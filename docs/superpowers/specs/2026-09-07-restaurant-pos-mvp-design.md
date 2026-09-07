@@ -23,6 +23,14 @@ This revision resolves defects found in review of the first draft:
 - Menu, user, and settings management were assumed but never specified, so
   the system as written could not be configured at all.
 
+A second round applied product-lead feedback:
+
+- Boolean fields are now consistently `is_`-prefixed.
+- Cancelling an order that was keyed in but never fired needs no manager
+  approval; the first draft only implied this rather than stating it.
+- Discounts no longer require manager approval. Manager-defined presets are
+  applied freely and audited by name; only free-form amounts remain gated.
+
 Newly added scope is marked **[added in review]** so it can be challenged.
 
 ## 1. MVP Capabilities
@@ -36,7 +44,10 @@ Newly added scope is marked **[added in review]** so it can be challenged.
 - Four roles: waiter, kitchen, cashier, manager (Section 3).
 - Staff identify themselves by PIN on shared terminals (Section 3).
 - Order lifecycle and per-line fire/void tracking (Section 5).
-- Order-level discount (percentage or fixed amount), manager-approved.
+- Order-level discounts, percentage or fixed amount. Manager-defined presets
+  ("Staff Meal 50%", "Independence Day 15%") are applied by any staff member
+  with no approval. Free-form amounts require a manager PIN. Every discount
+  is audited either way.
 - Payments: cash, card, and custom-named tender types, all recorded manually
   with no gateway or terminal integration. Multiple tenders may be split
   across one order. Cash over-tender is supported, with change calculated.
@@ -60,6 +71,7 @@ Newly added scope is marked **[added in review]** so it can be challenged.
   which the system cannot be set up or demonstrated:
   - Menu management: create/edit/archive categories, items, variants,
     modifiers; set prices; toggle 86 status.
+  - Discount presets: create/edit/deactivate named presets.
   - User management: create staff, assign role, set and reset PIN.
   - Settings: currency and precision, tax rate, service-charge percentage,
     table list, business details printed on receipts.
@@ -72,6 +84,11 @@ Newly added scope is marked **[added in review]** so it can be challenged.
 - Quick-service queue numbers or pickup-counter display.
 - Nested modifier groups or modifier-level inventory linkage.
 - Item-level (line-level) discounts or complimentary items.
+- Auto-applying or scheduled discount campaigns. A preset is always chosen
+  deliberately by a staff member; no discount fires itself from a date or
+  time window. Scheduling brings campaign precedence, overlap rules, and
+  midnight/timezone edges that a one-second tap does not justify.
+- More than one discount on a single order.
 - Bill splitting by guest (dividing one order into separate checks).
 - QR payment or external payment-terminal integration.
 - Partial or line-item refunds.
@@ -100,10 +117,10 @@ terminal. Approval authorises one specific action and does not persist.
 
 | Role | Key permissions |
 |---|---|
-| Waiter | Open a table order, add/edit lines while unfired, fire the order to the kitchen, void unfired lines, take payment |
+| Waiter | Open a table order, add/edit lines while unfired, fire the order to the kitchen, void unfired lines, void an order with nothing fired, apply a preset discount, take payment |
 | Kitchen | View and reprint kitchen tickets. No order state transitions in MVP |
-| Cashier | Take payment on any order (single or split tender), open quick-sale orders, reprint receipts |
-| Manager | All of the above, plus: approve discounts, approve fired-line and order voids, approve refunds, toggle 86 status, run and view the end-of-day close, view the audit log, manage menu, users, and settings |
+| Cashier | Take payment on any order (single or split tender), open quick-sale orders, void an order with nothing fired, apply a preset discount, reprint receipts |
+| Manager | All of the above, plus: approve free-form discounts, approve fired-line and order voids, approve refunds, toggle 86 status, run and view the end-of-day close, view the audit log, manage menu, discount presets, users, and settings |
 
 ### PIN handling
 
@@ -122,25 +139,37 @@ exhaustive schema.
 
 | Entity | Purpose | Notable fields |
 |---|---|---|
-| `User` | Staff member and audit actor | role, pin_hash, active, locked_until |
-| `Table` | Physical table available for table-service orders | label, area, active |
-| `Category` | Menu grouping | name, sort order, active |
-| `MenuItem` | Sellable item | category, name, base price (tax-inclusive), available (86 flag), active |
-| `Variant` | Single-select option changing price | menu_item, name, price delta |
-| `Modifier` | Multi-select option, price delta >= 0 | menu_item (or shared group), name, price delta |
+| `User` | Staff member and audit actor | role, pin_hash, is_active, locked_until |
+| `Table` | Physical table available for table-service orders | label, area, is_active |
+| `Category` | Menu grouping | name, sort order, is_active |
+| `MenuItem` | Sellable item | category, name, base price (tax-inclusive), is_available (86 flag), is_active |
+| `Variant` | Single-select option changing price | menu_item, name, price delta, is_active |
+| `Modifier` | Multi-select option, price delta >= 0 | menu_item (or shared group), name, price delta, is_active |
 | `Order` | One bill | type (table / quick_sale), table (nullable), status, business_day, opened_by, opened_at, closed_at |
 | `OrderLine` | One item on an order | order, menu_item, variant, modifiers, quantity, unit price snapshot, line state |
-| `Discount` | Order-level reduction | order, kind (percent / fixed), value, approved_by, reason |
+| `DiscountPreset` | Reusable named discount a manager defines | name, kind (percent / fixed), value, is_active |
+| `Discount` | Order-level reduction, at most one per order | order, preset (nullable), name snapshot, kind, value snapshot, applied_by, approved_by (nullable), reason |
 | `Payment` | One tender against an order | order, tender_type, amount, change_given, taken_by, taken_at |
-| `TenderType` | Cash, card, or custom named method | name, is_cash, active |
+| `TenderType` | Cash, card, or custom named method | name, is_cash, is_active |
 | `KitchenTicket` | One fire round | order, sequence, lines, printed_at, print_status |
 | `BusinessDay` | Reporting period between EOD closes | opened_at, closed_at, closed_by, report snapshot |
 | `AuditEntry` | Append-only record | actor, action, order (nullable), reason, timestamp, before/after amounts |
 | `Settings` | Singleton configuration | currency, minor-unit precision, tax rate, service charge rate, business details |
 
-**Price snapshotting.** `OrderLine` stores the resolved unit price at the time
-the line was added. Editing a menu price later must never change the total of
-an order already taken, and must never change a historical report.
+**Boolean naming.** Every boolean field is prefixed `is_`, without exception,
+including the 86 flag (`MenuItem.is_available`).
+
+**Snapshotting.** `OrderLine` stores the resolved unit price at the time the
+line was added, and `Discount` stores the preset's name, kind, and value at
+the time it was applied. Editing a menu price or a preset later must never
+change the total of an order already taken, and must never change a
+historical report. `Discount.preset` is a reference for reporting only; the
+snapshot is what the arithmetic and the receipt use.
+
+**Discount approval.** `approved_by` is populated only for free-form
+discounts, which require a manager PIN. A preset discount leaves it null and
+records only `applied_by`. Presence of `preset` and absence of `approved_by`
+together identify the ungated path.
 
 ## 5. Order and Line State Machine
 
@@ -179,6 +208,22 @@ preconditions, and the UI must not present them interchangeably:
 
 - **Void** applies to an `OPEN` (unpaid) order or to individual lines on one.
 - **Refund** applies only to a `CLOSED` order and reverses it in full.
+
+**What gates a void.** Approval tracks whether the kitchen has been given
+work, not who is asking:
+
+| Target | Approval | Audited |
+|---|---|---|
+| A `PENDING` line | None | No |
+| An order with no `FIRED` lines | None | Yes |
+| A `FIRED` line | Manager PIN + reason | Yes |
+| An order holding any `FIRED` line | Manager PIN + reason | Yes |
+
+Cancelling an order that was keyed in but never sent to the kitchen is
+ordinary mistake correction: nothing was cooked and no money was taken, so
+there is nothing for an approval to protect. It is still recorded, because a
+staff member who cancels a large share of their own orders is a pattern worth
+being able to see later.
 
 ## 6. Money, Tax, and Rounding
 
@@ -253,19 +298,29 @@ split tender), the order closes, and a receipt prints.
 takes payment immediately, and the order closes. Firing to the kitchen and
 receipt printing both occur at close.
 
-**Void an unfired line.** Waiter removes a `PENDING` line. No approval, no
-audit entry beyond the ordinary order edit.
+**Void an unfired line.** Staff member removes a `PENDING` line. No approval,
+no audit entry beyond the ordinary order edit.
 
-**Void a fired line or a whole order.** Requires a manager PIN at the prompt
-and a reason. Recorded in the audit log and reflected in the end-of-day
-report. Only possible while the order is `OPEN`.
+**Cancel an unfired order.** Staff member voids an `OPEN` order on which
+nothing has been fired and no payment recorded — the ordinary "keyed it in
+wrong" case. No approval prompt. The order becomes `VOIDED` and one audit
+entry is written naming the actor.
+
+**Void a fired line, or an order holding one.** Requires a manager PIN at the
+prompt and a reason. Recorded in the audit log and reflected in the
+end-of-day report. Only possible while the order is `OPEN`.
 
 **Refund.** Applies to a `CLOSED` order. Requires a manager PIN and a reason.
 Reverses the order in full; the order becomes `REFUNDED`.
 
-**Discount.** Waiter or cashier applies a percentage or fixed discount to the
-order. A manager PIN is required before it takes effect. The approval, the
-approver, and the amount are logged.
+**Apply a preset discount.** Staff member picks a named preset from the
+active list and it takes effect immediately, with no prompt. The preset's
+name, kind, and value are snapshotted onto the order and written to the audit
+log, so the log records "Staff Meal 50%" rather than a bare number.
+
+**Apply a free-form discount.** Staff member types a percentage or fixed
+amount. A manager PIN is required before it takes effect. The amount, the
+actor, and the approver are all logged.
 
 **86 an item.** Manager toggles an item unavailable. It disappears from
 order-entry immediately for new lines. Existing `PENDING` lines holding that
@@ -283,13 +338,23 @@ immutable report snapshot, closes the `BusinessDay`, and opens the next one.
 - Prices are tax-inclusive; the receipt tax line is derived, never added.
 - The service charge is calculated on the discounted tax-inclusive subtotal
   and is not itself taxed.
-- Discounts are order-level only and require manager approval before taking
-  effect. At most one discount per order in MVP.
+- Discounts are order-level only, and an order carries at most one.
+- A preset discount requires no approval; a free-form discount requires a
+  manager PIN. Both are audited.
+- A preset's name, kind, and value are snapshotted onto the order when
+  applied. Editing or deactivating the preset afterwards never alters an
+  existing order or a closed day's report.
+- A deactivated preset disappears from the picker but remains readable on
+  orders that already carry it.
+- No discount applies itself. A staff member always chooses it.
 - Non-cash tenders may not exceed the remaining balance; cash tenders may,
   with the excess returned as change.
 - An order may close only when tenders less change equal the total exactly.
 - Voiding a `FIRED` line, or any order containing one, requires manager
-  approval and a reason. Voiding a `PENDING` line does not.
+  approval and a reason. Voiding a `PENDING` line does not, and neither does
+  voiding an order on which nothing has been fired.
+- A whole-order void is always audited, with or without an approval step.
+  Removing a single `PENDING` line is not.
 - Refunds apply only to `CLOSED` orders, are always for the full amount, and
   require manager approval and a reason.
 - An order may be refunded once. A `REFUNDED` order is terminal.
@@ -333,6 +398,15 @@ immutable report snapshot, closes the `BusinessDay`, and opens the next one.
   kitchen is never sent an item it cannot make.
 - **Item 86'd while a `FIRED` line holds it.** No effect; it is already being
   prepared.
+- **Preset deactivated or edited while an open order carries it.** The order
+  is unaffected: it holds a snapshot, not a live reference. The picker stops
+  offering the preset for new orders.
+- **Free-form discount attempted with no manager available.** Blocked, and no
+  partial discount is written. A preset remains available as the ungated
+  alternative.
+- **Discount applied to an order that is later voided or refunded.** The
+  discount record travels with the order and appears in the end-of-day
+  discount total only for orders that actually closed.
 - **Concurrent edits to one open order from two terminals.** Last-write-wins
   is accepted for MVP given a single location and a small terminal count.
 - **Terminal or application restart mid-order.** Open orders persist
@@ -361,25 +435,34 @@ immutable report snapshot, closes the `BusinessDay`, and opens the next one.
    offered as the maximum.
 7. A split payment of 10.00 card plus 5.59 cash closes the order; a split
    leaving any balance does not.
-8. A discount, a fired-line void, and a refund each fail without a manager
-   PIN and succeed with one, and each produces exactly one audit entry
-   naming the actor, the approver, the reason, and the order.
-9. Toggling an item to 86 removes it from order entry within the same
-   session with no restart, and blocks firing an order holding it as a
-   pending line.
-10. A closed order's receipt reprints on demand with identical figures.
-11. A refund on a closed order moves it to `REFUNDED`, and a second refund
+8. A preset discount applies with no prompt of any kind, and its audit entry
+   names the preset ("Staff Meal 50%") rather than a bare number.
+9. A free-form discount is refused when the manager-PIN prompt is cancelled,
+   and succeeds with a valid manager PIN. Its record carries both the actor
+   and the approver; a preset's carries only the actor.
+10. Voiding an order on which nothing has been fired succeeds with no prompt
+    and writes exactly one audit entry. Voiding an order holding a fired line
+    raises the manager prompt and is refused when it is cancelled.
+11. A fired-line void and a refund each fail without a manager PIN and
+    succeed with one, each producing exactly one audit entry naming the
+    actor, the approver, the reason, and the order.
+12. Toggling an item to 86 removes it from order entry within the same
+    session with no restart, and blocks firing an order holding it as a
+    pending line.
+13. A closed order's receipt reprints on demand with identical figures.
+14. A refund on a closed order moves it to `REFUNDED`, and a second refund
     attempt on the same order is rejected.
-12. An end-of-day close is refused while an order is open, and succeeds once
+15. An end-of-day close is refused while an order is open, and succeeds once
     that order is closed or voided.
-13. The end-of-day report's sales, tax, service charge, discounts, refunds,
+16. The end-of-day report's sales, tax, service charge, discounts, refunds,
     voids, tender breakdown, and order count match a manual sum of that
     business day's orders.
-14. Editing a menu item's price after an order was taken changes neither that
-    order's total nor the closed day's report.
-15. The audit log contains one entry per void of a fired line, discount,
-    refund, approval, and PIN lockout in a test session, and contains no
-    PIN values in any form.
+17. Editing a menu item's price, or a discount preset's value, after an order
+    was taken changes neither that order's total nor the closed day's report.
+    Deactivating a preset still leaves it readable on orders that carry it.
+18. The audit log contains one entry per whole-order void, fired-line void,
+    discount, refund, approval, and PIN lockout in a test session, and
+    contains no PIN values in any form.
 
 ## 11. Operating Assumptions
 
@@ -407,6 +490,11 @@ immutable report snapshot, closes the `BusinessDay`, and opens the next one.
 - **Tip capture.** Excluded from MVP on the assumption that the service
   charge covers gratuity. If cash or card tips must be recorded per order,
   this needs to re-enter scope before payment is built.
+- **Free-form discount gate.** Free-form amounts require a manager PIN while
+  presets do not. An alternative is a threshold — ungated below some
+  percentage or amount, gated above it — which would remove most manager
+  prompts without leaving 100%-off open to anyone. Worth revisiting once
+  there is real usage data on how often free-form entry is actually needed.
 - **Service-charge base.** The service charge is calculated on the
   tax-inclusive discounted subtotal. Calculating it on the net-of-tax amount
   is the alternative; it changes every total slightly.
