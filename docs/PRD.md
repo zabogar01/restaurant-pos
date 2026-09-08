@@ -8,12 +8,24 @@ criteria at the end. Implementation plans should cite these IDs.
 
 ## 1. Scope summary
 
-Single location. Table-service is the core flow; quick sale (no table, paid
-immediately) is a variant of the same order model. Four roles sharing
-terminals over a local network. One tax rate, tax-inclusive prices, optional
+The MVP is a **single-host vertical slice**, not a deployable floor system. It
+runs entirely on the owner's local development machine: POS client, back
+office, application server, and PostgreSQL. It supports one active interactive
+POS workflow at a time.
+
+Table-service is the core flow; quick sale (no table, paid immediately) is a
+variant of the same order model. Two authenticating roles, cashier and
+manager, share the local client. One tax rate, tax-inclusive prices, optional
 untaxed service charge. Cash, card, and custom-named tenders recorded
-manually. Kitchen ticket printing, no kitchen display. No inventory, no
-integrations, no offline sync.
+manually. Kitchen ticket and cancellation-ticket printing, no kitchen display.
+No inventory, no integrations, no offline sync, no tips.
+
+**What this MVP does not prove.** It validates the domain — order lifecycle,
+money, approvals, audit, reporting. It does not validate multi-person floor
+operation, a dedicated waiter role, concurrent terminals, external card
+collection while another person edits an order, cross-terminal propagation,
+device commissioning, or hardware resilience. Those belong to the
+pre-production gate in [ROADMAP.md](ROADMAP.md).
 
 ## 2. Domain vocabulary
 
@@ -22,35 +34,55 @@ integrations, no offline sync.
 | Order | One bill. Type is `table` or `quick_sale`. Status is `OPEN`, `CLOSED`, `VOIDED`, or `REFUNDED` |
 | Order line | One item on an order. State is `PENDING`, `FIRED`, or `VOIDED` |
 | Fire | Send all `PENDING` lines to the kitchen as one printed ticket |
+| Cancellation ticket | A correction document telling the kitchen that fired work is cancelled. Never a fire |
 | 86 | Mark a menu item temporarily unavailable (`MenuItem.is_available = false`) |
 | Preset | A manager-defined named discount, applied without approval |
+| Tender | One recorded contribution to settlement. `Tender` is the entity name; "payment" may be used for the customer-facing workflow |
 | Business day | The period between two end-of-day closes |
-| Tender | One payment against an order; an order may have several |
+| ClientInstance | An opaque server-issued browser identifier used for UI continuity and telemetry. Not an authorization boundary |
 
-Full entity list and fields: see the design spec, Section 4. All boolean
-fields are `is_`-prefixed.
+All boolean fields are `is_`-prefixed. Enum states such as `Order.status` stay
+enums and do not acquire redundant booleans.
 
 ## 3. Functional requirements
 
 ### A. Identity and access
 
-- **FR-A1** Each staff member has a role of waiter, kitchen, cashier, or
-  manager, and a numeric PIN.
-- **FR-A2** Staff authenticate by PIN on a shared terminal. Authentication
-  establishes a short-lived actor context that expires on idle timeout or on
+- **FR-A1** The MVP has two authenticating roles: cashier and manager. Each
+  authenticating user has a unique six-digit numeric PIN. Kitchen remains a
+  non-authenticating staff classification with no PIN and no application
+  permissions. The waiter role is deferred beyond the MVP.
+- **FR-A2** Cashiers and managers authenticate by PIN on the owner's local
+  client. A correct PIN identifies the staff member and establishes a
+  server-side actor context that expires after 90 seconds of inactivity or on
   explicit release.
-- **FR-A3** PINs are stored using a modern password hash (argon2id or
-  bcrypt), never in plaintext, and never written to any log.
+- **FR-A3** PINs are stored using Argon2id, never in plaintext, and never
+  written to any log.
 - **FR-A4** PINs are unique per user, so an audit actor is unambiguous.
-- **FR-A5** Repeated failed PIN entry locks the user out for a cooldown
-  period. The lockout is audited.
+- **FR-A5** PIN verification has two installation-wide throttle classes:
+  `LOGIN` and `MANAGER_APPROVAL`. After five consecutive failures in either
+  class, the server rejects further verification in that class for five
+  minutes. Only a successful verification **in the same class** resets its
+  counter — a successful cashier login must not reset failed manager-approval
+  guesses. Throttle state is server-side and survives browser, application,
+  and database restart. Unauthenticated login failures are security
+  telemetry; failed and cancelled manager approvals remain actor-attributed
+  audit entries. No PIN value is recorded in either store.
 - **FR-A6** Manager approval is an inline prompt requiring a manager PIN at
   that moment. It authorises one specific action and does not persist.
+- **FR-A7** On first contact the server issues the browser profile an opaque
+  `ClientInstance` identifier in an HTTP-only cookie, with a server-side
+  record. It identifies UI continuity and security telemetry only. It is not
+  an authorization boundary, and clearing or replacing it does not bypass
+  installation-wide PIN throttling.
 
 ### B. Configuration and management (manager only)
 
 - **FR-B1** Settings hold currency, minor-unit precision, tax rate, service
-  charge rate, and the business details printed on receipts.
+  charge rate, and the business details printed on receipts. Currency and
+  minor-unit precision become immutable after the first order. Changes to tax
+  or service-charge rates create a new settings version and affect only
+  orders opened afterwards.
 - **FR-B2** Manage tables: create, edit, and deactivate.
 - **FR-B3** Manage users: create, assign role, set and reset PIN, deactivate.
 - **FR-B4** Manage menu: categories, items, variants, modifiers, prices.
@@ -60,56 +92,74 @@ fields are `is_`-prefixed.
 ### C. Menu
 
 - **FR-C1** Items belong to a category and carry a tax-inclusive base price.
-- **FR-C2** An item may offer variants: single-select, each with a price
-  delta (for example size).
+- **FR-C2** An item may offer single-select variants. A variant may have a
+  positive or negative price delta. The resolved unit price is the greater of
+  zero and the base price plus variant delta plus selected modifier deltas.
 - **FR-C3** An item may offer modifiers: multi-select, each with a price
-  delta of zero or more (for example "extra cheese +1.50").
+  delta of zero or more.
 - **FR-C4** No nested modifier groups. No link between modifiers and stock.
 - **FR-C5** An item with `is_available = false` cannot be added to any order.
+- **FR-C6** An availability change is reflected on the active order-entry
+  client within three seconds without restart. The server independently
+  revalidates availability when adding a line and when firing. An open
+  selection dialog preserves the user's choices, marks the item unavailable,
+  disables Add, and explains the change.
 
 ### D. Order capture
 
-- **FR-D1** A waiter opens a table order against a table that has no other
+- **FR-D1** A cashier opens a table order against a table that has no other
   `OPEN` order. A table holds at most one open order.
 - **FR-D2** A cashier opens a quick-sale order, which has no table.
 - **FR-D3** Lines may be added while the order is `OPEN`, including after an
   earlier fire.
-- **FR-D4** Adding a line captures the resolved unit price as a snapshot.
-  Later menu price edits never change an existing order.
+- **FR-D4** Adding a line snapshots its customer-visible item, variant, and
+  modifier names, component prices, and non-negative resolved unit price.
+  Later menu edits never change an existing order.
 - **FR-D5** A `PENDING` line may be edited or removed freely.
-- **FR-D6** Order state is held server-side and survives a terminal or
+- **FR-D6** Order state is held server-side and survives a client or
   application restart.
 
-### E. Kitchen firing
+### E. Kitchen printing
 
 - **FR-E1** Firing collects every `PENDING` line, prints one kitchen ticket
   containing only those lines, and marks them `FIRED`.
 - **FR-E2** A second fire prints only lines added since the previous fire.
-- **FR-E3** A failed print still marks the lines `FIRED` and saves the ticket
-  with `print_status = failed`, raising a visible warning and offering a
-  reprint. Printing never blocks the sale.
+- **FR-E3** A fire transaction marks its lines `FIRED` and saves the
+  immutable kitchen ticket and print job before printer delivery begins.
+  Delivery may become `PRINTED`, `FAILED`, or `UNKNOWN`. `FAILED` and
+  `UNKNOWN` kitchen work are shown as persistent emergency incidents on the
+  active POS client, with an explicit reprint action. The incident is
+  application-wide, not actor-session-specific. Printing never blocks or
+  rolls back the sale.
 - **FR-E4** Firing is blocked while any `PENDING` line holds an item that is
   86'd, until that line is voided or the item is restored.
 - **FR-E5** For a quick-sale order, firing and receipt printing both occur at
   close.
+- **FR-E6** `FAILED` or `UNKNOWN` receipt output is shown as a lower-priority
+  warning and is never presented with the same urgency as failed kitchen work
+  or cancellation output.
 
 ### F. Discounts
 
 - **FR-F1** Discounts are order-level. An order carries at most one.
-- **FR-F2** A preset discount is applied by any staff member with no approval
-  prompt.
-- **FR-F3** A free-form discount (typed percentage or amount) requires a
-  manager PIN.
+- **FR-F2** A preset discount is applied by any authenticating staff member
+  with no approval prompt.
+- **FR-F3** A free-form discount requires a manager PIN.
 - **FR-F4** Applying a discount snapshots the name, kind, and value onto the
-  order. Editing or deactivating the preset afterwards never alters an
-  existing order or a closed day's report.
+  order.
 - **FR-F5** A deactivated preset disappears from the picker but remains
   readable on orders that already carry it.
 - **FR-F6** Every discount is audited. A preset records the actor; a
   free-form discount records the actor and the approver.
 - **FR-F7** No discount applies itself. A staff member always chooses it.
+- **FR-F8** An applied discount may be removed or replaced. The approval gate
+  covers the **whole transition**: removing or replacing a free-form discount
+  requires manager approval even if its replacement is a preset; removing or
+  replacing a preset is ungated unless the replacement is free-form. Each
+  successful change writes one audit entry containing before and after
+  values.
 
-### G. Payment and close
+### G. Tender and close
 
 - **FR-G1** Tender types are cash, card, and any custom named method. All are
   recorded manually; there is no gateway or terminal integration.
@@ -123,6 +173,20 @@ fields are `is_`-prefixed.
 - **FR-G7** A receipt prints on close and is reprintable on demand with
   identical figures.
 - **FR-G8** A receipt-printer failure never prevents the order closing.
+- **FR-G9** Tender entry remains a client-side draft until close. No `Tender`
+  record is stored unless the complete plan settles the order exactly. The
+  draft survives actor-session idle expiry within the same browser tab, and
+  an actor must re-authenticate before close.
+- **FR-G10** Closing a table order is rejected while any line remains
+  `PENDING`.
+- **FR-G11** A zero-total order closes with no `Tender` records, produces a
+  receipt, counts as an order that reached `CLOSED`, and records zero
+  revenue.
+- **FR-G12** The MVP supports one active interactive POS workflow at a time.
+  While a tender draft is active, its tab disables add-line, discount change,
+  fire, void, and competing settlement actions. Concurrent payment collection
+  from another tab, browser profile, or device is outside the MVP. This is a
+  client guard, not a substitute for the deferred server-side checkout lease.
 
 ### H. Void and refund
 
@@ -134,36 +198,66 @@ fields are `is_`-prefixed.
 - **FR-H3** Voiding an order with no `FIRED` lines requires no approval and
   is audited.
 - **FR-H4** Voiding a `FIRED` line, or an order holding one, requires a
-  manager PIN and a reason, and is audited.
-- **FR-H5** A refund reverses a closed order in full. Partial refunds are out
-  of scope. It requires a manager PIN and a reason, and is audited.
+  manager PIN and reason and is audited. The same transaction creates one
+  immutable kitchen cancellation ticket containing only the previously fired
+  work being cancelled. Cancellation printing occurs after commit and never
+  gates or rolls back the void. `FAILED` or `UNKNOWN` cancellation delivery
+  creates an emergency print incident.
+- **FR-H5** A full refund reverses a closed order and records one or more
+  `RefundTender` allocations selected by the manager. The default allocation
+  reproduces each original `Tender`'s **effective contribution**, defined as
+  amount tendered minus change given. Allocations must sum exactly to the
+  order total. Partial refunds are out of scope. Requires a manager PIN and a
+  reason, and is audited.
 - **FR-H6** An order may be refunded once. `REFUNDED` is terminal.
 - **FR-H7** Voids and refunds against a closed business day are blocked.
 
 ### I. Business day and reporting
 
 - **FR-I1** A business day runs from one end-of-day close to the next. An
-  order belongs to the business day open when it was created, not to a
-  calendar date.
+  order belongs to the business day open when it was created.
 - **FR-I2** End-of-day close is refused while any order is still `OPEN`, and
   lists those orders.
 - **FR-I3** A successful close stores an immutable report snapshot, closes
   the business day, and opens the next.
 - **FR-I4** A second close of the same business day is rejected. The stored
   report remains re-printable.
-- **FR-I5** The report contains: total sales, tax collected, service charge
-  collected, discounts given, refunds, voids, breakdown by tender type, and
-  order count.
+- **FR-I5** The immutable report contains:
+  - Gross sales: the sum of `Order.total` for every order that reached
+    `CLOSED`, including orders later refunded.
+  - Refunds as a separate total, and net sales equal to gross minus refunds.
+  - Gross, refund-reversal, and net figures for included tax, service charge,
+    and discounts.
+  - Gross effective tender, refund allocation, and net movement by tender
+    type.
+  - Order count equal to every order that reached `CLOSED`, with
+    refunded-order count shown separately.
+  - Whole-order void count and value, where value is the order total
+    immediately before void.
+  - Fired-line void count, tax-inclusive line snapshot value, and the
+    before/after reduction in order total. These differ whenever an
+    order-level percentage discount or service charge applies.
+
+  A refunded order's original discount remains in gross discounts and is
+  shown again as a refund reversal, so net discounts reconcile without
+  rewriting history.
 
 ### J. Audit
 
 - **FR-J1** The audit log is append-only. Entries are never edited or
   deleted.
-- **FR-J2** An entry records actor, action, order reference where applicable,
-  reason, timestamp, and before/after amounts.
-- **FR-J3** Audited actions: whole-order void, fired-line void, discount,
-  refund, manager approval, and PIN lockout.
-- **FR-J4** No PIN value appears in the audit log in any form.
+- **FR-J2** An entry records the initiating actor, optional approver, action
+  and outcome, subject and order reference where applicable, required
+  business reason where applicable, timestamp, and before/after amounts.
+- **FR-J3** Audited actions are whole-order void, fired-line void, discount
+  apply/replace/remove, refund, and every manager-approval outcome. A
+  successful approved action creates **one combined entry** naming actor and
+  approver. A failed or cancelled approval creates one entry naming the
+  initiating actor with approver null. Unauthenticated PIN failures and
+  throttle cooldowns are security telemetry, not audit entries, because they
+  have no identified actor.
+- **FR-J4** No PIN value appears in the audit log or in security telemetry,
+  in any form.
 
 ## 4. Money rules
 
@@ -172,13 +266,21 @@ is derived from the total, never added to it. The service charge is **not
 taxed**.
 
 - **FR-M1** Currency and minor-unit precision are configured once (2 for USD
-  or EUR, 0 for IDR or JPY).
+  or EUR, 0 for IDR or JPY) and become immutable after the first order.
 - **FR-M2** All money is stored as integers in minor units. Binary floating
-  point is never used for money at any layer.
+  point is never used for money at any layer. Money and exact rate arithmetic
+  use an integer-exact type behind a single calculation module; canonical
+  base-10 integer strings cross the API boundary.
 - **FR-M3** Computed fractions round **half-up** at the point of becoming a
   stored or displayed value.
 - **FR-M4** Tax is computed once at order level from the discounted subtotal,
   never summed from per-line figures.
+- **FR-M5** Bounds: rate precision one part per million; maximum quantity 99
+  per line, whole numbers only; maximum line total, order total, and single
+  tender 99,999,999 minor units; maximum change 9,999,999 minor units. The
+  settlement UI validates the change ceiling before committing and shows the
+  maximum acceptable cash amount. Discounts are 0–100%; a fixed discount is
+  capped at the subtotal; no order may reach a negative total.
 
 Order of operations, with `r` = tax rate and `s` = service-charge rate:
 
@@ -209,92 +311,112 @@ Receipt shows subtotal 16.50, discount −1.65, service charge 0.74, total
 
 ## 5. Non-functional requirements
 
-- **NFR-1** Terminals, printers, and the server all run on one local network.
-  No cloud dependency for core operation.
-- **NFR-2** Printing targets ESC/POS-compatible thermal printers over the
-  LAN. Kitchen and receipt output may share one device in the smallest
-  deployment.
-- **NFR-3** Concurrent terminal count is single-digit. No horizontal scaling
-  or queueing infrastructure is assumed.
-- **NFR-4** Concurrent edits to one order resolve last-write-wins for MVP.
+- **NFR-1** The MVP browser, application server, back-office UI, and
+  PostgreSQL run on the owner's local development machine. The application is
+  reachable only through the operating system's loopback interface, served
+  over **HTTPS on localhost**. Printers may remain reachable over the local
+  network. No cloud dependency is used.
+- **NFR-2** Printing targets ESC/POS-compatible thermal printers. Kitchen and
+  receipt output may share one device.
+- **NFR-3** The MVP supports one local host and one active interactive
+  client. Multiple-terminal and simultaneous-operator operation are deferred.
+  The server still enforces aggregate versions, idempotency, row locks, and
+  command preconditions against duplicate, stale, or re-entrant commands.
+- **NFR-4** Concurrent commands are serialized by the server. Harmless edits
+  to `PENDING`-line details may use last-successfully-committed write. Fire,
+  discount change, settlement, void, refund, receipt allocation, and
+  business-day close use version and precondition checks and reject stale
+  conflicts.
 
 ## 6. Edge cases the build must handle
 
-- Kitchen or receipt printer offline or out of paper — see FR-E3, FR-G8.
+- Kitchen or receipt printer offline or out of paper — FR-E3, FR-E6, FR-G8.
 - Tenders below the total — closing blocked, remaining balance shown.
 - Non-cash tender above the remaining balance — rejected, maximum shown.
-- Manager approval requested with no manager available — action blocked, no
-  partial state written.
+- Cash over-tender above the change ceiling — rejected before commit, with
+  the maximum acceptable cash shown.
+- Manager approval requested with no manager available — blocked, no partial
+  state written.
 - Void attempted on an already-fired line — routed to the approval path
-  automatically, whoever initiates it.
+  automatically.
 - Refund attempted on an already-refunded order — rejected.
 - Item 86'd while a `PENDING` line holds it — firing blocked (FR-E4).
-- Item 86'd while a `FIRED` line holds it — no effect, already cooking.
+- Item 86'd while a `FIRED` line holds it — no effect.
 - Preset edited or deactivated while an open order carries it — order
-  unaffected, it holds a snapshot (FR-F4).
-- Discount on an order later voided or refunded — counted in the end-of-day
-  discount total only for orders that actually closed.
-- Terminal restart mid-order — open orders persist (FR-D6).
+  unaffected, it holds a snapshot.
+- Discount on an order later voided or refunded — see FR-I5 gross/reversal.
+- Actor-session expiry while a tender draft exists — draft survives in the
+  same tab, re-authentication required before close.
+- Client or application restart mid-order — open orders persist (FR-D6).
+- Application restart with pending or dispatching print jobs — dispatching
+  jobs become `UNKNOWN` on recovery.
 - End-of-day attempted with open orders — refused with a list (FR-I2).
-- Repeated wrong PIN — lockout, audited (FR-A5).
+- Five consecutive failed PIN verifications in a class — that class is
+  rejected for five minutes. Unauthenticated failures are security telemetry
+  with no staff actor and no PIN value.
+- `UNKNOWN` cancellation-ticket delivery — emergency incident, operator
+  checks the printer before reprinting.
+- Zero-total close — no `Tender` rows, receipt still produced.
+- Cash refund — defaults to effective contribution, not cash handed over.
 
 ## 7. Acceptance criteria
 
-Each is observable. The MVP is done when all pass.
+Each is observable. The MVP is done when all pass. Test level is noted where
+the browser is the wrong place to prove it.
 
 | # | Criterion | Covers |
 |---|---|---|
-| AC-1 | A waiter authenticates by PIN, opens a table order, adds an item with a variant and a priced modifier, fires it, and the kitchen ticket prints containing exactly that line | FR-A2, C2, C3, E1 |
+| AC-1 | A cashier authenticates by PIN, opens a table order, adds an item with a variant and a priced modifier, fires it, and the kitchen ticket prints containing exactly that line | FR-A2, C2, C3, E1 |
 | AC-2 | Adding two more lines and firing again prints a second ticket containing **only** the two new lines | FR-D3, E2 |
 | AC-3 | Voiding an unfired line succeeds with no prompt; voiding a fired line raises a manager-PIN prompt and is refused when cancelled | FR-H2, H4 |
-| AC-4 | The worked example reproduces exactly: subtotal 16.50, discount 1.65, tax-included 1.35, service charge 0.74, total 15.59 | FR-M1–M4 |
+| AC-4 | The worked example reproduces exactly: subtotal 16.50, discount 1.65, tax-included 1.35, service charge 0.74, total 15.59 *(unit and property tests)* | FR-M1–M5 |
 | AC-5 | 20.00 cash against a 15.59 total shows 4.41 change, closes the order, and records 15.59 as revenue — not 20.00 | FR-G4, G6 |
 | AC-6 | A card tender of 20.00 against a 15.59 balance is rejected, with 15.59 offered as the maximum | FR-G3 |
 | AC-7 | A split of 10.00 card plus 5.59 cash closes the order; a split leaving any balance does not | FR-G2, G5 |
-| AC-8 | A preset discount applies with no prompt of any kind, and its audit entry names the preset ("Staff Meal 50%") rather than a bare number | FR-F2, F6 |
-| AC-9 | A free-form discount is refused when the manager prompt is cancelled and succeeds with a valid manager PIN; its record carries actor and approver, a preset's carries only the actor | FR-F3, F6 |
+| AC-8 | A preset discount applies with no prompt, and its audit entry names the preset rather than a bare number | FR-F2, F6 |
+| AC-9 | A free-form discount is refused when the manager prompt is cancelled and succeeds with a valid PIN; its record carries actor and approver, a preset's carries only the actor | FR-F3, F6 |
 | AC-10 | Voiding an order with nothing fired succeeds with no prompt and writes exactly one audit entry; voiding an order holding a fired line raises the manager prompt | FR-H3, H4 |
-| AC-11 | A fired-line void and a refund each fail without a manager PIN and succeed with one, each producing one audit entry naming actor, approver, reason, and order | FR-H4, H5, J2 |
-| AC-12 | Toggling an item to 86 removes it from order entry within the same session with no restart, and blocks firing an order holding it as a pending line | FR-C5, E4 |
+| AC-11 | A fired-line void and a refund each fail without a manager PIN and succeed with one, each producing one combined audit entry naming actor, approver, reason, and order | FR-H4, H5, J2 |
+| AC-12 | Toggling an item to 86 removes or disables it for new order entry on the active client within three seconds without restart. An already-open selection dialog preserves the user's choices, marks the item unavailable, disables Add, and explains the change. Adding and firing independently reject unavailable items | FR-C5, C6, E4 |
 | AC-13 | A closed order's receipt reprints on demand with identical figures | FR-G7 |
 | AC-14 | A refund moves a closed order to `REFUNDED`; a second refund attempt is rejected | FR-H5, H6 |
 | AC-15 | End-of-day close is refused while an order is open, and succeeds once that order is closed or voided | FR-I2 |
-| AC-16 | The end-of-day report's sales, tax, service charge, discounts, refunds, voids, tender breakdown, and order count match a manual sum of that business day's orders | FR-I5 |
-| AC-17 | Editing a menu price or a preset value after an order was taken changes neither that order's total nor the closed day's report; a deactivated preset stays readable on orders carrying it | FR-D4, F4, F5 |
-| AC-18 | The audit log holds one entry per whole-order void, fired-line void, discount, refund, approval, and PIN lockout in a test session, and contains no PIN values in any form | FR-J3, J4 |
+| AC-16 | Report gross, reversal, and net figures — sales, tax, service charge, discounts, tender movement, order and void counts — match manual calculation *(integration tests)* | FR-I5 |
+| AC-17 | Editing a menu price or a preset value after an order was taken changes neither that order's total nor the closed day's report; a deactivated preset stays readable on orders carrying it *(integration tests)* | FR-D4, F4, F5 |
+| AC-18 | The audit log contains one combined entry per successful approved action naming actor and approver; one entry per failed or cancelled approval naming actor with approver null; and entries for whole-order void, fired-line void, discount apply/replace/remove, and refund. Unauthenticated PIN failures and throttle cooldowns appear only in security telemetry. Neither store contains a PIN value in any form *(integration, permission, and log-scan tests)* | FR-J3, J4 |
+| AC-19 | Five failed PIN verifications in a class cause a five-minute cooldown for that class only, surviving restart; a successful cashier login does not reset the manager-approval counter; clearing `ClientInstance` does not reset either | FR-A5, A7 |
+| AC-20 | A tender draft survives 90-second actor-session expiry in the same tab and requires re-authentication at close | FR-G9 |
+| AC-21 | While a tender draft is active, its tab disables add-line, discount change, fire, void, and competing settlement | FR-G12 |
+| AC-22 | A fired-line void creates exactly one cancellation ticket containing only the cancelled work, visually distinct from a work ticket | FR-H4, B-16 |
+| AC-23 | A kitchen print failure appears as an emergency incident while a receipt failure appears at lower urgency; they are never presented identically | FR-E3, E6 |
+| AC-24 | A zero-total order closes with no `Tender` row, produces a receipt, and records zero revenue | FR-G11 |
+| AC-25 | A 20.00 cash / 4.41 change sale defaults to a 15.59 cash `RefundTender` allocation, not 20.00 | FR-H5 |
+| AC-26 | A negative variant delta snapshots a resolved unit price of zero rather than a negative value | FR-C2, D4 |
 
 ## 8. Out of scope for MVP
 
-Multi-location. Queue numbers and pickup displays. Nested modifier groups.
-Item-level discounts and comps. Bill splitting by guest. QR and external
-terminal payments. Partial refunds. Kitchen display screens. Offline
-queueing and sync. Inventory. Item-level, labor, and hourly reporting.
-Jurisdiction-specific tax packs. Tip capture. Table transfer, merge, and
-split. Cash-drawer float and till reconciliation. Customer records and
-loyalty. Auto-applying or scheduled discount campaigns. More than one
-discount per order.
-
-Rationale for each: see the design spec, Section 2.
+Waiter as a distinct role. Multiple terminals and simultaneous operators.
+Provisioned terminal identity, commissioning, and revocation. Server-side
+checkout lease and manager takeover. LAN access, TLS beyond localhost, and
+certificate distribution. Server appliance, UPS, backup destination, and
+production recovery testing. Multi-location. Queue numbers and pickup
+displays. Nested modifier groups. Item-level discounts and comps. Bill
+splitting by guest. QR and external terminal payments. Partial refunds.
+Kitchen display screens. Offline queueing and sync. Inventory. Item-level,
+labor, and hourly reporting. Jurisdiction-specific tax packs. **Tip capture —
+definitively excluded.** Table transfer, merge, and split. Cash-drawer float
+and till reconciliation. Customer records and loyalty. Auto-applying or
+scheduled discount campaigns. More than one discount per order.
 
 ## 9. Open questions
 
-Tracked in the design spec, Section 12. None block the start of
-implementation; all should be settled before the feature they touch is
-built.
-
-1. Whether a `CLOSED` order can be reopened, or refund-and-rering is the only
-   path back.
-2. Whether voiding a fired line should print a cancellation slip to the
-   kitchen.
-3. Whether corrections against a closed business day need a mechanism, or
-   out-of-band handling is acceptable.
-4. Whether tips must be captured — must be settled **before payment is
-   built**, as retrofitting is expensive.
-5. Whether the service charge should be based on the net-of-tax amount rather
-   than the tax-inclusive subtotal.
-6. Whether the free-form discount gate should become a threshold instead.
-7. Receipt content and format details.
-8. Whether multi-terminal concurrency needs stricter locking than
-   last-write-wins.
-9. Whether the management screens should ship as UI or as seeded
-   configuration for the first release.
+1. **Implementation stack.** Blocks scaffolding, dependencies, and
+   packaging. Does not block domain or API-contract work.
+2. **Receipt jurisdiction and content.** Blocks final receipt schema,
+   numbering format, mandatory fields, refund documents, retention, and
+   reprint markings. The immutable `Receipt` entity can still be designed.
+3. **Post-close corrections.** Blocks final Phase 5 behavior. Corrections
+   that alter a closed day require a new adjustment record and next-day
+   reporting; mutating the closed report would violate B-9.
+4. **Maximum tax and service-charge rates.** Rate precision is settled at one
+   part per million; the permitted range is not.

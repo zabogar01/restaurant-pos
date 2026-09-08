@@ -1,7 +1,29 @@
 # Restaurant POS MVP Design
 
 Date: 2026-09-07
-Status: Approved for planning (revised after design review)
+Status: **Superseded in part.** This document records the interview and the
+reasoning behind the original scope. Where it disagrees with
+[PRD.md](../../PRD.md), [PRODUCT.md](../../PRODUCT.md),
+[ROADMAP.md](../../ROADMAP.md), or [BOUNDARIES.md](../../BOUNDARIES.md),
+those documents win.
+
+Changed after architecture review and the owner's scope cut of 2026-09-08:
+
+- The entity `Payment` is now `Tender`; `Table` is `DiningTable`.
+- The MVP has two authenticating roles, cashier and manager. Waiter is
+  deferred. Kitchen is a non-authenticating classification with no screen,
+  no PIN, and no reprint permission.
+- Fired-line voids print a kitchen cancellation ticket.
+- Refunds record `RefundTender` allocations by effective contribution.
+- Per-user lockout became installation-wide throttle buckets; unauthenticated
+  PIN failures are security telemetry, not audit entries.
+- Tip capture is definitively excluded.
+- The MVP runs on one local machine over HTTPS on localhost. Terminals, the
+  checkout lease, LAN TLS, appliance, UPS, and backups moved to the
+  pre-production gate in ROADMAP.md.
+- Open questions 1 (reopening a closed order) and 5 (service-charge base) are
+  resolved: no reopening, and the base is the tax-inclusive discounted
+  subtotal.
 
 ## Context
 
@@ -41,8 +63,9 @@ Newly added scope is marked **[added in review]** so it can be challenged.
   e.g. size), multi-select modifiers (each carrying a price delta of zero or
   more, e.g. "extra cheese +1.50"). No nested modifier groups, no
   modifier-to-inventory linkage.
-- Four roles: waiter, kitchen, cashier, manager (Section 3).
-- Staff identify themselves by PIN on shared terminals (Section 3).
+- Two authenticating roles: cashier and manager. Kitchen is a
+  non-authenticating classification; waiter is deferred (Section 3).
+- Staff identify themselves by PIN on the shared local client (Section 3).
 - Order lifecycle and per-line fire/void tracking (Section 5).
 - Order-level discounts, percentage or fixed amount. Manager-defined presets
   ("Staff Meal 50%", "Independence Day 15%") are applied by any staff member
@@ -51,7 +74,7 @@ Newly added scope is marked **[added in review]** so it can be challenged.
 - Payments: cash, card, and custom-named tender types, all recorded manually
   with no gateway or terminal integration. Multiple tenders may be split
   across one order. Cash over-tender is supported, with change calculated.
-- Voids: unfired lines voided freely by a waiter; fired lines and whole
+- Voids: unfired lines voided freely by any authenticating staff; fired lines and whole
   orders containing fired lines require manager approval and a reason.
 - Refunds: full-order only, on already-closed orders, manager-approved with a
   reason. Distinct from voids (Section 5).
@@ -75,8 +98,10 @@ Newly added scope is marked **[added in review]** so it can be challenged.
   - User management: create staff, assign role, set and reset PIN.
   - Settings: currency and precision, tax rate, service-charge percentage,
     table list, business details printed on receipts.
-- Local-area-network architecture: terminals, printers, and database run on
-  the local network with no cloud dependency for core operation.
+- Single-host architecture for the MVP: client, application, and database run
+  on one local machine over HTTPS on localhost, with no cloud dependency.
+  Printers may be reachable over the local network. Multi-terminal LAN
+  deployment moved to the pre-production gate.
 
 ## 2. Explicit Non-Goals (Post-MVP)
 
@@ -106,7 +131,7 @@ Newly added scope is marked **[added in review]** so it can be challenged.
 
 ## 3. User Roles, Identity, and Permissions
 
-Terminals are shared. A staff member authenticates by entering a numeric PIN;
+The local client is shared. A staff member authenticates by entering a numeric PIN;
 this establishes a short-lived actor context that expires on an idle timeout
 or when the user explicitly ends it. Every audited action records the
 PIN-identified user.
@@ -117,9 +142,9 @@ terminal. Approval authorises one specific action and does not persist.
 
 | Role | Key permissions |
 |---|---|
-| Waiter | Open a table order, add/edit lines while unfired, fire the order to the kitchen, void unfired lines, void an order with nothing fired, apply a preset discount, take payment |
-| Kitchen | View and reprint kitchen tickets. No order state transitions in MVP |
-| Cashier | Take payment on any order (single or split tender), open quick-sale orders, void an order with nothing fired, apply a preset discount, reprint receipts |
+| Cashier | Open table and quick-sale orders, add/edit lines while unfired, fire to the kitchen, void unfired lines, void an order with nothing fired, apply a preset discount, take payment (single or split tender), reprint receipts |
+| Kitchen | Non-authenticating classification. No PIN, no screen, no commands. Works from printed work and cancellation tickets |
+| Waiter | **Deferred beyond the MVP.** Its permissions are performed by the cashier |
 | Manager | All of the above, plus: approve free-form discounts, approve fired-line and order voids, approve refunds, toggle 86 status, run and view the end-of-day close, view the audit log, manage menu, discount presets, users, and settings |
 
 ### PIN handling
@@ -149,7 +174,8 @@ exhaustive schema.
 | `OrderLine` | One item on an order | order, menu_item, variant, modifiers, quantity, unit price snapshot, line state |
 | `DiscountPreset` | Reusable named discount a manager defines | name, kind (percent / fixed), value, is_active |
 | `Discount` | Order-level reduction, at most one per order | order, preset (nullable), name snapshot, kind, value snapshot, applied_by, approved_by (nullable), reason |
-| `Payment` | One tender against an order | order, tender_type, amount, change_given, taken_by, taken_at |
+| `Tender` | One recorded contribution to settlement | order, tender_type, name snapshot, amount, change_given, taken_by, taken_at |
+| `RefundTender` | One allocation of a refund back to a method | refund, tender_type, amount |
 | `TenderType` | Cash, card, or custom named method | name, is_cash, is_active |
 | `KitchenTicket` | One fire round | order, sequence, lines, printed_at, print_status |
 | `BusinessDay` | Reporting period between EOD closes | opened_at, closed_at, closed_by, report snapshot |
@@ -194,7 +220,7 @@ OPEN ──(all lines paid in full)──> CLOSED ──(manager refund)──> 
 **`OrderLine.state`**
 
 - `PENDING` — added, not yet sent to the kitchen. Editable and freely voidable
-  by a waiter.
+  by any authenticating staff member.
 - `FIRED` — printed on a kitchen ticket. Voidable only with manager approval.
 - `VOIDED` — removed. Excluded from all totals; retained for audit.
 
@@ -288,10 +314,10 @@ total 15.59, and a note line "Includes GST 10%: 1.35".
 
 ## 7. Critical Workflows
 
-**Table order.** Waiter authenticates by PIN, opens an order against a free
+**Table order.** Cashier authenticates by PIN, opens an order against a free
 table, adds lines (selecting variant and modifiers), and fires the order. A
 kitchen ticket prints with those lines. Later rounds add lines and fire again,
-printing only the new lines. A waiter or cashier then takes payment (single or
+printing only the new lines. A cashier then takes payment (single or
 split tender), the order closes, and a receipt prints.
 
 **Quick sale.** Cashier opens a quick-sale order with no table, adds lines,
@@ -419,7 +445,7 @@ immutable report snapshot, closes the `BusinessDay`, and opens the next one.
 
 ## 10. Observable Acceptance Criteria
 
-1. A waiter authenticates by PIN, opens a table order, adds an item with a
+1. A cashier authenticates by PIN, opens a table order, adds an item with a
    variant and a priced modifier, fires it, and the kitchen ticket prints
    containing exactly that line.
 2. Adding two more lines and firing again prints a second ticket containing

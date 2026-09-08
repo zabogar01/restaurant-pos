@@ -104,6 +104,9 @@ never a blocked sale.
 because of paper is worse than a paper pad.*
 
 **B-16. A fire sends only lines not previously fired.**
+A kitchen cancellation ticket is a correction, not a fire. It may identify
+previously fired work only in order to cancel it, must be unmistakable from a
+new work ticket, and must never reissue the original work as new.
 *Why: paper cannot be un-printed. A duplicate ticket means duplicated food,
 paid for by the restaurant.*
 

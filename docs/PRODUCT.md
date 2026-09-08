@@ -30,26 +30,37 @@ train staff for a week.
 
 ### Users
 
-**Waiter** — works standing up, on a shared terminal, with a queue of tables
-waiting. Optimises for speed above everything. Will not read a confirmation
-dialog. Needs to key an order, send it to the kitchen, and come back later to
-add another round without re-entering the first one.
+**Cashier** — performs both table-service and counter-service work in the MVP.
+Opens table orders, adds and fires multiple rounds, returns later to settle
+them, and handles quick sales, split tenders, cash change, and ordinary
+corrections. Works standing up, at speed, and will not read a confirmation
+dialog. The MVP validates the complete order lifecycle through this combined
+role; a dedicated waiter role is deferred.
 
-**Kitchen** — does not touch a screen. Receives paper tickets and works from
-them. Must never be sent a second copy of food already being cooked, and must
-never be sent something the restaurant cannot make.
-
-**Cashier** — handles money and is the last person to touch an order. Deals
-with the messy cases: split payment, over-tender in cash, a customer who
-changed their mind. Needs the arithmetic done for them, correctly, every
-time.
+**Kitchen** — is a non-authenticating staff classification in the MVP.
+Kitchen staff receive no PIN, use no screen, and issue no application
+commands. They work from original and cancellation tickets on paper. Must
+never be sent a second copy of food already being cooked, must be told when
+fired work is cancelled, and must never be sent something the restaurant
+cannot make.
 
 **Manager** — accountable for the money. Sets up the menu, the staff, and the
 rates. Approves the things that move money in a customer's favour. Closes the
 day and has to be able to answer "why is the till short?" the next morning.
 
-The four roles share terminals, so identity is per action, not per session: a
-staff member taps a PIN, does something, and the next person taps theirs.
+Cashier and manager are the MVP's authenticating roles and share the owner's
+local POS client. Identity remains per action through short-lived actor
+contexts: a staff member taps a PIN, does something, and the next person taps
+theirs. Kitchen is non-authenticating, and a dedicated waiter role is
+deferred.
+
+### Deployment status
+
+The MVP runs entirely on the owner's local development machine and is not
+approved as a production floor deployment. Before access from another device
+or any production use, the owner must approve and provide the server
+appliance, managed terminals, TLS and terminal provisioning, UPS, backup
+destination, and a tested recovery procedure.
 
 ## Product principles
 
@@ -59,7 +70,10 @@ does not anticipate.
 **1. The floor never waits on hardware.**
 Printers jam, run out of paper, and get unplugged. No order, payment, or
 state transition is ever conditional on a print succeeding. A print failure
-is a visible warning and a reprint button, never a blocked sale.
+is visible and offers recovery without blocking the sale. Kitchen work or
+cancellation-ticket failure is an emergency, because service may stop
+silently; receipt failure is a lower-priority customer-service issue. They
+are never presented with equal urgency.
 
 **2. Correct money beats convenient money.**
 Money is integer minor units, rounded by a stated rule, computed in a stated
