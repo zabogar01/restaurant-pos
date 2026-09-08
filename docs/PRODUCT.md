@@ -45,14 +45,32 @@ fired work is cancelled, and must never be sent something the restaurant
 cannot make.
 
 **Manager** — accountable for the money. Sets up the menu, the staff, and the
-rates. Approves the things that move money in a customer's favour. Closes the
-day and has to be able to answer "why is the till short?" the next morning.
+rates, sitting down, at a desk, reading dense tables. Approves the things that
+move money in a customer's favour, standing at the POS. Closes the day and has
+to be able to answer "why is the till short?" the next morning.
 
-Cashier and manager are the MVP's authenticating roles and share the owner's
-local POS client. Identity remains per action through short-lived actor
-contexts: a staff member taps a PIN, does something, and the next person taps
-theirs. Kitchen is non-authenticating, and a dedicated waiter role is
-deferred.
+Cashier and manager are the MVP's authenticating roles. Kitchen is
+non-authenticating, and a dedicated waiter role is deferred.
+
+### Two clients, one system
+
+The product is two applications, not one:
+
+**POS** — touch-first, tablet-shaped, used standing on the floor. Order entry,
+firing, discounts, tender, voids, refunds, receipt reprints, print recovery.
+Identity is per action: a staff member taps a PIN, does something, and the
+next person taps theirs. Sessions expire in seconds because the device is
+shared and unattended between uses.
+
+**Back office** — web, desktop-shaped, manager only. Menu, staff, tables,
+presets, settings, audit history, reports, and the end-of-day close. Sessions
+last as long as an ordinary desk session, because expiring mid-edit while
+someone builds a menu is its own kind of failure.
+
+They share one server, one database, and one transaction boundary. The
+separation is in the clients and their sessions, never in the data. A
+back-office session can never satisfy a manager approval at the POS — that
+always requires a PIN entered at the moment of the action.
 
 ### Deployment status
 
@@ -103,8 +121,13 @@ applies to branches, integrations, inventory, and analytics alike.
 
 **7. What a restaurant changes, it changes without a developer.**
 Menu, prices, staff, tax rate, service charge, tables, discount presets — all
-configuration, editable by a manager. Anything a restaurant adjusts more than
-once a year does not belong in code.
+configuration, editable by a manager in the back office. Anything a restaurant
+adjusts more than once a year does not belong in code.
+
+**8. The floor client carries only what the floor needs.**
+Management, configuration, history, and reporting live in the back office and
+never ship to the POS. The POS is the surface where speed and error cost the
+most, so it stays small on purpose.
 
 ## What this product is not
 

@@ -18,9 +18,17 @@ Changed after architecture review and the owner's scope cut of 2026-09-08:
 - Per-user lockout became installation-wide throttle buckets; unauthenticated
   PIN failures are security telemetry, not audit entries.
 - Tip capture is definitively excluded.
-- The MVP runs on one local machine over HTTPS on localhost. Terminals, the
-  checkout lease, LAN TLS, appliance, UPS, and backups moved to the
-  pre-production gate in ROADMAP.md.
+- The MVP runs on one local machine over HTTPS on localhost. Terminals, LAN
+  TLS, appliance, UPS, and backups moved to the pre-production gate in
+  ROADMAP.md.
+- The product is **two clients**, not one: a touch-first POS at `/pos/` and a
+  desktop back office at `/back-office/`, with separate sessions and timeout
+  policies, against one server and one database. All management,
+  configuration, reporting, audit viewing, and the end-of-day close live in
+  the back office.
+- A server-side `CheckoutLease` protects an in-flight payment from concurrent
+  back-office changes. It was cut with the single-machine reduction and
+  returned with the two-client split.
 - Open questions 1 (reopening a closed order) and 5 (service-charge base) are
   resolved: no reopening, and the base is the tax-inclusive discounted
   subtotal.
