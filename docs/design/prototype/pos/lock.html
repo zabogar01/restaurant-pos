@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POS-01 Lock / PIN entry</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'POS-01',client:'pos',name:'Lock / PIN entry',reqs:'FR-A2, A5, A7, B3, G9',states:[
+['default','Resting'],['loading','Verifying'],['error','Wrong PIN'],['throttled','LOGIN cooldown'],
+['invalidated','Session invalidated'],['draft','Tender draft waiting'],['incident','Kitchen printer emergency']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--pos"><div class="pos">
+
+  <!-- C-6: presence pre-auth, detail behind PIN. No order content on this screen. -->
+  <div class="emg" data-when="incident">
+    <div class="emg__mark"></div>
+    <div>
+      <div class="emg__t">Kitchen printer needs attention</div>
+      <div class="emg__s">Tap to sign in and view. No order details are shown before sign-in.</div>
+    </div>
+    <a class="btn btn--sm" style="margin-left:auto;width:180px" href="incidents.html">Sign in to view</a>
+  </div>
+
+  <div class="lock">
+    <div class="lock__box">
+      <div style="text-align:center;margin-bottom:8px">
+        <h1 style="font-size:22px;margin:0 0 4px">Enter PIN</h1>
+        <div class="muted" style="font-size:13px">Six digits</div>
+      </div>
+
+      <div class="pindots">
+        <span class="pindot pindot--on"></span><span class="pindot pindot--on"></span>
+        <span class="pindot pindot--on"></span><span class="pindot"></span>
+        <span class="pindot"></span><span class="pindot"></span>
+      </div>
+
+      <div data-when="loading" style="text-align:center;margin:24px 0">
+        <div class="loadinglabel">VERIFYING</div>
+        <div class="skel skel--w60" style="margin:12px auto"></div>
+      </div>
+
+      <div class="notice" data-when="error" style="margin:0 0 16px">
+        <div class="notice__t">PIN not recognised</div>
+        <div>2 attempts remaining before a five-minute cooldown.</div>
+      </div>
+
+      <div class="notice" data-when="throttled" style="margin:0 0 16px">
+        <div class="notice__t">Sign-in locked for 4 min 12 s</div>
+        <div>Five failed attempts. This cooldown applies to sign-in only and is
+        held by the server for the whole installation.</div>
+      </div>
+
+      <div class="notice" data-when="invalidated" style="margin:0 0 16px">
+        <div class="notice__t">Your session was ended by a manager</div>
+        <div>Your account or PIN was changed in the back office. Ask a manager
+        for your new PIN.</div>
+      </div>
+
+      <div class="notice notice--soft" data-when="draft" style="margin:0 0 16px">
+        <div class="notice__t">Payment in progress on this tab</div>
+        <div>Table 7 &mdash; 15.59 outstanding, 2 tenders drafted. Sign in to continue.
+        Nothing has been recorded yet.</div>
+      </div>
+
+      <div class="keypad" data-unless="loading">
+        <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+        <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+        <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+        <div class="key">&larr;</div><div class="key">0</div>
+        <a class="key" href="floor.html" data-unless="throttled draft" style="text-decoration:none">&#9654;</a>
+        <a class="key" href="settlement.html?state=reauth" data-when="draft" style="text-decoration:none">&#9654;</a>
+        <div class="key" data-when="throttled" style="border-style:dashed;color:var(--ink4)">&#9654;</div>
+      </div>
+    </div>
+  </div>
+
+</div><div class="device__caption">POS &mdash; 1280 &times; 800</div></div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Identify the staff member for the next stretch of work on a shared,
+  unattended device. This is the POS's resting state, not an exception.</p></div>
+
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed">
+    <span class="ann__t">Do not re-open</span>
+    <ul>
+      <li>Six numeric digits. Not a username, not a staff picker. <span class="req">FR-A1</span></li>
+      <li>No remember-me, no biometric, no stay-signed-in. 90 s idle. <span class="req">FR-A2, AC-28</span></li>
+      <li>PIN never echoed, logged, or revealed. No show-PIN control. <span class="req">FR-J4, B-12</span></li>
+      <li>Cooldown is per class and installation-wide; a cashier sign-in here does
+        not clear a manager-approval cooldown. <span class="req">FR-A5, AC-19</span></li>
+    </ul>
+  </div>
+
+  <h2>Not visible in a still</h2>
+  <div class="ann">
+    <ul>
+      <li>Background catalog polling does not extend the session. <span class="req">FR-A2b, AC-28</span></li>
+      <li>Cooldown is server-held and survives browser, app and database restart. <span class="req">FR-A5</span></li>
+      <li>"Session invalidated" fires on the next authenticated request after a
+        back-office change, not instantly. <span class="req">FR-B3, AC-32</span></li>
+    </ul>
+  </div>
+
+  <div class="ann ann--fixed" data-when="draft">
+    <span class="ann__t">Tender draft &mdash; FR-G9, AC-20</span>
+    <p>The draft is client-side and tab-local. No <code>Tender</code> row exists.
+    It survived the 90-second actor expiry; re-authentication is required before close.</p>
+  </div>
+
+  <div class="ann ann--call" data-when="incident">
+    <span class="ann__t">Ruling C-6</span>
+    <p>Presence is visible before authentication; detail requires a PIN. The
+    indicator names the printer, never the order. <span class="req">FR-E3</span></p>
+  </div>
+</aside>
+</main></body></html>

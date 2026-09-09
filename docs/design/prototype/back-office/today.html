@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-02 Today</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'BO-02',client:'bo',nav:'today',name:'Today  [designer’s call — implied I-2]',reqs:'FR-I1, I2, E3, E6',states:[
+['default','Day open, orders outstanding'],['incident','Kitchen print emergency'],
+['ready','Nothing outstanding'],['empty','No trading yet today'],['reauth','Idle re-authentication']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo"><div class="bo">
+  <nav class="bonav">
+    <div class="bonav__brand">Back office</div>
+    <div class="bonav__sec">Trading</div>
+    <a href="today.html" data-nav="today">Today</a>
+    <a href="end-of-day.html" data-nav="eod">End of day</a>
+    <div class="bonav__sec">History</div>
+    <a href="reports.html" data-nav="reports">Reports</a>
+    <a href="audit.html" data-nav="audit">Audit</a>
+    <div class="bonav__sec">Configuration</div>
+    <a href="menu.html" data-nav="menu">Menu</a>
+    <a href="tables.html" data-nav="tables">Tables</a>
+    <a href="users.html" data-nav="users">Staff</a>
+    <a href="presets.html" data-nav="presets">Discount presets</a>
+    <a href="settings.html" data-nav="settings">Settings</a>
+    <div class="bonav__sec">Hardware</div>
+    <a href="incidents.html" data-nav="incidents">Printing</a>
+    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
+      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
+      <a href="login.html" style="font-size:12px">Log out</a>
+    </div>
+  </nav>
+  <div class="bomain">
+    <div class="botop">
+      <b>Today</b>
+      <span class="muted">Business day open since 9 Sep, 06:00</span>
+      <span style="margin-left:auto" class="warnchip" data-when="default incident">
+        <span class="warnchip__mark"></span> 1 receipt unprinted <a href="incidents.html" style="margin-left:6px">View</a></span>
+    </div>
+    <div class="bocontent">
+
+      <div class="banner" data-when="incident" style="border-width:3px">
+        <div class="rowflex spread">
+          <div>
+            <div class="banner__t" style="font-size:15px">Kitchen ticket did not print &mdash; Table 1, round 2</div>
+            <div>The kitchen has not seen this work. Someone on the floor needs to know now.</div>
+          </div>
+          <a class="bobtn bobtn--primary" href="incidents.html">Open printing</a>
+        </div>
+      </div>
+
+      <div class="grid3">
+        <div class="card">
+          <div class="card__t">Open orders</div>
+          <div style="font-size:32px;font-family:var(--mono)" data-when="default incident">3</div>
+          <div style="font-size:32px;font-family:var(--mono)" data-when="ready empty">0</div>
+          <div class="muted" data-when="default incident">End of day cannot run until these are settled or voided.</div>
+          <div class="muted" data-when="ready">Ready to close the day.</div>
+          <div class="muted" data-when="empty">Nothing has been ordered yet.</div>
+        </div>
+        <div class="card">
+          <div class="card__t">Closed orders</div>
+          <div style="font-size:32px;font-family:var(--mono)" data-unless="empty">9</div>
+          <div style="font-size:32px;font-family:var(--mono)" data-when="empty">0</div>
+          <div class="muted">Figures are final only once the day is closed.</div>
+        </div>
+        <div class="card">
+          <div class="card__t">End of day</div>
+          <a class="bobtn bobtn--primary" href="end-of-day.html?state=refused" data-when="default incident">Go to end of day</a>
+          <a class="bobtn bobtn--primary" href="end-of-day.html" data-when="ready empty">Go to end of day</a>
+          <div class="muted" style="margin-top:8px">Closes the day and stores a report that never changes.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__t">Open orders right now</div>
+        <div class="empty" data-when="ready empty">No open orders</div>
+        <table class="dtable" data-when="default incident">
+          <thead><tr><th>Order</th><th>Opened</th><th>Type</th><th>State</th><th class="num">Total</th></tr></thead>
+          <tbody>
+            <tr><td>Table 1</td><td>19:38</td><td>Dine in</td><td>2 rounds fired</td><td class="num">15.59</td></tr>
+            <tr><td>Table 3</td><td>20:02</td><td>Dine in</td><td>Nothing fired</td><td class="num">8.00</td></tr>
+            <tr><td>Table 6</td><td>20:14</td><td>Dine in</td><td>Payment in progress</td><td class="num">42.10</td></tr>
+          </tbody>
+        </table>
+        <div class="muted" style="margin-top:10px">Read only. Orders are settled and voided at
+        the POS, never here.</div>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="reauth">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Your session timed out</h2></div>
+      <div class="modal__body">
+        <p>Sign in again to carry on. Anything you were editing is still here and
+        has not been lost.</p>
+        <span class="label">PIN</span><div class="field field--sm">&bull; &bull; &bull; &bull; &bull; &bull;</div>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="login.html">Log out</a>
+        <a class="bobtn bobtn--primary" href="today.html">Continue</a>
+      </div>
+    </div>
+  </div>
+
+</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>A landing destination after sign-in: the open business day, anything
+  outstanding, and the route to end of day.</p></div>
+
+  <div class="ann ann--call">
+    <span class="ann__t">Designer's call &mdash; I-2</span>
+    <p>Not named by any requirement. Drawn because <span class="req">FR-I2</span> makes "which orders are still
+    open?" the manager's most frequent question and <span class="req">FR-E3</span> requires a kitchen
+    incident to be unmissable here. If it is cut, sign-in lands on the menu and the
+    day state lives on BO-09.</p>
+  </div>
+
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>The back office never operates orders. It observes them. No settle, void,
+      fire, or refund control appears here. <span class="req">FR-G12</span></li>
+    <li>Kitchen emergencies appear in <b>both</b> clients, at emergency weight; receipt
+      failures at lower urgency, never the same. <span class="req">FR-E3, E6, AC-33</span></li>
+    <li>An order belongs to the business day that was open when it was created. <span class="req">FR-I1</span></li>
+  </ul></div>
+
+  <div class="ann" data-when="reauth">
+    <span class="ann__t">FR-A2b</span>
+    <p>Idle expiry is a modal over the work with unsaved form state preserved, not a
+    bounce to the login screen. Background polling does not count as activity.</p>
+  </div>
+</aside>
+</main></body></html>

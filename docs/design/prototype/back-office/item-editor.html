@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-04 Item editor</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'BO-04',client:'bo',nav:'menu',name:'Item editor',reqs:'FR-B4, C1–C4, C8, B1, M1',states:[
+['default','Editing an item'],['new','New item — empty'],['error','Validation error'],
+['unsaved','Unsaved changes'],['archive','Modal — archive item'],['overflow','Overflow — many options']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo"><div class="bo">
+  <nav class="bonav">
+    <div class="bonav__brand">Back office</div>
+    <div class="bonav__sec">Trading</div>
+    <a href="today.html" data-nav="today">Today</a>
+    <a href="end-of-day.html" data-nav="eod">End of day</a>
+    <div class="bonav__sec">History</div>
+    <a href="reports.html" data-nav="reports">Reports</a>
+    <a href="audit.html" data-nav="audit">Audit</a>
+    <div class="bonav__sec">Configuration</div>
+    <a href="menu.html" data-nav="menu">Menu</a>
+    <a href="tables.html" data-nav="tables">Tables</a>
+    <a href="users.html" data-nav="users">Staff</a>
+    <a href="presets.html" data-nav="presets">Discount presets</a>
+    <a href="settings.html" data-nav="settings">Settings</a>
+    <div class="bonav__sec">Hardware</div>
+    <a href="incidents.html" data-nav="incidents">Printing</a>
+    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
+      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
+      <a href="login.html" style="font-size:12px">Log out</a>
+    </div>
+  </nav>
+  <div class="bomain">
+    <div class="botop"><a href="menu.html">&larr; Menu</a><b data-unless="new">Burger</b><b data-when="new">New item</b>
+      <span class="tag" data-when="unsaved" style="margin-left:auto">UNSAVED CHANGES</span></div>
+    <div class="bocontent">
+
+      <div class="banner" data-when="error">
+        <div class="banner__t">Could not save</div>
+        <div>A variant delta must be a money amount. "twelve" is not one.</div>
+      </div>
+      <div class="banner banner--soft" data-when="unsaved">
+        <div class="banner__t">Not saved yet</div>
+        <div>If your session times out, this form comes back exactly as it is now.</div>
+      </div>
+
+      <div class="grid2" style="align-items:start">
+        <div>
+          <div class="card">
+            <div class="card__t">Item</div>
+            <div class="kv">
+              <span>Name shown to staff</span><div class="field field--sm" data-unless="new">Burger</div>
+                <div class="field field--sm muted" data-when="new">&nbsp;</div>
+              <span>Category</span><div class="field field--sm" data-unless="new">Mains</div>
+                <div class="field field--sm muted" data-when="new">Choose one</div>
+              <span>Price the customer pays</span><div class="field field--sm" data-unless="new">10.00</div>
+                <div class="field field--sm muted" data-when="new">0.00</div>
+            </div>
+            <div class="muted" style="margin-top:10px">Prices include tax. The tax line on the
+            receipt is worked out from this figure, never added to it.</div>
+          </div>
+
+          <div class="card">
+            <div class="card__t">Availability</div>
+            <div class="rowflex gap12"><span class="tag">ON</span>
+              <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">Mark 86</a>
+              <span class="muted">Reaches the POS within three seconds.</span></div>
+          </div>
+
+          <div class="card">
+            <div class="card__t">Archive</div>
+            <div class="muted" style="margin-bottom:10px">Archiving hides the item from new orders.
+            Orders that already contain it keep their own copy of the name and price.</div>
+            <a class="bobtn" href="item-editor.html?state=archive">Archive item</a>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="card__t">Variants &mdash; the customer picks exactly one</div>
+            <table class="dtable">
+              <thead><tr><th>Name</th><th class="num">Price change</th><th style="width:60px"></th></tr></thead>
+              <tbody data-unless="new overflow">
+                <tr><td>Regular</td><td class="num">+0.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Large</td><td class="num">+2.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Small</td><td class="num">&minus;1.00</td><td><a href="#">Remove</a></td></tr>
+              </tbody>
+              <tbody data-when="overflow">
+                <tr><td>Regular</td><td class="num">+0.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Large</td><td class="num">+2.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Small</td><td class="num">&minus;1.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Double</td><td class="num">+5.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Kids</td><td class="num">&minus;3.50</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Sharing</td><td class="num">+9.00</td><td><a href="#">Remove</a></td></tr>
+              </tbody>
+              <tbody data-when="new"><tr><td colspan="3" class="muted">None yet</td></tr></tbody>
+            </table>
+            <div class="muted" style="margin:8px 0 10px">A negative change can never take the
+            price below zero. The line records zero instead.</div>
+            <a class="bobtn bobtn--sm" href="item-editor.html?state=unsaved">Add variant</a>
+          </div>
+
+          <div class="card">
+            <div class="card__t">Modifiers &mdash; the customer picks any number</div>
+            <table class="dtable">
+              <thead><tr><th>Name</th><th class="num">Price change</th><th style="width:60px"></th></tr></thead>
+              <tbody data-unless="new overflow">
+                <tr><td>Extra cheese</td><td class="num">+1.50</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Bacon</td><td class="num">+2.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>No onion</td><td class="num">+0.00</td><td><a href="#">Remove</a></td></tr>
+              </tbody>
+              <tbody data-when="overflow">
+                <tr><td>Extra cheese</td><td class="num">+1.50</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Bacon</td><td class="num">+2.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>No onion</td><td class="num">+0.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Extra patty</td><td class="num">+4.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Gluten-free bun</td><td class="num">+1.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>No pickle</td><td class="num">+0.00</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Extra sauce</td><td class="num">+0.50</td><td><a href="#">Remove</a></td></tr>
+                <tr><td>Well done</td><td class="num">+0.00</td><td><a href="#">Remove</a></td></tr>
+              </tbody>
+              <tbody data-when="new"><tr><td colspan="3" class="muted">None yet</td></tr></tbody>
+            </table>
+            <div class="muted" style="margin:8px 0 10px">Modifier price changes are never negative.
+            Modifiers cannot contain other modifiers.</div>
+            <a class="bobtn bobtn--sm" href="item-editor.html?state=unsaved">Add modifier</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="rowflex gap12" style="margin-top:8px">
+        <a class="bobtn bobtn--primary" href="menu.html">Save item</a>
+        <a class="bobtn" href="menu.html">Cancel</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="archive">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Archive Burger?</h2></div>
+      <div class="modal__body">
+        <p>It disappears from order entry at the POS. Orders and reports that already
+        contain it are untouched &mdash; they hold their own copy of the name and the price
+        that was charged.</p>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="item-editor.html">Cancel</a>
+        <a class="bobtn bobtn--primary" href="menu.html">Archive</a>
+      </div>
+    </div>
+  </div>
+
+</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Define one item: category, tax-inclusive base price, variants, modifiers.</p></div>
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>Prices are <b>tax-inclusive</b>. The editor asks for the price the customer pays.
+      There is no ex-tax field. <span class="req">PRD §4, B-4</span></li>
+    <li>Variants are single-select with a positive or negative delta; modifiers are
+      multi-select with a delta of zero or more. Two different structures, not one
+      "options" concept. <span class="req">FR-C2, C3</span></li>
+    <li>Resolved unit price floors at zero. A negative variant delta snapshots zero,
+      never a negative. <span class="req">FR-C2, AC-26</span></li>
+    <li><b>No nested modifier groups.</b> <span class="req">FR-C4</span></li>
+    <li>No link between modifiers and stock. No inventory field. <span class="req">FR-C4</span></li>
+    <li>Currency and minor-unit precision are fixed elsewhere and locked after the
+      first order. <span class="req">FR-B1, M1</span></li>
+  </ul></div>
+  <h2>Not visible in a still</h2>
+  <div class="ann"><ul>
+    <li>Saving advances the catalog version, which can reject a POS command built on the
+      old prices with <code>CATALOG_CHANGED</code>. <span class="req">FR-C7</span></li>
+    <li>Unsaved form state survives an idle re-authentication. <span class="req">FR-A2b</span></li>
+  </ul></div>
+</aside>
+</main></body></html>

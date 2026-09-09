@@ -1,0 +1,310 @@
+/* Wireframe stylesheet — greyscale only, no brand, no type personality.
+   Structure, hierarchy, density, affordance. Nothing else.
+   Touch targets on POS screens are drawn at their real pixel sizes. */
+
+:root {
+  --ink:   #111111;
+  --ink2:  #3d3d3d;
+  --ink3:  #6e6e6e;
+  --ink4:  #949494;
+  --line:  #8c8c8c;
+  --line2: #c2c2c2;
+  --line3: #dedede;
+  --bg:    #ffffff;
+  --bg2:   #f4f4f4;
+  --bg3:   #e8e8e8;
+  --bg4:   #d6d6d6;
+  --bg5:   #bdbdbd;
+  --font:  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono:  ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg3);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* ---------- prototype chrome (outside the device frame) ---------- */
+
+.wfbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--ink); color: var(--bg);
+  padding: 10px 20px;
+  border-bottom: 2px solid var(--ink);
+}
+.wfbar a { color: var(--bg); }
+.wfbar__row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.wfbar__id { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; }
+.wfbar__name { font-size: 15px; font-weight: 600; }
+.wfbar__meta { font-size: 11px; color: var(--bg4); font-family: var(--mono); }
+.wfbar__states { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.wfchip {
+  font-size: 11px; padding: 3px 9px; border: 1px solid var(--ink4);
+  color: var(--bg3); text-decoration: none; white-space: nowrap;
+}
+.wfchip:hover { background: var(--ink2); }
+.wfchip[aria-current="true"] { background: var(--bg); color: var(--ink); border-color: var(--bg); font-weight: 600; }
+
+.wfmain { display: flex; align-items: flex-start; gap: 24px; padding: 24px; min-width: max-content; }
+
+.device { background: var(--bg); border: 2px solid var(--ink); position: relative; overflow: hidden; flex: none; }
+.device--pos { width: 1280px; height: 800px; }
+.device--bo  { width: 1440px; min-height: 900px; }
+.device__caption {
+  position: absolute; bottom: -22px; left: 0;
+  font-family: var(--mono); font-size: 11px; color: var(--ink3);
+}
+.devicewrap { flex: none; margin-bottom: 28px; }
+
+/* ---------- annotation rail ---------- */
+
+.rail { width: 340px; flex: none; font-size: 12px; }
+.rail h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; margin: 0 0 6px; color: var(--ink3); }
+.ann { background: var(--bg); border: 1px solid var(--line2); border-left: 4px solid var(--ink3); padding: 10px 12px; margin-bottom: 12px; }
+.ann--fixed { border-left-color: var(--ink); }
+.ann--call  { border-left-color: var(--bg5); }
+.ann p { margin: 0 0 6px; }
+.ann p:last-child { margin-bottom: 0; }
+.ann code, .req { font-family: var(--mono); font-size: 11px; }
+.ann__t { font-weight: 700; display: block; margin-bottom: 4px; }
+.rail ul { margin: 4px 0 0; padding-left: 16px; }
+.rail li { margin-bottom: 3px; }
+
+/* ---------- generic wireframe primitives ---------- */
+
+.ph { background: var(--bg2); border: 1px dashed var(--line2); }
+.skel { background: var(--bg3); height: 12px; margin: 8px 0; }
+.skel--w40 { width: 40%; } .skel--w60 { width: 60%; } .skel--w80 { width: 80%; }
+.loadinglabel { font-family: var(--mono); font-size: 12px; color: var(--ink3); letter-spacing: .1em; }
+
+.stack { display: flex; flex-direction: column; }
+.rowflex { display: flex; align-items: center; }
+.spread { justify-content: space-between; }
+.gap8 { gap: 8px; } .gap12 { gap: 12px; } .gap16 { gap: 16px; }
+.muted { color: var(--ink3); }
+.mono { font-family: var(--mono); }
+.strike { text-decoration: line-through; color: var(--ink4); }
+.tag {
+  display: inline-block; font-family: var(--mono); font-size: 10px;
+  letter-spacing: .06em; border: 1px solid var(--line); padding: 1px 5px;
+  vertical-align: middle;
+}
+.tag--solid { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tag--86 { background: var(--ink2); color: var(--bg); border-color: var(--ink2); }
+
+/* ---------- POS shell ---------- */
+
+.pos { display: flex; flex-direction: column; height: 100%; font-size: 15px; }
+
+.pos__bar {
+  height: 64px; flex: none; border-bottom: 2px solid var(--ink);
+  display: flex; align-items: center; gap: 20px; padding: 0 20px;
+}
+.pos__bar h1 { font-size: 18px; margin: 0; font-weight: 600; }
+.pos__actor { margin-left: auto; display: flex; align-items: center; gap: 14px; font-size: 13px; }
+.idle { font-family: var(--mono); font-size: 12px; border: 1px solid var(--line); padding: 3px 7px; }
+
+/* emergency vs warning — different weight, placement, persistence.
+   Greyscale carries the difference through size, border weight and required action. */
+.emg {
+  flex: none; border-bottom: 3px solid var(--ink); background: var(--bg4);
+  padding: 12px 20px; display: flex; align-items: center; gap: 16px; min-height: 60px;
+}
+.emg__mark { width: 28px; height: 28px; border: 3px solid var(--ink); flex: none; }
+.emg__t { font-weight: 700; font-size: 15px; }
+.emg__s { font-size: 13px; color: var(--ink2); }
+.warnchip {
+  display: inline-flex; align-items: center; gap: 8px; font-size: 12px;
+  border: 1px solid var(--line); background: var(--bg2); padding: 4px 10px;
+}
+.warnchip__mark { width: 10px; height: 10px; border: 1px solid var(--ink3); }
+
+.pos__body { flex: 1; display: flex; min-height: 0; }
+
+/* menu browser */
+.catrail { width: 172px; flex: none; border-right: 1px solid var(--line2); overflow: hidden; }
+.cat {
+  height: 72px; display: flex; align-items: center; padding: 0 16px;
+  border-bottom: 1px solid var(--line3); font-size: 15px; cursor: default;
+}
+.cat--on { background: var(--ink); color: var(--bg); font-weight: 600; }
+
+.menuarea { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.menugrid {
+  display: grid; grid-template-columns: repeat(4, 150px); gap: 8px;
+  padding: 12px; align-content: start; overflow: hidden;
+}
+.tile {
+  height: 96px; border: 1px solid var(--line); background: var(--bg);
+  padding: 8px; display: flex; flex-direction: column; justify-content: space-between;
+  font-size: 14px;
+}
+.tile__p { font-family: var(--mono); font-size: 13px; color: var(--ink2); }
+.tile--off { background: var(--bg3); border-style: dashed; color: var(--ink4); }
+.tile--off .tile__p { color: var(--ink4); }
+
+/* order panel */
+.orderpanel { width: 460px; flex: none; border-left: 2px solid var(--ink); display: flex; flex-direction: column; }
+.orderpanel__head { height: 56px; flex: none; border-bottom: 1px solid var(--line2); display: flex; align-items: center; padding: 0 16px; gap: 10px; }
+.lines { flex: 1; overflow: hidden; }
+.roundhead {
+  height: 32px; background: var(--bg3); border-bottom: 1px solid var(--line2);
+  display: flex; align-items: center; padding: 0 16px; font-size: 11px;
+  font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase;
+}
+.line {
+  min-height: 72px; border-bottom: 1px solid var(--line3); padding: 10px 16px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.line__q { width: 28px; font-family: var(--mono); font-size: 15px; }
+.line__b { flex: 1; min-width: 0; }
+.line__n { font-size: 15px; }
+.line__m { font-size: 12px; color: var(--ink3); }
+.line__a { font-family: var(--mono); font-size: 15px; }
+.line--void { background: var(--bg2); }
+.line--void .line__n { text-decoration: line-through; color: var(--ink4); }
+
+.totals { flex: none; border-top: 2px solid var(--ink); padding: 12px 16px; font-size: 14px; }
+.totals .t { display: flex; justify-content: space-between; padding: 3px 0; }
+.totals .t--grand { font-size: 22px; font-weight: 700; border-top: 1px solid var(--line2); margin-top: 6px; padding-top: 8px; }
+.totals .t--incl { font-size: 12px; color: var(--ink3); }
+
+.actions { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line2); }
+.btn {
+  height: 72px; border: 2px solid var(--ink); background: var(--bg); color: var(--ink);
+  font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center;
+  text-decoration: none; text-align: center; padding: 0 10px;
+}
+.btn--primary { background: var(--ink); color: var(--bg); }
+.btn--wide { grid-column: 1 / -1; }
+.btn--off { border-color: var(--line2); color: var(--ink4); background: var(--bg2); border-style: dashed; }
+.btn--sm { height: 48px; font-size: 13px; font-weight: 500; }
+
+/* inline notices inside the POS */
+.notice {
+  border: 2px solid var(--ink); background: var(--bg2); padding: 12px 16px;
+  margin: 12px 16px; font-size: 14px;
+}
+.notice__t { font-weight: 700; margin-bottom: 4px; }
+.notice--soft { border: 1px solid var(--line); }
+
+/* sheets and modals */
+.scrim { position: absolute; inset: 0; background: rgba(17,17,17,.45); }
+.sheet {
+  position: absolute; left: 0; right: 460px; top: 64px; bottom: 0;
+  background: var(--bg); border-right: 3px solid var(--ink);
+  display: flex; flex-direction: column;
+}
+/* A sheet leaves the order panel legible: the running order is the context the
+   cashier is acting on, so it is never covered. FR-D3, structural. */
+.scrim--sheet { right: 460px; top: 64px; }
+.sheet--bottom { left: 0; right: 0; top: auto; height: 560px; border-left: 0; border-top: 3px solid var(--ink); width: auto; }
+.sheet__head { height: 64px; flex: none; border-bottom: 2px solid var(--ink); display: flex; align-items: center; padding: 0 20px; gap: 12px; }
+.sheet__head h2 { font-size: 18px; margin: 0; }
+.sheet__body { flex: 1; padding: 20px; overflow: hidden; }
+.sheet__foot { flex: none; padding: 16px 20px; border-top: 1px solid var(--line2); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.modal {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  width: 560px; background: var(--bg); border: 3px solid var(--ink);
+}
+.modal__head { padding: 16px 20px; border-bottom: 2px solid var(--ink); }
+.modal__head h2 { margin: 0; font-size: 18px; }
+.modal__body { padding: 20px; }
+.modal__foot { padding: 16px 20px; border-top: 1px solid var(--line2); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modal--bo { width: 640px; font-size: 13px; }
+.modal--bo .modal__head h2 { font-size: 16px; }
+
+/* PIN keypad — 88px keys, honest touch size */
+.keypad { display: grid; grid-template-columns: repeat(3, 88px); gap: 10px; justify-content: center; }
+.key { height: 88px; border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; font-size: 24px; background: var(--bg); }
+.pindots { display: flex; gap: 12px; justify-content: center; margin: 20px 0; }
+.pindot { width: 20px; height: 20px; border: 2px solid var(--ink); border-radius: 50%; }
+.pindot--on { background: var(--ink); }
+
+/* numeric field */
+.field { border: 2px solid var(--ink); height: 56px; display: flex; align-items: center; padding: 0 14px; font-family: var(--mono); font-size: 20px; background: var(--bg); }
+.field--sm { height: 40px; font-size: 14px; border-width: 1px; }
+.label { font-size: 12px; color: var(--ink3); margin-bottom: 4px; display: block; }
+
+/* lock screen */
+.lock { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.lock__box { width: 420px; }
+
+/* floor plan */
+.floor { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; padding: 20px; align-content: start; overflow: hidden; }
+.tableblk { height: 128px; border: 2px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; padding: 10px; }
+.tableblk--open { border-color: var(--ink); border-width: 3px; background: var(--bg2); }
+.tableblk__n { font-size: 20px; font-weight: 700; }
+.tableblk__s { font-size: 12px; color: var(--ink3); }
+
+/* POS list rows */
+.listrow { min-height: 72px; border-bottom: 1px solid var(--line3); display: flex; align-items: center; gap: 16px; padding: 10px 20px; }
+
+/* ---------- Back office shell ---------- */
+
+.bo { display: flex; min-height: 896px; font-size: 13px; }
+.bonav { width: 220px; flex: none; border-right: 2px solid var(--ink); background: var(--bg2); }
+.bonav__brand { padding: 14px 16px; border-bottom: 2px solid var(--ink); font-weight: 700; }
+.bonav__sec { padding: 12px 16px 4px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink3); }
+.bonav a { display: block; padding: 8px 16px; text-decoration: none; color: var(--ink); border-left: 3px solid transparent; }
+.bonav a:hover { background: var(--bg3); }
+.bonav a[aria-current="page"] { background: var(--ink); color: var(--bg); font-weight: 600; border-left-color: var(--ink); }
+
+.bomain { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.botop { height: 52px; flex: none; border-bottom: 1px solid var(--line2); display: flex; align-items: center; gap: 16px; padding: 0 20px; }
+.bocontent { flex: 1; padding: 20px; }
+.bohead { display: flex; align-items: baseline; gap: 16px; margin-bottom: 16px; }
+.bohead h1 { font-size: 20px; margin: 0; }
+
+.dtable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dtable th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink3); border-bottom: 2px solid var(--ink); padding: 8px 10px; }
+.dtable td { border-bottom: 1px solid var(--line3); padding: 9px 10px; vertical-align: top; }
+.dtable tr:hover td { background: var(--bg2); }
+.dtable .num { text-align: right; font-family: var(--mono); }
+.dtable--tight td { padding: 6px 10px; }
+
+.bobtn { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 14px; border: 1px solid var(--ink); background: var(--bg); text-decoration: none; color: var(--ink); font-size: 13px; }
+.bobtn--primary { background: var(--ink); color: var(--bg); }
+.bobtn--off { border-color: var(--line2); color: var(--ink4); background: var(--bg2); }
+.bobtn--sm { height: 26px; font-size: 12px; padding: 0 9px; }
+
+.card { border: 1px solid var(--line2); background: var(--bg); padding: 16px; margin-bottom: 16px; }
+.card__t { font-size: 14px; font-weight: 700; margin: 0 0 10px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.kv { display: grid; grid-template-columns: 220px 1fr; gap: 8px 16px; align-items: center; }
+.banner { border: 2px solid var(--ink); background: var(--bg3); padding: 12px 16px; margin-bottom: 16px; }
+.banner--soft { border: 1px solid var(--line); background: var(--bg2); }
+.banner__t { font-weight: 700; margin-bottom: 4px; }
+.empty { border: 1px dashed var(--line2); background: var(--bg2); padding: 40px; text-align: center; color: var(--ink3); }
+.figs { display: grid; grid-template-columns: 1fr auto auto auto; gap: 2px 20px; font-size: 13px; }
+.figs > div { padding: 6px 0; border-bottom: 1px solid var(--line3); }
+.figs .h { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink3); border-bottom: 2px solid var(--ink); }
+.figs .n { font-family: var(--mono); text-align: right; }
+.figs .sec { font-weight: 700; border-bottom: 1px solid var(--line); padding-top: 14px; }
+
+/* launcher */
+.launch { max-width: 1180px; margin: 0 auto; padding: 32px 24px 80px; }
+.launch h1 { font-size: 24px; margin: 0 0 6px; }
+.launch h2 { font-size: 16px; margin: 32px 0 4px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+.launch .lead { color: var(--ink2); max-width: 70ch; }
+.scr { background: var(--bg); border: 1px solid var(--line2); padding: 12px 14px; margin-top: 12px; }
+.scr__h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.scr__id { font-family: var(--mono); font-size: 12px; }
+.scr__n { font-weight: 700; }
+.scr__r { font-family: var(--mono); font-size: 11px; color: var(--ink3); margin-left: auto; }
+.scr__p { font-size: 12px; color: var(--ink2); margin: 4px 0 8px; }
+.scr__s { display: flex; flex-wrap: wrap; gap: 6px; }
+.slink { font-size: 12px; border: 1px solid var(--line); padding: 3px 8px; text-decoration: none; color: var(--ink); background: var(--bg2); }
+.slink:hover { background: var(--ink); color: var(--bg); }
+.slink--implied { border-style: dashed; }
+.note { background: var(--bg); border-left: 4px solid var(--ink); padding: 12px 14px; margin: 16px 0; }

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-13 Printing</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'BO-13',client:'bo',nav:'incidents',name:'Print incidents',reqs:'FR-E3, E6, H4, G8, B-15',states:[
+['default','Kitchen emergency + receipt warning'],['cancel','Cancellation ticket UNKNOWN'],
+['empty','Nothing outstanding'],['reprint','Reprint result'],['loading','Loading'],['error','Error']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo"><div class="bo">
+  <nav class="bonav">
+    <div class="bonav__brand">Back office</div>
+    <div class="bonav__sec">Trading</div>
+    <a href="today.html" data-nav="today">Today</a>
+    <a href="end-of-day.html" data-nav="eod">End of day</a>
+    <div class="bonav__sec">History</div>
+    <a href="reports.html" data-nav="reports">Reports</a>
+    <a href="audit.html" data-nav="audit">Audit</a>
+    <div class="bonav__sec">Configuration</div>
+    <a href="menu.html" data-nav="menu">Menu</a>
+    <a href="tables.html" data-nav="tables">Tables</a>
+    <a href="users.html" data-nav="users">Staff</a>
+    <a href="presets.html" data-nav="presets">Discount presets</a>
+    <a href="settings.html" data-nav="settings">Settings</a>
+    <div class="bonav__sec">Hardware</div>
+    <a href="incidents.html" data-nav="incidents">Printing</a>
+    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
+      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
+      <a href="login.html" style="font-size:12px">Log out</a>
+    </div>
+  </nav>
+  <div class="bomain">
+    <div class="botop"><b>Printing</b><span class="muted">The same incidents the POS is showing right now</span></div>
+    <div class="bocontent">
+
+      <div data-when="loading"><div class="loadinglabel">LOADING</div><div class="skel skel--w60"></div></div>
+      <div class="banner" data-when="error"><div class="banner__t">Could not read printer state</div>
+        <div><a href="incidents.html">Retry</a></div></div>
+
+      <div class="empty" data-when="empty" style="padding:60px">
+        <div style="font-weight:700;margin-bottom:6px">Nothing outstanding</div>
+        <div>Every ticket and receipt has printed.</div>
+      </div>
+
+      <div data-when="default cancel reprint">
+        <div class="banner banner--soft" data-when="reprint">
+          <div class="banner__t">Reprint sent at 20:41</div>
+          <div>Confirm with the kitchen that the paper actually came out.</div>
+        </div>
+
+        <div class="bohead" style="margin-top:8px">
+          <h1 style="font-size:16px">Needs attention now</h1>
+          <span class="muted">The kitchen has not seen this work. Tell someone on the floor.</span>
+        </div>
+        <table class="dtable" style="border:3px solid var(--ink)">
+          <thead><tr><th style="width:22%">What</th><th>Order</th><th>Sent at</th><th>Contents</th>
+            <th>Delivery</th><th style="width:160px"></th></tr></thead>
+          <tbody>
+            <tr data-when="default reprint"><td><b>Kitchen work ticket</b></td><td>Table 1, round 2</td><td>19:58</td>
+              <td>2 items</td><td><span class="tag tag--solid">FAILED</span></td>
+              <td><a class="bobtn bobtn--sm" href="incidents.html?state=reprint">Reprint ticket</a></td></tr>
+            <tr data-when="cancel"><td><b>Cancellation ticket</b><div class="muted">Tells the kitchen to stop
+              work already sent. Never a new order.</div></td>
+              <td>Table 1 &mdash; Burger</td><td>20:02</td><td>1 cancelled line</td>
+              <td><span class="tag tag--solid">UNKNOWN</span></td>
+              <td><a class="bobtn bobtn--sm" href="incidents.html?state=reprint">Reprint cancellation</a></td></tr>
+          </tbody>
+        </table>
+        <div class="muted" style="margin-top:8px" data-when="cancel">Delivery is unknown, not
+        failed &mdash; it may already have printed. Check the printer before reprinting.</div>
+
+        <div class="bohead" style="margin-top:24px">
+          <h1 style="font-size:16px">Receipts</h1>
+          <span class="muted">A customer-service issue, not an emergency</span>
+        </div>
+        <table class="dtable">
+          <thead><tr><th style="width:22%">What</th><th>Order</th><th>Closed at</th><th>Contents</th>
+            <th>Delivery</th><th style="width:160px"></th></tr></thead>
+          <tbody>
+            <tr><td>Receipt</td><td>Table 1</td><td>20:14</td><td>15.59</td>
+              <td><span class="tag">FAILED</span></td>
+              <td><a class="bobtn bobtn--sm" href="incidents.html?state=reprint">Reprint receipt</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Make sure a manager sitting at a desk cannot miss a failed kitchen
+  ticket.</p></div>
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>The incident is <b>application-wide, not session-specific</b>. Both clients show
+      the same one; resolving it in either resolves it in both. <span class="req">FR-E3, AC-33</span></li>
+    <li>Two urgency classes that must never be presented identically &mdash; here carried by
+      section, border weight and ordering. <span class="req">FR-E6, AC-23</span></li>
+    <li>Printing never gates anything. <span class="req">B-15</span></li>
+    <li>A cancellation ticket is a correction, never a fire, and must be unmistakable
+      from a work ticket. <span class="req">B-16, FR-H4</span></li>
+    <li>This is a <b>data-table</b> rendering of the same object the POS draws as touch
+      cards. Independent components, one meaning. <span class="req">NFR-5</span></li>
+  </ul></div>
+  <div class="ann ann--call">
+    <span class="ann__t">Open &mdash; I-8, not decided here</span>
+    <p>Whether a back-office reprint of a <b>kitchen</b> ticket should be gated or audited
+    is unspecified: <span class="req">FR-E3</span> grants the action, <span class="req">FR-J3</span> does not list it. Drawn ungated and
+    unaudited, matching the requirements as written. Flagged, not settled.</p>
+  </div>
+</aside>
+</main></body></html>

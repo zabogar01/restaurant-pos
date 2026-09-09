@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POS-06 Closed order detail</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'POS-06',client:'pos',name:'Closed order detail  [approved from implied I-1]',reqs:'FR-G7, G8, H1, H5, H6, H7, A6',states:[
+['default','Closed — refund available'],['zero','Zero total — no refund action'],
+['refunded','Already refunded'],['dayclosed','Business day closed'],
+['sheet-refund','Sheet — refund allocation'],['approval','Modal — manager approval'],
+['reprint','Reprint FAILED'],['loading','Loading'],['error','Error']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--pos"><div class="pos">
+
+  <div class="pos__bar">
+    <a href="closed-orders.html" style="font-size:15px">&larr; Closed orders</a>
+    <h1 data-unless="zero">Table 1 &mdash; closed 20:14</h1>
+    <h1 data-when="zero">Table 6 &mdash; closed 19:41</h1>
+    <span class="tag tag--solid" data-when="refunded">REFUNDED</span>
+    <div class="pos__actor">
+      <span>Ana R. &middot; Cashier</span><span class="idle">90s</span>
+      <a class="btn btn--sm" href="lock.html" style="width:110px">Release</a>
+    </div>
+  </div>
+
+  <div class="pos__body">
+    <div style="flex:1;padding:20px;min-width:0">
+
+      <div class="warnchip" data-when="reprint" style="margin-bottom:16px">
+        <span class="warnchip__mark"></span> Receipt did not print. The order is closed regardless.
+        <a href="incidents.html" style="margin-left:8px">View</a>
+      </div>
+
+      <div class="notice" data-when="dayclosed">
+        <div class="notice__t">The business day this order belongs to has been closed</div>
+        <div>It can no longer be voided or refunded. Reprinting the receipt still works.</div>
+      </div>
+
+      <div class="notice" data-when="refunded">
+        <div class="notice__t">Refunded at 20:31 by M. Iqbal</div>
+        <div>Reason: wrong dish served. An order can only be refunded once.</div>
+      </div>
+
+      <div data-when="loading">
+        <div class="loadinglabel">LOADING ORDER</div>
+        <div class="skel skel--w80"></div><div class="skel skel--w60"></div><div class="skel skel--w40"></div>
+      </div>
+
+      <div class="notice" data-when="error">
+        <div class="notice__t">Could not load this order</div>
+        <div><a href="closed-order.html">Retry</a></div>
+      </div>
+
+      <div data-unless="loading error">
+        <div class="roundhead">Items</div>
+        <div class="line"><div class="line__q">1</div>
+          <div class="line__b"><div class="line__n">Burger</div>
+            <div class="line__m">Large (+2.00) &middot; Extra cheese (+1.50)</div></div>
+          <div class="line__a">13.50</div></div>
+        <div class="line"><div class="line__q">1</div>
+          <div class="line__b"><div class="line__n">Soda</div></div>
+          <div class="line__a">3.00</div></div>
+
+        <div class="roundhead" style="margin-top:16px">Payment</div>
+        <div data-unless="zero">
+          <div class="listrow" style="min-height:56px"><span style="flex:1">Card</span><span class="mono">10.00</span></div>
+          <div class="listrow" style="min-height:56px"><span style="flex:1">Cash</span><span class="mono">5.59</span></div>
+        </div>
+        <div data-when="zero">
+          <div class="listrow" style="min-height:56px"><span style="flex:1 ;color:var(--ink3)">No payment taken &mdash; fully discounted</span><span class="mono">0.00</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="width:460px;flex:none;border-left:2px solid var(--ink);display:flex;flex-direction:column">
+      <div class="totals" style="flex:1;border-top:0">
+        <div class="t"><span>Subtotal</span><span class="mono">16.50</span></div>
+        <div class="t" data-unless="zero"><span>Staff meal 10%</span><span class="mono">&minus;1.65</span></div>
+        <div class="t" data-when="zero"><span>Comp 100%</span><span class="mono">&minus;16.50</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono" data-unless="zero">0.74</span><span class="mono" data-when="zero">0.00</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono" data-unless="zero">15.59</span><span class="mono" data-when="zero">0.00</span></div>
+        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono" data-unless="zero">1.35</span><span class="mono" data-when="zero">0.00</span></div>
+      </div>
+
+      <div class="actions" style="grid-template-columns:1fr">
+        <a class="btn btn--wide" href="closed-order.html?state=reprint">Reprint receipt</a>
+
+        <!-- C-1: the Refund action is ABSENT on a zero-total order, never disabled -->
+        <a class="btn btn--wide" href="closed-order.html?state=sheet-refund"
+           data-when="default reprint">Refund this order</a>
+        <span class="btn btn--off btn--wide" data-when="refunded">Already refunded</span>
+        <span class="btn btn--off btn--wide" data-when="dayclosed">Refund unavailable &mdash; day closed</span>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="sheet-refund">
+    <div class="scrim scrim--sheet"></div>
+    <div class="sheet">
+      <div class="sheet__head"><h2>Refund the whole order</h2>
+        <span class="tag" style="margin-left:auto">MANAGER REQUIRED</span></div>
+      <div class="sheet__body">
+        <div class="notice notice--soft" style="margin:0 0 10px;padding:6px 12px">
+          <div class="notice__t">The whole order, 15.59</div>
+          <div>Part of an order cannot be refunded. An order can be refunded once.</div>
+        </div>
+        <span class="label">How the money goes back &mdash; must add up to 15.59</span>
+        <div class="listrow" style="padding:6px 0;min-height:0"><span style="flex:1">Card</span>
+          <div class="field field--sm mono" style="width:140px">10.00</div></div>
+        <div class="listrow" style="padding:6px 0;min-height:0"><span style="flex:1">Cash</span>
+          <div class="field field--sm mono" style="width:140px">5.59</div></div>
+        <div class="rowflex spread" style="padding:8px 0;font-size:18px;border-top:2px solid var(--ink)">
+          <span>Allocated</span><span class="mono"><b>15.59 of 15.59</b></span></div>
+        <div class="muted" style="margin-bottom:8px">Defaults to what each method actually
+        contributed &mdash; cash tendered less change given, not the note handed over.</div>
+        <span class="label">Reason &mdash; required</span>
+        <div class="stack" style="gap:6px">
+          <div class="btn btn--sm btn--primary" style="justify-content:flex-start;padding-left:16px">Wrong dish served</div>
+          <div class="btn btn--sm" style="justify-content:flex-start;padding-left:16px">Customer complaint</div>
+          <div class="btn btn--sm" style="justify-content:flex-start;padding-left:16px">Charged in error</div>
+          <div class="btn btn--sm" style="justify-content:flex-start;padding-left:16px">Other &mdash; type a reason</div>
+        </div>
+      </div>
+      <div class="sheet__foot">
+        <a class="btn" href="closed-order.html">Cancel</a>
+        <a class="btn btn--primary" href="closed-order.html?state=approval">Continue</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="approval">
+    <div class="scrim"></div>
+    <div class="modal">
+      <div class="modal__head"><h2>Manager PIN</h2>
+        <div class="muted" style="margin-top:4px">Refund Table 1, 15.59 &mdash; reason: wrong dish served</div></div>
+      <div class="modal__body">
+        <div class="pindots">
+          <span class="pindot pindot--on"></span><span class="pindot pindot--on"></span>
+          <span class="pindot pindot--on"></span><span class="pindot"></span>
+          <span class="pindot"></span><span class="pindot"></span>
+        </div>
+        <div class="keypad" style="grid-template-columns:repeat(3,72px)">
+          <div class="key" style="height:72px">1</div><div class="key" style="height:72px">2</div><div class="key" style="height:72px">3</div>
+          <div class="key" style="height:72px">4</div><div class="key" style="height:72px">5</div><div class="key" style="height:72px">6</div>
+          <div class="key" style="height:72px">7</div><div class="key" style="height:72px">8</div><div class="key" style="height:72px">9</div>
+          <div class="key" style="height:72px">&larr;</div><div class="key" style="height:72px">0</div>
+          <a class="key" style="height:72px;text-decoration:none" href="closed-order.html?state=refunded">&#9654;</a>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <a class="btn" href="closed-order.html">Cancel</a>
+        <span class="muted" style="align-self:center;font-size:12px">Cancelling refunds nothing.</span>
+      </div>
+    </div>
+  </div>
+
+</div><div class="device__caption">POS &mdash; 1280 &times; 800</div></div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Read what was charged, reprint the receipt, and &mdash; separately &mdash;
+  refund the order.</p></div>
+
+  <div class="ann ann--call" data-when="zero">
+    <span class="ann__t">Ruling C-1</span>
+    <p>A zero-total order took no money, so there is nothing to return. The
+    Refund action is <b>absent</b>, not disabled &mdash; a disabled control invites a
+    manager to hunt for an override that does not exist. <span class="req">FR-G11, H5</span></p>
+  </div>
+
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>Refunds are full-order only. No line selection, no partial amount. <span class="req">B-23, FR-H5</span></li>
+    <li>The default allocation reproduces each method's <b>effective contribution</b> &mdash;
+      amount tendered less change given. A 20.00 cash sale with 4.41 change defaults
+      to 15.59 cash back, not 20.00. <span class="req">FR-H5, AC-25</span></li>
+    <li>Allocations must add up to the order total exactly. <span class="req">FR-H5</span></li>
+    <li>Refund needs a manager PIN and a reason, and produces one combined audit entry
+      naming actor and approver. <span class="req">FR-H5, J2, J3, AC-11</span></li>
+    <li>A reprint shows identical figures. Nothing is recomputed from today's
+      settings. <span class="req">FR-G7, AC-13</span></li>
+    <li><b>Refund and void are never the same control.</b> This screen has no void
+      action; POS-03 has no refund action. <span class="req">FR-H1, B-19</span></li>
+    <li>REFUNDED is terminal. A second refund is rejected. <span class="req">FR-H6, B-10</span></li>
+  </ul></div>
+
+  <div class="ann ann--call" data-when="dayclosed">
+    <span class="ann__t">Designer's call &mdash; I-4</span>
+    <p>Blocked at the moment of the attempt, with the reason named, plus the standing
+    banner on POS-02. <span class="req">FR-H7, B-9</span></p>
+  </div>
+
+  <h2>Not visible in a still</h2>
+  <div class="ann"><ul>
+    <li>A failed reprint is the <b>low-urgency</b> print class, never the kitchen
+      emergency. <span class="req">FR-E6, AC-23</span></li>
+    <li>Cancelling the approval leaves the order untouched. <span class="req">B-20</span></li>
+  </ul></div>
+</aside>
+</main></body></html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-09 End of day</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'BO-09',client:'bo',nav:'eod',name:'End of day',reqs:'FR-I1, I2, I3, I4, H7',states:[
+['default','Ready to close'],['refused','Refused — orders still open'],['confirm','Modal — confirm close'],
+['loading','Closing'],['closed','Closed — report stored'],['already','Already closed today']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo"><div class="bo">
+  <nav class="bonav">
+    <div class="bonav__brand">Back office</div>
+    <div class="bonav__sec">Trading</div>
+    <a href="today.html" data-nav="today">Today</a>
+    <a href="end-of-day.html" data-nav="eod">End of day</a>
+    <div class="bonav__sec">History</div>
+    <a href="reports.html" data-nav="reports">Reports</a>
+    <a href="audit.html" data-nav="audit">Audit</a>
+    <div class="bonav__sec">Configuration</div>
+    <a href="menu.html" data-nav="menu">Menu</a>
+    <a href="tables.html" data-nav="tables">Tables</a>
+    <a href="users.html" data-nav="users">Staff</a>
+    <a href="presets.html" data-nav="presets">Discount presets</a>
+    <a href="settings.html" data-nav="settings">Settings</a>
+    <div class="bonav__sec">Hardware</div>
+    <a href="incidents.html" data-nav="incidents">Printing</a>
+    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
+      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
+      <a href="login.html" style="font-size:12px">Log out</a>
+    </div>
+  </nav>
+  <div class="bomain">
+    <div class="botop"><b>End of day</b><span class="muted">Business day of 9 Sep, open since 06:00</span></div>
+    <div class="bocontent">
+
+      <!-- refused -->
+      <div data-when="refused">
+        <div class="banner" style="border-width:3px">
+          <div class="banner__t" style="font-size:15px">The day cannot be closed &mdash; 3 orders are still open</div>
+          <div>Settle or void each of them <b>at the POS</b>, then come back and try again.
+          They cannot be closed from here.</div>
+        </div>
+        <div class="card">
+          <div class="card__t">Still open</div>
+          <table class="dtable">
+            <thead><tr><th>Order</th><th>Opened</th><th>Type</th><th>State</th><th class="num">Total</th></tr></thead>
+            <tbody>
+              <tr><td>Table 1</td><td>19:38</td><td>Dine in</td><td>2 rounds fired</td><td class="num">15.59</td></tr>
+              <tr><td>Table 3</td><td>20:02</td><td>Dine in</td><td>Nothing fired</td><td class="num">8.00</td></tr>
+              <tr><td>Table 6</td><td>20:14</td><td>Dine in</td><td>Payment in progress</td><td class="num">42.10</td></tr>
+            </tbody>
+          </table>
+          <div class="rowflex gap12" style="margin-top:14px">
+            <a class="bobtn bobtn--primary" href="end-of-day.html">Check again</a>
+            <span class="muted">This list is read from the server each time you check.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ready -->
+      <div data-when="default">
+        <div class="card">
+          <div class="card__t">Ready to close</div>
+          <p>No orders are open. Closing stores a report of today's trading that can
+          never be changed, and opens the next business day.</p>
+          <div class="grid3" style="margin:16px 0">
+            <div><div class="muted">Orders closed</div><div style="font-size:28px;font-family:var(--mono)">9</div></div>
+            <div><div class="muted">Gross sales</div><div style="font-size:28px;font-family:var(--mono)">248.35</div></div>
+            <div><div class="muted">Refunds</div><div style="font-size:28px;font-family:var(--mono)">15.59</div></div>
+          </div>
+          <a class="bobtn bobtn--primary" href="end-of-day.html?state=confirm">Close the business day</a>
+        </div>
+      </div>
+
+      <div data-when="loading">
+        <div class="loadinglabel">CLOSING THE BUSINESS DAY</div>
+        <div class="skel skel--w80"></div><div class="skel skel--w60"></div>
+        <div class="muted">Checking that nothing is still open, then storing the report.</div>
+      </div>
+
+      <div data-when="closed">
+        <div class="banner">
+          <div class="banner__t">Business day of 9 Sep is closed</div>
+          <div>The report is stored and will not change. The business day of 10 Sep is
+          now open.</div>
+        </div>
+        <div class="rowflex gap12">
+          <a class="bobtn bobtn--primary" href="report-detail.html">Open the report</a>
+          <a class="bobtn" href="report-detail.html?state=reprint">Print the report</a>
+        </div>
+      </div>
+
+      <div data-when="already">
+        <div class="banner">
+          <div class="banner__t">This day has already been closed</div>
+          <div>A business day can only be closed once. The stored report can be printed
+          again as many times as you like.</div>
+        </div>
+        <a class="bobtn bobtn--primary" href="report-detail.html">Open the report</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="confirm">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Close the business day of 9 Sep?</h2></div>
+      <div class="modal__body">
+        <p>This cannot be undone. The report is stored as it stands and never changes
+        afterwards.</p>
+        <p>Orders belonging to this day can no longer be voided or refunded.</p>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="end-of-day.html">Cancel</a>
+        <a class="bobtn bobtn--primary" href="end-of-day.html?state=closed">Close the day</a>
+      </div>
+    </div>
+  </div>
+
+</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Close the business day and produce the immutable report.</p></div>
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>Close is <b>refused while any order is open</b>, and lists them. No force-close,
+      no "close anyway", no auto-void of stragglers. <span class="req">FR-I2, AC-15</span></li>
+    <li>The close command reads authoritative server state inside its own transaction,
+      so owning the back office does not weaken the check. <span class="req">FR-I2</span></li>
+    <li>A closed day is immutable. Its report never changes; voids and refunds against
+      it are blocked. <span class="req">B-9, FR-H7, I4</span></li>
+    <li>A second close of the same day is rejected; the report stays printable. <span class="req">FR-I4</span></li>
+    <li>Post-close corrections are PRD Open Question 3. No adjustment flow is drawn.</li>
+  </ul></div>
+  <div class="ann ann--call" data-when="refused">
+    <span class="ann__t">Designer's call &mdash; I-6</span>
+    <p>The open-order list does <b>not</b> link into the POS. Two separately bootstrapped
+    clients with separate sessions cannot hand an actor context to each other
+    (<span class="req">NFR-5, FR-A2c</span>), so a link would be a lie. It is a re-read on demand instead, with
+    "Check again" naming what it does.</p>
+  </div>
+  <div class="ann ann--call" data-when="confirm">
+    <span class="ann__t">Designer's call &mdash; I-11</span>
+    <p>A confirmation step belongs here and nowhere on the POS: the reader is seated,
+    the action is irreversible (<span class="req">B-9</span>), and there is time to read. On the POS the
+    equivalent protection is a PIN, never a dialog.</p>
+  </div>
+</aside>
+</main></body></html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POS-07 Print incidents</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'POS-07',client:'pos',name:'Print incidents',reqs:'FR-E3, E6, H4, G8, B-15',states:[
+['default','Kitchen emergency + receipt warning'],['cancel','Cancellation ticket UNKNOWN'],
+['empty','Nothing outstanding'],['reprint','Reprint result'],['overflow','Overflow'],
+['loading','Loading'],['error','Error']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--pos"><div class="pos">
+
+  <div class="pos__bar">
+    <a href="floor.html" style="font-size:15px">&larr; Floor</a>
+    <h1>Printing</h1>
+    <div class="pos__actor"><span>Ana R. &middot; Cashier</span><span class="idle">90s</span></div>
+  </div>
+
+  <div class="pos__body" style="flex-direction:column;padding:20px;gap:20px;overflow:hidden">
+
+    <div data-when="loading">
+      <div class="loadinglabel">LOADING</div>
+      <div class="skel skel--w80"></div><div class="skel skel--w40"></div>
+    </div>
+
+    <div class="notice" data-when="error">
+      <div class="notice__t">Could not read printer state</div>
+      <div>Check the printer directly. <a href="incidents.html">Retry</a></div>
+    </div>
+
+    <div class="empty" data-when="empty" style="padding:60px">
+      <div style="font-weight:700;margin-bottom:6px">Nothing outstanding</div>
+      <div>Every ticket and receipt has printed.</div>
+    </div>
+
+    <!-- emergency class -->
+    <div data-when="default cancel reprint overflow">
+      <div class="rowflex gap12" style="margin-bottom:12px">
+        <div class="emg__mark" style="width:20px;height:20px"></div>
+        <b style="font-size:18px">Needs attention now</b>
+        <span class="muted">The kitchen has not seen this work</span>
+      </div>
+
+      <div style="border:3px solid var(--ink);padding:16px;margin-bottom:12px" data-when="default reprint overflow">
+        <div class="rowflex spread">
+          <div>
+            <div style="font-size:17px;font-weight:700">Kitchen ticket did not print</div>
+            <div class="muted">Table 1 &middot; round 2 &middot; 19:58 &middot; 2 items &middot; status FAILED</div>
+          </div>
+          <a class="btn" href="incidents.html?state=reprint" style="width:200px">Reprint ticket</a>
+        </div>
+        <div class="notice notice--soft" data-when="reprint" style="margin:12px 0 0">
+          <div class="notice__t">Reprint sent &mdash; printed at 20:03</div>
+          <div>Check the kitchen has the paper before clearing this.</div>
+        </div>
+      </div>
+
+      <div style="border:3px solid var(--ink);padding:16px;margin-bottom:12px" data-when="cancel overflow">
+        <div class="rowflex spread">
+          <div>
+            <div style="font-size:17px;font-weight:700">Cancellation ticket &mdash; delivery unknown</div>
+            <div class="muted">Table 1 &middot; Burger &middot; 20:02 &middot; status UNKNOWN</div>
+            <div style="margin-top:8px;max-width:720px">This ticket tells the kitchen to
+            <b>stop</b> work already sent. It may or may not have printed.
+            <b>Check the printer before reprinting</b> &mdash; it is a cancellation, never a
+            new order.</div>
+          </div>
+          <a class="btn" href="incidents.html?state=reprint" style="width:200px">Reprint cancellation</a>
+        </div>
+      </div>
+
+      <div style="border:3px solid var(--ink);padding:16px;margin-bottom:12px" data-when="overflow">
+        <div class="rowflex spread">
+          <div><div style="font-size:17px;font-weight:700">Kitchen ticket did not print</div>
+          <div class="muted">Table 9 &middot; round 1 &middot; 20:04 &middot; 5 items &middot; status FAILED</div></div>
+          <a class="btn" href="#" style="width:200px">Reprint ticket</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- lower-urgency class -->
+    <div data-when="default cancel reprint overflow">
+      <div class="rowflex gap12" style="margin-bottom:8px;margin-top:8px">
+        <span class="warnchip__mark"></span>
+        <b>Receipts</b><span class="muted">Customer-service issue, not an emergency</span>
+      </div>
+      <div style="border:1px solid var(--line);background:var(--bg2);padding:12px">
+        <div class="rowflex spread">
+          <div><div>Receipt did not print &mdash; Table 1, closed 20:14 &middot; status FAILED</div></div>
+          <a class="btn btn--sm" href="incidents.html?state=reprint" style="width:180px">Reprint receipt</a>
+        </div>
+      </div>
+      <div style="border:1px solid var(--line);background:var(--bg2);padding:12px;margin-top:8px" data-when="overflow">
+        <div class="rowflex spread">
+          <div><div>Receipt did not print &mdash; Counter, closed 20:11 &middot; status UNKNOWN</div></div>
+          <a class="btn btn--sm" href="#" style="width:180px">Reprint receipt</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><div class="device__caption">POS &mdash; 1280 &times; 800</div></div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Show unresolved print failures and offer a reprint, without ever
+  blocking the floor.</p></div>
+
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>Kitchen and receipt failures are <b>two urgency classes</b> and must never be
+      presented identically. In greyscale that is carried by border weight, size,
+      placement, persistence, and whether clearing needs an explicit action.
+      <span class="req">FR-E6, AC-23</span></li>
+    <li>Kitchen incidents are persistent until acted on and appear in <b>both</b>
+      clients. Not a toast, never auto-dismissing. <span class="req">FR-E3, AC-33</span></li>
+    <li>Printing never gates anything. No incident blocks order entry, firing,
+      closing, or navigation. <span class="req">B-15, FR-E3</span></li>
+    <li>A cancellation ticket is a correction, never a fire. Reprinting one must never
+      read as "send to the kitchen again". <span class="req">B-16, FR-H4</span></li>
+    <li>UNKNOWN is not FAILED. The operator checks the printer before reprinting.
+      <span class="req">PRD §6</span></li>
+  </ul></div>
+
+  <h2>Not visible in a still</h2>
+  <div class="ann"><ul>
+    <li>The incident is application-wide, not tied to an actor session. Resolving it
+      here resolves it in the back office too. <span class="req">FR-E3</span></li>
+    <li>Dispatching print jobs become UNKNOWN after an application restart. <span class="req">PRD §6</span></li>
+  </ul></div>
+</aside>
+</main></body></html>

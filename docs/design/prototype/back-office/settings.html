@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-08 Settings</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'BO-08',client:'bo',nav:'settings',name:'Settings',reqs:'FR-B1, M1, M5, G1 (payment methods — ruling I-9)',states:[
+['default','Locked — orders exist'],['firstrun','First run — nothing locked'],
+['ratechange','Modal — rate change'],['tender','Modal — payment method'],['error','Validation error']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo"><div class="bo">
+  <nav class="bonav">
+    <div class="bonav__brand">Back office</div>
+    <div class="bonav__sec">Trading</div>
+    <a href="today.html" data-nav="today">Today</a>
+    <a href="end-of-day.html" data-nav="eod">End of day</a>
+    <div class="bonav__sec">History</div>
+    <a href="reports.html" data-nav="reports">Reports</a>
+    <a href="audit.html" data-nav="audit">Audit</a>
+    <div class="bonav__sec">Configuration</div>
+    <a href="menu.html" data-nav="menu">Menu</a>
+    <a href="tables.html" data-nav="tables">Tables</a>
+    <a href="users.html" data-nav="users">Staff</a>
+    <a href="presets.html" data-nav="presets">Discount presets</a>
+    <a href="settings.html" data-nav="settings">Settings</a>
+    <div class="bonav__sec">Hardware</div>
+    <a href="incidents.html" data-nav="incidents">Printing</a>
+    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
+      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
+      <a href="login.html" style="font-size:12px">Log out</a>
+    </div>
+  </nav>
+  <div class="bomain">
+    <div class="botop"><b>Settings</b><span class="muted">One location, one tax rate</span></div>
+    <div class="bocontent">
+
+      <div class="banner" data-when="error">
+        <div class="banner__t">Could not save</div>
+        <div>A rate must be a number. Rates are held to one part per million.</div>
+      </div>
+
+      <div class="grid2" style="align-items:start">
+        <div>
+          <div class="card">
+            <div class="card__t">Money</div>
+            <div class="kv">
+              <span>Currency</span>
+              <div class="rowflex gap8" data-when="default ratechange tender error">
+                <div class="field field--sm" style="width:120px;background:var(--bg3)">IDR</div>
+                <span class="tag">LOCKED</span></div>
+              <div class="field field--sm" style="width:120px" data-when="firstrun">IDR</div>
+
+              <span>Decimal places</span>
+              <div class="rowflex gap8" data-when="default ratechange tender error">
+                <div class="field field--sm" style="width:120px;background:var(--bg3)">2</div>
+                <span class="tag">LOCKED</span></div>
+              <div class="field field--sm" style="width:120px" data-when="firstrun">2</div>
+            </div>
+            <div class="banner banner--soft" style="margin-top:12px" data-when="default ratechange tender error">
+              <div class="banner__t">Locked since the first order was taken</div>
+              <div>Changing the currency or the number of decimal places after money has
+              moved would rewrite what customers were charged. These stay as they are for
+              the life of the installation.</div>
+            </div>
+            <div class="banner banner--soft" style="margin-top:12px" data-when="firstrun">
+              <div class="banner__t">Set these once, carefully</div>
+              <div>They lock permanently the moment the first order is taken.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card__t">Rates</div>
+            <div class="kv">
+              <span>Tax rate &mdash; included in prices</span>
+              <div class="rowflex gap8"><div class="field field--sm" style="width:120px">10.000000 %</div>
+                <a class="bobtn bobtn--sm" href="settings.html?state=ratechange">Change</a></div>
+              <span>Service charge &mdash; not taxed</span>
+              <div class="rowflex gap8"><div class="field field--sm" style="width:120px">5.000000 %</div>
+                <a class="bobtn bobtn--sm" href="settings.html?state=ratechange">Change</a></div>
+            </div>
+            <div class="muted" style="margin-top:10px">Menu prices already include tax. The tax
+            line on a receipt is worked out from the total, never added to it. The service
+            charge is added on top and is not taxed.</div>
+          </div>
+        </div>
+
+        <div>
+          <!-- Ruling I-9: custom payment methods are configuration, not free text at the POS -->
+          <div class="card">
+            <div class="card__t">Payment methods</div>
+            <table class="dtable">
+              <thead><tr><th>Name shown at the POS</th><th>Behaves like</th><th>Status</th><th style="width:150px"></th></tr></thead>
+              <tbody>
+                <tr><td>Cash</td><td>Cash &mdash; may exceed the balance, gives change</td><td><span class="tag">BUILT IN</span></td><td></td></tr>
+                <tr><td>Card</td><td>Non-cash &mdash; capped at the balance</td><td><span class="tag">BUILT IN</span></td><td></td></tr>
+                <tr><td>Meal voucher</td><td>Non-cash &mdash; capped at the balance</td><td><span class="tag">ACTIVE</span></td>
+                  <td><a href="settings.html?state=tender">Edit</a> &middot; <a href="settings.html">Deactivate</a></td></tr>
+                <tr><td>Staff account</td><td>Non-cash &mdash; capped at the balance</td><td><span class="tag">ACTIVE</span></td>
+                  <td><a href="settings.html?state=tender">Edit</a> &middot; <a href="settings.html">Deactivate</a></td></tr>
+              </tbody>
+            </table>
+            <div style="margin-top:10px"><a class="bobtn bobtn--sm" href="settings.html?state=tender">Add payment method</a></div>
+            <div class="muted" style="margin-top:10px">Only cash may exceed the balance. Every
+            other method, custom ones included, is capped at what is still owed.</div>
+          </div>
+
+          <div class="card">
+            <div class="card__t">Business details printed on receipts</div>
+            <div class="kv">
+              <span>Business name</span><div class="field field--sm">Warung Sederhana</div>
+              <span>Address</span><div class="field field--sm">Jl. Melati 12</div>
+              <span>Tax registration</span><div class="field field--sm">01.234.567.8-901</div>
+              <span>Phone</span><div class="field field--sm">021 555 0134</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rowflex gap12"><a class="bobtn bobtn--primary" href="settings.html">Save settings</a>
+        <a class="bobtn" href="today.html">Cancel</a></div>
+    </div>
+  </div>
+
+  <div data-when="ratechange">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Change the tax rate</h2></div>
+      <div class="modal__body">
+        <div class="kv"><span>New rate</span><div class="field field--sm" style="width:160px">11.000000 %</div></div>
+        <div class="banner" style="margin-top:16px">
+          <div class="banner__t">This applies to orders opened from now on</div>
+          <div>Orders that are already open keep the rate they were opened with. Closed
+          orders and stored day reports never change.</div>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="settings.html">Cancel</a>
+        <a class="bobtn bobtn--primary" href="settings.html">Change rate</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="tender">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Payment method</h2></div>
+      <div class="modal__body">
+        <div class="kv">
+          <span>Name shown at the POS</span><div class="field field--sm">Meal voucher</div>
+        </div>
+        <div class="banner banner--soft" style="margin-top:16px">
+          <div class="banner__t">Behaves like a card</div>
+          <div>Custom methods are capped at the remaining balance and never give change.
+          Only cash may be over-tendered.</div>
+        </div>
+        <div class="muted" style="margin-top:12px">Everything is recorded by hand. There is no
+        card terminal or gateway connected to this system.</div>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="settings.html">Cancel</a>
+        <a class="bobtn bobtn--primary" href="settings.html">Save</a>
+      </div>
+    </div>
+  </div>
+
+</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Currency, precision, tax and service-charge rates, payment methods,
+  and the business details printed on receipts.</p></div>
+
+  <div class="ann ann--call">
+    <span class="ann__t">Ruling I-9 &mdash; payment methods</span>
+    <p>Custom named payment methods are <b>configuration here</b>, not free text typed on
+    the fastest, most error-prone screen in the product. <span class="req">FR-G1, B-24</span></p>
+  </div>
+
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>Currency and decimal places become <b>immutable after the first order</b>. The
+      locked state is not an edge case; it is the state this screen spends its life
+      in. <span class="req">FR-B1, M1</span></li>
+    <li>A rate change is versioned and never retroactive. No "apply to open orders"
+      option. <span class="req">FR-B1, B-8, B-9</span></li>
+    <li>One tax rate, tax-inclusive, service charge untaxed. No tax groups, no per-item
+      rates, no jurisdiction packs. <span class="req">PRD §4, B-3, B-4</span></li>
+    <li>Rate precision is one part per million. The permitted <b>range</b> is PRD Open
+      Question 4 and is not the designer's to settle &mdash; drawn without a stated maximum.</li>
+    <li>Only cash may exceed the balance. <span class="req">FR-G3, G4, B-5</span></li>
+  </ul></div>
+
+  <h2>Not visible in a still</h2>
+  <div class="ann"><p>An order captures the settings version in force when it opened and
+  keeps it for life. <span class="req">FR-B1, C7</span></p></div>
+</aside>
+</main></body></html>

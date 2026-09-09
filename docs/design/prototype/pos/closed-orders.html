@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POS-05 Closed orders</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'POS-05',client:'pos',name:'Closed orders  [approved from implied I-1]',reqs:'FR-G7, H5, H6, H7',states:[
+['default','List'],['empty','No closed orders'],['loading','Loading'],['error','Error'],['overflow','Overflow — full day']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--pos"><div class="pos">
+
+  <div class="pos__bar">
+    <a href="floor.html" style="font-size:15px">&larr; Floor</a>
+    <h1>Closed orders</h1>
+    <span class="muted" style="font-size:13px">Business day &mdash; 9 Sep</span>
+    <div class="pos__actor">
+      <span>Ana R. &middot; Cashier</span><span class="idle">90s</span>
+      <a class="btn btn--sm" href="lock.html" style="width:110px">Release</a>
+    </div>
+  </div>
+
+  <!-- I-1 ruling: search by table, time and amount. Not by receipt number. -->
+  <div class="rowflex gap12" style="padding:16px 20px;border-bottom:1px solid var(--line2)">
+    <div style="flex:1"><span class="label">Table</span><div class="field field--sm">Any</div></div>
+    <div style="flex:1"><span class="label">Closed at</span><div class="field field--sm">Last hour</div></div>
+    <div style="flex:1"><span class="label">Amount</span><div class="field field--sm">Any</div></div>
+    <div style="width:150px;align-self:flex-end"><a class="btn btn--sm" href="closed-orders.html">Search</a></div>
+  </div>
+
+  <div class="pos__body" style="flex-direction:column">
+
+    <div data-when="loading" style="padding:24px 20px">
+      <div class="loadinglabel">LOADING</div>
+      <div class="skel skel--w80"></div><div class="skel skel--w60"></div><div class="skel skel--w40"></div>
+    </div>
+
+    <div class="notice" data-when="error">
+      <div class="notice__t">Could not load closed orders</div>
+      <div><a href="closed-orders.html">Retry</a></div>
+    </div>
+
+    <div class="empty" data-when="empty" style="margin:20px;padding:48px">
+      <div style="font-weight:700;margin-bottom:6px">No closed orders yet today</div>
+      <div>Orders appear here once they are paid.</div>
+    </div>
+
+    <div data-when="default">
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit">
+        <span style="width:90px" class="mono">20:14</span>
+        <span style="width:110px"><span class="tag">TABLE 1</span></span>
+        <span style="flex:1">Card 10.00 &middot; Cash 5.59</span>
+        <span class="mono" style="font-size:18px">15.59</span></a>
+      <a class="listrow" href="closed-order.html?state=refunded" style="text-decoration:none;color:inherit">
+        <span style="width:90px" class="mono">19:58</span>
+        <span style="width:110px"><span class="tag">COUNTER</span></span>
+        <span style="flex:1">Cash 20.00 &middot; change 4.41 <span class="tag tag--solid">REFUNDED</span></span>
+        <span class="mono" style="font-size:18px">15.59</span></a>
+      <a class="listrow" href="closed-order.html?state=zero" style="text-decoration:none;color:inherit">
+        <span style="width:90px" class="mono">19:41</span>
+        <span style="width:110px"><span class="tag">TABLE 6</span></span>
+        <span style="flex:1">Comp 100% &mdash; no payment taken</span>
+        <span class="mono" style="font-size:18px">0.00</span></a>
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit">
+        <span style="width:90px" class="mono">19:20</span>
+        <span style="width:110px"><span class="tag">COUNTER</span></span>
+        <span style="flex:1">Card 42.10</span>
+        <span class="mono" style="font-size:18px">42.10</span></a>
+    </div>
+
+    <div data-when="overflow">
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit;min-height:64px"><span style="width:90px" class="mono">20:14</span><span style="width:110px"><span class="tag">TABLE 1</span></span><span style="flex:1">Card 10.00 &middot; Cash 5.59</span><span class="mono">15.59</span></a>
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit;min-height:64px"><span style="width:90px" class="mono">20:11</span><span style="width:110px"><span class="tag">COUNTER</span></span><span style="flex:1">Cash 10.00</span><span class="mono">8.20</span></a>
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit;min-height:64px"><span style="width:90px" class="mono">20:04</span><span style="width:110px"><span class="tag">TABLE 9</span></span><span style="flex:1">Card 63.40</span><span class="mono">63.40</span></a>
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit;min-height:64px"><span style="width:90px" class="mono">19:58</span><span style="width:110px"><span class="tag">COUNTER</span></span><span style="flex:1">Cash 20.00 &middot; change 4.41</span><span class="mono">15.59</span></a>
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit;min-height:64px"><span style="width:90px" class="mono">19:51</span><span style="width:110px"><span class="tag">TABLE 4</span></span><span style="flex:1">Card 22.00 &middot; Cash 5.00</span><span class="mono">27.00</span></a>
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit;min-height:64px"><span style="width:90px" class="mono">19:47</span><span style="width:110px"><span class="tag">COUNTER</span></span><span style="flex:1">Meal voucher 6.00 &middot; Cash 2.50</span><span class="mono">8.50</span></a>
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit;min-height:64px"><span style="width:90px" class="mono">19:41</span><span style="width:110px"><span class="tag">TABLE 6</span></span><span style="flex:1">Comp 100%</span><span class="mono">0.00</span></a>
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit;min-height:64px"><span style="width:90px" class="mono">19:33</span><span style="width:110px"><span class="tag">TABLE 2</span></span><span style="flex:1">Card 31.80</span><span class="mono">31.80</span></a>
+      <a class="listrow" href="closed-order.html" style="text-decoration:none;color:inherit;min-height:64px"><span style="width:90px" class="mono">19:20</span><span style="width:110px"><span class="tag">COUNTER</span></span><span style="flex:1">Card 42.10</span><span class="mono">42.10</span></a>
+      <div class="muted" style="padding:12px 20px">Rows stay at a 64 px touch target. The list scrolls; the search bar stays put.</div>
+    </div>
+  </div>
+
+</div><div class="device__caption">POS &mdash; 1280 &times; 800</div></div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Find a closed order in order to reprint its receipt or refund it.</p></div>
+
+  <div class="ann ann--call">
+    <span class="ann__t">Ruling I-1 &mdash; approved</span>
+    <p>This screen is not named by any requirement; it exists because
+    <span class="req">FR-G7</span> reprints on demand and <span class="req">FR-H5</span> refunds a closed order, and neither
+    says how the order is found.</p>
+    <p>Search is by <b>table, time and amount</b>. Not by receipt number &mdash; the
+    numbering format is an open product question and a search built on an
+    unsettled key would have to be redone.</p>
+  </div>
+
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>Refunded orders are terminal and marked as such. <span class="req">FR-H6, B-10</span></li>
+    <li>Voids and refunds against a closed business day are blocked. <span class="req">FR-H7, B-9</span></li>
+    <li>A zero-total order is a real closed order that appears here. <span class="req">FR-G11</span></li>
+  </ul></div>
+
+  <h2>Not visible in a still</h2>
+  <div class="ann"><p>Scope and retention are undecided. Drawn scoped to the open
+  business day, which is the smallest scope that satisfies reprint and refund.</p></div>
+</aside>
+</main></body></html>

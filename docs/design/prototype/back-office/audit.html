@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-12 Audit</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'BO-12',client:'bo',nav:'audit',name:'Audit viewer',reqs:'FR-J1, J2, J3, J4',states:[
+['default','Entries'],['entry','Modal — entry detail'],['nomatch','No entries match the filter'],
+['empty','No entries yet'],['overflow','Overflow — paged'],['loading','Loading'],['error','Error']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo"><div class="bo">
+  <nav class="bonav">
+    <div class="bonav__brand">Back office</div>
+    <div class="bonav__sec">Trading</div>
+    <a href="today.html" data-nav="today">Today</a>
+    <a href="end-of-day.html" data-nav="eod">End of day</a>
+    <div class="bonav__sec">History</div>
+    <a href="reports.html" data-nav="reports">Reports</a>
+    <a href="audit.html" data-nav="audit">Audit</a>
+    <div class="bonav__sec">Configuration</div>
+    <a href="menu.html" data-nav="menu">Menu</a>
+    <a href="tables.html" data-nav="tables">Tables</a>
+    <a href="users.html" data-nav="users">Staff</a>
+    <a href="presets.html" data-nav="presets">Discount presets</a>
+    <a href="settings.html" data-nav="settings">Settings</a>
+    <div class="bonav__sec">Hardware</div>
+    <a href="incidents.html" data-nav="incidents">Printing</a>
+    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
+      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
+      <a href="login.html" style="font-size:12px">Log out</a>
+    </div>
+  </nav>
+  <div class="bomain">
+    <div class="botop"><b>Audit</b><span class="muted">Append only. Nothing here can be edited or removed.</span></div>
+    <div class="bocontent">
+
+      <div class="card">
+        <div class="rowflex gap12">
+          <div style="flex:1"><span class="label">Who</span><div class="field field--sm">Anyone</div></div>
+          <div style="flex:1"><span class="label">What happened</span><div class="field field--sm">Anything</div></div>
+          <div style="flex:1"><span class="label">Order</span><div class="field field--sm">Any</div></div>
+          <div style="flex:1"><span class="label">Business day</span><div class="field field--sm">9 Sep 2026</div></div>
+          <div style="width:110px;align-self:flex-end"><a class="bobtn" href="audit.html">Apply</a></div>
+        </div>
+      </div>
+
+      <div data-when="loading"><div class="loadinglabel">LOADING</div>
+        <div class="skel skel--w80"></div><div class="skel skel--w60"></div></div>
+      <div class="banner" data-when="error"><div class="banner__t">Could not load the audit log</div>
+        <div><a href="audit.html">Retry</a></div></div>
+
+      <div class="empty" data-when="empty" style="padding:60px">
+        <div style="font-weight:700;margin-bottom:6px">Nothing has been recorded yet</div>
+        <div>Voids, discounts, refunds and manager approvals appear here as they happen.</div>
+      </div>
+      <div class="empty" data-when="nomatch" style="padding:60px">
+        <div style="font-weight:700;margin-bottom:6px">No entries match this filter</div>
+        <div>There are 47 entries for this business day. Widen the filter to see them.</div>
+        <div style="margin-top:16px"><a class="bobtn" href="audit.html">Clear filter</a></div>
+      </div>
+
+      <table class="dtable" data-when="default entry">
+        <thead><tr><th style="width:80px">Time</th><th style="width:22%">What happened</th><th>Who did it</th>
+          <th>Who approved it</th><th>Order</th><th>Reason</th><th class="num">Before</th><th class="num">After</th><th style="width:60px"></th></tr></thead>
+        <tbody>
+          <tr><td class="mono">20:31</td><td>Refund</td><td>Ana R.</td><td>M. Iqbal</td><td>Table 1</td>
+            <td>Wrong dish served</td><td class="num">15.59</td><td class="num">0.00</td>
+            <td><a href="audit.html?state=entry">Open</a></td></tr>
+          <tr><td class="mono">20:22</td><td>Manager approval cancelled</td><td>Ana R.</td><td class="muted">&mdash;</td><td>Table 4</td>
+            <td class="muted">&mdash;</td><td class="num">&mdash;</td><td class="num">&mdash;</td>
+            <td><a href="audit.html?state=entry">Open</a></td></tr>
+          <tr><td class="mono">20:19</td><td>Line voided after being sent</td><td>Ana R.</td><td>M. Iqbal</td><td>Table 1</td>
+            <td>Customer changed their mind</td><td class="num">29.09</td><td class="num">15.59</td>
+            <td><a href="audit.html?state=entry">Open</a></td></tr>
+          <tr><td class="mono">20:04</td><td>Payment taken over by a manager</td><td>M. Iqbal</td><td>M. Iqbal</td><td>Table 6</td>
+            <td>Terminal left unattended</td><td class="num">&mdash;</td><td class="num">&mdash;</td>
+            <td><a href="audit.html?state=entry">Open</a></td></tr>
+          <tr><td class="mono">19:57</td><td>Discount replaced</td><td>D. Putra</td><td>M. Iqbal</td><td>Table 4</td>
+            <td>Manager decision</td><td class="num">Staff meal 10%</td><td class="num">Other 15%</td>
+            <td><a href="audit.html?state=entry">Open</a></td></tr>
+          <tr><td class="mono">19:44</td><td>Discount applied</td><td>Ana R.</td><td class="muted">&mdash;</td><td>Table 1</td>
+            <td class="muted">&mdash;</td><td class="num">&mdash;</td><td class="num">Staff meal 10%</td>
+            <td><a href="audit.html?state=entry">Open</a></td></tr>
+          <tr><td class="mono">19:31</td><td>Whole order voided</td><td>D. Putra</td><td class="muted">&mdash;</td><td>Table 9</td>
+            <td>Order taken in error</td><td class="num">18.20</td><td class="num">0.00</td>
+            <td><a href="audit.html?state=entry">Open</a></td></tr>
+        </tbody>
+      </table>
+
+      <div data-when="overflow">
+        <table class="dtable dtable--tight">
+          <thead><tr><th style="width:80px">Time</th><th style="width:24%">What happened</th><th>Who</th><th>Approved by</th><th>Order</th><th class="num">Before</th><th class="num">After</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">20:31</td><td>Refund</td><td>Ana R.</td><td>M. Iqbal</td><td>Table 1</td><td class="num">15.59</td><td class="num">0.00</td></tr>
+            <tr><td class="mono">20:29</td><td>Discount removed</td><td>Ana R.</td><td>M. Iqbal</td><td>Table 4</td><td class="num">Other 15%</td><td class="num">&mdash;</td></tr>
+            <tr><td class="mono">20:22</td><td>Manager approval cancelled</td><td>Ana R.</td><td class="muted">&mdash;</td><td>Table 4</td><td class="num">&mdash;</td><td class="num">&mdash;</td></tr>
+            <tr><td class="mono">20:19</td><td>Line voided after being sent</td><td>Ana R.</td><td>M. Iqbal</td><td>Table 1</td><td class="num">29.09</td><td class="num">15.59</td></tr>
+            <tr><td class="mono">20:11</td><td>Discount applied</td><td>D. Putra</td><td class="muted">&mdash;</td><td>Counter</td><td class="num">&mdash;</td><td class="num">Regular 5%</td></tr>
+            <tr><td class="mono">20:04</td><td>Payment taken over by a manager</td><td>M. Iqbal</td><td>M. Iqbal</td><td>Table 6</td><td class="num">&mdash;</td><td class="num">&mdash;</td></tr>
+            <tr><td class="mono">19:59</td><td>Manager approval failed</td><td>D. Putra</td><td class="muted">&mdash;</td><td>Table 4</td><td class="num">&mdash;</td><td class="num">&mdash;</td></tr>
+            <tr><td class="mono">19:57</td><td>Discount replaced</td><td>D. Putra</td><td>M. Iqbal</td><td>Table 4</td><td class="num">Staff meal 10%</td><td class="num">Other 15%</td></tr>
+            <tr><td class="mono">19:52</td><td>Whole order voided</td><td>Ana R.</td><td>M. Iqbal</td><td>Table 2</td><td class="num">16.00</td><td class="num">0.00</td></tr>
+            <tr><td class="mono">19:44</td><td>Discount applied</td><td>Ana R.</td><td class="muted">&mdash;</td><td>Table 1</td><td class="num">&mdash;</td><td class="num">Staff meal 10%</td></tr>
+            <tr><td class="mono">19:31</td><td>Whole order voided</td><td>D. Putra</td><td class="muted">&mdash;</td><td>Table 9</td><td class="num">18.20</td><td class="num">0.00</td></tr>
+            <tr><td class="mono">19:20</td><td>Discount applied</td><td>Ana R.</td><td class="muted">&mdash;</td><td>Counter</td><td class="num">&mdash;</td><td class="num">Comp 100%</td></tr>
+          </tbody>
+        </table>
+        <div class="rowflex gap12" style="margin-top:12px">
+          <span class="bobtn bobtn--off bobtn--sm">Newer</span>
+          <a class="bobtn bobtn--sm" href="audit.html?state=overflow">Older</a>
+          <span class="muted">1&ndash;12 of 47 for this business day</span>
+        </div>
+        <div class="muted" style="margin-top:8px">The log only grows, so it pages rather than
+        scrolls. There is no row action menu &mdash; nothing here can be changed.</div>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="entry">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Refund &mdash; Table 1</h2>
+        <div class="muted" style="margin-top:4px">9 Sep 2026, 20:31:04</div></div>
+      <div class="modal__body">
+        <div class="kv" style="grid-template-columns:180px 1fr">
+          <span>Who did it</span><b>Ana R. &middot; Cashier &middot; staff no. 211</b>
+          <span>Who approved it</span><b>M. Iqbal &middot; Manager &middot; staff no. 104</b>
+          <span>Reason given</span><b>Wrong dish served</b>
+          <span>Order</span><b>Table 1, closed 20:14</b>
+          <span>Order total before</span><b class="mono">15.59</b>
+          <span>Order total after</span><b class="mono">0.00</b>
+          <span>Money returned</span><b class="mono">Card 10.00 &middot; Cash 5.59</b>
+        </div>
+        <div class="banner banner--soft" style="margin-top:16px">
+          <div class="banner__t">One entry, two people</div>
+          <div>An approved action is recorded once, naming the person who did it and the
+          person who approved it. A cancelled or failed approval is recorded separately
+          with no approver.</div>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="audit.html">Close</a>
+        <span class="muted" style="align-self:center;font-size:12px">Read only. There is no edit or delete.</span>
+      </div>
+    </div>
+  </div>
+
+</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Answer "why is the till short?" the next morning.</p></div>
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li><b>Append only. No edit, no delete, no soft-delete, no hide.</b> A designer must
+      not draw a row action menu here. <span class="req">FR-J1, B-7</span></li>
+    <li>Audited actions are exactly: whole-order void, fired-line void, discount
+      apply/replace/remove, refund, manager takeover of a checkout lease, and every
+      manager-approval outcome. <span class="req">FR-J3</span></li>
+    <li>Removing a pending line is <b>not</b> audited and must not appear. <span class="req">FR-H2</span></li>
+    <li>A successful approved action is <b>one combined entry</b>, not two. A failed or
+      cancelled approval is one entry with no approver. <span class="req">FR-J3, AC-18</span></li>
+    <li>Every entry names a specific person. No "system" actor, no action attributed to
+      a terminal. <span class="req">B-13</span></li>
+    <li><b>No PIN value appears here in any form, including partially masked.</b> <span class="req">FR-J4, B-12</span></li>
+    <li>Unauthenticated PIN failures and throttle cooldowns are security telemetry, not
+      audit entries, and do not belong on this screen. <span class="req">FR-J3</span></li>
+  </ul></div>
+  <div class="ann ann--call">
+    <span class="ann__t">Ruling I-3 &mdash; deferred, not forgotten</span>
+    <p>BO-14, a viewer for that security telemetry, is <b>out of scope for the MVP</b>.
+    The store exists and is written to; nothing reads it this release. Recorded here so
+    the omission is visible rather than looking like an oversight.</p>
+  </div>
+  <h2>Not visible in a still</h2>
+  <div class="ann"><p>Two different empties: nothing recorded yet, and nothing matching the
+  filter. They must not share a screen state &mdash; one is a new installation, the other
+  is a bad search.</p></div>
+</aside>
+</main></body></html>

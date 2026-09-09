@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-07 Discount presets</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'BO-07',client:'bo',nav:'presets',name:'Discount presets',reqs:'FR-B5, F2, F4, F5, M5',states:[
+['default','Preset list'],['empty','No presets'],['editor','Modal — create/edit'],['deactivate','Modal — deactivate']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo"><div class="bo">
+  <nav class="bonav">
+    <div class="bonav__brand">Back office</div>
+    <div class="bonav__sec">Trading</div>
+    <a href="today.html" data-nav="today">Today</a>
+    <a href="end-of-day.html" data-nav="eod">End of day</a>
+    <div class="bonav__sec">History</div>
+    <a href="reports.html" data-nav="reports">Reports</a>
+    <a href="audit.html" data-nav="audit">Audit</a>
+    <div class="bonav__sec">Configuration</div>
+    <a href="menu.html" data-nav="menu">Menu</a>
+    <a href="tables.html" data-nav="tables">Tables</a>
+    <a href="users.html" data-nav="users">Staff</a>
+    <a href="presets.html" data-nav="presets">Discount presets</a>
+    <a href="settings.html" data-nav="settings">Settings</a>
+    <div class="bonav__sec">Hardware</div>
+    <a href="incidents.html" data-nav="incidents">Printing</a>
+    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
+      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
+      <a href="login.html" style="font-size:12px">Log out</a>
+    </div>
+  </nav>
+  <div class="bomain">
+    <div class="botop"><b>Discount presets</b>
+      <span class="muted">Named discounts any signed-in staff member can apply without asking a manager</span></div>
+    <div class="bocontent">
+      <div class="bohead"><h1>Presets</h1><span class="muted">4 active &middot; 1 inactive</span>
+        <span style="margin-left:auto"></span>
+        <a class="bobtn bobtn--primary" href="presets.html?state=editor">New preset</a></div>
+
+      <div class="empty" data-when="empty" style="padding:60px">
+        <div style="font-weight:700;margin-bottom:6px">No presets yet</div>
+        <div>Without presets, every discount needs a manager PIN at the POS. Naming the
+        common ones here is what keeps managers off the floor.</div>
+      </div>
+
+      <table class="dtable" data-unless="empty">
+        <thead><tr><th style="width:28%">Name</th><th>Kind</th><th class="num">Value</th>
+          <th>Status</th><th style="width:200px"></th></tr></thead>
+        <tbody>
+          <tr><td>Staff meal</td><td>Percent</td><td class="num">10%</td><td><span class="tag">ACTIVE</span></td>
+            <td><a href="presets.html?state=editor">Edit</a> &middot; <a href="presets.html?state=deactivate">Deactivate</a></td></tr>
+          <tr><td>Regular customer</td><td>Percent</td><td class="num">5%</td><td><span class="tag">ACTIVE</span></td>
+            <td><a href="presets.html?state=editor">Edit</a> &middot; <a href="presets.html?state=deactivate">Deactivate</a></td></tr>
+          <tr><td>Service recovery</td><td>Fixed amount</td><td class="num">5.00</td><td><span class="tag">ACTIVE</span></td>
+            <td><a href="presets.html?state=editor">Edit</a> &middot; <a href="presets.html?state=deactivate">Deactivate</a></td></tr>
+          <tr><td>Comp</td><td>Percent</td><td class="num">100%</td><td><span class="tag">ACTIVE</span></td>
+            <td><a href="presets.html?state=editor">Edit</a> &middot; <a href="presets.html?state=deactivate">Deactivate</a></td></tr>
+          <tr style="color:var(--ink4)"><td>Opening week</td><td>Percent</td><td class="num">15%</td>
+            <td><span class="tag">INACTIVE</span></td><td><a href="presets.html">Reactivate</a></td></tr>
+        </tbody>
+      </table>
+      <div class="muted" style="margin-top:10px">A preset applies only when a staff member
+      chooses it. Nothing here schedules, triggers, or applies itself.</div>
+    </div>
+  </div>
+
+  <div data-when="editor">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Preset</h2></div>
+      <div class="modal__body">
+        <div class="kv">
+          <span>Name shown to staff</span><div class="field field--sm">Staff meal</div>
+          <span>Kind</span><div class="rowflex gap8"><span class="bobtn bobtn--primary">Percent</span><span class="bobtn">Fixed amount</span></div>
+          <span>Value</span><div class="field field--sm" style="width:140px">10 %</div>
+        </div>
+        <div class="muted" style="margin-top:12px">Percentages run from 0 to 100. A fixed amount
+        is capped at the order subtotal &mdash; an order can never go below zero.</div>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="presets.html">Cancel</a>
+        <a class="bobtn bobtn--primary" href="presets.html">Save</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="deactivate">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Deactivate "Staff meal"?</h2></div>
+      <div class="modal__body">
+        <p>It disappears from the picker at the POS immediately.</p>
+        <p>Orders that already carry it keep it, by name and value, exactly as it was
+        applied. Past reports do not change.</p>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="presets.html">Cancel</a>
+        <a class="bobtn bobtn--primary" href="presets.html">Deactivate</a>
+      </div>
+    </div>
+  </div>
+
+</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Define the named discounts staff may apply without approval.</p></div>
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>A preset is the constrained common path: any signed-in staff member applies it
+      with no prompt. Presets are not approval-gated, here or at the POS. <span class="req">FR-F2, principle 3</span></li>
+    <li>Discounts are 0&ndash;100%; a fixed discount is capped at the subtotal; no order
+      reaches a negative total. <span class="req">FR-M5</span></li>
+    <li><b>No scheduling, no auto-apply, no date or time triggers.</b> A "valid from /
+      valid to" field crosses the promotions boundary. <span class="req">FR-F7, B-21</span></li>
+    <li>One discount per order &mdash; no stacking rules, no precedence editor. <span class="req">B-22</span></li>
+    <li>Applying snapshots name, kind and value onto the order; later edits here never
+      change past orders. <span class="req">FR-F4, F5, B-8, AC-17</span></li>
+  </ul></div>
+  <h2>Not visible in a still</h2>
+  <div class="ann"><p>Preset changes advance the catalog version, so a POS command built on
+  an old preset value is rejected rather than applied at the wrong figure. <span class="req">FR-C7</span></p></div>
+</aside>
+</main></body></html>

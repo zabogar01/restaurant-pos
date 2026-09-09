@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-06 Staff</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'BO-06',client:'bo',nav:'users',name:'Staff',reqs:'FR-A1, A3, A4, B3, J4',states:[
+['default','Staff list'],['empty','No staff'],['editor','Modal — create/edit'],
+['pin','Modal — set/reset PIN'],['pinclash','Modal — PIN not unique'],['deactivate','Modal — deactivate']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo"><div class="bo">
+  <nav class="bonav">
+    <div class="bonav__brand">Back office</div>
+    <div class="bonav__sec">Trading</div>
+    <a href="today.html" data-nav="today">Today</a>
+    <a href="end-of-day.html" data-nav="eod">End of day</a>
+    <div class="bonav__sec">History</div>
+    <a href="reports.html" data-nav="reports">Reports</a>
+    <a href="audit.html" data-nav="audit">Audit</a>
+    <div class="bonav__sec">Configuration</div>
+    <a href="menu.html" data-nav="menu">Menu</a>
+    <a href="tables.html" data-nav="tables">Tables</a>
+    <a href="users.html" data-nav="users">Staff</a>
+    <a href="presets.html" data-nav="presets">Discount presets</a>
+    <a href="settings.html" data-nav="settings">Settings</a>
+    <div class="bonav__sec">Hardware</div>
+    <a href="incidents.html" data-nav="incidents">Printing</a>
+    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
+      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
+      <a href="login.html" style="font-size:12px">Log out</a>
+    </div>
+  </nav>
+  <div class="bomain">
+    <div class="botop"><b>Staff</b><span class="muted">Who can use the POS, and as what</span></div>
+    <div class="bocontent">
+      <div class="bohead"><h1>Staff</h1><span class="muted">6 people</span>
+        <span style="margin-left:auto"></span>
+        <a class="bobtn bobtn--primary" href="users.html?state=editor">Add person</a></div>
+
+      <div class="empty" data-when="empty" style="padding:60px">
+        <div style="font-weight:700;margin-bottom:6px">No staff yet</div>
+        <div>Add at least one manager before anything else.</div>
+      </div>
+
+      <table class="dtable" data-unless="empty">
+        <thead><tr><th style="width:24%">Name</th><th>Staff no.</th><th>Role</th><th>PIN</th>
+          <th>Status</th><th style="width:220px"></th></tr></thead>
+        <tbody>
+          <tr><td>M. Iqbal</td><td class="mono">104</td><td>Manager</td><td class="muted">Set &mdash; never shown</td>
+            <td><span class="tag">ACTIVE</span></td>
+            <td><a href="users.html?state=editor">Edit</a> &middot; <a href="users.html?state=pin">Reset PIN</a> &middot; <a href="users.html?state=deactivate">Deactivate</a></td></tr>
+          <tr><td>Ana R.</td><td class="mono">211</td><td>Cashier</td><td class="muted">Set &mdash; never shown</td>
+            <td><span class="tag">ACTIVE</span></td>
+            <td><a href="users.html?state=editor">Edit</a> &middot; <a href="users.html?state=pin">Reset PIN</a> &middot; <a href="users.html?state=deactivate">Deactivate</a></td></tr>
+          <tr><td>D. Putra</td><td class="mono">212</td><td>Cashier</td><td class="muted">Set &mdash; never shown</td>
+            <td><span class="tag">ACTIVE</span></td>
+            <td><a href="users.html?state=editor">Edit</a> &middot; <a href="users.html?state=pin">Reset PIN</a> &middot; <a href="users.html?state=deactivate">Deactivate</a></td></tr>
+          <tr><td>S. Halim</td><td class="mono">305</td><td>Kitchen</td><td class="muted">No PIN &mdash; does not sign in</td>
+            <td><span class="tag">ACTIVE</span></td>
+            <td><a href="users.html?state=editor">Edit</a> &middot; <a href="users.html?state=deactivate">Deactivate</a></td></tr>
+          <tr><td>B. Wibowo</td><td class="mono">306</td><td>Kitchen</td><td class="muted">No PIN &mdash; does not sign in</td>
+            <td><span class="tag">ACTIVE</span></td>
+            <td><a href="users.html?state=editor">Edit</a> &middot; <a href="users.html?state=deactivate">Deactivate</a></td></tr>
+          <tr style="color:var(--ink4)"><td>R. Sari</td><td class="mono">210</td><td>Cashier</td><td class="muted">&mdash;</td>
+            <td><span class="tag">INACTIVE</span></td><td><a href="users.html">Reactivate</a></td></tr>
+        </tbody>
+      </table>
+      <div class="muted" style="margin-top:10px">Kitchen staff are listed so shifts and audit
+      trails make sense, but they have no PIN and issue no commands.</div>
+    </div>
+  </div>
+
+  <div data-when="editor">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Person</h2></div>
+      <div class="modal__body">
+        <div class="kv">
+          <span>Name</span><div class="field field--sm">Ana R.</div>
+          <span>Staff number</span><div class="field field--sm">211</div>
+          <span>Role</span>
+          <div class="rowflex gap8">
+            <span class="bobtn bobtn--primary">Cashier</span>
+            <span class="bobtn">Manager</span>
+            <span class="bobtn">Kitchen &mdash; no sign-in</span>
+          </div>
+        </div>
+        <div class="muted" style="margin-top:12px">Three classifications, two of which sign in.
+        There is no waiter role in this release.</div>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="users.html">Cancel</a>
+        <a class="bobtn bobtn--primary" href="users.html">Save</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="pin pinclash">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Set a new PIN for Ana R.</h2></div>
+      <div class="modal__body">
+        <div class="banner" data-when="pinclash" style="margin-bottom:16px">
+          <div class="banner__t">That PIN is already in use</div>
+          <div>PINs must be unique so every recorded action names one person without
+          ambiguity. Choose a different six digits.</div>
+        </div>
+        <span class="label">New PIN &mdash; six digits</span>
+        <div class="field field--sm" style="width:200px">&bull; &bull; &bull; &bull; &bull; &bull;</div>
+        <div class="banner banner--soft" style="margin-top:16px">
+          <div class="banner__t">This ends their POS session</div>
+          <div>If Ana is signed in at the POS right now, her next action there will be
+          refused and she will have to sign in again with the new PIN.</div>
+        </div>
+        <div class="muted" style="margin-top:12px">A PIN can be set and reset. It can never be
+        read back &mdash; not here, not in the audit log, not in a support export.</div>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="users.html">Cancel</a>
+        <a class="bobtn bobtn--primary" href="users.html?state=pinclash">Set PIN</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="deactivate">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>Deactivate Ana R.?</h2></div>
+      <div class="modal__body">
+        <p>Her PIN stops working. If she is signed in at the POS, her next action there
+        is refused and she is returned to the sign-in screen.</p>
+        <p class="muted">Her past orders, approvals and audit entries are untouched.</p>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="users.html">Cancel</a>
+        <a class="bobtn bobtn--primary" href="users.html">Deactivate</a>
+      </div>
+    </div>
+  </div>
+
+</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Manage staff: create, assign role, set and reset PIN, deactivate.</p></div>
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>Two authenticating roles only: cashier and manager. <b>Kitchen is a
+      non-authenticating classification</b> with no PIN and no permissions. Waiter is
+      deferred &mdash; there is no waiter option. <span class="req">FR-A1</span></li>
+    <li>PINs are six digits and unique across users, so an audited actor is
+      unambiguous. <span class="req">FR-A1, A4, B-13</span></li>
+    <li>A PIN is never displayed, echoed or recoverable. Set and reset only &mdash; no view,
+      no masked reveal. <span class="req">FR-A3, J4, B-11, B-12</span></li>
+    <li>Deactivating a user or resetting a PIN has an immediate floor consequence and
+      the manager is told so at the moment of the action. <span class="req">FR-B3, AC-32</span></li>
+  </ul></div>
+  <h2>Not visible in a still</h2>
+  <div class="ann"><p>Invalidation happens on the user's <b>next authenticated request</b> at
+  the POS, not instantly. <span class="req">FR-B3</span></p></div>
+</aside>
+</main></body></html>

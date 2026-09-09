@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Restaurant POS — wireframe prototype</title>
+<link rel="stylesheet" href="wireframe.css">
+</head><body>
+<div class="launch">
+  <h1>Restaurant POS &mdash; wireframe prototype</h1>
+  <p class="lead">Two clients, one server. Wireframe fidelity only: greyscale, system type,
+  no brand, no colour, no imagery, no motion. Structure, hierarchy, density, affordance
+  and flow. Visual direction is assigned downstream and anything invented here would be
+  discarded.</p>
+  <p class="lead">All data is fake and hard-coded. Nothing calculates. Money figures follow
+  the PRD worked example &mdash; subtotal 16.50, discount 1.65, tax included 1.35, service 0.74,
+  total 15.59 &mdash; so the numbers are at least coherent with each other.</p>
+
+  <div class="note">
+    <b>How to read this.</b> Every screen is a real route. Every state below is a real,
+    reachable variant of that route, reached with <code>?state=</code>. Modals and sheets are
+    overlays on their parent screen and never change the route &mdash; that distinction is
+    load-bearing: manager approval is an overlay over whatever triggered it, never a page.
+    Each screen carries an annotation rail on the right naming the requirements it
+    satisfies and the behaviour a still picture cannot show.
+    <div style="margin-top:8px"><span class="slink" style="pointer-events:none">Regular state</span>
+    <span class="slink slink--implied" style="pointer-events:none;margin-left:6px">Dashed = screen or behaviour ruled in from the "implied but unspecified" list</span></div>
+  </div>
+
+  <h2>Walk the order lifecycle</h2>
+  <p class="lead">The path a reviewer should click to judge whether the workflow is right.</p>
+  <div class="scr">
+    <div class="scr__s" style="gap:8px">
+      <a class="slink" href="pos/lock.html">1. Cashier signs in</a>
+      <a class="slink" href="pos/floor.html">2. Opens Table 1</a>
+      <a class="slink" href="pos/order.html?state=empty">3. Empty order</a>
+      <a class="slink" href="pos/order.html?state=sheet-item">4. Configures an item</a>
+      <a class="slink" href="pos/order.html?state=default">5. Two rounds fired, discount on</a>
+      <a class="slink" href="pos/order.html?state=sheet-voidline">6. Voids fired work</a>
+      <a class="slink" href="pos/order.html?state=approval">7. Manager PIN</a>
+      <a class="slink" href="pos/settlement.html?state=partial">8. Split payment</a>
+      <a class="slink" href="pos/settlement.html?state=exact">9. Exact settlement</a>
+      <a class="slink" href="pos/closed-order.html">10. Closed order</a>
+      <a class="slink" href="pos/closed-order.html?state=sheet-refund">11. Refund</a>
+      <a class="slink" href="back-office/end-of-day.html?state=refused">12. End of day refused</a>
+      <a class="slink" href="back-office/end-of-day.html?state=closed">13. Day closed</a>
+      <a class="slink" href="back-office/report-detail.html">14. Stored report</a>
+      <a class="slink" href="back-office/audit.html">15. Audit</a>
+    </div>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<script>
+var DATA = [
+ {t:'POS client — /pos/',
+  sub:'Tablet landscape, 1280 &times; 800. Touch. Standing cashier, at speed, one-handed. 90-second idle expiry. Visitor mode: Operate.',
+  screens:[
+  {id:'POS-01', f:'pos/lock.html', n:'Lock / PIN entry', r:'FR-A2, A5, A7, B3, G9',
+   p:'Identify the staff member on a shared, unattended device. The POS’s resting state, not an exception.',
+   s:[['default','Resting'],['loading','Verifying'],['error','Wrong PIN'],['throttled','LOGIN cooldown'],
+      ['invalidated','Session invalidated'],['draft','Tender draft waiting'],['incident','Printer emergency — presence only']]},
+  {id:'POS-02', f:'pos/floor.html', n:'Floor — tables and quick sale', r:'FR-D1, D2, C8, I1',
+   p:'Pick the thing to work on: an open table order, a new table order, or a quick sale.',
+   s:[['default','Mixed occupancy'],['clear','All tables free'],['empty','No tables configured'],
+      ['loading','Loading'],['error','Error'],['overflow','Overflow — 24 tables'],
+      ['confirm','Modal — open table order'],['dayclosed','Business day closed',1]]},
+  {id:'POS-03', f:'pos/order.html', n:'Order workspace', r:'FR-D3–D6, C1–C7, E1–E5, F1–F8, H2–H4, G10, G12',
+   p:'Build and correct an order, fire it in rounds, discount it, void it. Two variants: table and quick sale.',
+   s:[['default','Table — 2 rounds fired'],['empty','Table — no lines'],['quick','Quick sale — no fire control'],
+      ['overflow','Overflow — long order'],['zero','Zero total (100% comp)'],
+      ['eightysix','Item 86’d — disabled in place'],['fireblocked','Fire blocked — 86’d pending line'],
+      ['catalog','CATALOG_CHANGED'],['lock-draft','Locked — your own payment'],['lock-lease','Locked — another client'],
+      ['fireerror','Kitchen print FAILED'],['loading','Loading'],['error','Command rejected'],
+      ['sheet-item','Sheet — item configuration'],['sheet-item86','Sheet — 86’d mid-selection'],
+      ['sheet-line','Sheet — line editor'],['sheet-discount','Sheet — preset picker'],
+      ['sheet-freeform','Sheet — free-form discount'],['sheet-remove','Sheet — remove/replace discount'],
+      ['sheet-voidline','Sheet — void fired line'],['sheet-voidorder','Sheet — void order (unfired)'],
+      ['sheet-voidorder-fired','Sheet — void order (holds fired)'],
+      ['approval','Modal — manager approval'],['approval-error','Modal — wrong PIN'],
+      ['approval-throttled','Modal — approval cooldown'],['approval-denied','Modal — cashier PIN refused']]},
+  {id:'POS-04', f:'pos/settlement.html', n:'Settlement', r:'FR-G1–G14, M5, E5, A2',
+   p:'Collect money and close the order exactly. Entering acquires the checkout lease.',
+   s:[['empty','No payment drafted'],['partial','Split — balance remaining'],['exact','Exact — close enabled'],
+      ['change','Cash over — change due'],['cardover','Card over balance — rejected'],
+      ['ceiling','Change ceiling exceeded'],['zero','Zero total'],['pending','Blocked — unsent lines'],
+      ['overflow','Overflow — many splits'],['reauth','Modal — re-authenticate to close'],
+      ['cancel','Modal — cancel payment',1],['leaselost','Modal — displaced by takeover'],
+      ['takeover','Modal — manager takeover'],['loading','Closing'],['error','Close rejected']]},
+  {id:'POS-05', f:'pos/closed-orders.html', n:'Closed orders', r:'FR-G7, H5, H6, H7', implied:1,
+   p:'Find a closed order to reprint its receipt or refund it. Search by table, time and amount — not receipt number.',
+   s:[['default','List'],['empty','No closed orders'],['loading','Loading'],['error','Error'],['overflow','Overflow — full day']]},
+  {id:'POS-06', f:'pos/closed-order.html', n:'Closed order detail', r:'FR-G7, G8, H1, H5, H6, H7, A6', implied:1,
+   p:'Read what was charged, reprint the receipt, and — separately — refund the order.',
+   s:[['default','Closed — refund available'],['zero','Zero total — refund action absent',1],
+      ['refunded','Already refunded'],['dayclosed','Business day closed',1],
+      ['sheet-refund','Sheet — refund allocation'],['approval','Modal — manager approval'],
+      ['reprint','Receipt reprint FAILED'],['loading','Loading'],['error','Error']]},
+  {id:'POS-07', f:'pos/incidents.html', n:'Print incidents', r:'FR-E3, E6, H4, G8, B-15',
+   p:'Show unresolved print failures and offer a reprint, without ever blocking the floor.',
+   s:[['default','Kitchen emergency + receipt warning'],['cancel','Cancellation ticket UNKNOWN'],
+      ['empty','Nothing outstanding'],['reprint','Reprint result'],['overflow','Overflow'],
+      ['loading','Loading'],['error','Error']]}
+ ]},
+ {t:'Back-office client — /back-office/',
+  sub:'Web, desktop, 1440 wide. Seated manager, dense tables. 30-minute idle, 8-hour absolute. Visitor mode: Operate, with Read characteristics in reporting and audit.',
+  screens:[
+  {id:'BO-01', f:'back-office/login.html', n:'Login', r:'FR-A2b, A2c, A5, A7',
+   p:'Establish a conventional desk session for a manager. Manager only.',
+   s:[['default','Resting'],['loading','Signing in'],['error','Wrong credentials'],
+      ['denied','Cashier PIN refused'],['throttled','LOGIN cooldown']]},
+  {id:'BO-02', f:'back-office/today.html', n:'Today', r:'FR-I1, I2, E3, E6', implied:1,
+   p:'Landing after sign-in: the open business day, what is outstanding, and the route to end of day.',
+   s:[['default','Day open, orders outstanding'],['incident','Kitchen print emergency'],
+      ['ready','Nothing outstanding'],['empty','No trading yet'],['reauth','Modal — idle re-authentication']]},
+  {id:'BO-03', f:'back-office/menu.html', n:'Menu — items and categories', r:'FR-B4, B6, C1, C5, C7, C8, G13',
+   p:'See and manage the whole menu; toggle 86 status fast. The only 86 control in the product.',
+   s:[['default','Items list'],['eightysix','Item toggled to 86'],['leaserejected','86 rejected — order being paid'],
+      ['empty','No items yet'],['category','Modal — category'],['loading','Loading'],['error','Error'],['overflow','Overflow — long menu']]},
+  {id:'BO-04', f:'back-office/item-editor.html', n:'Item editor', r:'FR-B4, C1–C4, C8, B1, M1',
+   p:'Define one item: category, tax-inclusive base price, single-select variants, multi-select modifiers.',
+   s:[['default','Editing an item'],['new','New item — empty'],['error','Validation error'],
+      ['unsaved','Unsaved changes'],['archive','Modal — archive item'],['overflow','Overflow — many options']]},
+  {id:'BO-05', f:'back-office/tables.html', n:'Tables', r:'FR-B2, C8, AC-32',
+   p:'Define the floor: create, edit, deactivate tables.',
+   s:[['default','Table list'],['rejected','Deactivation rejected — order open'],['empty','No tables'],['editor','Modal — create/edit']]},
+  {id:'BO-06', f:'back-office/users.html', n:'Staff', r:'FR-A1, A3, A4, B3, J4',
+   p:'Manage staff: create, assign role, set and reset PIN, deactivate. Kitchen is listed but never signs in.',
+   s:[['default','Staff list'],['empty','No staff'],['editor','Modal — create/edit'],
+      ['pin','Modal — set/reset PIN'],['pinclash','Modal — PIN not unique'],['deactivate','Modal — deactivate']]},
+  {id:'BO-07', f:'back-office/presets.html', n:'Discount presets', r:'FR-B5, F2, F4, F5, M5',
+   p:'Define the named discounts staff may apply without approval — the constrained common path.',
+   s:[['default','Preset list'],['empty','No presets'],['editor','Modal — create/edit'],['deactivate','Modal — deactivate']]},
+  {id:'BO-08', f:'back-office/settings.html', n:'Settings', r:'FR-B1, M1, M5, G1',
+   p:'Currency, precision, tax and service-charge rates, payment methods, receipt business details.',
+   s:[['default','Locked — orders exist'],['firstrun','First run — nothing locked'],
+      ['ratechange','Modal — rate change'],['tender','Modal — payment method',1],['error','Validation error']]},
+  {id:'BO-09', f:'back-office/end-of-day.html', n:'End of day', r:'FR-I1, I2, I3, I4, H7',
+   p:'Close the business day and produce the immutable report.',
+   s:[['default','Ready to close'],['refused','Refused — orders still open'],['confirm','Modal — confirm close'],
+      ['loading','Closing'],['closed','Closed — report stored'],['already','Already closed']]},
+  {id:'BO-10', f:'back-office/reports.html', n:'Reports — business day list', r:'FR-I3, I4, I5',
+   p:'Find a stored day report. Snapshots, never live queries.',
+   s:[['default','Stored days'],['empty','No day closed yet']]},
+  {id:'BO-11', f:'back-office/report-detail.html', n:'Report detail', r:'FR-I4, I5',
+   p:'Read one immutable end-of-day snapshot; print it. Gross / reversal / net is the spine.',
+   s:[['default','Stored report'],['emptyday','Day with no trading'],['reprint','Reprint result']]},
+  {id:'BO-12', f:'back-office/audit.html', n:'Audit viewer', r:'FR-J1, J2, J3, J4',
+   p:'Answer "why is the till short?" the next morning. Append only; no row actions exist.',
+   s:[['default','Entries'],['entry','Modal — entry detail'],['nomatch','No entries match the filter'],
+      ['empty','No entries yet'],['overflow','Overflow — paged'],['loading','Loading'],['error','Error']]},
+  {id:'BO-13', f:'back-office/incidents.html', n:'Print incidents', r:'FR-E3, E6, H4, G8, B-15',
+   p:'Make sure a manager at a desk cannot miss a failed kitchen ticket. Same incidents as POS-07.',
+   s:[['default','Kitchen emergency + receipt warning'],['cancel','Cancellation ticket UNKNOWN'],
+      ['empty','Nothing outstanding'],['reprint','Reprint result'],['loading','Loading'],['error','Error']]}
+ ]}
+];
+
+var html = '';
+DATA.forEach(function (grp) {
+  html += '<h2>' + grp.t + '</h2><p class="lead">' + grp.sub + '</p>';
+  grp.screens.forEach(function (s) {
+    html += '<div class="scr"><div class="scr__h">' +
+      '<span class="scr__id">' + s.id + '</span>' +
+      '<span class="scr__n">' + s.n + '</span>' +
+      (s.implied ? '<span class="tag">RULED IN FROM IMPLIED</span>' : '') +
+      '<span class="scr__r">' + s.r + '</span></div>' +
+      '<div class="scr__p">' + s.p + '</div><div class="scr__s">';
+    s.s.forEach(function (st) {
+      html += '<a class="slink' + (st[2] ? ' slink--implied' : '') + '" href="' + s.f +
+        '?state=' + st[0] + '">' + st[1] + '</a>';
+    });
+    html += '</div></div>';
+  });
+});
+
+html += '<h2>Deliberately absent</h2><div class="scr"><div class="scr__p">' +
+  '<b>No kitchen screen.</b> Kitchen is a non-authenticating classification with no PIN and no application commands (FR-A1). Paper only.<br>' +
+  '<b>No security-telemetry viewer (was BO-14).</b> Out of scope for the MVP by ruling I-3. The store is written to; nothing reads it this release.<br>' +
+  '<b>No approval-granting surface in the back office.</b> A back-office session never satisfies a POS approval (FR-A2c, AC-27).<br>' +
+  '<b>No order entry, tender, fire, void or refund in the back office.</b> It observes orders; it never operates them (FR-G12).<br>' +
+  '<b>No shared void/refund control.</b> POS-03 owns void, POS-06 owns refund; never the same screen (FR-H1, B-19).<br>' +
+  '<b>No tips, anywhere.</b> Definitively excluded (PRD §8).' +
+  '</div></div>';
+
+document.getElementById('out').innerHTML = html;
+</script>
+</body></html>

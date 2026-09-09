@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-10 Reports</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'BO-10',client:'bo',nav:'reports',name:'Reports — business day list',reqs:'FR-I3, I4, I5',states:[
+['default','Stored days'],['empty','No day closed yet']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo"><div class="bo">
+  <nav class="bonav">
+    <div class="bonav__brand">Back office</div>
+    <div class="bonav__sec">Trading</div>
+    <a href="today.html" data-nav="today">Today</a>
+    <a href="end-of-day.html" data-nav="eod">End of day</a>
+    <div class="bonav__sec">History</div>
+    <a href="reports.html" data-nav="reports">Reports</a>
+    <a href="audit.html" data-nav="audit">Audit</a>
+    <div class="bonav__sec">Configuration</div>
+    <a href="menu.html" data-nav="menu">Menu</a>
+    <a href="tables.html" data-nav="tables">Tables</a>
+    <a href="users.html" data-nav="users">Staff</a>
+    <a href="presets.html" data-nav="presets">Discount presets</a>
+    <a href="settings.html" data-nav="settings">Settings</a>
+    <div class="bonav__sec">Hardware</div>
+    <a href="incidents.html" data-nav="incidents">Printing</a>
+    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
+      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
+      <a href="login.html" style="font-size:12px">Log out</a>
+    </div>
+  </nav>
+  <div class="bomain">
+    <div class="botop"><b>Reports</b><span class="muted">One stored report per closed business day</span></div>
+    <div class="bocontent">
+      <div class="bohead"><h1>Business days</h1><span class="muted">Read only</span></div>
+
+      <div class="empty" data-when="empty" style="padding:60px">
+        <div style="font-weight:700;margin-bottom:6px">No day has been closed yet</div>
+        <div>A report appears here the first time you close a business day.</div>
+        <div style="margin-top:16px"><a class="bobtn" href="end-of-day.html">Go to end of day</a></div>
+      </div>
+
+      <table class="dtable" data-when="default">
+        <thead><tr><th style="width:16%">Business day</th><th>Closed at</th><th>Closed by</th>
+          <th class="num">Orders</th><th class="num">Gross</th><th class="num">Refunds</th>
+          <th class="num">Net</th><th style="width:90px"></th></tr></thead>
+        <tbody>
+          <tr><td>9 Sep 2026</td><td>23:14</td><td>M. Iqbal</td><td class="num">9</td>
+            <td class="num">248.35</td><td class="num">15.59</td><td class="num">232.76</td>
+            <td><a href="report-detail.html">Open</a></td></tr>
+          <tr><td>8 Sep 2026</td><td>23:02</td><td>M. Iqbal</td><td class="num">14</td>
+            <td class="num">411.90</td><td class="num">0.00</td><td class="num">411.90</td>
+            <td><a href="report-detail.html">Open</a></td></tr>
+          <tr><td>7 Sep 2026</td><td>22:51</td><td>M. Iqbal</td><td class="num">6</td>
+            <td class="num">0.00</td><td class="num">0.00</td><td class="num">0.00</td>
+            <td><a href="report-detail.html?state=emptyday">Open</a></td></tr>
+          <tr><td>6 Sep 2026</td><td>23:20</td><td>M. Iqbal</td><td class="num">18</td>
+            <td class="num">602.15</td><td class="num">27.00</td><td class="num">575.15</td>
+            <td><a href="report-detail.html">Open</a></td></tr>
+        </tbody>
+      </table>
+      <div class="muted" style="margin-top:10px">These are stored snapshots, not live figures.
+      Opening one shows exactly what was stored when the day closed.</div>
+    </div>
+  </div>
+</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Find a stored day report.</p></div>
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>Reports are stored snapshots, not live queries. No date-range picker that
+      recomputes across days, no ad-hoc reporting. <span class="req">FR-I3, B-9</span></li>
+    <li>A day with no trading still produces a report. <span class="req">FR-I3</span></li>
+    <li>No item-level, hourly, or labour breakdown. Out of MVP scope.</li>
+  </ul></div>
+  <h2>Not visible in a still</h2>
+  <div class="ann"><p>The list only grows &mdash; one row per trading day &mdash; so it needs paging
+  long before it needs filtering.</p></div>
+</aside>
+</main></body></html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-01 Login</title>
+<link rel="stylesheet" href="../wireframe.css">
+<script>window.WF={id:'BO-01',client:'bo',name:'Login',reqs:'FR-A2b, A2c, A5, A7',states:[
+['default','Resting'],['loading','Signing in'],['error','Wrong credentials'],
+['denied','Cashier PIN refused'],['throttled','LOGIN cooldown']]};</script>
+<script defer src="../wireframe.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo">
+<div style="min-height:896px;display:flex;align-items:center;justify-content:center">
+  <div style="width:420px">
+    <div style="font-weight:700;font-size:18px;margin-bottom:4px">Back office</div>
+    <div class="muted" style="margin-bottom:20px">Manager sign-in. Desk session: 30 minutes
+    idle, 8 hours maximum.</div>
+
+    <div class="banner" data-when="error" style="margin-bottom:16px">
+      <div class="banner__t">Sign-in failed</div>
+      <div>Check the staff number and PIN. 3 attempts remaining.</div>
+    </div>
+    <div class="banner" data-when="denied" style="margin-bottom:16px">
+      <div class="banner__t">That account cannot use the back office</div>
+      <div>The back office is for managers. A cashier PIN will not work here, and a
+      back-office session cannot approve anything at the POS.</div>
+    </div>
+    <div class="banner" data-when="throttled" style="margin-bottom:16px">
+      <div class="banner__t">Sign-in locked for 4 min 41 s</div>
+      <div>Five failed attempts. The cooldown is held by the server for the whole
+      installation and covers the POS sign-in too.</div>
+    </div>
+    <div data-when="loading" style="margin-bottom:16px">
+      <div class="loadinglabel">SIGNING IN</div><div class="skel skel--w60"></div>
+    </div>
+
+    <span class="label">Staff number</span>
+    <div class="field field--sm" style="margin-bottom:14px">104</div>
+    <span class="label">PIN</span>
+    <div class="field field--sm" style="margin-bottom:20px">&bull; &bull; &bull; &bull; &bull; &bull;</div>
+    <a class="bobtn bobtn--primary" href="today.html" style="width:100%" data-unless="throttled">Sign in</a>
+    <span class="bobtn bobtn--off" style="width:100%" data-when="throttled">Sign in</span>
+  </div>
+</div>
+</div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+<aside class="rail">
+  <h2>Purpose</h2>
+  <div class="ann"><p>Establish a conventional desk session for a manager.</p></div>
+  <h2>Fixed by the PRD</h2>
+  <div class="ann ann--fixed"><ul>
+    <li>Manager only. There is no cashier back-office view. <span class="req">FR-B preamble</span></li>
+    <li>A back-office session is never accepted on a POS route and never satisfies a
+      POS approval. <span class="req">FR-A2c, AC-27</span></li>
+    <li>30-minute idle, 8-hour absolute, explicit logout. <span class="req">FR-A2b, AC-28</span></li>
+    <li>Idle expiry preserves unsaved form state behind re-authentication &mdash; that is a
+      modal over the work, never a bounce to this screen. <span class="req">FR-A2b</span></li>
+    <li>No PIN value is echoed, logged or revealed. <span class="req">FR-J4, B-12</span></li>
+  </ul></div>
+  <h2>Not visible in a still</h2>
+  <div class="ann"><p>The LOGIN throttle class is shared installation-wide with the POS
+  and survives restart. A successful sign-in here does not clear the
+  MANAGER_APPROVAL cooldown. <span class="req">FR-A5, AC-19</span></p></div>
+</aside>
+</main></body></html>
