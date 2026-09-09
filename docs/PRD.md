@@ -112,6 +112,10 @@ All of section B lives in the back-office client. None of it ships to the POS.
   that user's POS session on its next authenticated request.
 - **FR-B4** Manage menu: categories, items, variants, modifiers, prices.
 - **FR-B5** Manage discount presets: create, edit, deactivate.
+- **FR-B7** Manage tender types: create, rename, and deactivate custom named
+  methods alongside cash and card. B-24 makes this configuration, so a
+  cashier never types a tender name as free text on the fastest screen in the
+  product.
 - **FR-B6** Toggle an item's 86 status.
 
 ### C. Menu
@@ -166,10 +170,17 @@ All of section B lives in the back-office client. None of it ships to the POS.
   so a manager working in the back office cannot miss a failed kitchen ticket.
   The incident is application-wide, not actor-session-specific. Printing never
   blocks or rolls back the sale.
+- **FR-E3b** The *presence* of an unresolved kitchen incident is visible on an
+  unauthenticated POS lock screen; its *detail* requires a PIN. An incident
+  cannot be missed simply because nobody is signed in, and order information
+  is never shown to a room.
 - **FR-E4** Firing is blocked while any `PENDING` line holds an item that is
   86'd, until that line is voided or the item is restored.
 - **FR-E5** For a quick-sale order, firing and receipt printing both occur at
-  close.
+  close. A quick-sale order presents **no fire control at all** — settling
+  fires it. One visible control meaning "send to kitchen" on a table order and
+  nothing on a quick sale teaches the cashier the control is unreliable, and
+  that lesson carries to the table order where it matters.
 - **FR-E6** `FAILED` or `UNKNOWN` receipt output is shown as a lower-priority
   warning and is never presented with the same urgency as failed kitchen work
   or cancellation output.
@@ -223,7 +234,10 @@ All of section B lives in the back-office client. None of it ships to the POS.
   snapshot, version, availability, and checkout-lease preconditions. While a
   tender draft is active, its POS tab disables add-line, discount change,
   fire, void, and competing settlement. That tab guard is UX only and is not a
-  substitute for FR-G13.
+  substitute for FR-G13. The two block the same five actions for different
+  reasons and must never show the same message: the tab guard is the
+  cashier's own doing and they can clear it, while a lease is another
+  client's doing and they cannot.
 - **FR-G13** Beginning settlement acquires a server-side `CheckoutLease` on
   the order. While active it blocks add-line, discount change, fire, void, and
   competing settlement, including from the back office. Reads are never
@@ -237,7 +251,9 @@ All of section B lives in the back-office client. None of it ships to the POS.
   more than 15 minutes without renewed actor authentication. A manager may
   take it over at any time after acknowledging that an external charge may
   already be in progress; takeover is audited and the displaced client's close
-  is rejected.
+  is rejected. The holder may also release its own lease explicitly — a
+  cashier must not wait five minutes because a customer changed their mind.
+  Releasing a lease you hold moves no money and needs no approval.
 
 ### H. Void and refund
 
@@ -260,6 +276,11 @@ All of section B lives in the back-office client. None of it ships to the POS.
   amount tendered minus change given. Allocations must sum exactly to the
   order total. Partial refunds are out of scope. Requires a manager PIN and a
   reason, and is audited.
+- **FR-H5b** A zero-total order is **not refundable**. It took no money, so
+  there is nothing to return, and a zero-value allocation would be a fake
+  money record. The refund action is absent rather than disabled on such an
+  order — a disabled control invites a manager to hunt for an override that
+  does not exist.
 - **FR-H6** An order may be refunded once. `REFUNDED` is terminal.
 - **FR-H7** Voids and refunds against a closed business day are blocked.
 
@@ -460,7 +481,7 @@ the browser is the wrong place to prove it.
 | AC-9 | A free-form discount is refused when the manager prompt is cancelled and succeeds with a valid PIN; its record carries actor and approver, a preset's carries only the actor | FR-F3, F6 |
 | AC-10 | Voiding an order with nothing fired succeeds with no prompt and writes exactly one audit entry; voiding an order holding a fired line raises the manager prompt | FR-H3, H4 |
 | AC-11 | A fired-line void and a refund each fail without a manager PIN and succeed with one, each producing one combined audit entry naming actor, approver, reason, and order | FR-H4, H5, J2 |
-| AC-12 | A manager toggles an item to 86 **in the back office**; the separately running POS client removes or disables it for new order entry within three seconds without restart. An already-open selection dialog preserves the user's choices, marks the item unavailable, disables Add, and explains the change. Adding and firing independently reject unavailable items *(two concurrent browser contexts)* | FR-C5, C6, E4 |
+| AC-12 | A manager toggles an item to 86 **in the back office**; the separately running POS client **disables it in place** for new order entry within three seconds without restart — greyed, marked, and unselectable, never removed, so the grid does not reflow under a finger already moving. An already-open selection dialog preserves the user's choices, marks the item unavailable, disables Add, and explains the change. Adding and firing independently reject unavailable items *(two concurrent browser contexts)* | FR-C5, C6, E4 |
 | AC-13 | A closed order's receipt reprints on demand with identical figures | FR-G7 |
 | AC-14 | A refund moves a closed order to `REFUNDED`; a second refund attempt is rejected | FR-H5, H6 |
 | AC-15 | End-of-day close is refused while an order is open, and succeeds once that order is closed or voided | FR-I2 |
