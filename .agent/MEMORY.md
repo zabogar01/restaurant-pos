@@ -332,7 +332,7 @@ Roster verified against `herdr agent list` on 2026-09-14.
 | `designer` | claude, **Fable 5.1** | `w2:p3` | live, idle. Works **in the design worktree** at `../restaurant-pos-design` | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
 | `design-reviewer` | codex | `w2:p9` | live, working | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
 | `builder1` | claude | `w2:pB` | live, idle | First implementer. **Delivered [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md)** and a handoff worth reading — it found three defects in the plan itself |
-| `builder2` | claude | `w2:pC` | live, working | Holds [PHASE0-002](tasks/PHASE0-002-money-module.md) — the money module, where `B-1` is enforced or quietly lost. Finishing, then backend pauses |
+| `builder2` | claude | `w2:pC` | live, idle | **Delivered [PHASE0-002](tasks/PHASE0-002-money-module.md)**, 81 tests. Backend is paused behind it |
 | `builder3` | claude | `w2:pD` | live, working | First frontend implementer. Holds [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens, lock screen |
 | `designer2` | codex, gpt-6-astra | `w2:pA` | live, idle, **out of quota** | Started 2026-09-14 and equipped with the Impeccable skill. Delivered the token set, then stopped before `docs/DESIGN.md`. DESIGN-003 was reassigned off it the same day; kept alive because its scrollback is the only record of how the tokens were extracted |
 
@@ -357,6 +357,60 @@ the proposal document itself, and the architect's account of it exists only in
 its pane scrollback — which is why the material parts of it are copied into
 this file. The same is true of the visual direction build: `REVIEW.md` and the
 brief are its only durable record, and neither is a task file.
+
+---
+
+## Phase 0 Task 2 landed, and what came out of it
+
+`packages/money` is on disk and lead-verified: **81 tests across 5 files, all
+passing**, typecheck clean over both `apps/server` and `packages/money`. The
+lead ran `npm run verify` rather than reading the claim.
+
+**Two defects in the plan, found by building it.** Both now corrected in the
+plan with a dated note saying what they were:
+- The PRD worked example summed to **2000, not 1650**, so the plan's own
+  assertion would have failed. The modifiers are part of the burger's price,
+  not additions to it.
+- `rateFromPercent(percent: number)` — a float path guarded by more float, and
+  the one signature in the module `B-1` most obviously forbids. A rate is not
+  money, but a float rate multiplied into money produces float money by a
+  shorter route. It is `percent: string`, parsed exactly.
+
+**A mistake of the lead's, caught by the implementer.** `git add -A` while
+`builder2` was mid-task swept its working tree into a docs commit (`261129d`).
+`builder2` checked and the files were byte-identical to what it had verified,
+so nothing broke — but it was mid *mutation run*, and a deliberately broken
+file could have been committed as real work. **Path-scoped `git add` from now
+on while any implementer is live.**
+
+### Rulings owed on what Task 2 raised
+
+- **`Money` and `Rate` are the same type**, so `mulRate(rate, amount)` compiles
+  with its arguments swapped. **Lead's ruling: brand `Rate`, leave `Money` as
+  `bigint`.** A `Rate` is only ever produced by `rateFromPercent`, so branding
+  it costs nothing at the call sites, while branding `Money` would force a
+  constructor around every literal. It prevents the swap, which is the actual
+  bug. **Not applied yet** — backend is paused, and this is a twenty-line change
+  that is cheap now and expensive after ten tasks import the type. It runs when
+  the backend resumes, before Task 3.
+- **`FR-M3` and `B-2` say "half-up" and never say what that means below zero.**
+  The code rounds **half away from zero**, so −74.5 → −75, which keeps a refund
+  the exact negation of its sale; floor-style half-up would give −74 and a
+  refund one rupiah short. This is **contract wording and therefore the
+  owner's**. `builder2` proposed: *"Computed fractions round half away from zero
+  (0.5 → 1, −0.5 → −1) at the point of becoming a stored or displayed value."*
+  Nothing was edited.
+
+### A trap the frontend must not walk into
+
+`formatMoney` renders `15590`, not `Rp 15.590` — grouping and the symbol are
+the frontend's. `builder2` checked on this machine that
+`Intl.NumberFormat('id-ID', …)` formats a **bigint exactly**, while wrapping it
+in `Number(...)` first silently loses precision
+(`9.007.199.254.740.993` becomes `…992`). **Any display helper passes the
+bigint straight in and never calls `Number()` on money.** That is a `B-1`
+violation waiting for a UI agent, and it goes into every frontend task file
+from F2 onward — F1 has no money on it.
 
 ---
 
