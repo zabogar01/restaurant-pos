@@ -31,8 +31,19 @@ and the Frost design system. A fresh clone has all of it. Nothing is merged to
 
 ## Current phase
 
-**Pre-implementation.** No application code exists in this repository. There
-is no `package.json`, no source tree, and no test suite.
+**Phase 0, started 2026-09-14.** The implementation gate opened the same day
+with every condition met and in git history. `builder1` holds
+[PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md), Task 1 of
+twelve: the monorepo scaffold, PostgreSQL 16, and the migration runner.
+
+Until that lands there is still no `package.json`, no source tree, and no test
+suite — so a claim that something "runs" is worth checking against the branch
+rather than believing.
+
+**Branch: `agent/phase-0-foundations`**, cut 2026-09-14 from
+`agent/design-direction` at `92359a2`. Implementation work goes there.
+`agent/design-direction` holds everything up to and including the design
+system; neither is merged, and only the owner merges.
 
 Work completed so far is product definition, a reconciled and owner-approved
 architecture proposal, UX structure, a remediated behavioral wireframe, two
@@ -314,7 +325,8 @@ Roster verified against `herdr agent list` on 2026-09-14.
 | `lead` | claude | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-14 and named it |
 | `architect` | codex | `w2:p2` | live, idle | Delivered the reconciliation 2026-09-10 after 36 minutes. Owns architecture questions |
 | `designer` | claude, **Fable 5.1** | `w2:p3` | live, working | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
-| `design-reviewer` | codex | `w2:p9` | live, idle | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
+| `design-reviewer` | codex | `w2:p9` | live, working | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
+| `builder1` | claude | `w2:pB` | live, working | Started 2026-09-14. First implementer. Holds [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md) — scaffold, PostgreSQL, migration runner |
 | `designer2` | codex, gpt-6-astra | `w2:pA` | live, idle, **out of quota** | Started 2026-09-14 and equipped with the Impeccable skill. Delivered the token set, then stopped before `docs/DESIGN.md`. DESIGN-003 was reassigned off it the same day; kept alive because its scrollback is the only record of how the tokens were extracted |
 
 **Both codex agents share one account quota and both exhausted it at 15:11 on

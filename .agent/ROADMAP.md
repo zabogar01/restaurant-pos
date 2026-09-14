@@ -28,7 +28,7 @@ decisions, neither of which holds up Phase 0.
 | A3 | [DESIGN-001](tasks/DESIGN-001-external-visual-direction.md) — visual direction | **Delivered and chosen. FROST, 2026-09-14.** Two light directions were built in-repo from the owner's reference; Paper is rejected and left untouched | Owner |
 | A4 | [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) — convert Frost into `docs/DESIGN.md` and a token set | **Done** 2026-09-14. `docs/DESIGN.md` plus a 169-token registry, every token carrying file, line, selector and property. Lead-verified: 169/169/169 three-way, 12 random provenance claims checked, all passed | `designer2` then `designer` |
 | A5 | Decide whether a dark palette ships | Not started. Light only was delivered, deliberately | Owner |
-| A6 | Review the Frost conversion | **Next.** A4 has landed and is lead-verified for completeness and provenance; it has not been reviewed for design judgement. The codex quota window has reset | `design-reviewer` |
+| A6 | Review the Frost conversion | **In flight**, started 2026-09-14. Lead-verified for completeness and provenance; this pass is for design judgement — sourced-but-wrong values, resolutions that promote a fixture accident to a rule, declared absences that are not actually absent | `design-reviewer` |
 | A7 | Style the three absences Phase 0 hits — pressed/active touch state, field error state, login form controls | Not started. Deliberately absent from Frost; goes to a designer and through review, never invented into `packages/tokens` | `designer` |
 
 A3's deliverable is real and reviewed: open
@@ -119,6 +119,22 @@ Small, none of it blocking, all of it recorded so it does not get lost.
 | ~~Fix the Phase 0 plan's stale paragraphs~~ | **Done** 2026-09-14: both tax-model paragraphs corrected, and the token package's invented placeholder palette now points at the Frost registry instead of contradicting it |
 | Propose PRD §9 time-zone wording | The PRD never names a restaurant time zone; receipt and business-day timestamps both need one. Contract document, so the owner approves the wording |
 | Settle ruling I-8 | Back-office kitchen-ticket reprint is granted by `FR-E3` and unaudited by `FR-J3`. Drawn as the requirements read. Needs a ruling, not a workaround |
+
+---
+
+## Phase 0, in flight
+
+Branch **`agent/phase-0-foundations`**, cut 2026-09-14 from
+`agent/design-direction` at `92359a2`.
+
+| # | Task | State | Owner |
+|---|---|---|---|
+| 1 | Monorepo scaffold, PostgreSQL, migration runner — [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md) | **In flight**, started 2026-09-14 | `builder1` |
+| 2–12 | Money, schema and grants, PIN, audit, throttling, sessions, HTTPS server, auth routes, approval, client shells, acceptance tests | Not started. One task file each, written when the task before it lands | unassigned |
+
+Task files are written by the lead one at a time rather than all twelve up
+front: each task's constraints depend on what the previous one actually built,
+and a task file written against an imagined scaffold is worse than none.
 
 ---
 
