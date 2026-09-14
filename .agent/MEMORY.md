@@ -31,14 +31,20 @@ and the Frost design system. A fresh clone has all of it. Nothing is merged to
 
 ## Current phase
 
-**Phase 0, started 2026-09-14.** The implementation gate opened the same day
-with every condition met and in git history. `builder1` holds
-[PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md), Task 1 of
-twelve: the monorepo scaffold, PostgreSQL 16, and the migration runner.
+**Phase 0, started 2026-09-14. Task 1 of twelve is done and verified; Task 2 is
+running.** The implementation gate opened the same day with every condition met
+and in git history.
 
-Until that lands there is still no `package.json`, no source tree, and no test
-suite — so a claim that something "runs" is worth checking against the branch
-rather than believing.
+**The repository has code now.** `package.json`, npm workspaces,
+`tsconfig.base.json`, `docker-compose.yml` running PostgreSQL 16 on
+`127.0.0.1:5433`, `apps/server/src/db/{pool,migrate}.ts`, one migration, and
+seven passing tests. Run order: `npm run db:up` → `npm run db:migrate` →
+`npm run verify`.
+
+**The lead ran `npm run verify` rather than believing the handoff:** 7 tests
+passed in `apps/server/test/migrate.test.ts`, typecheck clean. `builder1` had
+also verified from a fresh clone into a path containing a space, which is how
+it found the next item.
 
 **Branch: `agent/phase-0-foundations`**, cut 2026-09-14 from
 `agent/design-direction` at `92359a2`. Implementation work goes there.
@@ -323,9 +329,10 @@ Roster verified against `herdr agent list` on 2026-09-14.
 |---|---|---|---|---|
 | `lead` | claude | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-14 and named it |
 | `architect` | codex | `w2:p2` | live, idle | Delivered the reconciliation 2026-09-10 after 36 minutes. Owns architecture questions |
-| `designer` | claude, **Fable 5.1** | `w2:p3` | live, working | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
+| `designer` | claude, **Fable 5.1** | `w2:p3` | live, working, **in the design worktree** | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
 | `design-reviewer` | codex | `w2:p9` | live, working | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
-| `builder1` | claude | `w2:pB` | live, working | Started 2026-09-14. First implementer. Holds [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md) — scaffold, PostgreSQL, migration runner |
+| `builder1` | claude | `w2:pB` | live, idle | First implementer. **Delivered [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md)** and a handoff worth reading — it found three defects in the plan itself |
+| `builder2` | claude | `w2:pC` | live, working | Holds [PHASE0-002](tasks/PHASE0-002-money-module.md) — the money module, where `B-1` is enforced or quietly lost |
 | `designer2` | codex, gpt-6-astra | `w2:pA` | live, idle, **out of quota** | Started 2026-09-14 and equipped with the Impeccable skill. Delivered the token set, then stopped before `docs/DESIGN.md`. DESIGN-003 was reassigned off it the same day; kept alive because its scrollback is the only record of how the tokens were extracted |
 
 **Both codex agents share one account quota and both exhausted it at 15:11 on
@@ -349,6 +356,85 @@ the proposal document itself, and the architect's account of it exists only in
 its pane scrollback — which is why the material parts of it are copied into
 this file. The same is true of the visual direction build: `REVIEW.md` and the
 brief are its only durable record, and neither is a task file.
+
+---
+
+## Phase 0 rulings and open engineering questions
+
+Made by the lead on 2026-09-14 from `builder1`'s Task 1 findings. The first
+three are applied in [PHASE0-002](tasks/PHASE0-002-money-module.md); the last
+two must be settled before Task 3 writes a second database test file.
+
+**Ruled:**
+
+- **vitest goes to 4**, superseding the plan's `^2.1.0`. Five advisories sit in
+  the vitest 2 dev-server and UI chain, one critical and one high. None is
+  reachable the way this repository runs tests and none ships — but one test
+  file exists today and eleven tasks' worth exist later, so the upgrade is
+  cheap now and an argument in three weeks.
+- **`"engines": { "node": ">=22" }`.** `docs/ARCHITECTURE.md` calls for Node
+  LTS; this machine runs 25.2.1, which is not LTS, and everything passes on it.
+  The field makes the expectation explicit rather than implied. Revisit at the
+  pre-production gate.
+- **`B-1` is enforced at the type level and proven by `@ts-expect-error`
+  tests** that run under `npm run typecheck`. A rule nothing checks is a rule
+  an agent in a hurry will break, and "no `number` for money" is precisely the
+  kind of rule that erodes quietly.
+
+**Open, and blocking Task 3:**
+
+- **Parallel test files race on one database.** `builder1` demonstrated this
+  rather than predicting it: a second test file with Task 3's `beforeAll` shape
+  broke five runs out of five, once as `14 failed | 13 passed`. Both files run
+  `DROP SCHEMA public CASCADE`, and vitest runs files in parallel. Candidates
+  are `fileParallelism: false` for server tests or a database per worker.
+  **Leaning to `fileParallelism: false`** — deterministic, and Phase 0 is too
+  small for the complexity of per-worker databases — but it is not written into
+  a task file yet, so it is not settled.
+- **The pool's default role is a superuser.** `pool.ts` defaults to
+  `pos_owner`, which is `POSTGRES_USER` and has `rolsuper = t`. Superusers
+  bypass grants, so a `B-7` append-only test that goes through `query()` would
+  pass while proving nothing. **Task 3's grant test must connect as `pos_app`.**
+  This one is not a preference; a test that cannot fail is worse than no test.
+
+Also fixed in the plan: Task 12 Step 7 said to *replace* the root `scripts`
+block, which done literally would have deleted `typecheck` from `verify`. It
+now says extend, and `db:up` carries `--wait` so migration does not race the
+container's start.
+
+---
+
+## The Frost conversion was reviewed, and it did not come back clean
+
+`design-reviewer` returned **ten findings on 2026-09-14, one critical**, all
+recorded with the lead's rulings in
+[DESIGN-004](tasks/DESIGN-004-frost-review-remediation.md) and assigned to
+`designer`. Two were confirmed by the lead before the task was written:
+
+1. **CRITICAL — the rejected-close state offers a live close on a stale
+   balance.** `error` means the close was rejected *because the order changed
+   while payment was being collected*, and the screen says so — while rendering
+   balance `0`, tagging the draft `FULLY ALLOCATED`, and exposing a live
+   **Close order & print receipt**. `B-18` closes an order only on exact
+   settlement. **This is in the wireframe as well as in Frost**, and it came in
+   through DESIGN-002 pass 1, which set the balance to 0.00 in four states —
+   right for three of them, wrong for `error`, the one state where the total
+   may have moved.
+2. **HIGH — the tender pads are still typed `[SHEET]`** in `SITEMAP.md` and
+   `SCREEN-INVENTORY.md`'s `M-4`, while `docs/DESIGN.md` now says persistent
+   panel. The owner ruled the panel on 2026-09-10; this file recorded the
+   retyping as *in progress* and it was never done. Four days later the design
+   system asserted one side of it and the repository began contradicting itself
+   in three places. **A ruling recorded in the present progressive is a ruling
+   that does not land.**
+
+The remaining eight range from a completeness claim stronger than the artifact,
+through a `B-16` verdict that was never earned, to a 10px tag that is the only
+thing telling a cashier a row is PIN-gated.
+
+**Work happens in a git worktree** at `../restaurant-pos-design` on
+`agent/design-direction`, so design fixes and implementation do not fight over
+one checkout.
 
 ---
 

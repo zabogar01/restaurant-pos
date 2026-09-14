@@ -3668,18 +3668,26 @@ Expected: PASS, all five tests.
 
 - [ ] **Step 7: Add a top-level verification script**
 
-In the root `package.json`, replace the `scripts` block:
+In the root `package.json`, **extend** the `scripts` block — do not replace it.
+Task 1 shipped `typecheck` and a `verify` that runs it, and a literal
+replacement here would delete `typecheck` from the verification chain and drop
+`test` entirely. The scripts that must exist afterwards:
 
 ```json
   "scripts": {
-    "db:up": "docker compose up -d",
+    "db:up": "docker compose up -d --wait",
     "db:migrate": "npm run migrate -w apps/server",
     "build:clients": "npm run build -w apps/pos && npm run build -w apps/back-office",
+    "typecheck": "tsc -p apps/server --noEmit",
     "test:unit": "vitest run",
     "test:e2e": "npm test -w e2e",
-    "verify": "npm run test:unit && npm run build:clients && npm run test:e2e"
+    "verify": "npm run typecheck && npm run test:unit && npm run build:clients && npm run test:e2e"
   },
 ```
+
+`db:up` waits on the healthcheck. Without `--wait`, `npm run db:up && npm run
+db:migrate` races the container's start and fails intermittently — found in
+Task 1, not predicted.
 
 - [ ] **Step 8: Run the full verification**
 
