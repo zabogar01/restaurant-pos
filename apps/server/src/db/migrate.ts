@@ -22,10 +22,17 @@ export async function runMigrations(dir: string): Promise<string[]> {
   for (const file of files) {
     if (done.has(file)) continue;
     const sql = await readFile(join(dir, file), 'utf8');
-    await withTransaction(async (client) => {
-      await client.query(sql);
-      await client.query('INSERT INTO schema_migration (filename) VALUES ($1)', [file]);
-    });
+    try {
+      await withTransaction(async (client) => {
+        await client.query(sql);
+        await client.query('INSERT INTO schema_migration (filename) VALUES ($1)', [file]);
+      });
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      throw new Error(`migration ${file} failed and was rolled back: ${reason}`, {
+        cause: err,
+      });
+    }
     applied.push(file);
   }
 
