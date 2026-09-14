@@ -5,9 +5,10 @@
 <link rel="stylesheet" href="../../structure.css">
 <script>window.WF={id:'BO-03',client:'bo',nav:'menu',name:'Menu — items and categories',reqs:'FR-B4, B6, C1, C5, C7, C8, G13',states:[
 ['default','Items list'],['eightysix','Item toggled to 86'],['leaserejected','86 rejected — order being paid'],
-['empty','No items yet'],['category','Modal — category'],['loading','Loading'],['error','Error'],['overflow','Overflow — long menu']]};</script>
+['empty','No items yet'],['category','Modal — category'],['category-invalid','Modal — category, empty name refused'],['loading','Loading'],['error','Error'],['overflow','Overflow — long menu']]};</script>
 <script defer src="../../mockup.js"></script>
 <link rel="stylesheet" href="../../visual.css">
+<link rel="stylesheet" href="../../frost-states.css">
 </head><body>
 <header class="wfbar"></header>
 <main class="wfmain">
@@ -71,7 +72,7 @@
         <div style="margin-top:16px"><a class="bobtn bobtn--primary" href="menu.html?state=category">Create first category</a></div>
       </div>
 
-      <table class="dtable" data-when="default eightysix leaserejected category">
+      <table class="dtable" data-when="default eightysix leaserejected category category-invalid">
         <thead><tr><th style="width:32%">Item</th><th>Category</th><th>Variants</th><th>Modifiers</th>
           <th class="num">Price</th><th style="width:130px">Availability</th><th style="width:70px"></th></tr></thead>
         <tbody>
@@ -134,18 +135,21 @@
     </div>
   </div>
 
-  <div data-when="category">
+  <div data-when="category category-invalid">
     <div class="scrim" style="position:absolute;inset:0"></div>
     <div class="modal modal--bo">
       <div class="modal__head"><h2>New category</h2></div>
       <div class="modal__body">
-        <span class="label">Name</span><div class="field field--sm">Mains</div>
+        <span class="label">Name</span><div class="field field--sm" data-when="category">Mains</div>
+        <div class="field field--sm field--invalid" data-when="category-invalid"></div>
+        <span class="field__msg" data-when="category-invalid">Enter a name</span>
         <div class="muted" style="margin-top:12px">Categories order the menu at the POS. They
         carry no price and no availability of their own.</div>
       </div>
       <div class="modal__foot">
         <a class="bobtn" href="menu.html">Cancel</a>
-        <a class="bobtn bobtn--primary" href="menu.html">Create</a>
+        <a class="bobtn bobtn--primary" href="menu.html" data-when="category">Create</a>
+        <span class="bobtn bobtn--off" aria-disabled="true" data-when="category-invalid">Create</span>
       </div>
     </div>
   </div>

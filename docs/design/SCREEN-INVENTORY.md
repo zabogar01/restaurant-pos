@@ -512,7 +512,11 @@ because no menu is hard-coded, B-24) · *loading* · *error* · *permission-deni
 (n/a; back office is manager only) · *overflow* (long menu: dense table,
 sticky headers, no truncation of price or availability) · *item 86'd* ·
 *86 rejected while a CheckoutLease holds a quick-sale order carrying that item,
-naming the order* (FR-G13, AC-29) · *item archived* (FR-C8).
+naming the order* (FR-G13, AC-29) · *item archived* (FR-C8) ·
+*category-invalid* — Create tapped with an empty name; the Name field is
+invalid with "Enter a name"; Create stays disabled until a name is entered;
+nothing is written (added 2026-09-14 by the lead's ruling in DESIGN-005
+finding 4; a state of the category modal, not a new node).
 
 **Requirements.** FR-B4, FR-B6, FR-C1, FR-C5, FR-C7, FR-C8, FR-G13.
 

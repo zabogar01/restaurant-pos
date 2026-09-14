@@ -30,6 +30,14 @@ screens, 13 back-office screens and 6 modals does not, because M-4 keeps its
 number in the inventory as a retyped node. Applied in SCREEN-INVENTORY.md and
 EXTERNAL-HANDOFF.md in the same change (DESIGN-004, finding 2).
 
+**One `[INLINE]` node added under BO-03 on 2026-09-14** by the lead's ruling
+in [DESIGN-005](../../.agent/tasks/DESIGN-005-a7-three-missing-states.md)
+(finding 4): the category modal's refusal of an empty name. A state of an
+existing screen, recorded the way the seven `[INLINE]` nodes above were; no
+route, modal or sheet added, removed or retyped, so 7 POS screens, 13
+back-office screens and 6 modals still hold. Applied in SCREEN-INVENTORY.md
+in the same change.
+
 One further change is a **variant, not a node**: the line-editor sheet now has
 a table form and a quick-sale form, exactly as POS-03 itself has two variants.
 They differ only in where leaving them returns to — the quick form must never
@@ -231,6 +239,7 @@ reports and audit.
 │   │   ├── [INLINE] 86 toggle per item row ............... FR-B6, C5
 │   │   ├── [INLINE] 86 rejected — item on a leased order . FR-G13
 │   │   ├── [MODAL] Category create / edit ................ FR-B4
+│   │   ├── [INLINE] Category create refused — empty name . FR-B4
 │   │   └── [INLINE] Empty — no items yet ................. FR-B4
 │   └── BO-04 [SCREEN] Item editor ................... FR-B4, C1–C4, C7, C8
 │       ├── [INLINE] Variants — single-select, ± delta .... FR-C2

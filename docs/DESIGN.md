@@ -1208,9 +1208,10 @@ wherever they appear.
    The login form (Phase 0) exists only in the greyscale wireframe, which
    loads `wireframe.css`, not `visual.css`: two 40px `field-small` boxes and
    a full-width primary button, in greyscale. Its invalid state is
-   specified (`field-small-invalid`: the 56px treatment at 40px) but not
-   demonstrated — no reviewed state holds a refused small field, and
-   DESIGN-005 was not licensed to add one; its resting look is still the
+   specified (`field-small-invalid`: the 56px treatment at 40px) and shown
+   in the office category modal's `category-invalid` state — a BO-03 state
+   added on 2026-09-14 by the lead's ruling in DESIGN-005, with *Create*
+   disabled so the refusal is visible; its resting look is still the
    inherited `.field` rule.
 3. **Success and informational colour.** There is no success green and no
    neutral informational hue; confirmations are grouping-blue notices. If a
