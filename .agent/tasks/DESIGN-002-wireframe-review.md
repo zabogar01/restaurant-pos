@@ -1,6 +1,6 @@
 # DESIGN-002 — Wireframe review
 
-**Status:** Active
+**Status:** Closed 2026-09-14 by `lead`. See the closing entry at the end.
 **Owner:** Product owner reviewing; `lead` capturing and applying
 **Depends on:** none
 
@@ -599,3 +599,54 @@ touched. Previously reported items 3 (line-editor Back target — now resolved
 for the quick variant, still loose for the table one), 4 and 6 stand; item 2's
 unaudited half is now partly closed, since this pass audited POS-03 and POS-04
 arithmetic and found and fixed the overflow subtotal.
+
+---
+
+**2026-09-14 — `lead`. Closing entry.**
+
+Every finding raised in this task is applied, declined with a reason, or
+carried forward below. The work is committed as `65b697a`. Closing it.
+
+## The one decision left open for me, now ruled
+
+**The quick-sale line editor is a second FORM of the existing line-editor
+sheet, not a seventh modal. The count stands at 7 POS screens, 13 back-office
+screens, 6 modals.**
+
+The designer flagged this rather than deciding it, correctly, because it
+changes a published count. Both forms are the same destination — edit one line
+— reached from two workspaces, differing in what the surrounding workspace
+permits and in where Back returns. That is the same relationship POS-03's own
+two variants already have, and SITEMAP's node types distinguish *destinations*,
+not the permissions a destination inherits from where it was opened. Counting
+it separately would mean counting every context-conditioned variant separately,
+and the modal count would stop being a useful number.
+
+The condition attached: SCREEN-INVENTORY must state the variant explicitly, so
+that an implementer building the quick workspace knows the sheet it opens has
+no *Send to kitchen* control. It already does, from pass 3.
+
+## Carried forward, not lost
+
+These stand as the designer wrote them and are wireframe slack rather than
+defects. None blocks implementation; each is cheap to fix when the screen is
+built for real against the Frost design system:
+
+1. The table line editor's Back returns to a fixed state rather than the state
+   it was opened from. Wiring a history model into a static prototype buys
+   nothing; a real client gets this for free.
+2. `Meal voucher` and `Staff account` are drawn inert. They behave exactly as
+   card does — prefilled, capped at the balance — and are inert only to keep
+   the state list readable. The rail says so.
+3. POS-03's `default` state shows "3 items" over two lines. Copy defect.
+4. Screens other than POS-03 and POS-04 were never audited for the class of
+   arithmetic incoherence that was found and fixed in those two. Worth a pass
+   before the reporting screens are built, because a wrong figure in a
+   wireframe gets copied into a fixture and then into a test.
+
+## Ruling I-8 is NOT closed by this task
+
+Back-office reprint of a kitchen ticket: `FR-E3` grants it, `FR-J3` does not
+audit it. Nothing in this task bears on it, and the architecture explicitly
+declined to settle it by implication — `docs/ARCHITECTURE.md` §19 item 5 states
+it needs a product decision before Phase 3 completes. It is the owner's.

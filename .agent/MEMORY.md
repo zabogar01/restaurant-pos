@@ -18,11 +18,14 @@ decision was reached in conversation but never written into a document, it is
 recorded here as unresolved, because a decision that lives only in a
 transcript is not available to the next agent.
 
-**Read this warning first.** Nothing since `c5a2807` is committed. This file,
-`.agent/` entirely, `CLAUDE.md`, `AGENTS.md`, `.gitignore`, the external design
-handoff, the PRD closures, the whole architecture revision, three passes of
-wireframe remediation, and both visual directions exist only in the working
-tree. A fresh clone has none of it.
+**The durability problem is fixed.** For four days everything this project
+decided lived only in an uncommitted working tree. On 2026-09-14 the owner
+authorised committing it, and six commits on `agent/design-direction` now carry
+the lot: this file and `.agent/` entirely, `CLAUDE.md`, `AGENTS.md`,
+`.gitignore`, the PRD closures, the standing architecture and its seven
+accepted ADRs, three passes of wireframe remediation, both visual directions,
+and the Frost design system. A fresh clone has all of it. Nothing is merged to
+`main`; that is the owner's.
 
 ---
 
@@ -145,8 +148,7 @@ Confirmed by the product owner in session and written into the repository:
     `verification.json` as its evidence, and none of it will exist in a clone.
     The review's findings survive as prose; the artifacts behind them do not.
 
-The last three are recorded in the PRD only in the **uncommitted** working
-tree.
+The last three are recorded in the PRD, committed as `4c59cdc`.
 
 ---
 
@@ -262,34 +264,29 @@ Nothing in this section may be treated as decided.
 
 ## Git state
 
-- **Branch:** `agent/design-direction`
-- **Latest commit:** `c5a2807` "Documents and wireframe"
-- **Nothing has been committed since.**
+- **Branch:** `agent/design-direction`. Never merged to `main`; only the owner
+  merges.
+- **Working tree clean** as of 2026-09-14.
+- **Six commits on top of `c5a2807`**, in the order they were made:
 
-```
- M docs/ARCHITECTURE_PROPOSAL.md        architect's full reconciliation
- M docs/PRD.md                          stack, currency, and tax closures
-D  docs/design/.DS_Store                staged removal
- M docs/design/SITEMAP.md               DESIGN-002 [INLINE] nodes and verdict
- M docs/design/SCREEN-INVENTORY.md      DESIGN-002 states and rulings I-12, I-13
- M docs/design/prototype/index.html     DESIGN-002 remediation
- M docs/design/prototype/pos/order.html        "
- M docs/design/prototype/pos/settlement.html   "
- M docs/design/prototype/wireframe.css         "
- M docs/design/prototype/wireframe.js          "
-?? .agent/                              this file and everything beside it
-?? .gitignore
-?? AGENTS.md
-?? CLAUDE.md
-?? .impeccable/                         4.9 MB of tool state and review captures
-?? docs/design/EXTERNAL-HANDOFF.md      the DESIGN-001 package, route not taken
-?? docs/design/VISUAL-DIRECTION-BRIEF.md  the direction contract
-?? docs/design/visual-directions/       Paper and Frost, DESIGN.md, REVIEW.md
-```
+| Commit | What it carries |
+|---|---|
+| `e6120f0` | Agent coordination memory, `CLAUDE.md`, `AGENTS.md`, `.gitignore`, `.DS_Store` out of the index |
+| `4c59cdc` | PRD closures: stack, currency, tax model |
+| `10bcb4c` | `docs/ARCHITECTURE.md` and seven accepted ADRs; the proposal superseded |
+| `65b697a` | Three passes of wireframe remediation |
+| `5d339c5` | Paper and Frost, the brief, the finish review, the external handoff |
+| `12294a7` | `docs/DESIGN.md`, the 169-token Frost registry, the Phase 0 plan's corrections |
 
-Repository hygiene, fixed 2026-09-10 and still uncommitted: a `.gitignore` now
-exists at the root, and `docs/design/.DS_Store` has been removed from the index
-(the file remains on disk, now ignored).
+Repository hygiene: a `.gitignore` exists at the root, `docs/design/.DS_Store`
+is out of the index (the file remains on disk, now ignored), and `.impeccable/`
+is ignored entirely by the owner's 2026-09-14 ruling.
+
+The only thing still uncommitted at any moment is this file, which goes stale
+the instant it is committed and is updated again after. That is expected; the
+warning worth keeping is the older one — **work that lives only in a pane
+scrollback is not durable**, and two of this project's agents have now lost
+their closing reports to a usage limit.
 
 `docs/design/` is **tracked**: all 26 files under it, including the whole
 prototype, were committed in `c5a2807`. Any instruction premised on that

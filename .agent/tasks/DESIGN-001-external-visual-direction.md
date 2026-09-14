@@ -1,6 +1,7 @@
 # DESIGN-001 — External visual direction
 
-**Status:** Active
+**Status:** Closed 2026-09-14. Delivered, and by a different route than this
+task describes — see the closing entry at the end.
 **Owner:** Product owner, working with an external tool
 **Depends on:** none
 
@@ -184,3 +185,44 @@ Still open:
   product lead. It is usable as input either way, since this task restyles
   confirmed structure rather than validating it.
 - Nothing has been returned yet.
+
+---
+
+**2026-09-14 — `lead`. Closing entry.**
+
+**Delivered, and the route this task specifies was not the route taken.** No
+external tool was used. The owner supplied a Customer.io style reference and
+the visual work was built inside this repository, against the confirmed
+structure, under a direction contract at
+[docs/design/VISUAL-DIRECTION-BRIEF.md](../../docs/design/VISUAL-DIRECTION-BRIEF.md).
+`docs/design/EXTERNAL-HANDOFF.md` is still written, still self-contained, and
+still correct; it simply was not needed. Committed as `5d339c5`.
+
+**What came back:** two light directions, `paper` and `frost`, each covering
+all six representative screens at the stated device targets, plus a comparison
+gallery, a stated token set, and a finish review by `design-reviewer` whose
+verdict was *ship for visual comparison*. **The owner chose Frost on
+2026-09-14.**
+
+**The eight acceptance criteria** were walked against the Frost delivery by
+`designer` during [DESIGN-003](DESIGN-003-frost-design-system.md); the walk is
+recorded there. Six met, two met-with-a-limit:
+
+- **Criterion 2** — behavioral constraints hold, but certified from screenshots
+  and fixture states rather than from a behavioral walk of every state.
+- **Criterion 8** — complete enough to write the design system without
+  inventing values, which was tested directly by writing it: everything the six
+  screens need was sourced, and eleven things they do not cover were recorded
+  as absent rather than filled in.
+
+**What this task asked for and did not get, deliberately:** *both light and
+dark, or an explicit decision that only one ships.* Light shipped. The decision
+about dark has not been made, and it is the owner's — tracked as `A5` in
+[ROADMAP.md](../ROADMAP.md). A POS on a floor and a back office at a desk are
+different lighting situations, which is why this task asked for the decision
+rather than the palette.
+
+**Corrections to the "Still open" list above, which is now historical:** the
+tool question is moot; the prototype *was* reviewed screen by screen, under
+[DESIGN-002](DESIGN-002-wireframe-review.md), before the visual work was
+converted; and something has been returned.
