@@ -339,3 +339,79 @@ DPR 1, measured with `getComputedStyle` and `getBoundingClientRect`:
 - Every value above is a `var(--frost-*)` that exists in `frost.css`, so
   `no-invented-values.test.ts` passes as written; `currentColor` is not a
   literal colour under its regex.
+
+---
+
+## Second pass — `design-reviewer` findings, 2026-09-14
+
+Eight findings. The lead verified the first two in the source before writing
+them here. Fix all eight or answer one with `file:line` evidence; "disagree" is
+not an answer.
+
+**1 — HIGH. On a real touch screen, pressed still collapses into selected.
+CONFIRMED BY LEAD.** `visual.css:77` applies the ink selected fill on
+`a.tile:hover`, unconditionally. `frost-states.css:44` only *comments* that an
+implementation should scope hover to `@media (hover: hover)`. A comment changes
+nothing: touch browsers synthesise and hold `:hover` after a tap, so the tile
+is left looking selected once the ring goes — **the precise confusion this
+state was designed to prevent.** The fixture hides it by putting `.is-pressed`
+on an inert `<div>` (`frost/pos/order.html:109`) while the real target is an
+anchor (`:100`).
+
+`frost-states.css` loads *after* `visual.css` and is yours, so neutralise it
+there — a `(hover: none)` / `(pointer: coarse)` guard that puts the tile back
+to its rest appearance — rather than deferring it to an implementer who will
+inherit the bug. `visual.css` stays byte-identical; that is why the separate
+sheet exists.
+
+**2 — MEDIUM. The two-name discipline does not exist in the delivered rules.
+CONFIRMED BY LEAD.** `--frost-invalid` is declared in the registry, and
+`docs/DESIGN.md:625` says the split lets warning and invalid diverge — but
+`frost-states.css:64` and `:71` both consume `var(--warning)`. Changing warning
+would silently change every invalid field. Consume the invalid token.
+
+**3 — MEDIUM. "Every enabled touch control" is broader than the selector.**
+The allow-list at `frost-states.css:25` misses ordinary anchors — Back
+(`settlement.html:27`), the tender-line Remove (`:104`) — while
+`docs/DESIGN.md:855` and `:1145` state the rule universally, and the open list
+still says inline touch links are uncertified. Either the selector grows to
+match the claim or the claim narrows to match the selector. Say which and why.
+
+**4 — MEDIUM. The invalid demonstration invented a behavioral state.** This
+task forbade behaviour, structure and copy changes, and
+`frost/back-office/menu.html:6` adds a state, `:143` adds "Enter a name" copy
+absent from BO-03 in `SCREEN-INVENTORY.md:510`, `:75` drops the table behind
+the modal, and `:149`'s live Create exits the invalid state — so the fixture
+does not even show the submission being refused. Demonstrate the invalid field
+inside an existing state, or tell me what structural change you think is
+warranted and let me rule on it. Do not quietly keep it.
+
+**5 — MEDIUM. The document still tells a reader nothing was invented.**
+`docs/DESIGN.md:3` (machine-facing), `:458` and `:512` all claim every value
+traces to a Frost artifact, which four honestly designed tokens at `:477`
+contradict. A consumer reading the frontmatter gets the wrong provenance
+contract — the exact failure the `source: null` shape was built to avoid.
+
+**6 — MEDIUM. The open list shrank by two, not three.** Criterion 6 asked for
+exactly three. The round-tag entry was prose outside the numbered list, and
+`:1178` now says it "left this list". Make the accounting true, whichever way
+is honest.
+
+**7 — LOW. Selected-plus-pressed is claimed but not inspectable.** The ring on
+an ink-filled selected tile or rail item (`docs/DESIGN.md:962`) is the single
+hardest case for "selection fills, pressing strokes", and no fixture shows it.
+Show it.
+
+**8 — LOW. The disabled exclusion has a hole.** `frost-states.css:35`
+suppresses `.bobtn--off:active` but not `.bobtn--off.is-pressed`, so the
+generic rule would ring a frozen disabled back-office button.
+
+### Acceptance for this pass
+
+1. Findings 1 and 2 fixed in `frost-states.css`, with `visual.css` and
+   `structure.css` still byte-identical to what was reviewed.
+2. Finding 4 either fixed inside existing states or raised to the lead as a
+   structural question. Not left as it is.
+3. Every other finding fixed or answered with `file:line`.
+4. Commit as you go on `agent/design-direction` in this worktree, and confirm
+   with `git log` that the branch moved before reporting.
