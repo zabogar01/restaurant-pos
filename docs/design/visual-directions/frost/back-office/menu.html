@@ -5,9 +5,10 @@
 <link rel="stylesheet" href="../../structure.css">
 <script>window.WF={id:'BO-03',client:'bo',nav:'menu',name:'Menu — items and categories',reqs:'FR-B4, B6, C1, C5, C7, C8, G13',states:[
 ['default','Items list'],['eightysix','Item toggled to 86'],['leaserejected','86 rejected — order being paid'],
-['empty','No items yet'],['category','Modal — category'],['loading','Loading'],['error','Error'],['overflow','Overflow — long menu']]};</script>
+['empty','No items yet'],['category','Modal — category'],['category-invalid','Modal — category, name required (DESIGN-005)'],['loading','Loading'],['error','Error'],['overflow','Overflow — long menu']]};</script>
 <script defer src="../../mockup.js"></script>
 <link rel="stylesheet" href="../../visual.css">
+<link rel="stylesheet" href="../../frost-states.css">
 </head><body>
 <header class="wfbar"></header>
 <main class="wfmain">
@@ -134,12 +135,14 @@
     </div>
   </div>
 
-  <div data-when="category">
+  <div data-when="category category-invalid">
     <div class="scrim" style="position:absolute;inset:0"></div>
     <div class="modal modal--bo">
       <div class="modal__head"><h2>New category</h2></div>
       <div class="modal__body">
-        <span class="label">Name</span><div class="field field--sm">Mains</div>
+        <span class="label">Name</span><div class="field field--sm" data-when="category">Mains</div>
+        <div class="field field--sm field--invalid" data-when="category-invalid"></div>
+        <span class="field__msg" data-when="category-invalid">Enter a name</span>
         <div class="muted" style="margin-top:12px">Categories order the menu at the POS. They
         carry no price and no availability of their own.</div>
       </div>

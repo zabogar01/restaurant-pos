@@ -13,9 +13,11 @@
 ['ceiling','Change ceiling exceeded'],['zero','Zero total'],['pending','Blocked — pending lines'],
 ['overflow','Overflow — many splits'],['reauth','Re-authenticate to close'],
 ['cancel','Cancel payment'],['leaselost','Lease lost — displaced'],['takeover','Manager takeover'],
-['loading','Closing'],['error','Close rejected']]};</script>
+['loading','Closing'],['error','Close rejected'],
+['pressed','Pressed — tap in progress (DESIGN-005)']]};</script>
 <script defer src="../../mockup.js"></script>
 <link rel="stylesheet" href="../../visual.css">
+<link rel="stylesheet" href="../../frost-states.css">
 </head><body>
 <header class="wfbar"></header>
 <main class="wfmain">
@@ -50,7 +52,7 @@
       <div style="padding:16px 20px;border-bottom:2px solid var(--ink)">
         <div class="rowflex spread" style="font-size:32px;font-weight:700">
           <span style="font-size:18px;font-weight:400">Balance</span>
-          <span class="mono" data-when="empty card cardsplit cashover cardover pending leaselost takeover">155.925</span>
+          <span class="mono" data-when="empty pressed card cardsplit cashover cardover pending leaselost takeover">155.925</span>
           <span class="mono" data-when="partial ceiling">55.925</span>
           <span class="mono" data-when="error">37.800</span>
           <span class="mono" data-when="exact exactcash exactsplit change overflow reauth cancel loading zero">0</span>
@@ -94,7 +96,7 @@
         </div>
 
         
-        <div class="empty" data-when="empty card cardsplit cashover cardover pending" style="padding:20px">Nothing drafted yet</div>
+        <div class="empty" data-when="empty pressed card cardsplit cashover cardover pending" style="padding:20px">Nothing drafted yet</div>
 
         
         <div data-when="partial ceiling">
@@ -152,7 +154,8 @@
     <div style="flex:1;display:flex;flex-direction:column;min-width:0">
       
       <div style="padding:12px 20px;border-bottom:1px solid var(--line2)" class="rowflex gap8">
-        <a class="btn btn--sm btn--primary" href="settlement.html?state=empty" style="flex:1;height:56px;font-size:15px" data-unless="card cardsplit cardover">Cash</a>
+        <a class="btn btn--sm btn--primary" href="settlement.html?state=empty" style="flex:1;height:56px;font-size:15px" data-unless="card cardsplit cardover pressed">Cash</a>
+        <a class="btn btn--sm btn--primary is-pressed" href="settlement.html?state=empty" style="flex:1;height:56px;font-size:15px" data-when="pressed">Cash</a>
         <a class="btn btn--sm" href="settlement.html?state=empty" style="flex:1;height:56px;font-size:15px" data-when="card cardsplit cardover">Cash</a>
         <a class="btn btn--sm btn--primary" href="settlement.html?state=card" style="flex:1;height:56px;font-size:15px" data-when="card cardsplit cardover">Card</a>
         <a class="btn btn--sm" href="settlement.html?state=card" style="flex:1;height:56px;font-size:15px" data-unless="card cardsplit cardover">Card</a>
@@ -190,19 +193,23 @@
               <span class="tag" data-when="cardsplit cashover cardover ceiling">KEYED BY HAND</span>
               <span class="tag" data-when="exact exactcash exactsplit change overflow reauth cancel loading">FULLY ALLOCATED</span>
             </div>
-            <div class="field" data-when="empty card pending leaselost takeover">155.925</div>
+            <div class="field" data-when="empty pressed card pending leaselost takeover">155.925</div>
             <div class="field" data-when="partial">55.925</div>
             <div class="field" data-when="cardsplit">100.000</div>
-            <div class="field" data-when="cashover cardover">200.000</div>
-            <div class="field" data-when="ceiling">99.999.999</div>
+            <div class="field" data-when="cashover">200.000</div>
+            <div class="field field--invalid" data-when="cardover">200.000</div>
+            <div class="field field--invalid" data-when="ceiling">99.999.999</div>
             <div class="field" data-when="error">37.800</div>
             <div class="field" data-when="exact exactcash exactsplit change overflow reauth cancel loading">0</div>
+            <span class="field__msg" data-when="cardover">Card maximum 155.925</span>
+            <span class="field__msg" data-when="ceiling">Cash maximum 10.055.924</span>
           </div>
           
           <div style="width:170px"><span class="label">&nbsp;</span>
             <a class="btn" href="settlement.html?state=exact" style="height:56px" data-when="card">Add card</a>
             <a class="btn" href="settlement.html?state=partial" style="height:56px" data-when="cardsplit">Add card</a>
             <a class="btn" href="settlement.html?state=exactcash" style="height:56px" data-when="empty pending leaselost takeover">Add cash</a>
+            <a class="btn is-pressed" href="settlement.html?state=exactcash" style="height:56px" data-when="pressed">Add cash</a>
             <a class="btn" href="settlement.html?state=exactsplit" style="height:56px" data-when="partial">Add cash</a>
             <a class="btn" href="settlement.html?state=change" style="height:56px" data-when="cashover">Add cash</a>
             <a class="btn" href="#" style="height:56px" data-when="error">Add cash</a>
@@ -233,7 +240,7 @@
 
         <div class="keypad" data-unless="zero" style="grid-template-columns:repeat(3,88px);justify-content:flex-start">
           <div class="key" style="height:72px">1</div><div class="key" style="height:72px">2</div><div class="key" style="height:72px">3</div>
-          <div class="key" style="height:72px">4</div><div class="key" style="height:72px">5</div><div class="key" style="height:72px">6</div>
+          <div class="key" style="height:72px">4</div><div class="key" data-unless="pressed" style="height:72px">5</div><div class="key is-pressed" data-when="pressed" style="height:72px">5</div><div class="key" style="height:72px">6</div>
           <div class="key" style="height:72px">7</div><div class="key" style="height:72px">8</div><div class="key" style="height:72px">9</div>
           <div class="key" style="height:72px;visibility:hidden" aria-hidden="true"></div><div class="key" style="height:72px">0</div><div class="key" style="height:72px">&larr;</div>
         </div>
@@ -243,7 +250,7 @@
         <a class="btn btn--primary" href="../../../prototype/pos/closed-order.html" data-when="exact exactcash exactsplit change overflow cancel">Close order &amp; print receipt</a>
         <a class="btn btn--primary" href="../../../prototype/pos/closed-order.html?state=zero" data-when="zero">Close order &amp; print receipt</a>
         <a class="btn btn--primary" href="settlement.html?state=reauth" data-when="reauth">Sign in to close</a>
-        <span class="btn btn--off" data-when="empty card cardsplit cashover partial cardover ceiling pending leaselost takeover error">
+        <span class="btn btn--off" data-when="empty pressed card cardsplit cashover partial cardover ceiling pending leaselost takeover error">
           Close order &mdash; balance outstanding</span>
         <span class="btn btn--off" data-when="loading">Closing&hellip;</span>
       </div>

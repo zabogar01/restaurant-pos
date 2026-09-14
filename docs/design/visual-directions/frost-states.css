@@ -1,0 +1,91 @@
+/* Frost — the three states the reviewed artifacts do not contain.
+   Designed under .agent/tasks/DESIGN-005-a7-three-missing-states.md on
+   2026-09-14 by `designer`, awaiting design-reviewer. NOT part of the Frost
+   review (DESIGN-001) and NOT a source in the sense the token registry uses
+   the word: every value below is recorded in docs/design/tokens/frost.tokens.json
+   with "source": null and a "designed" block naming this task. Loaded by the
+   Frost fixtures after visual.css. Presentation only; no behaviour, no copy.
+   The `.is-pressed` and `.field--invalid` classes exist so a static fixture can
+   hold a state a finger would otherwise have to hold. */
+
+/* ------------------------------------------------------------------ */
+/* 1. Pressed / active on touch                                        */
+/*                                                                     */
+/* Selection fills; pressing strokes. While a finger is down, a 2px    */
+/* ring is drawn INSIDE the control's own edge in the control's text   */
+/* colour. The same one rule therefore reads on a cream key (ink ring), */
+/* a white tile or button (ink ring), the spruce primary and the ink   */
+/* selected fill (white ring), and the brick destructive fill (white   */
+/* ring); the ring's contrast is the text's contrast, already measured. */
+/* Inset, so it never collides with the keyboard focus ring (outside,  */
+/* green) and never moves layout; a stroke, so it cannot be mistaken   */
+/* for the solid ink fill that means selected. No fill change, no      */
+/* shadow, no scale, no transition. Lineage: the keyed amount field's   */
+/* 1px -> 2px spruce thickening already means "a hand touched this".   */
+.is-pressed,
+a.tile:active,
+a.btn:active, .btn:active, a.bobtn:active,
+.key:active, a.key:active,
+.cat:active,
+a.line__t:active, a.line__x:active,
+.bonav a:active {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+/* A disabled or 86'd control has no pressed state: nothing happened. */
+.btn--off:active, .bobtn--off:active, .tile--off:active,
+.btn--off.is-pressed, .tile--off.is-pressed { box-shadow: none; }
+/* A pressed order-line body rings only the tap target, never the trailing
+   slot, which is its sibling (I-12). The ring draws exactly what was pressed. */
+a.line__t.is-pressed, a.line__t:active { border-radius: 2px; }
+/* Hover is a mouse fact. Touch browsers synthesise :hover on tap, and Frost's
+   tile hover is the ink selected fill — the confusion this state exists to
+   prevent. An implementation scopes every hover rule to @media (hover: hover);
+   the fixture stylesheets predate that rule and are left as reviewed. */
+
+/* ------------------------------------------------------------------ */
+/* 2. Field invalid                                                    */
+/*                                                                     */
+/* A field holding a value the system has refused. The border thickens */
+/* to 2px in warning amber (the hue Frost already uses for "attend to  */
+/* this, nothing is lost"), the fill stays white — never the pale amber */
+/* field, which is the receipt-warning chip — and a one-line message    */
+/* in the same amber sits directly under the field naming the rule and */
+/* the limit (AC-6). Left padding pulls to 13px so the figure does not */
+/* shift, exactly as the keyed field does. Not brick: brick means "this */
+/* action destroys something", and a refused keystroke destroys nothing. */
+/* Applies to: a rejected value; an empty required field on submit.    */
+/* Does NOT apply to a field whose value is fine while the action       */
+/* failed — that is a notice beside the field, and the field stays as   */
+/* it was.                                                              */
+.field.field--invalid,
+html[data-direction="frost"] .field.field--invalid,
+html[data-direction="frost"] .field.field--invalid.amount-field {
+  background: var(--elevated);
+  border: 2px solid var(--warning);
+  padding-left: 13px;
+}
+.field__msg {
+  display: block;
+  margin-top: 4px;
+  color: var(--warning);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.modal--bo .field__msg { font-size: 13px; }
+
+/* ------------------------------------------------------------------ */
+/* 3. Round-heading tag                                                */
+/*                                                                     */
+/* The tag in a round-group heading is the one statement of what a tap */
+/* on the rows below will do — MANAGER TO VOID, REMOVE FREELY, FINISH  */
+/* PAYMENT FIRST, ANOTHER CLIENT — and the trailing slot on a fired row */
+/* is deliberately empty (I-12), so nothing else says it. It is set at */
+/* 13px, the floor for anything a cashier acts on, and now outweighs   */
+/* the 11px heading it sits in, which is the right order: the heading  */
+/* names the group, the tag tells the hand what it may do. Everything   */
+/* else — 500 weight, 2px 4px padding, no border, no tracking, colour   */
+/* inherited from the band — is unchanged, and the tag still fits the  */
+/* fixed 32px band (13px x 1.3 + 4px = 21px). Closes DESIGN-004 #6.     */
+.roundhead .tag { font-size: 13px; }

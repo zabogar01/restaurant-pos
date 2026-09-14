@@ -17,9 +17,11 @@
 ['sheet-voidline','Sheet — void fired line'],['sheet-voidorder','Sheet — void order (unfired)'],
 ['sheet-voidorder-fired','Sheet — void order (holds fired)'],
 ['approval','Modal — manager approval'],['approval-error','Modal — wrong PIN'],
-['approval-throttled','Modal — approval cooldown'],['approval-denied','Modal — cashier PIN refused']]};</script>
+['approval-throttled','Modal — approval cooldown'],['approval-denied','Modal — cashier PIN refused'],
+['pressed','Pressed — tap in progress (DESIGN-005)']]};</script>
 <script defer src="../../mockup.js"></script>
 <link rel="stylesheet" href="../../visual.css">
+<link rel="stylesheet" href="../../frost-states.css">
 </head><body>
 <header class="wfbar"></header>
 <main class="wfmain">
@@ -53,7 +55,8 @@
     
     <div class="catrail" data-unless="lock-draft lock-lease">
       <div class="cat cat--on">Mains</div>
-      <div class="cat">Sides</div>
+      <div class="cat" data-unless="pressed">Sides</div>
+      <div class="cat is-pressed" data-when="pressed">Sides</div>
       <div class="cat">Drinks</div>
       <div class="cat">Desserts</div>
     </div>
@@ -103,7 +106,8 @@
         <div class="tile">Fish &amp; Chips<div class="tile__p">140.000</div></div>
         <div class="tile">Caesar Salad<div class="tile__p">75.000</div></div>
         <div class="tile">Soup of the Day<div class="tile__p">55.000</div></div>
-        <div class="tile">Fries<div class="tile__p">40.000</div></div>
+        <div class="tile" data-unless="pressed">Fries<div class="tile__p">40.000</div></div>
+        <div class="tile is-pressed" data-when="pressed">Fries<div class="tile__p">40.000</div></div>
         <div class="tile">Onion Rings<div class="tile__p">45.000</div></div>
         <div class="tile">Soda<div class="tile__p">30.000</div></div>
         <div class="tile">Coffee<div class="tile__p">35.000</div></div>
@@ -117,7 +121,7 @@
       <div class="orderpanel__head">
         <b data-unless="quick quick-line">Order &middot; T1</b>
         <b data-when="quick quick-line">Order &middot; counter</b>
-        <span class="muted" data-when="default zero fireerror error sheet-discount sheet-freeform sheet-remove sheet-voidline sheet-voidorder-fired approval approval-error approval-throttled approval-denied">2 items</span>
+        <span class="muted" data-when="default pressed zero fireerror error sheet-discount sheet-freeform sheet-remove sheet-voidline sheet-voidorder-fired approval approval-error approval-throttled approval-denied">2 items</span>
         <span class="muted" data-when="linecontrols eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder lock-draft lock-lease">3 items</span>
         <span class="muted" data-when="overflow" data-line="of-coffee of-cheese of-wine">9 items</span>
         <span class="muted" data-when="overflow" data-gone="of-coffee of-cheese of-wine">8 items</span>
@@ -154,7 +158,11 @@
           <div class="roundhead">Round 2 &middot; fired 19:58 &middot; printed
             <span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
           <div class="line">
-            <a class="line__t" href="order.html?state=sheet-voidline">
+            <a class="line__t" href="order.html?state=sheet-voidline" data-unless="pressed">
+            <div class="line__q">1</div>
+            <div class="line__b"><div class="line__n">Soda</div></div>
+            <div class="line__a">30.000</div></a>
+            <a class="line__t is-pressed" href="order.html?state=sheet-voidline" data-when="pressed">
             <div class="line__q">1</div>
             <div class="line__b"><div class="line__n">Soda</div></div>
             <div class="line__a">30.000</div></a>
@@ -361,7 +369,8 @@
       <div class="actions" data-unless="lock-draft lock-lease">
         <a class="btn" href="order.html?state=sheet-discount" data-unless="empty">Discount</a>
         <span class="btn btn--off" data-when="empty">Discount</span>
-        <a class="btn" href="order.html?state=sheet-voidorder" data-unless="empty">Void order</a>
+        <a class="btn" href="order.html?state=sheet-voidorder" data-unless="empty pressed">Void order</a>
+        <a class="btn is-pressed" href="order.html?state=sheet-voidorder" data-when="pressed">Void order</a>
         <span class="btn btn--off" data-when="empty">Void order</span>
 
         
@@ -370,7 +379,8 @@
         <span class="btn btn--off" data-when="empty">Send to kitchen</span>
         <span class="btn btn--off" data-when="fireblocked">Send to kitchen</span>
 
-        <a class="btn btn--primary" href="settlement.html?state=partial" data-unless="empty quick quick-line">Settle</a>
+        <a class="btn btn--primary" href="settlement.html?state=partial" data-unless="empty quick quick-line pressed">Settle</a>
+        <a class="btn btn--primary is-pressed" href="settlement.html?state=partial" data-when="pressed">Settle</a>
         <span class="btn btn--off" data-when="empty">Settle</span>
         <a class="btn btn--primary btn--wide" href="settlement.html?state=partial" data-when="quick quick-line">
           Settle &mdash; sends the order to the kitchen</a>
