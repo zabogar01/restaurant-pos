@@ -534,3 +534,35 @@ nobody could look at — the same defect as finding 7, which you just closed.
 
 Nothing else reopens. When this lands, A7 is done and the frontend can apply
 all three states.
+
+### Handoff — third pass, 2026-09-14, `designer` (claude, Fable 5.1)
+
+The ruling applied, all four items. Committed as the commit preceding this
+handoff on `agent/design-direction`; `git log` confirmed. `visual.css`,
+`structure.css` and the two POS fixtures untouched in this pass.
+
+1. **`SCREEN-INVENTORY.md`** — BO-03's *States* line carries
+   *category-invalid* in the ruled wording verbatim, with a parenthetical
+   dating it to this ruling and saying it is a state of the modal, not a node.
+2. **Fixture** — `frost/back-office/menu.html?state=category-invalid`: the
+   items table stays behind the modal (measured: 8 rows, 506px tall, visible
+   through the scrim); the Name field is an empty 40px `field--sm
+   field--invalid` (2px `rgb(131,97,28)`, white, 13px left padding) with
+   *Enter a name* at 13px below; **Create is a `bobtn bobtn--off` span with
+   `aria-disabled="true"`** — grey dashed, no href — so the refusal cannot be
+   walked past. The existing `category` state is unchanged: *Mains* in a 1px
+   field, live Create. The sheet is linked after `visual.css`.
+3. **Registry and DESIGN.md** — `--frost-invalid` and `--frost-invalid-border`
+   list the state in `shown`; open item 2 points at it and names the ruling.
+   Registry still 172 tokens, CSS unchanged; frontmatter re-parsed.
+4. **`SITEMAP.md`** — checked, not assumed: BO-03 already lists its states as
+   `[INLINE]` nodes (*86 rejected — item on a leased order*, *Empty — no
+   items yet*), so a comparable line was added after the category modal,
+   aligned to the same leader column, plus a dated paragraph in the header
+   recording that one `[INLINE]` node was added under BO-03 and the counts
+   hold. `EXTERNAL-HANDOFF.md` was not touched: it lists overlays, and no
+   overlay changed.
+
+Not changed: `mockup.js` (it adds `aria-disabled` only to `.btn`, so the
+attribute is set inline on the office span). Nothing else reopened.
+
