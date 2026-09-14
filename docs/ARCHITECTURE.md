@@ -1,37 +1,33 @@
-> **Superseded:** The product owner approved this reconciled proposal on
-> 2026-09-10. [ARCHITECTURE.md](ARCHITECTURE.md) is the standing architecture,
-> with accepted decisions under [decisions/](decisions/). This file is retained
-> only as the record of the reconciliation that preceded approval.
+# Architecture — Restaurant POS MVP
 
-# Architecture Proposal — Restaurant POS MVP
+Status: Approved
 
-Status: Proposed for product-owner approval
+Approved by: Product owner
 
-Date: 2026-09-10
+Approval date: 2026-09-10
 
 Audience: Product owner, implementation team, testers, and future maintainers
 
-## 1. Purpose, authority, and decision labels
+## 1. Purpose and authority
 
-This document proposes the technical architecture for the approved MVP in
-PRODUCT.md, PRD.md, ROADMAP.md, and BOUNDARIES.md. Those four documents remain
-authoritative. This proposal is not binding until the product owner approves
-it and it is converted into `ARCHITECTURE.md` and accepted architecture
-decision records.
+This document is the approved technical architecture for the Restaurant POS
+MVP. It stands on its own as the implementation authority for technical
+structure and trade-offs. PRODUCT.md, PRD.md, ROADMAP.md, and BOUNDARIES.md
+remain authoritative for product behavior, scope, sequencing, and inviolable
+rules. If this document conflicts with a boundary, the boundary wins; if it
+appears to conflict with the product contract, implementation stops and raises
+the conflict rather than silently choosing one.
 
-All seven ADRs in this document remain **Proposed**. Approval is a human act;
-writing this proposal does not accept any ADR.
+The product owner approved this architecture on 2026-09-10. The accepted
+decision records in section 18 preserve the seven consequential decisions and
+their trade-offs. Future changes to an accepted decision require a new ADR that
+supersedes the old one; accepted ADRs are not edited into a different decision.
 
-Uncertain decisions use one of these labels:
+Items marked **Deferred beyond MVP** are deliberately excluded. Items marked
+**Product decision required** remain open dependencies and are not closed by
+architecture approval.
 
-- **Architect recommendation** — the preferred implementation unless review
-  identifies a concrete constraint that changes the trade-off.
-- **Product decision required** — product behavior or a business rule that the
-  owner must settle before the affected phase can be completed.
-- **Deferred beyond MVP** — deliberately excluded and not to be anticipated
-  with unused infrastructure.
-
-## 2. Proposed architecture
+## 2. Architecture
 
 Build one TypeScript modular monolith with two independently bootstrapped
 React clients:
@@ -73,7 +69,7 @@ transaction.
 The implementation stack is settled: TypeScript, Node.js, Fastify, React,
 Vite, and PostgreSQL.
 
-**Architect recommendation:** Use Node.js LTS, PostgreSQL 16, strict
+Use Node.js LTS, PostgreSQL 16, strict
 TypeScript, npm workspaces, SQL-first migrations, and a thin typed query layer.
 Use Zod or an equivalent schema library at HTTP and configuration boundaries,
 Argon2id for PIN verification, Vitest plus fast-check for unit and property
@@ -120,7 +116,7 @@ development certificate. Caddy, an internal certificate authority, terminal
 trust installation, certificate renewal operations, a server appliance, a
 UPS, and backup infrastructure are not part of this deployment.
 
-**Architect recommendation:** Run one application process and one print
+Run one application process and one print
 dispatcher in that process. Horizontal scaling would add session and print-job
 coordination without satisfying an MVP need.
 
@@ -469,11 +465,12 @@ Manager approval is embedded in the protected POS command. It requires a
 manager PIN at that moment, authorizes exactly one action, and creates no
 approval session or reusable token. A back-office session never satisfies it.
 
-**Architect recommendation:** A manager acting at the POS may re-enter their
-own PIN as the approver; the approved role model grants managers the cashier
-workflow and does not define two-person separation of duties. If the owner
-requires actor and approver to be different people, that is a new product rule
-and must be stated explicitly before implementation.
+A manager who initiated a POS action may re-enter their own PIN as its
+approver. No second manager is required. The audit entry still identifies the
+initiating actor and approver, satisfying B-13, and the PIN is still entered at
+the moment of the one protected action without creating reusable authority,
+satisfying B-14. Actor and approver may therefore contain the same StaffUser
+identifier.
 
 ### 7.2 Sessions and cookies
 
@@ -503,7 +500,7 @@ discarded immediately after verification and must never enter logs, traces,
 metrics, audit, telemetry, errors, or crash reports.
 
 PIN-only entry needs a way to find one salted Argon2id record without selecting
-a user first. **Architect recommendation:** store a unique keyed blind index
+a user first. store a unique keyed blind index
 of the normalized PIN for lookup and uniqueness, using a server secret kept
 outside PostgreSQL, then verify the selected record with Argon2id. The blind
 index is not an authentication verifier, must never be exposed or logged, and
@@ -592,8 +589,9 @@ Use an internal UUID independently of the human-visible number. The MVP may use
 a single installation-wide monotonically increasing series, but its displayed
 format, reset policy, mandatory fiscal fields, refund-document numbering, and
 reprint marks remain subject to the receipt product decision in section 19.
-Store timestamps as UTC instants; the same receipt decision must identify the
-restaurant time zone used to render fiscal and business-day timestamps.
+Store timestamps as UTC instants. Rendering fiscal and business-day
+timestamps depends on the separate restaurant time-zone decision in section
+19.
 
 ## 10. Monetary and tax calculation
 
@@ -845,16 +843,16 @@ That is an architectural change, not a caching enhancement.
 | The MVP is mistaken for production-ready software | Exposure of PINs, data loss, and operational outage | Loopback startup guard plus the explicit pre-production gate | Deferred beyond MVP |
 | One local host is a single point of failure | All writes stop if the development machine or PostgreSQL stops | Fail visibly in MVP; appliance, UPS, backup, and recovery are mandatory before production | Deferred beyond MVP |
 | The MVP exercises table service sequentially through a combined cashier | It does not validate waiter/cashier handoff or real floor contention | State this limitation; validate waiter role and multi-terminal service at the pre-production gate | Deferred beyond MVP |
-| Installation-wide PIN cooldown can deny all logins or approvals for five minutes | Typing mistakes or abuse cause a bounded local denial of service | Separate LOGIN and MANAGER_APPROVAL buckets, clear UI, durable database-time cooldown; retain because client-reset-resistant throttling is required | Architect recommendation |
-| A PIN blind index becomes a fast verifier if its secret and database are both stolen | Six-digit PINs can be enumerated after complete-host compromise | Keep the key outside PostgreSQL, retain Argon2id as verifier, restrict host access, rotate credentials after compromise | Architect recommendation |
-| CheckoutLease outlives an abandoned tab | Order mutations are temporarily blocked | Five-minute renewable TTL, explicit release, database time, 15-minute authentication hard stop, audited takeover | Architect recommendation |
-| Takeover races a physical card charge | Customer may have been charged before software settlement | Explicit warning, audited takeover, displaced-token rejection, manager reconciliation | Architect recommendation |
-| ESC/POS cannot prove exactly-once paper delivery | Missing or duplicate kitchen work | Immutable documents, PrintAttempt history, UNKNOWN state, no automatic retry, explicit operator recovery | Architect recommendation |
-| Two frontend bundles drift or duplicate domain behavior | Inconsistent rules and higher maintenance | Share schemas and domain services, never committed calculation or authorization logic in either client | Architect recommendation |
-| Local development certificates add setup friction | HTTPS may initially show trust errors | Script and document local certificate creation/trust; do not substitute loopback HTTP | Architect recommendation |
-| Receipt law is unresolved | Final fields, numbering, refund documents, and markings may be wrong | Keep Receipt immutable and numbering isolated; settle jurisdiction before Phase 4 completion | Product decision required |
-| Permitted rate range is unresolved | Settings validation cannot be finalized | Approve maximum tax and service-charge rates before Phase 2 | Product decision required |
-| Post-close corrections are unresolved | Legitimate corrections after day close lack a supported path | Preserve closed-day immutability and define a next-day adjustment process before Phase 5 completion | Product decision required |
+| Installation-wide PIN cooldown can deny all logins or approvals for five minutes | Typing mistakes or abuse cause a bounded local denial of service | Separate LOGIN and MANAGER_APPROVAL buckets, clear UI, durable database-time cooldown; retain because client-reset-resistant throttling is required | Accepted architecture |
+| A PIN blind index becomes a fast verifier if its secret and database are both stolen | Six-digit PINs can be enumerated after complete-host compromise | Keep the key outside PostgreSQL, retain Argon2id as verifier, restrict host access, rotate credentials after compromise | Accepted architecture |
+| CheckoutLease outlives an abandoned tab | Order mutations are temporarily blocked | Five-minute renewable TTL, explicit release, database time, 15-minute authentication hard stop, audited takeover | Accepted architecture |
+| Takeover races a physical card charge | Customer may have been charged before software settlement | Explicit warning, audited takeover, displaced-token rejection, manager reconciliation | Accepted architecture |
+| ESC/POS cannot prove exactly-once paper delivery | Missing or duplicate kitchen work | Immutable documents, PrintAttempt history, UNKNOWN state, no automatic retry, explicit operator recovery | Accepted architecture |
+| Two frontend bundles drift or duplicate domain behavior | Inconsistent rules and higher maintenance | Share schemas and domain services, never committed calculation or authorization logic in either client | Accepted architecture |
+| Local development certificates add setup friction | HTTPS may initially show trust errors | Script and document local certificate creation/trust; do not substitute loopback HTTP | Accepted architecture |
+| Receipt law is unresolved | Final fields, numbering, refund documents, and markings may be wrong | Keep Receipt immutable and numbering isolated; settle jurisdiction before Phase 4 completion | Open product decision |
+| Permitted rate range is unresolved | Settings validation cannot be finalized | Approve maximum tax and service-charge rates before Phase 2 | Open product decision |
+| Post-close corrections are unresolved | Legitimate corrections after day close lack a supported path | Preserve closed-day immutability and define a next-day adjustment process before Phase 5 completion | Open product decision |
 
 ## 17. Rejected alternatives
 
@@ -917,169 +915,44 @@ Rejected for the MVP. Two browser bundles establish the correct client
 separation with less packaging work. A native shell becomes relevant only if
 offline storage or device integration demonstrates a need.
 
-## 18. Proposed architecture decision records
+## 18. Accepted architecture decision records
 
-### ADR-001: Single-host modular monolith with two clients
+The following ADRs were accepted with this architecture on 2026-09-10:
 
-**Status:** Proposed
+| ADR | Accepted decision |
+|---|---|
+| [ADR-001](decisions/ADR-001-single-host-modular-monolith-with-two-clients.md) | Single-host modular monolith with two clients |
+| [ADR-002](decisions/ADR-002-postgresql-as-sole-operational-authority.md) | PostgreSQL as sole operational authority |
+| [ADR-003](decisions/ADR-003-versioned-commands-and-bounded-checkout-leasing.md) | Versioned commands and bounded checkout leasing |
+| [ADR-004](decisions/ADR-004-versioned-exact-nett-monetary-policy.md) | Versioned exact nett monetary policy |
+| [ADR-005](decisions/ADR-005-transactional-print-outbox-with-uncertain-delivery.md) | Transactional print outbox with uncertain delivery |
+| [ADR-006](decisions/ADR-006-transactional-immutable-receipt-numbering.md) | Transactional immutable receipt numbering |
+| [ADR-007](decisions/ADR-007-transactional-audit-with-separate-failed-approval-evidence.md) | Transactional audit with separate failed-approval evidence |
 
-**Deciders:** Product owner and technical lead
+## 19. Open product dependencies
 
-**Context:** The MVP has two distinct interaction surfaces but one authority
-and several operations that must commit atomically.
+Architecture approval does not close these product decisions:
 
-**Decision:** Build two independently bootstrapped frontend bundles served from
-one loopback-only Fastify modular monolith backed by one PostgreSQL database.
-Keep the client boundary and reject a service split.
-
-**Options considered:** One responsive client, two clients with one monolith,
-separate services, and cloud-hosted core.
-
-**Consequences:** POS and back office can use appropriate layouts and session
-policies while sharing domain logic and transactions. The MVP remains a
-single-host development slice and requires the pre-production gate before
-network exposure.
-
-### ADR-002: PostgreSQL as sole operational authority
-
-**Status:** Proposed
-
-**Deciders:** Technical lead
-
-**Context:** Orders, checkout leases, printing, receipts, refunds, and day close
-need locking, constraints, and durable recovery.
-
-**Decision:** PostgreSQL is authoritative; clients, caches, and paper are
-projections or artifacts.
-
-**Options considered:** PostgreSQL, SQLite, and client-owned state.
-
-**Consequences:** Transactions and invariants are explicit. The application
-cannot accept offline writes when PostgreSQL is unavailable.
-
-### ADR-003: Versioned commands and bounded checkout leasing
-
-**Status:** Proposed
-
-**Deciders:** Product owner and technical lead
-
-**Context:** Blind last-write-wins can overwrite food or money, while a
-back-office 86 can invalidate a quick sale during external card collection.
-
-**Decision:** Use aggregate and catalog versions, idempotency records, row
-locks, command preconditions, and a five-minute renewable CheckoutLease with a
-15-minute authentication hard stop and audited takeover.
-
-**Options considered:** Whole-resource last-write-wins, optimistic commands
-alone, tab-only mutation guards, and unbounded ownership locks.
-
-**Consequences:** Sensitive races fail visibly, abandoned work self-releases,
-and a manager has a recorded recovery path. Lease behavior adds Phase 4 tests
-but no tender persistence or new order state.
-
-### ADR-004: Versioned exact nett monetary policy
-
-**Status:** Proposed
-
-**Deciders:** Product owner and technical lead
-
-**Context:** Historical totals must be exact and reproducible after rates,
-configuration, or code change.
-
-**Decision:** Use integer minor units, `bigint` money/rate arithmetic, rates in
-parts per million, centralized half-up rounding, immutable SettingsVersion
-snapshots, and the settled nett calculation policy.
-
-**Options considered:** Floating point, tax-exclusive “++” billing, live
-configuration lookup, and immutable order snapshots.
-
-**Consequences:** Displayed menu prices are the tax-inclusive amount paid; tax
-is derived and service charge is untaxed. API serialization and tests must
-explicitly support integer strings and calculation-policy versions.
-
-### ADR-005: Transactional print outbox with uncertain delivery
-
-**Status:** Proposed
-
-**Deciders:** Product owner and technical lead
-
-**Context:** Printing cannot gate business transitions, and basic printers
-cannot prove exactly-once delivery.
-
-**Decision:** Store immutable documents and PrintJobs with the business action,
-dispatch after commit, record every PrintAttempt, and never automatically retry
-an ambiguous outcome.
-
-**Options considered:** Synchronous printing, browser printing, automatic
-retry, external broker, and PostgreSQL outbox.
-
-**Consequences:** Business can continue during faults. Both clients need
-persistent, urgency-specific incidents and explicit reprint recovery.
-
-### ADR-006: Transactional immutable receipt numbering
-
-**Status:** Proposed
-
-**Deciders:** Product owner and technical lead
-
-**Context:** Concurrent closes must not duplicate a human-visible number, and
-reprints must preserve historical figures.
-
-**Decision:** Lock ReceiptSeries and store one immutable Receipt inside the
-close transaction. Reprint the stored entity rather than re-rendering current
-state.
-
-**Options considered:** PostgreSQL sequence, day-local counter, random visible
-identifier, and locked transactional counter.
-
-**Consequences:** Committed receipts are unique and stable without consuming a
-number on rollback. Jurisdiction-specific numbering may supersede the proposed
-format or reset policy.
-
-### ADR-007: Transactional audit with separate failed-approval evidence
-
-**Status:** Proposed
-
-**Deciders:** Product owner and technical lead
-
-**Context:** A successful audited action without evidence violates a hard
-boundary, while failed or cancelled approval has no business mutation
-transaction to join.
-
-**Decision:** Insert successful-action evidence in the same transaction as the
-action and deny application update/delete privileges. Record failed or
-cancelled approval evidence in its own short append-only transaction.
-Unauthenticated failures go to separate security telemetry.
-
-**Options considered:** Transactional insert, asynchronous audit events,
-mutable activity logs, and omission of failed attempts.
-
-**Consequences:** Successful actions and their evidence cannot diverge. Failed
-approval evidence remains actor-attributed without inventing an approver or a
-business mutation. Audit migration requires a separate privileged role.
-
-## 19. Questions requiring product-owner approval
-
-Only the following product decisions remain open in the current contract:
-
-1. **Receipt content and fiscal requirements — product decision required
+1. **Restaurant time zone — product decision required before timestamp
+   rendering and business-day acceptance are final.** The database stores UTC
+   instants, but the PRD does not name the restaurant time zone used to display
+   receipt timestamps or interpret business-day boundaries.
+2. **Receipt content and fiscal requirements — product decision required
    before Phase 4 completion.** Confirm the jurisdiction, business fields,
    number format and reset policy, mandatory tax wording, refund document,
-   retention, logo/footer, reprint marking, restaurant time zone for rendered
-   receipt and business-day timestamps, and any fiscal-device requirement.
-2. **Maximum tax and service-charge rates — product decision required before
+   retention, logo/footer, reprint marking, and any fiscal-device requirement.
+3. **Maximum tax and service-charge rates — product decision required before
    Phase 2.** Rate precision is one part per million, but the permitted range
    still needs a business limit.
-3. **Post-close corrections — product decision required before Phase 5
+4. **Post-close corrections — product decision required before Phase 5
    completion.** Define the legitimate correction workflow after BusinessDay
    close. It must use a new adjustment in a later open day and must never mutate
    the closed report or its original orders.
-
-One architecture interpretation should be confirmed with approval of this
-proposal: a manager who initiated a POS action may re-enter their own PIN as
-its approver. Requiring a different manager would introduce two-person
-separation of duties that the current role model and staffing assumptions do
-not specify.
+5. **Back-office kitchen-ticket reprint audit treatment — product decision
+   required before Phase 3 completion.** FR-E3 grants the reprint action, while
+   FR-J3 does not include it in the audited-action list. The immutable-document
+   and PrintAttempt design supports either ruling; architecture approval does
+   not silently make the action audited or unaudited.
 
 ## 20. Deferred beyond MVP
 
