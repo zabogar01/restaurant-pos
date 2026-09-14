@@ -1,5 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { query, withTransaction } from './pool.js';
 
 export async function runMigrations(dir: string): Promise<string[]> {
@@ -39,8 +40,18 @@ export async function runMigrations(dir: string): Promise<string[]> {
   return applied;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const dir = resolve(process.argv[2] ?? 'db/migrations');
+// Compare as URLs: import.meta.url is percent-encoded, so a checkout whose
+// path contains a space never matched a hand-built `file://` string and the
+// command exited 0 having done nothing.
+const invokedDirectly =
+  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (invokedDirectly) {
+  // `npm run db:migrate` runs with the workspace as cwd, so the default is
+  // anchored to this file, and an explicit path to where npm was invoked.
+  const dir = process.argv[2]
+    ? resolve(process.env.INIT_CWD ?? process.cwd(), process.argv[2])
+    : fileURLToPath(new URL('../../../../db/migrations', import.meta.url));
   runMigrations(dir)
     .then((a) => {
       console.log(a.length ? `applied: ${a.join(', ')}` : 'no pending migrations');

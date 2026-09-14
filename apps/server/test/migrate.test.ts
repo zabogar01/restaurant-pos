@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import { runMigrations } from '../src/db/migrate.js';
 import { query } from '../src/db/pool.js';
 
@@ -88,5 +91,34 @@ describe('runMigrations', () => {
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
+  });
+
+  describe('npm run db:migrate', () => {
+    const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+    const run = promisify(execFile);
+
+    it('applies the repository migrations when run from the repository root', async () => {
+      const { stdout } = await run('npm', ['run', 'db:migrate'], { cwd: repoRoot });
+      expect(stdout).toContain('applied: 0001_extensions.sql');
+
+      const rows = await query<{ filename: string }>('SELECT filename FROM schema_migration');
+      expect(rows.map((r) => r.filename)).toContain('0001_extensions.sql');
+    });
+
+    it('exits non-zero and names the failing file', async () => {
+      const dir = await mkdtemp(join(tmpdir(), 'pos-migrations-'));
+      try {
+        await writeFile(join(dir, '0001_broken.sql'), 'SELECT * FROM table_that_does_not_exist;');
+        const failure = await run('npm', ['run', 'db:migrate', '--', dir], { cwd: repoRoot }).then(
+          () => null,
+          (err: { code?: number; stderr?: string }) => err
+        );
+        expect(failure, 'db:migrate exited 0').not.toBeNull();
+        expect(failure?.code).not.toBe(0);
+        expect(failure?.stderr).toContain('0001_broken.sql');
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
   });
 });
