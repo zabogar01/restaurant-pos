@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en" data-direction="frost"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POS-03 Order workspace</title>
+<link rel="stylesheet" href="../../structure.css">
+<script>window.WF={id:'POS-03',client:'pos',name:'Order workspace',reqs:'FR-D3–D6, C1–C7, E1–E5, F1–F8, H2–H4, G10, G12',states:[
+['default','Table order — 2 rounds fired'],['empty','Table order — no lines'],['quick','Quick sale'],
+['linecontrols','Line controls — pending vs fired'],
+['quick-line','Quick sale — line editor'],
+['overflow','Overflow — long order'],['zero','Zero total (100% comp)'],
+['eightysix','Item 86’d — disabled in place'],['fireblocked','Fire blocked — 86’d pending line'],
+['catalog','CATALOG_CHANGED'],['lock-draft','Locked — your payment'],['lock-lease','Locked — another client'],
+['fireerror','Fire printed FAILED'],['loading','Loading'],['error','Command rejected'],
+['sheet-item','Sheet — item configuration'],['sheet-item86','Sheet — item 86’d mid-selection'],
+['sheet-line','Sheet — line editor'],['sheet-discount','Sheet — preset picker'],
+['sheet-freeform','Sheet — free-form discount'],['sheet-remove','Sheet — remove/replace discount'],
+['sheet-voidline','Sheet — void fired line'],['sheet-voidorder','Sheet — void order (unfired)'],
+['sheet-voidorder-fired','Sheet — void order (holds fired)'],
+['approval','Modal — manager approval'],['approval-error','Modal — wrong PIN'],
+['approval-throttled','Modal — approval cooldown'],['approval-denied','Modal — cashier PIN refused']]};</script>
+<script defer src="../../mockup.js"></script>
+<link rel="stylesheet" href="../../visual.css">
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--pos"><div class="pos">
+
+  <div class="emg" data-when="fireerror">
+    <div class="emg__mark"></div>
+    <div>
+      <div class="emg__t">Kitchen ticket did not print &mdash; Table 1, round 2</div>
+      <div class="emg__s">The order is unaffected. The kitchen has not seen this work.</div>
+    </div>
+    <a class="btn btn--sm" href="incidents.html" style="margin-left:auto;width:200px">Open incidents</a>
+  </div>
+
+  <div class="pos__bar">
+    <a href="../../../prototype/pos/floor.html" style="font-size:15px">&larr; Floor</a>
+    <h1 data-unless="quick quick-line">Table 1</h1>
+    <h1 data-when="quick quick-line">Quick sale</h1>
+    <span class="tag" data-unless="quick quick-line">DINE IN</span>
+    <span class="tag" data-when="quick quick-line">COUNTER</span>
+    <div class="pos__actor">
+      <span>Ana R. &middot; Cashier</span>
+      <span class="idle">90s</span>
+      <a class="btn btn--sm" href="lock.html" style="width:110px">Release</a>
+    </div>
+  </div>
+
+  <div class="pos__body">
+
+    
+    
+    <div class="catrail" data-unless="lock-draft lock-lease">
+      <div class="cat cat--on">Mains</div>
+      <div class="cat">Sides</div>
+      <div class="cat">Drinks</div>
+      <div class="cat">Desserts</div>
+    </div>
+
+    <div class="menuarea">
+
+      <div class="notice" data-when="catalog">
+        <div class="notice__t">The menu changed while you were ordering</div>
+        <div>Nothing was added. Prices have been refreshed &mdash; check the item and add it again.</div>
+      </div>
+
+      <div class="notice" data-when="error">
+        <div class="notice__t">Could not add that line</div>
+        <div>The order is exactly as it was. Nothing was half-applied. <a href="order.html">Try again</a></div>
+      </div>
+
+      <div class="notice notice--soft" data-when="lock-draft">
+        <div class="notice__t">Finish this payment first</div>
+        <div>You are collecting payment for this order on this tab. Adding items,
+        changing the discount, firing, and voiding &mdash; including removing a line
+        you have not sent yet &mdash; are unavailable until you finish or cancel it.
+        You can still read the order.</div>
+        <a class="btn btn--sm" href="settlement.html?state=pending" style="width:220px;margin-top:10px">Back to payment</a>
+      </div>
+
+      <div class="notice" data-when="lock-lease">
+        <div class="notice__t">Another client is settling this order</div>
+        <div>Payment was started elsewhere and may involve a card charge already in
+        progress. You cannot add items, discount, fire, or void this order &mdash; and
+        that includes removing a line you have not sent yet. Reading it is still
+        fine.</div>
+        <a class="btn btn--sm" href="settlement.html?state=takeover" style="width:260px;margin-top:10px">Manager: take over payment</a>
+      </div>
+
+      <div data-when="loading" style="padding:24px">
+        <div class="loadinglabel">LOADING MENU</div>
+        <div class="skel skel--w80"></div><div class="skel skel--w60"></div><div class="skel skel--w40"></div>
+      </div>
+
+      <div class="menugrid" data-unless="loading lock-draft lock-lease">
+        <a class="tile" href="order.html?state=sheet-item" style="text-decoration:none;color:inherit">
+          <div>Burger</div><div class="tile__p">100.000</div></a>
+        <div class="tile">Chicken Wings<div class="tile__p">90.000</div></div>
+        <div class="tile" data-unless="eightysix fireblocked sheet-item86">Steak<div class="tile__p">240.000</div></div>
+        <div class="tile tile--off" data-when="eightysix fireblocked sheet-item86">
+          <div>Steak <span class="tag tag--86">86</span></div><div class="tile__p">240.000</div></div>
+        <div class="tile">Fish &amp; Chips<div class="tile__p">140.000</div></div>
+        <div class="tile">Caesar Salad<div class="tile__p">75.000</div></div>
+        <div class="tile">Soup of the Day<div class="tile__p">55.000</div></div>
+        <div class="tile">Fries<div class="tile__p">40.000</div></div>
+        <div class="tile">Onion Rings<div class="tile__p">45.000</div></div>
+        <div class="tile">Soda<div class="tile__p">30.000</div></div>
+        <div class="tile">Coffee<div class="tile__p">35.000</div></div>
+        <div class="tile">Beer<div class="tile__p">65.000</div></div>
+        <div class="tile">House Wine<div class="tile__p">80.000</div></div>
+      </div>
+    </div>
+
+    
+    <div class="orderpanel">
+      <div class="orderpanel__head">
+        <b data-unless="quick quick-line">Order &middot; T1</b>
+        <b data-when="quick quick-line">Order &middot; counter</b>
+        <span class="muted" data-when="default zero fireerror error sheet-discount sheet-freeform sheet-remove sheet-voidline sheet-voidorder-fired approval approval-error approval-throttled approval-denied">2 items</span>
+        <span class="muted" data-when="linecontrols eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder lock-draft lock-lease">3 items</span>
+        <span class="muted" data-when="overflow" data-line="of-coffee of-cheese of-wine">9 items</span>
+        <span class="muted" data-when="overflow" data-gone="of-coffee of-cheese of-wine">8 items</span>
+        <span class="muted" data-when="quick quick-line" data-line="q-burger q-soda">2 items &middot; not yet sent</span>
+        <span class="muted" data-when="quick quick-line" data-gone="q-burger q-soda">1 item &middot; not yet sent</span>
+        <span class="muted" data-when="empty">Empty</span>
+      </div>
+
+      <div class="lines">
+
+        <div class="empty" data-when="empty" style="margin:20px;padding:32px">
+          <div style="font-weight:700;margin-bottom:6px">No items yet</div>
+          <div>Tap an item on the left to start.</div>
+        </div>
+
+        
+        <div data-unless="empty quick quick-line loading overflow lock-draft lock-lease">
+          <div class="roundhead">Round 1 &middot; fired 19:42 &middot; printed
+            <span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
+          <div class="line" data-unless="sheet-voidline">
+            <a class="line__t" href="order.html?state=sheet-voidline">
+            <div class="line__q">1</div>
+            <div class="line__b"><div class="line__n">Burger</div>
+              <div class="line__m">Large (+20.000) &middot; Extra cheese (+15.000)</div></div>
+            <div class="line__a">135.000</div></a>
+            <div class="line__x line__x--empty"></div>
+          </div>
+          <div class="line" data-when="sheet-voidline" style="background:var(--bg3)">
+            <div class="line__q">1</div>
+            <div class="line__b"><div class="line__n">Burger <span class="tag tag--solid">SELECTED</span></div>
+              <div class="line__m">Large (+20.000) &middot; Extra cheese (+15.000)</div></div>
+            <div class="line__a">135.000</div>
+          <div class="line__x line__x--empty"></div></div>
+          <div class="roundhead">Round 2 &middot; fired 19:58 &middot; printed
+            <span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
+          <div class="line">
+            <a class="line__t" href="order.html?state=sheet-voidline">
+            <div class="line__q">1</div>
+            <div class="line__b"><div class="line__n">Soda</div></div>
+            <div class="line__a">30.000</div></a>
+            <div class="line__x line__x--empty"></div>
+          </div>
+        </div>
+
+        
+        <div data-when="lock-draft lock-lease">
+          <div class="roundhead">Round 1 &middot; fired 19:42 &middot; printed
+            <span class="tag" style="margin-left:auto" data-when="lock-draft">FINISH PAYMENT FIRST</span>
+            <span class="tag" style="margin-left:auto" data-when="lock-lease">ANOTHER CLIENT</span></div>
+          <div class="line">
+            <div class="line__q">1</div>
+            <div class="line__b"><div class="line__n">Burger</div>
+              <div class="line__m">Large (+20.000) &middot; Extra cheese (+15.000)</div></div>
+            <div class="line__a">135.000</div>
+            <div class="line__x line__x--empty"></div>
+          </div>
+          <div class="roundhead">Round 2 &middot; fired 19:58 &middot; printed
+            <span class="tag" style="margin-left:auto" data-when="lock-draft">FINISH PAYMENT FIRST</span>
+            <span class="tag" style="margin-left:auto" data-when="lock-lease">ANOTHER CLIENT</span></div>
+          <div class="line">
+            <div class="line__q">1</div>
+            <div class="line__b"><div class="line__n">Soda</div></div>
+            <div class="line__a">30.000</div>
+            <div class="line__x line__x--empty"></div>
+          </div>
+          
+          <div class="roundhead">Pending &middot; not sent to the kitchen
+            <span class="tag" style="margin-left:auto" data-when="lock-draft">FINISH PAYMENT FIRST</span>
+            <span class="tag" style="margin-left:auto" data-when="lock-lease">ANOTHER CLIENT</span></div>
+          <div class="line">
+            <div class="line__q">1</div>
+            <div class="line__b"><div class="line__n">Steak</div>
+              <div class="line__m">Medium rare</div></div>
+            <div class="line__a">240.000</div>
+            <div class="line__x line__x--empty"></div>
+          </div>
+        </div>
+
+        
+        <div data-when="quick quick-line">
+          <div class="roundhead">Not sent to the kitchen yet
+            <span class="tag" style="margin-left:auto">REMOVE FREELY</span></div>
+          <div class="line" data-line="q-burger">
+            <a class="line__t" href="order.html?state=quick-line">
+              <div class="line__q">1</div>
+              <div class="line__b"><div class="line__n">Burger</div>
+                <div class="line__m">Large (+20.000) &middot; Extra cheese (+15.000)</div></div>
+              <div class="line__a">135.000</div>
+            </a>
+            <a class="line__x" href="order.html?state=quick&amp;gone=q-burger" title="Remove Burger">&times;</a>
+          </div>
+          <div class="line" data-line="q-soda">
+            <a class="line__t" href="order.html?state=quick-line">
+              <div class="line__q">1</div>
+              <div class="line__b"><div class="line__n">Soda</div></div>
+              <div class="line__a">30.000</div>
+            </a>
+            <a class="line__x" href="order.html?state=quick&amp;gone=q-soda" title="Remove Soda">&times;</a>
+          </div>
+        </div>
+
+        
+        <div data-when="linecontrols eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder">
+          <div class="roundhead">Pending &middot; not sent to the kitchen
+            <span class="tag" style="margin-left:auto">REMOVE FREELY</span></div>
+          <div class="line">
+            <a class="line__t" href="order.html?state=sheet-line">
+              <div class="line__q">1</div>
+              <div class="line__b"><div class="line__n">Steak
+                <span class="tag tag--86" data-when="eightysix fireblocked sheet-item86">86</span></div>
+                <div class="line__m">Medium rare</div></div>
+              <div class="line__a">240.000</div>
+            </a>
+            <a class="line__x" href="order.html" title="Remove Steak">&times;</a>
+          </div>
+        </div>
+
+        
+        
+        <div data-when="overflow">
+          <div class="roundhead">Round 1 &middot; fired 19:42<span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
+          <div class="line">
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">2</div><div class="line__b"><div class="line__n">Burger</div><div class="line__m">Large &middot; Extra cheese</div></div><div class="line__a">270.000</div></a>
+            <div class="line__x line__x--empty"></div>
+          </div>
+          <div class="line">
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">1</div><div class="line__b"><div class="line__n">Fish &amp; Chips</div></div><div class="line__a">140.000</div></a>
+            <div class="line__x line__x--empty"></div>
+          </div>
+          <div class="line">
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">4</div><div class="line__b"><div class="line__n">Soda</div></div><div class="line__a">120.000</div></a>
+            <div class="line__x line__x--empty"></div>
+          </div>
+          <div class="line line--void"><div class="line__q">1</div><div class="line__b"><div class="line__n">Caesar Salad</div><div class="line__m">Voided 19:51 &middot; approved by M. Iqbal</div></div><div class="line__a">75.000</div><div class="line__x line__x--empty"></div></div>
+          <div class="roundhead">Round 2 &middot; fired 19:58<span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
+          <div class="line">
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">3</div><div class="line__b"><div class="line__n">Chicken Wings</div></div><div class="line__a">270.000</div></a>
+            <div class="line__x line__x--empty"></div>
+          </div>
+          <div class="line">
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">2</div><div class="line__b"><div class="line__n">Beer</div></div><div class="line__a">130.000</div></a>
+            <div class="line__x line__x--empty"></div>
+          </div>
+          <div class="line">
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">1</div><div class="line__b"><div class="line__n">Onion Rings</div></div><div class="line__a">45.000</div></a>
+            <div class="line__x line__x--empty"></div>
+          </div>
+          <div class="roundhead">Pending &middot; not sent to the kitchen<span class="tag" style="margin-left:auto">REMOVE FREELY</span></div>
+          <div class="line" data-line="of-coffee"><a class="line__t" href="order.html?state=sheet-line"><div class="line__q">2</div><div class="line__b"><div class="line__n">Coffee</div></div><div class="line__a">70.000</div></a><a class="line__x" href="order.html?state=overflow&amp;gone=of-coffee" title="Remove Coffee">&times;</a></div>
+          <div class="line" data-line="of-cheese"><a class="line__t" href="order.html?state=sheet-line"><div class="line__q">1</div><div class="line__b"><div class="line__n">Cheesecake</div></div><div class="line__a">60.000</div></a><a class="line__x" href="order.html?state=overflow&amp;gone=of-cheese" title="Remove Cheesecake">&times;</a></div>
+          <div class="line" data-line="of-wine"><a class="line__t" href="order.html?state=sheet-line"><div class="line__q">1</div><div class="line__b"><div class="line__n">House Wine</div></div><div class="line__a">80.000</div></a><a class="line__x" href="order.html?state=overflow&amp;gone=of-wine" title="Remove House Wine">&times;</a></div>
+        </div>
+
+        <div data-when="loading" style="padding:20px">
+          <div class="skel skel--w80"></div><div class="skel skel--w60"></div><div class="skel skel--w80"></div>
+        </div>
+
+      </div>
+
+      <div class="notice" data-when="fireblocked" style="flex:none;margin:0;border-left:0;border-right:0">
+        <div class="notice__t">Cannot send to the kitchen</div>
+        <div>1 pending line is no longer available: <b>Steak</b>.
+        Void that line or ask a manager to put the item back on.</div>
+      </div>
+
+      
+      <div class="totals" data-unless="empty loading zero linecontrols lock-draft lock-lease eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder overflow quick quick-line">
+        <div class="t"><span>Subtotal</span><span class="mono">165.000</span></div>
+        <div class="t"><span>Staff meal 10% <a href="order.html?state=sheet-remove" style="font-size:12px">change</a></span><span class="mono">&minus;16.500</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">7.425</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">155.925</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">13.500</span></div>
+      </div>
+      
+      <div class="totals" data-when="linecontrols lock-draft lock-lease eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder">
+        <div class="t"><span>Subtotal</span><span class="mono">405.000</span></div>
+        <div class="t"><span>Staff meal 10%</span><span class="mono">&minus;40.500</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">18.225</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">382.725</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">33.136</span></div>
+      </div>
+      
+      <div class="totals" data-when="quick quick-line" data-line="q-burger q-soda">
+        <div class="t"><span>Subtotal</span><span class="mono">165.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">8.250</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">173.250</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">15.000</span></div>
+      </div>
+      <div class="totals" data-when="quick quick-line" data-gone="q-burger">
+        <div class="t"><span>Subtotal</span><span class="mono">30.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">1.500</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">31.500</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">2.727</span></div>
+      </div>
+      <div class="totals" data-when="quick quick-line" data-gone="q-soda">
+        <div class="t"><span>Subtotal</span><span class="mono">135.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">6.750</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">141.750</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">12.273</span></div>
+      </div>
+      
+      <div class="totals" data-when="zero">
+        <div class="t"><span>Subtotal</span><span class="mono">165.000</span></div>
+        <div class="t"><span>Comp 100% <a href="order.html?state=sheet-remove" style="font-size:12px">change</a></span><span class="mono">&minus;165.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">0</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">0</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">0</span></div>
+      </div>
+      
+      <div class="totals" data-when="empty">
+        <div class="t"><span>Subtotal</span><span class="mono">0</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">0</span></div>
+      </div>
+      <div class="totals" data-when="overflow" data-line="of-coffee of-cheese of-wine">
+        <div class="t"><span>Subtotal</span><span class="mono">1.185.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">59.250</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">1.244.250</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">107.727</span></div>
+      </div>
+      <div class="totals" data-when="overflow" data-gone="of-coffee">
+        <div class="t"><span>Subtotal</span><span class="mono">1.115.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">55.750</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">1.170.750</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">101.364</span></div>
+      </div>
+      <div class="totals" data-when="overflow" data-gone="of-cheese">
+        <div class="t"><span>Subtotal</span><span class="mono">1.125.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">56.250</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">1.181.250</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">102.273</span></div>
+      </div>
+      <div class="totals" data-when="overflow" data-gone="of-wine">
+        <div class="t"><span>Subtotal</span><span class="mono">1.105.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">55.250</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">1.160.250</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">100.455</span></div>
+      </div>
+      <div class="totals" data-when="loading"><div class="skel skel--w60"></div><div class="skel skel--w40"></div></div>
+
+      
+      <div class="actions" data-unless="lock-draft lock-lease">
+        <a class="btn" href="order.html?state=sheet-discount" data-unless="empty">Discount</a>
+        <span class="btn btn--off" data-when="empty">Discount</span>
+        <a class="btn" href="order.html?state=sheet-voidorder" data-unless="empty">Void order</a>
+        <span class="btn btn--off" data-when="empty">Void order</span>
+
+        
+        <a class="btn" href="order.html?state=fireerror"
+           data-unless="empty quick quick-line fireblocked">Send to kitchen</a>
+        <span class="btn btn--off" data-when="empty">Send to kitchen</span>
+        <span class="btn btn--off" data-when="fireblocked">Send to kitchen</span>
+
+        <a class="btn btn--primary" href="settlement.html?state=partial" data-unless="empty quick quick-line">Settle</a>
+        <span class="btn btn--off" data-when="empty">Settle</span>
+        <a class="btn btn--primary btn--wide" href="settlement.html?state=partial" data-when="quick quick-line">
+          Settle &mdash; sends the order to the kitchen</a>
+      </div>
+      <div class="actions" data-when="lock-draft lock-lease">
+        <span class="btn btn--off">Discount</span><span class="btn btn--off">Void order</span>
+        <span class="btn btn--off">Send to kitchen</span><span class="btn btn--off">Settle</span>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <div data-when="sheet-item sheet-item86">
+    <div class="scrim scrim--sheet"></div>
+    <div class="sheet">
+      <div class="sheet__head"><h2>Burger</h2><span class="mono" style="margin-left:auto">100.000</span></div>
+      <div class="sheet__body">
+        <div class="notice" data-when="sheet-item86" style="margin:0 0 20px">
+          <div class="notice__t">Burger is no longer available</div>
+          <div>A manager marked it 86 while you were choosing. Your selections are kept
+          so you can note them, but it cannot be added.</div>
+        </div>
+        <span class="label">Size &mdash; choose one</span>
+        <div class="rowflex gap8" style="margin-bottom:20px">
+          <div class="btn" style="width:150px">Regular<br>+0</div>
+          <div class="btn btn--primary" style="width:150px">Large<br>+20.000</div>
+          <div class="btn" style="width:150px">Small<br>&minus;10.000</div>
+        </div>
+        <span class="label">Extras &mdash; choose any</span>
+        <div class="rowflex gap8" style="flex-wrap:wrap">
+          <div class="btn btn--primary" style="width:180px">Extra cheese +15.000</div>
+          <div class="btn" style="width:180px">Bacon +20.000</div>
+          <div class="btn" style="width:180px">No onion +0</div>
+        </div>
+        <div class="rowflex spread" style="margin-top:24px;font-size:20px">
+          <span>Line total</span><span class="mono"><b>135.000</b></span>
+        </div>
+      </div>
+      <div class="sheet__foot">
+        <a class="btn" href="order.html">Cancel</a>
+        <a class="btn btn--primary" href="order.html?state=eightysix" data-when="sheet-item">Add to order</a>
+        <span class="btn btn--off" data-when="sheet-item86">Add to order</span>
+      </div>
+    </div>
+  </div>
+
+  
+  <div data-when="quick-line">
+    <div class="scrim scrim--sheet"></div>
+    <div class="sheet">
+      <div class="sheet__head"><h2>Burger</h2>
+        <span class="tag" style="margin-left:auto">NOT SENT YET</span></div>
+      <div class="sheet__body">
+        <span class="label">Quantity &mdash; whole numbers, maximum 99</span>
+        <div class="rowflex gap12" style="margin-bottom:24px">
+          <div class="btn" style="width:88px">&minus;</div>
+          <div class="field" style="width:120px;justify-content:center">1</div>
+          <div class="btn" style="width:88px">+</div>
+        </div>
+        <div class="muted">Nothing on a counter sale goes to the kitchen until you
+        settle it, so removing this line needs no approval and is not recorded.</div>
+        <div class="muted" style="margin-top:8px">You can also remove it straight from
+        the order line. This sheet exists for quantity.</div>
+      </div>
+      <div class="sheet__foot">
+        <a class="btn" href="order.html?state=quick">Back</a>
+        <a class="btn btn--primary" href="order.html?state=quick&amp;gone=q-burger">Remove line</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="sheet-line">
+    <div class="scrim scrim--sheet"></div>
+    <div class="sheet">
+      <div class="sheet__head"><h2>Steak &mdash; pending</h2></div>
+      <div class="sheet__body">
+        <span class="label">Quantity &mdash; whole numbers, maximum 99</span>
+        <div class="rowflex gap12" style="margin-bottom:24px">
+          <div class="btn" style="width:88px">&minus;</div>
+          <div class="field" style="width:120px;justify-content:center">1</div>
+          <div class="btn" style="width:88px">+</div>
+        </div>
+        <div class="muted">This line has not been sent to the kitchen. Removing it needs
+        no approval and is not recorded.</div>
+        <div class="muted" style="margin-top:8px">You can also remove it straight from the
+        order line without opening this sheet. This sheet exists for quantity, which
+        has nowhere else to live.</div>
+      </div>
+      <div class="sheet__foot">
+        <a class="btn" href="order.html?state=eightysix">Back</a>
+        <a class="btn btn--primary" href="order.html">Remove line</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="sheet-discount">
+    <div class="scrim scrim--sheet"></div>
+    <div class="sheet">
+      <div class="sheet__head"><h2>Discount</h2><span class="muted" style="margin-left:auto">One per order</span></div>
+      <div class="sheet__body">
+        <span class="label">Presets &mdash; no approval needed</span>
+        <div class="stack gap8" style="margin-bottom:24px">
+          <a class="btn" href="order.html?state=default">Staff meal &mdash; 10%</a>
+          <a class="btn" href="order.html?state=default">Regular customer &mdash; 5%</a>
+          <a class="btn" href="order.html?state=default">Service recovery &mdash; 50.000 off</a>
+          <a class="btn" href="order.html?state=zero">Comp &mdash; 100%</a>
+        </div>
+        <span class="label">Anything else</span>
+        <a class="btn" href="order.html?state=sheet-freeform" style="border-style:dashed">
+          Other amount &mdash; needs a manager</a>
+      </div>
+      <div class="sheet__foot"><a class="btn" href="order.html">Cancel</a><span></span></div>
+    </div>
+  </div>
+
+  <div data-when="sheet-freeform">
+    <div class="scrim scrim--sheet"></div>
+    <div class="sheet">
+      <div class="sheet__head"><h2>Other discount</h2><span class="tag" style="margin-left:auto">MANAGER REQUIRED</span></div>
+      <div class="sheet__body">
+        <div class="rowflex gap8" style="margin-bottom:20px">
+          <div class="btn btn--primary" style="width:150px">Percent</div>
+          <div class="btn" style="width:150px">Fixed amount</div>
+        </div>
+        <span class="label">Value &mdash; 0 to 100%</span>
+        <div class="field" style="width:220px">15 %</div>
+        <div class="muted" style="margin-top:20px">A manager must enter their PIN before this
+        is applied. Nothing changes on the order until they do.</div>
+      </div>
+      <div class="sheet__foot">
+        <a class="btn" href="order.html?state=sheet-discount">Back</a>
+        <a class="btn btn--primary" href="order.html?state=approval">Apply</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="sheet-remove">
+    <div class="scrim scrim--sheet"></div>
+    <div class="sheet">
+      <div class="sheet__head"><h2>Change discount</h2></div>
+      <div class="sheet__body">
+        <div class="card" style="margin-bottom:20px">
+          <div class="card__t">Currently applied</div>
+          <div class="rowflex spread"><span>Staff meal &mdash; 10%</span><span class="mono">&minus;16.500</span></div>
+          <div class="muted" style="margin-top:6px">Applied by Ana R. at 19:44. Preset, no approval.</div>
+        </div>
+        <div class="stack gap8">
+          <a class="btn" href="order.html?state=default">Replace with another preset</a>
+          <a class="btn" href="order.html?state=approval" style="border-style:dashed">Replace with another amount &mdash; needs a manager</a>
+          <a class="btn" href="order.html?state=empty">Remove the discount</a>
+        </div>
+      </div>
+      <div class="sheet__foot"><a class="btn" href="order.html">Cancel</a><span></span></div>
+    </div>
+  </div>
+
+  <div data-when="sheet-voidline">
+    <div class="scrim scrim--sheet"></div>
+    <div class="sheet">
+      <div class="sheet__head"><h2>Void a line already sent to the kitchen</h2>
+        <span class="tag" style="margin-left:auto">MANAGER REQUIRED</span></div>
+      <div class="sheet__body">
+        <div class="card">
+          <div class="rowflex spread"><span><b>Burger</b> &mdash; Large, extra cheese</span><span class="mono">135.000</span></div>
+          <div class="muted" style="margin-top:4px">Sent to the kitchen in round 1 at 19:42.</div>
+        </div>
+        <div class="notice" style="margin:16px 0">
+          <div class="notice__t">A cancellation ticket will print in the kitchen</div>
+          <div>It cancels this work only. It is not a new order and does not re-send the item.</div>
+        </div>
+        <span class="label">Reason &mdash; required</span>
+        <div class="stack gap8">
+          <div class="btn btn--sm" style="justify-content:flex-start;padding-left:16px">Sent to the wrong table</div>
+          <div class="btn btn--sm btn--primary" style="justify-content:flex-start;padding-left:16px">Customer changed their mind</div>
+          <div class="btn btn--sm" style="justify-content:flex-start;padding-left:16px">Kitchen cannot make it</div>
+          <div class="btn btn--sm" style="justify-content:flex-start;padding-left:16px">Other &mdash; type a reason</div>
+        </div>
+      </div>
+      <div class="sheet__foot">
+        <a class="btn" href="order.html">Cancel</a>
+        <a class="btn btn--primary" href="order.html?state=approval">Continue</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="sheet-voidorder">
+    <div class="scrim scrim--sheet"></div>
+    <div class="sheet">
+      <div class="sheet__head"><h2>Void this order</h2></div>
+      <div class="sheet__body">
+        <div class="notice notice--soft">
+          <div class="notice__t">Nothing on this order has been sent to the kitchen</div>
+          <div>No approval needed. The void is recorded against your name.</div>
+        </div>
+        <div class="rowflex spread" style="margin-top:20px;font-size:20px">
+          <span>Order value</span><span class="mono"><b>382.725</b></span></div>
+      </div>
+      <div class="sheet__foot">
+        <a class="btn" href="order.html?state=eightysix">Keep order</a>
+        <a class="btn btn--primary" href="../../../prototype/pos/floor.html">Void order</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="sheet-voidorder-fired">
+    <div class="scrim scrim--sheet"></div>
+    <div class="sheet">
+      <div class="sheet__head"><h2>Void this order</h2>
+        <span class="tag" style="margin-left:auto">MANAGER REQUIRED</span></div>
+      <div class="sheet__body">
+        <div class="notice">
+          <div class="notice__t">2 lines have already been sent to the kitchen</div>
+          <div>A cancellation ticket will print covering only that fired work.</div>
+        </div>
+        <span class="label" style="margin-top:16px">Reason &mdash; required</span>
+        <div class="stack gap8">
+          <div class="btn btn--sm btn--primary" style="justify-content:flex-start;padding-left:16px">Customer left</div>
+          <div class="btn btn--sm" style="justify-content:flex-start;padding-left:16px">Order taken in error</div>
+          <div class="btn btn--sm" style="justify-content:flex-start;padding-left:16px">Other &mdash; type a reason</div>
+        </div>
+        <div class="rowflex spread" style="margin-top:20px;font-size:20px">
+          <span>Order value</span><span class="mono"><b>155.925</b></span></div>
+      </div>
+      <div class="sheet__foot">
+        <a class="btn" href="order.html">Keep order</a>
+        <a class="btn btn--primary" href="order.html?state=approval">Continue</a>
+      </div>
+    </div>
+  </div>
+
+  
+  <div data-when="approval approval-error approval-throttled approval-denied">
+    <div class="scrim"></div>
+    <div class="modal">
+      <div class="modal__head">
+        <h2>Manager PIN</h2>
+        <div class="muted" style="margin-top:4px">Void a fired line &mdash; Burger 135.000 &mdash;
+        reason: customer changed their mind</div>
+      </div>
+      <div class="modal__body">
+        <div class="pindots">
+          <span class="pindot pindot--on"></span><span class="pindot pindot--on"></span>
+          <span class="pindot pindot--on"></span><span class="pindot pindot--on"></span>
+          <span class="pindot"></span><span class="pindot"></span>
+        </div>
+
+        <div class="notice" data-when="approval-error" style="margin:0 0 16px">
+          <div class="notice__t">PIN not recognised</div>
+          <div>3 attempts remaining before manager approvals are locked for five minutes.</div>
+        </div>
+        <div class="notice" data-when="approval-throttled" style="margin:0 0 16px">
+          <div class="notice__t">Manager approvals locked for 4 min 38 s</div>
+          <div>Five failed approval attempts. Signing in as a cashier does not clear this.</div>
+        </div>
+        <div class="notice" data-when="approval-denied" style="margin:0 0 16px">
+          <div class="notice__t">That PIN is not a manager</div>
+          <div>This action needs a manager. The attempt has been recorded.</div>
+        </div>
+
+        <div class="keypad" style="grid-template-columns:repeat(3,72px)">
+          <div class="key" style="height:72px">1</div><div class="key" style="height:72px">2</div><div class="key" style="height:72px">3</div>
+          <div class="key" style="height:72px">4</div><div class="key" style="height:72px">5</div><div class="key" style="height:72px">6</div>
+          <div class="key" style="height:72px">7</div><div class="key" style="height:72px">8</div><div class="key" style="height:72px">9</div>
+          <div class="key" style="height:72px">&larr;</div><div class="key" style="height:72px">0</div>
+          <a class="key" style="height:72px;text-decoration:none" href="order.html?state=default">&#9654;</a>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <a class="btn" href="order.html">Cancel</a>
+        <span class="muted" style="align-self:center;font-size:12px">Cancelling changes nothing on the order.</span>
+      </div>
+    </div>
+  </div>
+
+</div><div class="device__caption">POS &mdash; 1280 &times; 800</div></div></div>
+
+
+</main></body></html>

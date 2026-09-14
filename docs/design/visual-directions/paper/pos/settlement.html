@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en" data-direction="paper"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POS-04 Settlement</title>
+<link rel="stylesheet" href="../../structure.css">
+<script>window.WF={id:'POS-04',client:'pos',name:'Settlement',reqs:'FR-G1–G14, M5, E5, A2',states:[
+['empty','No payment drafted — cash'],['card','Card — balance already filled in'],
+['exact','Exact — card in full'],['exactcash','Exact — cash in full'],
+['cardsplit','Card — 100.000 keyed, splitting'],['partial','Split — 55.925 still owing'],
+['exactsplit','Exact — 100.000 card + 55.925 cash (AC-7)'],
+['cashover','Cash — 200.000 keyed over the balance'],['change','Cash over — change due (AC-5)'],
+['cardover','Card over balance — rejected (AC-6)'],
+['ceiling','Change ceiling exceeded'],['zero','Zero total'],['pending','Blocked — pending lines'],
+['overflow','Overflow — many splits'],['reauth','Re-authenticate to close'],
+['cancel','Cancel payment'],['leaselost','Lease lost — displaced'],['takeover','Manager takeover'],
+['loading','Closing'],['error','Close rejected']]};</script>
+<script defer src="../../mockup.js"></script>
+<link rel="stylesheet" href="../../visual.css">
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--pos"><div class="pos">
+
+  <div class="pos__bar">
+    <a href="order.html?state=lock-draft" style="font-size:15px">&larr; Order</a>
+    <h1>Payment &mdash; Table 1</h1>
+    <span class="tag" data-unless="zero">NOTHING RECORDED YET</span>
+    <div class="pos__actor">
+      <span data-unless="reauth">Ana R. &middot; Cashier</span>
+      <span data-when="reauth" class="tag">SIGNED OUT</span>
+      <span class="idle" data-unless="reauth">90s</span>
+      <span class="idle">Lease 4:52</span>
+    </div>
+  </div>
+
+  <div class="pos__body">
+
+    
+    <div style="width:560px;flex:none;border-right:2px solid var(--ink);display:flex;flex-direction:column">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--line2)">
+        <div class="totals" style="border:0;padding:0">
+          <div class="t"><span>Subtotal</span><span class="mono">165.000</span></div>
+          <div class="t"><span data-unless="zero">Staff meal 10%</span><span data-when="zero">Comp 100%</span><span class="mono" data-unless="zero">&minus;16.500</span><span class="mono" data-when="zero">&minus;165.000</span></div>
+          <div class="t"><span>Service charge 5%</span><span class="mono" data-unless="zero">7.425</span><span class="mono" data-when="zero">0</span></div>
+          <div class="t t--grand"><span>Total</span><span class="mono" data-unless="zero">155.925</span><span class="mono" data-when="zero">0</span></div>
+          <div class="t t--incl"><span>Includes tax 10%</span><span class="mono" data-unless="zero">13.500</span><span class="mono" data-when="zero">0</span></div>
+        </div>
+      </div>
+
+      <div style="padding:16px 20px;border-bottom:2px solid var(--ink)">
+        <div class="rowflex spread" style="font-size:32px;font-weight:700">
+          <span style="font-size:18px;font-weight:400">Balance</span>
+          <span class="mono" data-when="empty card cardsplit cashover cardover pending leaselost takeover">155.925</span>
+          <span class="mono" data-when="partial ceiling">55.925</span>
+          <span class="mono" data-when="exact exactcash exactsplit change overflow reauth cancel error loading zero">0</span>
+        </div>
+        <div class="rowflex spread" data-when="change" style="font-size:22px;font-weight:700;margin-top:8px">
+          <span style="font-size:16px;font-weight:400">Change due</span><span class="mono">44.075</span>
+        </div>
+        <div class="muted" data-when="change" style="margin-top:4px">Recorded revenue is the order
+        total, 155.925 &mdash; not the 200.000 handed over.</div>
+      </div>
+
+      <div style="flex:1;overflow:hidden;padding:16px 20px">
+        <div class="notice" data-when="zero" style="margin:0 0 12px">
+          <div class="notice__t">Nothing to collect</div>
+          <div>This order is fully discounted. Closing it records zero revenue and still
+          prints a receipt. No payment lines are stored.</div>
+        </div>
+
+        <div class="notice" data-when="pending" style="margin:0 0 12px">
+          <div class="notice__t">Cannot close &mdash; 1 item has not been sent to the kitchen</div>
+          <div><b>Steak</b> is still pending. Send it or void it first &mdash; which means
+          leaving this payment, because a draft blocks both.
+          <a href="order.html?state=lock-draft">Back to the order</a></div>
+        </div>
+
+        <div class="notice" data-when="error" style="margin:0 0 12px">
+          <div class="notice__t">Close was rejected</div>
+          <div>The order changed while you were collecting payment. Your drafted payment
+          lines are still here &mdash; check the total and try again. Nothing was recorded.</div>
+        </div>
+
+        <div data-when="loading" style="margin-bottom:12px">
+          <div class="loadinglabel">CLOSING ORDER</div>
+          <div class="skel skel--w80"></div><div class="skel skel--w40"></div>
+        </div>
+
+        <div class="rowflex spread" data-unless="zero" style="margin-bottom:4px">
+          <span class="label" style="margin:0">Drafted payment lines</span>
+          <span class="tag">NOTHING RECORDED YET</span>
+        </div>
+
+        
+        <div class="empty" data-when="empty card cardsplit cashover cardover pending" style="padding:20px">Nothing drafted yet</div>
+
+        
+        <div data-when="partial ceiling">
+          <div class="listrow" style="padding:8px 0;min-height:56px"><span style="flex:1">Card</span><span class="mono">100.000</span>
+            <a href="settlement.html?state=empty" style="font-size:13px">Remove</a></div>
+        </div>
+
+        
+        <div data-when="exact reauth cancel error loading">
+          <div class="listrow" style="padding:8px 0;min-height:56px"><span style="flex:1">Card</span><span class="mono">155.925</span>
+            <a href="settlement.html?state=empty" style="font-size:13px">Remove</a></div>
+        </div>
+
+        
+        <div data-when="exactcash">
+          <div class="listrow" style="padding:8px 0;min-height:56px"><span style="flex:1">Cash</span><span class="mono">155.925</span>
+            <a href="settlement.html?state=empty" style="font-size:13px">Remove</a></div>
+        </div>
+
+        
+        <div data-when="exactsplit">
+          <div class="listrow" style="padding:8px 0;min-height:56px"><span style="flex:1">Card</span><span class="mono">100.000</span>
+            <a href="settlement.html?state=empty" style="font-size:13px">Remove</a></div>
+          <div class="listrow" style="padding:8px 0;min-height:56px"><span style="flex:1">Cash</span><span class="mono">55.925</span>
+            <a href="settlement.html?state=partial" style="font-size:13px">Remove</a></div>
+        </div>
+
+        
+        <div data-when="change">
+          <div class="listrow" style="padding:8px 0;min-height:56px"><span style="flex:1">Cash</span><span class="mono">200.000</span>
+            <a href="settlement.html?state=empty" style="font-size:13px">Remove</a></div>
+          <div class="listrow" style="padding:8px 0;min-height:56px"><span style="flex:1">Change given</span><span class="mono">&minus;44.075</span></div>
+        </div>
+
+        <div data-when="overflow">
+          <div class="listrow" style="padding:6px 0;min-height:48px"><span style="flex:1">Card</span><span class="mono">40.000</span><a href="#" style="font-size:13px">Remove</a></div>
+          <div class="listrow" style="padding:6px 0;min-height:48px"><span style="flex:1">Card</span><span class="mono">30.000</span><a href="#" style="font-size:13px">Remove</a></div>
+          <div class="listrow" style="padding:6px 0;min-height:48px"><span style="flex:1">Meal voucher</span><span class="mono">20.000</span><a href="#" style="font-size:13px">Remove</a></div>
+          <div class="listrow" style="padding:6px 0;min-height:48px"><span style="flex:1">Card</span><span class="mono">10.000</span><a href="#" style="font-size:13px">Remove</a></div>
+          <div class="listrow" style="padding:6px 0;min-height:48px"><span style="flex:1">Staff account</span><span class="mono">20.000</span><a href="#" style="font-size:13px">Remove</a></div>
+          <div class="listrow" style="padding:6px 0;min-height:48px"><span style="flex:1">Cash</span><span class="mono">35.925</span><a href="#" style="font-size:13px">Remove</a></div>
+          <div class="muted" style="padding-top:6px">List scrolls. Total, balance and the close
+          control never scroll away.</div>
+        </div>
+      </div>
+
+      <div style="padding:12px 20px;border-top:1px solid var(--line2)">
+        <a class="btn btn--sm" href="settlement.html?state=cancel" data-unless="leaselost takeover">Cancel payment</a>
+        <div class="muted" style="margin-top:6px;font-size:12px" data-unless="leaselost takeover">
+          Releases the order so it can be edited again. Nothing has been recorded here.</div>
+      </div>
+    </div>
+
+    
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+      
+      <div style="padding:12px 20px;border-bottom:1px solid var(--line2)" class="rowflex gap8">
+        <a class="btn btn--sm btn--primary" href="settlement.html?state=empty" style="flex:1;height:56px;font-size:15px" data-unless="card cardsplit cardover">Cash</a>
+        <a class="btn btn--sm" href="settlement.html?state=empty" style="flex:1;height:56px;font-size:15px" data-when="card cardsplit cardover">Cash</a>
+        <a class="btn btn--sm btn--primary" href="settlement.html?state=card" style="flex:1;height:56px;font-size:15px" data-when="card cardsplit cardover">Card</a>
+        <a class="btn btn--sm" href="settlement.html?state=card" style="flex:1;height:56px;font-size:15px" data-unless="card cardsplit cardover">Card</a>
+        <div class="btn btn--sm" style="flex:1;height:56px;font-size:15px">Meal voucher</div>
+        <div class="btn btn--sm" style="flex:1;height:56px;font-size:15px">Staff account</div>
+      </div>
+
+      <div style="padding:12px 20px;flex:1;overflow:hidden">
+
+        <div class="notice" data-when="cardover" style="margin:0 0 12px">
+          <div class="notice__t">Card cannot be more than the balance</div>
+          <div>You entered 200.000. The most you can take on card is <b>155.925</b> &mdash; which is
+          what was already filled in. Cash is the only method that may exceed the
+          balance.</div>
+        </div>
+
+        <div class="notice" data-when="ceiling" style="margin:0 0 12px">
+          <div class="notice__t">Too much cash to give change for</div>
+          <div>The most cash this sale can accept is <b>10.055.924</b> &mdash; the 55.925
+          still owing plus the 9.999.999 change limit. Nothing has been recorded and
+          the drafted payment lines are unchanged.</div>
+        </div>
+
+        <div class="empty" data-when="zero" style="padding:40px">
+          <div style="font-weight:700;margin-bottom:6px">No payment to take</div>
+          <div>Close the order to print the receipt.</div>
+        </div>
+
+        
+        <div class="rowflex gap12" style="margin-bottom:8px" data-unless="zero">
+          <div style="flex:1">
+            <div class="rowflex spread" style="margin-bottom:4px">
+              <span class="label" style="margin:0">Amount</span>
+              <span class="tag tag--solid" data-unless="cardsplit cashover cardover ceiling exact exactcash exactsplit change overflow reauth cancel error loading">ALREADY FILLED IN &mdash; WHOLE BALANCE</span>
+              <span class="tag" data-when="cardsplit cashover cardover ceiling">KEYED BY HAND</span>
+              <span class="tag" data-when="exact exactcash exactsplit change overflow reauth cancel error loading">FULLY ALLOCATED</span>
+            </div>
+            <div class="field" data-when="empty card pending leaselost takeover">155.925</div>
+            <div class="field" data-when="partial">55.925</div>
+            <div class="field" data-when="cardsplit">100.000</div>
+            <div class="field" data-when="cashover cardover">200.000</div>
+            <div class="field" data-when="ceiling">99.999.999</div>
+            <div class="field" data-when="exact exactcash exactsplit change overflow reauth cancel error loading">0</div>
+          </div>
+          
+          <div style="width:170px"><span class="label">&nbsp;</span>
+            <a class="btn" href="settlement.html?state=exact" style="height:56px" data-when="card">Add card</a>
+            <a class="btn" href="settlement.html?state=partial" style="height:56px" data-when="cardsplit">Add card</a>
+            <a class="btn" href="settlement.html?state=exactcash" style="height:56px" data-when="empty pending leaselost takeover">Add cash</a>
+            <a class="btn" href="settlement.html?state=exactsplit" style="height:56px" data-when="partial">Add cash</a>
+            <a class="btn" href="settlement.html?state=change" style="height:56px" data-when="cashover">Add cash</a>
+            <span class="btn btn--off" style="height:56px;font-size:13px" data-when="cardover ceiling">Over the limit &mdash; cannot add</span>
+            <span class="btn btn--off" style="height:56px" data-when="exact exactcash exactsplit change overflow reauth cancel error loading">Nothing left</span>
+          </div>
+        </div>
+
+        
+        <div class="muted" data-when="card" style="margin-bottom:14px">
+          The whole balance, already filled in &mdash; and the <b>most</b> card can take.
+          Key a smaller amount to split the bill; whatever is left stays on the balance.</div>
+        <div class="muted" data-when="cardsplit" style="margin-bottom:14px">
+          100.000 of the 155.925 owing. Adding this leaves <b>55.925 on the balance</b> for the
+          next method. That is the whole of splitting a bill &mdash; there is no mode to enter.</div>
+        <div class="muted" data-when="cashover" style="margin-bottom:14px">
+          More than the 155.925 owing, which cash is allowed to be. Adding this gives
+          <b>44.075 change</b>; the recorded takings are still 155.925.</div>
+        <div class="muted" data-when="cardover" style="margin-bottom:14px">
+          Card is capped at the remaining balance, so this cannot be added. Clear it and
+          key 155.925 or less &mdash; or take the excess in cash.</div>
+        <div class="muted" data-when="ceiling" style="margin-bottom:14px">
+          Cash <b>may</b> be more than the balance, but not more than the restaurant can
+          give change for, so this cannot be added.</div>
+        <div class="muted" data-unless="card cardsplit cashover cardover ceiling zero exact exactcash exactsplit change overflow reauth cancel error loading" style="margin-bottom:14px">
+          The whole balance, already filled in. Cash <b>may</b> be more than this &mdash; key
+          what the customer handed over and the change is worked out.</div>
+
+        <div class="keypad" data-unless="zero" style="grid-template-columns:repeat(3,88px);justify-content:flex-start">
+          <div class="key" style="height:72px">1</div><div class="key" style="height:72px">2</div><div class="key" style="height:72px">3</div>
+          <div class="key" style="height:72px">4</div><div class="key" style="height:72px">5</div><div class="key" style="height:72px">6</div>
+          <div class="key" style="height:72px">7</div><div class="key" style="height:72px">8</div><div class="key" style="height:72px">9</div>
+          <div class="key" style="height:72px;visibility:hidden" aria-hidden="true"></div><div class="key" style="height:72px">0</div><div class="key" style="height:72px">&larr;</div>
+        </div>
+      </div>
+
+      <div style="padding:16px 20px;border-top:2px solid var(--ink)">
+        <a class="btn btn--primary" href="../../../prototype/pos/closed-order.html" data-when="exact exactcash exactsplit change overflow cancel error">Close order &amp; print receipt</a>
+        <a class="btn btn--primary" href="../../../prototype/pos/closed-order.html?state=zero" data-when="zero">Close order &amp; print receipt</a>
+        <a class="btn btn--primary" href="settlement.html?state=reauth" data-when="reauth">Sign in to close</a>
+        <span class="btn btn--off" data-when="empty card cardsplit cashover partial cardover ceiling pending leaselost takeover">
+          Close order &mdash; balance outstanding</span>
+        <span class="btn btn--off" data-when="loading">Closing&hellip;</span>
+      </div>
+    </div>
+  </div>
+
+  
+  <div data-when="reauth">
+    <div class="scrim"></div>
+    <div class="modal">
+      <div class="modal__head"><h2>Sign in to finish this payment</h2>
+        <div class="muted" style="margin-top:4px">Your session timed out. The drafted payment
+        lines are still here.</div></div>
+      <div class="modal__body">
+        <div class="pindots">
+          <span class="pindot pindot--on"></span><span class="pindot pindot--on"></span>
+          <span class="pindot"></span><span class="pindot"></span>
+          <span class="pindot"></span><span class="pindot"></span>
+        </div>
+        <div class="keypad" style="grid-template-columns:repeat(3,72px)">
+          <div class="key" style="height:72px">1</div><div class="key" style="height:72px">2</div><div class="key" style="height:72px">3</div>
+          <div class="key" style="height:72px">4</div><div class="key" style="height:72px">5</div><div class="key" style="height:72px">6</div>
+          <div class="key" style="height:72px">7</div><div class="key" style="height:72px">8</div><div class="key" style="height:72px">9</div>
+          <div class="key" style="height:72px">&larr;</div><div class="key" style="height:72px">0</div>
+          <a class="key" style="height:72px;text-decoration:none" href="settlement.html?state=exact">&#9654;</a>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <a class="btn" href="order.html?state=default">Leave payment</a>
+        <span class="muted" style="align-self:center;font-size:12px">The draft stays in this tab.</span>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="cancel">
+    <div class="scrim"></div>
+    <div class="modal">
+      <div class="modal__head"><h2>Cancel this payment?</h2></div>
+      <div class="modal__body">
+        <p><b>Nothing has been recorded.</b> No payment line exists on the server until
+        the order closes, so cancelling discards the draft and the order goes back to
+        being editable straight away.</p>
+        <p class="muted">If a card was already put through on a terminal, that charge is
+        outside this system and has to be settled with the customer. This screen cannot
+        know either way.</p>
+        <p class="muted">One drafted payment line will be discarded.</p>
+      </div>
+      <div class="modal__foot">
+        <a class="btn" href="settlement.html?state=exact">Keep collecting</a>
+        <a class="btn btn--primary" href="order.html?state=default">Cancel payment</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="leaselost">
+    <div class="scrim"></div>
+    <div class="modal">
+      <div class="modal__head"><h2>A manager took over this payment</h2></div>
+      <div class="modal__body">
+        <p>This order is now being settled elsewhere. Your drafted payment lines were
+        never recorded and cannot be closed from here.</p>
+        <p class="muted">If you had already taken a card payment, tell the manager now.</p>
+      </div>
+      <div class="modal__foot">
+        <a class="btn btn--primary btn--wide" href="../../../prototype/pos/floor.html">Back to floor</a>
+      </div>
+    </div>
+  </div>
+
+  <div data-when="takeover">
+    <div class="scrim"></div>
+    <div class="modal">
+      <div class="modal__head"><h2>Take over this payment</h2>
+        <span class="tag" style="margin-top:6px;display:inline-block">MANAGER REQUIRED</span></div>
+      <div class="modal__body">
+        <div class="notice">
+          <div class="notice__t">A card charge may already be in progress</div>
+          <div>Another client started collecting payment for Table 1 at 20:14. Taking over
+          rejects their close. Check with them before you continue.</div>
+        </div>
+        <div style="margin-top:16px"><span class="label">Manager PIN</span>
+          <div class="pindots" style="justify-content:flex-start">
+            <span class="pindot pindot--on"></span><span class="pindot pindot--on"></span>
+            <span class="pindot pindot--on"></span><span class="pindot"></span>
+            <span class="pindot"></span><span class="pindot"></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal__foot">
+        <a class="btn" href="order.html?state=lock-lease">Cancel</a>
+        <a class="btn btn--primary" href="settlement.html?state=empty">I understand &mdash; take over</a>
+      </div>
+    </div>
+  </div>
+
+</div><div class="device__caption">POS &mdash; 1280 &times; 800</div></div></div>
+
+
+</main></body></html>

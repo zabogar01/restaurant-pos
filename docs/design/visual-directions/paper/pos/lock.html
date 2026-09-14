@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-direction="paper"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POS-01 Lock / PIN entry</title>
+<link rel="stylesheet" href="../../structure.css">
+<script>window.WF={id:'POS-01',client:'pos',name:'Lock / PIN entry',reqs:'FR-A2, A5, A7, B3, G9',states:[
+['default','Resting'],['loading','Verifying'],['error','Wrong PIN'],['throttled','LOGIN cooldown'],
+['invalidated','Session invalidated'],['draft','Tender draft waiting'],['incident','Kitchen printer emergency']]};</script>
+<script defer src="../../mockup.js"></script>
+<link rel="stylesheet" href="../../visual.css">
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--pos"><div class="pos">
+
+  
+  <div class="emg" data-when="incident">
+    <div class="emg__mark"></div>
+    <div>
+      <div class="emg__t">Kitchen printer needs attention</div>
+      <div class="emg__s">Tap to sign in and view. No order details are shown before sign-in.</div>
+    </div>
+    <a class="btn btn--sm" style="margin-left:auto;width:180px" href="incidents.html">Sign in to view</a>
+  </div>
+
+  <div class="lock">
+    <div class="lock__box">
+      <div style="text-align:center;margin-bottom:8px">
+        <h1 style="font-size:22px;margin:0 0 4px">Enter PIN</h1>
+        <div class="muted" style="font-size:13px">Six digits</div>
+      </div>
+
+      <div class="pindots">
+        <span class="pindot pindot--on"></span><span class="pindot pindot--on"></span>
+        <span class="pindot pindot--on"></span><span class="pindot"></span>
+        <span class="pindot"></span><span class="pindot"></span>
+      </div>
+
+      <div data-when="loading" style="text-align:center;margin:24px 0">
+        <div class="loadinglabel">VERIFYING</div>
+        <div class="skel skel--w60" style="margin:12px auto"></div>
+      </div>
+
+      <div class="notice" data-when="error" style="margin:0 0 16px">
+        <div class="notice__t">PIN not recognised</div>
+        <div>2 attempts remaining before a five-minute cooldown.</div>
+      </div>
+
+      <div class="notice" data-when="throttled" style="margin:0 0 16px">
+        <div class="notice__t">Sign-in locked for 4 min 12 s</div>
+        <div>Five failed attempts. This cooldown applies to sign-in only and is
+        held by the server for the whole installation.</div>
+      </div>
+
+      <div class="notice" data-when="invalidated" style="margin:0 0 16px">
+        <div class="notice__t">Your session was ended by a manager</div>
+        <div>Your account or PIN was changed in the back office. Ask a manager
+        for your new PIN.</div>
+      </div>
+
+      <div class="notice notice--soft" data-when="draft" style="margin:0 0 16px">
+        <div class="notice__t">Payment in progress on this tab</div>
+        <div>Table 7 &mdash; 155.925 outstanding, 2 tenders drafted. Sign in to continue.
+        Nothing has been recorded yet.</div>
+      </div>
+
+      <div class="keypad" data-unless="loading">
+        <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+        <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+        <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+        <div class="key">&larr;</div><div class="key">0</div>
+        <a class="key" href="../../../prototype/pos/floor.html" data-unless="throttled draft" style="text-decoration:none">&#9654;</a>
+        <a class="key" href="settlement.html?state=reauth" data-when="draft" style="text-decoration:none">&#9654;</a>
+        <div class="key" data-when="throttled" style="border-style:dashed;color:var(--ink4)">&#9654;</div>
+      </div>
+    </div>
+  </div>
+
+</div><div class="device__caption">POS &mdash; 1280 &times; 800</div></div></div>
+
+
+</main></body></html>
