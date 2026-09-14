@@ -1,0 +1,276 @@
+/* POS-01 lock screen, Frost.
+ *
+ * Every colour, size, weight and space here is a var(--frost-*) from
+ * @pos/tokens, which re-exports docs/design/tokens/frost.css. The only
+ * literals are structural (flex, grid, percentages that fill a parent) and the
+ * 1px border width docs/DESIGN.md states for every border ("Borders are 1px
+ * everywhere", Shapes). test/no-invented-values.test.ts enforces that.
+ *
+ * Pressed / active touch state: deliberately none. Frost has no pressed
+ * treatment (docs/DESIGN.md Open item 2, tracked as A7). This screen stays
+ * usable without one because every key press changes the entry display — a
+ * digit fills a dot, delete empties one, Continue clears them. See the FE-001
+ * handoff.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--frost-surface);
+  color: var(--frost-text);
+  font-family: var(--frost-font);
+  font-weight: var(--frost-weight-regular);
+  font-variant-numeric: var(--frost-numeric-variant);
+  line-height: var(--frost-leading-body);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+:focus-visible {
+  outline: var(--frost-focus-outline);
+  outline-offset: var(--frost-focus-offset);
+  box-shadow: var(--frost-focus-ring);
+}
+
+.icon {
+  width: var(--frost-icon-size);
+  height: var(--frost-icon-size);
+  flex: none;
+  stroke-width: var(--frost-icon-stroke);
+}
+
+/* ---- Device frame: 1280×800 landscape, fixed, not responsive ---- */
+
+.pos-device {
+  width: var(--frost-pos-width);
+  height: var(--frost-pos-height);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--frost-surface);
+  font-size: var(--frost-text-15);
+}
+
+/* ---- Emergency banner (FR-E3b) ---- */
+
+.emergency-banner {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-4);
+  min-height: var(--frost-emergency-min-height);
+  padding: var(--frost-emergency-padding);
+  background: var(--frost-emergency);
+  color: var(--frost-emergency-text);
+  border-bottom: 1px solid var(--frost-emergency);
+}
+
+.emergency-banner__mark {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--frost-emergency-marker-size);
+  height: var(--frost-emergency-marker-size);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-emergency);
+}
+
+.emergency-banner__title {
+  font-size: var(--frost-text-18);
+  font-weight: var(--frost-weight-semibold);
+}
+
+.emergency-banner__detail {
+  font-size: var(--frost-text-13);
+  color: var(--frost-emergency-secondary);
+}
+
+/* The artifact sets this action 180px wide inline (lock.html). That width is
+ * not in the registry — --frost-receipt-reprint-width is also 180px, but it is
+ * sourced from a different control on a different screen — so the action is
+ * sized by its padding until the registry carries it. Flagged in the handoff. */
+.emergency-banner__action {
+  margin-left: auto;
+  height: var(--frost-action-compact-height);
+  padding: var(--frost-button-padding);
+  border: 1px solid var(--frost-elevated);
+  border-radius: var(--frost-radius-button);
+  background: var(--frost-elevated);
+  color: var(--frost-emergency);
+  font-size: var(--frost-text-13);
+  font-weight: var(--frost-weight-medium);
+  cursor: pointer;
+}
+
+/* ---- Lock ---- */
+
+.lock {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--frost-lock-surface);
+}
+
+.lock__box {
+  width: var(--frost-lock-box-width);
+}
+
+.lock__heading {
+  text-align: center;
+  margin-bottom: var(--frost-space-2);
+}
+
+.lock__title {
+  margin: 0 0 var(--frost-space-1);
+  font-size: var(--frost-text-30);
+  font-weight: var(--frost-weight-medium);
+  letter-spacing: var(--frost-tracking-headline);
+  line-height: var(--frost-leading-body);
+}
+
+.lock__subtitle {
+  font-size: var(--frost-text-15);
+  color: var(--frost-muted);
+}
+
+/* ---- Entry display: a count, never the digits ---- */
+
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--frost-space-3);
+  margin: var(--frost-space-5) 0;
+}
+
+.pin-dot {
+  width: var(--frost-pin-dot-size);
+  height: var(--frost-pin-dot-size);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-indicator);
+}
+
+.pin-dot--filled {
+  background: var(--frost-primary);
+  border-color: var(--frost-primary);
+}
+
+/* ---- Keypad ---- */
+
+.keypad {
+  display: grid;
+  grid-template-columns: var(--frost-pin-columns);
+  gap: var(--frost-keypad-gap);
+  justify-content: center;
+}
+
+.key {
+  height: var(--frost-pin-key-height);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-key-surface);
+  color: var(--frost-text);
+  font-size: var(--frost-text-26);
+  font-weight: var(--frost-weight-regular);
+  cursor: pointer;
+}
+
+.key .icon {
+  width: var(--frost-key-icon-size);
+  height: var(--frost-key-icon-size);
+}
+
+.key--continue {
+  background: var(--frost-key-continue);
+  border-color: var(--frost-primary);
+  color: var(--frost-primary-text);
+}
+
+/* LOGIN cooldown. Dashed means not available (docs/DESIGN.md, Shapes); the
+ * artifact draws this key cream with a dashed border and grey arrow. */
+.key--continue-disabled {
+  border-style: dashed;
+  color: var(--frost-unavailable-text);
+  cursor: default;
+}
+
+/* ---- Notices ---- */
+
+.notice {
+  margin: 0 0 var(--frost-space-4);
+  padding: var(--frost-space-3) var(--frost-space-4);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-group);
+  font-size: var(--frost-text-14);
+}
+
+.notice--soft {
+  background: var(--frost-surface);
+}
+
+.notice__title {
+  font-weight: var(--frost-weight-semibold);
+  margin-bottom: var(--frost-space-1);
+}
+
+/* ---- Verifying ----
+ * Inherited, not reviewed: docs/DESIGN.md Open item 8 says the loading label
+ * and skeleton were never restyled for Frost. Colours and sizes map onto the
+ * registry; the structure sheet's .1em letter-spacing on the label has no
+ * token and is omitted. PROVISIONAL. */
+
+.verifying {
+  text-align: center;
+  margin: var(--frost-space-6) 0;
+}
+
+.verifying__label {
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+.verifying__bar {
+  width: 60%;
+  height: var(--frost-space-3);
+  margin: var(--frost-space-3) auto;
+  background: var(--frost-group);
+}
+
+/* ---- Development-only fixture links, outside the device frame ---- */
+
+.fixture-states {
+  width: var(--frost-pos-width);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--frost-space-2) var(--frost-space-4);
+  padding: var(--frost-space-4);
+  border-top: var(--frost-divider-stroke);
+  font-size: var(--frost-text-13);
+}
+
+.fixture-states a {
+  color: var(--frost-primary);
+  text-underline-offset: var(--frost-link-underline-offset);
+}
+
+.fixture-states a[aria-current='page'] {
+  font-weight: var(--frost-weight-semibold);
+}

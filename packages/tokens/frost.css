@@ -1,0 +1,10 @@
+/* The Frost custom properties, importable by both clients as
+ * `@pos/tokens/frost.css`.
+ *
+ * This file re-exports the registry and declares nothing itself. Every value
+ * lives in docs/design/tokens/frost.css, generated from frost.tokens.json,
+ * where each token carries the file and line it was sourced from. A second
+ * copy here would be a second place for a value to drift, so there is none —
+ * test/tokens.test.ts fails if a declaration appears in this file.
+ */
+@import "../../docs/design/tokens/frost.css";

@@ -1,0 +1,8 @@
+{
+  "name": "@pos/tokens",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./frost.css": "./frost.css"
+  }
+}
