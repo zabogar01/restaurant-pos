@@ -35,8 +35,12 @@ a.line__t:active, a.line__x:active,
 .btn--off:active, .bobtn--off:active, .tile--off:active,
 .btn--off.is-pressed, .tile--off.is-pressed { box-shadow: none; }
 /* A pressed order-line body rings only the tap target, never the trailing
-   slot, which is its sibling (I-12). The ring draws exactly what was pressed. */
-a.line__t.is-pressed, a.line__t:active { border-radius: 2px; }
+   slot, which is its sibling (I-12). The ring draws exactly what was pressed.
+   The row's 10px 16px padding belongs to the row, not the target, so the ring
+   is pushed 8px out from the target's text with an equal negative margin and
+   padding: the text does not move, the ring gains room, and 8px stays inside
+   the row's padding and short of the 12px gap to the slot. */
+a.line__t.is-pressed, a.line__t:active { border-radius: 2px; margin: -8px; padding: 8px; }
 /* Hover is a mouse fact. Touch browsers synthesise :hover on tap, and Frost's
    tile hover is the ink selected fill — the confusion this state exists to
    prevent. An implementation scopes every hover rule to @media (hover: hover);
