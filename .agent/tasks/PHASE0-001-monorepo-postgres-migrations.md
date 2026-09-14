@@ -88,3 +88,145 @@ Written by `builder1`. Follow the format in
 what was decided and on what evidence, what was found and not fixed, and what
 the next agent needs and does not have. A handoff that says only "done" has
 failed.
+
+### 2026-09-14 — `builder1`, Task 1 finished
+
+Three commits on `agent/phase-0-foundations`: `4520660` (scaffold as the plan
+writes it), `01f3b23` (failed-migration attribution and rollback proof),
+`21e13b9` (`npm run db:migrate` did nothing as written). Not merged.
+
+#### What was done
+
+| Path | What |
+|---|---|
+| `package.json`, `package-lock.json` | npm workspaces root. Scripts `db:up`, `db:migrate`, `test` as the plan names them, plus `test:unit`, `typecheck`, `verify` |
+| `tsconfig.base.json` | Plan's options verbatim (`ES2022`, `strict`, `noUncheckedIndexedAccess`) |
+| `docker-compose.yml` | `postgres:16` as `pos_owner`/`pos`, published on **`127.0.0.1:5433`**, with a `pg_isready` healthcheck |
+| `apps/server/package.json`, `apps/server/tsconfig.json` | Plan's manifest verbatim. Resolved: `pg` 8.23.0, `tsx` 4.23.13, `typescript` 5.9.3, `vitest` 2.1.9 |
+| `apps/server/src/db/pool.ts` | Plan's code verbatim: `getPool`, `query<T>`, `withTransaction<T>`, BIGINT kept as string |
+| `apps/server/src/db/migrate.ts` | `runMigrations(dir): Promise<string[]>`, one transaction per file together with its `schema_migration` row. Two changes from the plan, below |
+| `db/migrations/0001_extensions.sql` | `CREATE EXTENSION IF NOT EXISTS pgcrypto;` |
+| `apps/server/test/migrate.test.ts` | 7 tests: the plan's two, plus failure attribution, failure rollback, record atomicity, and the real `npm run db:migrate` script succeeding and failing |
+| `.gitignore` | **Unchanged.** Commit `e6120f0` already holds every line the plan's Step 4 asks for |
+
+Every file Task 1 names exists (acceptance 6).
+
+#### What was decided, and on what evidence
+
+- **Postgres binds loopback, not every interface.** The plan writes
+  `ports: ["5433:5432"]`, which publishes on `0.0.0.0`. `docs/ARCHITECTURE.md`
+  §3.1: "PostgreSQL is reachable only from the same host or a private local
+  container network, never from the LAN." Accepted architecture beats plan
+  text. Evidence: `docker compose ps` shows `127.0.0.1:5433->5432/tcp`.
+- **`verify` exists now, as `npm run typecheck && npm run test:unit`.** This
+  task's acceptance 1 requires it; the plan only defines it in Task 12 Step 7.
+  `typecheck` is in it because acceptance 5 requires compilation and vitest
+  does not type-check.
+- **`db:up` is `docker compose up -d --wait`.** Without waiting on the
+  healthcheck, `npm run db:up && npm run db:migrate` races container start.
+- **The runner's error names the file** —
+  `migration 0009_bad.sql failed and was rolled back: relation "nope" does not exist`,
+  original error kept as `cause`. The plan's code surfaced only PostgreSQL's
+  message (acceptance 4). Seen red before the change.
+- **`npm run db:migrate` was silently broken as written; fixed.** It printed
+  npm's banner and exited 0 having done nothing. Cause 1: the guard compared
+  percent-encoded `import.meta.url` with hand-built `file://${argv[1]}`, and
+  this checkout's path contains a space (`POS System`). Now uses
+  `pathToFileURL`. Cause 2: `npm run -w apps/server` runs with cwd
+  `apps/server`, so the default `db/migrations` pointed nowhere. Default is now
+  anchored to the module file; an explicit path argument resolves against
+  `INIT_CWD`. Both reproduced by a failing test before the fix.
+- **Tests were mutation-checked, not just run green.** Removing the
+  already-applied skip turns the idempotency test red (acceptance 3). Moving
+  the migration SQL outside the transaction did **not** turn the plain
+  rollback test red — PostgreSQL runs a multi-statement string as one implicit
+  transaction — so a further test has the file's SQL succeed and only its
+  `schema_migration` insert fail. That one goes red without the transaction.
+- **No `any` in scaffold sources.** `grep -rnw any apps/server/src
+  apps/server/test tsconfig.base.json` returns nothing. `query<T>` casts from
+  `pg`'s `any[]` rows, as the plan's interface requires.
+- **No database role or grant created** (B-7 constraint). Only `pos_owner`,
+  from the image environment.
+
+#### Verification, verbatim
+
+Fresh `git clone` of `21e13b9` into a path containing a space, Docker volume
+removed first (`docker compose down -v`), then `npm ci`, `npm run db:up`,
+`npm run db:migrate` (printed `applied: 0001_extensions.sql`), then:
+
+```
+> verify
+> npm run typecheck && npm run test:unit
+
+
+> typecheck
+> tsc -p apps/server --noEmit
+
+
+> test:unit
+> vitest run
+
+
+ RUN  v2.1.9 /private/tmp/claude-501/-Users-fajars-Work-Dev-POS-System-restaurant-pos/e07bd479-f802-4526-95a0-957d17f0559d/scratchpad/clean checkout/restaurant-pos
+
+ ✓ apps/server/test/migrate.test.ts (7 tests) 767ms
+   ✓ runMigrations > npm run db:migrate > applies the repository migrations when run from the repository root 372ms
+   ✓ runMigrations > npm run db:migrate > exits non-zero and names the failing file 309ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  15:43:11
+   Duration  1.04s (transform 30ms, setup 0ms, collect 37ms, tests 767ms, environment 0ms, prepare 43ms)
+
+verify exit=0
+```
+
+Same result in the working tree. `SELECT version()`: `PostgreSQL 16.15`.
+Running `db:migrate` twice printed `applied: 0001_extensions.sql` and then
+`no pending migrations`, both exit 0. Not skipped: nothing.
+
+#### Found and not fixed
+
+1. **Parallel test files will race on one database.** Vitest runs files in
+   parallel by default. This file's `beforeEach` and Task 3's `beforeAll`
+   both run `DROP SCHEMA public CASCADE`. **Demonstrated, not predicted:** a
+   throwaway second file with Task 3's `beforeAll` shape, run with
+   `npx vitest run` five times, broke all five runs. Once it was
+   `14 failed | 13 passed (27)`. Four times it was `7 passed | 20 skipped (27)`,
+   meaning the probe's setup died. The probe was deleted and never committed.
+   There is no plan-named fix, so I did not invent one. Candidates: a root `vitest.config.ts` with
+   `fileParallelism: false` for server tests, or a database per worker.
+   **Needs a decision before Task 3 lands.**
+2. **The pool's default role is a superuser.** `pool.ts` defaults to
+   `pos_owner`, which is `POSTGRES_USER` and a superuser (`pg_roles.rolsuper`
+   = `t`, checked). Superusers
+   bypass grants, so a B-7 test in Task 3 that goes through `query()` proves
+   nothing. The plan's Task 4 `config.ts` defaults to `pos_app`, but `pool.ts`
+   does not read config. The grant test must connect as `pos_app`.
+3. **Tests and development share one database.** Running tests drops the
+   `public` schema. Acceptable today, with no data worth keeping.
+4. **Task 12 Step 7 says to *replace* the root `scripts` block.** Done
+   literally, that drops `typecheck` from `verify` and deletes `test`. It
+   should extend the scripts instead.
+5. **`npm audit`: 5 vulnerabilities (3 moderate, 1 high, 1 critical)**, all in
+   the `vitest` 2.x → `vite` → `esbuild` dev-server chain. Dev-only, never
+   shipped. The fix is `vitest` 4, a major upgrade past the plan's `^2.1.0`,
+   so it is the lead's call.
+6. **Nothing guards B-1 mechanically.** The plan names no linter, so none was
+   added. A `number`-for-money lint rule would need a decision on ESLint.
+7. **Node 25.2.1 is not LTS.** `docs/ARCHITECTURE.md` says Node.js LTS; the
+   plan's `@types/node` is `^22`. Everything passed on 25. No `engines` field
+   was added.
+
+#### What the next implementer needs and does not have
+
+- **To write a migration:** add `db/migrations/NNNN_name.sql`. It runs in one
+  transaction with its record. Do not put `BEGIN`/`COMMIT` in the file — that
+  breaks the atomicity.
+- **Order of operations:** `npm run db:up` → `npm run db:migrate` →
+  `npm run verify`. Tests call `runMigrations('db/migrations')`, which is
+  relative to the repository root, where vitest runs.
+- **Docker Desktop was not running** at session start, despite `docker
+  --version` working. `open -a Docker` fixed it.
+- **Items 1 and 2 above**, before anyone writes a second database test file.
+- **Task status still reads `Active`.** Moving it is the lead's call.
