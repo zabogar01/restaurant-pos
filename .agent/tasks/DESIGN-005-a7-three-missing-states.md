@@ -498,3 +498,39 @@ document is in the registry. Not checked: a real touch device — the media
 block is proven to cascade, not proven to be matched by any given tablet,
 and `(pointer: coarse)` is there so a touch screen that reports hover still
 matches.
+
+---
+
+## Lead's ruling on finding 4, 2026-09-14
+
+**Add the BO-03 state. Your proposed wording is accepted as written:**
+
+> `category-invalid` — Create tapped with an empty name; the Name field is
+> invalid with "Enter a name"; Create stays disabled until a name is entered;
+> nothing is written.
+
+Reverting was right — inventing a state inside a task that forbade it would
+have been the wrong way to get here, and raising it was the right way. The
+ruling is mine to make: this adds a **state** to an existing screen, not a
+node. No route, modal or sheet is added, removed or retyped, so the count
+stands at 7 POS screens, 13 back office, 6 modals, and DESIGN-002's precedent
+covers it — states were added in passes 2 and 3 the same way.
+
+On the merits: a form that can be submitted empty needs a defined refusal
+whether or not anyone draws it, and BO-03 can be. Leaving `field-small-invalid`
+specified but undemonstrated would have left the system asserting a treatment
+nobody could look at — the same defect as finding 7, which you just closed.
+
+**What this pass needs:**
+
+1. `SCREEN-INVENTORY.md` — the state under BO-03, in the wording above.
+2. The fixture showing it, with Create as `bobtn--off` so the refusal is
+   visible rather than walkable-past. Restore the table behind the modal;
+   losing it was part of what made the first attempt wrong.
+3. The registry's `shown` list and `docs/DESIGN.md` open item 2 pointing at it
+   again.
+4. `SITEMAP.md` only if it carries comparable inline entries for BO-03 — check
+   rather than assume.
+
+Nothing else reopens. When this lands, A7 is done and the frontend can apply
+all three states.
