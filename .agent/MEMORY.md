@@ -332,7 +332,8 @@ Roster verified against `herdr agent list` on 2026-09-14.
 | `designer` | claude, **Fable 5.1** | `w2:p3` | live, working, **in the design worktree** | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
 | `design-reviewer` | codex | `w2:p9` | live, working | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
 | `builder1` | claude | `w2:pB` | live, idle | First implementer. **Delivered [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md)** and a handoff worth reading — it found three defects in the plan itself |
-| `builder2` | claude | `w2:pC` | live, working | Holds [PHASE0-002](tasks/PHASE0-002-money-module.md) — the money module, where `B-1` is enforced or quietly lost |
+| `builder2` | claude | `w2:pC` | live, working | Holds [PHASE0-002](tasks/PHASE0-002-money-module.md) — the money module, where `B-1` is enforced or quietly lost. Finishing, then backend pauses |
+| `builder3` | claude | `w2:pD` | live, working | First frontend implementer. Holds [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens, lock screen |
 | `designer2` | codex, gpt-6-astra | `w2:pA` | live, idle, **out of quota** | Started 2026-09-14 and equipped with the Impeccable skill. Delivered the token set, then stopped before `docs/DESIGN.md`. DESIGN-003 was reassigned off it the same day; kept alive because its scrollback is the only record of how the tokens were extracted |
 
 **Both codex agents share one account quota and both exhausted it at 15:11 on
@@ -356,6 +357,40 @@ the proposal document itself, and the architect's account of it exists only in
 its pane scrollback — which is why the material parts of it are copied into
 this file. The same is true of the visual direction build: `REVIEW.md` and the
 brief are its only durable record, and neither is a task file.
+
+---
+
+## Sequencing: frontend first, and smaller tasks — owner, 2026-09-14
+
+Two instructions, both worth keeping in front of whoever reads this next.
+
+**1. Frontend first.** The Phase 0 plan is backend-first — ten server tasks,
+then the clients — and the lead followed it without ever asking whether that
+order suited the owner. It did not. The frontend is built against fixtures,
+the owner reviews it, and the backend follows once they say it is good. The
+plan is suspended, not discarded: its twelve tasks, paths and tests remain the
+specification for the server work when it resumes.
+
+Backend Task 2 (`packages/money`) was allowed to finish rather than be
+interrupted, because `B-1` governs money on a screen exactly as it governs
+money in a column, and the frontend would otherwise render IDR through a
+throwaway helper it would have to unpick later.
+
+**2. Smaller tasks, reviewed between.** One reviewable slice per session. The
+owner's reason is concrete and worth quoting rather than paraphrasing: a task
+has a high risk of running out of context mid-way, and they would rather review
+each piece themselves before the next begins. A task that exhausts its budget
+halfway leaves a half-built screen and a handoff nobody can trust.
+
+What that changes when writing a task file: one screen, not a client. Every
+handoff names the command and the URL the owner opens. An agent that starts a
+second screen has ended its task and says so.
+
+First slice is [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — the POS
+bundle, the Frost tokens wired in, and the lock screen at 1280×800. Deliberately
+the smallest thing that proves the whole chain: build, tokens, touch geometry
+at real sizes. If the design system does not survive contact with real code,
+one screen is the cheapest place to learn it.
 
 ---
 

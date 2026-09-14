@@ -122,15 +122,51 @@ Small, none of it blocking, all of it recorded so it does not get lost.
 
 ---
 
-## Phase 0, in flight
+## Sequencing changed 2026-09-14 — frontend first
+
+**Owner's instruction.** The Phase 0 plan is written backend-first: ten server
+tasks, then the two client shells. That order is **suspended**. The frontend is
+built first, against fixtures, styled from Frost; the owner reviews it; the
+backend follows once they say it is good.
+
+The plan is not discarded — its twelve tasks, their file paths and their tests
+stay the specification for the server work when it resumes. What changed is
+when they run.
+
+**And tasks get smaller.** One reviewable slice per session, with the owner
+reviewing between them. The reason is concrete: a task that exhausts its
+context halfway leaves a half-built screen and a handoff nobody can trust.
+A task that feels like it needs two sessions is two tasks.
+
+| Rule | What it means when writing the next task file |
+|---|---|
+| One screen, or one slice of one screen | Not "the POS client" |
+| Reviewable by a person in a browser | The handoff names the command and the URL |
+| Stop at the edge | An agent that starts a second screen has ended its task and should say so |
+
+## Frontend queue
+
+| # | Task | State | Owner |
+|---|---|---|---|
+| F1 | [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens wired, lock/PIN screen at 1280×800 | **In flight**, started 2026-09-14 | `builder3` |
+| F2 | POS order workspace — the densest screen: menu grid, running order, three line signatures, 86'd tiles | Not started. Written after the owner reviews F1 | unassigned |
+| F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 is fixing | Not started | unassigned |
+| F4 | The remaining POS screens, then the back office | Not started | unassigned |
+
+F1 is deliberately the smallest thing that proves the chain end to end: Vite
+build, token import, touch geometry at real sizes. If the design system does
+not survive contact with real code, that is cheaper to learn on one screen.
+
+## Phase 0 backend, paused after Task 2
 
 Branch **`agent/phase-0-foundations`**, cut 2026-09-14 from
 `agent/design-direction` at `92359a2`.
 
 | # | Task | State | Owner |
 |---|---|---|---|
-| 1 | Monorepo scaffold, PostgreSQL, migration runner — [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md) | **In flight**, started 2026-09-14 | `builder1` |
-| 2–12 | Money, schema and grants, PIN, audit, throttling, sessions, HTTPS server, auth routes, approval, client shells, acceptance tests | Not started. One task file each, written when the task before it lands | unassigned |
+| 1 | Monorepo scaffold, PostgreSQL, migration runner — [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md) | **Done** 2026-09-14, lead-verified. 7 tests, typecheck clean | `builder1` |
+| 2 | Money module — [PHASE0-002](tasks/PHASE0-002-money-module.md) | **In flight.** Allowed to finish: it is a shared package the frontend needs, since `B-1` governs money on screen as much as in the database | `builder2` |
+| 3–12 | Schema and grants, PIN, audit, throttling, sessions, HTTPS server, auth routes, approval, client shells, acceptance tests | **Paused** until the owner has reviewed the frontend | unassigned |
 
 Task files are written by the lead one at a time rather than all twelve up
 front: each task's constraints depend on what the previous one actually built,
