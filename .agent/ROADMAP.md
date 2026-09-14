@@ -29,9 +29,9 @@ decisions, neither of which holds up Phase 0.
 | A4 | [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) — convert Frost into `docs/DESIGN.md` and a token set | **Done** 2026-09-14. `docs/DESIGN.md` plus a 169-token registry, every token carrying file, line, selector and property. Lead-verified: 169/169/169 three-way, 12 random provenance claims checked, all passed | `designer2` then `designer` |
 | A5 | Decide whether a dark palette ships | Not started. Light only was delivered, deliberately | Owner |
 | A6 | Review the Frost conversion | **In flight**, started 2026-09-14. Lead-verified for completeness and provenance; this pass is for design judgement — sourced-but-wrong values, resolutions that promote a fixture accident to a rule, declared absences that are not actually absent | `design-reviewer` |
-| A7 | [DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) — pressed/active touch state, field error state, and the fired row's 10px gated-path tag | **In flight**, started 2026-09-14 on the owner's instruction. The one design task that *requires* invention, with every invented value marked as designed rather than sourced | `designer` |
-| A8 | Review DESIGN-005 | Not started. `design-reviewer` reviews what A7 invents, before any of it reaches code | `design-reviewer` |
-| A9 | Apply the three states to `apps/pos` | Not started. Small frontend task after A8 | unassigned |
+| A7 | [DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) — pressed/active touch state, field invalid state, the fired row's gated-path tag | **Done** 2026-09-14, three passes. Four designed tokens, `source: null` plus a `designed` block; reviewed stylesheets untouched | `designer` |
+| A8 | Review DESIGN-005 | **Done** 2026-09-14. Eight findings, one high — a press still collapsed into a selection on touch. All fixed or answered | `design-reviewer` |
+| A9 | Apply the three states to `apps/pos` | Not started. Small frontend task | unassigned |
 
 A3's deliverable is real and reviewed: open
 [docs/design/visual-directions/index.html](../docs/design/visual-directions/index.html)
@@ -152,7 +152,7 @@ A task that feels like it needs two sessions is two tasks.
 |---|---|---|---|
 | F1 | [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens wired, lock/PIN screen at 1280×800 | **In flight**, started 2026-09-14 | `builder3` |
 | F1 review | Owner opened FE-001 and approved it, 2026-09-14 | **Done.** "Screen's fine" | Owner |
-| F2 | POS order workspace — the densest screen: menu grid, running order, three line signatures, 86'd tiles | Not started. **Waits on A7/A8**: this is the screen where a tap often changes nothing near the finger, so the pressed state must exist before it is built | unassigned |
+| F2 | POS order workspace — the densest screen: menu grid, running order, three line signatures, 86'd tiles | **Unblocked** 2026-09-14: A7 and A8 are done, so the pressed state exists before the screen that needs it | unassigned |
 | F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 is fixing | Not started | unassigned |
 | F4 | The remaining POS screens, then the back office | Not started | unassigned |
 

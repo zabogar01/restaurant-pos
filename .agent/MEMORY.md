@@ -360,6 +360,75 @@ brief are its only durable record, and neither is a task file.
 
 ---
 
+## A7 is done — the three missing states exist, reviewed and demonstrated
+
+[DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) closed 2026-09-14
+after three passes and one review, on `agent/design-direction` in the design
+worktree. **This was the one design task that required invention**, and the
+condition was that invented values be marked as designed rather than disguised
+as sourced.
+
+**What exists now:** 172 tokens, of which **four are designed** and carry
+`source: null` — explicit, not missing — plus a `designed` block naming the
+task, date, the rule in `frost-states.css`, the fixture states that show it,
+and why. A check asserts every token has exactly one provenance shape.
+`visual.css` and `structure.css` are still byte-identical to what
+`design-reviewer` reviewed, which is why all 168 sourced line numbers still
+point where they did. The new rules live in a separate sheet for exactly that
+reason — a sharper instinct than the task asked for.
+
+- **`--frost-pressed-ring: inset 0 0 0 2px currentColor`.** The rule is
+  *selection fills; pressing strokes*. `currentColor` means one rule reads on
+  every ground — ink on cream keys and white tiles, white on spruce, brick on
+  the outlined destructive — with **zero new colour values**. Inset, so it
+  never collides with the outer focus ring, never overlaps a neighbour in a
+  zero-gap stack, and moves no layout. On an order line it rings the tap target
+  only and stops short of the trailing slot: `I-12` made visible.
+- **`--frost-invalid` (#83611c)** — the warning hex under its own name, so an
+  implementation never writes "warning" on a form field and the two can diverge
+  later. Plus `--frost-invalid-border` and `--frost-round-tag-size: 13px`, which
+  closes `design-reviewer` finding 6.
+
+### What the review caught, and why it mattered
+
+The first pass looked right in a screenshot and was wrong on a touch device.
+`visual.css:77` applies the ink selected fill on `a.tile:hover`, and touch
+browsers synthesise and hold `:hover` after a tap — so once the ring went, the
+tile was left looking selected, **the exact confusion the state was designed to
+prevent**. The designer had seen it and written a *comment* saying an
+implementation should gate hover. A comment fixes nothing and hands the bug to
+whoever writes the code. It is now a real `(hover: none), (pointer: coarse)`
+block of thirteen rules. Second of the same shape: `--frost-invalid` existed as
+a name while both rules consumed `var(--warning)`, so the separation was
+documentation rather than fact.
+
+**The proof methods are the standard to hold others to.** It cloned the
+media-block rules into the live page to prove the cascade actually wins, and
+set `--warning` to magenta at runtime to prove the invalid token is genuinely
+independent. Claims checked by construction, not by assertion.
+
+### A ruling worth remembering how it was reached
+
+The designer specified a 40px invalid field, could not demonstrate it in any
+reviewed state, **invented a BO-03 state to show it, then reverted it and
+asked.** That is the behaviour to want when a constraint and a need collide.
+Granted: BO-03 now has *category-invalid* — Create tapped with an empty name,
+the field invalid with "Enter a name", Create disabled until a name is entered,
+nothing written. It adds a **state to an existing screen, not a node**, so the
+count stands at **7 POS / 13 back office / 6 modals** and DESIGN-002's
+precedent covers it.
+
+**Lead-verified on the branch, not from the handoff:** 172 tokens with four
+designed and none ambiguous, CSS matching the registry exactly, no token named
+in `docs/DESIGN.md` that is absent from it, the frontmatter's all-sourced claim
+gone, `menu.html` byte-identical to its pre-A7 bytes before the ruled state was
+added back deliberately, and the reviewed stylesheets untouched.
+
+**F2 is unblocked.** The order workspace is the screen where a tap often
+changes nothing near the finger, which is why it waited for this.
+
+---
+
 ## FE-001 landed — the first screen exists, and it is the owner's to judge
 
 `apps/pos` builds and runs. The POS lock screen is real code at 1280×800 on the
