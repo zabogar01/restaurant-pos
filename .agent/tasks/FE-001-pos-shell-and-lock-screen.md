@@ -119,3 +119,209 @@ Written by `builder3`. What was built with paths, what was decided and on what
 evidence, what was found and not fixed, what the next implementer needs, the
 verbatim verification output, and **the exact command the owner runs to see
 it**. A handoff that says only "done" has failed.
+
+### Handoff — builder3, 2026-09-14
+
+**See it.** From the repository root:
+
+```sh
+npm install
+npm run dev -w apps/pos
+```
+
+Open **http://127.0.0.1:5173/pos/** in a browser window at least 1280×800.
+The screen is the top-left 1280×800 frame. Below it, outside the frame and in
+development only, is a row of links to every fixture state. Direct URLs:
+
+| State | URL |
+|---|---|
+| Resting | http://127.0.0.1:5173/pos/ |
+| Verifying | http://127.0.0.1:5173/pos/?state=loading |
+| Wrong PIN | http://127.0.0.1:5173/pos/?state=error |
+| Deactivated user | http://127.0.0.1:5173/pos/?state=permission-denied |
+| LOGIN cooldown | http://127.0.0.1:5173/pos/?state=throttled |
+| Session invalidated | http://127.0.0.1:5173/pos/?state=invalidated |
+| Tender draft waiting | http://127.0.0.1:5173/pos/?state=draft |
+| Kitchen printer emergency | http://127.0.0.1:5173/pos/?state=incident |
+
+The port is fixed (`strictPort`); if 5173 is taken the command fails loudly
+rather than moving to another URL.
+
+#### What was built
+
+- **`packages/tokens`** — `@pos/tokens/frost.css`, a one-line `@import` of
+  `docs/design/tokens/frost.css`. It declares nothing of its own;
+  `packages/tokens/test/tokens.test.ts` fails if it ever does.
+- **`apps/pos`** — Vite 8 + React 18 + TypeScript. Plan paths:
+  `package.json`, `vite.config.ts`, `index.html`, `src/main.tsx`,
+  `src/App.tsx`, `src/PinPad.tsx`. Added: `src/pos.css` (all styling),
+  `src/fixtures.ts` (the POS-01 states and their copy), `src/icons.tsx` (the
+  three of Frost's four icons this screen uses, paths from `mockup.js`).
+- **Tests** in `apps/pos/test/`:
+  - `pin-pad.test.tsx` (jsdom) — 12 keys in order; dots count entries and cap
+    at six; delete and Continue; keypad withdrawn while verifying; Continue
+    inert under cooldown; and three B-12 tests below.
+  - `no-invented-values.test.ts` — every file in `src/` has no literal colour,
+    no length except a `1px` border, no literal font size/weight/line height,
+    and every `var(--frost-*)` it uses exists in the registry.
+  - `console-free.test.ts` — no `console.`, storage, cookie, `fetch`, XHR or
+    beacon anywhere in `src/`.
+- **Root `package.json`** — `typecheck` now also runs `tsc -p apps/pos`;
+  `jsdom@^29.1.1` added to root devDependencies (see decisions).
+  `package-lock.json` changed by additions only.
+
+#### What was decided, and on what evidence
+
+- **Versions: Vite 8, `@vitejs/plugin-react` 6, React 18.3.** The plan names
+  Vite 5 and plugin-react 4. vitest 4 (ruled 2026-09-14) already installs
+  Vite 8.3.0; Vite 5 would have put two Vites in one tree, and plugin-react 6
+  is the release whose peer range is Vite 8. React stays at the plan's 18.
+- **jsdom at the root, version 29.** vitest resolves its environment package
+  from its own location, so jsdom nested under `apps/pos` failed with
+  `Cannot find package 'jsdom'`. jsdom 30's engines field excludes Node 25 (this
+  machine runs 25.2.1); 29 accepts `^22.13 || >=24`.
+- **Build output stays in `apps/pos/dist`** (gitignored), not the plan's
+  `../server/public/pos`, because this task does not touch `apps/server`.
+  `base: '/pos/'` is kept so the URL shape already matches the plan.
+  `npm run build -w apps/pos` succeeds.
+- **The PIN lives only in a `useRef`.** React state holds the *count*; the DOM
+  renders the count. `onSubmit(pin)` clears the ref before calling out. In
+  `App.tsx` the fixture handler is `() => {}` — the PIN is compared against
+  nothing and goes nowhere.
+- **Continue clears the entry** in every state except cooldown. It navigates
+  nowhere, because every destination the artifact links to is another screen.
+- **Verifying shows all six dots filled**, because verification only follows a
+  full entry. The artifact's static fixture shows three filled in every state;
+  that is a drawing convenience, not a claim about the state.
+- **The fixture state links sit outside the frame and only in development**
+  (`import.meta.env.DEV`); they are absent from the production build.
+- **The *Sign in to view* action focuses the PIN entry box**, which is what the
+  reviewed artifact's script does after the REVIEW.md fix.
+
+#### Pressed / active state (A7) — none added
+
+No pressed treatment exists in Frost, and **this screen does not use one,
+provisional or otherwise.** Reasoning: every key already produces a visible
+change in the entry display — a digit fills a dot, delete empties one,
+Continue empties all of them — so a cashier is never left wondering whether a
+tap landed. The one tap with no visible result is Continue with nothing
+entered. Stated in a comment at the top of `src/pos.css`. On the order and
+tender screens a tap will *not* always change something nearby, and A7 will
+bite there; it should be settled before F2.
+
+#### How the three checks were verified
+
+**88px keys on a 3-column grid — measured in the rendered page.** Chrome
+(Claude in Chrome), window resized to a 1440×823 viewport, DPR 1, dev server
+running, `getBoundingClientRect()` on every `.keypad > .key`:
+12 keys, every one `88x88`; three column x-positions `498, 596, 694`; four row
+y-positions `313.625, 411.625, 509.625, 607.625`; column and row gaps both
+`10`; computed `grid-template-columns: 88px 88px 88px`. Device frame
+`1280x800`; banner `1280x80`.
+
+The same measurement on the reviewed artifact
+(`docs/design/visual-directions/frost/pos/lock.html`, served locally) returns
+the same numbers: lock box `430,184.38 420×511.25` in both; keys at the same
+x/y; in `?state=throttled` both put the box at y `90.92` height `618.14` and
+the notice at `430,220.17 420×90.89`; in `?state=loading` both put the box at
+y `300.67` height `198.64`.
+
+**B-12 — four ways.**
+1. `pin-pad.test.tsx`: entering `123456` and `987650` in fresh renders produces
+   **byte-identical `innerHTML`**.
+2. Same file: every attribute containing a numeral is recorded at rest
+   (`tabindex`, SVG geometry, `aria-label=0 of 6 digits entered`); after
+   entering `480719` the only change is the count label. The dot container's
+   text is empty.
+3. Same file: after typing, Continue, and typing again, spies on
+   `console.log/info/warn/error/debug/trace` were never called;
+   `localStorage` and `sessionStorage` are empty; URL unchanged; title has no
+   digit. (Node 25's own experimental `localStorage` global shadows jsdom's
+   under vitest; the test re-installs jsdom's storage so a write would land
+   where the test can see it.)
+4. In Chrome, after four real taps (2, 9, 5, 4): no fragment of the sequence
+   in `outerHTML`; the only numerals in any attribute under `#root` were
+   `tabindex -1`, `aria-label 4 of 6 digits entered`, `viewBox` and the two
+   icon paths; the console held only Vite's connect messages and React's
+   DevTools notice.
+
+**The tests can fail.** Three deliberate mutations, each reverted:
+adding `console.log(pin)` in `submit` failed 2 tests; adding
+`data-d={digits.current[i]}` to the dots failed 2 tests; retyping
+`background: #fffcf6; height: 88px;` in `pos.css` failed 2 tests.
+
+**Inspected in:** Chrome via Claude in Chrome, all eight states screenshotted
+at 1280×800, keyboard focus ring checked on *Sign in to view* and on a key.
+
+#### Flagged — provisional, or needing a decision
+
+1. **`permission-denied` copy is mine, and provisional.** SCREEN-INVENTORY
+   POS-01 declares the state; the reviewed artifact never drew it. Wording:
+   *"This account is deactivated" / "Ask a manager to restore your access in
+   the back office."* Comment in `src/fixtures.ts`. Also worth a product look:
+   a distinct message for a deactivated user's PIN tells a guesser that the PIN
+   they typed *is* a real PIN. That is a contract question, not mine.
+2. **The *Sign in to view* action is narrower than the artifact** (121px
+   measured against 180px). The artifact sets 180px inline in `lock.html`, and
+   that value is **not in the registry**. `--frost-receipt-reprint-width` is
+   also 180px, but it is sourced from *Reprint receipt* on `incidents.html`;
+   borrowing it would tie two unrelated controls together. The action is sized
+   by `--frost-button-padding` until the designer registers the width.
+3. **The verifying treatment is inherited, not reviewed** (DESIGN.md Open item
+   8). Colour and sizes map to tokens; the structure sheet's `.1em` label
+   tracking has no token and is omitted; the skeleton bar is `60%` wide, a
+   structural percentage copied from `.skel--w60`. Commented in `pos.css`.
+
+#### Found and not fixed
+
+- **The tender-draft notice shows a table and an amount on a locked screen**
+  (*"Table 7 — 155.925 outstanding, 2 tenders drafted"*). POS-01's resting
+  state says "no order context leaked on screen" and FR-E3b says "order
+  information is never shown to a room". The copy is the reviewed artifact's
+  and I kept it verbatim, but the contract appears to forbid it. Owner/lead
+  decision; not changed.
+- **The plan's Task 11 Step 4 PinPad is superseded in more than its token
+  values**: it renders `'•'.repeat(pin.length)` (fine) but keeps the PIN in
+  React state and its keys are 72px tall. Whoever resumes Task 11 should start
+  from `apps/pos/src/PinPad.tsx`, not the plan's listing.
+- Digits cannot be typed on a physical keyboard; only Tab/Enter reach the
+  on-screen keys. The artifact has no keyboard entry either.
+
+#### What the next implementer needs and does not have
+
+- A registered width for *Sign in to view* (item 2 above), and a pressed state
+  decision before the order workspace.
+- The server side of Task 11 (serving `dist/` at `/pos/`) is untouched.
+- `PinPad` has the interface the auth task will want (`onSubmit(pin)`,
+  `verifying`, `continueDisabled`); nothing calls a server.
+
+#### Verification output
+
+`npm run verify`, run 16:07:58 with the database container up, verbatim:
+
+```
+> verify
+> npm run typecheck && npm run test:unit
+
+
+> typecheck
+> tsc -p apps/server --noEmit && tsc -p packages/money --noEmit && tsc -p apps/pos
+
+
+> test:unit
+> vitest run
+
+
+ RUN  v4.1.11 /Users/fajars/Work/Dev/POS System/restaurant-pos
+
+
+ Test Files  8 passed (8)
+      Tests  114 passed (114)
+   Start at  16:07:58
+   Duration  893ms (transform 135ms, setup 0ms, import 432ms, tests 805ms, environment 457ms)
+```
+
+Baseline before this task: `4 passed (4)` files, `79 passed (79)` tests. The
+35 new tests are all in `apps/pos/test` and `packages/tokens/test`.
+
+**Stopped here.** One screen. Nothing else in the POS was started.
