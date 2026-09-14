@@ -255,12 +255,19 @@ client-side and tab-local until close (FR-G9).
 **States.**
 - *empty* — no tenders drafted; full balance outstanding. **Ruling I-13:** the
   tender amount field is **prefilled with the remaining balance** for every
-  method, and is editable in place.
+  method, and is editable in place. The tender pad itself is a persistent
+  `[INLINE]` panel in the right column, never a sheet (M-4, retyped
+  2026-09-14).
 - *tender prefilled* — a method is chosen and the amount is already correct.
   The ordinary payment is method, Add, Close, with nothing keyed.
 - *loading* — close command in flight. Idempotent; must not be double-fired.
 - *error* — close rejected (stale version, lease lost, precondition failed).
-  No partial state; the draft survives for correction (B-20).
+  No partial state; the draft survives for correction (B-20). **The balance
+  shown is the changed order's balance, the draft is not marked fully
+  allocated, and the close control is refused until the balance is zero
+  again (B-18).** A rejected close is the one state where the total may have
+  moved under the draft, so it never re-offers the close it just refused
+  (DESIGN-004, finding 1).
 - *permission-denied* — a manager takeover displaced this client, and its
   close is rejected (FR-G14, AC-30).
 - *overflow* — many split tenders. The draft list scrolls; balance and total
@@ -853,7 +860,17 @@ Deactivated presets are absent from the picker but readable on orders holding
 them (FR-F5). Each successful change writes one audit entry with before and
 after values (FR-F8).
 
-## M-4 — Tender pads `[SHEET]` — POS-04
+## M-4 — Tender pads `[INLINE]` — POS-04
+
+**Retyped 2026-09-14, applying the owner's ruling of 2026-09-10.** Not a sheet.
+The tender pad is a persistent panel in the right column of POS-04, drawn that
+way since DESIGN-002 pass 1 ("what the drawing exposed", item 2 below). It
+does not enter from an edge and is never dismissed: choosing a method replaces
+the pad's content in place, and the only ways off it are Cancel payment or a
+successful close, both of which leave POS-04. It keeps its `M-4` number so the
+references here and in EXTERNAL-HANDOFF.md stay stable; it is no longer an
+overlay. Same change in SITEMAP.md and EXTERNAL-HANDOFF.md (DESIGN-004,
+finding 2).
 
 Cash and non-cash are **different components with different rules** (FR-G3,
 G4, B-5): cash may exceed the balance and produces change with a validated
@@ -931,7 +948,9 @@ draft put the drafted payment lines beside the keypad, and at 1280 x 800 the pad
 pushed them under the close bar. What is owed, what has been drafted against it,
 and the change due belong together on the left; the right column is one payment
 line being entered. This is the only screen where the PRD's "nothing recorded
-until close" (FR-G9) has to be legible at a glance, and it now is.
+until close" (FR-G9) has to be legible at a glance, and it now is. The owner
+ruled on 2026-09-10 that this right column is a persistent panel and not a
+`[SHEET]`; M-4 was retyped to match on 2026-09-14.
 
 **3. FR-E4's fire refusal cannot live in the scrolling line list.** The explanation
 of *why* the kitchen button is dead was drawn inside the order list, where a long

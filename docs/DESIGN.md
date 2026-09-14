@@ -64,6 +64,20 @@ typography:
     fontSize: "11px"
     fontWeight: 500
     letterSpacing: "0"
+  table-header:
+    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
+    fontSize: "11px"
+    fontWeight: 500
+    letterSpacing: "0.06em"
+  overlay-heading-office:
+    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
+    fontSize: "16px"
+    fontWeight: 500
+  body-office-modal:
+    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: 1.45
   tag:
     fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
     fontSize: "10px"
@@ -215,13 +229,11 @@ components:
     textColor: "{colors.text}"
     rounded: "{rounded.flat}"
     padding: "10px 16px"
-    height: "72px"
   order-line-void:
     backgroundColor: "{colors.void-surface}"
     textColor: "{colors.unavailable-text}"
     rounded: "{rounded.flat}"
     padding: "10px 16px"
-    height: "72px"
   order-line-remove:
     backgroundColor: "{colors.elevated}"
     textColor: "{colors.destructive}"
@@ -301,19 +313,21 @@ components:
   modal:
     backgroundColor: "{colors.elevated}"
     textColor: "{colors.text}"
+    typography: "{typography.body-pos}"
     rounded: "{rounded.surface}"
     padding: "20px"
     width: "560px"
   modal-office:
     backgroundColor: "{colors.elevated}"
     textColor: "{colors.text}"
+    typography: "{typography.body-office-modal}"
     rounded: "{rounded.surface}"
     padding: "20px"
     width: "640px"
   data-table-header:
     backgroundColor: "{colors.group}"
-    textColor: "{colors.text}"
-    typography: "{typography.group-label}"
+    textColor: "{colors.muted}"
+    typography: "{typography.table-header}"
     rounded: "{rounded.flat}"
     padding: "12px 12px"
   data-table-row:
@@ -351,7 +365,6 @@ components:
     textColor: "{colors.emergency-text}"
     rounded: "{rounded.flat}"
     padding: "12px 20px"
-    height: "80px"
   warning-chip:
     backgroundColor: "{colors.warning-surface}"
     textColor: "{colors.warning}"
@@ -434,7 +447,18 @@ selector and property each one came from.
 **Tokens.** `docs/design/tokens/frost.tokens.json` is the registry;
 `docs/design/tokens/frost.css` is generated from it. Every `--frost-*` name in
 this document exists in both under that name. The frontmatter above is the
-same values in the portable DESIGN.md schema, for tools that read it.
+same values in the portable DESIGN.md schema, for tools that read it. That
+schema has no *minimum* height, so the order line (72px minimum) and the
+emergency banner (80px minimum) carry no `height` there at all; the minimums
+are stated in Layout and Components and in the registry. A fixed height on
+either would clip a long item name or shrink the banner's coverage.
+
+**Completeness, stated honestly.** This system is complete for the six
+reviewed screens: every value they use is here. It is **not yet sufficient
+for Phase 0's two client shells**, which need a pressed/active touch state
+and a field error state that Frost does not contain. Both are tracked as
+`A7` in `.agent/ROADMAP.md` and go through review; neither is invented here.
+The list at the end says what else is inherited, unreviewed, or absent.
 
 **What this document does not decide.** Behavior, structure and copy belong to
 [design/SITEMAP.md](design/SITEMAP.md) and
@@ -573,16 +597,21 @@ smaller size is safe.
 | White on the 86 tag | 5.6 |
 | Control border against white (non-text) | 3.9 |
 
-### Inherited mapping for screens not yet styled
+### Inherited mapping inside the six screens
 
-Only six screens were styled and reviewed. The stylesheet remaps the
-wireframe's greyscale variables so the other fourteen render in Frost's
-palette without a pass of their own (`visual.css` lines 24–35): `--ink` →
+Only six screens were styled and reviewed, and only they load `visual.css`.
+The other fourteen wireframes load `wireframe.css`
+(`prototype/pos/floor.html:5`) and render greyscale; nothing restyles them.
+Within the six, `visual.css` remaps the wireframe's greyscale variables so
+that every rule written for the structure sheet renders in Frost's palette
+(`visual.css` lines 24–35): `--ink` →
 text, `--ink2` and `--ink3` → muted, `--ink4` → #60696b, `--line` → control
 border, `--line2` and `--line3` → divider, `--bg` → white, `--bg2` → canvas,
-`--bg3` → grouping, `--bg4` → pending, `--bg5` → #a1c2c6. That mapping is
-sourced; the resulting screens are not reviewed. Treat them as a starting
-point, not a specification.
+`--bg3` → grouping, `--bg4` → pending, `--bg5` → #a1c2c6. That is how the
+skeleton bars, the category modal's text field and the inline fixture rules
+get their colour. The mapping is sourced; what it produces was not
+individually reviewed. An unstyled screen that later loads `visual.css` will
+inherit the same way, and that is a starting point, not a specification.
 
 ## Typography
 
@@ -631,7 +660,12 @@ Line height is 1.45 (`--frost-leading-body`) unless stated. POS body is 15px
 **The Supplement Rule.** The 10px and 11px sizes label things that are
 already readable at a larger size beside them — a round heading over 15px
 lines, a column header over 14px cells. They are not a licence to set
-critical text small. Nothing a cashier must act on is below 13px.
+critical text small. Nothing a cashier must act on is below 13px — with one
+known exception the Frost screens carry and this document does not endorse:
+on a fired round the 10px `MANAGER TO VOID` tag in the round heading is the
+only visible statement that the row opens a PIN-gated path, because the
+trailing slot is deliberately empty. No sourced treatment fixes that; it is
+raised in DESIGN-004 finding 6 and awaits a ruling.
 
 ### Money
 
@@ -697,9 +731,9 @@ canvas; PIN keys 88×88px in three 88px columns (`--frost-pin-key-height`,
 (`--frost-office-content-padding`); cards at 20px (`--frost-card-padding`);
 report detail in two columns (`--frost-report-columns`) with a 16px gap
 (`--frost-report-column-gap`); the back-office modal 640px
-(`--frost-office-modal-width`). The 900px minimum height
-(`--frost-office-min-height`) is the review window, not a product limit; the
-report reaches about 946px and scrolls.
+(`--frost-office-modal-width`). The back office has no fixed height: the
+review gallery framed it at 900px, that value is not a product limit and no
+token carries it; the report reaches about 946px and scrolls.
 
 **Spacing scale:** 4, 8, 12, 16, 20, 24, 32, 40, 48px (`--frost-space-1`,
 `--frost-space-2`, `--frost-space-3`, `--frost-space-4`, `--frost-space-5`,
@@ -769,11 +803,15 @@ Three radii and one circle (`--frost-radius-flat` 0, `--frost-radius-surface`
   (`--frost-emergency-marker-size`), so the two alert marks differ in shape
   as well as colour.
 
-Borders are 1px everywhere except the keyed amount field (2px) and three
-inline rules on the settlement summary panel, authored in the fixture and
-not overridden by the stylesheet: a 2px ink rule on its right edge, below the
-balance block, and above the close action. Dashed borders mean *not
-available*: the 86'd tile, the disabled button, the empty state.
+Borders are 1px everywhere; the keyed amount field's 2px spruce border is the
+one designed exception. Three anonymous inline `2px solid var(--ink)` rules
+survive in the settlement fixture (summary panel right edge, below the
+balance block, and the close band of the tender panel), shared by Paper and
+Frost alike and overridden by neither. They are wireframe residue that the
+stylesheet's own boundaries — every named one normalised to 1px — did not
+reach, not a Frost decision; an implementation draws them at 1px control
+border. Dashed borders mean *not available*: the 86'd tile, the disabled
+button, the empty state.
 
 Icons are inline SVG on a 24 grid, `stroke="currentColor"`, stroke width 1.8
 (`--frost-icon-stroke`), round caps and joins, drawn at 20px
@@ -888,14 +926,15 @@ different action.
 
 ### Modal and sheet
 - White, 2px corners, 1px spruce boundary, no shadow, on the 38% scrim. Head
-  and foot on canvas with a divider between; heading 18px 500 (16px in the
-  640px back-office modal, whose body is 13px). `modal` 560px; `modal-office`
-  640px. The item sheet occupies the region left of the order panel and below
+  and foot on canvas with a divider between; heading 18px 500
+  (`overlay-heading`), body at POS size. The 640px back-office modal is 13px
+  (`body-office-modal`) with a 16px 500 heading (`overlay-heading-office`).
+  `modal` 560px; `modal-office` 640px. The item sheet occupies the region left of the order panel and below
   the header, and scrolls its body. Modals carry `role="dialog"`,
   `aria-modal`, and are labelled by their heading.
 
 ### Data table
-- `data-table-header`: 11px 500 uppercase at 0.06em, `12px 12px`
+- `data-table-header`: 11px 500 muted, uppercase at 0.06em, `12px 12px`
   (`--frost-table-head-padding`), grouping-blue fill, 1px control-border rule
   below.
 - `data-table-row`: white, 14px at 1.45, `15px 12px`
@@ -970,8 +1009,13 @@ different action.
   grouped, right-aligned, with the currency labelled once per group.
 - **Do** use 72px for a standard POS action, 88px for a PIN key, 56px for a
   tender method — never smaller than this table.
-- **Do** use spruce for what commits and ink for what is selected; they are
-  different values and different jobs.
+- **Do** fill spruce only for the one terminal action of a surface — the
+  control that ends the task the surface exists for: *Close order & print
+  receipt*, *Settle*, *Add to order*, *Apply*, *Remove line* in the line
+  editor, *Continue* on a PIN pad, *Sign in*, *Create*. Every other
+  state-changing control is outlined: *Send to kitchen*, *Add card*, *Add
+  cash*, *Discount*, *Void order* on the action band, and both *Reprint*
+  commands. Ink, not spruce, fills what is selected.
 - **Do** keep the POS chrome white, the canvas #fafafa, and the lock screen and
   keys cream.
 
@@ -993,8 +1037,11 @@ different action.
 
 ## Open — not present in the Frost artifacts
 
-Values the design system needs and the Frost delivery does not contain. Each
-is a question for the owner or the lead, not a gap for an implementer to fill.
+Three different claims, kept apart because they are different: **absent**
+(no Frost artifact contains it), **inherited** (it renders in a Frost screen
+only through rules written for the greyscale wireframe), and **unreviewed**
+(it exists but the finish review did not cover it). Each is a question for
+the owner or the lead, not a gap for an implementer to fill.
 
 1. **Dark palette.** Light only was delivered, deliberately. Whether a dark
    palette ships is an open product decision (ROADMAP Track A, item A5). No
@@ -1006,12 +1053,15 @@ is a question for the owner or the lead, not a gap for an implementer to fill.
 3. **Field error and invalid state.** Errors in the fixtures are notices
    beside a field. No border, colour or text treatment exists for an invalid
    field itself.
-4. **Form controls beyond the numeric field.** Text input, select, checkbox,
-   and any toggle. The back-office 86 switch is a row-level pill button plus
-   a tag in the fixtures; the item editor and settings screens were not
-   styled. The login form (Phase 0) exists only in the greyscale wireframe,
-   where it is two 40px `field-small` boxes and a full-width primary button
-   under the inherited mapping.
+4. **Form controls beyond the numeric field — mostly absent, one inherited.**
+   Select, checkbox, and any toggle are absent. A 40px text field *is*
+   rendered in the Frost category modal (`frost/back-office/menu.html:142`,
+   `field-small`) through the shared `.field` rules — inherited, and the
+   modal was not a reviewed screen. The back-office 86 switch is a row-level
+   pill button plus a tag; the item editor and settings screens are absent.
+   The login form (Phase 0) exists only in the greyscale wireframe, which
+   loads `wireframe.css`, not `visual.css`: two 40px `field-small` boxes and
+   a full-width primary button, in greyscale.
 5. **Success and informational colour.** There is no success green and no
    neutral informational hue; confirmations are grouping-blue notices. If a
    confirmed close or a successful reprint needs its own colour, none is
@@ -1019,15 +1069,27 @@ is a question for the owner or the lead, not a gap for an implementer to fill.
 6. **Icons beyond the four.** Arrow, back, close and alert are the entire set.
    The lock screen's *Sign in to view* and the rest of the product have no
    icon vocabulary.
-7. **Screens outside the six.** Floor plan, closed orders, quick-sale line
-   editor, the seven remaining back-office screens and all sheets other than
-   the item sheet render via the inherited variable mapping and were not
-   reviewed. Their geometry is the wireframe's; their colour is inferred.
-8. **Loading and skeleton treatment.** `.skel` and `.loadinglabel` come from
-   the greyscale structure sheet and were not restyled.
-9. **Printed output.** Kitchen tickets, cancellation tickets and receipts are
-   paper. Nothing in Frost styles them, and they are out of this document's
-   scope.
+7. **Screens outside the six — absent.** Floor plan, closed orders, closed
+   order detail, and the eleven remaining back-office screens exist only as
+   greyscale wireframes loading `wireframe.css`; no Frost file styles them.
+   Their geometry is the wireframe's; their colour is not specified. The
+   sheets and modals *inside* the six screens — item configuration, line
+   editor in both forms including the quick-sale form
+   (`frost/pos/order.html`, state `quick-line`), discount picker and
+   free-form entry, void line, void order, manager approval, re-auth,
+   cancel, lease lost, takeover — are rendered in Frost and were among the
+   146 fixture states the finish review's verification covered.
+8. **Loading and skeleton treatment — inherited.** `.skel` and
+   `.loadinglabel` render in the Frost order and lock screens through the
+   structure sheet's rules and the variable remap (skeleton bars in
+   grouping blue, label in muted). Nothing in `visual.css` addresses them;
+   they were not restyled and not called out in review.
+9. **Printed output — absent, and load-bearing.** Kitchen tickets,
+   cancellation tickets and receipts are paper. Nothing in Frost designs
+   them. `B-16` requires a cancellation ticket to be unmistakable from a new
+   work ticket, and that is a property of the printed artifact, so this
+   system cannot claim `B-16` is met. Printed output must be designed and
+   reviewed before Phase 3 prints anything.
 10. **Inline text links as touch targets.** Retained from the wireframe,
     explicitly not certified. Device testing decides them.
 11. **Assistive-technology, dim-floor and real-device checks.** The finish

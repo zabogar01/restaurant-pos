@@ -19,6 +19,17 @@ is unaffected. They are recorded here because this document already carries
 `[INLINE]` affordance rulings of the same kind, and a brief that omits them
 would drift.
 
+**Retyped 2026-09-14, applying the owner's ruling of 2026-09-10.** The three
+tender pads under POS-04 — cash, card, custom — are `[INLINE]`, not `[SHEET]`.
+The tender pad is a persistent panel occupying the right column of the
+settlement screen: it does not enter from an edge, is never dismissed, and
+choosing another method replaces its content in place; leaving it means
+leaving POS-04. The prototype has drawn it that way since DESIGN-002 pass 1
+and this document lagged. Overlay semantics change; the count of 7 POS
+screens, 13 back-office screens and 6 modals does not, because M-4 keeps its
+number in the inventory as a retyped node. Applied in SCREEN-INVENTORY.md and
+EXTERNAL-HANDOFF.md in the same change (DESIGN-004, finding 2).
+
 One further change is a **variant, not a node**: the line-editor sheet now has
 a table form and a quick-sale form, exactly as POS-03 itself has two variants.
 They differ only in where leaving them returns to — the quick form must never
@@ -141,11 +152,12 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   ├── [INLINE] Draft tender list (client-side, unstored) ...... FR-G9
 │   ├── [INLINE] Tender amount PREFILLED with the remaining
 │   │             balance, editable in place. No split mode ..... FR-G2, G3, B-5, I-13
-│   ├── [SHEET] Cash tender pad ................................ FR-G4, M5
+│   ├── [INLINE] Cash tender pad — persistent right-column panel,
+│   │             never dismissed; choosing a method swaps it .... FR-G4, M5
 │   │   └── [INLINE] Above change ceiling — max cash shown ..... FR-M5
-│   ├── [SHEET] Card tender pad ................................ FR-G3
+│   ├── [INLINE] Card tender pad — same panel, card rules ....... FR-G3
 │   │   └── [INLINE] Above remaining balance — rejected, max shown FR-G3
-│   ├── [SHEET] Custom named tender ............................ FR-G1
+│   ├── [INLINE] Custom named tender — same panel ............... FR-G1
 │   ├── [INLINE] Change due ................................... FR-G4, G6
 │   ├── [INLINE] Zero-total settlement — no tenders needed ..... FR-G11
 │   ├── [INLINE] Close blocked — table order has PENDING lines . FR-G10

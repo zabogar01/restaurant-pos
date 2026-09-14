@@ -1192,17 +1192,6 @@
         "authoredValue": "1440px"
       }
     },
-    "--frost-office-min-height": {
-      "value": "900px",
-      "group": "Geometry",
-      "source": {
-        "path": "docs/design/visual-directions/visual.css",
-        "line": 59,
-        "selector": ".device--bo",
-        "property": "min-height",
-        "authoredValue": "900px"
-      }
-    },
     "--frost-pos-header-height": {
       "value": "64px",
       "group": "Geometry",

@@ -99,14 +99,21 @@ September 2026 changed several affordances inside the order and payment screens
 — see the rules below on the trailing slot, the read-only locked order, and the
 prefilled amount — but added and removed no screens, routes, or overlays. The
 one addition is a second **form** of the line-editor overlay for counter sales,
-which differs from the table form only in where closing it returns to.
+which differs from the table form only in where closing it returns to. One
+overlay was **retyped**: the tender pad is a persistent panel on the settlement
+screen, not an overlay (owner ruling 2026-09-10, applied 2026-09-14).
 
 **Back office:** login, today, item editor, tables, users, discount presets,
 settings, end-of-day, reports list, audit log, print incidents.
 
 **Overlays** — these are *not* pages and must never become pages: the manager
-approval prompt, item configuration, discount selection, the tender pad,
-refund allocation, and back-office re-authentication.
+approval prompt, item configuration, discount selection, refund allocation,
+and back-office re-authentication.
+
+**The tender pad is not an overlay.** It is a persistent panel in the right
+column of the settlement screen, present the whole time the screen is open,
+never dismissed; choosing a payment method swaps its content in place. Do not
+draw it as a sheet, drawer, or dialog.
 
 ---
 

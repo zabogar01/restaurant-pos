@@ -191,7 +191,11 @@ each was resolved (stylesheet wins in every case).*
    not primary `#0b363b`. Recorded as "Ink", a distinct role from Spruce.
 3. Prose: "flat surfaces use 1px rules". The settlement fixture carries three
    inline 2px ink rules that no stylesheet rule overrides (summary panel right
-   edge, below the balance, above the close action). Recorded as the exception.
+   edge, below the balance, and the close band of the *tender* panel).
+   Originally recorded as a Frost exception; **corrected under DESIGN-004
+   finding 7**: they are shared by Paper and Frost, anonymous, and untouched
+   by a stylesheet that normalises every named boundary to 1px — wireframe
+   residue, not intent. The system is 1px; the residue is noted as such.
 4. Prose does not say table column headers are uppercase; `structure.css` sets
    `text-transform: uppercase` on `.dtable th` and `visual.css` never
    overrides it, while `.figs .h` is explicitly set to none. Recorded: table
@@ -242,23 +246,45 @@ text on the unavailable tile, 4.7:1.
    Identical, because the stylesheet is the wireframe's (`diff` empty).
 6. Money as whole rupiah — **met.** Every figure in the fixtures and in
    `docs/DESIGN.md` is precision 0, period grouped.
-7. No boundary broken — **met.** B-16: the fired slot is empty and void is
-   PIN-gated elsewhere; B-18: the tender amount prefills to the balance and the
-   close action is gated on zero balance; B-19: void and refund share no
-   control or screen in the six; emergency/receipt (PRODUCT principle 1, B-15):
-   unequal treatment throughout. Nothing visual gates a state transition on a
-   print.
+7. No boundary broken — **corrected under DESIGN-004 (findings 1 and 4);
+   the original "met" was not earned.**
+   - B-16 — **open.** The boundary is about a cancellation ticket being
+     unmistakable from new kitchen work, which is a property of printed
+     output, and printed output is undesigned (`docs/DESIGN.md`, Open item
+     9). The empty fired slot and PIN gating I cited are `FR-H4` and `I-12`,
+     not `B-16`. Printed output must be designed before Phase 3 prints.
+   - B-18 — **was broken in the delivery, fixed 2026-09-14.** The settlement
+     `error` state (close rejected because the order changed) showed balance
+     0, tagged the draft `FULLY ALLOCATED`, and offered a live close — in the
+     Frost fixture and in the wireframe it inherited from (DESIGN-002 pass 1).
+     Now the balance is the changed order's, the draft is prefilled with the
+     remainder, and the close is refused until zero again. B-20 holds: the
+     drafted line survives, nothing recorded.
+   - B-19 — **met for the six screens only.** Void and refund share no
+     control or screen among them, but POS-06 (refund) is not among the six,
+     so the claim does not extend to the refund surface.
+   - B-15 and PRODUCT principle 1 — **consistent, not proven.** The
+     incident screens show a warning plus a reprint action and no blocked
+     sale, which is consistent with print never gating a transition, but a
+     static fixture cannot demonstrate a non-gating.
+   - B-5 — consistent: the card prefill is also the card ceiling (I-13).
 8. Complete enough to write `docs/DESIGN.md` and tokens without inventing —
-   **met-with-a-limit.** Everything needed for the six screens was sourced.
-   The eleven items under "Open" are genuine absences, and two of them
-   (pressed state, login form) will be needed before Phase 0's client shells
-   are styled.
+   **met for the six reviewed screens; not yet sufficient for Phase 0**
+   (restated under DESIGN-004 finding 3, lead's ruling). Everything the six
+   screens use was sourced without invention. Phase 0's two client shells
+   additionally need a pressed/active touch state and a field error state
+   that Frost does not contain; both are tracked as `A7` and go through
+   review. The Open list now distinguishes absent from inherited from
+   unreviewed.
 
 *Task acceptance criteria.* 1 met (each non-obvious value is traced above or
-in the registry). 2 met (walk above). 3 met. 4 met. 5 met. 6 met. 7 met: JSON
-parses; every one of the 169 `--frost-*` names in `docs/DESIGN.md` exists in
-the registry and every registry token is referenced; the YAML frontmatter
-parses and every `{ref}` resolves.
+in the registry). 2 met (walk above, as corrected 2026-09-14). 3 met. 4 met.
+5 met. 6 — **not met as delivered**: B-18 was broken by the settlement
+`error` fixture; fixed under DESIGN-004. 7 met: JSON parses; every `--frost-*`
+name in `docs/DESIGN.md` exists in the registry and every registry token is
+referenced (168 after DESIGN-004 dropped the review-frame
+`--frost-office-min-height`); the YAML frontmatter parses and every `{ref}`
+resolves.
 
 *Raised to the lead — decisions, not mine to make.*
 - The Phase 0 plan's `packages/tokens/src/index.ts` carries placeholder values

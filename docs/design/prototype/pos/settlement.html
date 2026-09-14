@@ -38,11 +38,11 @@
     <div style="width:560px;flex:none;border-right:2px solid var(--ink);display:flex;flex-direction:column">
       <div style="padding:16px 20px;border-bottom:1px solid var(--line2)">
         <div class="totals" style="border:0;padding:0">
-          <div class="t"><span>Subtotal</span><span class="mono">16.50</span></div>
-          <div class="t"><span>Staff meal 10%</span><span class="mono">&minus;1.65</span></div>
-          <div class="t"><span>Service charge 5%</span><span class="mono">0.74</span></div>
-          <div class="t t--grand"><span>Total</span><span class="mono" data-unless="zero">15.59</span><span class="mono" data-when="zero">0.00</span></div>
-          <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">1.35</span></div>
+          <div class="t"><span>Subtotal</span><span class="mono" data-unless="error">16.50</span><span class="mono" data-when="error">20.50</span></div>
+          <div class="t"><span>Staff meal 10%</span><span class="mono" data-unless="error">&minus;1.65</span><span class="mono" data-when="error">&minus;2.05</span></div>
+          <div class="t"><span>Service charge 5%</span><span class="mono" data-unless="error">0.74</span><span class="mono" data-when="error">0.92</span></div>
+          <div class="t t--grand"><span>Total</span><span class="mono" data-unless="zero error">15.59</span><span class="mono" data-when="error">19.37</span><span class="mono" data-when="zero">0.00</span></div>
+          <div class="t t--incl"><span>Includes GST 10%</span><span class="mono" data-unless="error">1.35</span><span class="mono" data-when="error">1.68</span></div>
         </div>
       </div>
 
@@ -51,7 +51,8 @@
           <span style="font-size:18px;font-weight:400">Balance</span>
           <span class="mono" data-when="empty card cardsplit cashover cardover pending leaselost takeover">15.59</span>
           <span class="mono" data-when="partial ceiling">5.59</span>
-          <span class="mono" data-when="exact exactcash exactsplit change overflow reauth cancel error loading zero">0.00</span>
+          <span class="mono" data-when="error">3.78</span>
+          <span class="mono" data-when="exact exactcash exactsplit change overflow reauth cancel loading zero">0.00</span>
         </div>
         <div class="rowflex spread" data-when="change" style="font-size:22px;font-weight:700;margin-top:8px">
           <span style="font-size:16px;font-weight:400">Change due</span><span class="mono">4.41</span>
@@ -74,10 +75,16 @@
           <a href="order.html?state=lock-draft">Back to the order</a></div>
         </div>
 
+        <!-- error = the close was rejected because the order changed under the
+             draft. The balance is therefore whatever the changed order now says,
+             the draft is NOT fully allocated, and the close control is refused
+             until exactness is re-established (B-18). The drafted lines survive
+             for correction; nothing was recorded (B-20). DESIGN-004 finding 1. -->
         <div class="notice" data-when="error" style="margin:0 0 12px">
           <div class="notice__t">Close was rejected</div>
-          <div>The order changed while you were collecting payment. Your drafted payment
-          lines are still here &mdash; check the total and try again. Nothing was recorded.</div>
+          <div>The order changed while you were collecting payment. The total is now
+          <b>19.37</b> and <b>3.78 is still owing</b>. Your drafted payment lines are still
+          here &mdash; add the rest, or remove them and start again. Nothing was recorded.</div>
         </div>
 
         <div data-when="loading" style="margin-bottom:12px">
@@ -190,16 +197,17 @@
           <div style="flex:1">
             <div class="rowflex spread" style="margin-bottom:4px">
               <span class="label" style="margin:0">Amount</span>
-              <span class="tag tag--solid" data-unless="cardsplit cashover cardover ceiling exact exactcash exactsplit change overflow reauth cancel error loading">ALREADY FILLED IN &mdash; WHOLE BALANCE</span>
+              <span class="tag tag--solid" data-unless="cardsplit cashover cardover ceiling exact exactcash exactsplit change overflow reauth cancel loading">ALREADY FILLED IN &mdash; WHOLE BALANCE</span>
               <span class="tag" data-when="cardsplit cashover cardover ceiling">KEYED BY HAND</span>
-              <span class="tag" data-when="exact exactcash exactsplit change overflow reauth cancel error loading">FULLY ALLOCATED</span>
+              <span class="tag" data-when="exact exactcash exactsplit change overflow reauth cancel loading">FULLY ALLOCATED</span>
             </div>
             <div class="field" data-when="empty card pending leaselost takeover">15.59</div>
             <div class="field" data-when="partial">5.59</div>
             <div class="field" data-when="cardsplit">10.00</div>
             <div class="field" data-when="cashover cardover">20.00</div>
             <div class="field" data-when="ceiling">99,999,999.00</div>
-            <div class="field" data-when="exact exactcash exactsplit change overflow reauth cancel error loading">0.00</div>
+            <div class="field" data-when="error">3.78</div>
+            <div class="field" data-when="exact exactcash exactsplit change overflow reauth cancel loading">0.00</div>
           </div>
           <!-- Every Add lands on the state that adding THIS amount actually
                produces. A rejected amount cannot be added at all (B-20, AC-6). -->
@@ -209,8 +217,9 @@
             <a class="btn" href="settlement.html?state=exactcash" style="height:56px" data-when="empty pending leaselost takeover">Add cash</a>
             <a class="btn" href="settlement.html?state=exactsplit" style="height:56px" data-when="partial">Add cash</a>
             <a class="btn" href="settlement.html?state=change" style="height:56px" data-when="cashover">Add cash</a>
+            <a class="btn" href="#" style="height:56px" data-when="error">Add cash</a>
             <span class="btn btn--off" style="height:56px;font-size:13px" data-when="cardover ceiling">Over the limit &mdash; cannot add</span>
-            <span class="btn btn--off" style="height:56px" data-when="exact exactcash exactsplit change overflow reauth cancel error loading">Nothing left</span>
+            <span class="btn btn--off" style="height:56px" data-when="exact exactcash exactsplit change overflow reauth cancel loading">Nothing left</span>
           </div>
         </div>
 
@@ -231,7 +240,7 @@
         <div class="muted" data-when="ceiling" style="margin-bottom:14px">
           Cash <b>may</b> be more than the balance, but not more than the restaurant can
           give change for, so this cannot be added.</div>
-        <div class="muted" data-unless="card cardsplit cashover cardover ceiling zero exact exactcash exactsplit change overflow reauth cancel error loading" style="margin-bottom:14px">
+        <div class="muted" data-unless="card cardsplit cashover cardover ceiling zero exact exactcash exactsplit change overflow reauth cancel loading" style="margin-bottom:14px">
           The whole balance, already filled in. Cash <b>may</b> be more than this &mdash; key
           what the customer handed over and the change is worked out.</div>
 
@@ -244,10 +253,10 @@
       </div>
 
       <div style="padding:16px 20px;border-top:2px solid var(--ink)">
-        <a class="btn btn--primary" href="closed-order.html" data-when="exact exactcash exactsplit change overflow cancel error">Close order &amp; print receipt</a>
+        <a class="btn btn--primary" href="closed-order.html" data-when="exact exactcash exactsplit change overflow cancel">Close order &amp; print receipt</a>
         <a class="btn btn--primary" href="closed-order.html?state=zero" data-when="zero">Close order &amp; print receipt</a>
         <a class="btn btn--primary" href="settlement.html?state=reauth" data-when="reauth">Sign in to close</a>
-        <span class="btn btn--off" data-when="empty card cardsplit cashover partial cardover ceiling pending leaselost takeover">
+        <span class="btn btn--off" data-when="empty card cardsplit cashover partial cardover ceiling pending leaselost takeover error">
           Close order &mdash; balance outstanding</span>
         <span class="btn btn--off" data-when="loading">Closing&hellip;</span>
       </div>

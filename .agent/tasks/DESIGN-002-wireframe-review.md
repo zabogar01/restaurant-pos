@@ -278,6 +278,17 @@ the structure is unchanged.
    control: a rejected close is now retryable rather than reading "balance
    outstanding", and a close in flight reads "Closing…". I did not audit the
    remaining screens for the same class of error.
+
+   > **Corrected 2026-09-14 by `lead`, after `design-reviewer` found it.** That
+   > correction was right for `reauth`, `cancel` and `loading` and **wrong for
+   > `error`**, which is the one state where the order's total may have moved —
+   > the rejection copy says so itself. Setting its balance to 0.00 and leaving
+   > the close control live offered a close on a stale balance, which `B-18`
+   > forbids. Fixed under
+   > [DESIGN-004](DESIGN-004-frost-review-remediation.md) finding 1, in the
+   > wireframe and in the Frost fixture. The lesson worth keeping: a fix
+   > applied to four states because they looked alike was only correct for
+   > three, and the fourth differed for a reason the copy already stated.
 3. **The line-editor sheet's Back control returns to `eightysix`,** not to the
    state the user arrived from. Pre-existing wireframe navigation slack, now
    slightly more visible because the sheet is reachable from more states. Not
