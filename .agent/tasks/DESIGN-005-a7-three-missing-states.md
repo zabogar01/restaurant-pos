@@ -415,3 +415,86 @@ generic rule would ring a frozen disabled back-office button.
 3. Every other finding fixed or answered with `file:line`.
 4. Commit as you go on `agent/design-direction` in this worktree, and confirm
    with `git log` that the branch moved before reporting.
+
+### Handoff — second pass, 2026-09-14, `designer` (claude, Fable 5.1)
+
+Seven fixed, one (finding 4) reverted and raised. Committed as `4268b8b`
+plus this handoff; `git log` confirmed. `visual.css` and `structure.css`
+hash `32aabe39…` and `af39176b…`, identical to `5d339c5`; `structure.css`
+still equals the `wireframe.css` fingerprint.
+
+**1 — fixed.** `frost-states.css` now carries
+`@media (hover: none), (pointer: coarse)` with twelve rules that put every
+hover in `visual.css:77, :78, :97, :99, :111, :113, :116, :117, :170, :171,
+:183` and `structure.css:200, :290, :302` back to rest — tile to white/ink/
+control border with muted price, line name un-underlined, remove control
+white, secondary button white/control border, primary spruce, destructive
+white/brick, final destructive brick, nav item transparent, table row white
+— while `.tile--selected`, `.btn--selected` and `[aria-current="page"]` keep
+their fill. Same selectors, later sheet, so equal specificity wins. Proven
+in Chrome, which has a mouse and cannot match the media query: the block's
+rules were cloned out of the media condition into the page, a tile hovered,
+and `getComputedStyle` read `rgb(255,255,255)` background, ink text, control
+border, muted price; with the clone removed and the hover held it read
+`rgb(3,33,37)` — the selected fill. The fixture's pressed tile is now a live
+`<a class="tile is-pressed" href=…>`, not an inert div.
+
+**2 — fixed.** `frost-states.css` declares `:root { --invalid: #83611c }`
+and both invalid rules consume `var(--invalid)`; `var(--warning)` no longer
+appears in the sheet. Proven: `--warning` set to `#ff00ff` on the root at
+runtime, the invalid border and message still computed `rgb(131,97,28)`.
+Registry `why` for `--frost-invalid` says so.
+
+**3 — selector grew by one, claim narrowed.** Added
+`.pos__bar > a:first-child:active` (the header back link, a 64×48 box by
+`visual.css:63`, measured `[20,8,64,48]`). The claim in `docs/DESIGN.md`
+(Touch pressed, Do list, sheet comment) now reads *every enabled boxed
+control* and names the exclusion: inline text links — the tender line's
+Remove (`settlement.html:104`), the totals' *change*, links inside notices —
+get no ring because they are uncertified as touch targets (open item 8) and
+an inset ring on an unboxed run of text hugs the glyphs; whatever device
+testing makes of them will be a box, and the box will ring.
+
+**4 — reverted, raised.** `frost/back-office/menu.html` is restored to its
+bytes at `ca0a4db`; the `category-invalid` state, its copy and its
+stylesheet link are gone; the registry's `shown` lists and `docs/DESIGN.md`
+open item 2 no longer cite it. **For the lead to rule:** the 40px
+`field-small-invalid` is specified (same treatment as 56px) but nothing
+demonstrates it, because no reviewed state holds a refused small field. If
+a demonstration is wanted, the honest route is a BO-03 state in
+`SCREEN-INVENTORY.md` — proposed wording: *`category-invalid` — Create
+tapped with an empty name; the Name field is invalid with "Enter a name";
+Create stays disabled until a name is entered; nothing is written* — after
+which the fixture can show it with Create as `bobtn--off`. That is a
+structural and copy change and not mine to make. Phase 0's login form is
+the other candidate and is greyscale only.
+
+**5 — fixed.** Frontmatter `description` now says 168 trace and four were
+designed; the status block's first paragraph says "except the four designed
+under DESIGN-005"; the completeness note says "read from the artifacts" of
+the six screens' values only.
+
+**6 — accounting made true.** The open list's intro now states: eleven
+items on 2026-09-14, nine now; the two removed were pressed and invalid; the
+third gap, the round tag, was never an item in the list but the Supplement
+Rule's one exception, closed there. "Left this list" is gone. Criterion 6
+as written ("shrinks by exactly these three") could not be met literally
+because only two of the three were ever in the list; this is the honest
+form.
+
+**7 — fixed.** `order.html?state=pressed` now shows the selected rail row
+*Mains* (`cat cat--on is-pressed`) with a white ring on the ink fill
+directly above *Sides* with an ink ring on white — the two halves of
+"selection fills, pressing strokes" side by side. Measured: white
+`0 0 0 2px inset` on `rgb(3,33,37)`.
+
+**8 — fixed.** `.bobtn--off.is-pressed` added to the exclusion.
+
+Inspected: `order.html?state=pressed` zoomed at actual size (rail and grid),
+`settlement.html?state=cardover`, `?state=empty`; the hover-block proof
+above; registry JSON parses at 172 tokens with the CSS unchanged; DESIGN.md
+frontmatter parsed by Ruby YAML, 56 components; every `--frost-*` in the
+document is in the registry. Not checked: a real touch device — the media
+block is proven to cascade, not proven to be matched by any given tablet,
+and `(pointer: coarse)` is there so a touch screen that reports hover still
+matches.
