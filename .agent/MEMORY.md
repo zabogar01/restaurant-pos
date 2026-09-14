@@ -3,8 +3,8 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-14, from repository evidence at commit `c5a2807` plus the
-uncommitted working tree and the live Herdr roster.
+Last updated: 2026-09-14, from repository evidence at `ad186db` on
+`agent/phase-0-foundations` and the live Herdr roster.
 
 The 2026-09-10 revision of this file was written at 11:50 and went stale the
 same afternoon: DESIGN-002 ran two further passes, and an entire visual
@@ -45,15 +45,14 @@ rather than believing.
 `agent/design-direction` holds everything up to and including the design
 system; neither is merged, and only the owner merges.
 
-Work completed so far is product definition, a reconciled and owner-approved
-architecture proposal, UX structure, a remediated behavioral wireframe, two
-proposed light visual directions, and one implementation plan. Two tracks ran
-in parallel: visual direction (`DESIGN-001`, `DESIGN-002`) and architecture
-approval. Both now wait on the owner rather than on an agent.
+Everything before this: the product contract, a standing architecture with
+seven accepted ADRs, confirmed UX structure, a remediated behavioral wireframe,
+two light visual directions with Frost chosen, a design system stating Frost as
+169 sourced tokens, and twelve planned Phase 0 tasks.
 
-Implementation has not started and is gated — see [ROADMAP.md](ROADMAP.md). One
-gate condition is open (Phase 0 execution mode) and one is half done (the
-architecture is approved but not converted).
+The gate in [ROADMAP.md](ROADMAP.md) is **open** — all five conditions met and
+all five in git history. What remains open are product decisions, not gate
+conditions, and each names the phase it must be settled before.
 
 ---
 
