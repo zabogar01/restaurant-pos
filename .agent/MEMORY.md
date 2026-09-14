@@ -333,7 +333,7 @@ Roster verified against `herdr agent list` on 2026-09-14.
 | `design-reviewer` | codex | `w2:p9` | live, working | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
 | `builder1` | claude | `w2:pB` | live, idle | First implementer. **Delivered [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md)** and a handoff worth reading — it found three defects in the plan itself |
 | `builder2` | claude | `w2:pC` | live, idle | **Delivered [PHASE0-002](tasks/PHASE0-002-money-module.md)**, 81 tests. Backend is paused behind it |
-| `builder3` | claude | `w2:pD` | live, working | First frontend implementer. Holds [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens, lock screen |
+| `builder3` | claude | `w2:pD` | live, idle | First frontend implementer. **Delivered [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md)** — POS bundle, Frost tokens, lock screen, 8 states |
 | `designer2` | codex, gpt-6-astra | `w2:pA` | live, idle, **out of quota** | Started 2026-09-14 and equipped with the Impeccable skill. Delivered the token set, then stopped before `docs/DESIGN.md`. DESIGN-003 was reassigned off it the same day; kept alive because its scrollback is the only record of how the tokens were extracted |
 
 **Both codex agents share one account quota and both exhausted it at 15:11 on
@@ -357,6 +357,52 @@ the proposal document itself, and the architect's account of it exists only in
 its pane scrollback — which is why the material parts of it are copied into
 this file. The same is true of the visual direction build: `REVIEW.md` and the
 brief are its only durable record, and neither is a task file.
+
+---
+
+## FE-001 landed — the first screen exists, and it is the owner's to judge
+
+`apps/pos` builds and runs. The POS lock screen is real code at 1280×800 on the
+Frost tokens, with eight fixture states. **Lead-verified: 114 tests across 8
+files pass, typecheck clean over server, money and POS.** The lead also opened
+it in a browser and looked at it.
+
+**To see it:** `npm run dev -w apps/pos` from the repository root, then
+`http://127.0.0.1:5173/pos/`. States hang off `?state=` — `loading`, `error`,
+`permission-denied`, `throttled`, `invalidated`, `draft`, `incident`. The port
+is strict, so it fails loudly rather than moving.
+
+**Nothing behind it is real.** The PIN is compared against nothing.
+
+Three things worth keeping:
+
+- **`packages/tokens` declares no values of its own.** It is a one-line
+  `@import` of `docs/design/tokens/frost.css`, and a test fails if it ever
+  declares anything. That is the anti-drift mechanism working as intended: the
+  registry stays the single source, and a client cannot fork it by accident.
+- **`builder3` wrote tests that enforce the rules rather than trusting them.**
+  `no-invented-values.test.ts` fails on any literal colour, length, font size
+  or weight in `src/`, and on any `var(--frost-*)` absent from the registry.
+  `console-free.test.ts` fails on any `console.`, storage, cookie, `fetch`,
+  XHR or beacon. `B-12` is checked four ways, the sharpest being that entering
+  `123456` and `987650` produce **byte-identical `innerHTML`**.
+- **The 88px keys were measured in the rendered page, not read off the CSS** —
+  twelve keys at exactly 88×88, and the same measurement run against the
+  reviewed Frost artifact returns the same geometry.
+
+**`A7` — no pressed state was used, and the reasoning is worth carrying.**
+`builder3` did not reach for a provisional treatment, because on *this* screen
+every key already changes something visible: a digit fills a dot, delete empties
+one, Continue empties all. The gap does not bite here. **It will bite on the
+order and tender screens**, where a tap often changes nothing nearby, so `A7`
+should be settled before F2.
+
+Deviations from the plan, each with a reason: Vite 8 and `@vitejs/plugin-react`
+6 (vitest 4 already installs Vite 8; Vite 5 would put two Vites in one tree),
+jsdom 29 at the root (30's engines field excludes this machine's Node 25, and
+vitest resolves the environment from its own location), and the build output
+left in `apps/pos/dist` rather than the plan's `apps/server/public/pos`,
+because this task was not allowed to touch the server.
 
 ---
 
