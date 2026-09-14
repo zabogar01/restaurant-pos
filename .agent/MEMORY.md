@@ -329,7 +329,7 @@ Roster verified against `herdr agent list` on 2026-09-14.
 |---|---|---|---|---|
 | `lead` | claude | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-14 and named it |
 | `architect` | codex | `w2:p2` | live, idle | Delivered the reconciliation 2026-09-10 after 36 minutes. Owns architecture questions |
-| `designer` | claude, **Fable 5.1** | `w2:p3` | live, idle. Works **in the design worktree** at `../restaurant-pos-design` | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
+| `designer` | claude, **Opus 5** | `w2:p3` | live, working **in the design worktree** at `../restaurant-pos-design`. Holds [DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
 | `design-reviewer` | codex | `w2:p9` | live, working | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
 | `builder1` | claude | `w2:pB` | live, idle | First implementer. **Delivered [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md)** and a handoff worth reading — it found three defects in the plan itself |
 | `builder2` | claude | `w2:pC` | live, idle | **Delivered [PHASE0-002](tasks/PHASE0-002-money-module.md)**, 81 tests. Backend is paused behind it |
@@ -446,6 +446,23 @@ on while any implementer is live.**
   owner's**. `builder2` proposed: *"Computed fractions round half away from zero
   (0.5 → 1, −0.5 → −1) at the point of becoming a stored or displayed value."*
   Nothing was edited.
+
+### Model limits have now interrupted three agents in one day
+
+Worth knowing before planning around any particular model:
+
+- **Both codex agents** (`architect`, `designer2`) hit a shared **account**
+  limit at 15:11, a minute apart, because they were running hard jobs in
+  parallel on one account. `architect` had finished and lost only its closing
+  report; `designer2` was cut off mid-task.
+- **Fable 5.1 hit a monthly spend limit** at ~16:15 and **never processed the
+  A7 prompt at all** — zero work, no partial state. `designer` was restarted on
+  Opus 5 in the same pane, so the owner's Fable preference is overridden by
+  availability, not by choice.
+
+The practical lesson: a long prompt is cheap to re-send, but only if you check
+that the agent actually did something. `agent_status: done` means the pane went
+idle, not that work happened. `git log` is the check.
 
 ### A trap the frontend must not walk into
 
