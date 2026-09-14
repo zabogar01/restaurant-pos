@@ -329,7 +329,7 @@ Roster verified against `herdr agent list` on 2026-09-14.
 |---|---|---|---|---|
 | `lead` | claude | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-14 and named it |
 | `architect` | codex | `w2:p2` | live, idle | Delivered the reconciliation 2026-09-10 after 36 minutes. Owns architecture questions |
-| `designer` | claude, **Fable 5.1** | `w2:p3` | live, working, **in the design worktree** | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
+| `designer` | claude, **Fable 5.1** | `w2:p3` | live, idle. Works **in the design worktree** at `../restaurant-pos-design` | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
 | `design-reviewer` | codex | `w2:p9` | live, working | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
 | `builder1` | claude | `w2:pB` | live, idle | First implementer. **Delivered [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md)** and a handoff worth reading — it found three defects in the plan itself |
 | `builder2` | claude | `w2:pC` | live, working | Holds [PHASE0-002](tasks/PHASE0-002-money-module.md) — the money module, where `B-1` is enforced or quietly lost. Finishing, then backend pauses |
@@ -463,9 +463,39 @@ recorded with the lead's rulings in
    in three places. **A ruling recorded in the present progressive is a ruling
    that does not land.**
 
-The remaining eight range from a completeness claim stronger than the artifact,
+The remaining eight ranged from a completeness claim stronger than the artifact,
 through a `B-16` verdict that was never earned, to a 10px tag that is the only
 thing telling a cashier a row is PIN-gated.
+
+**Remediated 2026-09-14, committed as `ca0a4db` on `agent/design-direction`.**
+Nine fixed, one raised. The lead verified the two confirmed findings rather
+than accepting the report: `error` is out of the live close's `data-when` in
+both the wireframe and the Frost fixture, no `[SHEET]`-typed tender pad
+survives in any of the three documents, and the derived changed-order figures
+reproduce the fixture's own arithmetic under the nett model — tax on the net,
+not on the service charge, `184.500 ÷ 11 = 16.773`.
+
+Two things came out of it that outlive the task:
+
+- **The `error` state differed from its three siblings for a reason its own
+  copy stated.** DESIGN-002 pass 1 corrected four states to a zero balance
+  because they looked alike; three were right. When a fix applies to several
+  states at once, the one that does not fit is the one to look at hardest.
+- **`designer`'s handoff said it had committed. It had not** — the worktree was
+  dirty and the branch unmoved. The lead found it by running `git log`, not by
+  reading the sentence. The rule in CLAUDE.md is about tests, and it generalises
+  to anything an agent reports as done.
+
+**Still needs a ruling — finding 6.** On a fired order line the trailing slot
+is deliberately empty (`I-12`), so a **10px** `MANAGER TO VOID` tag on the round
+header is the only visible statement that the row opens the PIN-gated path —
+while `docs/DESIGN.md` says nothing a cashier must act on sits below 13px, and
+hover cannot rescue anything on a touch screen. No sourced value fixes it:
+Frost contains no 13px tag, and moving the statement into the row is a new
+composition. `designer` correctly invented nothing. The least-inventing
+candidate is the tag at `--frost-text-13`, an existing size in a new place,
+which makes it an `A7` item that goes through review rather than a typo to
+correct.
 
 **Work happens in a git worktree** at `../restaurant-pos-design` on
 `agent/design-direction`, so design fixes and implementation do not fight over
