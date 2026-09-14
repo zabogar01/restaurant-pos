@@ -34,6 +34,7 @@ colors:
   lock-surface: "#fffcf6"
   key-surface: "#fffcf6"
   key-continue: "#032125"
+  invalid: "#83611c"
 typography:
   body-pos:
     fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
@@ -84,6 +85,17 @@ typography:
     fontWeight: 500
     lineHeight: 1.3
     letterSpacing: "0.025em"
+  round-tag:
+    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
+    fontSize: "13px"
+    fontWeight: 500
+    lineHeight: 1.3
+    letterSpacing: "0"
+  field-message:
+    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
+    fontSize: "14px"
+    fontWeight: 500
+    lineHeight: 1.45
   label:
     fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'
     fontSize: "12px"
@@ -310,6 +322,24 @@ components:
     rounded: "{rounded.surface}"
     padding: "0 14px"
     height: "40px"
+  field-invalid:
+    backgroundColor: "{colors.elevated}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.surface}"
+    padding: "0 14px 0 13px"
+    height: "56px"
+  field-small-invalid:
+    backgroundColor: "{colors.elevated}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.surface}"
+    padding: "0 14px 0 13px"
+    height: "40px"
+  field-message:
+    backgroundColor: "{colors.elevated}"
+    textColor: "{colors.invalid}"
+    typography: "{typography.field-message}"
+    rounded: "{rounded.flat}"
+    padding: "4px 0 0"
   modal:
     backgroundColor: "{colors.elevated}"
     textColor: "{colors.text}"
@@ -430,7 +460,8 @@ of its own: every value below was read from a Frost artifact, and the token
 files under [design/tokens/](design/tokens/) record the exact file, line,
 selector and property each one came from.
 
-**Sources, in order of authority.**
+**Sources, in order of authority.** Plus one that is not a source at all,
+listed last so it cannot be mistaken for one.
 
 1. `docs/design/visual-directions/visual.css` — the reviewed Frost stylesheet,
    scoped as `html[data-direction="frost"]` over a shared `:root`.
@@ -443,10 +474,24 @@ selector and property each one came from.
    frontmatter and prose. Where it disagrees with the stylesheet, the
    stylesheet wins, because the stylesheet is what was reviewed. Each
    disagreement is listed in the DESIGN-003 conversion note.
+5. `docs/design/visual-directions/frost-states.css` — **designed, not
+   reviewed.** Three states the Frost artifacts do not contain (pressed on
+   touch, field invalid, the round-heading tag at a legible size), designed
+   under [DESIGN-005](../.agent/tasks/DESIGN-005-a7-three-missing-states.md)
+   on 2026-09-14 and awaiting `design-reviewer`. The Frost fixtures load it
+   after `visual.css`, which stays byte-identical to what was reviewed.
 
 **Tokens.** `docs/design/tokens/frost.tokens.json` is the registry;
 `docs/design/tokens/frost.css` is generated from it. Every `--frost-*` name in
-this document exists in both under that name. The frontmatter above is the
+this document exists in both under that name. **Two provenance shapes, never
+mixed.** 168 tokens were read from a reviewed artifact and carry `source`
+with a path, line, selector, property and the authored value. Four were
+designed under DESIGN-005 — `--frost-pressed-ring`, `--frost-invalid`,
+`--frost-invalid-border`, `--frost-round-tag-size` — and carry `source: null`
+and a `designed` block naming the task, the date, the author, the review
+status, the stylesheet that holds the rule, the fixture states that show it,
+and why. A designed token never cites a file and line as if it had been read
+there; a null is the honest answer. The frontmatter above is the
 same values in the portable DESIGN.md schema, for tools that read it. That
 schema has no *minimum* height, so the order line (72px minimum) and the
 emergency banner (80px minimum) carry no `height` there at all; the minimums
@@ -454,11 +499,15 @@ are stated in Layout and Components and in the registry. A fixed height on
 either would clip a long item name or shrink the banner's coverage.
 
 **Completeness, stated honestly.** This system is complete for the six
-reviewed screens: every value they use is here. It is **not yet sufficient
-for Phase 0's two client shells**, which need a pressed/active touch state
-and a field error state that Frost does not contain. Both are tracked as
-`A7` in `.agent/ROADMAP.md` and go through review; neither is invented here.
-The list at the end says what else is inherited, unreviewed, or absent.
+reviewed screens: every value they use is here. For **Phase 0's two client
+shells** it now also carries the pressed/active touch state and the field
+invalid state they need — designed under DESIGN-005, shown in the fixtures,
+and **not yet reviewed**: an implementation may apply them, and `A7` closes
+when `design-reviewer` passes them. The portable frontmatter above cannot
+express the pressed ring (its schema has no stroke or shadow field), so that
+state exists only as the token, the stylesheet rule and the prose in
+*Elevation & Depth*. The list at the end says what else is inherited,
+unreviewed, or absent.
 
 **What this document does not decide.** Behavior, structure and copy belong to
 [design/SITEMAP.md](design/SITEMAP.md) and
@@ -573,6 +622,14 @@ Any one of the three tells them apart; the treatment uses all three. A
 receipt warning never inherits the red field, and a kitchen incident is never
 reduced to an outline.
 
+**Invalid — designed under DESIGN-005.** A refused field value uses the same
+amber as warning under its own name, `--frost-invalid` (#83611c): a 2px
+border on a white field and a one-line message beneath it. It is *not* the
+receipt warning — the field never takes the pale amber fill, so it is never a
+warning chip — and it is not brick, because brick means an action destroys
+something and a refused keystroke destroys nothing. Red stays the kitchen's.
+5.69:1 on white.
+
 - **Focus** (`--frost-focus`, #abffae): the outer 6px ring of keyboard focus
   and the text-selection background. It appears nowhere else.
 - **Scrollbar** (`--frost-scrollbar`, #a1c2c6 thumb on a transparent track):
@@ -596,6 +653,12 @@ smaller size is safe.
 | Unavailable text on unavailable surface | 4.7 |
 | White on the 86 tag | 5.6 |
 | Control border against white (non-text) | 3.9 |
+| Invalid amber on white / on canvas (designed) | 5.7 / 5.5 |
+| Invalid 2px border against white (non-text) | 5.7 |
+| Pressed ring — ink on white / on cream / on grouping (designed) | 16.8 / 16.4 / 14.9 |
+| Pressed ring — white on spruce / on ink / on brick | 13.1 / 16.8 / 7.1 |
+| Pressed ring — brick on white (outlined destructive) | 7.1 |
+| Round tag at 13px — muted on grouping / ink on pending | 8.0 / 15.8 |
 
 ### Inherited mapping inside the six screens
 
@@ -655,17 +718,22 @@ Line height is 1.45 (`--frost-leading-body`) unless stated. POS body is 15px
 | POS actor, compact POS actions, back-office top bar, report figures, page subtitle | 13px `--frost-text-13` | 400; compact actions 500 | normal | Back-office modal body is also 13px |
 | Modifiers, field labels, secondary totals, idle chip, report notes, small office actions | 12px `--frost-text-12` | 400 | normal | Report notes at 1.5 `--frost-leading-report-note` |
 | Round-group heading, table column header, navigation section label | 11px `--frost-text-11` | 500 | round 0 `--frost-tracking-round`; table 0.06em `--frost-tracking-table` uppercase `--frost-table-head-case`; nav 0.04em `--frost-tracking-nav` | Round headings are sentence case; table headers are uppercase; nav sections are as authored |
-| Tag | 10px `--frost-text-10` | 500 | 0.025em `--frost-tracking-tag`, 1.3 `--frost-leading-tag` | Inside a round heading a tag loses its tracking and its border |
+| Tag | 10px `--frost-text-10` | 500 | 0.025em `--frost-tracking-tag`, 1.3 `--frost-leading-tag` | Inside a round heading a tag loses its tracking and its border, and is set larger — see the next row |
+| Round-heading tag (designed, DESIGN-005) | 13px `--frost-round-tag-size` | 500 | 0, 1.3 | *MANAGER TO VOID*, *REMOVE FREELY*, *FINISH PAYMENT FIRST*, *ANOTHER CLIENT* — the one statement of what a tap on the rows below does |
+| Field message (designed, DESIGN-005) | 14px `--frost-text-14`; 13px `--frost-text-13` in a back-office modal | 500 | normal | The one line under an invalid field naming the rule and the limit |
 
 **The Supplement Rule.** The 10px and 11px sizes label things that are
 already readable at a larger size beside them — a round heading over 15px
 lines, a column header over 14px cells. They are not a licence to set
-critical text small. Nothing a cashier must act on is below 13px — with one
-known exception the Frost screens carry and this document does not endorse:
-on a fired round the 10px `MANAGER TO VOID` tag in the round heading is the
-only visible statement that the row opens a PIN-gated path, because the
-trailing slot is deliberately empty. No sourced treatment fixes that; it is
-raised in DESIGN-004 finding 6 and awaits a ruling.
+critical text small. Nothing a cashier must act on is below 13px. The one
+exception the Frost screens carried — the 10px `MANAGER TO VOID` tag, the
+only visible statement that a fired row opens a PIN-gated path because the
+trailing slot is deliberately empty — is closed by DESIGN-005: every tag
+inside a round heading is 13px (`--frost-round-tag-size`), so the tag now
+outweighs the 11px heading it sits in. That is the right order — the heading
+names the group, the tag tells the hand what it may do — and it holds ruling
+`I-12` intact: no control enters the slot and the row's affordance is not
+state-conditional. Designed, not sourced; awaiting review.
 
 ### Money
 
@@ -784,6 +852,36 @@ box-shadow: 0 0 0 6px #abffae` (`--frost-focus-outline`,
 boundary on light surfaces; the green ring is emphasis. Links underline at a
 3px offset (`--frost-link-underline-offset`).
 
+**Touch pressed — designed under DESIGN-005.** On the POS the finger covers
+what it presses, so the proof that a tap landed has to be visible outside the
+contact patch. While a finger is down, every enabled control draws a **2px
+ring inside its own edge in its own text colour**
+(`--frost-pressed-ring`: `inset 0 0 0 2px currentColor`). *Selection fills;
+pressing strokes.* The ring is a stroke so it cannot be read as the solid ink
+fill that means selected; it is inside the edge so it never collides with the
+keyboard focus ring, which is outside and green, and so it moves no layout;
+and it takes `currentColor` so one rule reads on every ground — ink on a
+cream key, a white tile, a white button and a white rail row; white on the
+spruce primary, the ink selected fill and the brick final action; brick on an
+outlined destructive button — and the ring's contrast is the text's contrast,
+already measured. No fill change, no shadow, no scale, no transition, because
+a pressed state that is only a transition does not exist on a slow device.
+Its lineage is the keyed amount field, whose 1px→2px spruce thickening
+already means *a hand touched this*. On an order line the ring encloses only
+the tap target — quantity, name, amount — drawn 8px out from the text inside
+the row's own padding, and stops short of the trailing slot, which is a
+sibling (`I-12`): the ring shows exactly what was pressed. A disabled or 86'd
+control has no pressed state, because nothing happened. The rule applies to
+PIN keys too; the lock screen was not blocked on it because every key there
+already reports through the dots (FE-001), so applying it there is a
+follow-up, not a fix.
+
+**Hover is a mouse fact.** Touch browsers synthesise `:hover` on tap, and
+Frost's tile hover is the ink selected fill — the exact confusion the pressed
+state exists to prevent. An implementation scopes every hover rule to
+`@media (hover: hover)`; the fixture stylesheets predate this rule and are
+left as reviewed.
+
 **The Flat Floor Rule.** A surface never lifts. State is shown by fill and
 stroke, never by shadow, scale, or transition.
 
@@ -841,6 +939,9 @@ Behavior and copy are the screen inventory's; only presentation is stated.
   border; carries `aria-disabled`.
 - **Inside an emergency field:** white fill, red text, white border.
 - **Inside a warning field:** amber text and border on the pale field.
+- **Pressed** (designed): any of the above with `--frost-pressed-ring`; the
+  ring is white on primary, selected and final-destructive fills, ink on a
+  secondary, brick on an outlined destructive. Never on disabled.
 
 ### Buttons (back office)
 - `button-office`: pill, 36px high (`--frost-office-action-height`), `0 14px`
@@ -858,6 +959,9 @@ Behavior and copy are the screen inventory's; only presentation is stated.
   treatment.
 - **Selected** (`menu-tile-selected`): ink fill, white name *and* price,
   spruce border. Same box.
+- **Pressed** (designed): the available tile with an ink ring inside its
+  edge (`--frost-pressed-ring`); the selected tile with a white one. The
+  tile does not fill on press — a fill is selection.
 - **Unavailable / 86'd** (`menu-tile-unavailable`): grey fill, grey name and
   price, dashed #90999a border, a filled grey `tag-86` reading *86*. Same
   150×96px box, same grid position, `aria-disabled`. It is never removed and
@@ -880,6 +984,9 @@ Behavior and copy are the screen inventory's; only presentation is stated.
 - **Fired** (`order-line`): identical reading hierarchy; the trailing slot is
   present, the same size, and **empty** — no border, no fill, no icon. Void is
   reached from the row's own action, behind the manager PIN.
+- **Pressed** (designed, pending or fired): the tap target alone takes the
+  ink ring, 8px out from its text and short of the slot; the pending remove
+  control, when pressed, takes a brick ring of its own.
 - **Voided** (`order-line-void`): canvas-grey fill, name and amount struck
   through in #60696b, modifiers #60696b, empty slot, inert.
 - **Locked order** (payment in progress, or another client holds the lease):
@@ -896,9 +1003,10 @@ different action.
 - 32px band, `0 16px`, 11px 500 muted, sentence case, no tracking, divider
   below. Fired groups on grouping blue (`round-header`); the pending group on
   pale green with ink text (`round-header-pending`). A trailing tag inside the
-  band is 10px with `2px 4px` padding (`--frost-round-tag-padding`), no
-  border, no tracking. Meaning appears once per group, never as per-line
-  badges.
+  band is **13px** (`--frost-round-tag-size`, designed under DESIGN-005; it
+  was 10px) with `2px 4px` padding (`--frost-round-tag-padding`), no border,
+  no tracking, colour inherited from the band; 23px tall, it fits the band.
+  Meaning appears once per group, never as per-line badges.
 
 ### Order totals
 - Rows at 14px with `3px 0` between; the grand total 24px 500 with a divider
@@ -910,6 +1018,7 @@ different action.
 - `pin-key`: 88×88px, cream fill, 1px control border, 2px corners, 26px 400
   numeral. Delete-last-digit is the same key with a 24px back icon.
 - `pin-key-continue`: ink fill, white 24px arrow icon, spruce border.
+- **Pressed** (designed): cream keys take an ink ring, Continue a white one.
 - PIN dots: 20px circles, 1px control border; filled spruce when entered.
 - The same key on the tender pad is 88×72px (`tender-key`) and on the
   approval dialog 72×72px (`approval-key`), both cream.
@@ -923,6 +1032,21 @@ different action.
   it and remains editable in place.
 - **Tender amount — keyed** (`amount-field-keyed`): white, 2px spruce border,
   13px left padding, with the existing *KEYED BY HAND* label.
+- **Invalid** (`field-invalid`, `field-small-invalid`, designed under
+  DESIGN-005): the field holds a value the system refused. White fill, 2px
+  `--frost-invalid` border (`--frost-invalid-border`), left padding 13px
+  (`--frost-amount-keyed-padding-left`) so the figure does not shift, and a
+  **message** (`field-message`) directly under it: one line, 14px 500 in
+  `--frost-invalid`, 4px above (`--frost-space-1`); 13px inside a
+  back-office modal. The message names the rule and the limit — *Card
+  maximum 155.925* — so `AC-6` is met at the field, not only in a notice.
+  Three cases that are not the same: an **empty required field on submit**
+  is invalid with a message naming what is missing (*Enter a name*); a
+  **rejected value** is invalid with the limit; a **fine value whose action
+  failed** is *not* invalid — the field stays keyed or prefilled and the
+  failure is a `notice` beside it, because the field is not wrong. A field at
+  rest that happens to be empty is at rest. The existing notice above the
+  tender field is kept; the field's own line is the short form.
 
 ### Modal and sheet
 - White, 2px corners, 1px spruce boundary, no shadow, on the 38% scrim. Head
@@ -1018,9 +1142,19 @@ different action.
   commands. Ink, not spruce, fills what is selected.
 - **Do** keep the POS chrome white, the canvas #fafafa, and the lock screen and
   keys cream.
+- **Do** show a press as a 2px inset ring in the control's own text colour, on
+  every enabled touch control, and scope every hover rule to
+  `@media (hover: hover)`.
+- **Do** mark a refused value on the field itself — 2px amber border, white
+  fill, one amber line under it naming the limit — and leave a field whose
+  value was fine alone when the action fails.
 
 ### Don't:
 - **Don't** add a shadow, a transition, or a hover that moves anything.
+- **Don't** fill a control to show it is pressed, or ring one to show it is
+  selected. Selection fills; pressing strokes.
+- **Don't** paint an invalid field brick or red, or give it the pale amber
+  fill of a receipt warning.
 - **Don't** use a radius other than 0, 2px or pill on a rectangle, or a circle
   on anything but the PIN dot and the warning marker.
 - **Don't** let a receipt warning take the red field, or reduce a kitchen
@@ -1041,19 +1175,16 @@ Three different claims, kept apart because they are different: **absent**
 (no Frost artifact contains it), **inherited** (it renders in a Frost screen
 only through rules written for the greyscale wireframe), and **unreviewed**
 (it exists but the finish review did not cover it). Each is a question for
-the owner or the lead, not a gap for an implementer to fill.
+the owner or the lead, not a gap for an implementer to fill. Two items that
+stood here on 2026-09-14 — the pressed/active touch state and the field
+invalid state — and the round-tag exception recorded under the Supplement
+Rule were designed under DESIGN-005 and left this list; they are *designed
+and unreviewed*, a fourth claim, and are marked as such wherever they appear.
 
 1. **Dark palette.** Light only was delivered, deliberately. Whether a dark
    palette ships is an open product decision (ROADMAP Track A, item A5). No
    dark value exists and none is proposed here.
-2. **Pressed / active state on touch.** The stylesheet defines hover for
-   tiles, buttons, lines and navigation, and keyboard focus. It defines no
-   `:active` or pressed treatment for a finger. Hover cannot be the answer on
-   a touch POS.
-3. **Field error and invalid state.** Errors in the fixtures are notices
-   beside a field. No border, colour or text treatment exists for an invalid
-   field itself.
-4. **Form controls beyond the numeric field — mostly absent, one inherited.**
+2. **Form controls beyond the numeric field — mostly absent, one inherited.**
    Select, checkbox, and any toggle are absent. A 40px text field *is*
    rendered in the Frost category modal (`frost/back-office/menu.html:142`,
    `field-small`) through the shared `.field` rules — inherited, and the
@@ -1061,15 +1192,17 @@ the owner or the lead, not a gap for an implementer to fill.
    pill button plus a tag; the item editor and settings screens are absent.
    The login form (Phase 0) exists only in the greyscale wireframe, which
    loads `wireframe.css`, not `visual.css`: two 40px `field-small` boxes and
-   a full-width primary button, in greyscale.
-5. **Success and informational colour.** There is no success green and no
+   a full-width primary button, in greyscale. Its invalid state is now
+   specified (`field-small-invalid`, shown in the office category modal);
+   its resting look is still the inherited `.field` rule.
+3. **Success and informational colour.** There is no success green and no
    neutral informational hue; confirmations are grouping-blue notices. If a
    confirmed close or a successful reprint needs its own colour, none is
    sourced.
-6. **Icons beyond the four.** Arrow, back, close and alert are the entire set.
+4. **Icons beyond the four.** Arrow, back, close and alert are the entire set.
    The lock screen's *Sign in to view* and the rest of the product have no
    icon vocabulary.
-7. **Screens outside the six — absent.** Floor plan, closed orders, closed
+5. **Screens outside the six — absent.** Floor plan, closed orders, closed
    order detail, and the eleven remaining back-office screens exist only as
    greyscale wireframes loading `wireframe.css`; no Frost file styles them.
    Their geometry is the wireframe's; their colour is not specified. The
@@ -1079,20 +1212,23 @@ the owner or the lead, not a gap for an implementer to fill.
    free-form entry, void line, void order, manager approval, re-auth,
    cancel, lease lost, takeover — are rendered in Frost and were among the
    146 fixture states the finish review's verification covered.
-8. **Loading and skeleton treatment — inherited.** `.skel` and
+6. **Loading and skeleton treatment — inherited.** `.skel` and
    `.loadinglabel` render in the Frost order and lock screens through the
    structure sheet's rules and the variable remap (skeleton bars in
    grouping blue, label in muted). Nothing in `visual.css` addresses them;
    they were not restyled and not called out in review.
-9. **Printed output — absent, and load-bearing.** Kitchen tickets,
+7. **Printed output — absent, and load-bearing.** Kitchen tickets,
    cancellation tickets and receipts are paper. Nothing in Frost designs
    them. `B-16` requires a cancellation ticket to be unmistakable from a new
    work ticket, and that is a property of the printed artifact, so this
    system cannot claim `B-16` is met. Printed output must be designed and
    reviewed before Phase 3 prints anything.
-10. **Inline text links as touch targets.** Retained from the wireframe,
-    explicitly not certified. Device testing decides them.
-11. **Assistive-technology, dim-floor and real-device checks.** The finish
-    review certified screenshots and two browser hover checks, nothing
-    physical. The contrast table above is arithmetic on the token values,
-    not a measurement on hardware.
+8. **Inline text links as touch targets.** Retained from the wireframe,
+   explicitly not certified. Device testing decides them.
+9. **Assistive-technology, dim-floor and real-device checks.** The finish
+   review certified screenshots and two browser hover checks, nothing
+   physical. The contrast table above is arithmetic on the token values,
+   not a measurement on hardware. The three DESIGN-005 states were checked
+   the same way — rendered in Chrome at actual size and measured — and not
+   on a touch device; whether a 2px ring is enough under a real finger on
+   a real floor is a device-test question.
