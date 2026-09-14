@@ -379,10 +379,9 @@
         "stylesheet": "docs/design/visual-directions/frost-states.css — the .field--invalid and .field__msg rules",
         "shown": [
           "docs/design/visual-directions/frost/pos/settlement.html?state=cardover",
-          "docs/design/visual-directions/frost/pos/settlement.html?state=ceiling",
-          "docs/design/visual-directions/frost/back-office/menu.html?state=category-invalid"
+          "docs/design/visual-directions/frost/pos/settlement.html?state=ceiling"
         ],
-        "why": "The hue of a refused field value and of its message. Same value as --frost-warning, named separately so an implementation does not have to write \"warning\" (a receipt-print matter) on a field. Not brick: --frost-destructive means this action destroys something, and a refused keystroke destroys nothing. Not red: emergency is the kitchen's. Measured 5.69:1 on white, 5.45:1 on canvas. No new colour value."
+        "why": "The hue of a refused field value and of its message. Same value as --frost-warning, named separately so an implementation does not have to write \"warning\" (a receipt-print matter) on a field. Not brick: --frost-destructive means this action destroys something, and a refused keystroke destroys nothing. Not red: emergency is the kitchen's. Measured 5.69:1 on white, 5.45:1 on canvas. No new colour value. frost-states.css declares and consumes its own --invalid variable so a change to --warning cannot reach an invalid field; the separation is a fact in the rules, not only a name."
       }
     },
     "--frost-font": {
@@ -1917,8 +1916,7 @@
         "stylesheet": "docs/design/visual-directions/frost-states.css — the .field--invalid rule",
         "shown": [
           "docs/design/visual-directions/frost/pos/settlement.html?state=cardover",
-          "docs/design/visual-directions/frost/pos/settlement.html?state=ceiling",
-          "docs/design/visual-directions/frost/back-office/menu.html?state=category-invalid"
+          "docs/design/visual-directions/frost/pos/settlement.html?state=ceiling"
         ],
         "why": "A field holding a refused value thickens its border to 2px in --frost-invalid on a white fill, with left padding pulled to --frost-amount-keyed-padding-left (13px) so the figure does not shift, mirroring --frost-amount-keyed-border. The fill stays white so the field is never the pale amber receipt-warning chip. Applies to a rejected value and to an empty required field on submit; not to a field whose value is fine while the action failed, which stays as it was beside a notice. The one-line message under the field uses --frost-invalid at --frost-text-14 (POS) or --frost-text-13 (back-office modal), --frost-weight-medium, --frost-space-1 above."
       }

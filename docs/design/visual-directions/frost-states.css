@@ -8,6 +8,12 @@
    The `.is-pressed` and `.field--invalid` classes exist so a static fixture can
    hold a state a finger would otherwise have to hold. */
 
+/* The invalid hue has its own variable, declared here and consumed below, so
+   that changing --warning (a receipt-print matter) can never silently change
+   an invalid field. Same value today; a separate name is only a separation if
+   the rules use it. Registry: --frost-invalid. */
+:root { --invalid: #83611c; }
+
 /* ------------------------------------------------------------------ */
 /* 1. Pressed / active on touch                                        */
 /*                                                                     */
@@ -22,18 +28,27 @@
 /* for the solid ink fill that means selected. No fill change, no      */
 /* shadow, no scale, no transition. Lineage: the keyed amount field's   */
 /* 1px -> 2px spruce thickening already means "a hand touched this".   */
+/* Scope: every enabled BOXED touch control — anything with a border, a fill
+   or a reserved box: tiles, buttons, keys, rail rows, nav items, order-line
+   bodies and their remove control, and the header back link (a 48x64 minimum
+   box per the touch-target table). Inline text links — a tender line's
+   Remove, the totals' "change", links inside notices — are not certified as
+   touch targets (docs/DESIGN.md, open list) and get no ring: an inset ring
+   on an unboxed run of text would hug the glyphs and mean nothing. Device
+   testing decides those links; whatever it makes of them will be a box. */
 .is-pressed,
 a.tile:active,
 a.btn:active, .btn:active, a.bobtn:active,
 .key:active, a.key:active,
 .cat:active,
 a.line__t:active, a.line__x:active,
-.bonav a:active {
+.bonav a:active,
+.pos__bar > a:first-child:active {
   box-shadow: inset 0 0 0 2px currentColor;
 }
 /* A disabled or 86'd control has no pressed state: nothing happened. */
 .btn--off:active, .bobtn--off:active, .tile--off:active,
-.btn--off.is-pressed, .tile--off.is-pressed { box-shadow: none; }
+.btn--off.is-pressed, .bobtn--off.is-pressed, .tile--off.is-pressed { box-shadow: none; }
 /* A pressed order-line body rings only the tap target, never the trailing
    slot, which is its sibling (I-12). The ring draws exactly what was pressed.
    The row's 10px 16px padding belongs to the row, not the target, so the ring
@@ -41,10 +56,28 @@ a.line__t:active, a.line__x:active,
    padding: the text does not move, the ring gains room, and 8px stays inside
    the row's padding and short of the 12px gap to the slot. */
 a.line__t.is-pressed, a.line__t:active { border-radius: 2px; margin: -8px; padding: 8px; }
-/* Hover is a mouse fact. Touch browsers synthesise :hover on tap, and Frost's
-   tile hover is the ink selected fill — the confusion this state exists to
-   prevent. An implementation scopes every hover rule to @media (hover: hover);
-   the fixture stylesheets predate that rule and are left as reviewed. */
+/* Hover is a mouse fact. Touch browsers synthesise :hover on tap and hold it
+   after the finger lifts, and Frost's tile hover (visual.css:77) is the ink
+   selected fill — so without this block a tapped tile would be left looking
+   selected once the ring goes, the exact confusion the ring exists to
+   prevent. Where there is no hover, or the pointer is a finger, every hover
+   rule in visual.css and structure.css is put back to its rest appearance
+   here; selected things stay selected. visual.css is not edited. An
+   implementation writes its hover rules inside @media (hover: hover) instead. */
+@media (hover: none), (pointer: coarse) {
+  a.tile:hover:not(.tile--selected) { background: var(--elevated); color: var(--text) !important; border-color: var(--control-border); }
+  a.tile:hover:not(.tile--selected) .tile__p { color: var(--muted); }
+  a.line__t:hover .line__n { text-decoration: none; }
+  a.line__x:hover { background: var(--elevated); color: var(--destructive); }
+  a.btn:hover, a.bobtn:hover { background: var(--elevated); border-color: var(--control-border); }
+  a.btn--primary:hover, a.bobtn--primary:hover { background: var(--primary); color: var(--primary-text); border-color: var(--primary); }
+  a.btn--destructive:hover { background: var(--elevated); color: var(--destructive); border-color: var(--destructive); }
+  a.btn--primary.btn--destructive:hover { background: var(--destructive); color: var(--primary-text); border-color: var(--destructive); }
+  a.btn--selected:hover, a.btn--primary.btn--selected:hover { background: var(--selected); color: var(--selected-text); border-color: var(--primary); }
+  .bonav a:hover { background: transparent; }
+  .bonav a[aria-current="page"]:hover { background: var(--selected); color: var(--selected-text); }
+  .dtable tr:hover td { background: var(--elevated); }
+}
 
 /* ------------------------------------------------------------------ */
 /* 2. Field invalid                                                    */
@@ -65,13 +98,13 @@ a.line__t.is-pressed, a.line__t:active { border-radius: 2px; margin: -8px; paddi
 html[data-direction="frost"] .field.field--invalid,
 html[data-direction="frost"] .field.field--invalid.amount-field {
   background: var(--elevated);
-  border: 2px solid var(--warning);
+  border: 2px solid var(--invalid);
   padding-left: 13px;
 }
 .field__msg {
   display: block;
   margin-top: 4px;
-  color: var(--warning);
+  color: var(--invalid);
   font-family: var(--font);
   font-size: 14px;
   font-weight: 500;

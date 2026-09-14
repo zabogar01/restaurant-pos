@@ -1,6 +1,6 @@
 ---
 name: Restaurant POS — Frost
-description: The Frost light direction, chosen 2026-09-14, stated as values an implementation can consume. Every value traces to a Frost artifact; nothing here is invented.
+description: The Frost light direction, chosen 2026-09-14, stated as values an implementation can consume. 168 tokens trace to a reviewed Frost artifact; four (pressed ring, invalid, invalid border, round-tag size) were designed under DESIGN-005, are marked designed in the registry and here, and await review.
 colors:
   surface: "#fafafa"
   elevated: "#ffffff"
@@ -456,9 +456,11 @@ components:
 2026-09-14 from the two light directions built under
 [DESIGN-001](../.agent/tasks/DESIGN-001-external-visual-direction.md). This
 document converts that direction into values. It carries no visual authority
-of its own: every value below was read from a Frost artifact, and the token
-files under [design/tokens/](design/tokens/) record the exact file, line,
-selector and property each one came from.
+of its own: every value below was read from a Frost artifact — **except the
+four designed under DESIGN-005**, which are marked as designed at every
+mention — and the token files under [design/tokens/](design/tokens/) record
+the exact file, line, selector and property each read value came from, and
+`source: null` for the four that were not read anywhere.
 
 **Sources, in order of authority.** Plus one that is not a source at all,
 listed last so it cannot be mistaken for one.
@@ -499,7 +501,7 @@ are stated in Layout and Components and in the registry. A fixed height on
 either would clip a long item name or shrink the banner's coverage.
 
 **Completeness, stated honestly.** This system is complete for the six
-reviewed screens: every value they use is here. For **Phase 0's two client
+reviewed screens: every value they use is here, read from the artifacts. For **Phase 0's two client
 shells** it now also carries the pressed/active touch state and the field
 invalid state they need — designed under DESIGN-005, shown in the fixtures,
 and **not yet reviewed**: an implementation may apply them, and `A7` closes
@@ -854,8 +856,10 @@ boundary on light surfaces; the green ring is emphasis. Links underline at a
 
 **Touch pressed — designed under DESIGN-005.** On the POS the finger covers
 what it presses, so the proof that a tap landed has to be visible outside the
-contact patch. While a finger is down, every enabled control draws a **2px
-ring inside its own edge in its own text colour**
+contact patch. While a finger is down, every enabled **boxed** control — a
+tile, button, key, rail row, nav item, order-line body or remove control, or
+the header back link, anything with a border, a fill or a reserved box — draws
+a **2px ring inside its own edge in its own text colour**
 (`--frost-pressed-ring`: `inset 0 0 0 2px currentColor`). *Selection fills;
 pressing strokes.* The ring is a stroke so it cannot be read as the solid ink
 fill that means selected; it is inside the edge so it never collides with the
@@ -871,16 +875,24 @@ already means *a hand touched this*. On an order line the ring encloses only
 the tap target — quantity, name, amount — drawn 8px out from the text inside
 the row's own padding, and stops short of the trailing slot, which is a
 sibling (`I-12`): the ring shows exactly what was pressed. A disabled or 86'd
-control has no pressed state, because nothing happened. The rule applies to
-PIN keys too; the lock screen was not blocked on it because every key there
+control has no pressed state, because nothing happened. Inline text links —
+a tender line's *Remove*, the totals' *change*, links inside notices — get no
+ring: they are not certified as touch targets (open list, item 8), and an
+inset ring on an unboxed run of text would hug the glyphs and mean nothing;
+whatever device testing makes of them will be a box, and the box will ring.
+The rule applies to PIN keys too; the lock screen was not blocked on it because every key there
 already reports through the dots (FE-001), so applying it there is a
 follow-up, not a fix.
 
-**Hover is a mouse fact.** Touch browsers synthesise `:hover` on tap, and
-Frost's tile hover is the ink selected fill — the exact confusion the pressed
-state exists to prevent. An implementation scopes every hover rule to
-`@media (hover: hover)`; the fixture stylesheets predate this rule and are
-left as reviewed.
+**Hover is a mouse fact.** Touch browsers synthesise `:hover` on tap and
+hold it after the finger lifts, and Frost's tile hover is the ink selected
+fill — so a tapped tile would be left looking selected once the ring goes,
+the exact confusion the pressed state exists to prevent. `frost-states.css`
+therefore puts every hover rule in `visual.css` and `structure.css` back to
+its rest appearance under `@media (hover: none), (pointer: coarse)`, with
+selected things staying selected; `visual.css` is not edited. An
+implementation writes its own hover rules inside `@media (hover: hover)` and
+needs no such block.
 
 **The Flat Floor Rule.** A surface never lifts. State is shown by fill and
 stroke, never by shadow, scale, or transition.
@@ -1143,7 +1155,7 @@ different action.
 - **Do** keep the POS chrome white, the canvas #fafafa, and the lock screen and
   keys cream.
 - **Do** show a press as a 2px inset ring in the control's own text colour, on
-  every enabled touch control, and scope every hover rule to
+  every enabled boxed touch control, and write every hover rule inside
   `@media (hover: hover)`.
 - **Do** mark a refused value on the field itself — 2px amber border, white
   fill, one amber line under it naming the limit — and leave a field whose
@@ -1175,11 +1187,14 @@ Three different claims, kept apart because they are different: **absent**
 (no Frost artifact contains it), **inherited** (it renders in a Frost screen
 only through rules written for the greyscale wireframe), and **unreviewed**
 (it exists but the finish review did not cover it). Each is a question for
-the owner or the lead, not a gap for an implementer to fill. Two items that
-stood here on 2026-09-14 — the pressed/active touch state and the field
-invalid state — and the round-tag exception recorded under the Supplement
-Rule were designed under DESIGN-005 and left this list; they are *designed
-and unreviewed*, a fourth claim, and are marked as such wherever they appear.
+the owner or the lead, not a gap for an implementer to fill. **Accounting for
+DESIGN-005:** this list held eleven items on 2026-09-14 and holds nine. The
+two removed were the pressed/active touch state and the field invalid state.
+The third gap DESIGN-005 closed — the 10px round-heading tag — was never an
+item here; it was recorded as the one exception under the Supplement Rule,
+and is closed there. All three are now *designed and unreviewed*, a fourth
+claim beside absent, inherited and unreviewed, and are marked as such
+wherever they appear.
 
 1. **Dark palette.** Light only was delivered, deliberately. Whether a dark
    palette ships is an open product decision (ROADMAP Track A, item A5). No
@@ -1192,9 +1207,11 @@ and unreviewed*, a fourth claim, and are marked as such wherever they appear.
    pill button plus a tag; the item editor and settings screens are absent.
    The login form (Phase 0) exists only in the greyscale wireframe, which
    loads `wireframe.css`, not `visual.css`: two 40px `field-small` boxes and
-   a full-width primary button, in greyscale. Its invalid state is now
-   specified (`field-small-invalid`, shown in the office category modal);
-   its resting look is still the inherited `.field` rule.
+   a full-width primary button, in greyscale. Its invalid state is
+   specified (`field-small-invalid`: the 56px treatment at 40px) but not
+   demonstrated — no reviewed state holds a refused small field, and
+   DESIGN-005 was not licensed to add one; its resting look is still the
+   inherited `.field` rule.
 3. **Success and informational colour.** There is no success green and no
    neutral informational hue; confirmations are grouping-blue notices. If a
    confirmed close or a successful reprint needs its own colour, none is

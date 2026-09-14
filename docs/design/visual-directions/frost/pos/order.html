@@ -54,7 +54,8 @@
     
     
     <div class="catrail" data-unless="lock-draft lock-lease">
-      <div class="cat cat--on">Mains</div>
+      <div class="cat cat--on" data-unless="pressed">Mains</div>
+      <div class="cat cat--on is-pressed" data-when="pressed">Mains</div>
       <div class="cat" data-unless="pressed">Sides</div>
       <div class="cat is-pressed" data-when="pressed">Sides</div>
       <div class="cat">Drinks</div>
@@ -107,7 +108,8 @@
         <div class="tile">Caesar Salad<div class="tile__p">75.000</div></div>
         <div class="tile">Soup of the Day<div class="tile__p">55.000</div></div>
         <div class="tile" data-unless="pressed">Fries<div class="tile__p">40.000</div></div>
-        <div class="tile is-pressed" data-when="pressed">Fries<div class="tile__p">40.000</div></div>
+        <a class="tile is-pressed" href="order.html?state=sheet-item" style="text-decoration:none;color:inherit" data-when="pressed">
+          <div>Fries</div><div class="tile__p">40.000</div></a>
         <div class="tile">Onion Rings<div class="tile__p">45.000</div></div>
         <div class="tile">Soda<div class="tile__p">30.000</div></div>
         <div class="tile">Coffee<div class="tile__p">35.000</div></div>
