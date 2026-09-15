@@ -29,6 +29,70 @@ and the Frost design system. A fresh clone has all of it. Nothing is merged to
 
 ---
 
+## START HERE — resume point, 2026-09-15
+
+Every agent from the 2026-09-14 session was shut down deliberately to free
+memory. **Nothing was lost:** both working trees were clean and every handoff
+is committed in `.agent/tasks/`. An agent's scrollback was never the record;
+the task files are.
+
+**Two branches, neither merged. Only the owner merges.**
+
+| Branch | Where | Holds |
+|---|---|---|
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen. Head `da314a5` |
+| `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
+
+The design branch is **behind** the code branch on `.agent/` files, because the
+lead writes memory on whichever branch it is standing on. Expect a conflict
+there when the owner merges, and resolve it in favour of the newer file rather
+than by hand-merging prose.
+
+**What is done:** the implementation gate is open and all five conditions are
+in git history. Phase 0 tasks 1 and 2 (scaffold, money) are done and
+lead-verified. FE-001 (POS bundle, Frost tokens, lock screen) is done and
+**the owner approved it**. A7 is done — the three states Frost lacked, reviewed
+and remediated over three passes.
+
+**What is next, in order:**
+
+1. **A9 — apply the three A7 states to `apps/pos`.** Small. The pressed ring,
+   the invalid field, and the 13px round tag exist in
+   `frost-states.css` on the design branch and must reach
+   `packages/tokens` and the POS. Note the hover rule: **every hover must be
+   scoped to `@media (hover: hover)`**, or a synthesised touch hover will leave
+   a tile looking selected.
+2. **F2 — the POS order workspace.** Unblocked. The densest screen: menu grid,
+   running order, the three line signatures, 86'd tiles disabled in place.
+
+**How this session works** — the owner's two standing instructions:
+
+- **Frontend first.** Backend tasks 3–12 are paused until the owner has seen
+  enough of the frontend. The Phase 0 plan is suspended, not discarded.
+- **One reviewable slice per task, owner reviews between.** Every handoff names
+  the command and URL that shows the work. An agent that starts a second screen
+  has ended its task.
+
+**To see the work:** `npm run dev -w apps/pos` → `http://127.0.0.1:5173/pos/`
+for the app; for the design fixtures, serve
+`../restaurant-pos-design/docs/design/visual-directions/` and open
+`index.html`.
+
+**Waiting on the owner, none of it blocking:** the dark palette; `FR-M3`'s
+"half-up" wording, where the code rounds half away from zero so a refund is the
+exact negation of its sale; ruling I-8; the restaurant time zone; receipt
+content; the permitted rate range.
+
+**Two lessons this project paid for:**
+
+- **`git log` is the check, not the handoff.** One agent reported committing
+  work that was never committed; another reported `done` having never read its
+  assignment. Both looked identical to success from the outside.
+- **Never `git add -A` while an implementer is live.** The lead swept a
+  mid-mutation-run working tree into a docs commit. It happened to be clean.
+
+---
+
 ## Current phase
 
 **Phase 0, started 2026-09-14. Task 1 of twelve is done and verified; Task 2 is
