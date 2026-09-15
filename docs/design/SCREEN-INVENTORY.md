@@ -143,7 +143,10 @@ affordances only.
   category. The order list and the menu browser scroll independently; the
   totals panel never scrolls out of view.
 - *line states* — PENDING, FIRED, VOIDED must be distinguishable at a glance
-  in greyscale (FR-D5, E1, H4).
+  in greyscale (FR-D5, E1, H4). **Ruling I-12:** the distinction is carried by
+  the line's trailing slot, not only by its typography. A PENDING line has a
+  remove control there; a FIRED line reserves the same slot and leaves it
+  empty; a VOIDED line is struck through and inert.
 - *round grouping* — lines grouped by fire round; a second fire sends only new
   lines (FR-E2, B-16). The cashier must be able to answer "did this go to the
   kitchen?" without asking anyone.
@@ -162,6 +165,26 @@ affordances only.
 - *settlement lock, another client's lease* — the same five actions disabled by a
   server-held lease (FR-G13). **Ruling C-5:** reads as "another client is settling
   this order" — not recoverable by this cashier. **Never the same string.**
+- *menu browser under either lock* — **absent.** Add-line is one of the five
+  blocked actions (AC-21, AC-29) and the menu grid is the surface that performs
+  it. Unlike the order lines it holds nothing the cashier is entitled to read
+  while locked, so it is removed rather than left inert — an intact menu grid
+  under a lock is an invitation to tap it. The lock notice takes the space and
+  carries the route out.
+- *order lines under either lock* — **void is one of the five blocked actions,
+  and FR-H1 defines void as applying to an OPEN order _or to lines on one_.**
+  AC-3 calls removing an unfired line "voiding an unfired line", so the
+  per-line remove control is a void and is blocked with the rest. Under either
+  lock **every trailing slot is empty and no row is interactive**. This is
+  ruling I-12 holding, not a fourth line signature: the slot means "removable
+  now", and under a lock nothing is removable now. **Inert, not absent** — see
+  I-12. The rows stay, because FR-G13 blocks no reads and the lines are what
+  the cashier is still entitled to read.
+- *pending line held under a lock* — a draft or lease may exist against a table
+  order that still holds a PENDING line; FR-G10 refuses the **close**, not the
+  draft. This is the case FR-G10 exists to catch, and it is drawn on both
+  sides: the locked order workspace and POS-04's *table order with PENDING
+  lines* refusal.
 - *fire result* — PRINTED, FAILED, or UNKNOWN. FAILED/UNKNOWN escalates to the
   global emergency banner (FR-E3).
 - *zero-total* — a 100% discount leaves a zero total that is still closable
@@ -179,11 +202,27 @@ H4, FR-G10, G12, FR-M4.
   table order and nothing on a quick sale teaches the cashier the button is
   unreliable, and that lesson transfers to the table order where it matters.
 - Removing a PENDING line requires **no approval and is not audited**
-  (FR-H2). No confirmation dialog. This is deliberate: the cashier will not
-  read one, and there is nothing to protect.
+  (FR-H2, AC-3). No confirmation dialog. This is deliberate: the cashier will
+  not read one, and there is nothing to protect. **Ruling I-12: it is a
+  control on the line itself**, not only a button inside the line-editor
+  sheet.
 - Voiding a FIRED line requires a manager PIN **and a reason**, and emits
   exactly one cancellation ticket containing only the cancelled work
-  (FR-H4, AC-22, B-16).
+  (FR-H4, AC-22, B-16). **Ruling I-12: it is never reached from the line's
+  trailing slot.** The row body opens the void sheet; the trailing slot stays
+  empty on a fired line. A gated action never occupies the position an
+  ungated one has already taught. **Under a settlement lock neither control
+  exists**, because void — line-level included, per FR-H1 and AC-3 — is one of
+  the five actions FR-G12 and FR-G13 block.
+- The line-editor sheet is retained for **quantity** (FR-D5, FR-M5), which has
+  nowhere else to live. It keeps a Remove control as the exit from that sheet;
+  the per-line control is the fast path, not a replacement.
+- **The line editor has a table form and a quick form**, as POS-03 itself has
+  two variants. They differ only in the return target: the quick form returns
+  to the quick workspace. A shared sheet returned to the table workspace, which
+  carries a Send to kitchen control — a control a quick sale must never show at
+  all (**C-2**, FR-E5). A variant that differs only in affordances is exactly
+  what the two POS-03 variants already are.
 - Void here applies to an OPEN order or its lines. **Refund never appears on
   this screen** (FR-H1, B-19).
 - One discount per order (FR-F1, B-22). A preset applies with no prompt
@@ -214,10 +253,21 @@ entering acquires a server-side CheckoutLease (FR-G13); the draft it holds is
 client-side and tab-local until close (FR-G9).
 
 **States.**
-- *empty* — no tenders drafted; full balance outstanding.
+- *empty* — no tenders drafted; full balance outstanding. **Ruling I-13:** the
+  tender amount field is **prefilled with the remaining balance** for every
+  method, and is editable in place. The tender pad itself is a persistent
+  `[INLINE]` panel in the right column, never a sheet (M-4, retyped
+  2026-09-14).
+- *tender prefilled* — a method is chosen and the amount is already correct.
+  The ordinary payment is method, Add, Close, with nothing keyed.
 - *loading* — close command in flight. Idempotent; must not be double-fired.
 - *error* — close rejected (stale version, lease lost, precondition failed).
-  No partial state; the draft survives for correction (B-20).
+  No partial state; the draft survives for correction (B-20). **The balance
+  shown is the changed order's balance, the draft is not marked fully
+  allocated, and the close control is refused until the balance is zero
+  again (B-18).** A rejected close is the one state where the total may have
+  moved under the draft, so it never re-offers the close it just refused
+  (DESIGN-004, finding 1).
 - *permission-denied* — a manager takeover displaced this client, and its
   close is rejected (FR-G14, AC-30).
 - *overflow* — many split tenders. The draft list scrolls; balance and total
@@ -225,11 +275,22 @@ client-side and tab-local until close (FR-G9).
 - *partially tendered* — balance remaining shown; close disabled (FR-G5,
   B-18).
 - *non-cash over balance* — rejected, with the maximum acceptable amount
-  offered (FR-G3, AC-6, B-5).
+  offered (FR-G3, AC-6, B-5). **A rejected amount cannot be added at all**: the
+  Add control is disabled, not merely warned against, and the drafted lines are
+  left exactly as they were (B-20).
 - *cash over balance* — accepted; change computed as cash minus remaining
   balance (FR-G4, AC-5).
 - *change ceiling exceeded* — validated **before** commit, with the maximum
-  acceptable cash shown (FR-M5).
+  acceptable cash shown (FR-M5). **That maximum is the remaining balance plus
+  the 9,999,999 change limit, capped by the 99,999,999 single-tender limit** —
+  not the bare change limit, which is not an amount of cash the sale can take.
+  Add is disabled here too, and the draft is unchanged.
+- *the tender walk* — every Add lands on the state that adding **that** amount
+  produces, so the three settlement paths are walkable end to end rather than
+  merely described: exact cash in full; card in full (the I-13 headline); and
+  **AC-7** — 10.00 card keyed against a 15.59 balance, added, leaving 5.59
+  which the cash pad then arrives prefilled with, closing the order. **AC-5**
+  walks the same way through a 20.00 cash tender and 4.41 change.
 - *exact settlement* — close enabled (FR-G5).
 - *zero-total* — closes with no Tender records, still produces a receipt
   (FR-G11, AC-24).
@@ -247,12 +308,28 @@ client-side and tab-local until close (FR-G9).
 **Must not invent.**
 - **No Tender record exists before close** (FR-G9). The draft is client-side.
   A design that shows tenders "saved so far" as server records is wrong.
+- **This screen may say nothing was _recorded_; it may never say nothing was
+  _taken_.** FR-G1 has no gateway and no terminal integration, and FR-G14
+  explicitly contemplates a card charge already in progress elsewhere. The POS
+  cannot know whether money moved, only whether it wrote anything down.
 - **Exact settlement only** (FR-G5, B-18). No tolerance, no "close anyway",
   no rounding allowance at the boundary.
 - Revenue is the order total, never the amount tendered (FR-G6, B-6). Change
   is not revenue and must not be presented as part of takings.
 - Cash may exceed balance; card and custom tenders may not (FR-G3, G4, B-5).
   The two pads are therefore not the same component with a different label.
+  **Ruling I-13:** for card and custom the prefilled balance is simultaneously
+  the default *and* the ceiling, so B-5 holds by construction. For cash the
+  same prefill is a default only. The caption under the field states which,
+  because a rule that is only true is not yet legible.
+- **Ruling I-13: there is no split mode, tab, or toggle.** Keying an amount
+  below the balance *is* the split (FR-G2); the remainder stays on the balance
+  and the pad is ready for the next method. A mode the cashier must remember
+  to enter is a mode they forget mid-transaction, and B-18 is checked against
+  the balance, never against a mode.
+- Prefilling does **not** remove the over-balance rejection (FR-G3, AC-6). A
+  cashier can still key past the maximum, and the refusal naming the maximum
+  is a requirement, not a fallback.
 - **No tips. Definitively excluded** (PRD §8). No tip line, no rounding-up
   prompt, no suggested amounts.
 - No gateway, no terminal integration — every tender is recorded manually
@@ -435,7 +512,11 @@ because no menu is hard-coded, B-24) · *loading* · *error* · *permission-deni
 (n/a; back office is manager only) · *overflow* (long menu: dense table,
 sticky headers, no truncation of price or availability) · *item 86'd* ·
 *86 rejected while a CheckoutLease holds a quick-sale order carrying that item,
-naming the order* (FR-G13, AC-29) · *item archived* (FR-C8).
+naming the order* (FR-G13, AC-29) · *item archived* (FR-C8) ·
+*category-invalid* — Create tapped with an empty name; the Name field is
+invalid with "Enter a name"; Create stays disabled until a name is entered;
+nothing is written (added 2026-09-14 by the lead's ruling in DESIGN-005
+finding 4; a state of the category modal, not a new node).
 
 **Requirements.** FR-B4, FR-B6, FR-C1, FR-C5, FR-C7, FR-C8, FR-G13.
 
@@ -783,7 +864,17 @@ Deactivated presets are absent from the picker but readable on orders holding
 them (FR-F5). Each successful change writes one audit entry with before and
 after values (FR-F8).
 
-## M-4 — Tender pads `[SHEET]` — POS-04
+## M-4 — Tender pads `[INLINE]` — POS-04
+
+**Retyped 2026-09-14, applying the owner's ruling of 2026-09-10.** Not a sheet.
+The tender pad is a persistent panel in the right column of POS-04, drawn that
+way since DESIGN-002 pass 1 ("what the drawing exposed", item 2 below). It
+does not enter from an edge and is never dismissed: choosing a method replaces
+the pad's content in place, and the only ways off it are Cancel payment or a
+successful close, both of which leave POS-04. It keeps its `M-4` number so the
+references here and in EXTERNAL-HANDOFF.md stay stable; it is no longer an
+overlay. Same change in SITEMAP.md and EXTERNAL-HANDOFF.md (DESIGN-004,
+finding 2).
 
 Cash and non-cash are **different components with different rules** (FR-G3,
 G4, B-5): cash may exceed the balance and produces change with a validated
@@ -823,6 +914,8 @@ The product lead has ruled on each. Nothing below is open.
 | I-9 | Where a custom payment-method name comes from | **Back-office configuration**, a new area under BO-08 Settings. B-24 forbids inventing configuration as free text on the fastest, most error-prone screen in the product. |
 | I-10 | Voiding several orders in sequence at end of day | Designer's call. **No bulk void.** Each void is a deliberate, separately reasoned act (FR-H3/H4); a batch control would make the rare path routine, against principle 3. |
 | I-11 | Confirmation dialogs | Designer's call, now a standing rule: **confirmations on the back office, PIN gates on the POS, nothing in between.** The back-office reader is seated and the action irreversible (B-9); the POS reader will not read a dialog, so protection there is a PIN or nothing (FR-H2). |
+| I-12 | Where a per-line removal control lives on POS-03 | Raised by the product owner in DESIGN-002. **Applied, with the gated twin deliberately kept out of the same slot.** A PENDING line carries a remove control in its trailing slot: one tap, no prompt, nothing written (FR-H2, AC-3). A FIRED line **reserves the same slot and leaves it empty** — absent, not disabled, the same reasoning as C-1 — and its void is reached by tapping the row body, which opens the reason-and-PIN sheet (FR-H4). A single control that is silent on one row and PIN-gated on the row above it teaches a reflex that is correct most of the time, and B-16 means paper cannot be un-printed. The empty slot also keeps the money column aligned across row types. The group header, not each row, carries the marker, because the panel's first job is being read. The line-editor sheet is kept for quantity (FR-D5, M5), which has no other home. **Under a settlement lock neither control exists** — void is one of the five actions FR-G12 and FR-G13 block, and FR-H1 scopes void to an open order *or to lines on one*, so line removal is a void too. Every slot is empty there, which is this ruling holding rather than a fourth signature. Chosen **inert, not absent**: C-1 removes a control that is permanently impossible, whereas a lock is temporary and each variant has a real route out, so naming it points at something that exists — and FR-G13 blocks no reads, so the rows themselves must stay legible. |
+| I-13 | Whether a card tender should require keying an amount | Raised by the product owner in DESIGN-002. **Applied as a prefill, not as a mode.** Every tender arrives with the remaining balance already in the field, editable in place. For card and custom that value is also the maximum, so B-5 holds by construction and the most error-prone screen in the product loses a keying step. An explicit split mode or tab was **declined**: keying less than the balance already *is* the split, a new structural node would have to be added to three documents including a settled external brief, and a mode the cashier must remember to enter is a mode they forget with a customer waiting. B-18 is enforced by the balance, not by a mode. The over-balance rejection (AC-6) stays drawn, because a cashier can still key past the maximum. |
 
 ---
 
@@ -859,7 +952,9 @@ draft put the drafted payment lines beside the keypad, and at 1280 x 800 the pad
 pushed them under the close bar. What is owed, what has been drafted against it,
 and the change due belong together on the left; the right column is one payment
 line being entered. This is the only screen where the PRD's "nothing recorded
-until close" (FR-G9) has to be legible at a glance, and it now is.
+until close" (FR-G9) has to be legible at a glance, and it now is. The owner
+ruled on 2026-09-10 that this right column is a persistent panel and not a
+`[SHEET]`; M-4 was retyped to match on 2026-09-14.
 
 **3. FR-E4's fire refusal cannot live in the scrolling line list.** The explanation
 of *why* the kitchen button is dead was drawn inside the order list, where a long

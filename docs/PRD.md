@@ -344,6 +344,16 @@ Prices are **tax-inclusive**: the price shown is the price paid. The tax line
 is derived from the total, never added to it. The service charge is **not
 taxed**.
 
+This is the **"nett"** convention, confirmed by the owner. Indonesian "++"
+billing — tax-exclusive prices with the service charge itself taxed under PB1,
+a regional restaurant tax rather than PPN — was considered and deliberately
+not chosen. Both conventions are current in Indonesia; this installation uses
+nett, and every figure below follows from that.
+
+**This installation: IDR, minor-unit precision 0.** Whole rupiah, no decimal
+separator. The worked example below is written in generic minor units so the
+arithmetic reads the same at any precision.
+
 - **FR-M1** Currency and minor-unit precision are configured once (2 for USD
   or EUR, 0 for IDR or JPY) and become immutable after the first order.
 - **FR-M2** All money is stored as integers in minor units. Binary floating
@@ -521,13 +531,21 @@ scheduled discount campaigns. More than one discount per order.
 
 ## 9. Open questions
 
-1. **Implementation stack.** Blocks scaffolding, dependencies, and
-   packaging. Does not block domain or API-contract work.
-2. **Receipt jurisdiction and content.** Blocks final receipt schema,
-   numbering format, mandatory fields, refund documents, retention, and
-   reprint markings. The immutable `Receipt` entity can still be designed.
-3. **Post-close corrections.** Blocks final Phase 5 behavior. Corrections
+1. **Receipt content and fiscal requirements.** Blocks the final receipt
+   schema, numbering format, mandatory fields, refund documents, retention,
+   and reprint markings. The immutable `Receipt` entity can still be designed.
+   The tax and currency parts of this question are now closed — see below.
+2. **Post-close corrections.** Blocks final Phase 5 behavior. Corrections
    that alter a closed day require a new adjustment record and next-day
    reporting; mutating the closed report would violate B-9.
-4. **Maximum tax and service-charge rates.** Rate precision is settled at one
+3. **Maximum tax and service-charge rates.** Rate precision is settled at one
    part per million; the permitted range is not.
+
+### Closed since the first draft
+
+- **Tax model.** Nett, not "++". See section 4.
+- **Currency and precision.** IDR at precision 0.
+- **Implementation stack.** TypeScript, Node, Fastify, React, Vite, and
+  PostgreSQL. Recorded here only so this document does not contradict the
+  Phase 0 plan; the stack itself belongs to the architecture, not to the
+  product requirements.

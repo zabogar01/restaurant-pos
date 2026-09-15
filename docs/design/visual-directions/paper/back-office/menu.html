@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" data-direction="paper"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-03 Menu</title>
+<link rel="stylesheet" href="../../structure.css">
+<script>window.WF={id:'BO-03',client:'bo',nav:'menu',name:'Menu — items and categories',reqs:'FR-B4, B6, C1, C5, C7, C8, G13',states:[
+['default','Items list'],['eightysix','Item toggled to 86'],['leaserejected','86 rejected — order being paid'],
+['empty','No items yet'],['category','Modal — category'],['loading','Loading'],['error','Error'],['overflow','Overflow — long menu']]};</script>
+<script defer src="../../mockup.js"></script>
+<link rel="stylesheet" href="../../visual.css">
+</head><body>
+<header class="wfbar"></header>
+<main class="wfmain">
+<div class="devicewrap"><div class="device device--bo"><div class="bo">
+  <nav class="bonav">
+    <div class="bonav__brand">Back office</div>
+    <div class="bonav__sec">Trading</div>
+    <a href="../../../prototype/back-office/today.html" data-nav="today">Today</a>
+    <a href="../../../prototype/back-office/end-of-day.html" data-nav="eod">End of day</a>
+    <div class="bonav__sec">History</div>
+    <a href="../../../prototype/back-office/reports.html" data-nav="reports">Reports</a>
+    <a href="../../../prototype/back-office/audit.html" data-nav="audit">Audit</a>
+    <div class="bonav__sec">Configuration</div>
+    <a href="menu.html" data-nav="menu">Menu</a>
+    <a href="../../../prototype/back-office/tables.html" data-nav="tables">Tables</a>
+    <a href="../../../prototype/back-office/users.html" data-nav="users">Staff</a>
+    <a href="../../../prototype/back-office/presets.html" data-nav="presets">Discount presets</a>
+    <a href="../../../prototype/back-office/settings.html" data-nav="settings">Settings</a>
+    <div class="bonav__sec">Hardware</div>
+    <a href="../../../prototype/back-office/incidents.html" data-nav="incidents">Printing</a>
+    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
+      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
+      <a href="../../../prototype/back-office/login.html" style="font-size:12px">Log out</a>
+    </div>
+  </nav>
+  <div class="bomain">
+    <div class="botop"><b>Menu</b><span class="muted">Changes reach the POS within three seconds</span></div>
+    <div class="bocontent">
+
+      <div class="banner" data-when="leaserejected">
+        <div class="banner__t">Steak was not marked 86</div>
+        <div>A counter order (opened 20:14) is being paid for right now and includes this
+        item. Marking it unavailable would break a payment already in progress.
+        Try again once that order is closed.</div>
+      </div>
+
+      <div class="banner banner--soft" data-when="eightysix">
+        <div class="banner__t">Steak is now marked 86</div>
+        <div>It becomes unavailable and stays greyed in its existing POS position within three seconds. Orders
+        that already contain it are unaffected, and a pending line holding it will
+        block that order from being sent to the kitchen.</div>
+      </div>
+
+      <div class="bohead">
+        <h1>Items</h1>
+        <span class="muted" data-unless="overflow">4 categories &middot; 8 items</span><span class="muted" data-when="overflow">4 categories &middot; 34 items</span>
+        <span style="margin-left:auto"></span>
+        <a class="bobtn" href="menu.html?state=category">New category</a>
+        <a class="bobtn bobtn--primary" href="../../../prototype/back-office/item-editor.html?state=new">New item</a>
+      </div>
+
+      <div data-when="loading"><div class="loadinglabel">LOADING MENU</div>
+        <div class="skel skel--w80"></div><div class="skel skel--w60"></div><div class="skel skel--w40"></div></div>
+
+      <div class="banner" data-when="error"><div class="banner__t">Could not load the menu</div>
+        <div><a href="menu.html">Retry</a></div></div>
+
+      <div class="empty" data-when="empty" style="padding:60px">
+        <div style="font-weight:700;margin-bottom:6px">No items yet</div>
+        <div>Nothing is preloaded. Create a category, then add items to it.</div>
+        <div style="margin-top:16px"><a class="bobtn bobtn--primary" href="menu.html?state=category">Create first category</a></div>
+      </div>
+
+      <table class="dtable" data-when="default eightysix leaserejected category">
+        <thead><tr><th style="width:32%">Item</th><th>Category</th><th>Variants</th><th>Modifiers</th>
+          <th class="num">Price</th><th style="width:130px">Availability</th><th style="width:70px"></th></tr></thead>
+        <tbody>
+          <tr><td>Burger</td><td>Mains</td><td>3 &mdash; Regular / Large / Small</td><td>3</td><td class="num">100.000</td>
+            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
+            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Chicken Wings</td><td>Mains</td><td>&mdash;</td><td>1</td><td class="num">90.000</td>
+            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
+            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr data-when="eightysix"><td>Steak</td><td>Mains</td><td>3 &mdash; Rare / Medium / Well</td><td>2</td><td class="num">240.000</td>
+            <td><span class="tag tag--86">86</span> <a class="bobtn bobtn--sm" href="menu.html">Put back on</a></td>
+            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr data-unless="eightysix"><td>Steak</td><td>Mains</td><td>3 &mdash; Rare / Medium / Well</td><td>2</td><td class="num">240.000</td>
+            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=leaserejected">86</a></td>
+            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Fish &amp; Chips</td><td>Mains</td><td>&mdash;</td><td>&mdash;</td><td class="num">140.000</td>
+            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
+            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Caesar Salad</td><td>Mains</td><td>2</td><td>2</td><td class="num">75.000</td>
+            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
+            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Fries</td><td>Sides</td><td>2 &mdash; Regular / Large</td><td>&mdash;</td><td class="num">40.000</td>
+            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
+            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Soda</td><td>Drinks</td><td>&mdash;</td><td>&mdash;</td><td class="num">30.000</td>
+            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
+            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr style="color:var(--ink4)"><td>Winter Stew <span class="tag">ARCHIVED</span></td><td>Mains</td><td>&mdash;</td><td>&mdash;</td>
+            <td class="num">110.000</td><td>&mdash;</td><td><a href="../../../prototype/back-office/item-editor.html">View</a></td></tr>
+        </tbody>
+      </table>
+
+      <table class="dtable dtable--tight" data-when="overflow">
+        <thead><tr><th style="width:30%">Item</th><th>Category</th><th class="num">Price</th><th style="width:130px">Availability</th><th style="width:60px"></th></tr></thead>
+        <tbody>
+          <tr><td>Burger</td><td>Mains</td><td class="num">100.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Cheeseburger</td><td>Mains</td><td class="num">115.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Chicken Wings</td><td>Mains</td><td class="num">90.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Steak</td><td>Mains</td><td class="num">240.000</td><td><span class="tag tag--86">86</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Fish &amp; Chips</td><td>Mains</td><td class="num">140.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Caesar Salad</td><td>Mains</td><td class="num">75.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Soup of the Day</td><td>Mains</td><td class="num">55.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Pasta</td><td>Mains</td><td class="num">120.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Fries</td><td>Sides</td><td class="num">40.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Onion Rings</td><td>Sides</td><td class="num">45.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Garlic Bread</td><td>Sides</td><td class="num">35.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Side Salad</td><td>Sides</td><td class="num">30.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Soda</td><td>Drinks</td><td class="num">30.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Coffee</td><td>Drinks</td><td class="num">35.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Tea</td><td>Drinks</td><td class="num">30.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Beer</td><td>Drinks</td><td class="num">65.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>House Wine</td><td>Drinks</td><td class="num">80.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Cheesecake</td><td>Desserts</td><td class="num">60.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Ice Cream</td><td>Desserts</td><td class="num">45.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+          <tr><td>Brownie</td><td>Desserts</td><td class="num">50.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
+        </tbody>
+      </table>
+      <div class="muted" data-when="overflow" style="margin-top:10px">Header row sticks. Price and
+      availability are never truncated; the item name column absorbs the loss.</div>
+    </div>
+  </div>
+
+  <div data-when="category">
+    <div class="scrim" style="position:absolute;inset:0"></div>
+    <div class="modal modal--bo">
+      <div class="modal__head"><h2>New category</h2></div>
+      <div class="modal__body">
+        <span class="label">Name</span><div class="field field--sm">Mains</div>
+        <div class="muted" style="margin-top:12px">Categories order the menu at the POS. They
+        carry no price and no availability of their own.</div>
+      </div>
+      <div class="modal__foot">
+        <a class="bobtn" href="menu.html">Cancel</a>
+        <a class="bobtn bobtn--primary" href="menu.html">Create</a>
+      </div>
+    </div>
+  </div>
+
+</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+
+</main></body></html>

@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en"><head>
+<html lang="en" data-direction="paper"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>POS-03 Order workspace</title>
-<link rel="stylesheet" href="../wireframe.css">
+<link rel="stylesheet" href="../../structure.css">
 <script>window.WF={id:'POS-03',client:'pos',name:'Order workspace',reqs:'FR-D3–D6, C1–C7, E1–E5, F1–F8, H2–H4, G10, G12',states:[
 ['default','Table order — 2 rounds fired'],['empty','Table order — no lines'],['quick','Quick sale'],
 ['linecontrols','Line controls — pending vs fired'],
@@ -18,7 +18,8 @@
 ['sheet-voidorder-fired','Sheet — void order (holds fired)'],
 ['approval','Modal — manager approval'],['approval-error','Modal — wrong PIN'],
 ['approval-throttled','Modal — approval cooldown'],['approval-denied','Modal — cashier PIN refused']]};</script>
-<script defer src="../wireframe.js"></script>
+<script defer src="../../mockup.js"></script>
+<link rel="stylesheet" href="../../visual.css">
 </head><body>
 <header class="wfbar"></header>
 <main class="wfmain">
@@ -34,7 +35,7 @@
   </div>
 
   <div class="pos__bar">
-    <a href="floor.html" style="font-size:15px">&larr; Floor</a>
+    <a href="../../../prototype/pos/floor.html" style="font-size:15px">&larr; Floor</a>
     <h1 data-unless="quick quick-line">Table 1</h1>
     <h1 data-when="quick quick-line">Quick sale</h1>
     <span class="tag" data-unless="quick quick-line">DINE IN</span>
@@ -48,13 +49,8 @@
 
   <div class="pos__body">
 
-    <!-- ============ menu browser ============ -->
-    <!-- The menu is the add-line surface, and add-line is one of the five
-         actions FR-G12 and FR-G13 block (AC-21, AC-29). Unlike the order
-         lines, it holds nothing the cashier is entitled to read while locked,
-         so it goes entirely rather than sitting there inert: an intact menu
-         grid under a lock is an invitation to tap it. The lock notice takes
-         the space and carries the route out. -->
+    
+    
     <div class="catrail" data-unless="lock-draft lock-lease">
       <div class="cat cat--on">Mains</div>
       <div class="cat">Sides</div>
@@ -99,24 +95,24 @@
 
       <div class="menugrid" data-unless="loading lock-draft lock-lease">
         <a class="tile" href="order.html?state=sheet-item" style="text-decoration:none;color:inherit">
-          <div>Burger</div><div class="tile__p">10.00</div></a>
-        <div class="tile">Chicken Wings<div class="tile__p">9.00</div></div>
-        <div class="tile" data-unless="eightysix fireblocked sheet-item86">Steak<div class="tile__p">24.00</div></div>
+          <div>Burger</div><div class="tile__p">100.000</div></a>
+        <div class="tile">Chicken Wings<div class="tile__p">90.000</div></div>
+        <div class="tile" data-unless="eightysix fireblocked sheet-item86">Steak<div class="tile__p">240.000</div></div>
         <div class="tile tile--off" data-when="eightysix fireblocked sheet-item86">
-          <div>Steak <span class="tag tag--86">86</span></div><div class="tile__p">24.00</div></div>
-        <div class="tile">Fish &amp; Chips<div class="tile__p">14.00</div></div>
-        <div class="tile">Caesar Salad<div class="tile__p">7.50</div></div>
-        <div class="tile">Soup of the Day<div class="tile__p">5.50</div></div>
-        <div class="tile">Fries<div class="tile__p">4.00</div></div>
-        <div class="tile">Onion Rings<div class="tile__p">4.50</div></div>
-        <div class="tile">Soda<div class="tile__p">3.00</div></div>
-        <div class="tile">Coffee<div class="tile__p">3.50</div></div>
-        <div class="tile">Beer<div class="tile__p">6.50</div></div>
-        <div class="tile">House Wine<div class="tile__p">8.00</div></div>
+          <div>Steak <span class="tag tag--86">86</span></div><div class="tile__p">240.000</div></div>
+        <div class="tile">Fish &amp; Chips<div class="tile__p">140.000</div></div>
+        <div class="tile">Caesar Salad<div class="tile__p">75.000</div></div>
+        <div class="tile">Soup of the Day<div class="tile__p">55.000</div></div>
+        <div class="tile">Fries<div class="tile__p">40.000</div></div>
+        <div class="tile">Onion Rings<div class="tile__p">45.000</div></div>
+        <div class="tile">Soda<div class="tile__p">30.000</div></div>
+        <div class="tile">Coffee<div class="tile__p">35.000</div></div>
+        <div class="tile">Beer<div class="tile__p">65.000</div></div>
+        <div class="tile">House Wine<div class="tile__p">80.000</div></div>
       </div>
     </div>
 
-    <!-- ============ order panel ============ -->
+    
     <div class="orderpanel">
       <div class="orderpanel__head">
         <b data-unless="quick quick-line">Order &middot; T1</b>
@@ -137,13 +133,7 @@
           <div>Tap an item on the left to start.</div>
         </div>
 
-        <!-- fired rounds: table order.
-             A fired line carries NO per-line control. Its body opens the void
-             sheet, which requires a manager PIN and a reason (FR-H4). The
-             group header, not each row, carries the marker — once per round,
-             because the panel's first job is being read.
-             Not rendered under either settlement lock — see the locked block
-             below, which is the same order with every interaction removed. -->
+        
         <div data-unless="empty quick quick-line loading overflow lock-draft lock-lease">
           <div class="roundhead">Round 1 &middot; fired 19:42 &middot; printed
             <span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
@@ -151,15 +141,15 @@
             <a class="line__t" href="order.html?state=sheet-voidline">
             <div class="line__q">1</div>
             <div class="line__b"><div class="line__n">Burger</div>
-              <div class="line__m">Large (+2.00) &middot; Extra cheese (+1.50)</div></div>
-            <div class="line__a">13.50</div></a>
+              <div class="line__m">Large (+20.000) &middot; Extra cheese (+15.000)</div></div>
+            <div class="line__a">135.000</div></a>
             <div class="line__x line__x--empty"></div>
           </div>
           <div class="line" data-when="sheet-voidline" style="background:var(--bg3)">
             <div class="line__q">1</div>
             <div class="line__b"><div class="line__n">Burger <span class="tag tag--solid">SELECTED</span></div>
-              <div class="line__m">Large (+2.00) &middot; Extra cheese (+1.50)</div></div>
-            <div class="line__a">13.50</div>
+              <div class="line__m">Large (+20.000) &middot; Extra cheese (+15.000)</div></div>
+            <div class="line__a">135.000</div>
           <div class="line__x line__x--empty"></div></div>
           <div class="roundhead">Round 2 &middot; fired 19:58 &middot; printed
             <span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
@@ -167,24 +157,12 @@
             <a class="line__t" href="order.html?state=sheet-voidline">
             <div class="line__q">1</div>
             <div class="line__b"><div class="line__n">Soda</div></div>
-            <div class="line__a">3.00</div></a>
+            <div class="line__a">30.000</div></a>
             <div class="line__x line__x--empty"></div>
           </div>
         </div>
 
-        <!-- The same order under either settlement lock.
-             FR-G12 and FR-G13 block the same five actions, and VOID is one of
-             them. FR-H1 defines void as applying to an open order OR TO LINES
-             ON ONE, and AC-3 calls removing an unfired line "voiding an
-             unfired line" — so the per-line remove control is a void too, and
-             goes with the rest. Every trailing slot is therefore empty.
-             That is ruling I-12 holding, not a fourth signature: the slot
-             means "removable now", and under a lock nothing is removable now.
-             The rows themselves are untouched, because FR-G13 says reads are
-             never blocked and these lines are what the cashier is still
-             entitled to read. Only the interaction goes.
-             The reason is named once per group header — I-12's placement — and
-             never in the same words for the two locks (C-5). -->
+        
         <div data-when="lock-draft lock-lease">
           <div class="roundhead">Round 1 &middot; fired 19:42 &middot; printed
             <span class="tag" style="margin-left:auto" data-when="lock-draft">FINISH PAYMENT FIRST</span>
@@ -192,8 +170,8 @@
           <div class="line">
             <div class="line__q">1</div>
             <div class="line__b"><div class="line__n">Burger</div>
-              <div class="line__m">Large (+2.00) &middot; Extra cheese (+1.50)</div></div>
-            <div class="line__a">13.50</div>
+              <div class="line__m">Large (+20.000) &middot; Extra cheese (+15.000)</div></div>
+            <div class="line__a">135.000</div>
             <div class="line__x line__x--empty"></div>
           </div>
           <div class="roundhead">Round 2 &middot; fired 19:58 &middot; printed
@@ -202,12 +180,10 @@
           <div class="line">
             <div class="line__q">1</div>
             <div class="line__b"><div class="line__n">Soda</div></div>
-            <div class="line__a">3.00</div>
+            <div class="line__a">30.000</div>
             <div class="line__x line__x--empty"></div>
           </div>
-          <!-- The case FR-G10 exists to refuse: a draft or lease against a
-               table order that still holds a PENDING line. The remove control
-               is gone here for the same reason the void path is. -->
+          
           <div class="roundhead">Pending &middot; not sent to the kitchen
             <span class="tag" style="margin-left:auto" data-when="lock-draft">FINISH PAYMENT FIRST</span>
             <span class="tag" style="margin-left:auto" data-when="lock-lease">ANOTHER CLIENT</span></div>
@@ -215,16 +191,12 @@
             <div class="line__q">1</div>
             <div class="line__b"><div class="line__n">Steak</div>
               <div class="line__m">Medium rare</div></div>
-            <div class="line__a">24.00</div>
+            <div class="line__a">240.000</div>
             <div class="line__x line__x--empty"></div>
           </div>
         </div>
 
-        <!-- quick sale: everything pending until close, so every line keeps its
-             own remove control. C-2 removes the fire control here, not this one.
-             The body opens the QUICK line editor, never the table one — that
-             path returned to a workspace carrying a Send to kitchen control,
-             which a quick sale must never show (C-2, FR-E5). -->
+        
         <div data-when="quick quick-line">
           <div class="roundhead">Not sent to the kitchen yet
             <span class="tag" style="margin-left:auto">REMOVE FREELY</span></div>
@@ -232,8 +204,8 @@
             <a class="line__t" href="order.html?state=quick-line">
               <div class="line__q">1</div>
               <div class="line__b"><div class="line__n">Burger</div>
-                <div class="line__m">Large (+2.00) &middot; Extra cheese (+1.50)</div></div>
-              <div class="line__a">13.50</div>
+                <div class="line__m">Large (+20.000) &middot; Extra cheese (+15.000)</div></div>
+              <div class="line__a">135.000</div>
             </a>
             <a class="line__x" href="order.html?state=quick&amp;gone=q-burger" title="Remove Burger">&times;</a>
           </div>
@@ -241,15 +213,13 @@
             <a class="line__t" href="order.html?state=quick-line">
               <div class="line__q">1</div>
               <div class="line__b"><div class="line__n">Soda</div></div>
-              <div class="line__a">3.00</div>
+              <div class="line__a">30.000</div>
             </a>
             <a class="line__x" href="order.html?state=quick&amp;gone=q-soda" title="Remove Soda">&times;</a>
           </div>
         </div>
 
-        <!-- pending round on a table order.
-             The body opens the line editor; the trailing square removes the
-             line outright — no prompt, nothing written (FR-H2, AC-3). -->
+        
         <div data-when="linecontrols eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder">
           <div class="roundhead">Pending &middot; not sent to the kitchen
             <span class="tag" style="margin-left:auto">REMOVE FREELY</span></div>
@@ -259,48 +229,46 @@
               <div class="line__b"><div class="line__n">Steak
                 <span class="tag tag--86" data-when="eightysix fireblocked sheet-item86">86</span></div>
                 <div class="line__m">Medium rare</div></div>
-              <div class="line__a">24.00</div>
+              <div class="line__a">240.000</div>
             </a>
             <a class="line__x" href="order.html" title="Remove Steak">&times;</a>
           </div>
         </div>
 
-        <!-- overflow -->
-        <!-- Overflow carries the same three signatures at density: a fired line
-             has an empty trailing slot, a pending line has the remove square,
-             a voided line is struck through and inert. -->
+        
+        
         <div data-when="overflow">
           <div class="roundhead">Round 1 &middot; fired 19:42<span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
           <div class="line">
-            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">2</div><div class="line__b"><div class="line__n">Burger</div><div class="line__m">Large &middot; Extra cheese</div></div><div class="line__a">27.00</div></a>
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">2</div><div class="line__b"><div class="line__n">Burger</div><div class="line__m">Large &middot; Extra cheese</div></div><div class="line__a">270.000</div></a>
             <div class="line__x line__x--empty"></div>
           </div>
           <div class="line">
-            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">1</div><div class="line__b"><div class="line__n">Fish &amp; Chips</div></div><div class="line__a">14.00</div></a>
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">1</div><div class="line__b"><div class="line__n">Fish &amp; Chips</div></div><div class="line__a">140.000</div></a>
             <div class="line__x line__x--empty"></div>
           </div>
           <div class="line">
-            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">4</div><div class="line__b"><div class="line__n">Soda</div></div><div class="line__a">12.00</div></a>
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">4</div><div class="line__b"><div class="line__n">Soda</div></div><div class="line__a">120.000</div></a>
             <div class="line__x line__x--empty"></div>
           </div>
-          <div class="line line--void"><div class="line__q">1</div><div class="line__b"><div class="line__n">Caesar Salad</div><div class="line__m">Voided 19:51 &middot; approved by M. Iqbal</div></div><div class="line__a">7.50</div><div class="line__x line__x--empty"></div></div>
+          <div class="line line--void"><div class="line__q">1</div><div class="line__b"><div class="line__n">Caesar Salad</div><div class="line__m">Voided 19:51 &middot; approved by M. Iqbal</div></div><div class="line__a">75.000</div><div class="line__x line__x--empty"></div></div>
           <div class="roundhead">Round 2 &middot; fired 19:58<span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
           <div class="line">
-            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">3</div><div class="line__b"><div class="line__n">Chicken Wings</div></div><div class="line__a">27.00</div></a>
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">3</div><div class="line__b"><div class="line__n">Chicken Wings</div></div><div class="line__a">270.000</div></a>
             <div class="line__x line__x--empty"></div>
           </div>
           <div class="line">
-            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">2</div><div class="line__b"><div class="line__n">Beer</div></div><div class="line__a">13.00</div></a>
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">2</div><div class="line__b"><div class="line__n">Beer</div></div><div class="line__a">130.000</div></a>
             <div class="line__x line__x--empty"></div>
           </div>
           <div class="line">
-            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">1</div><div class="line__b"><div class="line__n">Onion Rings</div></div><div class="line__a">4.50</div></a>
+            <a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">1</div><div class="line__b"><div class="line__n">Onion Rings</div></div><div class="line__a">45.000</div></a>
             <div class="line__x line__x--empty"></div>
           </div>
           <div class="roundhead">Pending &middot; not sent to the kitchen<span class="tag" style="margin-left:auto">REMOVE FREELY</span></div>
-          <div class="line" data-line="of-coffee"><a class="line__t" href="order.html?state=sheet-line"><div class="line__q">2</div><div class="line__b"><div class="line__n">Coffee</div></div><div class="line__a">7.00</div></a><a class="line__x" href="order.html?state=overflow&amp;gone=of-coffee" title="Remove Coffee">&times;</a></div>
-          <div class="line" data-line="of-cheese"><a class="line__t" href="order.html?state=sheet-line"><div class="line__q">1</div><div class="line__b"><div class="line__n">Cheesecake</div></div><div class="line__a">6.00</div></a><a class="line__x" href="order.html?state=overflow&amp;gone=of-cheese" title="Remove Cheesecake">&times;</a></div>
-          <div class="line" data-line="of-wine"><a class="line__t" href="order.html?state=sheet-line"><div class="line__q">1</div><div class="line__b"><div class="line__n">House Wine</div></div><div class="line__a">8.00</div></a><a class="line__x" href="order.html?state=overflow&amp;gone=of-wine" title="Remove House Wine">&times;</a></div>
+          <div class="line" data-line="of-coffee"><a class="line__t" href="order.html?state=sheet-line"><div class="line__q">2</div><div class="line__b"><div class="line__n">Coffee</div></div><div class="line__a">70.000</div></a><a class="line__x" href="order.html?state=overflow&amp;gone=of-coffee" title="Remove Coffee">&times;</a></div>
+          <div class="line" data-line="of-cheese"><a class="line__t" href="order.html?state=sheet-line"><div class="line__q">1</div><div class="line__b"><div class="line__n">Cheesecake</div></div><div class="line__a">60.000</div></a><a class="line__x" href="order.html?state=overflow&amp;gone=of-cheese" title="Remove Cheesecake">&times;</a></div>
+          <div class="line" data-line="of-wine"><a class="line__t" href="order.html?state=sheet-line"><div class="line__q">1</div><div class="line__b"><div class="line__n">House Wine</div></div><div class="line__a">80.000</div></a><a class="line__x" href="order.html?state=overflow&amp;gone=of-wine" title="Remove House Wine">&times;</a></div>
         </div>
 
         <div data-when="loading" style="padding:20px">
@@ -315,90 +283,88 @@
         Void that line or ask a manager to put the item back on.</div>
       </div>
 
-      <!-- totals: worked example -->
+      
       <div class="totals" data-unless="empty loading zero linecontrols lock-draft lock-lease eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder overflow quick quick-line">
-        <div class="t"><span>Subtotal</span><span class="mono">16.50</span></div>
-        <div class="t"><span>Staff meal 10% <a href="order.html?state=sheet-remove" style="font-size:12px">change</a></span><span class="mono">&minus;1.65</span></div>
-        <div class="t"><span>Service charge 5%</span><span class="mono">0.74</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">15.59</span></div>
-        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">1.35</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">165.000</span></div>
+        <div class="t"><span>Staff meal 10% <a href="order.html?state=sheet-remove" style="font-size:12px">change</a></span><span class="mono">&minus;16.500</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">7.425</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">155.925</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">13.500</span></div>
       </div>
-      <!-- totals: with a pending line added -->
+      
       <div class="totals" data-when="linecontrols lock-draft lock-lease eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder">
-        <div class="t"><span>Subtotal</span><span class="mono">40.50</span></div>
-        <div class="t"><span>Staff meal 10%</span><span class="mono">&minus;4.05</span></div>
-        <div class="t"><span>Service charge 5%</span><span class="mono">1.82</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">38.27</span></div>
-        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">3.31</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">405.000</span></div>
+        <div class="t"><span>Staff meal 10%</span><span class="mono">&minus;40.500</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">18.225</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">382.725</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">33.136</span></div>
       </div>
-      <!-- totals: quick sale, no discount. One block per removal, so the
-           trailing control's promise — the line goes and the money moves — is
-           actually demonstrable rather than asserted. -->
+      
       <div class="totals" data-when="quick quick-line" data-line="q-burger q-soda">
-        <div class="t"><span>Subtotal</span><span class="mono">16.50</span></div>
-        <div class="t"><span>Service charge 5%</span><span class="mono">0.83</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">17.33</span></div>
-        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">1.50</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">165.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">8.250</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">173.250</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">15.000</span></div>
       </div>
       <div class="totals" data-when="quick quick-line" data-gone="q-burger">
-        <div class="t"><span>Subtotal</span><span class="mono">3.00</span></div>
-        <div class="t"><span>Service charge 5%</span><span class="mono">0.15</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">3.15</span></div>
-        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">0.27</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">30.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">1.500</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">31.500</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">2.727</span></div>
       </div>
       <div class="totals" data-when="quick quick-line" data-gone="q-soda">
-        <div class="t"><span>Subtotal</span><span class="mono">13.50</span></div>
-        <div class="t"><span>Service charge 5%</span><span class="mono">0.68</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">14.18</span></div>
-        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">1.23</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">135.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">6.750</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">141.750</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">12.273</span></div>
       </div>
-      <!-- totals: zero -->
+      
       <div class="totals" data-when="zero">
-        <div class="t"><span>Subtotal</span><span class="mono">16.50</span></div>
-        <div class="t"><span>Comp 100% <a href="order.html?state=sheet-remove" style="font-size:12px">change</a></span><span class="mono">&minus;16.50</span></div>
-        <div class="t"><span>Service charge 5%</span><span class="mono">0.00</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">0.00</span></div>
-        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">0.00</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">165.000</span></div>
+        <div class="t"><span>Comp 100% <a href="order.html?state=sheet-remove" style="font-size:12px">change</a></span><span class="mono">&minus;165.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">0</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">0</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">0</span></div>
       </div>
-      <!-- totals: empty / overflow -->
+      
       <div class="totals" data-when="empty">
-        <div class="t"><span>Subtotal</span><span class="mono">0.00</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">0.00</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">0</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">0</span></div>
       </div>
       <div class="totals" data-when="overflow" data-line="of-coffee of-cheese of-wine">
-        <div class="t"><span>Subtotal</span><span class="mono">118.50</span></div>
-        <div class="t"><span>Service charge 5%</span><span class="mono">5.93</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">124.43</span></div>
-        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">10.77</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">1.185.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">59.250</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">1.244.250</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">107.727</span></div>
       </div>
       <div class="totals" data-when="overflow" data-gone="of-coffee">
-        <div class="t"><span>Subtotal</span><span class="mono">111.50</span></div>
-        <div class="t"><span>Service charge 5%</span><span class="mono">5.58</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">117.08</span></div>
-        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">10.14</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">1.115.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">55.750</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">1.170.750</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">101.364</span></div>
       </div>
       <div class="totals" data-when="overflow" data-gone="of-cheese">
-        <div class="t"><span>Subtotal</span><span class="mono">112.50</span></div>
-        <div class="t"><span>Service charge 5%</span><span class="mono">5.63</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">118.13</span></div>
-        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">10.23</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">1.125.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">56.250</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">1.181.250</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">102.273</span></div>
       </div>
       <div class="totals" data-when="overflow" data-gone="of-wine">
-        <div class="t"><span>Subtotal</span><span class="mono">110.50</span></div>
-        <div class="t"><span>Service charge 5%</span><span class="mono">5.53</span></div>
-        <div class="t t--grand"><span>Total</span><span class="mono">116.03</span></div>
-        <div class="t t--incl"><span>Includes GST 10%</span><span class="mono">10.05</span></div>
+        <div class="t"><span>Subtotal</span><span class="mono">1.105.000</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">55.250</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">1.160.250</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">100.455</span></div>
       </div>
       <div class="totals" data-when="loading"><div class="skel skel--w60"></div><div class="skel skel--w40"></div></div>
 
-      <!-- actions -->
+      
       <div class="actions" data-unless="lock-draft lock-lease">
         <a class="btn" href="order.html?state=sheet-discount" data-unless="empty">Discount</a>
         <span class="btn btn--off" data-when="empty">Discount</span>
         <a class="btn" href="order.html?state=sheet-voidorder" data-unless="empty">Void order</a>
         <span class="btn btn--off" data-when="empty">Void order</span>
 
-        <!-- C-2: no fire control at all on a quick sale -->
+        
         <a class="btn" href="order.html?state=fireerror"
            data-unless="empty quick quick-line fireblocked">Send to kitchen</a>
         <span class="btn btn--off" data-when="empty">Send to kitchen</span>
@@ -416,12 +382,12 @@
     </div>
   </div>
 
-  <!-- ============ sheets ============ -->
+  
 
   <div data-when="sheet-item sheet-item86">
     <div class="scrim scrim--sheet"></div>
     <div class="sheet">
-      <div class="sheet__head"><h2>Burger</h2><span class="mono" style="margin-left:auto">10.00</span></div>
+      <div class="sheet__head"><h2>Burger</h2><span class="mono" style="margin-left:auto">100.000</span></div>
       <div class="sheet__body">
         <div class="notice" data-when="sheet-item86" style="margin:0 0 20px">
           <div class="notice__t">Burger is no longer available</div>
@@ -430,18 +396,18 @@
         </div>
         <span class="label">Size &mdash; choose one</span>
         <div class="rowflex gap8" style="margin-bottom:20px">
-          <div class="btn" style="width:150px">Regular<br>+0.00</div>
-          <div class="btn btn--primary" style="width:150px">Large<br>+2.00</div>
-          <div class="btn" style="width:150px">Small<br>&minus;1.00</div>
+          <div class="btn" style="width:150px">Regular<br>+0</div>
+          <div class="btn btn--primary" style="width:150px">Large<br>+20.000</div>
+          <div class="btn" style="width:150px">Small<br>&minus;10.000</div>
         </div>
         <span class="label">Extras &mdash; choose any</span>
         <div class="rowflex gap8" style="flex-wrap:wrap">
-          <div class="btn btn--primary" style="width:180px">Extra cheese +1.50</div>
-          <div class="btn" style="width:180px">Bacon +2.00</div>
-          <div class="btn" style="width:180px">No onion +0.00</div>
+          <div class="btn btn--primary" style="width:180px">Extra cheese +15.000</div>
+          <div class="btn" style="width:180px">Bacon +20.000</div>
+          <div class="btn" style="width:180px">No onion +0</div>
         </div>
         <div class="rowflex spread" style="margin-top:24px;font-size:20px">
-          <span>Line total</span><span class="mono"><b>13.50</b></span>
+          <span>Line total</span><span class="mono"><b>135.000</b></span>
         </div>
       </div>
       <div class="sheet__foot">
@@ -452,10 +418,7 @@
     </div>
   </div>
 
-  <!-- The quick-sale line editor. Separate from the table one so that leaving
-       it returns to the quick workspace, which has no fire control at all
-       (C-2, FR-E5). The shared sheet returned to a table workspace and put a
-       Send to kitchen control in front of a counter cashier. -->
+  
   <div data-when="quick-line">
     <div class="scrim scrim--sheet"></div>
     <div class="sheet">
@@ -513,7 +476,7 @@
         <div class="stack gap8" style="margin-bottom:24px">
           <a class="btn" href="order.html?state=default">Staff meal &mdash; 10%</a>
           <a class="btn" href="order.html?state=default">Regular customer &mdash; 5%</a>
-          <a class="btn" href="order.html?state=default">Service recovery &mdash; 5.00 off</a>
+          <a class="btn" href="order.html?state=default">Service recovery &mdash; 50.000 off</a>
           <a class="btn" href="order.html?state=zero">Comp &mdash; 100%</a>
         </div>
         <span class="label">Anything else</span>
@@ -552,7 +515,7 @@
       <div class="sheet__body">
         <div class="card" style="margin-bottom:20px">
           <div class="card__t">Currently applied</div>
-          <div class="rowflex spread"><span>Staff meal &mdash; 10%</span><span class="mono">&minus;1.65</span></div>
+          <div class="rowflex spread"><span>Staff meal &mdash; 10%</span><span class="mono">&minus;16.500</span></div>
           <div class="muted" style="margin-top:6px">Applied by Ana R. at 19:44. Preset, no approval.</div>
         </div>
         <div class="stack gap8">
@@ -572,7 +535,7 @@
         <span class="tag" style="margin-left:auto">MANAGER REQUIRED</span></div>
       <div class="sheet__body">
         <div class="card">
-          <div class="rowflex spread"><span><b>Burger</b> &mdash; Large, extra cheese</span><span class="mono">13.50</span></div>
+          <div class="rowflex spread"><span><b>Burger</b> &mdash; Large, extra cheese</span><span class="mono">135.000</span></div>
           <div class="muted" style="margin-top:4px">Sent to the kitchen in round 1 at 19:42.</div>
         </div>
         <div class="notice" style="margin:16px 0">
@@ -604,11 +567,11 @@
           <div>No approval needed. The void is recorded against your name.</div>
         </div>
         <div class="rowflex spread" style="margin-top:20px;font-size:20px">
-          <span>Order value</span><span class="mono"><b>38.27</b></span></div>
+          <span>Order value</span><span class="mono"><b>382.725</b></span></div>
       </div>
       <div class="sheet__foot">
         <a class="btn" href="order.html?state=eightysix">Keep order</a>
-        <a class="btn btn--primary" href="floor.html">Void order</a>
+        <a class="btn btn--primary" href="../../../prototype/pos/floor.html">Void order</a>
       </div>
     </div>
   </div>
@@ -630,7 +593,7 @@
           <div class="btn btn--sm" style="justify-content:flex-start;padding-left:16px">Other &mdash; type a reason</div>
         </div>
         <div class="rowflex spread" style="margin-top:20px;font-size:20px">
-          <span>Order value</span><span class="mono"><b>15.59</b></span></div>
+          <span>Order value</span><span class="mono"><b>155.925</b></span></div>
       </div>
       <div class="sheet__foot">
         <a class="btn" href="order.html">Keep order</a>
@@ -639,13 +602,13 @@
     </div>
   </div>
 
-  <!-- ============ manager approval modal ============ -->
+  
   <div data-when="approval approval-error approval-throttled approval-denied">
     <div class="scrim"></div>
     <div class="modal">
       <div class="modal__head">
         <h2>Manager PIN</h2>
-        <div class="muted" style="margin-top:4px">Void a fired line &mdash; Burger 13.50 &mdash;
+        <div class="muted" style="margin-top:4px">Void a fired line &mdash; Burger 135.000 &mdash;
         reason: customer changed their mind</div>
       </div>
       <div class="modal__body">
@@ -685,135 +648,5 @@
 
 </div><div class="device__caption">POS &mdash; 1280 &times; 800</div></div></div>
 
-<aside class="rail">
-  <h2>Purpose</h2>
-  <div class="ann"><p>Build and correct an order, fire it in rounds, discount it, void it.
-  The screen the cashier spends the shift on. One screen, two variants:
-  <code>table</code> and <code>quick_sale</code>.</p></div>
 
-  <h2>Fixed by the PRD</h2>
-  <div class="ann ann--fixed">
-    <ul>
-      <li>A fire sends only lines not previously fired. There is no
-        "reprint whole order to kitchen" control, ever. <span class="req">FR-E2, B-16</span></li>
-      <li>Removing a pending line takes no approval and is not audited.
-        No confirmation dialog. <span class="req">FR-H2</span></li>
-      <li>Voiding a fired line needs a manager PIN <b>and</b> a reason, and emits one
-        cancellation ticket covering only that work. <span class="req">FR-H4, AC-22</span></li>
-      <li>Refund never appears on this screen. Void is for open orders only. <span class="req">FR-H1, B-19</span></li>
-      <li>One discount per order. Preset: no prompt. Free-form: manager PIN.
-        <span class="req">FR-F1, F2, F3, B-22</span></li>
-      <li>The gate covers the whole transition &mdash; replacing a free-form discount with
-        a preset is still gated. <span class="req">FR-F8</span></li>
-      <li>Tax is derived and display-only, never added. <span class="req">B-4, FR-M4</span></li>
-      <li>Quantity is whole, maximum 99. <span class="req">FR-M5</span></li>
-      <li>Modifiers are flat &mdash; no nested groups. <span class="req">FR-C4</span></li>
-    </ul>
-  </div>
-
-  <div class="ann ann--call">
-    <span class="ann__t">Ruling I-12 &mdash; one meaning per slot</span>
-    <p>An order line has <b>three affordance signatures</b>, readable in greyscale
-    without reading the words:</p>
-    <ul>
-      <li><b>Pending</b> &mdash; a bordered square at the trailing edge. One tap and the
-      line is gone: no prompt, nothing written. <span class="req">FR-H2, AC-3</span></li>
-      <li><b>Fired</b> &mdash; that slot is <b>empty</b>. The row itself opens the void sheet,
-      which demands a reason and a manager PIN and prints a cancellation
-      ticket. <span class="req">FR-H4, B-16, AC-22</span></li>
-      <li><b>Voided</b> &mdash; struck through and inert. Terminal.</li>
-    </ul>
-    <p>The trailing slot is never re-used for a gated action. A control that is
-    silent on one row and PIN-gated on the row above it teaches a reflex that is
-    right most of the time, and paper cannot be un-printed. Absent, not disabled
-    &mdash; the same reasoning as ruling C-1.</p>
-    <p>The group header carries the marker once per round rather than a tag on
-    every row: the panel's first job is being read.</p>
-  </div>
-
-  <div class="ann ann--call" data-when="quick quick-line">
-    <span class="ann__t">Ruling C-2</span>
-    <p>A quick sale has <b>no fire control at all</b>. Settling sends it.
-    The settle button says so. <span class="req">FR-E5, G10</span></p>
-  </div>
-
-  <div class="ann ann--call" data-when="eightysix fireblocked sheet-item86">
-    <span class="ann__t">Ruling C-3</span>
-    <p>An 86'd item is <b>disabled in place</b> &mdash; the tile keeps its position, greys,
-    and carries an 86 marker. It is never removed, because removal reflows the grid
-    under a finger already moving. <span class="req">FR-C5, C6, AC-12</span></p>
-    <p>Within three seconds of the back-office toggle, no restart. Drawn here as a
-    static state; the propagation is a two-second poll.</p>
-  </div>
-
-  <div class="ann ann--call" data-when="lock-draft lock-lease">
-    <span class="ann__t">Ruling C-5</span>
-    <p>Same five actions disabled, two different causes, two different messages.
-    The tab guard is the cashier's own doing and they can undo it. The lease is
-    someone else's and they cannot. <span class="req">FR-G12, G13</span></p>
-  </div>
-
-  <div class="ann ann--call" data-when="lock-draft lock-lease">
-    <span class="ann__t">I-12 under a lock &mdash; inert, not absent</span>
-    <p><b>Void is one of the five blocked actions</b>, and
-    <span class="req">FR-H1</span> defines void as applying to an open order
-    <i>or to lines on one</i>. <span class="req">AC-3</span> calls removing an
-    unfired line "voiding an unfired line". So the per-line remove control is a
-    void too, and goes with the fired-line path. Every trailing slot here is
-    empty.</p>
-    <p>That is <b>I-12 holding, not a fourth signature</b>. The slot means
-    "removable now"; under a lock nothing is removable now, so the slot is empty
-    on every row. The row body stops being a control for the same reason.</p>
-    <p><b>Why inert rather than absent.</b> Ruling C-1 removes a control that is
-    <i>permanently</i> impossible &mdash; a zero-total order can never be refunded, so
-    a disabled Refund points at an override that does not exist. A settlement
-    lock is temporary and each variant has a real route out: finish or cancel
-    the payment, or wait for the other client. Naming that route points at
-    something that exists.</p>
-    <p>Removing the rows would also be wrong on its own terms.
-    <span class="req">FR-G13</span> says reads are never blocked, and these
-    lines are what the cashier is still entitled to read. The rows are
-    untouched; only the interaction goes, and the reason is named once per
-    group header &mdash; never in the same words for the two locks
-    <span class="req">C-5</span>.</p>
-  </div>
-
-  <div class="ann" data-when="lock-draft lock-lease">
-    <span class="ann__t">FR-G10 &mdash; the case this illustrates</span>
-    <p>This order holds a <b>pending line</b> while a payment is under way. Nothing
-    prevents that: FR-G10 refuses the <i>close</i>, not the draft. The matching
-    refusal is on POS-04 &mdash; follow "Back to payment".</p>
-  </div>
-
-  <div class="ann" data-when="fireblocked">
-    <span class="ann__t">FR-E4, B-17</span>
-    <p>Fire is refused while a pending line holds an 86'd item, and the offending
-    line is named. Resolution is voiding the line or restoring the item. An
-    unavailable item never reaches the kitchen.</p>
-  </div>
-
-  <div class="ann" data-when="catalog">
-    <span class="ann__t">FR-C7, AC-31</span>
-    <p><code>CATALOG_CHANGED</code>. The command was built on stale catalog data and was
-    rejected. No line was added at the stale price.</p>
-  </div>
-
-  <div class="ann" data-when="approval approval-error approval-throttled approval-denied">
-    <span class="ann__t">FR-A6, B-14, B-20</span>
-    <p>This is a modal over the screen that triggered it, never a route and never a
-    mode. It authorises one action and does not persist.</p>
-    <p>A manager holding a back-office session still enters a PIN here. <span class="req">FR-A2c, AC-27</span></p>
-    <p>Cancelling writes an audit entry naming the actor with approver null. The cancel
-    path is evidence, not a no-op. <span class="req">FR-J3, AC-18</span></p>
-  </div>
-
-  <h2>Not visible in a still</h2>
-  <div class="ann"><ul>
-    <li>Lines are grouped by fire round so the cashier can answer "did this go to the
-      kitchen?" without asking. <span class="req">FR-E2</span> &mdash; grouping is the designer's call, see I-7.</li>
-    <li>Order state is server-held and survives a client or app restart. <span class="req">FR-D6</span></li>
-    <li>Snapshotted prices: later menu edits never change this order. <span class="req">FR-D4, B-8</span></li>
-    <li>Rejected commands leave the order exactly as it was. <span class="req">B-20</span></li>
-  </ul></div>
-</aside>
 </main></body></html>

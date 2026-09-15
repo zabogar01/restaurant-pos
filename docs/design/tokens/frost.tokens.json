@@ -1,0 +1,1927 @@
+{
+  "name": "Restaurant POS — Frost",
+  "description": "Light direction chosen 2026-09-14; literal extraction of reviewed Frost. Values are strings suitable for CSS custom properties. Verified against source 2026-09-14 (designer, DESIGN-003). Extended 2026-09-14 (designer, DESIGN-005) with four tokens that were DESIGNED, not extracted: their \"source\" is null and a \"designed\" block says so.",
+  "authority": "docs/DESIGN.md",
+  "maintenance": "This JSON is the editable token registry. Generate frost.css from tokens entries in insertion order; never edit CSS independently. JSON value and CSS declaration must match exactly. source locates authored evidence; var() aliases are resolved using visual.css :root followed by the Frost override. Two provenance shapes exist and are never mixed: a token READ from a reviewed Frost artifact carries \"source\" {path, line, selector, property, authoredValue}; a token DESIGNED in a task carries \"source\": null and \"designed\" {task, date, by, status, stylesheet, shown, why}. A designed token never cites a file and line as if it had been read there.",
+  "tokens": {
+    "--frost-surface": {
+      "value": "#fafafa",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 43,
+        "selector": "html[data-direction=\"frost\"]",
+        "property": "--surface",
+        "authoredValue": "#fafafa"
+      }
+    },
+    "--frost-elevated": {
+      "value": "#ffffff",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 5,
+        "selector": ":root",
+        "property": "--elevated",
+        "authoredValue": "#ffffff"
+      }
+    },
+    "--frost-text": {
+      "value": "#032125",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 6,
+        "selector": ":root",
+        "property": "--text",
+        "authoredValue": "#032125"
+      }
+    },
+    "--frost-muted": {
+      "value": "#354d51",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 7,
+        "selector": ":root",
+        "property": "--muted",
+        "authoredValue": "#354d51"
+      }
+    },
+    "--frost-border": {
+      "value": "#ebebeb",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 8,
+        "selector": ":root",
+        "property": "--border",
+        "authoredValue": "#ebebeb"
+      }
+    },
+    "--frost-control-border": {
+      "value": "#718487",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 9,
+        "selector": ":root",
+        "property": "--control-border",
+        "authoredValue": "#718487"
+      }
+    },
+    "--frost-primary": {
+      "value": "#0b363b",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 10,
+        "selector": ":root",
+        "property": "--primary",
+        "authoredValue": "#0b363b"
+      }
+    },
+    "--frost-primary-text": {
+      "value": "#ffffff",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 11,
+        "selector": ":root",
+        "property": "--primary-text",
+        "authoredValue": "#ffffff"
+      }
+    },
+    "--frost-selected": {
+      "value": "#032125",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 45,
+        "selector": "html[data-direction=\"frost\"]",
+        "property": "--selected",
+        "authoredValue": "#032125"
+      }
+    },
+    "--frost-selected-text": {
+      "value": "#ffffff",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 46,
+        "selector": "html[data-direction=\"frost\"]",
+        "property": "--selected-text",
+        "authoredValue": "#ffffff"
+      }
+    },
+    "--frost-group": {
+      "value": "#e2f4ff",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 44,
+        "selector": "html[data-direction=\"frost\"]",
+        "property": "--group",
+        "authoredValue": "#e2f4ff"
+      }
+    },
+    "--frost-destructive": {
+      "value": "#9b352c",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 15,
+        "selector": ":root",
+        "property": "--destructive",
+        "authoredValue": "#9b352c"
+      }
+    },
+    "--frost-destructive-soft": {
+      "value": "#fff2ee",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 16,
+        "selector": ":root",
+        "property": "--destructive-soft",
+        "authoredValue": "#fff2ee"
+      }
+    },
+    "--frost-emergency": {
+      "value": "#a12622",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 17,
+        "selector": ":root",
+        "property": "--emergency",
+        "authoredValue": "#a12622"
+      }
+    },
+    "--frost-emergency-text": {
+      "value": "#ffffff",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 18,
+        "selector": ":root",
+        "property": "--emergency-text",
+        "authoredValue": "#ffffff"
+      }
+    },
+    "--frost-warning": {
+      "value": "#83611c",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 19,
+        "selector": ":root",
+        "property": "--warning",
+        "authoredValue": "#83611c"
+      }
+    },
+    "--frost-warning-surface": {
+      "value": "#fff5da",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 20,
+        "selector": ":root",
+        "property": "--warning-surface",
+        "authoredValue": "#fff5da"
+      }
+    },
+    "--frost-focus": {
+      "value": "#abffae",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 21,
+        "selector": ":root",
+        "property": "--focus",
+        "authoredValue": "#abffae"
+      }
+    },
+    "--frost-unavailable": {
+      "value": "#ebebeb",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 22,
+        "selector": ":root",
+        "property": "--unavailable",
+        "authoredValue": "#ebebeb"
+      }
+    },
+    "--frost-unavailable-text": {
+      "value": "#60696b",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 23,
+        "selector": ":root",
+        "property": "--unavailable-text",
+        "authoredValue": "#60696b"
+      }
+    },
+    "--frost-lock-surface": {
+      "value": "#fffcf6",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 204,
+        "selector": "html[data-direction=\"frost\"] .lock",
+        "property": "background",
+        "authoredValue": "#fffcf6"
+      }
+    },
+    "--frost-key-surface": {
+      "value": "#fffcf6",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 202,
+        "selector": "html[data-direction=\"frost\"] .key",
+        "property": "background",
+        "authoredValue": "#fffcf6"
+      }
+    },
+    "--frost-key-continue": {
+      "value": "#032125",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 203,
+        "selector": "html[data-direction=\"frost\"] a.key",
+        "property": "background",
+        "authoredValue": "#032125"
+      }
+    },
+    "--frost-pending-surface": {
+      "value": "#eafde8",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 90,
+        "selector": ".roundhead--pending",
+        "property": "background",
+        "authoredValue": "#eafde8"
+      }
+    },
+    "--frost-pending-text": {
+      "value": "#032125",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 90,
+        "selector": ".roundhead--pending",
+        "property": "color",
+        "authoredValue": "#032125"
+      }
+    },
+    "--frost-primary-hover": {
+      "value": "#032125",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 113,
+        "selector": "a.btn--primary:hover, a.bobtn--primary:hover",
+        "property": "background",
+        "authoredValue": "#032125"
+      }
+    },
+    "--frost-destructive-hover": {
+      "value": "#822b24",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 117,
+        "selector": "a.btn--primary.btn--destructive:hover",
+        "property": "background",
+        "authoredValue": "#822b24"
+      }
+    },
+    "--frost-unavailable-border": {
+      "value": "#90999a",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 81,
+        "selector": ".tile--off",
+        "property": "border-color",
+        "authoredValue": "#90999a"
+      }
+    },
+    "--frost-unavailable-tag-surface": {
+      "value": "#60696b",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 70,
+        "selector": ".tag--86",
+        "property": "background",
+        "authoredValue": "#60696b"
+      }
+    },
+    "--frost-disabled-border": {
+      "value": "#c2c8c9",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 118,
+        "selector": ".btn--off, .bobtn--off",
+        "property": "border-color",
+        "authoredValue": "#c2c8c9"
+      }
+    },
+    "--frost-emergency-secondary": {
+      "value": "#fff2ee",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 152,
+        "selector": ".emg__s",
+        "property": "color",
+        "authoredValue": "#fff2ee"
+      }
+    },
+    "--frost-void-surface": {
+      "value": "#fafafa",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 101,
+        "selector": ".line--void",
+        "property": "background",
+        "authoredValue": "#fafafa"
+      }
+    },
+    "--frost-scrollbar": {
+      "value": "#a1c2c6 transparent",
+      "group": "Colors",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 51,
+        "selector": "*",
+        "property": "scrollbar-color",
+        "authoredValue": "#a1c2c6 transparent"
+      }
+    },
+    "--frost-invalid": {
+      "value": "#83611c",
+      "group": "Colors",
+      "source": null,
+      "designed": {
+        "task": ".agent/tasks/DESIGN-005-a7-three-missing-states.md",
+        "date": "2026-09-14",
+        "by": "designer (claude, Fable 5.1)",
+        "status": "designed under DESIGN-005; awaiting design-reviewer; not part of the DESIGN-001 Frost review",
+        "stylesheet": "docs/design/visual-directions/frost-states.css — the .field--invalid and .field__msg rules",
+        "shown": [
+          "docs/design/visual-directions/frost/pos/settlement.html?state=cardover",
+          "docs/design/visual-directions/frost/pos/settlement.html?state=ceiling",
+          "docs/design/visual-directions/frost/back-office/menu.html?state=category-invalid"
+        ],
+        "why": "The hue of a refused field value and of its message. Same value as --frost-warning, named separately so an implementation does not have to write \"warning\" (a receipt-print matter) on a field. Not brick: --frost-destructive means this action destroys something, and a refused keystroke destroys nothing. Not red: emergency is the kitchen's. Measured 5.69:1 on white, 5.45:1 on canvas. No new colour value. frost-states.css declares and consumes its own --invalid variable so a change to --warning cannot reach an invalid field; the separation is a fact in the rules, not only a name."
+      }
+    },
+    "--frost-font": {
+      "value": "\"Helvetica Neue\", Helvetica, Arial, sans-serif",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 36,
+        "selector": ":root",
+        "property": "--font",
+        "authoredValue": "\"Helvetica Neue\", Helvetica, Arial, sans-serif"
+      }
+    },
+    "--frost-numeric-variant": {
+      "value": "tabular-nums lining-nums",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 49,
+        "selector": "body",
+        "property": "font-variant-numeric",
+        "authoredValue": "tabular-nums lining-nums"
+      }
+    },
+    "--frost-weight-regular": {
+      "value": "400",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 48,
+        "selector": "html, body",
+        "property": "font-weight",
+        "authoredValue": "400"
+      }
+    },
+    "--frost-weight-medium": {
+      "value": "500",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 62,
+        "selector": ".pos__bar h1",
+        "property": "font-weight",
+        "authoredValue": "500"
+      }
+    },
+    "--frost-weight-semibold": {
+      "value": "600",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 66,
+        "selector": "b, strong",
+        "property": "font-weight",
+        "authoredValue": "600"
+      }
+    },
+    "--frost-leading-body": {
+      "value": "1.45",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 32,
+        "selector": "html, body",
+        "property": "line-height",
+        "authoredValue": "1.45"
+      }
+    },
+    "--frost-leading-tag": {
+      "value": "1.3",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 68,
+        "selector": ".tag",
+        "property": "line-height",
+        "authoredValue": "1.3"
+      }
+    },
+    "--frost-leading-report-note": {
+      "value": "1.5",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 197,
+        "selector": ".card .muted",
+        "property": "line-height",
+        "authoredValue": "1.5"
+      }
+    },
+    "--frost-leading-remove": {
+      "value": "1",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 198,
+        "selector": ".line__x",
+        "property": "line-height",
+        "authoredValue": "1"
+      }
+    },
+    "--frost-tracking-title": {
+      "value": "-.2px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 62,
+        "selector": ".pos__bar h1",
+        "property": "letter-spacing",
+        "authoredValue": "-.2px"
+      }
+    },
+    "--frost-tracking-headline": {
+      "value": "-.4px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 175,
+        "selector": ".bohead h1",
+        "property": "letter-spacing",
+        "authoredValue": "-.4px"
+      }
+    },
+    "--frost-tracking-tag": {
+      "value": ".025em",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 68,
+        "selector": ".tag",
+        "property": "letter-spacing",
+        "authoredValue": ".025em"
+      }
+    },
+    "--frost-tracking-nav": {
+      "value": ".04em",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 167,
+        "selector": ".bonav__sec",
+        "property": "letter-spacing",
+        "authoredValue": ".04em"
+      }
+    },
+    "--frost-tracking-table": {
+      "value": ".06em",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 300,
+        "selector": ".dtable th",
+        "property": "letter-spacing",
+        "authoredValue": ".06em"
+      }
+    },
+    "--frost-table-head-case": {
+      "value": "uppercase",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 300,
+        "selector": ".dtable th",
+        "property": "text-transform",
+        "authoredValue": "uppercase"
+      }
+    },
+    "--frost-tracking-round": {
+      "value": "0",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 88,
+        "selector": ".roundhead",
+        "property": "letter-spacing",
+        "authoredValue": "0"
+      }
+    },
+    "--frost-text-10": {
+      "value": "10px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 68,
+        "selector": ".tag",
+        "property": "font-size",
+        "authoredValue": "10px"
+      }
+    },
+    "--frost-round-tag-size": {
+      "value": "13px",
+      "group": "Typography",
+      "source": null,
+      "designed": {
+        "task": ".agent/tasks/DESIGN-005-a7-three-missing-states.md",
+        "date": "2026-09-14",
+        "by": "designer (claude, Fable 5.1)",
+        "status": "designed under DESIGN-005; awaiting design-reviewer; not part of the DESIGN-001 Frost review",
+        "stylesheet": "docs/design/visual-directions/frost-states.css — the .roundhead .tag rule",
+        "shown": [
+          "docs/design/visual-directions/frost/pos/order.html?state=default",
+          "docs/design/visual-directions/frost/pos/order.html?state=lock-draft",
+          "docs/design/visual-directions/frost/pos/order.html?state=linecontrols"
+        ],
+        "why": "The tag inside a round-group heading (MANAGER TO VOID, REMOVE FREELY, FINISH PAYMENT FIRST, ANOTHER CLIENT) is the one statement of what a tap on the rows below will do, because a fired row's trailing slot is deliberately empty (I-12). It was 10px (--frost-text-10) against the system's own floor of 13px for anything a cashier acts on. Set to 13px — the value of --frost-text-13, an existing size used in a new place — so it outweighs the 11px heading it sits in; weight, padding, tracking, border and colour are unchanged and it fits the fixed 32px band at 23px. Closes DESIGN-004 finding 6."
+      }
+    },
+    "--frost-text-11": {
+      "value": "11px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 88,
+        "selector": ".roundhead",
+        "property": "font-size",
+        "authoredValue": "11px"
+      }
+    },
+    "--frost-text-12": {
+      "value": "12px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 130,
+        "selector": ".label",
+        "property": "font-size",
+        "authoredValue": "12px"
+      }
+    },
+    "--frost-text-13": {
+      "value": "13px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 112,
+        "selector": ".pos__actor",
+        "property": "font-size",
+        "authoredValue": "13px"
+      }
+    },
+    "--frost-text-14": {
+      "value": "14px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 164,
+        "selector": ".bo",
+        "property": "font-size",
+        "authoredValue": "14px"
+      }
+    },
+    "--frost-text-15": {
+      "value": "15px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 60,
+        "selector": ".pos",
+        "property": "font-size",
+        "authoredValue": "15px"
+      }
+    },
+    "--frost-text-16": {
+      "value": "16px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 84,
+        "selector": ".orderpanel__head",
+        "property": "font-size",
+        "authoredValue": "16px"
+      }
+    },
+    "--frost-text-18": {
+      "value": "18px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 151,
+        "selector": ".emg__t",
+        "property": "font-size",
+        "authoredValue": "18px"
+      }
+    },
+    "--frost-text-20": {
+      "value": "20px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 62,
+        "selector": ".pos__bar h1",
+        "property": "font-size",
+        "authoredValue": "20px"
+      }
+    },
+    "--frost-text-24": {
+      "value": "24px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 106,
+        "selector": ".totals .t--grand",
+        "property": "font-size",
+        "authoredValue": "24px"
+      }
+    },
+    "--frost-text-26": {
+      "value": "26px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 131,
+        "selector": ".key",
+        "property": "font-size",
+        "authoredValue": "26px"
+      }
+    },
+    "--frost-text-30": {
+      "value": "30px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 175,
+        "selector": ".bohead h1",
+        "property": "font-size",
+        "authoredValue": "30px"
+      }
+    },
+    "--frost-text-17": {
+      "value": "17px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/incidents.html",
+        "line": 51,
+        "selector": "inline: font-size:17px;font-weight:700",
+        "property": "font-size",
+        "authoredValue": "17px"
+      }
+    },
+    "--frost-text-22": {
+      "value": "22px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/settlement.html",
+        "line": 57,
+        "selector": "inline: data-when=\"change\" style=\"font-size:22px",
+        "property": "font-size",
+        "authoredValue": "22px"
+      }
+    },
+    "--frost-text-32": {
+      "value": "32px",
+      "group": "Typography",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/settlement.html",
+        "line": 51,
+        "selector": "inline: style=\"font-size:32px;font-weight:700\"",
+        "property": "font-size",
+        "authoredValue": "32px"
+      }
+    },
+    "--frost-space-1": {
+      "value": "4px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 38,
+        "selector": ":root",
+        "property": "--space-1",
+        "authoredValue": "4px"
+      }
+    },
+    "--frost-space-2": {
+      "value": "8px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 38,
+        "selector": ":root",
+        "property": "--space-2",
+        "authoredValue": "8px"
+      }
+    },
+    "--frost-space-3": {
+      "value": "12px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 38,
+        "selector": ":root",
+        "property": "--space-3",
+        "authoredValue": "12px"
+      }
+    },
+    "--frost-space-4": {
+      "value": "16px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 38,
+        "selector": ":root",
+        "property": "--space-4",
+        "authoredValue": "16px"
+      }
+    },
+    "--frost-space-5": {
+      "value": "20px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 39,
+        "selector": ":root",
+        "property": "--space-5",
+        "authoredValue": "20px"
+      }
+    },
+    "--frost-space-6": {
+      "value": "24px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 39,
+        "selector": ":root",
+        "property": "--space-6",
+        "authoredValue": "24px"
+      }
+    },
+    "--frost-space-8": {
+      "value": "32px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 39,
+        "selector": ":root",
+        "property": "--space-8",
+        "authoredValue": "32px"
+      }
+    },
+    "--frost-space-10": {
+      "value": "40px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 39,
+        "selector": ":root",
+        "property": "--space-10",
+        "authoredValue": "40px"
+      }
+    },
+    "--frost-space-12": {
+      "value": "48px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 39,
+        "selector": ":root",
+        "property": "--space-12",
+        "authoredValue": "48px"
+      }
+    },
+    "--frost-keypad-gap": {
+      "value": "10px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 133,
+        "selector": ".keypad",
+        "property": "gap",
+        "authoredValue": "10px"
+      }
+    },
+    "--frost-line-padding": {
+      "value": "10px 16px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 167,
+        "selector": ".line",
+        "property": "padding",
+        "authoredValue": "10px 16px"
+      }
+    },
+    "--frost-line-gap": {
+      "value": "12px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 168,
+        "selector": ".line",
+        "property": "gap",
+        "authoredValue": "12px"
+      }
+    },
+    "--frost-totals-padding": {
+      "value": "12px 16px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 206,
+        "selector": ".totals",
+        "property": "padding",
+        "authoredValue": "12px 16px"
+      }
+    },
+    "--frost-actions-padding": {
+      "value": "12px 16px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 211,
+        "selector": ".actions",
+        "property": "padding",
+        "authoredValue": "12px 16px"
+      }
+    },
+    "--frost-actions-gap": {
+      "value": "8px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 211,
+        "selector": ".actions",
+        "property": "gap",
+        "authoredValue": "8px"
+      }
+    },
+    "--frost-grand-total-bleed": {
+      "value": "8px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 201,
+        "selector": "html[data-direction=\"frost\"] .totals .t--grand",
+        "property": "padding",
+        "authoredValue": "8px"
+      }
+    },
+    "--frost-button-padding": {
+      "value": "0 16px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 110,
+        "selector": ".btn",
+        "property": "padding",
+        "authoredValue": "0 16px"
+      }
+    },
+    "--frost-office-button-padding": {
+      "value": "0 14px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 306,
+        "selector": ".bobtn",
+        "property": "padding",
+        "authoredValue": "0 14px"
+      }
+    },
+    "--frost-office-button-small-padding": {
+      "value": "0 9px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 309,
+        "selector": ".bobtn--sm",
+        "property": "padding",
+        "authoredValue": "0 9px"
+      }
+    },
+    "--frost-table-cell-padding": {
+      "value": "15px 12px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 181,
+        "selector": ".dtable td",
+        "property": "padding",
+        "authoredValue": "15px 12px"
+      }
+    },
+    "--frost-table-cell-tight-padding": {
+      "value": "9px 12px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 184,
+        "selector": ".dtable--tight td",
+        "property": "padding",
+        "authoredValue": "9px 12px"
+      }
+    },
+    "--frost-table-head-padding": {
+      "value": "12px 12px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 180,
+        "selector": ".dtable th",
+        "property": "padding",
+        "authoredValue": "12px 12px"
+      }
+    },
+    "--frost-field-padding": {
+      "value": "0 14px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 265,
+        "selector": ".field",
+        "property": "padding",
+        "authoredValue": "0 14px"
+      }
+    },
+    "--frost-tag-padding": {
+      "value": "2px 5px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 68,
+        "selector": ".tag",
+        "property": "padding",
+        "authoredValue": "2px 5px"
+      }
+    },
+    "--frost-round-tag-padding": {
+      "value": "2px 4px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 89,
+        "selector": ".roundhead .tag",
+        "property": "padding",
+        "authoredValue": "2px 4px"
+      }
+    },
+    "--frost-overlay-body-padding": {
+      "value": "20px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 252,
+        "selector": ".modal__body",
+        "property": "padding",
+        "authoredValue": "20px"
+      }
+    },
+    "--frost-overlay-head-padding": {
+      "value": "16px 20px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 250,
+        "selector": ".modal__head",
+        "property": "padding",
+        "authoredValue": "16px 20px"
+      }
+    },
+    "--frost-overlay-foot-padding": {
+      "value": "16px 20px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 253,
+        "selector": ".modal__foot",
+        "property": "padding",
+        "authoredValue": "16px 20px"
+      }
+    },
+    "--frost-nav-item-padding": {
+      "value": "10px 24px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 168,
+        "selector": ".bonav a",
+        "property": "padding",
+        "authoredValue": "10px 24px"
+      }
+    },
+    "--frost-nav-section-padding": {
+      "value": "20px 24px 6px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 167,
+        "selector": ".bonav__sec",
+        "property": "padding",
+        "authoredValue": "20px 24px 6px"
+      }
+    },
+    "--frost-card-padding": {
+      "value": "20px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 187,
+        "selector": ".card",
+        "property": "padding",
+        "authoredValue": "20px"
+      }
+    },
+    "--frost-idle-chip-padding": {
+      "value": "4px 8px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 65,
+        "selector": ".idle",
+        "property": "padding",
+        "authoredValue": "4px 8px"
+      }
+    },
+    "--frost-report-figure-gap": {
+      "value": "2px 12px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 191,
+        "selector": ".figs",
+        "property": "gap",
+        "authoredValue": "2px 12px"
+      }
+    },
+    "--frost-report-figure-padding": {
+      "value": "8px 0",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 192,
+        "selector": ".figs > div",
+        "property": "padding",
+        "authoredValue": "8px 0"
+      }
+    },
+    "--frost-report-total-padding-top": {
+      "value": "14px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 195,
+        "selector": ".figs .sec",
+        "property": "padding-top",
+        "authoredValue": "14px"
+      }
+    },
+    "--frost-emergency-padding": {
+      "value": "12px 20px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 119,
+        "selector": ".emg",
+        "property": "padding",
+        "authoredValue": "12px 20px"
+      }
+    },
+    "--frost-warning-chip-padding": {
+      "value": "4px 10px",
+      "group": "Spacing",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 126,
+        "selector": ".warnchip",
+        "property": "padding",
+        "authoredValue": "4px 10px"
+      }
+    },
+    "--frost-radius-flat": {
+      "value": "0",
+      "group": "Shapes",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 40,
+        "selector": ":root",
+        "property": "--radius-flat",
+        "authoredValue": "0"
+      }
+    },
+    "--frost-radius-surface": {
+      "value": "2px",
+      "group": "Shapes",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 40,
+        "selector": ":root",
+        "property": "--radius-surface",
+        "authoredValue": "2px"
+      }
+    },
+    "--frost-radius-button": {
+      "value": "9999px",
+      "group": "Shapes",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 40,
+        "selector": ":root",
+        "property": "--radius-button",
+        "authoredValue": "9999px"
+      }
+    },
+    "--frost-radius-indicator": {
+      "value": "50%",
+      "group": "Shapes",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 261,
+        "selector": ".pindot",
+        "property": "border-radius",
+        "authoredValue": "50%"
+      }
+    },
+    "--frost-pos-width": {
+      "value": "1280px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 58,
+        "selector": ".device--pos",
+        "property": "width",
+        "authoredValue": "1280px"
+      }
+    },
+    "--frost-pos-height": {
+      "value": "800px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 58,
+        "selector": ".device--pos",
+        "property": "height",
+        "authoredValue": "800px"
+      }
+    },
+    "--frost-office-width": {
+      "value": "1440px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 59,
+        "selector": ".device--bo",
+        "property": "width",
+        "authoredValue": "1440px"
+      }
+    },
+    "--frost-pos-header-height": {
+      "value": "64px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 108,
+        "selector": ".pos__bar",
+        "property": "height",
+        "authoredValue": "64px"
+      }
+    },
+    "--frost-office-header-height": {
+      "value": "64px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 172,
+        "selector": ".botop",
+        "property": "height",
+        "authoredValue": "64px"
+      }
+    },
+    "--frost-category-width": {
+      "value": "172px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 133,
+        "selector": ".catrail",
+        "property": "width",
+        "authoredValue": "172px"
+      }
+    },
+    "--frost-category-height": {
+      "value": "72px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 135,
+        "selector": ".cat",
+        "property": "height",
+        "authoredValue": "72px"
+      }
+    },
+    "--frost-menu-columns": {
+      "value": "repeat(4, 150px)",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 142,
+        "selector": ".menugrid",
+        "property": "grid-template-columns",
+        "authoredValue": "repeat(4, 150px)"
+      }
+    },
+    "--frost-menu-gap": {
+      "value": "8px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 142,
+        "selector": ".menugrid",
+        "property": "gap",
+        "authoredValue": "8px"
+      }
+    },
+    "--frost-menu-padding": {
+      "value": "12px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 143,
+        "selector": ".menugrid",
+        "property": "padding",
+        "authoredValue": "12px"
+      }
+    },
+    "--frost-tile-height": {
+      "value": "96px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 146,
+        "selector": ".tile",
+        "property": "height",
+        "authoredValue": "96px"
+      }
+    },
+    "--frost-tile-padding": {
+      "value": "12px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 75,
+        "selector": ".tile",
+        "property": "padding",
+        "authoredValue": "12px"
+      }
+    },
+    "--frost-order-panel-width": {
+      "value": "460px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 155,
+        "selector": ".orderpanel",
+        "property": "width",
+        "authoredValue": "460px"
+      }
+    },
+    "--frost-order-head-height": {
+      "value": "56px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 156,
+        "selector": ".orderpanel__head",
+        "property": "height",
+        "authoredValue": "56px"
+      }
+    },
+    "--frost-round-height": {
+      "value": "32px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 161,
+        "selector": ".roundhead",
+        "property": "height",
+        "authoredValue": "32px"
+      }
+    },
+    "--frost-line-min-height": {
+      "value": "72px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 167,
+        "selector": ".line",
+        "property": "min-height",
+        "authoredValue": "72px"
+      }
+    },
+    "--frost-line-body-min-height": {
+      "value": "52px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 96,
+        "selector": ".line__t",
+        "property": "min-height",
+        "authoredValue": "52px"
+      }
+    },
+    "--frost-line-slot-width": {
+      "value": "56px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 195,
+        "selector": ".line__x",
+        "property": "width",
+        "authoredValue": "56px"
+      }
+    },
+    "--frost-line-slot-height": {
+      "value": "56px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 195,
+        "selector": ".line__x",
+        "property": "height",
+        "authoredValue": "56px"
+      }
+    },
+    "--frost-line-quantity-width": {
+      "value": "28px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 177,
+        "selector": ".line__q",
+        "property": "width",
+        "authoredValue": "28px"
+      }
+    },
+    "--frost-action-height": {
+      "value": "72px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 213,
+        "selector": ".btn",
+        "property": "height",
+        "authoredValue": "72px"
+      }
+    },
+    "--frost-action-compact-height": {
+      "value": "48px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 220,
+        "selector": ".btn--sm",
+        "property": "height",
+        "authoredValue": "48px"
+      }
+    },
+    "--frost-office-action-height": {
+      "value": "36px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 177,
+        "selector": ".bobtn",
+        "property": "height",
+        "authoredValue": "36px"
+      }
+    },
+    "--frost-office-action-small-height": {
+      "value": "28px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 178,
+        "selector": ".bobtn--sm",
+        "property": "height",
+        "authoredValue": "28px"
+      }
+    },
+    "--frost-pin-key-height": {
+      "value": "88px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 259,
+        "selector": ".key",
+        "property": "height",
+        "authoredValue": "88px"
+      }
+    },
+    "--frost-pin-columns": {
+      "value": "repeat(3, 88px)",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 258,
+        "selector": ".keypad",
+        "property": "grid-template-columns",
+        "authoredValue": "repeat(3, 88px)"
+      }
+    },
+    "--frost-pin-dot-size": {
+      "value": "20px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 261,
+        "selector": ".pindot",
+        "property": "width",
+        "authoredValue": "20px"
+      }
+    },
+    "--frost-lock-box-width": {
+      "value": "420px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 139,
+        "selector": ".lock__box",
+        "property": "width",
+        "authoredValue": "420px"
+      }
+    },
+    "--frost-field-height": {
+      "value": "56px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 265,
+        "selector": ".field",
+        "property": "height",
+        "authoredValue": "56px"
+      }
+    },
+    "--frost-field-small-height": {
+      "value": "40px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 266,
+        "selector": ".field--sm",
+        "property": "height",
+        "authoredValue": "40px"
+      }
+    },
+    "--frost-modal-width": {
+      "value": "560px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 248,
+        "selector": ".modal",
+        "property": "width",
+        "authoredValue": "560px"
+      }
+    },
+    "--frost-office-modal-width": {
+      "value": "640px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 254,
+        "selector": ".modal--bo",
+        "property": "width",
+        "authoredValue": "640px"
+      }
+    },
+    "--frost-sheet-top": {
+      "value": "64px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 233,
+        "selector": ".sheet",
+        "property": "top",
+        "authoredValue": "64px"
+      }
+    },
+    "--frost-sheet-right": {
+      "value": "460px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 233,
+        "selector": ".sheet",
+        "property": "right",
+        "authoredValue": "460px"
+      }
+    },
+    "--frost-sheet-header-height": {
+      "value": "64px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 241,
+        "selector": ".sheet__head",
+        "property": "height",
+        "authoredValue": "64px"
+      }
+    },
+    "--frost-office-nav-width": {
+      "value": "220px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 286,
+        "selector": ".bonav",
+        "property": "width",
+        "authoredValue": "220px"
+      }
+    },
+    "--frost-office-content-padding": {
+      "value": "24px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 173,
+        "selector": ".bocontent",
+        "property": "padding",
+        "authoredValue": "24px"
+      }
+    },
+    "--frost-report-columns": {
+      "value": "1fr 1fr",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 313,
+        "selector": ".grid2",
+        "property": "grid-template-columns",
+        "authoredValue": "1fr 1fr"
+      }
+    },
+    "--frost-report-column-gap": {
+      "value": "16px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 313,
+        "selector": ".grid2",
+        "property": "gap",
+        "authoredValue": "16px"
+      }
+    },
+    "--frost-emergency-min-height": {
+      "value": "80px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 150,
+        "selector": ".emg",
+        "property": "min-height",
+        "authoredValue": "80px"
+      }
+    },
+    "--frost-emergency-marker-size": {
+      "value": "28px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 153,
+        "selector": ".emg__mark",
+        "property": "width",
+        "authoredValue": "28px"
+      }
+    },
+    "--frost-warning-marker-size": {
+      "value": "10px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/structure.css",
+        "line": 128,
+        "selector": ".warnchip__mark",
+        "property": "width",
+        "authoredValue": "10px"
+      }
+    },
+    "--frost-icon-size": {
+      "value": "20px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 207,
+        "selector": ".ui-icon",
+        "property": "width",
+        "authoredValue": "20px"
+      }
+    },
+    "--frost-key-icon-size": {
+      "value": "24px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 208,
+        "selector": ".key .ui-icon, .line__x .ui-icon",
+        "property": "width",
+        "authoredValue": "24px"
+      }
+    },
+    "--frost-icon-stroke": {
+      "value": "1.8",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/mockup.js",
+        "line": 73,
+        "selector": "icon()",
+        "property": "stroke-width",
+        "authoredValue": "1.8"
+      }
+    },
+    "--frost-settlement-summary-width": {
+      "value": "560px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/settlement.html",
+        "line": 39,
+        "selector": "inline: style=\"width:560px;flex:none",
+        "property": "width",
+        "authoredValue": "560px"
+      }
+    },
+    "--frost-tender-action-height": {
+      "value": "56px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/settlement.html",
+        "line": 200,
+        "selector": "inline: Add card</a>",
+        "property": "height",
+        "authoredValue": "56px"
+      }
+    },
+    "--frost-tender-key-height": {
+      "value": "72px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/settlement.html",
+        "line": 231,
+        "selector": "inline: class=\"key\" style=\"height:72px\">1",
+        "property": "height",
+        "authoredValue": "72px"
+      }
+    },
+    "--frost-approval-columns": {
+      "value": "repeat(3,72px)",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/order.html",
+        "line": 634,
+        "selector": "inline: class=\"keypad\" style=\"grid-template-columns:repeat(3,72px)\"",
+        "property": "grid-template-columns",
+        "authoredValue": "repeat(3,72px)"
+      }
+    },
+    "--frost-approval-key-height": {
+      "value": "72px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/order.html",
+        "line": 635,
+        "selector": "inline: class=\"key\" style=\"height:72px\">1",
+        "property": "height",
+        "authoredValue": "72px"
+      }
+    },
+    "--frost-incident-reprint-width": {
+      "value": "200px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/incidents.html",
+        "line": 54,
+        "selector": "inline: >Reprint ticket</a>",
+        "property": "width",
+        "authoredValue": "200px"
+      }
+    },
+    "--frost-receipt-reprint-width": {
+      "value": "180px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/incidents.html",
+        "line": 94,
+        "selector": "inline: >Reprint receipt</a>",
+        "property": "width",
+        "authoredValue": "180px"
+      }
+    },
+    "--frost-scrim": {
+      "value": "rgb(0 25 28 / 38%)",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 140,
+        "selector": ".scrim",
+        "property": "background",
+        "authoredValue": "rgb(0 25 28 / 38%)"
+      }
+    },
+    "--frost-overlay-border": {
+      "value": "1px solid #0b363b",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 141,
+        "selector": ".sheet, .modal",
+        "property": "border",
+        "authoredValue": "1px solid var(--primary)"
+      }
+    },
+    "--frost-overlay-shadow": {
+      "value": "none",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 141,
+        "selector": ".sheet, .modal",
+        "property": "box-shadow",
+        "authoredValue": "none"
+      }
+    },
+    "--frost-control-stroke": {
+      "value": "1px solid #718487",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 131,
+        "selector": ".key",
+        "property": "border",
+        "authoredValue": "1px solid var(--control-border)"
+      }
+    },
+    "--frost-divider-stroke": {
+      "value": "1px solid #ebebeb",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 61,
+        "selector": ".pos__bar",
+        "property": "border-bottom",
+        "authoredValue": "1px solid var(--border)"
+      }
+    },
+    "--frost-focus-outline": {
+      "value": "2px solid #0b363b",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 53,
+        "selector": "a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible",
+        "property": "outline",
+        "authoredValue": "2px solid var(--primary)"
+      }
+    },
+    "--frost-focus-offset": {
+      "value": "2px",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 53,
+        "selector": "a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible",
+        "property": "outline-offset",
+        "authoredValue": "2px"
+      }
+    },
+    "--frost-focus-ring": {
+      "value": "0 0 0 6px #abffae",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 53,
+        "selector": "a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible",
+        "property": "box-shadow",
+        "authoredValue": "0 0 0 6px var(--focus)"
+      }
+    },
+    "--frost-link-underline-offset": {
+      "value": "3px",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 52,
+        "selector": "a",
+        "property": "text-underline-offset",
+        "authoredValue": "3px"
+      }
+    },
+    "--frost-amount-keyed-border": {
+      "value": "2px solid #0b363b",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 124,
+        "selector": "html[data-state=\"cardsplit\"] .amount-field, html[data-state=\"cashover\"] .amount-field,\nhtml[data-state=\"cardover\"] .amount-field, html[data-state=\"ceiling\"] .amount-field",
+        "property": "border",
+        "authoredValue": "2px solid #0b363b"
+      }
+    },
+    "--frost-amount-keyed-padding-left": {
+      "value": "13px",
+      "group": "Depth and interaction",
+      "source": {
+        "path": "docs/design/visual-directions/visual.css",
+        "line": 124,
+        "selector": "html[data-state=\"cardsplit\"] .amount-field, html[data-state=\"cashover\"] .amount-field,\nhtml[data-state=\"cardover\"] .amount-field, html[data-state=\"ceiling\"] .amount-field",
+        "property": "padding-left",
+        "authoredValue": "13px"
+      }
+    },
+    "--frost-pressed-ring": {
+      "value": "inset 0 0 0 2px currentColor",
+      "group": "Depth and interaction",
+      "source": null,
+      "designed": {
+        "task": ".agent/tasks/DESIGN-005-a7-three-missing-states.md",
+        "date": "2026-09-14",
+        "by": "designer (claude, Fable 5.1)",
+        "status": "designed under DESIGN-005; awaiting design-reviewer; not part of the DESIGN-001 Frost review",
+        "stylesheet": "docs/design/visual-directions/frost-states.css — the .is-pressed / :active rule",
+        "shown": [
+          "docs/design/visual-directions/frost/pos/order.html?state=pressed",
+          "docs/design/visual-directions/frost/pos/settlement.html?state=pressed"
+        ],
+        "why": "Pressed / active on touch. A 2px stroke inside the control's own edge in the control's text colour: a stroke so it cannot be confused with the solid ink fill that means selected; inset so it never collides with the keyboard focus ring (outside, green) and never moves layout; currentColor so one rule reads on cream, white, spruce, ink and brick and the ring's contrast is the text's already-measured contrast. Lineage: the keyed amount field's 1px to 2px spruce thickening (--frost-amount-keyed-border) already means a hand touched this. No new colour value."
+      }
+    },
+    "--frost-invalid-border": {
+      "value": "2px solid #83611c",
+      "group": "Depth and interaction",
+      "source": null,
+      "designed": {
+        "task": ".agent/tasks/DESIGN-005-a7-three-missing-states.md",
+        "date": "2026-09-14",
+        "by": "designer (claude, Fable 5.1)",
+        "status": "designed under DESIGN-005; awaiting design-reviewer; not part of the DESIGN-001 Frost review",
+        "stylesheet": "docs/design/visual-directions/frost-states.css — the .field--invalid rule",
+        "shown": [
+          "docs/design/visual-directions/frost/pos/settlement.html?state=cardover",
+          "docs/design/visual-directions/frost/pos/settlement.html?state=ceiling",
+          "docs/design/visual-directions/frost/back-office/menu.html?state=category-invalid"
+        ],
+        "why": "A field holding a refused value thickens its border to 2px in --frost-invalid on a white fill, with left padding pulled to --frost-amount-keyed-padding-left (13px) so the figure does not shift, mirroring --frost-amount-keyed-border. The fill stays white so the field is never the pale amber receipt-warning chip. Applies to a rejected value and to an empty required field on submit; not to a field whose value is fine while the action failed, which stays as it was beside a notice. The one-line message under the field uses --frost-invalid at --frost-text-14 (POS) or --frost-text-13 (back-office modal), --frost-weight-medium, --frost-space-1 above."
+      }
+    }
+  }
+}

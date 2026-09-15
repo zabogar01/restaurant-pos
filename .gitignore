@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+dist/
+*.log
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local TLS material — generated per machine, never shared
+certs/
+
+# Test output
+coverage/
+playwright-report/
+test-results/
+
+# Design tool working state — config, hook cache, and review captures.
+# Owner ruling 2026-09-14: build residue, not repository evidence. What the
+# visual review found is recorded in docs/design/visual-directions/REVIEW.md;
+# the captures themselves are reproducible and are not kept.
+.impeccable/

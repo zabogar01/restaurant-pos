@@ -34,16 +34,19 @@
       <a class="slink" href="pos/order.html?state=empty">3. Empty order</a>
       <a class="slink" href="pos/order.html?state=sheet-item">4. Configures an item</a>
       <a class="slink" href="pos/order.html?state=default">5. Two rounds fired, discount on</a>
+      <a class="slink slink--implied" href="pos/order.html?state=linecontrols">5b. Line controls — pending vs fired</a>
       <a class="slink" href="pos/order.html?state=sheet-voidline">6. Voids fired work</a>
       <a class="slink" href="pos/order.html?state=approval">7. Manager PIN</a>
-      <a class="slink" href="pos/settlement.html?state=partial">8. Split payment</a>
-      <a class="slink" href="pos/settlement.html?state=exact">9. Exact settlement</a>
-      <a class="slink" href="pos/closed-order.html">10. Closed order</a>
-      <a class="slink" href="pos/closed-order.html?state=sheet-refund">11. Refund</a>
-      <a class="slink" href="back-office/end-of-day.html?state=refused">12. End of day refused</a>
-      <a class="slink" href="back-office/end-of-day.html?state=closed">13. Day closed</a>
-      <a class="slink" href="back-office/report-detail.html">14. Stored report</a>
-      <a class="slink" href="back-office/audit.html">15. Audit</a>
+      <a class="slink slink--implied" href="pos/settlement.html?state=card">8. Card — amount already filled in</a>
+      <a class="slink slink--implied" href="pos/settlement.html?state=cardsplit">9. Key 10.00 — that is the split</a>
+      <a class="slink" href="pos/settlement.html?state=partial">10. 5.59 still owing, cash prefilled</a>
+      <a class="slink" href="pos/settlement.html?state=exactsplit">11. Exact — AC-7 closes</a>
+      <a class="slink" href="pos/closed-order.html">12. Closed order</a>
+      <a class="slink" href="pos/closed-order.html?state=sheet-refund">13. Refund</a>
+      <a class="slink" href="back-office/end-of-day.html?state=refused">14. End of day refused</a>
+      <a class="slink" href="back-office/end-of-day.html?state=closed">15. Day closed</a>
+      <a class="slink" href="back-office/report-detail.html">16. Stored report</a>
+      <a class="slink" href="back-office/audit.html">17. Audit</a>
     </div>
   </div>
 
@@ -67,6 +70,8 @@ var DATA = [
   {id:'POS-03', f:'pos/order.html', n:'Order workspace', r:'FR-D3–D6, C1–C7, E1–E5, F1–F8, H2–H4, G10, G12',
    p:'Build and correct an order, fire it in rounds, discount it, void it. Two variants: table and quick sale.',
    s:[['default','Table — 2 rounds fired'],['empty','Table — no lines'],['quick','Quick sale — no fire control'],
+      ['linecontrols','Line controls — pending vs fired',1],
+      ['quick-line','Quick sale — line editor',1],
       ['overflow','Overflow — long order'],['zero','Zero total (100% comp)'],
       ['eightysix','Item 86’d — disabled in place'],['fireblocked','Fire blocked — 86’d pending line'],
       ['catalog','CATALOG_CHANGED'],['lock-draft','Locked — your own payment'],['lock-lease','Locked — another client'],
@@ -80,8 +85,12 @@ var DATA = [
       ['approval-throttled','Modal — approval cooldown'],['approval-denied','Modal — cashier PIN refused']]},
   {id:'POS-04', f:'pos/settlement.html', n:'Settlement', r:'FR-G1–G14, M5, E5, A2',
    p:'Collect money and close the order exactly. Entering acquires the checkout lease.',
-   s:[['empty','No payment drafted'],['partial','Split — balance remaining'],['exact','Exact — close enabled'],
-      ['change','Cash over — change due'],['cardover','Card over balance — rejected'],
+   s:[['empty','No payment drafted — cash'],['card','Card — balance already filled in',1],
+      ['exact','Exact — card in full'],['exactcash','Exact — cash in full'],
+      ['cardsplit','Card — 10.00 keyed, splitting',1],['partial','Split — 5.59 still owing'],
+      ['exactsplit','Exact — 10.00 card + 5.59 cash (AC-7)'],
+      ['cashover','Cash — 20.00 keyed over the balance'],['change','Cash over — change due (AC-5)'],
+      ['cardover','Card over balance — rejected (AC-6)'],
       ['ceiling','Change ceiling exceeded'],['zero','Zero total'],['pending','Blocked — unsent lines'],
       ['overflow','Overflow — many splits'],['reauth','Modal — re-authenticate to close'],
       ['cancel','Modal — cancel payment',1],['leaselost','Modal — displaced by takeover'],

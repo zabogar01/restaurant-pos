@@ -1,0 +1,141 @@
+# Execution Queue
+
+The immediate queue only. For the complete product roadmap — all six MVP
+phases, the pre-production gate, and the three post-MVP horizons — see
+[docs/ROADMAP.md](../docs/ROADMAP.md). This file exists to say what happens
+next, not what happens eventually.
+
+Owned by the Claude product lead. No other agent writes to this file.
+
+Last updated 2026-09-14, after auditing what actually happened on 2026-09-10.
+The previous revision was written at 11:50 that day and missed the afternoon
+entirely.
+
+---
+
+## Two tracks run in parallel
+
+Design and architecture were independent and both blocked implementation.
+**Both have now delivered.** What is left on each is review and open product
+decisions, neither of which holds up Phase 0.
+
+### Track A — Design
+
+| # | Item | State | Owner |
+|---|---|---|---|
+| A1 | Sitemap and screen inventory | Confirmed, committed | `designer` |
+| A2 | Behavioral wireframe prototype and its review | **Remediation done, task not closed.** Three passes: owner findings as rulings I-12 and I-13, then void-under-lock, then eight `design-reviewer` findings plus five found by verification. Seven `[INLINE]` nodes added; screen count unchanged. See [DESIGN-002](tasks/DESIGN-002-wireframe-review.md) | `designer`, captured by `lead` |
+| A3 | [DESIGN-001](tasks/DESIGN-001-external-visual-direction.md) — visual direction | **Delivered and chosen. FROST, 2026-09-14.** Two light directions were built in-repo from the owner's reference; Paper is rejected and left untouched | Owner |
+| A4 | [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) — convert Frost into `docs/DESIGN.md` and a token set | **Done** 2026-09-14. `docs/DESIGN.md` plus a 169-token registry, every token carrying file, line, selector and property. Lead-verified: 169/169/169 three-way, 12 random provenance claims checked, all passed | `designer2` then `designer` |
+| A5 | Decide whether a dark palette ships | Not started. Light only was delivered, deliberately | Owner |
+| A6 | Review the Frost conversion | **Next.** A4 has landed and is lead-verified for completeness and provenance; it has not been reviewed for design judgement. The codex quota window has reset | `design-reviewer` |
+| A7 | Style the three absences Phase 0 hits — pressed/active touch state, field error state, login form controls | Not started. Deliberately absent from Frost; goes to a designer and through review, never invented into `packages/tokens` | `designer` |
+
+A3's deliverable is real and reviewed: open
+[docs/design/visual-directions/index.html](../docs/design/visual-directions/index.html)
+to see both. The verdict was *ship for visual comparison* — a review of six
+screens in each direction, not approval of a design system. The owner chose
+Frost from it on 2026-09-14.
+
+**A4 is the conversion, not a redesign.** Every value in `docs/DESIGN.md` must
+trace to a built Frost artifact. Nothing else in the repository waits on it —
+Phase 0 ships two client shells with a PIN pad and a login form and needs no
+palette.
+
+Five agents are live, all idle: `lead`, `designer` (Fable 5.1, delivered A4),
+`architect` (delivered B4), `designer2` (delivered A4's token registry before a
+quota limit stopped it), and `design-reviewer`, which is next up on A6.
+
+### Track B — Architecture
+
+| # | Item | State | Owner |
+|---|---|---|---|
+| B1 | Architecture proposal | Written, all seven ADRs `Proposed` | `architect` |
+| B2 | Reconcile the proposal with the scope cut, the two-client split, and the review deltas | **Done** 2026-09-10, committed 2026-09-14 in `10bcb4c`. 997 insertions, 638 deletions | `architect` |
+| B3 | Close PRD open questions on stack, currency, and tax model | **Done** 2026-09-10, committed 2026-09-14 in `4c59cdc` | `lead` |
+| B4 | Owner approval, then conversion into `docs/ARCHITECTURE.md` and accepted ADRs under `docs/decisions/` | **Done** 2026-09-14. `docs/ARCHITECTURE.md` (972 lines, standing alone) and seven `Accepted` ADRs under `docs/decisions/`. Verified by `lead`. Committed `10bcb4c` | `architect` |
+
+---
+
+## The implementation gate
+
+**No agent writes application code until every condition below is true.** This
+is a hard gate, not a checklist to work around. An agent that finds itself
+reasoning about why a condition does not really apply should stop and raise it
+instead.
+
+1. ~~The owner has explicitly approved
+   [docs/ARCHITECTURE_PROPOSAL.md](../docs/ARCHITECTURE_PROPOSAL.md), and it
+   has been converted into `docs/ARCHITECTURE.md` with its ADRs moved to
+   `docs/decisions/` and marked accepted.~~ **Both halves done.** Approved
+   2026-09-10; converted 2026-09-14 by `architect` and verified on disk —
+   `docs/ARCHITECTURE.md` stands alone at 972 lines and all seven ADRs in
+   `docs/decisions/` read `Accepted`. `docs/ARCHITECTURE.md` is now the
+   technical authority; the proposal survives under a superseded banner as the
+   record of the reconciliation only.
+2. ~~The deployment conflict is resolved in the documents, not merely
+   understood.~~ **Done** 2026-09-10, committed `10bcb4c`. Proposal §3.1 is single-host
+   and loopback-only with a startup guard; §3.2 defers the appliance, LAN TLS,
+   UPS, and backups to a named pre-production gate. PRODUCT.md and the proposal
+   now agree.
+3. ~~PRD open questions on stack, currency, and tax model are closed in the
+   PRD.~~ **Done** 2026-09-10, committed `4c59cdc`.
+4. ~~The owner has chosen an execution mode for
+   [the Phase 0 plan](../docs/superpowers/plans/2026-09-08-phase-0-foundations.md):
+   subagent-driven or inline.~~ **Done** 2026-09-14: **subagent-driven.** A
+   fresh implementer per task or small group, clean context each, a written
+   handoff out of each, and the lead reviewing between tasks.
+5. ~~A `.gitignore` exists and `docs/design/.DS_Store` is out of the index.~~
+   **Done** 2026-09-10, committed `e6120f0`.
+
+## THE GATE IS OPEN — 2026-09-14
+
+All five conditions are met and all five are in git history, so a fresh clone
+meets them too. **Phase 0 may begin**, subagent-driven.
+
+What that does not mean: the gate opening does not approve anything still
+listed as open. The restaurant time zone, receipt content, the permitted rate
+range, post-close corrections, ruling I-8, the dark palette, and the three
+visual states Frost does not cover are all still open, and each has a phase it
+must be settled before. An implementer that needs one of them stops and raises
+it.
+
+**Not gated by visual direction.** Phase 0 ships two client shells with a PIN
+pad and a login form. It needs no palette, and rebuilding those two screens
+later against a real design system is cheap.
+
+---
+
+## Housekeeping the lead owes
+
+Small, none of it blocking, all of it recorded so it does not get lost.
+
+| Item | Why it is not done yet |
+|---|---|
+| ~~Commit the documentation state~~ | **Done** 2026-09-14: six commits on `agent/design-direction`, working tree clean. Not merged to `main` — the owner merges |
+| ~~Close [DESIGN-002](tasks/DESIGN-002-wireframe-review.md)~~ | **Done** 2026-09-14. Ruled: the quick-sale line editor is a second *form* of the existing sheet, not a seventh modal — the count stands at 7 / 13 / 6. Four items carried forward as wireframe slack |
+| ~~Bring [DESIGN-001](tasks/DESIGN-001-external-visual-direction.md) up to date~~ | **Done** 2026-09-14, closed. Delivered in-repo rather than through an external tool; six of eight acceptance criteria met, two met-with-a-limit |
+| ~~Decide what to do with `.impeccable/`~~ | **Done** 2026-09-14: ignored entirely as build residue. `REVIEW.md`'s cited captures will therefore not exist in a clone |
+| ~~Fix the Phase 0 plan's stale paragraphs~~ | **Done** 2026-09-14: both tax-model paragraphs corrected, and the token package's invented placeholder palette now points at the Frost registry instead of contradicting it |
+| Propose PRD §9 time-zone wording | The PRD never names a restaurant time zone; receipt and business-day timestamps both need one. Contract document, so the owner approves the wording |
+| Settle ruling I-8 | Back-office kitchen-ticket reprint is granted by `FR-E3` and unaudited by `FR-J3`. Drawn as the requirements read. Needs a ruling, not a workaround |
+
+---
+
+## After the gate
+
+Phase 0 executes from its plan, **subagent-driven** by the owner's 2026-09-14
+ruling: twelve TDD tasks covering money primitives, PIN identity, throttling,
+audience-scoped sessions, append-only audit, the HTTPS-on-localhost server, and
+the two client shells. Its own definition of done is in the plan.
+
+Subagent-driven means each task or small group goes to a fresh implementer with
+a clean context; each returns a written handoff; the lead reviews between tasks
+and does not implement. An implementer writes only its own task handoff — never
+this file or MEMORY.md.
+
+Before the first task starts, the plan's closing paragraph needs its fix: it
+still calls the tax model open, and it was settled on 2026-09-10.
+
+Phases 1 through 6 each need their own plan written before execution. Only
+Phase 0 has one.

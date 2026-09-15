@@ -3,6 +3,47 @@
 Status: **confirmed by the product lead.** Conflicts C-1 to C-7 and implied items
 I-1, I-3, I-5, I-9 are ruled on; the rulings are folded into the structure below and
 built in [prototype/](prototype/).
+
+Owner findings from [DESIGN-002](../../.agent/tasks/DESIGN-002-wireframe-review.md)
+added rulings **I-12** (per-line removal on POS-03) and **I-13** (prefilled tender
+amount on POS-04).
+
+**What changed, stated precisely.** No *navigable or overlay topology* changed:
+no route, modal, or sheet was added, removed, or retyped, so the count of 7 POS
+screens, 13 back-office screens, and 6 modals still holds and every destination
+is the destination it was. What was added is **seven `[INLINE]` nodes** — five
+under POS-03 and two under POS-04 — and `[INLINE]` *is* a node type in §1, so
+"nothing structural changed" would be too broad a claim. An `[INLINE]` node is a
+state of a screen, not a place you can navigate to, which is why the screen list
+is unaffected. They are recorded here because this document already carries
+`[INLINE]` affordance rulings of the same kind, and a brief that omits them
+would drift.
+
+**Retyped 2026-09-14, applying the owner's ruling of 2026-09-10.** The three
+tender pads under POS-04 — cash, card, custom — are `[INLINE]`, not `[SHEET]`.
+The tender pad is a persistent panel occupying the right column of the
+settlement screen: it does not enter from an edge, is never dismissed, and
+choosing another method replaces its content in place; leaving it means
+leaving POS-04. The prototype has drawn it that way since DESIGN-002 pass 1
+and this document lagged. Overlay semantics change; the count of 7 POS
+screens, 13 back-office screens and 6 modals does not, because M-4 keeps its
+number in the inventory as a retyped node. Applied in SCREEN-INVENTORY.md and
+EXTERNAL-HANDOFF.md in the same change (DESIGN-004, finding 2).
+
+**One `[INLINE]` node added under BO-03 on 2026-09-14** by the lead's ruling
+in [DESIGN-005](../../.agent/tasks/DESIGN-005-a7-three-missing-states.md)
+(finding 4): the category modal's refusal of an empty name. A state of an
+existing screen, recorded the way the seven `[INLINE]` nodes above were; no
+route, modal or sheet added, removed or retyped, so 7 POS screens, 13
+back-office screens and 6 modals still hold. Applied in SCREEN-INVENTORY.md
+in the same change.
+
+One further change is a **variant, not a node**: the line-editor sheet now has
+a table form and a quick-sale form, exactly as POS-03 itself has two variants.
+They differ only in where leaving them returns to — the quick form must never
+return to a workspace carrying a fire control (C-2, FR-E5). If the product lead
+prefers to count that as two distinct sheet nodes, it is a one-line change here
+and the modal count becomes 7.
 Derived from [PRD.md](../PRD.md). Constrained by [BOUNDARIES.md](../BOUNDARIES.md).
 Companion document: [SCREEN-INVENTORY.md](SCREEN-INVENTORY.md).
 
@@ -83,10 +124,23 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   ├── [INLINE] CATALOG_CHANGED refresh notice ................. FR-C7
 │   ├── [INLINE] Settlement lock — YOUR draft, you can undo it .. FR-G12, C-5
 │   ├── [INLINE] Settlement lock — ANOTHER client's lease ....... FR-G13, C-5
+│   │   ├── [INLINE] Lines READ-ONLY under either lock: no remove
+│   │   │       control, no void path, every slot empty ........ FR-G12, G13, H1, AC-3
+│   │   └── [INLINE] Menu browser ABSENT under either lock —
+│   │             add-line is blocked and it holds nothing to read FR-G12, G13, AC-21, AC-29
+│   ├── [INLINE] PENDING line held while a draft/lease is active
+│   │             (FR-G10 refuses the close, not the draft) ..... FR-G10, G12, G13
 │   ├── [SHEET] Item configuration — variant + modifiers ........ FR-C2, C3
 │   │   └── [INLINE] Item 86'd mid-selection; choices kept,
 │   │                Add disabled, reason shown ................. FR-C6
-│   ├── [SHEET] Line editor — quantity, remove pending line ..... FR-D5, H2
+│   ├── [INLINE] PENDING line — remove control in the trailing slot
+│   │             (one tap, no prompt, nothing written) .......... FR-H2, AC-3, I-12
+│   ├── [INLINE] FIRED line — the same slot RESERVED AND EMPTY;
+│   │             the row body opens the void sheet ............. FR-H4, B-16, I-12
+│   ├── [SHEET] Line editor — quantity, remove pending line ..... FR-D5, M5, H2
+│   │   ├── [INLINE] table form — returns to the table workspace
+│   │   └── [INLINE] quick form — returns to the QUICK workspace,
+│   │             which carries no fire control ................. C-2, FR-E5
 │   ├── [SHEET] Discount picker — presets ....................... FR-F2, F5
 │   │   └── [SHEET] Free-form discount entry ................... FR-F3
 │   │       └── [MODAL] Manager approval ....................... FR-A6, F3
@@ -104,11 +158,14 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   │   CheckoutLease (FR-G13); leaving it releases or abandons the draft.
 │   ├── [INLINE] Balance remaining / fully allocated ............ FR-G5
 │   ├── [INLINE] Draft tender list (client-side, unstored) ...... FR-G9
-│   ├── [SHEET] Cash tender pad ................................ FR-G4, M5
+│   ├── [INLINE] Tender amount PREFILLED with the remaining
+│   │             balance, editable in place. No split mode ..... FR-G2, G3, B-5, I-13
+│   ├── [INLINE] Cash tender pad — persistent right-column panel,
+│   │             never dismissed; choosing a method swaps it .... FR-G4, M5
 │   │   └── [INLINE] Above change ceiling — max cash shown ..... FR-M5
-│   ├── [SHEET] Card tender pad ................................ FR-G3
+│   ├── [INLINE] Card tender pad — same panel, card rules ....... FR-G3
 │   │   └── [INLINE] Above remaining balance — rejected, max shown FR-G3
-│   ├── [SHEET] Custom named tender ............................ FR-G1
+│   ├── [INLINE] Custom named tender — same panel ............... FR-G1
 │   ├── [INLINE] Change due ................................... FR-G4, G6
 │   ├── [INLINE] Zero-total settlement — no tenders needed ..... FR-G11
 │   ├── [INLINE] Close blocked — table order has PENDING lines . FR-G10
@@ -182,6 +239,7 @@ reports and audit.
 │   │   ├── [INLINE] 86 toggle per item row ............... FR-B6, C5
 │   │   ├── [INLINE] 86 rejected — item on a leased order . FR-G13
 │   │   ├── [MODAL] Category create / edit ................ FR-B4
+│   │   ├── [INLINE] Category create refused — empty name . FR-B4
 │   │   └── [INLINE] Empty — no items yet ................. FR-B4
 │   └── BO-04 [SCREEN] Item editor ................... FR-B4, C1–C4, C7, C8
 │       ├── [INLINE] Variants — single-select, ± delta .... FR-C2

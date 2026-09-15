@@ -32,7 +32,7 @@ Copied verbatim from the spec. Every task's requirements implicitly include this
 - **NFR-1.** One HTTPS origin on localhost, path-separated `/pos/` and `/back-office/`, APIs at `/api/pos/…` and `/api/back-office/…`. A startup guard rejects any non-loopback listener.
 - **NFR-5.** Two independently bootstrapped frontend bundles with separate route manifests, session cookies, and layouts. A single responsive application that shows or hides navigation by role or viewport does not satisfy this requirement.
 
-**Open question that does NOT block this phase:** whether menu prices are tax-inclusive with an untaxed service charge ("nett"), or tax-exclusive with a taxed service charge (Indonesian "++"). Phase 0 builds only precision-independent primitives. This must be settled before Phase 2 implements the calculation policy.
+**Settled 2026-09-10, and it never blocked this phase:** the tax model is **nett** — menu prices are tax-inclusive, the service charge is untaxed, and the tax line is derived from the total. Indonesian "++" was considered and deliberately not chosen. Phase 2 implements the calculation policy against that ruling; Phase 0 builds only precision-independent primitives and is unaffected either way. Currency is **IDR at minor-unit precision 0**.
 
 ---
 
@@ -2993,22 +2993,39 @@ Create `packages/tokens/package.json`:
 { "name": "@pos/tokens", "type": "module", "main": "src/index.ts" }
 ```
 
-Create `packages/tokens/src/index.ts`:
+Create `packages/tokens/src/index.ts`.
+
+**Read this before writing that file.** When this plan was written no visual
+direction existed, so it carried invented placeholder values. One exists now:
+the owner chose **Frost** on 2026-09-14, and it is stated as values in
+[docs/DESIGN.md](../../DESIGN.md) with a 169-token registry at
+`docs/design/tokens/frost.tokens.json` and its generated
+`docs/design/tokens/frost.css`, every token carrying the file, line, selector
+and property it came from.
+
+Take the values from there. Do not retype them by hand and do not invent a
+value that is missing — `docs/DESIGN.md` lists what the Frost artifacts do not
+cover, and a pressed/active touch state is one of them. If Task 11 needs
+something that is genuinely absent, stop and raise it rather than filling the
+gap.
+
+The shape below is the shape this package should have; the values in it are the
+superseded placeholders and are shown only so the contrast is obvious:
 
 ```ts
 /** Shared design tokens. Layout and components stay per-client (NFR-5). */
 export const tokens = {
   color: {
-    bg: '#faf9f7',
+    bg: '#faf9f7',      // SUPERSEDED — see docs/design/tokens/frost.tokens.json
     surface: '#ffffff',
     text: '#1a1a1a',
     muted: '#6b6b6b',
-    accent: '#1f6feb',
+    accent: '#1f6feb',  // SUPERSEDED — Frost's primary is spruce, not blue
     danger: '#b42318',
     border: '#e3e1de',
   },
   space: { xs: '4px', sm: '8px', md: '16px', lg: '24px', xl: '40px' },
-  radius: { sm: '6px', md: '10px' },
+  radius: { sm: '6px', md: '10px' },  // SUPERSEDED — Frost is flat 0/2px + pill
 } as const;
 ```
 
@@ -3691,4 +3708,4 @@ git commit -m "test: two-client acceptance coverage for phase 0"
 
 ## What Phase 0 deliberately does not build
 
-Orders, lines, menu, tables, discounts, tender, printing, business day, reporting. The money module exists but no calculation policy is wired, because the tax-inclusive versus "++" question is still open and belongs to Phase 2. The `CheckoutLease` belongs to Phase 4.
+Orders, lines, menu, tables, discounts, tender, printing, business day, reporting. The money module exists but no calculation policy is wired: the tax model was settled on 2026-09-10 as **nett** — tax-inclusive prices, untaxed service charge, the tax line derived from the total — and wiring that policy is Phase 2's work, not this phase's. Phase 0 builds only precision-independent primitives, which is why the settlement changes nothing here. The `CheckoutLease` belongs to Phase 4.
