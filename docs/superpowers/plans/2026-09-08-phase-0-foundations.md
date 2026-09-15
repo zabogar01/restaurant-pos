@@ -388,7 +388,7 @@ git commit -m "feat: monorepo scaffold, postgres, and migration runner"
 
 **Interfaces:**
 - Consumes: nothing. This package has no database or HTTP dependency.
-- Produces: `type Money = bigint`, `type Rate = bigint`, `RATE_SCALE: bigint`, `divHalfUp(n: bigint, d: bigint): bigint`, `mulRate(amount: Money, rate: Rate): Money`, `taxIncludedIn(amount: Money, rate: Rate): Money`, `encodeMoney(m: Money): string`, `decodeMoney(s: string): Money`, `formatMoney(m: Money, precision: number): string`, `rateFromPercent(percent: number): Rate`.
+- Produces: `type Money = bigint`, `type Rate = bigint`, `RATE_SCALE: bigint`, `divHalfUp(n: bigint, d: bigint): bigint`, `mulRate(amount: Money, rate: Rate): Money`, `taxIncludedIn(amount: Money, rate: Rate): Money`, `encodeMoney(m: Money): string`, `decodeMoney(s: string): Money`, `formatMoney(m: Money, precision: number): string`, `rateFromPercent(percent: string): Rate`. **Corrected 2026-09-14:** this read `percent: number`, which is the one signature in the module that `B-1` most obviously forbids — a rate is not money, but a float rate multiplied into money produces float money by a shorter route. Rates arrive as decimal strings.
 
 - [ ] **Step 1: Create the package manifest**
 
@@ -642,7 +642,11 @@ describe('the PRD worked example', () => {
     const tax = rateFromPercent(10);
     const service = rateFromPercent(5);
 
-    const subtotal = 1350n + 200n + 150n + 300n; // 1650
+    // Corrected 2026-09-14: as written this summed to 2000, not 1650, and the
+    // assertion below would have failed. 1350 is the burger's own price; the
+    // modifiers are part of it, not additions to it.
+    const burger = 1000n + 200n + 150n;
+    const subtotal = burger + 300n;
     expect(subtotal).toBe(1650n);
 
     const discount = mulRate(subtotal, rateFromPercent(10));
@@ -719,13 +723,14 @@ export type Rate = bigint;
 
 export const RATE_SCALE = 1_000_000n;
 
-export function rateFromPercent(percent: number): Rate {
-  const scaled = percent * 10_000;
-  if (!Number.isInteger(Math.round(scaled * 1e6) / 1e6) || Math.abs(scaled - Math.round(scaled)) > 1e-9) {
-    throw new Error('rate precision is limited to one part per million');
-  }
-  if (percent < 0) throw new Error('rate must not be negative');
-  return BigInt(Math.round(scaled));
+// Corrected 2026-09-14. The original took `percent: number` and reached the
+// rate through float arithmetic and `Math.round`, then guarded the result with
+// epsilon comparisons — a float path guarded by more float. Percentages arrive
+// as decimal strings and are parsed exactly. See packages/money/src for the
+// implementation that shipped.
+export function rateFromPercent(percent: string): Rate {
+  // parse a decimal string exactly to one part per million; reject anything
+  // finer, anything negative, and anything that is not a decimal number.
 }
 
 /** amount x rate, rounded half-up once. */
@@ -3668,18 +3673,26 @@ Expected: PASS, all five tests.
 
 - [ ] **Step 7: Add a top-level verification script**
 
-In the root `package.json`, replace the `scripts` block:
+In the root `package.json`, **extend** the `scripts` block — do not replace it.
+Task 1 shipped `typecheck` and a `verify` that runs it, and a literal
+replacement here would delete `typecheck` from the verification chain and drop
+`test` entirely. The scripts that must exist afterwards:
 
 ```json
   "scripts": {
-    "db:up": "docker compose up -d",
+    "db:up": "docker compose up -d --wait",
     "db:migrate": "npm run migrate -w apps/server",
     "build:clients": "npm run build -w apps/pos && npm run build -w apps/back-office",
+    "typecheck": "tsc -p apps/server --noEmit",
     "test:unit": "vitest run",
     "test:e2e": "npm test -w e2e",
-    "verify": "npm run test:unit && npm run build:clients && npm run test:e2e"
+    "verify": "npm run typecheck && npm run test:unit && npm run build:clients && npm run test:e2e"
   },
 ```
+
+`db:up` waits on the healthcheck. Without `--wait`, `npm run db:up && npm run
+db:migrate` races the container's start and fails intermittently — found in
+Task 1, not predicted.
 
 - [ ] **Step 8: Run the full verification**
 

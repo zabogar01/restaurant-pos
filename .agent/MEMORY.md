@@ -3,8 +3,8 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-14, from repository evidence at commit `c5a2807` plus the
-uncommitted working tree and the live Herdr roster.
+Last updated: 2026-09-14, from repository evidence at `ad186db` on
+`agent/phase-0-foundations` and the live Herdr roster.
 
 The 2026-09-10 revision of this file was written at 11:50 and went stale the
 same afternoon: DESIGN-002 ran two further passes, and an entire visual
@@ -29,20 +29,100 @@ and the Frost design system. A fresh clone has all of it. Nothing is merged to
 
 ---
 
+## START HERE — resume point, 2026-09-15
+
+Every agent from the 2026-09-14 session was shut down deliberately to free
+memory. **Nothing was lost:** both working trees were clean and every handoff
+is committed in `.agent/tasks/`. An agent's scrollback was never the record;
+the task files are.
+
+**Two branches, neither merged. Only the owner merges.**
+
+| Branch | Where | Holds |
+|---|---|---|
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen. Head `da314a5` |
+| `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
+
+The design branch is **behind** the code branch on `.agent/` files, because the
+lead writes memory on whichever branch it is standing on. Expect a conflict
+there when the owner merges, and resolve it in favour of the newer file rather
+than by hand-merging prose.
+
+**What is done:** the implementation gate is open and all five conditions are
+in git history. Phase 0 tasks 1 and 2 (scaffold, money) are done and
+lead-verified. FE-001 (POS bundle, Frost tokens, lock screen) is done and
+**the owner approved it**. A7 is done — the three states Frost lacked, reviewed
+and remediated over three passes.
+
+**What is next, in order:**
+
+1. **A9 — apply the three A7 states to `apps/pos`.** Small. The pressed ring,
+   the invalid field, and the 13px round tag exist in
+   `frost-states.css` on the design branch and must reach
+   `packages/tokens` and the POS. Note the hover rule: **every hover must be
+   scoped to `@media (hover: hover)`**, or a synthesised touch hover will leave
+   a tile looking selected.
+2. **F2 — the POS order workspace.** Unblocked. The densest screen: menu grid,
+   running order, the three line signatures, 86'd tiles disabled in place.
+
+**How this session works** — the owner's two standing instructions:
+
+- **Frontend first.** Backend tasks 3–12 are paused until the owner has seen
+  enough of the frontend. The Phase 0 plan is suspended, not discarded.
+- **One reviewable slice per task, owner reviews between.** Every handoff names
+  the command and URL that shows the work. An agent that starts a second screen
+  has ended its task.
+
+**To see the work:** `npm run dev -w apps/pos` → `http://127.0.0.1:5173/pos/`
+for the app; for the design fixtures, serve
+`../restaurant-pos-design/docs/design/visual-directions/` and open
+`index.html`.
+
+**Waiting on the owner, none of it blocking:** the dark palette; `FR-M3`'s
+"half-up" wording, where the code rounds half away from zero so a refund is the
+exact negation of its sale; ruling I-8; the restaurant time zone; receipt
+content; the permitted rate range.
+
+**Two lessons this project paid for:**
+
+- **`git log` is the check, not the handoff.** One agent reported committing
+  work that was never committed; another reported `done` having never read its
+  assignment. Both looked identical to success from the outside.
+- **Never `git add -A` while an implementer is live.** The lead swept a
+  mid-mutation-run working tree into a docs commit. It happened to be clean.
+
+---
+
 ## Current phase
 
-**Pre-implementation.** No application code exists in this repository. There
-is no `package.json`, no source tree, and no test suite.
+**Phase 0, started 2026-09-14. Task 1 of twelve is done and verified; Task 2 is
+running.** The implementation gate opened the same day with every condition met
+and in git history.
 
-Work completed so far is product definition, a reconciled and owner-approved
-architecture proposal, UX structure, a remediated behavioral wireframe, two
-proposed light visual directions, and one implementation plan. Two tracks ran
-in parallel: visual direction (`DESIGN-001`, `DESIGN-002`) and architecture
-approval. Both now wait on the owner rather than on an agent.
+**The repository has code now.** `package.json`, npm workspaces,
+`tsconfig.base.json`, `docker-compose.yml` running PostgreSQL 16 on
+`127.0.0.1:5433`, `apps/server/src/db/{pool,migrate}.ts`, one migration, and
+seven passing tests. Run order: `npm run db:up` → `npm run db:migrate` →
+`npm run verify`.
 
-Implementation has not started and is gated — see [ROADMAP.md](ROADMAP.md). One
-gate condition is open (Phase 0 execution mode) and one is half done (the
-architecture is approved but not converted).
+**The lead ran `npm run verify` rather than believing the handoff:** 7 tests
+passed in `apps/server/test/migrate.test.ts`, typecheck clean. `builder1` had
+also verified from a fresh clone into a path containing a space, which is how
+it found the next item.
+
+**Branch: `agent/phase-0-foundations`**, cut 2026-09-14 from
+`agent/design-direction` at `92359a2`. Implementation work goes there.
+`agent/design-direction` holds everything up to and including the design
+system; neither is merged, and only the owner merges.
+
+Everything before this: the product contract, a standing architecture with
+seven accepted ADRs, confirmed UX structure, a remediated behavioral wireframe,
+two light visual directions with Frost chosen, a design system stating Frost as
+169 sourced tokens, and twelve planned Phase 0 tasks.
+
+The gate in [ROADMAP.md](ROADMAP.md) is **open** — all five conditions met and
+all five in git history. What remains open are product decisions, not gate
+conditions, and each names the phase it must be settled before.
 
 ---
 
@@ -313,8 +393,11 @@ Roster verified against `herdr agent list` on 2026-09-14.
 |---|---|---|---|---|
 | `lead` | claude | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-14 and named it |
 | `architect` | codex | `w2:p2` | live, idle | Delivered the reconciliation 2026-09-10 after 36 minutes. Owns architecture questions |
-| `designer` | claude, **Fable 5.1** | `w2:p3` | live, working | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
-| `design-reviewer` | codex | `w2:p9` | live, idle | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
+| `designer` | claude, **Opus 5** | `w2:p3` | live, working **in the design worktree** at `../restaurant-pos-design`. Holds [DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
+| `design-reviewer` | codex | `w2:p9` | live, working | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
+| `builder1` | claude | `w2:pB` | live, idle | First implementer. **Delivered [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md)** and a handoff worth reading — it found three defects in the plan itself |
+| `builder2` | claude | `w2:pC` | live, idle | **Delivered [PHASE0-002](tasks/PHASE0-002-money-module.md)**, 81 tests. Backend is paused behind it |
+| `builder3` | claude | `w2:pD` | live, idle | First frontend implementer. **Delivered [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md)** — POS bundle, Frost tokens, lock screen, 8 states |
 | `designer2` | codex, gpt-6-astra | `w2:pA` | live, idle, **out of quota** | Started 2026-09-14 and equipped with the Impeccable skill. Delivered the token set, then stopped before `docs/DESIGN.md`. DESIGN-003 was reassigned off it the same day; kept alive because its scrollback is the only record of how the tokens were extracted |
 
 **Both codex agents share one account quota and both exhausted it at 15:11 on
@@ -338,6 +421,335 @@ the proposal document itself, and the architect's account of it exists only in
 its pane scrollback — which is why the material parts of it are copied into
 this file. The same is true of the visual direction build: `REVIEW.md` and the
 brief are its only durable record, and neither is a task file.
+
+---
+
+## A7 is done — the three missing states exist, reviewed and demonstrated
+
+[DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) closed 2026-09-14
+after three passes and one review, on `agent/design-direction` in the design
+worktree. **This was the one design task that required invention**, and the
+condition was that invented values be marked as designed rather than disguised
+as sourced.
+
+**What exists now:** 172 tokens, of which **four are designed** and carry
+`source: null` — explicit, not missing — plus a `designed` block naming the
+task, date, the rule in `frost-states.css`, the fixture states that show it,
+and why. A check asserts every token has exactly one provenance shape.
+`visual.css` and `structure.css` are still byte-identical to what
+`design-reviewer` reviewed, which is why all 168 sourced line numbers still
+point where they did. The new rules live in a separate sheet for exactly that
+reason — a sharper instinct than the task asked for.
+
+- **`--frost-pressed-ring: inset 0 0 0 2px currentColor`.** The rule is
+  *selection fills; pressing strokes*. `currentColor` means one rule reads on
+  every ground — ink on cream keys and white tiles, white on spruce, brick on
+  the outlined destructive — with **zero new colour values**. Inset, so it
+  never collides with the outer focus ring, never overlaps a neighbour in a
+  zero-gap stack, and moves no layout. On an order line it rings the tap target
+  only and stops short of the trailing slot: `I-12` made visible.
+- **`--frost-invalid` (#83611c)** — the warning hex under its own name, so an
+  implementation never writes "warning" on a form field and the two can diverge
+  later. Plus `--frost-invalid-border` and `--frost-round-tag-size: 13px`, which
+  closes `design-reviewer` finding 6.
+
+### What the review caught, and why it mattered
+
+The first pass looked right in a screenshot and was wrong on a touch device.
+`visual.css:77` applies the ink selected fill on `a.tile:hover`, and touch
+browsers synthesise and hold `:hover` after a tap — so once the ring went, the
+tile was left looking selected, **the exact confusion the state was designed to
+prevent**. The designer had seen it and written a *comment* saying an
+implementation should gate hover. A comment fixes nothing and hands the bug to
+whoever writes the code. It is now a real `(hover: none), (pointer: coarse)`
+block of thirteen rules. Second of the same shape: `--frost-invalid` existed as
+a name while both rules consumed `var(--warning)`, so the separation was
+documentation rather than fact.
+
+**The proof methods are the standard to hold others to.** It cloned the
+media-block rules into the live page to prove the cascade actually wins, and
+set `--warning` to magenta at runtime to prove the invalid token is genuinely
+independent. Claims checked by construction, not by assertion.
+
+### A ruling worth remembering how it was reached
+
+The designer specified a 40px invalid field, could not demonstrate it in any
+reviewed state, **invented a BO-03 state to show it, then reverted it and
+asked.** That is the behaviour to want when a constraint and a need collide.
+Granted: BO-03 now has *category-invalid* — Create tapped with an empty name,
+the field invalid with "Enter a name", Create disabled until a name is entered,
+nothing written. It adds a **state to an existing screen, not a node**, so the
+count stands at **7 POS / 13 back office / 6 modals** and DESIGN-002's
+precedent covers it.
+
+**Lead-verified on the branch, not from the handoff:** 172 tokens with four
+designed and none ambiguous, CSS matching the registry exactly, no token named
+in `docs/DESIGN.md` that is absent from it, the frontmatter's all-sourced claim
+gone, `menu.html` byte-identical to its pre-A7 bytes before the ruled state was
+added back deliberately, and the reviewed stylesheets untouched.
+
+**F2 is unblocked.** The order workspace is the screen where a tap often
+changes nothing near the finger, which is why it waited for this.
+
+---
+
+## FE-001 landed — the first screen exists, and it is the owner's to judge
+
+`apps/pos` builds and runs. The POS lock screen is real code at 1280×800 on the
+Frost tokens, with eight fixture states. **Lead-verified: 114 tests across 8
+files pass, typecheck clean over server, money and POS.** The lead also opened
+it in a browser and looked at it.
+
+**To see it:** `npm run dev -w apps/pos` from the repository root, then
+`http://127.0.0.1:5173/pos/`. States hang off `?state=` — `loading`, `error`,
+`permission-denied`, `throttled`, `invalidated`, `draft`, `incident`. The port
+is strict, so it fails loudly rather than moving.
+
+**Nothing behind it is real.** The PIN is compared against nothing.
+
+Three things worth keeping:
+
+- **`packages/tokens` declares no values of its own.** It is a one-line
+  `@import` of `docs/design/tokens/frost.css`, and a test fails if it ever
+  declares anything. That is the anti-drift mechanism working as intended: the
+  registry stays the single source, and a client cannot fork it by accident.
+- **`builder3` wrote tests that enforce the rules rather than trusting them.**
+  `no-invented-values.test.ts` fails on any literal colour, length, font size
+  or weight in `src/`, and on any `var(--frost-*)` absent from the registry.
+  `console-free.test.ts` fails on any `console.`, storage, cookie, `fetch`,
+  XHR or beacon. `B-12` is checked four ways, the sharpest being that entering
+  `123456` and `987650` produce **byte-identical `innerHTML`**.
+- **The 88px keys were measured in the rendered page, not read off the CSS** —
+  twelve keys at exactly 88×88, and the same measurement run against the
+  reviewed Frost artifact returns the same geometry.
+
+**`A7` — no pressed state was used, and the reasoning is worth carrying.**
+`builder3` did not reach for a provisional treatment, because on *this* screen
+every key already changes something visible: a digit fills a dot, delete empties
+one, Continue empties all. The gap does not bite here. **It will bite on the
+order and tender screens**, where a tap often changes nothing nearby, so `A7`
+should be settled before F2.
+
+Deviations from the plan, each with a reason: Vite 8 and `@vitejs/plugin-react`
+6 (vitest 4 already installs Vite 8; Vite 5 would put two Vites in one tree),
+jsdom 29 at the root (30's engines field excludes this machine's Node 25, and
+vitest resolves the environment from its own location), and the build output
+left in `apps/pos/dist` rather than the plan's `apps/server/public/pos`,
+because this task was not allowed to touch the server.
+
+---
+
+## Phase 0 Task 2 landed, and what came out of it
+
+`packages/money` is on disk and lead-verified: **81 tests across 5 files, all
+passing**, typecheck clean over both `apps/server` and `packages/money`. The
+lead ran `npm run verify` rather than reading the claim.
+
+**Two defects in the plan, found by building it.** Both now corrected in the
+plan with a dated note saying what they were:
+- The PRD worked example summed to **2000, not 1650**, so the plan's own
+  assertion would have failed. The modifiers are part of the burger's price,
+  not additions to it.
+- `rateFromPercent(percent: number)` — a float path guarded by more float, and
+  the one signature in the module `B-1` most obviously forbids. A rate is not
+  money, but a float rate multiplied into money produces float money by a
+  shorter route. It is `percent: string`, parsed exactly.
+
+**A mistake of the lead's, caught by the implementer.** `git add -A` while
+`builder2` was mid-task swept its working tree into a docs commit (`261129d`).
+`builder2` checked and the files were byte-identical to what it had verified,
+so nothing broke — but it was mid *mutation run*, and a deliberately broken
+file could have been committed as real work. **Path-scoped `git add` from now
+on while any implementer is live.**
+
+### Rulings owed on what Task 2 raised
+
+- **`Money` and `Rate` are the same type**, so `mulRate(rate, amount)` compiles
+  with its arguments swapped. **Lead's ruling: brand `Rate`, leave `Money` as
+  `bigint`.** A `Rate` is only ever produced by `rateFromPercent`, so branding
+  it costs nothing at the call sites, while branding `Money` would force a
+  constructor around every literal. It prevents the swap, which is the actual
+  bug. **Not applied yet** — backend is paused, and this is a twenty-line change
+  that is cheap now and expensive after ten tasks import the type. It runs when
+  the backend resumes, before Task 3.
+- **`FR-M3` and `B-2` say "half-up" and never say what that means below zero.**
+  The code rounds **half away from zero**, so −74.5 → −75, which keeps a refund
+  the exact negation of its sale; floor-style half-up would give −74 and a
+  refund one rupiah short. This is **contract wording and therefore the
+  owner's**. `builder2` proposed: *"Computed fractions round half away from zero
+  (0.5 → 1, −0.5 → −1) at the point of becoming a stored or displayed value."*
+  Nothing was edited.
+
+### Model limits have now interrupted three agents in one day
+
+Worth knowing before planning around any particular model:
+
+- **Both codex agents** (`architect`, `designer2`) hit a shared **account**
+  limit at 15:11, a minute apart, because they were running hard jobs in
+  parallel on one account. `architect` had finished and lost only its closing
+  report; `designer2` was cut off mid-task.
+- **Fable 5.1 hit a monthly spend limit** at ~16:15 and **never processed the
+  A7 prompt at all** — zero work, no partial state. `designer` was restarted on
+  Opus 5 in the same pane, so the owner's Fable preference is overridden by
+  availability, not by choice.
+
+The practical lesson: a long prompt is cheap to re-send, but only if you check
+that the agent actually did something. `agent_status: done` means the pane went
+idle, not that work happened. `git log` is the check.
+
+### A trap the frontend must not walk into
+
+`formatMoney` renders `15590`, not `Rp 15.590` — grouping and the symbol are
+the frontend's. `builder2` checked on this machine that
+`Intl.NumberFormat('id-ID', …)` formats a **bigint exactly**, while wrapping it
+in `Number(...)` first silently loses precision
+(`9.007.199.254.740.993` becomes `…992`). **Any display helper passes the
+bigint straight in and never calls `Number()` on money.** That is a `B-1`
+violation waiting for a UI agent, and it goes into every frontend task file
+from F2 onward — F1 has no money on it.
+
+---
+
+## Sequencing: frontend first, and smaller tasks — owner, 2026-09-14
+
+Two instructions, both worth keeping in front of whoever reads this next.
+
+**1. Frontend first.** The Phase 0 plan is backend-first — ten server tasks,
+then the clients — and the lead followed it without ever asking whether that
+order suited the owner. It did not. The frontend is built against fixtures,
+the owner reviews it, and the backend follows once they say it is good. The
+plan is suspended, not discarded: its twelve tasks, paths and tests remain the
+specification for the server work when it resumes.
+
+Backend Task 2 (`packages/money`) was allowed to finish rather than be
+interrupted, because `B-1` governs money on a screen exactly as it governs
+money in a column, and the frontend would otherwise render IDR through a
+throwaway helper it would have to unpick later.
+
+**2. Smaller tasks, reviewed between.** One reviewable slice per session. The
+owner's reason is concrete and worth quoting rather than paraphrasing: a task
+has a high risk of running out of context mid-way, and they would rather review
+each piece themselves before the next begins. A task that exhausts its budget
+halfway leaves a half-built screen and a handoff nobody can trust.
+
+What that changes when writing a task file: one screen, not a client. Every
+handoff names the command and the URL the owner opens. An agent that starts a
+second screen has ended its task and says so.
+
+First slice is [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — the POS
+bundle, the Frost tokens wired in, and the lock screen at 1280×800. Deliberately
+the smallest thing that proves the whole chain: build, tokens, touch geometry
+at real sizes. If the design system does not survive contact with real code,
+one screen is the cheapest place to learn it.
+
+---
+
+## Phase 0 rulings and open engineering questions
+
+Made by the lead on 2026-09-14 from `builder1`'s Task 1 findings. The first
+three are applied in [PHASE0-002](tasks/PHASE0-002-money-module.md); the last
+two must be settled before Task 3 writes a second database test file.
+
+**Ruled:**
+
+- **vitest goes to 4**, superseding the plan's `^2.1.0`. Five advisories sit in
+  the vitest 2 dev-server and UI chain, one critical and one high. None is
+  reachable the way this repository runs tests and none ships — but one test
+  file exists today and eleven tasks' worth exist later, so the upgrade is
+  cheap now and an argument in three weeks.
+- **`"engines": { "node": ">=22" }`.** `docs/ARCHITECTURE.md` calls for Node
+  LTS; this machine runs 25.2.1, which is not LTS, and everything passes on it.
+  The field makes the expectation explicit rather than implied. Revisit at the
+  pre-production gate.
+- **`B-1` is enforced at the type level and proven by `@ts-expect-error`
+  tests** that run under `npm run typecheck`. A rule nothing checks is a rule
+  an agent in a hurry will break, and "no `number` for money" is precisely the
+  kind of rule that erodes quietly.
+
+**Open, and blocking Task 3:**
+
+- **Parallel test files race on one database.** `builder1` demonstrated this
+  rather than predicting it: a second test file with Task 3's `beforeAll` shape
+  broke five runs out of five, once as `14 failed | 13 passed`. Both files run
+  `DROP SCHEMA public CASCADE`, and vitest runs files in parallel. Candidates
+  are `fileParallelism: false` for server tests or a database per worker.
+  **Leaning to `fileParallelism: false`** — deterministic, and Phase 0 is too
+  small for the complexity of per-worker databases — but it is not written into
+  a task file yet, so it is not settled.
+- **The pool's default role is a superuser.** `pool.ts` defaults to
+  `pos_owner`, which is `POSTGRES_USER` and has `rolsuper = t`. Superusers
+  bypass grants, so a `B-7` append-only test that goes through `query()` would
+  pass while proving nothing. **Task 3's grant test must connect as `pos_app`.**
+  This one is not a preference; a test that cannot fail is worse than no test.
+
+Also fixed in the plan: Task 12 Step 7 said to *replace* the root `scripts`
+block, which done literally would have deleted `typecheck` from `verify`. It
+now says extend, and `db:up` carries `--wait` so migration does not race the
+container's start.
+
+---
+
+## The Frost conversion was reviewed, and it did not come back clean
+
+`design-reviewer` returned **ten findings on 2026-09-14, one critical**, all
+recorded with the lead's rulings in
+[DESIGN-004](tasks/DESIGN-004-frost-review-remediation.md) and assigned to
+`designer`. Two were confirmed by the lead before the task was written:
+
+1. **CRITICAL — the rejected-close state offers a live close on a stale
+   balance.** `error` means the close was rejected *because the order changed
+   while payment was being collected*, and the screen says so — while rendering
+   balance `0`, tagging the draft `FULLY ALLOCATED`, and exposing a live
+   **Close order & print receipt**. `B-18` closes an order only on exact
+   settlement. **This is in the wireframe as well as in Frost**, and it came in
+   through DESIGN-002 pass 1, which set the balance to 0.00 in four states —
+   right for three of them, wrong for `error`, the one state where the total
+   may have moved.
+2. **HIGH — the tender pads are still typed `[SHEET]`** in `SITEMAP.md` and
+   `SCREEN-INVENTORY.md`'s `M-4`, while `docs/DESIGN.md` now says persistent
+   panel. The owner ruled the panel on 2026-09-10; this file recorded the
+   retyping as *in progress* and it was never done. Four days later the design
+   system asserted one side of it and the repository began contradicting itself
+   in three places. **A ruling recorded in the present progressive is a ruling
+   that does not land.**
+
+The remaining eight ranged from a completeness claim stronger than the artifact,
+through a `B-16` verdict that was never earned, to a 10px tag that is the only
+thing telling a cashier a row is PIN-gated.
+
+**Remediated 2026-09-14, committed as `ca0a4db` on `agent/design-direction`.**
+Nine fixed, one raised. The lead verified the two confirmed findings rather
+than accepting the report: `error` is out of the live close's `data-when` in
+both the wireframe and the Frost fixture, no `[SHEET]`-typed tender pad
+survives in any of the three documents, and the derived changed-order figures
+reproduce the fixture's own arithmetic under the nett model — tax on the net,
+not on the service charge, `184.500 ÷ 11 = 16.773`.
+
+Two things came out of it that outlive the task:
+
+- **The `error` state differed from its three siblings for a reason its own
+  copy stated.** DESIGN-002 pass 1 corrected four states to a zero balance
+  because they looked alike; three were right. When a fix applies to several
+  states at once, the one that does not fit is the one to look at hardest.
+- **`designer`'s handoff said it had committed. It had not** — the worktree was
+  dirty and the branch unmoved. The lead found it by running `git log`, not by
+  reading the sentence. The rule in CLAUDE.md is about tests, and it generalises
+  to anything an agent reports as done.
+
+**Still needs a ruling — finding 6.** On a fired order line the trailing slot
+is deliberately empty (`I-12`), so a **10px** `MANAGER TO VOID` tag on the round
+header is the only visible statement that the row opens the PIN-gated path —
+while `docs/DESIGN.md` says nothing a cashier must act on sits below 13px, and
+hover cannot rescue anything on a touch screen. No sourced value fixes it:
+Frost contains no 13px tag, and moving the statement into the row is a new
+composition. `designer` correctly invented nothing. The least-inventing
+candidate is the tag at `--frost-text-13`, an existing size in a new place,
+which makes it an `A7` item that goes through review rather than a typo to
+correct.
+
+**Work happens in a git worktree** at `../restaurant-pos-design` on
+`agent/design-direction`, so design fixes and implementation do not fight over
+one checkout.
 
 ---
 

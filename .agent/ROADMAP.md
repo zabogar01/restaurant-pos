@@ -28,8 +28,10 @@ decisions, neither of which holds up Phase 0.
 | A3 | [DESIGN-001](tasks/DESIGN-001-external-visual-direction.md) — visual direction | **Delivered and chosen. FROST, 2026-09-14.** Two light directions were built in-repo from the owner's reference; Paper is rejected and left untouched | Owner |
 | A4 | [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) — convert Frost into `docs/DESIGN.md` and a token set | **Done** 2026-09-14. `docs/DESIGN.md` plus a 169-token registry, every token carrying file, line, selector and property. Lead-verified: 169/169/169 three-way, 12 random provenance claims checked, all passed | `designer2` then `designer` |
 | A5 | Decide whether a dark palette ships | Not started. Light only was delivered, deliberately | Owner |
-| A6 | Review the Frost conversion | **Next.** A4 has landed and is lead-verified for completeness and provenance; it has not been reviewed for design judgement. The codex quota window has reset | `design-reviewer` |
-| A7 | Style the three absences Phase 0 hits — pressed/active touch state, field error state, login form controls | Not started. Deliberately absent from Frost; goes to a designer and through review, never invented into `packages/tokens` | `designer` |
+| A6 | Review the Frost conversion | **In flight**, started 2026-09-14. Lead-verified for completeness and provenance; this pass is for design judgement — sourced-but-wrong values, resolutions that promote a fixture accident to a rule, declared absences that are not actually absent | `design-reviewer` |
+| A7 | [DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) — pressed/active touch state, field invalid state, the fired row's gated-path tag | **Done** 2026-09-14, three passes. Four designed tokens, `source: null` plus a `designed` block; reviewed stylesheets untouched | `designer` |
+| A8 | Review DESIGN-005 | **Done** 2026-09-14. Eight findings, one high — a press still collapsed into a selection on touch. All fixed or answered | `design-reviewer` |
+| A9 | Apply the three states to `apps/pos` | Not started. Small frontend task | unassigned |
 
 A3's deliverable is real and reviewed: open
 [docs/design/visual-directions/index.html](../docs/design/visual-directions/index.html)
@@ -119,6 +121,59 @@ Small, none of it blocking, all of it recorded so it does not get lost.
 | ~~Fix the Phase 0 plan's stale paragraphs~~ | **Done** 2026-09-14: both tax-model paragraphs corrected, and the token package's invented placeholder palette now points at the Frost registry instead of contradicting it |
 | Propose PRD §9 time-zone wording | The PRD never names a restaurant time zone; receipt and business-day timestamps both need one. Contract document, so the owner approves the wording |
 | Settle ruling I-8 | Back-office kitchen-ticket reprint is granted by `FR-E3` and unaudited by `FR-J3`. Drawn as the requirements read. Needs a ruling, not a workaround |
+
+---
+
+## Sequencing changed 2026-09-14 — frontend first
+
+**Owner's instruction.** The Phase 0 plan is written backend-first: ten server
+tasks, then the two client shells. That order is **suspended**. The frontend is
+built first, against fixtures, styled from Frost; the owner reviews it; the
+backend follows once they say it is good.
+
+The plan is not discarded — its twelve tasks, their file paths and their tests
+stay the specification for the server work when it resumes. What changed is
+when they run.
+
+**And tasks get smaller.** One reviewable slice per session, with the owner
+reviewing between them. The reason is concrete: a task that exhausts its
+context halfway leaves a half-built screen and a handoff nobody can trust.
+A task that feels like it needs two sessions is two tasks.
+
+| Rule | What it means when writing the next task file |
+|---|---|
+| One screen, or one slice of one screen | Not "the POS client" |
+| Reviewable by a person in a browser | The handoff names the command and the URL |
+| Stop at the edge | An agent that starts a second screen has ended its task and should say so |
+
+## Frontend queue
+
+| # | Task | State | Owner |
+|---|---|---|---|
+| F1 | [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens wired, lock/PIN screen at 1280×800 | **In flight**, started 2026-09-14 | `builder3` |
+| F1 review | Owner opened FE-001 and approved it, 2026-09-14 | **Done.** "Screen's fine" | Owner |
+| F2 | POS order workspace — the densest screen: menu grid, running order, three line signatures, 86'd tiles | **Unblocked** 2026-09-14: A7 and A8 are done, so the pressed state exists before the screen that needs it | unassigned |
+| F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 is fixing | Not started | unassigned |
+| F4 | The remaining POS screens, then the back office | Not started | unassigned |
+
+F1 is deliberately the smallest thing that proves the chain end to end: Vite
+build, token import, touch geometry at real sizes. If the design system does
+not survive contact with real code, that is cheaper to learn on one screen.
+
+## Phase 0 backend, paused after Task 2
+
+Branch **`agent/phase-0-foundations`**, cut 2026-09-14 from
+`agent/design-direction` at `92359a2`.
+
+| # | Task | State | Owner |
+|---|---|---|---|
+| 1 | Monorepo scaffold, PostgreSQL, migration runner — [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md) | **Done** 2026-09-14, lead-verified. 7 tests, typecheck clean | `builder1` |
+| 2 | Money module — [PHASE0-002](tasks/PHASE0-002-money-module.md) | **In flight.** Allowed to finish: it is a shared package the frontend needs, since `B-1` governs money on screen as much as in the database | `builder2` |
+| 3–12 | Schema and grants, PIN, audit, throttling, sessions, HTTPS server, auth routes, approval, client shells, acceptance tests | **Paused** until the owner has reviewed the frontend | unassigned |
+
+Task files are written by the lead one at a time rather than all twelve up
+front: each task's constraints depend on what the previous one actually built,
+and a task file written against an imagined scaffold is worse than none.
 
 ---
 
