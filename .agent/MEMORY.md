@@ -3,8 +3,17 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-14, from repository evidence at `ad186db` on
-`agent/phase-0-foundations` and the live Herdr roster.
+Last updated: 2026-09-16, from repository evidence on
+`agent/phase-0-foundations` and the live Herdr roster. That edit recorded A9
+(FE-002) as done and lead-verified, and ruled the order-line ring offset that
+F2 will hit. The preceding 2026-09-15 edit corrected the branch head and an
+Active agents table that listed seven agents that no longer existed.
+
+**Uncommitted as of 2026-09-16:** A9's work sits in the working tree — the
+172-token registry, `frost-states.css`, `pos.css`, the hover test, FE-002 — plus
+this file and `.agent/ROADMAP.md`. Nothing has been committed since `d3c0aa1`,
+because the owner has not been asked yet. **Until it is committed, a fresh
+clone does not have A9.**
 
 The 2026-09-10 revision of this file was written at 11:50 and went stale the
 same afternoon: DESIGN-002 ran two further passes, and an entire visual
@@ -40,7 +49,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen. Head `da314a5` |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen. Head `d3c0aa1` |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -56,14 +65,42 @@ and remediated over three passes.
 
 **What is next, in order:**
 
-1. **A9 — apply the three A7 states to `apps/pos`.** Small. The pressed ring,
-   the invalid field, and the 13px round tag exist in
-   `frost-states.css` on the design branch and must reach
-   `packages/tokens` and the POS. Note the hover rule: **every hover must be
-   scoped to `@media (hover: hover)`**, or a synthesised touch hover will leave
-   a tile looking selected.
-2. **F2 — the POS order workspace.** Unblocked. The densest screen: menu grid,
-   running order, the three line signatures, 86'd tiles disabled in place.
+1. **A9 — [FE-002](tasks/FE-002-apply-a7-states.md). DONE 2026-09-16,
+   lead-verified.** Full account under *A9 landed* below. Written after checking
+   what `apps/pos` actually contains, which changed the task: **only the pressed
+   ring had a control to land on.**
+   The lock screen has twelve keys, Continue and the emergency action — and no
+   text field and no round-group heading, so the invalid state and the 13px tag
+   have no surface and are deferred to F3 and F2 rather than given an invented
+   home. A7's own precedent: its designer needed a state to demonstrate the
+   invalid field, invented one, **then reverted it and asked.**
+
+   Three things the lead found while writing it, none of them in the roadmap
+   line:
+
+   - **The code branch's registry is the 169-token pre-A7 version.** The four
+     A7 tokens live only on `agent/design-direction`. This branch has never
+     modified `docs/design/tokens/`, so `git checkout agent/design-direction --`
+     on three paths is clean and loses nothing. Only those three paths cross;
+     `docs/DESIGN.md` and the rest are the owner's merge.
+   - **The pressed ring collides with the focus ring**, and only in the
+     rendering, not the geometry. `pos.css` sets `box-shadow` for
+     `:focus-visible`; `box-shadow` is one property, so a naive `:active` rule
+     erases the focus ring at the moment of the press. Both must go in one
+     declaration.
+   - **`pos.css` has no `:hover` rule at all today**, so the hover scoping has
+     nothing to scope — which is exactly why FE-002 makes it a *test* rather
+     than a rule. A8 caught A7's designer writing a comment saying an
+     implementation should gate hover; a comment fixes nothing and hands the
+     bug to whoever writes the code. F2 builds the menu grid, which is where it
+     bites.
+2. **F2 — the POS order workspace.** Next, and now genuinely equipped rather
+   than merely unblocked: the pressed ring, the 172-token registry and the hover
+   test are all on the code branch. The densest screen: menu grid, running
+   order, the three line signatures, 86'd tiles disabled in place.
+
+   **The order-line ring offset is ruled** — see *A9 landed* below. F2's task
+   file must carry the ruling and the test it requires.
 
 **How this session works** — the owner's two standing instructions:
 
@@ -95,9 +132,11 @@ content; the permitted rate range.
 
 ## Current phase
 
-**Phase 0, started 2026-09-14. Task 1 of twelve is done and verified; Task 2 is
-running.** The implementation gate opened the same day with every condition met
-and in git history.
+**Phase 0, started 2026-09-14. Backend tasks 1 and 2 of twelve are done and
+lead-verified; tasks 3–12 are paused behind the owner's frontend-first
+instruction.** The frontend track has delivered FE-001 (lock screen, owner
+approved) and FE-002 (A9). The implementation gate opened 2026-09-14 with every
+condition met and in git history.
 
 **The repository has code now.** `package.json`, npm workspaces,
 `tsconfig.base.json`, `docker-compose.yml` running PostgreSQL 16 on
@@ -387,34 +426,40 @@ Coordinated through Herdr in workspace `w2`. Herdr routes messages between
 panes; it stores nothing durable. Anything that must survive the session
 belongs in this file.
 
-Roster verified against `herdr agent list` on 2026-09-14.
+Roster verified against `herdr agent list` on 2026-09-15.
+
+**One agent is live. The eight-agent roster this section carried is gone.**
 
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
-| `lead` | claude | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-14 and named it |
-| `architect` | codex | `w2:p2` | live, idle | Delivered the reconciliation 2026-09-10 after 36 minutes. Owns architecture questions |
-| `designer` | claude, **Opus 5** | `w2:p3` | live, working **in the design worktree** at `../restaurant-pos-design`. Holds [DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
-| `design-reviewer` | codex | `w2:p9` | live, working | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
-| `builder1` | claude | `w2:pB` | live, idle | First implementer. **Delivered [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md)** and a handoff worth reading — it found three defects in the plan itself |
-| `builder2` | claude | `w2:pC` | live, idle | **Delivered [PHASE0-002](tasks/PHASE0-002-money-module.md)**, 81 tests. Backend is paused behind it |
-| `builder3` | claude | `w2:pD` | live, idle | First frontend implementer. **Delivered [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md)** — POS bundle, Frost tokens, lock screen, 8 states |
-| `designer2` | codex, gpt-6-astra | `w2:pA` | live, idle, **out of quota** | Started 2026-09-14 and equipped with the Impeccable skill. Delivered the token set, then stopped before `docs/DESIGN.md`. DESIGN-003 was reassigned off it the same day; kept alive because its scrollback is the only record of how the tokens were extracted |
+| `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-15 and renamed it `lead` |
+| `builder4` | claude | `w2:pF` | live, idle | **Delivered [FE-002](tasks/FE-002-apply-a7-states.md)** (roadmap A9), lead-verified. Took a baseline `npm run verify` before touching anything, found PostgreSQL down and started it. Kept alive only until the owner has looked at A9; its context is spent, so **F2 goes to a fresh implementer**, not to this one |
 
-**Both codex agents share one account quota and both exhausted it at 15:11 on
-2026-09-14**, mid-task in `designer2`'s case. The window resets at 15:25. This
-is worth knowing before parallelising codex agents again: running two hard jobs
-concurrently on one account spends the budget twice as fast and stops both at
-once. `architect` finished first and lost only its closing report; `designer2`
-lost the second half of its task.
+`architect`, `designer`, `design-reviewer`, `designer2`, `builder1`, `builder2`
+and `builder3` were all shut down on 2026-09-14 to free memory. Their panes no
+longer exist. Nothing was lost: both working trees were clean and every handoff
+is committed under `.agent/tasks/`. Any future work needs a fresh agent started
+into a fresh pane — no scrollback survives.
 
-`designer` (claude) and `design-reviewer` (codex) are idle and available.
-`design-reviewer` wrote the visual finish review and is the natural reviewer for
-whatever `designer2` returns — but it draws on the same exhausted quota.
+What the dead roster is still worth knowing for:
 
-The previous revision of this file recorded `designer` as **gone** and an
-unassigned idle Claude at `w2:p8`. Both were wrong by the time anyone read
-them: the designer was reinstated and did the bulk of the afternoon's work, and
-`w2:p8` no longer exists. `design-reviewer` was never recorded at all.
+- **The two codex agents shared one account quota and both exhausted it at
+  15:11 on 2026-09-14**, mid-task in `designer2`'s case. Running two hard jobs
+  concurrently on one account spends the budget twice as fast and stops both at
+  once. `architect` finished first and lost only its closing report; `designer2`
+  lost the second half of its task.
+- **Fable 5.1 hit a monthly spend limit** the same afternoon and never processed
+  the A7 prompt at all. The owner's Fable preference is overridden by
+  availability, not by choice.
+
+Twice now this section has been confidently wrong about who is alive — the
+2026-09-10 revision recorded `designer` as gone while it did the bulk of that
+afternoon's work, and the 2026-09-14 revision listed seven agents that had
+already been shut down. **Verify the roster against `herdr agent list` before
+trusting this table, and rewrite it when it disagrees.**
+
+A third git worktree exists at `.claude/worktrees/keen-chebyshev-ccf255`,
+detached at `78153ab`. It is leftover tooling state, not a work location.
 
 There is no task file for the architecture work. `B2` was carried out against
 the proposal document itself, and the architect's account of it exists only in
@@ -490,6 +535,87 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## A9 landed — the pressed ring is in the POS, and the hover rule is a test
+
+[FE-002](tasks/FE-002-apply-a7-states.md) closed 2026-09-16 on
+`agent/phase-0-foundations`, delivered by `builder4`. **Lead-verified: 120 tests
+across 9 files, typecheck clean, 172 tokens, and the three design artifacts
+byte-identical to `agent/design-direction`.** The lead also opened two of the
+screenshots and looked at them.
+
+**What is now true of the code branch:** the registry is the 172-token A7
+version, `frost-states.css` is present, and every enabled boxed control on the
+lock screen — twelve keys, Continue, the emergency action — draws
+`--frost-pressed-ring` while held. The disabled Continue draws nothing, because
+a disabled control's press did nothing.
+
+Three things worth carrying:
+
+- **The focus ring and the pressed ring collide, and only in the rendering.**
+  `frost-states.css` says the inset ring never collides with the outside focus
+  ring, which is true of the geometry. But `box-shadow` is one property, so a
+  naive `:active` rule *replaces* the focus ring — a keyboard user would watch
+  it vanish at the moment of the press. Both shadows go in one declaration. The
+  lead found this while writing the task, not in review, which is the cheap
+  place to find it.
+- **The hover rule is now a test, not a comment.** A8's most expensive lesson
+  was that A7's designer wrote a comment saying an implementation should gate
+  hover, and `design-reviewer` rejected it: a comment fixes nothing and hands
+  the bug to whoever writes the code. `apps/pos/test/hover-scoped.test.ts` fails
+  on any `:hover` in `apps/pos/src` outside `@media (hover: hover)`. It carries
+  detector self-tests so it cannot pass vacuously while `pos.css` has no hover
+  rule at all — which it does not, today. **The lead proved it red** by
+  appending an unscoped `.key:hover` and watching the suite fail, rather than
+  accepting that it had been proven.
+- **The implementer ran a negative control.** It could not hold `:active`
+  through the Chrome tool, which only clicks, so it drove the same Chrome over
+  the DevTools Protocol, held the press, and read computed style — then removed
+  the collision fix and confirmed the focus halo disappears. Proving a fix by
+  also proving its absence breaks things is the standard A7's review set, met
+  here without being asked.
+
+### The order-line ring offset — RULED, 2026-09-16
+
+`frost-states.css:58` rings a pressed order line with
+`border-radius: 2px; margin: -8px; padding: 8px`, so the ring clears the text
+without moving it. Those are literal lengths, and `no-invented-values.test.ts`
+rejects literal lengths in `apps/pos/src`. F2 is the screen that hits it.
+
+`builder4` found what the lead had not: **DESIGN-005 already gives the token
+form** — `margin: calc(-1 * var(--frost-space-2)); padding: var(--frost-space-2);
+border-radius: var(--frost-radius-surface)`. The registry has
+`--frost-space-2: 8px` and `--frost-radius-surface: 2px`, and the length regex
+has no unit to catch inside the `calc`. So the route exists and no exemption is
+needed. It did not decide whether a *space* token may carry a ring offset, and
+was right not to.
+
+**Lead's ruling: use the token form, and F2 must carry a test that pins the
+relationship.** The offset is a genuine spacing fact, not a coincidence of equal
+numbers — the states sheet derives it from the row's own padding and says 8px
+"stays inside the row's padding and short of the 12px gap to the slot". So it
+should track the spacing scale. But that creates a coupling nothing watches: if
+`--frost-space-2` is ever retuned for layout, the ring silently crosses the gap
+into the trailing slot and `I-12` breaks visually with no test failing.
+
+The test asserts the offset stays within the row's padding and short of the slot
+gap. This is the same move as the hover test and for the same reason: an
+invisible coupling becomes a checked one. **An implementer that finds the test
+inconvenient raises it; it does not widen the exemption.**
+
+### Housekeeping left running
+
+- **PostgreSQL is up.** `builder4`'s baseline `npm run verify` failed seven
+  tests in `apps/server/test/migrate.test.ts` with `ECONNREFUSED ::1:5433`
+  because the container was down. It ran `npm run db:up`, got 114/114, then
+  started. Container `restaurant-pos-db-1` is still running.
+- **A Vite dev server on 5173 is not `builder4`'s.** It was already listening
+  when the task started, serving this checkout's `apps/pos`. Left alone.
+- **The browser evidence is gone with the session.** Screenshots and the
+  DevTools script lived in a scratchpad, not the repository. The claims they
+  support are written down; the suite and the detector are the durable check.
 
 ---
 

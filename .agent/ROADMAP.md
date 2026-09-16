@@ -7,9 +7,9 @@ next, not what happens eventually.
 
 Owned by the Claude product lead. No other agent writes to this file.
 
-Last updated 2026-09-14, after auditing what actually happened on 2026-09-10.
-The previous revision was written at 11:50 that day and missed the afternoon
-entirely.
+Last updated 2026-09-15. That edit closed four rows this file still showed as
+in flight — A6, F1, and Phase 0 Task 2 had all landed — and corrected the live
+agent count from five to one.
 
 ---
 
@@ -28,10 +28,10 @@ decisions, neither of which holds up Phase 0.
 | A3 | [DESIGN-001](tasks/DESIGN-001-external-visual-direction.md) — visual direction | **Delivered and chosen. FROST, 2026-09-14.** Two light directions were built in-repo from the owner's reference; Paper is rejected and left untouched | Owner |
 | A4 | [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) — convert Frost into `docs/DESIGN.md` and a token set | **Done** 2026-09-14. `docs/DESIGN.md` plus a 169-token registry, every token carrying file, line, selector and property. Lead-verified: 169/169/169 three-way, 12 random provenance claims checked, all passed | `designer2` then `designer` |
 | A5 | Decide whether a dark palette ships | Not started. Light only was delivered, deliberately | Owner |
-| A6 | Review the Frost conversion | **In flight**, started 2026-09-14. Lead-verified for completeness and provenance; this pass is for design judgement — sourced-but-wrong values, resolutions that promote a fixture accident to a rule, declared absences that are not actually absent | `design-reviewer` |
+| A6 | Review the Frost conversion | **Done** 2026-09-14. Ten findings, one critical — a live close offered on a stale balance. Nine fixed, one raised; remediation committed `ca0a4db`. See [DESIGN-004](tasks/DESIGN-004-frost-review-remediation.md). Finding 6 became A7 | `design-reviewer` |
 | A7 | [DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) — pressed/active touch state, field invalid state, the fired row's gated-path tag | **Done** 2026-09-14, three passes. Four designed tokens, `source: null` plus a `designed` block; reviewed stylesheets untouched | `designer` |
 | A8 | Review DESIGN-005 | **Done** 2026-09-14. Eight findings, one high — a press still collapsed into a selection on touch. All fixed or answered | `design-reviewer` |
-| A9 | Apply the three states to `apps/pos` | Not started. Small frontend task | unassigned |
+| A9 | [FE-002](tasks/FE-002-apply-a7-states.md) — apply the three states to `apps/pos` | **Done** 2026-09-16, lead-verified: 120 tests across 9 files, 172 tokens, the three design artifacts byte-identical to the design branch, and the hover detector proven red by the lead's own unscoped rule. Only the pressed ring had a surface; the invalid field and the round tag arrive unused, deliberately, for F3 and F2 | `builder4` |
 
 A3's deliverable is real and reviewed: open
 [docs/design/visual-directions/index.html](../docs/design/visual-directions/index.html)
@@ -44,9 +44,9 @@ trace to a built Frost artifact. Nothing else in the repository waits on it —
 Phase 0 ships two client shells with a PIN pad and a login form and needs no
 palette.
 
-Five agents are live, all idle: `lead`, `designer` (Fable 5.1, delivered A4),
-`architect` (delivered B4), `designer2` (delivered A4's token registry before a
-quota limit stopped it), and `design-reviewer`, which is next up on A6.
+**One agent is live as of 2026-09-15: `lead`.** Every other agent was shut down
+on 2026-09-14 to free memory, with clean working trees and committed handoffs.
+A9 and F2 each need a fresh implementer started into a fresh pane.
 
 ### Track B — Architecture
 
@@ -150,9 +150,9 @@ A task that feels like it needs two sessions is two tasks.
 
 | # | Task | State | Owner |
 |---|---|---|---|
-| F1 | [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens wired, lock/PIN screen at 1280×800 | **In flight**, started 2026-09-14 | `builder3` |
+| F1 | [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens wired, lock/PIN screen at 1280×800 | **Done** 2026-09-14, lead-verified: 114 tests across 8 files, typecheck clean, opened in a browser | `builder3` |
 | F1 review | Owner opened FE-001 and approved it, 2026-09-14 | **Done.** "Screen's fine" | Owner |
-| F2 | POS order workspace — the densest screen: menu grid, running order, three line signatures, 86'd tiles | **Unblocked** 2026-09-14: A7 and A8 are done, so the pressed state exists before the screen that needs it | unassigned |
+| F2 | POS order workspace — the densest screen: menu grid, running order, three line signatures, 86'd tiles | **Next.** Unblocked and now genuinely equipped: A9 landed the pressed ring, the 172-token registry and the hover test on the code branch. The order-line ring offset is ruled — see MEMORY.md | unassigned |
 | F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 is fixing | Not started | unassigned |
 | F4 | The remaining POS screens, then the back office | Not started | unassigned |
 
@@ -168,7 +168,7 @@ Branch **`agent/phase-0-foundations`**, cut 2026-09-14 from
 | # | Task | State | Owner |
 |---|---|---|---|
 | 1 | Monorepo scaffold, PostgreSQL, migration runner — [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md) | **Done** 2026-09-14, lead-verified. 7 tests, typecheck clean | `builder1` |
-| 2 | Money module — [PHASE0-002](tasks/PHASE0-002-money-module.md) | **In flight.** Allowed to finish: it is a shared package the frontend needs, since `B-1` governs money on screen as much as in the database | `builder2` |
+| 2 | Money module — [PHASE0-002](tasks/PHASE0-002-money-module.md) | **Done** 2026-09-14, lead-verified: 81 tests across 5 files, typecheck clean. One ruling owed before Task 3 — brand `Rate`, leave `Money` as `bigint` — not yet applied | `builder2` |
 | 3–12 | Schema and grants, PIN, audit, throttling, sessions, HTTPS server, auth routes, approval, client shells, acceptance tests | **Paused** until the owner has reviewed the frontend | unassigned |
 
 Task files are written by the lead one at a time rather than all twelve up
