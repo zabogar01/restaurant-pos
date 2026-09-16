@@ -6,11 +6,20 @@
  * 1px border width docs/DESIGN.md states for every border ("Borders are 1px
  * everywhere", Shapes). test/no-invented-values.test.ts enforces that.
  *
- * Pressed / active touch state: deliberately none. Frost has no pressed
- * treatment (docs/DESIGN.md Open item 2, tracked as A7). This screen stays
- * usable without one because every key press changes the entry display — a
- * digit fills a dot, delete empties one, Continue clears them. See the FE-001
- * handoff.
+ * Pressed: every enabled boxed control — the twelve keys, Continue, the
+ * emergency action — draws --frost-pressed-ring while a finger or pointer is
+ * down. Designed under A7 (DESIGN-005, docs/design/visual-directions/
+ * frost-states.css): selection fills, pressing strokes. The ring is inset and
+ * in currentColor, so one rule reads ink on a cream key, white on the ink
+ * Continue and brick on the white emergency action, with no new colour. The
+ * lock screen was usable without it (every key changes the dots; FE-001), but
+ * the rule is universal, and the order and tender screens will need it.
+ * The disabled Continue gets no ring: its press did nothing, so nothing says
+ * it did.
+ *
+ * Hover: none today. Any hover rule belongs inside @media (hover: hover),
+ * because touch browsers hold :hover after a tap. test/hover-scoped.test.ts
+ * enforces that.
  */
 
 *,
@@ -201,6 +210,20 @@ button {
   background: var(--frost-key-continue);
   border-color: var(--frost-primary);
   color: var(--frost-primary-text);
+}
+
+/* box-shadow is one property, so a pressed rule on its own would replace the
+ * :focus-visible ring above and a keyboard user pressing Space would watch
+ * focus vanish. Focused and pressed draws both: the outer focus ring and the
+ * inset pressed ring never overlap. */
+.key:active:not(.key--continue-disabled),
+.emergency-banner__action:active {
+  box-shadow: var(--frost-pressed-ring);
+}
+
+.key:focus-visible:active:not(.key--continue-disabled),
+.emergency-banner__action:focus-visible:active {
+  box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
 }
 
 /* LOGIN cooldown. Dashed means not available (docs/DESIGN.md, Shapes); the

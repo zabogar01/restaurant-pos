@@ -1,8 +1,8 @@
 {
   "name": "Restaurant POS — Frost",
-  "description": "Light direction chosen 2026-09-14; literal extraction of reviewed Frost. Values are strings suitable for CSS custom properties. Verified against source 2026-09-14 (designer, DESIGN-003).",
+  "description": "Light direction chosen 2026-09-14; literal extraction of reviewed Frost. Values are strings suitable for CSS custom properties. Verified against source 2026-09-14 (designer, DESIGN-003). Extended 2026-09-14 (designer, DESIGN-005) with four tokens that were DESIGNED, not extracted: their \"source\" is null and a \"designed\" block says so.",
   "authority": "docs/DESIGN.md",
-  "maintenance": "This JSON is the editable token registry. Generate frost.css from tokens entries in insertion order; never edit CSS independently. JSON value and CSS declaration must match exactly. source locates authored evidence; var() aliases are resolved using visual.css :root followed by the Frost override.",
+  "maintenance": "This JSON is the editable token registry. Generate frost.css from tokens entries in insertion order; never edit CSS independently. JSON value and CSS declaration must match exactly. source locates authored evidence; var() aliases are resolved using visual.css :root followed by the Frost override. Two provenance shapes exist and are never mixed: a token READ from a reviewed Frost artifact carries \"source\" {path, line, selector, property, authoredValue}; a token DESIGNED in a task carries \"source\": null and \"designed\" {task, date, by, status, stylesheet, shown, why}. A designed token never cites a file and line as if it had been read there.",
   "tokens": {
     "--frost-surface": {
       "value": "#fafafa",
@@ -367,6 +367,24 @@
         "authoredValue": "#a1c2c6 transparent"
       }
     },
+    "--frost-invalid": {
+      "value": "#83611c",
+      "group": "Colors",
+      "source": null,
+      "designed": {
+        "task": ".agent/tasks/DESIGN-005-a7-three-missing-states.md",
+        "date": "2026-09-14",
+        "by": "designer (claude, Fable 5.1)",
+        "status": "designed under DESIGN-005; awaiting design-reviewer; not part of the DESIGN-001 Frost review",
+        "stylesheet": "docs/design/visual-directions/frost-states.css — the .field--invalid and .field__msg rules",
+        "shown": [
+          "docs/design/visual-directions/frost/pos/settlement.html?state=cardover",
+          "docs/design/visual-directions/frost/pos/settlement.html?state=ceiling",
+          "docs/design/visual-directions/frost/back-office/menu.html?state=category-invalid"
+        ],
+        "why": "The hue of a refused field value and of its message. Same value as --frost-warning, named separately so an implementation does not have to write \"warning\" (a receipt-print matter) on a field. Not brick: --frost-destructive means this action destroys something, and a refused keystroke destroys nothing. Not red: emergency is the kitchen's. Measured 5.69:1 on white, 5.45:1 on canvas. No new colour value. frost-states.css declares and consumes its own --invalid variable so a change to --warning cannot reach an invalid field; the separation is a fact in the rules, not only a name."
+      }
+    },
     "--frost-font": {
       "value": "\"Helvetica Neue\", Helvetica, Arial, sans-serif",
       "group": "Typography",
@@ -552,6 +570,24 @@
         "selector": ".tag",
         "property": "font-size",
         "authoredValue": "10px"
+      }
+    },
+    "--frost-round-tag-size": {
+      "value": "13px",
+      "group": "Typography",
+      "source": null,
+      "designed": {
+        "task": ".agent/tasks/DESIGN-005-a7-three-missing-states.md",
+        "date": "2026-09-14",
+        "by": "designer (claude, Fable 5.1)",
+        "status": "designed under DESIGN-005; awaiting design-reviewer; not part of the DESIGN-001 Frost review",
+        "stylesheet": "docs/design/visual-directions/frost-states.css — the .roundhead .tag rule",
+        "shown": [
+          "docs/design/visual-directions/frost/pos/order.html?state=default",
+          "docs/design/visual-directions/frost/pos/order.html?state=lock-draft",
+          "docs/design/visual-directions/frost/pos/order.html?state=linecontrols"
+        ],
+        "why": "The tag inside a round-group heading (MANAGER TO VOID, REMOVE FREELY, FINISH PAYMENT FIRST, ANOTHER CLIENT) is the one statement of what a tap on the rows below will do, because a fired row's trailing slot is deliberately empty (I-12). It was 10px (--frost-text-10) against the system's own floor of 13px for anything a cashier acts on. Set to 13px — the value of --frost-text-13, an existing size used in a new place — so it outweighs the 11px heading it sits in; weight, padding, tracking, border and colour are unchanged and it fits the fixed 32px band at 23px. Closes DESIGN-004 finding 6."
       }
     },
     "--frost-text-11": {
@@ -1190,17 +1226,6 @@
         "selector": ".device--bo",
         "property": "width",
         "authoredValue": "1440px"
-      }
-    },
-    "--frost-office-min-height": {
-      "value": "900px",
-      "group": "Geometry",
-      "source": {
-        "path": "docs/design/visual-directions/visual.css",
-        "line": 59,
-        "selector": ".device--bo",
-        "property": "min-height",
-        "authoredValue": "900px"
       }
     },
     "--frost-pos-header-height": {
@@ -1861,6 +1886,41 @@
         "selector": "html[data-state=\"cardsplit\"] .amount-field, html[data-state=\"cashover\"] .amount-field,\nhtml[data-state=\"cardover\"] .amount-field, html[data-state=\"ceiling\"] .amount-field",
         "property": "padding-left",
         "authoredValue": "13px"
+      }
+    },
+    "--frost-pressed-ring": {
+      "value": "inset 0 0 0 2px currentColor",
+      "group": "Depth and interaction",
+      "source": null,
+      "designed": {
+        "task": ".agent/tasks/DESIGN-005-a7-three-missing-states.md",
+        "date": "2026-09-14",
+        "by": "designer (claude, Fable 5.1)",
+        "status": "designed under DESIGN-005; awaiting design-reviewer; not part of the DESIGN-001 Frost review",
+        "stylesheet": "docs/design/visual-directions/frost-states.css — the .is-pressed / :active rule",
+        "shown": [
+          "docs/design/visual-directions/frost/pos/order.html?state=pressed",
+          "docs/design/visual-directions/frost/pos/settlement.html?state=pressed"
+        ],
+        "why": "Pressed / active on touch. A 2px stroke inside the control's own edge in the control's text colour: a stroke so it cannot be confused with the solid ink fill that means selected; inset so it never collides with the keyboard focus ring (outside, green) and never moves layout; currentColor so one rule reads on cream, white, spruce, ink and brick and the ring's contrast is the text's already-measured contrast. Lineage: the keyed amount field's 1px to 2px spruce thickening (--frost-amount-keyed-border) already means a hand touched this. No new colour value."
+      }
+    },
+    "--frost-invalid-border": {
+      "value": "2px solid #83611c",
+      "group": "Depth and interaction",
+      "source": null,
+      "designed": {
+        "task": ".agent/tasks/DESIGN-005-a7-three-missing-states.md",
+        "date": "2026-09-14",
+        "by": "designer (claude, Fable 5.1)",
+        "status": "designed under DESIGN-005; awaiting design-reviewer; not part of the DESIGN-001 Frost review",
+        "stylesheet": "docs/design/visual-directions/frost-states.css — the .field--invalid rule",
+        "shown": [
+          "docs/design/visual-directions/frost/pos/settlement.html?state=cardover",
+          "docs/design/visual-directions/frost/pos/settlement.html?state=ceiling",
+          "docs/design/visual-directions/frost/back-office/menu.html?state=category-invalid"
+        ],
+        "why": "A field holding a refused value thickens its border to 2px in --frost-invalid on a white fill, with left padding pulled to --frost-amount-keyed-padding-left (13px) so the figure does not shift, mirroring --frost-amount-keyed-border. The fill stays white so the field is never the pale amber receipt-warning chip. Applies to a rejected value and to an empty required field on submit; not to a field whose value is fine while the action failed, which stays as it was beside a notice. The one-line message under the field uses --frost-invalid at --frost-text-14 (POS) or --frost-text-13 (back-office modal), --frost-weight-medium, --frost-space-1 above."
       }
     }
   }

@@ -1,5 +1,8 @@
 /* Generated from frost.tokens.json. Do not edit independently.
  * Reviewed Frost extraction; source path, line, selector and property live in JSON.
+ * Four tokens (pressed ring, invalid, invalid border, round tag size) were DESIGNED
+ * under DESIGN-005 on 2026-09-14 and read from no reviewed artifact; in the JSON their
+ * source is null and a "designed" block says why. They await design-reviewer.
  * Import in either client; these properties do not apply layout or behavior.
  */
 :root {
@@ -36,6 +39,7 @@
   --frost-emergency-secondary: #fff2ee;
   --frost-void-surface: #fafafa;
   --frost-scrollbar: #a1c2c6 transparent;
+  --frost-invalid: #83611c;
   --frost-font: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --frost-numeric-variant: tabular-nums lining-nums;
   --frost-weight-regular: 400;
@@ -53,6 +57,7 @@
   --frost-table-head-case: uppercase;
   --frost-tracking-round: 0;
   --frost-text-10: 10px;
+  --frost-round-tag-size: 13px;
   --frost-text-11: 11px;
   --frost-text-12: 12px;
   --frost-text-13: 13px;
@@ -111,7 +116,6 @@
   --frost-pos-width: 1280px;
   --frost-pos-height: 800px;
   --frost-office-width: 1440px;
-  --frost-office-min-height: 900px;
   --frost-pos-header-height: 64px;
   --frost-office-header-height: 64px;
   --frost-category-width: 172px;
@@ -172,4 +176,6 @@
   --frost-link-underline-offset: 3px;
   --frost-amount-keyed-border: 2px solid #0b363b;
   --frost-amount-keyed-padding-left: 13px;
+  --frost-pressed-ring: inset 0 0 0 2px currentColor;
+  --frost-invalid-border: 2px solid #83611c;
 }
