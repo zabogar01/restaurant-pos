@@ -1,0 +1,259 @@
+// @vitest-environment jsdom
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { OrderPanel } from '../src/OrderPanel.js';
+import {
+  FIRED_TAG,
+  LOCK_TAG,
+  ORDER_STATES,
+  PENDING_TAG,
+  VOID_LINE_HREF,
+  orderViewFrom,
+  type OrderState,
+  type OrderView,
+} from '../src/orderFixtures.js';
+
+// Ruling I-12, read from the rendered markup. A row's trailing slot carries
+// exactly one meaning: a PENDING row has a remove control there, a FIRED row
+// reserves the slot and leaves it empty, and under either settlement lock
+// every slot is empty and no row is a control. The slot is always the tap
+// target's sibling — DESIGN-002 pass 3 found a fired row drawn as one anchor
+// that swallowed the slot, violating I-12 in its own markup.
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+let host: HTMLDivElement;
+let root: Root;
+
+beforeEach(() => {
+  host = document.createElement('div');
+  document.body.appendChild(host);
+  root = createRoot(host);
+});
+
+afterEach(() => {
+  act(() => root.unmount());
+  host.remove();
+});
+
+function render(view: OrderView | OrderState) {
+  act(() => root.render(<OrderPanel view={typeof view === 'string' ? { state: view } : view} />));
+}
+
+const rows = () => [...host.querySelectorAll<HTMLElement>('.order-line')];
+const rowsWith = (status: string) => rows().filter((r) => r.dataset.lineStatus === status);
+const slotOf = (row: Element) => row.querySelector(':scope > .order-line__slot')!;
+const targetOf = (row: Element) => row.querySelector(':scope > .order-line__target')!;
+const tags = () => [...host.querySelectorAll('.round-head .round-head__tag')].map((t) => t.textContent);
+const text = (selector: string) => [...host.querySelectorAll(selector)].map((e) => e.textContent);
+
+/** Trailing slots that sit inside an anchor. The guard: this is always empty. */
+function slotsInsideAnchors(container: ParentNode): Element[] {
+  return [...container.querySelectorAll('.order-line__slot')].filter((s) => s.parentElement?.closest('a') !== null);
+}
+
+describe('the slot guard can see a swallowed slot', () => {
+  it('flags a fired row drawn as one anchor around its slot', () => {
+    const bad = document.createElement('div');
+    bad.innerHTML =
+      '<li class="order-line"><a class="order-line__target" href="#void">Soda<div class="order-line__slot"></div></a></li>';
+    expect(slotsInsideAnchors(bad)).toHaveLength(1);
+  });
+
+  it('flags a whole row wrapped in an anchor', () => {
+    const bad = document.createElement('div');
+    bad.innerHTML =
+      '<a href="#void"><li class="order-line"><div class="order-line__target">Soda</div><div class="order-line__slot"></div></li></a>';
+    expect(slotsInsideAnchors(bad)).toHaveLength(1);
+  });
+});
+
+describe('fixture states', () => {
+  it('has exactly the six states of F2a', () => {
+    expect(ORDER_STATES.map((s) => s.id)).toEqual(['default', 'empty', 'overflow', 'pressed', 'lock-draft', 'lock-lease']);
+  });
+
+  it('is reachable by ?state=, and anything else is the default', () => {
+    for (const { id } of ORDER_STATES) expect(orderViewFrom(`?state=${id}`).state).toBe(id);
+    expect(orderViewFrom('?state=sheet-voidline').state).toBe('default');
+    expect(orderViewFrom('').state).toBe('default');
+  });
+});
+
+describe.each(ORDER_STATES.map((s) => s.id))('I-12 structure in %s', (state) => {
+  beforeEach(() => render(state));
+
+  it('no trailing slot has an anchor ancestor', () => {
+    expect(slotsInsideAnchors(host)).toEqual([]);
+  });
+
+  it('every row is exactly a tap target followed by its sibling slot', () => {
+    for (const row of rows()) {
+      expect([...row.children].map((c) => c.className.split(' ')[0])).toEqual(['order-line__target', 'order-line__slot']);
+      expect(targetOf(row).contains(slotOf(row))).toBe(false);
+    }
+  });
+
+  it('every fired and voided slot is empty — absent, not disabled', () => {
+    for (const row of [...rowsWith('fired'), ...rowsWith('voided')]) {
+      expect(slotOf(row).childNodes).toHaveLength(0);
+    }
+  });
+
+  it('a voided row is not a control', () => {
+    for (const row of rowsWith('voided')) {
+      expect(row.querySelector('a, button, [tabindex]')).toBeNull();
+    }
+  });
+});
+
+describe('unlocked rows', () => {
+  it('default draws fired rows and a pending row', () => {
+    render('default');
+    expect(rowsWith('fired').length).toBeGreaterThan(0);
+    expect(rowsWith('pending').length).toBeGreaterThan(0);
+  });
+
+  it.each(['default', 'overflow', 'pressed'] as const)('%s: a PENDING row has one remove control in its slot, nothing else', (state) => {
+    render(state);
+    const pending = rowsWith('pending');
+    expect(pending.length).toBeGreaterThan(0);
+    for (const row of pending) {
+      const slot = slotOf(row);
+      expect(slot.children).toHaveLength(1);
+      const remove = slot.firstElementChild as HTMLAnchorElement;
+      expect(remove.matches('a.order-line__remove')).toBe(true);
+      const name = row.querySelector('.order-line__name')!.textContent;
+      expect(remove.getAttribute('aria-label')).toBe(`Remove ${name}`);
+    }
+  });
+
+  it.each(['default', 'overflow', 'pressed'] as const)('%s: a FIRED row body is the link to the void sheet', (state) => {
+    render(state);
+    for (const row of rowsWith('fired')) {
+      const target = targetOf(row);
+      expect(target.tagName).toBe('A');
+      expect(target.getAttribute('href')).toBe(VOID_LINE_HREF);
+    }
+  });
+
+  it('the remove control removes the line with no prompt, landing on the artifact’s figures', () => {
+    render('default');
+    const href = rowsWith('pending')[0]!.querySelector('a.order-line__remove')!.getAttribute('href')!;
+    render(orderViewFrom(href));
+    expect(rowsWith('pending')).toEqual([]);
+    expect(text('.round-head__tag')).toEqual([FIRED_TAG, FIRED_TAG]);
+    expect(text('.totals dd')).toEqual(['165.000', '−16.500', '7.425', '155.925', '13.500']);
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('2 items');
+  });
+});
+
+describe.each(['lock-draft', 'lock-lease'] as const)('%s: settlement lock', (state) => {
+  const lock = state === 'lock-draft' ? 'draft' : 'lease';
+  beforeEach(() => render(state));
+
+  it('keeps every row, fired and pending, legible', () => {
+    expect(rowsWith('fired').length).toBeGreaterThan(0);
+    expect(rowsWith('pending').length).toBeGreaterThan(0);
+    expect(text('.order-line__name')).toEqual(['Burger', 'Soda', 'Steak']);
+    expect(text('.order-line__amount')).toEqual(['135.000', '30.000', '240.000']);
+  });
+
+  it('every slot is empty and no row is a control', () => {
+    for (const row of rows()) expect(slotOf(row).childNodes).toHaveLength(0);
+    expect(host.querySelector('.order-lines')!.querySelectorAll('a, button, [tabindex], [role="button"]')).toHaveLength(0);
+  });
+
+  it('every round header carries the lock reason instead of its tag', () => {
+    expect(tags()).toEqual([LOCK_TAG[lock], LOCK_TAG[lock], LOCK_TAG[lock]]);
+  });
+
+  it('draws every close-bar action unavailable in place', () => {
+    expect(host.querySelectorAll('.order-actions a')).toHaveLength(0);
+    expect(text('.order-actions .action--off')).toEqual(['Discount', 'Void order', 'Send to kitchen', 'Settle']);
+  });
+
+  it('ignores a ?gone= removal: removing a pending line is a void, and void is blocked', () => {
+    render({ state, gone: 'steak' });
+    expect(text('.order-line__name')).toContain('Steak');
+  });
+});
+
+it('the two locks never share a string (C-5)', () => {
+  expect(LOCK_TAG.draft).not.toBe(LOCK_TAG.lease);
+});
+
+describe('round headers', () => {
+  it('carry the tag, not the rows: MANAGER TO VOID on fired rounds, REMOVE FREELY on pending', () => {
+    render('default');
+    expect(tags()).toEqual([FIRED_TAG, FIRED_TAG, PENDING_TAG]);
+    expect(host.querySelectorAll('.order-line .round-head__tag')).toHaveLength(0);
+  });
+
+  it('name the round, its fire time and its print status (I-7)', () => {
+    render('default');
+    expect(text('.round-head__label')).toEqual([
+      'Round 1 · fired 19:42 · printed',
+      'Round 2 · fired 19:58 · printed',
+      'Pending · not sent to the kitchen',
+    ]);
+  });
+});
+
+describe('pressed', () => {
+  it('holds exactly one FIRED row body down, and nothing else', () => {
+    render('pressed');
+    const held = [...host.querySelectorAll('.is-pressed')];
+    expect(held).toHaveLength(1);
+    expect(held[0]!.matches('a.order-line__target')).toBe(true);
+    expect(held[0]!.parentElement!.dataset.lineStatus).toBe('fired');
+  });
+
+  it('is not drawn in any other state', () => {
+    for (const { id } of ORDER_STATES.filter((s) => s.id !== 'pressed')) {
+      render(id);
+      expect(host.querySelectorAll('.is-pressed')).toHaveLength(0);
+    }
+  });
+});
+
+describe('empty and overflow', () => {
+  it('empty: no rows, the empty notice, zero totals, every action unavailable', () => {
+    render('empty');
+    expect(rows()).toEqual([]);
+    expect(host.querySelector('.order-empty')).not.toBeNull();
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('Empty');
+    expect(text('.totals dd')).toEqual(['0', '0']);
+    expect(host.querySelectorAll('.order-actions a')).toHaveLength(0);
+  });
+
+  it('overflow: the totals and close bar sit outside the scrolling list', () => {
+    render('overflow');
+    const panel = host.querySelector('.order-panel')!;
+    expect([...panel.children].map((c) => c.className)).toEqual(['order-panel__head', 'order-lines', 'totals', 'order-actions']);
+    expect(rows().length).toBeGreaterThanOrEqual(10);
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('9 items');
+  });
+
+  it('overflow: a voided row is struck and counts as no item', () => {
+    render('overflow');
+    const [voided] = rowsWith('voided');
+    expect(voided!.classList.contains('order-line--voided')).toBe(true);
+    expect(voided!.querySelector('.order-line__detail')!.textContent).toBe('Voided 19:51 · approved by M. Iqbal');
+  });
+});
+
+describe('money on the panel', () => {
+  it('renders grouped rupiah figures from the fixture bigints', () => {
+    render('default');
+    expect(text('.order-line__amount')).toEqual(['135.000', '30.000', '240.000']);
+    expect(text('.order-line__detail')[0]).toBe('Large (+20.000) · Extra cheese (+15.000)');
+    expect(text('.totals dd')).toEqual(['405.000', '−40.500', '18.225', '382.725', '33.136']);
+  });
+
+  it('overflow totals group past a million', () => {
+    render('overflow');
+    expect(text('.totals dd')).toEqual(['1.185.000', '59.250', '1.244.250', '107.727']);
+  });
+});

@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pos/money": "*",
     "@pos/tokens": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

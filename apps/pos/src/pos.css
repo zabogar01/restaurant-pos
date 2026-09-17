@@ -1,4 +1,4 @@
-/* POS-01 lock screen, Frost.
+/* POS-01 lock screen and POS-03 order panel (F2a), Frost.
  *
  * Every colour, size, weight and space here is a var(--frost-*) from
  * @pos/tokens, which re-exports docs/design/tokens/frost.css. The only
@@ -17,9 +17,9 @@
  * The disabled Continue gets no ring: its press did nothing, so nothing says
  * it did.
  *
- * Hover: none today. Any hover rule belongs inside @media (hover: hover),
- * because touch browsers hold :hover after a tap. test/hover-scoped.test.ts
- * enforces that.
+ * Hover: only on the order panel, and every rule sits inside
+ * @media (hover: hover), because touch browsers hold :hover after a tap.
+ * test/hover-scoped.test.ts enforces that.
  */
 
 *,
@@ -275,6 +275,346 @@ button {
   height: var(--frost-space-3);
   margin: var(--frost-space-3) auto;
   background: var(--frost-group);
+}
+
+/* ==== POS-03 order panel (F2a) ====
+ * frost/pos/order.html, the panel region only. The header bar and the menu
+ * region are held empty at their artifact geometry; they are F2b's. */
+
+.order-screen__bar {
+  flex: none;
+  height: var(--frost-pos-header-height);
+  background: var(--frost-elevated);
+  border-bottom: var(--frost-divider-stroke);
+}
+
+.order-screen__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.order-screen__menu {
+  flex: 1;
+  min-width: 0;
+}
+
+.order-panel {
+  width: var(--frost-order-panel-width);
+  flex: none;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--frost-elevated);
+  border-left: var(--frost-control-stroke);
+}
+
+/* The artifact's 10px gap between title and count has no token; the count is
+ * pushed right by its auto margin, so the gap never shows. */
+.order-panel__head {
+  flex: none;
+  height: var(--frost-order-head-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--frost-space-4);
+  border-bottom: var(--frost-divider-stroke);
+  font-size: var(--frost-text-16);
+}
+
+.order-panel__title {
+  margin: 0;
+  font-size: inherit;
+  font-weight: var(--frost-weight-medium);
+}
+
+.order-panel__count {
+  margin-left: auto;
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+/* Only the lines scroll. The totals and the close bar are flex: none siblings,
+ * so an overflowing order never pushes them off the frame. */
+.order-lines {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--frost-scrollbar);
+}
+
+/* Inline on the artifact: margin 20px, padding 32px, a 700-weight title with a
+ * 6px gap. The registry has no 700 weight and no 6px, so the title is
+ * semibold and sits directly on its line. */
+.order-empty {
+  margin: var(--frost-space-5);
+  padding: var(--frost-space-8);
+  border: 1px dashed var(--frost-control-border);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-surface);
+  color: var(--frost-muted);
+  text-align: center;
+}
+
+.order-empty__title {
+  font-weight: var(--frost-weight-semibold);
+}
+
+/* A fixed band: it stays one line whatever a state puts in it, or the group
+ * rhythm the panel is scanned by breaks. */
+.round-head {
+  height: var(--frost-round-height);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--frost-space-4);
+  background: var(--frost-group);
+  border-bottom: var(--frost-divider-stroke);
+  color: var(--frost-muted);
+  font-size: var(--frost-text-11);
+  font-weight: var(--frost-weight-medium);
+  letter-spacing: var(--frost-tracking-round);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* The one statement of what a tap on the rows below will do, since a fired
+ * row's slot is empty (I-12). 13px, the floor for anything a cashier acts on
+ * (A7, DESIGN-005). The artifact's inline margin-left: auto lives here. */
+.round-head__tag {
+  margin-left: auto;
+  padding: var(--frost-round-tag-padding);
+  border: 1px solid transparent;
+  border-radius: var(--frost-radius-surface);
+  font-size: var(--frost-round-tag-size);
+  font-weight: var(--frost-weight-medium);
+  line-height: var(--frost-leading-tag);
+  letter-spacing: var(--frost-tracking-round);
+}
+
+.round-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Every row has one geometry: a tap target and a trailing slot that is its
+ * sibling, separated by the row gap. test/order-line-ring.test.ts reads the
+ * padding and gap tokens here. */
+.order-line {
+  min-height: var(--frost-line-min-height);
+  display: flex;
+  gap: var(--frost-line-gap);
+  align-items: flex-start;
+  padding: var(--frost-line-padding);
+  border-bottom: var(--frost-divider-stroke);
+  background: var(--frost-elevated);
+}
+
+.order-line__target {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--frost-line-body-min-height);
+  display: flex;
+  gap: var(--frost-line-gap);
+  align-items: flex-start;
+  color: inherit;
+  text-decoration: none;
+}
+
+.order-line__quantity {
+  width: var(--frost-line-quantity-width);
+  font-size: var(--frost-text-15);
+  color: var(--frost-muted);
+}
+
+.order-line__body {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.order-line__name {
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-medium);
+}
+
+.order-line__detail {
+  font-size: var(--frost-text-12);
+  line-height: var(--frost-leading-body);
+  color: var(--frost-muted);
+}
+
+.order-line__amount {
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-medium);
+  white-space: nowrap;
+}
+
+/* Reserved on every row, filled only on a removable one, so the amount column
+ * never shifts between row types. */
+.order-line__slot {
+  flex: none;
+  width: var(--frost-line-slot-width);
+  height: var(--frost-line-slot-height);
+  align-self: center;
+}
+
+.order-line__remove {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--frost-destructive);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-destructive);
+  text-decoration: none;
+}
+
+.order-line__remove .icon {
+  width: var(--frost-key-icon-size);
+  height: var(--frost-key-icon-size);
+}
+
+.order-line--voided {
+  background: var(--frost-void-surface);
+}
+
+.order-line--voided .order-line__name,
+.order-line--voided .order-line__amount {
+  text-decoration: line-through;
+  color: var(--frost-unavailable-text);
+}
+
+.order-line--voided .order-line__detail {
+  color: var(--frost-unavailable-text);
+}
+
+/* Totals. The artifact pads each row 3px 0 and sets the grand total 6px below
+ * the row above; neither length is in the registry, so both are omitted. */
+.totals {
+  flex: none;
+  margin: 0;
+  padding: var(--frost-totals-padding);
+  border-top: var(--frost-control-stroke);
+  background: var(--frost-elevated);
+  font-size: var(--frost-text-14);
+}
+
+.totals__row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.totals__row dd {
+  margin: 0;
+}
+
+.totals__row--grand {
+  margin: 0 calc(-1 * var(--frost-grand-total-bleed));
+  padding: var(--frost-grand-total-bleed);
+  border-top: var(--frost-divider-stroke);
+  background: var(--frost-group);
+  font-size: var(--frost-text-24);
+  font-weight: var(--frost-weight-medium);
+}
+
+.totals__row--included {
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+.order-actions {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--frost-actions-gap);
+  padding: var(--frost-actions-padding);
+  border-top: var(--frost-divider-stroke);
+  background: var(--frost-elevated);
+}
+
+.action {
+  height: var(--frost-action-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--frost-button-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-button);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-medium);
+  text-align: center;
+  text-decoration: none;
+}
+
+.action--primary {
+  background: var(--frost-primary);
+  border-color: var(--frost-primary);
+  color: var(--frost-primary-text);
+}
+
+/* Dashed means not available (docs/DESIGN.md, Shapes). Drawn in place. */
+.action--off {
+  background: var(--frost-unavailable);
+  border: 1px dashed var(--frost-disabled-border);
+  color: var(--frost-unavailable-text);
+}
+
+/* Pressed. Every enabled boxed control on the panel: the row body, the remove
+ * control, the close-bar actions. An unavailable action is a span and a
+ * locked or voided row body is a div, so neither can match — nothing happened,
+ * so nothing says it did. .is-pressed is the fixture's held press. */
+a.order-line__target:active,
+.order-line__target.is-pressed,
+a.order-line__remove:active,
+a.action:active {
+  box-shadow: var(--frost-pressed-ring);
+}
+
+a.order-line__target:focus-visible:active,
+a.order-line__remove:focus-visible:active,
+a.action:focus-visible:active {
+  box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
+}
+
+/* The ring rings the tap target only, never the slot beside it (I-12). The
+ * row's padding belongs to the row, so the ring is pushed out from the text by
+ * an equal negative margin and padding: the text does not move and the ring
+ * gains room. The offset reuses a spacing token (lead ruling, 2026-09-16), and
+ * must stay inside the row's padding and short of the gap to the slot.
+ * test/order-line-ring.test.ts pins that, so retuning --frost-space-2 cannot
+ * push the ring into the slot unnoticed. */
+a.order-line__target:active,
+.order-line__target.is-pressed {
+  margin: calc(-1 * var(--frost-space-2));
+  padding: var(--frost-space-2);
+  border-radius: var(--frost-radius-surface);
+}
+
+@media (hover: hover) {
+  a.order-line__target:hover .order-line__name {
+    text-decoration: underline;
+    text-underline-offset: var(--frost-link-underline-offset);
+  }
+
+  a.order-line__remove:hover {
+    background: var(--frost-destructive-soft);
+  }
+
+  a.action:hover {
+    background: var(--frost-group);
+    border-color: var(--frost-primary);
+  }
+
+  a.action--primary:hover {
+    background: var(--frost-primary-hover);
+    color: var(--frost-primary-text);
+  }
 }
 
 /* ---- Development-only fixture links, outside the device frame ---- */
