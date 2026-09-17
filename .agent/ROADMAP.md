@@ -152,8 +152,11 @@ A task that feels like it needs two sessions is two tasks.
 |---|---|---|---|
 | F1 | [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens wired, lock/PIN screen at 1280×800 | **Done** 2026-09-14, lead-verified: 114 tests across 8 files, typecheck clean, opened in a browser | `builder3` |
 | F1 review | Owner opened FE-001 and approved it, 2026-09-14 | **Done.** "Screen's fine" | Owner |
-| F2 | POS order workspace — the densest screen: menu grid, running order, three line signatures, 86'd tiles | **Next.** Unblocked and now genuinely equipped: A9 landed the pressed ring, the 172-token registry and the hover test on the code branch. The order-line ring offset is ruled — see MEMORY.md | unassigned |
-| F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 is fixing | Not started | unassigned |
+| F2 | POS order workspace | **Split into three** 2026-09-16. The Frost fixture is 664 lines and carries about 26 states; FE-001 was one screen with 8 states and produced 114 tests. F2 as one task was three sessions pretending to be one | — |
+| F2a | [FE-003](tasks/FE-003-order-panel.md) — the running order panel: fire-round groups, the three line signatures, money, totals, both settlement locks. Six states | **Done** 2026-09-17, lead-verified: 213 tests across 12 files, up from 120, and all three new guards proven red by the lead injecting the defect each catches. Committed `89a100e` | `builder5` |
+| F2b | The menu grid: tiles, categories, 86'd tiles disabled in place, quick sale | **Next.** Carries one hard requirement from F2a: **the lock notice**. The artifact puts the route out of a settlement lock in the menu region, so until F2b lands, `lock-draft` and `lock-lease` strand the cashier. Acceptance criterion, not a note | unassigned |
+| F2c | The sheets, the approval PIN flow, and the fire-error states | Not started | unassigned |
+| F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 fixed | Not started. Consumes `--frost-invalid`, which A9 landed unused | unassigned |
 | F4 | The remaining POS screens, then the back office | Not started | unassigned |
 
 F1 is deliberately the smallest thing that proves the chain end to end: Vite

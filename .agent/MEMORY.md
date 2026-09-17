@@ -3,17 +3,18 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-16, from repository evidence on
-`agent/phase-0-foundations` and the live Herdr roster. That edit recorded A9
-(FE-002) as done and lead-verified, and ruled the order-line ring offset that
-F2 will hit. The preceding 2026-09-15 edit corrected the branch head and an
-Active agents table that listed seven agents that no longer existed.
+Last updated: 2026-09-17, from repository evidence on
+`agent/phase-0-foundations` and the live Herdr roster. That edit recorded F2a
+(FE-003) as done and lead-verified, and ruled the eleven departures its
+implementer raised. The 2026-09-16 edit recorded A9 and ruled the order-line
+ring offset; the 2026-09-15 edit corrected the branch head and an Active agents
+table that listed seven agents that no longer existed.
 
-**Uncommitted as of 2026-09-16:** A9's work sits in the working tree — the
-172-token registry, `frost-states.css`, `pos.css`, the hover test, FE-002 — plus
-this file and `.agent/ROADMAP.md`. Nothing has been committed since `d3c0aa1`,
-because the owner has not been asked yet. **Until it is committed, a fresh
-clone does not have A9.**
+**A9 is committed.** Two commits on `agent/phase-0-foundations`: `0625be9`
+carries the implementation — the 172-token registry, `frost-states.css`,
+`pos.css` and the hover test — and `c80bb87` carries FE-002, this file and
+`.agent/ROADMAP.md`. **F2a followed in `89a100e`.** A fresh clone has both.
+Still not merged to `main`; that is the owner's.
 
 The 2026-09-10 revision of this file was written at 11:50 and went stale the
 same afternoon: DESIGN-002 ran two further passes, and an entire visual
@@ -38,7 +39,7 @@ and the Frost design system. A fresh clone has all of it. Nothing is merged to
 
 ---
 
-## START HERE — resume point, 2026-09-15
+## START HERE — resume point, 2026-09-17
 
 Every agent from the 2026-09-14 session was shut down deliberately to free
 memory. **Nothing was lost:** both working trees were clean and every handoff
@@ -49,7 +50,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen. Head `d3c0aa1` |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state and the order panel. Head `89a100e` |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -94,13 +95,21 @@ and remediated over three passes.
      implementation should gate hover; a comment fixes nothing and hands the
      bug to whoever writes the code. F2 builds the menu grid, which is where it
      bites.
-2. **F2 — the POS order workspace.** Next, and now genuinely equipped rather
-   than merely unblocked: the pressed ring, the 172-token registry and the hover
-   test are all on the code branch. The densest screen: menu grid, running
-   order, the three line signatures, 86'd tiles disabled in place.
+2. **F2 — split into three, 2026-09-16.** The roadmap line called it one task.
+   The Frost fixture for POS-03 is **664 lines carrying about twenty-six
+   states**, and FE-001 was one screen with eight states that produced 114
+   tests. F2 as written was three sessions pretending to be one, and the owner's
+   own rule is that a task needing two sessions is two tasks. Counting the
+   screen before assigning it is now the second time that changed a task — the
+   first was A9, which shrank.
 
-   **The order-line ring offset is ruled** — see *A9 landed* below. F2's task
-   file must carry the ruling and the test it requires.
+   - **F2a — [FE-003](tasks/FE-003-order-panel.md). DONE 2026-09-17,
+     lead-verified.** The running order panel. 213 tests, up from 120. Account
+     under *F2a landed* below.
+   - **F2b — the menu grid**, next: tiles, categories, 86'd tiles disabled in
+     place, quick sale. **Carries a hard requirement, not a nicety: the lock
+     notice.** A locked order panel currently strands a cashier — see below.
+   - **F2c** — the sheets, the approval PIN flow, the fire-error states.
 
 **How this session works** — the owner's two standing instructions:
 
@@ -110,8 +119,10 @@ and remediated over three passes.
   the command and URL that shows the work. An agent that starts a second screen
   has ended its task.
 
-**To see the work:** `npm run dev -w apps/pos` → `http://127.0.0.1:5173/pos/`
-for the app; for the design fixtures, serve
+**To see the work:** `npm run dev -w apps/pos`, then `http://127.0.0.1:5173/pos/`
+for the lock screen and `/pos/order` for the order panel — six states on
+`?state=`: `default`, `empty`, `overflow`, `pressed`, `lock-draft`, `lock-lease`.
+For the design fixtures, for the design fixtures, serve
 `../restaurant-pos-design/docs/design/visual-directions/` and open
 `index.html`.
 
@@ -434,6 +445,7 @@ Roster verified against `herdr agent list` on 2026-09-15.
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-15 and renamed it `lead` |
 | `builder4` | claude | `w2:pF` | live, idle | **Delivered [FE-002](tasks/FE-002-apply-a7-states.md)** (roadmap A9), lead-verified. Took a baseline `npm run verify` before touching anything, found PostgreSQL down and started it. Kept alive only until the owner has looked at A9; its context is spent, so **F2 goes to a fresh implementer**, not to this one |
+| `builder5` | claude | `w2:pG` | live, idle | **Delivered [FE-003](tasks/FE-003-order-panel.md)** (F2a), lead-verified. Raised eleven departures as lead calls rather than deciding them, and found that a locked panel has no route out. Context spent; **F2b goes to a fresh implementer** |
 
 `architect`, `designer`, `design-reviewer`, `designer2`, `builder1`, `builder2`
 and `builder3` were all shut down on 2026-09-14 to free memory. Their panes no
@@ -535,6 +547,82 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## F2a landed — the order panel, with I-12 checked rather than described
+
+[FE-003](tasks/FE-003-order-panel.md) closed 2026-09-17 on
+`agent/phase-0-foundations`, delivered by `builder5`, committed `89a100e`.
+**Lead-verified: 213 tests across 12 files, up from 120; typecheck clean.**
+
+**The three new guards were each proven red by the lead**, by injecting the
+defect each claims to catch rather than accepting that it had been proven:
+widening the ring offset failed the clearance tests; `Number()` on money failed
+both the detector and the exactness check; wrapping a row in an anchor failed
+the `I-12` slot guard in three states.
+
+**`tsc` does not catch `Number()` on a bigint**, because `Number()` accepts one.
+That makes the test the only guard on the money trap `builder2` measured, and it
+is the reason the rule had to be a test rather than a note in a handoff.
+
+**The `I-12` guard now catches automatically what DESIGN-002 pass 3 found by
+hand** — a fired row built as one anchor that swallowed its own reserved slot,
+violating the ruling in its own markup. That defect cost a review pass once.
+
+**Looked at, not inferred:** a held pending row rings the body and stops clear
+of the × box, which is `I-12` made visible and cannot be proven from CSS. The
+measured clearance is 4px — the 12px gap minus the 8px offset, the number the
+ruling predicts. `lock-draft` renders every slot empty, no row a control, the
+reason on every header, rows fully legible: inert, not absent.
+
+### A locked panel currently strands the cashier — F2b must fix it
+
+The artifact puts the lock notice — *Back to payment*, *Manager: take over
+payment* — in the **menu region**, which F2a does not own. So the panel is
+correct and the *screen* is not: under either lock there is no visible route
+out. `builder5` found this and **refused to invent a button in the panel**,
+which was right in both directions.
+
+**This is an acceptance criterion for F2b, not a note.** A slice boundary that
+leaves a user stranded is only acceptable while the next slice is known to close
+it, and that only holds if it is written down as a requirement.
+
+### Owner decision owed before F3 — does IDR show its symbol
+
+FE-003's task text said the symbol is the frontend's job; the reviewed artifact
+draws every amount bare (`135.000`). `builder5` followed the artifact and
+flagged the contradiction rather than choosing silently. **Provisionally ruled:
+follow the artifact.** Whether `Rp` appears is one decision for every screen
+that shows money, and **F3 is where it stops being cosmetic**, because that is
+money shown to a customer at the point of payment. Raised with the owner
+2026-09-16; unanswered.
+
+### A lead error worth keeping
+
+FE-003's task file listed the "three line signatures" as PENDING, FIRED and the
+locked case. **The locked case is `I-12` holding, not a signature** — which the
+same file says correctly two paragraphs later and then contradicts in its own
+list. SCREEN-INVENTORY's third signature is VOIDED. `builder5` followed the
+inventory over the task file and drew VOIDED rows. The lesson is the ordinary
+one: a task file is a derived document, and where it disagrees with the
+inventory the inventory wins.
+
+### Accepted costs, recorded rather than fixed
+
+- **Five artifact literals were omitted rather than approximated**, leaving the
+  totals block about 6px tighter. Omitting beats inventing under
+  `no-invented-values`, and each is commented in `pos.css`. One is not merely
+  spacing: the empty notice's `700` heading renders as semibold 600. If the
+  owner wants the artifact's exact block, the fix is registry tokens.
+- **The `Number(` detector is blunt** — it bans the call across all of `src` and
+  an alias slips through. Adequate; the limit is stated, not hidden.
+- **Focused-and-pressed was not verified in a browser** on the new controls.
+  Space does not activate a link, so FE-002's keyboard method does not carry
+  over. A real gap, small, honestly reported, and it belongs in F2b's browser
+  pass.
+- **`?state=settle` is `builder5`'s placeholder name**; the artifact links to
+  `settlement.html`. F3 settles it.
 
 ---
 
