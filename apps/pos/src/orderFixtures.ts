@@ -6,8 +6,11 @@ import type { Money } from '@pos/money';
 // Nothing is computed here: every total is the artifact's own figure, written
 // down as a bigint, because pricing is the server's and this slice has none.
 //
-// F2a only: the panel. The menu grid is F2b; the sheets, the approval PIN and
-// the fire-error states are F2c.
+// F2a built the panel and its six states. F2b adds three states that change
+// only the menu region (eightysix, loading, catalog); the panel draws the table
+// order in each, see ORDER_FIXTURES. The menu region's own fixtures are in
+// menuFixtures.ts. The sheets, the approval PIN and the fire-error states are
+// F2c.
 
 export type LineStatus = 'pending' | 'fired' | 'voided';
 
@@ -52,7 +55,16 @@ export type OrderFixture = {
   totalsWithout?: Readonly<Record<string, Totals>>;
 };
 
-export type OrderState = 'default' | 'empty' | 'overflow' | 'pressed' | 'lock-draft' | 'lock-lease';
+export type OrderState =
+  | 'default'
+  | 'empty'
+  | 'overflow'
+  | 'pressed'
+  | 'lock-draft'
+  | 'lock-lease'
+  | 'eightysix'
+  | 'loading'
+  | 'catalog';
 
 export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'default', label: 'Two rounds fired, one line pending' },
@@ -61,6 +73,9 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'pressed', label: 'Pressed — fired line held' },
   { id: 'lock-draft', label: 'Locked — your payment' },
   { id: 'lock-lease', label: 'Locked — another client' },
+  { id: 'eightysix', label: 'Item 86’d — disabled in place' },
+  { id: 'loading', label: 'Loading the menu' },
+  { id: 'catalog', label: 'Menu changed while ordering' },
 ];
 
 // ruling C-5: the two locks never share a string.
@@ -206,6 +221,14 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   'lock-draft': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, lock: 'draft' },
 
   'lock-lease': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, lock: 'lease' },
+
+  // F2b's states change the menu region. The panel draws the table order, as
+  // the artifact's catalog state does. Its eightysix state also tags the
+  // pending Steak line 86, and its loading state replaces the lines and totals
+  // with a skeleton; both are panel markup this slice does not touch.
+  eightysix: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  loading: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  catalog: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
 };
 
 export type OrderView = { state: OrderState; gone?: string };

@@ -1,4 +1,5 @@
 import { Icon } from './icons.js';
+import { MenuRegion } from './MenuRegion.js';
 import { formatAmount } from './money.js';
 import {
   EDIT_LINE_HREF,
@@ -18,16 +19,16 @@ import {
   type Totals,
 } from './orderFixtures.js';
 
-// POS-03, F2a: the running order panel. The menu grid (F2b) and the header bar
-// are not built here; their regions are held empty so the panel sits where the
-// artifact puts it on the 1280×800 frame.
+// POS-03: the running order panel (F2a) beside the menu region (F2b). The
+// header bar is not built yet; it is held empty at the artifact's height so the
+// panel sits where the artifact puts it on the 1280×800 frame.
 export function OrderScreen({ view = orderViewFrom(window.location.search) }: { view?: OrderView }) {
   return (
     <>
       <div className="pos-device">
         <div className="order-screen__bar" aria-hidden="true" />
         <div className="order-screen__body">
-          <div className="order-screen__menu" aria-hidden="true" />
+          <MenuRegion state={view.state} />
           <OrderPanel view={view} />
         </div>
       </div>
