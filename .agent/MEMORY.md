@@ -13,7 +13,7 @@ table that listed seven agents that no longer existed.
 **A9 is committed.** Two commits on `agent/phase-0-foundations`: `0625be9`
 carries the implementation — the 172-token registry, `frost-states.css`,
 `pos.css` and the hover test — and `c80bb87` carries FE-002, this file and
-`.agent/ROADMAP.md`. **F2a followed in `89a100e`.** A fresh clone has both.
+`.agent/ROADMAP.md`. **F2a followed in `89a100e`, F2b in `eca409c`.** A fresh clone has all of it.
 Still not merged to `main`; that is the owner's.
 
 The 2026-09-10 revision of this file was written at 11:50 and went stale the
@@ -50,7 +50,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state and the order panel. Head `89a100e` |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel and the menu region. Head `eca409c` |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -106,10 +106,15 @@ and remediated over three passes.
    - **F2a — [FE-003](tasks/FE-003-order-panel.md). DONE 2026-09-17,
      lead-verified.** The running order panel. 213 tests, up from 120. Account
      under *F2a landed* below.
-   - **F2b — the menu grid**, next: tiles, categories, 86'd tiles disabled in
-     place, quick sale. **Carries a hard requirement, not a nicety: the lock
-     notice.** A locked order panel currently strands a cashier — see below.
-   - **F2c** — the sheets, the approval PIN flow, the fire-error states.
+   - **F2b — [FE-004](tasks/FE-004-menu-region.md). DONE 2026-09-17,
+     lead-verified.** The menu region. 273 tests, up from 213. **The locked
+     order now has a route out**, and the check spans both slices — see below.
+   - **F2c** — the sheets, the approval PIN flow, `error`, `fireerror`,
+     `fireblocked`.
+   - **F2d — quick-sale / counter mode**, split out of F2b on 2026-09-17. It
+     changes the order's identity (`T1` becomes `counter`) and the panel header,
+     not just the menu, so it is its own slice rather than a state smuggled into
+     the grid.
 
 **How this session works** — the owner's two standing instructions:
 
@@ -445,6 +450,7 @@ Roster verified against `herdr agent list` on 2026-09-15.
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-15 and renamed it `lead` |
 | `builder4` | claude | `w2:pF` | live, idle | **Delivered [FE-002](tasks/FE-002-apply-a7-states.md)** (roadmap A9), lead-verified. Took a baseline `npm run verify` before touching anything, found PostgreSQL down and started it. Kept alive only until the owner has looked at A9; its context is spent, so **F2 goes to a fresh implementer**, not to this one |
+| `builder6` | claude | `w2:pH` | live, idle | **Delivered [FE-004](tasks/FE-004-menu-region.md)** (F2b), lead-verified. Caught two wrong premises in its own task file and checked rather than followed them. Context spent; F2c goes to a fresh implementer |
 | `builder5` | claude | `w2:pG` | live, idle | **Delivered [FE-003](tasks/FE-003-order-panel.md)** (F2a), lead-verified. Raised eleven departures as lead calls rather than deciding them, and found that a locked panel has no route out. Context spent; **F2b goes to a fresh implementer** |
 
 `architect`, `designer`, `design-reviewer`, `designer2`, `builder1`, `builder2`
@@ -547,6 +553,82 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## F2b landed — the locked order has a way out, and the check spans the seam
+
+[FE-004](tasks/FE-004-menu-region.md) closed 2026-09-17, delivered by
+`builder6`, committed `eca409c`. **Lead-verified: 273 tests across 13 files, up
+from 213.**
+
+**Acceptance criterion 1 was proven by deleting it.** Removing both route-out
+actions failed four tests, named *"carries exactly one action, a link that goes
+somewhere"* and *"whole screen: the panel stays inert and readable, and the
+notice's action is the only way out"*, once per lock. **The cross-slice check is
+a test, not a reviewer remembering to look across the seam.** That is better
+than the task asked for, and it is the pattern to repeat wherever one slice
+completes another.
+
+**Looked at:** `lock-draft` gives the cashier exactly one control on the whole
+frame — the route out — beside a fully legible panel. `eightysix` holds Steak
+greyed and dashed in slot three of row one, grid unreflowed.
+
+### The lead's task file was wrong twice, and the implementer checked both
+
+- **It claimed the registry carries nothing for the category rail or the `86`
+  tag. It carries all seven tokens.** The lead's grep was too narrow — `cat-`
+  misses `category-`, `86` misses `unavailable-` — and the conclusion went into
+  the task as fact.
+- **It said `loading` shows neither rail nor grid.** The artifact keeps the rail;
+  only the grid gives way to the skeleton.
+
+**That is the third consecutive slice where a task file was wrong and a reviewed
+artifact was right** (FE-003 mis-listed the three line signatures). The rule is
+now explicit and belongs in every task file: **a task file is derived. Where it
+disagrees with the artifact or the inventory, raise it and follow the artifact.**
+Three implementers have now done exactly that, which is the process working —
+but the lead is the one generating the errors, so the lead writes less
+confidently: state a premise as a premise, not as a finding.
+
+### RULED — `<button>` for acting, `<a>` for going, 2026-09-17
+
+**Two consecutive slices reported the same unverified gap:** focused-and-pressed
+could not be checked, because a mouse press drops `:focus-visible` and **Space
+does not activate a link**. Repetition across slices is a signal, not an
+accident.
+
+The real question underneath is semantic. In the finished product a menu tile
+*adds a line*, a category *filters the grid*, an order-line body *opens a
+sheet*, and the × *removes a line*. None of those is navigation. They are links
+today only because the Frost fixtures are static HTML that moves by URL, and
+**fixture plumbing must not dictate the app's semantics.**
+
+- **Anything that acts on the order is a `<button>`.** Tiles, categories, line
+  bodies, the remove control, the close-bar actions.
+- **Anchors are for going somewhere** — the route out of a lock, which genuinely
+  leaves for the settlement screen.
+
+**Scope, deliberately limited.** This is a refactor across two committed,
+reviewed slices, so it is **its own task (F2e), not a blocker on F2c** and not a
+silent edit. What F2c must do is **stop the debt growing: every new acting
+control is a `<button>`.** Once F2e lands, focused-and-pressed becomes checkable
+by the keyboard method FE-002 already established, and that check goes into the
+suite rather than into another handoff's "not checked" list.
+
+### Also carried
+
+- **Three placeholder route names now exist** — `?state=settle`,
+  `?state=settle-pending`, `?state=settle-takeover`. **F3 reconciles all three**;
+  it is the first thing F3's task file will say.
+- **The panel in `eightysix` and `loading` is not the artifact's**, because
+  panel markup was out of bounds for F2b. The artifact tags the pending Steak
+  *line* with `86` and skeletons the panel while loading. **The 86'd line is
+  F2c's** — it is the setup for `fireblocked`.
+- **Hover-on-touch could not be emulated.** `Emulation.setEmulatedMedia` did not
+  take, so `builder6` declared the check **void** rather than reporting a pass it
+  had not earned. Worth naming as the standard: a check that did not run is not
+  a check that passed.
 
 ---
 

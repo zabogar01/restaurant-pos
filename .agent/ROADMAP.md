@@ -7,9 +7,11 @@ next, not what happens eventually.
 
 Owned by the Claude product lead. No other agent writes to this file.
 
-Last updated 2026-09-15. That edit closed four rows this file still showed as
-in flight — A6, F1, and Phase 0 Task 2 had all landed — and corrected the live
-agent count from five to one.
+Last updated 2026-09-17, after F2b landed. F2 is now five rows, not one: the
+POS-03 fixture carries about twenty-six states, and splitting it is the reason
+each slice has been reviewable. F2e was added the same day from a ruling, not
+from a plan — two slices in a row could not verify a focused press, because
+Space does not activate a link.
 
 ---
 
@@ -44,9 +46,10 @@ trace to a built Frost artifact. Nothing else in the repository waits on it —
 Phase 0 ships two client shells with a PIN pad and a login form and needs no
 palette.
 
-**One agent is live as of 2026-09-15: `lead`.** Every other agent was shut down
-on 2026-09-14 to free memory, with clean working trees and committed handoffs.
-A9 and F2 each need a fresh implementer started into a fresh pane.
+**Live as of 2026-09-17: `lead`, plus `builder4`, `builder5` and `builder6`
+idle with their slices delivered.** Each implementer's context is spent on the
+slice it built, so **every new slice gets a fresh agent in a fresh pane** — that
+is the owner's subagent-driven ruling, not a preference.
 
 ### Track B — Architecture
 
@@ -154,8 +157,10 @@ A task that feels like it needs two sessions is two tasks.
 | F1 review | Owner opened FE-001 and approved it, 2026-09-14 | **Done.** "Screen's fine" | Owner |
 | F2 | POS order workspace | **Split into three** 2026-09-16. The Frost fixture is 664 lines and carries about 26 states; FE-001 was one screen with 8 states and produced 114 tests. F2 as one task was three sessions pretending to be one | — |
 | F2a | [FE-003](tasks/FE-003-order-panel.md) — the running order panel: fire-round groups, the three line signatures, money, totals, both settlement locks. Six states | **Done** 2026-09-17, lead-verified: 213 tests across 12 files, up from 120, and all three new guards proven red by the lead injecting the defect each catches. Committed `89a100e` | `builder5` |
-| F2b | The menu grid: tiles, categories, 86'd tiles disabled in place, quick sale | **Next.** Carries one hard requirement from F2a: **the lock notice**. The artifact puts the route out of a settlement lock in the menu region, so until F2b lands, `lock-draft` and `lock-lease` strand the cashier. Acceptance criterion, not a note | unassigned |
-| F2c | The sheets, the approval PIN flow, and the fire-error states | Not started | unassigned |
+| F2b | [FE-004](tasks/FE-004-menu-region.md) — the menu region | **Done** 2026-09-17, lead-verified: 273 tests across 13 files, and criterion 1 proven by deleting the route out and watching four tests fail, two of them whole-screen checks spanning F2a's panel. Committed `eca409c` | `builder6` |
+| F2c | The sheets, the approval PIN flow, `error`, `fireerror`, `fireblocked`, and the 86'd line in the panel | **Next.** Every new acting control is a `<button>` — see the semantics ruling in MEMORY.md | unassigned |
+| F2d | Quick-sale / counter mode | Not started. **Split out of F2b** 2026-09-17: it changes the order's identity and the panel header, not just the menu, so it is its own slice rather than a state smuggled into the grid | unassigned |
+| F2e | Convert acting controls from `<a>` to `<button>` across F2a and F2b | Not started. **Ruled 2026-09-17** after two slices reported the same unverifiable focused-and-pressed state: Space does not activate a link. Tiles, categories, line bodies and the remove control act on the order and are buttons; anchors are for leaving the screen. A refactor of committed work, so its own task | unassigned |
 | F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 fixed | Not started. Consumes `--frost-invalid`, which A9 landed unused | unassigned |
 | F4 | The remaining POS screens, then the back office | Not started | unassigned |
 
