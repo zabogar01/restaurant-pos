@@ -119,8 +119,8 @@ and remediated over three passes.
      that a manager may re-enter their own PIN as approver. **Built first
      because both gated families lead here**, so it is built once rather than
      twice.
-   - **F2i — the discount family**, moved out of F2c 2026-09-18:
-     `sheet-discount`, `sheet-freeform`, `sheet-remove`, `zero`. Depends on F2g.
+   - **F2i — [FE-007](tasks/FE-007-discount-family.md), in flight with
+     `builder9` from 2026-09-18.** The discount family. Unblocked by F2g.
    - **F2j — the void family**: `sheet-voidline`, `sheet-voidorder`,
      `sheet-voidorder-fired`. Depends on F2g.
    - **F2h** — `error`, `fireerror`, `fireblocked`, and the 86'd line in the
@@ -686,6 +686,35 @@ have satisfied criterion 1 and broken the inventory's rule that denial is
 built the three states that were genuinely ungated, held four, and asked** —
 with a proposed ruling and a test file already wired so any held state is
 checked the moment it is added.
+
+### CORRECTION, 2026-09-18 — the lead over-read the inventory on `FR-F8`
+
+FE-005's verification ruled that remove/replace of a discount is *wholly*
+gated, calling it "stricter even than the handoff put it". **That was wrong.**
+It was taken from SCREEN-INVENTORY's compressed summary — *"remove/replace
+(gated by the whole transition, FR-F8)"* — rather than from `FR-F8` itself.
+
+The PRD is more precise, and the PRD is the contract:
+
+> The approval gate covers the **whole transition**: removing or replacing a
+> **free-form** discount requires manager approval **even if its replacement is
+> a preset**; removing or replacing a **preset is ungated unless the replacement
+> is free-form**.
+
+"Whole transition" means the gate inspects **both ends** — what is removed and
+what replaces it — not that every path through the sheet is gated. **The
+artifact draws this correctly**, which is why three of its controls are ungated
+in the one case it shows.
+
+**What the error changed:** nothing built. F2c still correctly held those
+sheets, because two of the three paths do reach the prompt. **What it changed is
+F2i**, which is now a richer slice: the gate is *data-driven* and needs a
+fixture for a free-form discount applied, where all three controls are gated.
+
+**The lesson generalises the existing one.** "Slice by authority" was right;
+this adds: **the inventory is derived from the PRD, and a compressed summary
+loses precision in exactly the direction that sounds safer.** Go to the
+requirement.
 
 ### RULED — slice by authority, not by component
 
