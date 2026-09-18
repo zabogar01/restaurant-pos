@@ -14,9 +14,9 @@ import type { VoidReason } from './void.js';
 // "Void whole order" sheet, with an unfired variant and an approval path).
 //
 // No reason is chosen in any fixture. The artifact draws one chosen in each
-// gated sheet, but ?state=sheet-voidline is where a fired row's body leads in
-// the app, so a reason chosen here would be a default: a void recorded with a
-// reason nobody gave (FR-H4).
+// gated sheet, but these are the sheets a fired row's body and Void order open
+// in the app (panelVoid, below), so a reason chosen here would be a default: a
+// void recorded with a reason nobody gave (FR-H4).
 
 export type VoidSheetFixture = {
   /** A FIRED line, by id, on the order beside the sheet; or the whole order. */
@@ -49,8 +49,9 @@ export const ORDER_REASONS: ReadonlyArray<VoidReason> = [
 // ?state=eightysix, which this does not copy (see the FE-008 handoff).
 const settled = { cancel: { state: 'default' }, landsOn: { state: 'default' } } satisfies Pick<VoidSheetFixture, 'cancel' | 'landsOn'>;
 
-// The close bar's Void order, which opens both order sheets.
-const VOID_ORDER_OPENER = '.order-actions a[href="?state=sheet-voidorder"]';
+/** The close bar's Void order, which opens the order's void sheet. */
+export const VOID_ORDER_ACTION = 'void-order';
+const VOID_ORDER_OPENER = `.order-actions [data-action="${VOID_ORDER_ACTION}"]`;
 
 export const VOID_FIXTURES: Partial<Record<OrderState, VoidSheetFixture>> = {
   // The artifact's line: the fired Burger. Focus returns to its row body, the
@@ -66,6 +67,23 @@ export const VOID_FIXTURES: Partial<Record<OrderState, VoidSheetFixture>> = {
 
   'sheet-voidorder-fired': { target: { kind: 'order' }, reasons: ORDER_REASONS, opener: VOID_ORDER_OPENER, ...settled },
 };
+
+/**
+ * The void sheet a control on the panel opens: for the line the cashier
+ * tapped, or for the order on screen — never a fixture's line or a fixture's
+ * order (B-16: a cancellation ticket covers the work asked for, and nothing
+ * else). Cancel returns focus to that control. Closing, either way, keeps the
+ * order the cashier was looking at: no state draws a voided result, and moving
+ * to another fixture's order would change the panel under the cashier.
+ */
+export function panelVoid(target: VoidSheetFixture['target'], view: OrderView): VoidSheetFixture {
+  return target.kind === 'line'
+    ? { target, reasons: LINE_REASONS, opener: lineBody(target.lineId), cancel: view, landsOn: view }
+    : { target, reasons: ORDER_REASONS, opener: VOID_ORDER_OPENER, cancel: view, landsOn: view };
+}
+
+/** A row's tap target, by its line's id. */
+export const lineBody = (lineId: string) => `.order-line[data-line-id="${lineId}"] > .order-line__target`;
 
 /** The order as the panel beside the sheet shows it. */
 export type ShownOrder = { title: string; groups: ReadonlyArray<RoundGroup>; totals: Totals };

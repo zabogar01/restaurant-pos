@@ -63,7 +63,7 @@ export function ApprovalPrompt({ approval, go }: { approval: ApprovalFixture; go
             continueDisabled={approval.throttled}
           >
             {approval.notice && (
-              <div className="notice">
+              <div className="notice" role={approval.notice.failure ? 'alert' : undefined}>
                 <div className="notice__title">{approval.notice.title}</div>
                 <div>{approval.notice.body}</div>
               </div>

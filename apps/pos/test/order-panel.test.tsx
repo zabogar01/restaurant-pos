@@ -2,13 +2,13 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { OrderPanel } from '../src/OrderPanel.js';
+import { OrderPanel, type PanelActions } from '../src/OrderPanel.js';
 import {
+  EDIT_LINE_SEARCH,
   FIRED_TAG,
   LOCK_TAG,
   ORDER_STATES,
   PENDING_TAG,
-  VOID_LINE_HREF,
   orderViewFrom,
   type OrderState,
   type OrderView,
@@ -19,7 +19,8 @@ import {
 // reserves the slot and leaves it empty, and under either settlement lock
 // every slot is empty and no row is a control. The slot is always the tap
 // target's sibling — DESIGN-002 pass 3 found a fired row drawn as one anchor
-// that swallowed the slot, violating I-12 in its own markup.
+// that swallowed the slot, violating I-12 in its own markup. Since FE-009 a
+// live row body is a <button>, so the guard looks for either.
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -37,9 +38,20 @@ afterEach(() => {
   host.remove();
 });
 
-function render(view: OrderView | OrderState) {
-  act(() => root.render(<OrderPanel view={typeof view === 'string' ? { state: view } : view} />));
+function render(view: OrderView | OrderState, actions?: PanelActions) {
+  act(() => root.render(<OrderPanel view={typeof view === 'string' ? { state: view } : view} actions={actions} />));
 }
+
+/** Panel actions that record what the panel asked for. */
+function recording() {
+  const asked: Array<{ navigate: string } | { openVoid: unknown }> = [];
+  const actions: PanelActions = {
+    navigate: (search) => asked.push({ navigate: search }),
+    openVoid: (target) => asked.push({ openVoid: target }),
+  };
+  return { asked, actions };
+}
+const press = (el: Element) => act(() => (el as HTMLElement).click());
 
 const rows = () => [...host.querySelectorAll<HTMLElement>('.order-line')];
 const rowsWith = (status: string) => rows().filter((r) => r.dataset.lineStatus === status);
@@ -48,9 +60,9 @@ const targetOf = (row: Element) => row.querySelector(':scope > .order-line__targ
 const tags = () => [...host.querySelectorAll('.round-head .round-head__tag')].map((t) => t.textContent);
 const text = (selector: string) => [...host.querySelectorAll(selector)].map((e) => e.textContent);
 
-/** Trailing slots that sit inside an anchor. The guard: this is always empty. */
-function slotsInsideAnchors(container: ParentNode): Element[] {
-  return [...container.querySelectorAll('.order-line__slot')].filter((s) => s.parentElement?.closest('a') !== null);
+/** Trailing slots that sit inside a control, an anchor or a button. The guard: this is always empty. */
+function slotsInsideControls(container: ParentNode): Element[] {
+  return [...container.querySelectorAll('.order-line__slot')].filter((s) => s.parentElement?.closest('a, button') !== null);
 }
 
 describe('the slot guard can see a swallowed slot', () => {
@@ -58,14 +70,35 @@ describe('the slot guard can see a swallowed slot', () => {
     const bad = document.createElement('div');
     bad.innerHTML =
       '<li class="order-line"><a class="order-line__target" href="#void">Soda<div class="order-line__slot"></div></a></li>';
-    expect(slotsInsideAnchors(bad)).toHaveLength(1);
+    expect(slotsInsideControls(bad)).toHaveLength(1);
   });
 
   it('flags a whole row wrapped in an anchor', () => {
     const bad = document.createElement('div');
     bad.innerHTML =
       '<a href="#void"><li class="order-line"><div class="order-line__target">Soda</div><div class="order-line__slot"></div></li></a>';
-    expect(slotsInsideAnchors(bad)).toHaveLength(1);
+    expect(slotsInsideControls(bad)).toHaveLength(1);
+  });
+
+  it('flags a fired row drawn as one button around its slot', () => {
+    const bad = document.createElement('div');
+    bad.innerHTML =
+      '<li class="order-line"><button type="button" class="order-line__target">Soda<span class="order-line__slot"></span></button></li>';
+    expect(slotsInsideControls(bad)).toHaveLength(1);
+  });
+
+  it('flags a whole row wrapped in a button', () => {
+    const bad = document.createElement('div');
+    bad.innerHTML =
+      '<button type="button"><span class="order-line"><span class="order-line__target">Soda</span><span class="order-line__slot"></span></span></button>';
+    expect(slotsInsideControls(bad)).toHaveLength(1);
+  });
+
+  it('passes a row whose slot is its target’s sibling', () => {
+    const good = document.createElement('div');
+    good.innerHTML =
+      '<li class="order-line"><button type="button" class="order-line__target">Soda</button><div class="order-line__slot"></div></li>';
+    expect(slotsInsideControls(good)).toEqual([]);
   });
 });
 
@@ -109,8 +142,8 @@ describe('fixture states', () => {
 describe.each(ORDER_STATES.map((s) => s.id))('I-12 structure in %s', (state) => {
   beforeEach(() => render(state));
 
-  it('no trailing slot has an anchor ancestor', () => {
-    expect(slotsInsideAnchors(host)).toEqual([]);
+  it('no trailing slot has an anchor or button ancestor', () => {
+    expect(slotsInsideControls(host)).toEqual([]);
   });
 
   it('every row is exactly a tap target followed by its sibling slot', () => {
@@ -147,26 +180,66 @@ describe('unlocked rows', () => {
     for (const row of pending) {
       const slot = slotOf(row);
       expect(slot.children).toHaveLength(1);
-      const remove = slot.firstElementChild as HTMLAnchorElement;
-      expect(remove.matches('a.order-line__remove')).toBe(true);
+      const remove = slot.firstElementChild as HTMLButtonElement;
+      expect(remove.matches('button.order-line__remove[type="button"]')).toBe(true);
       const name = row.querySelector('.order-line__name')!.textContent;
       expect(remove.getAttribute('aria-label')).toBe(`Remove ${name}`);
     }
   });
 
-  it.each(['default', 'overflow', 'pressed'] as const)('%s: a FIRED row body is the link to the void sheet', (state) => {
-    render(state);
-    for (const row of rowsWith('fired')) {
+  it.each(['default', 'overflow', 'pressed'] as const)('%s: a FIRED row body is the button that opens the void sheet for that line', (state) => {
+    const { asked, actions } = recording();
+    render(state, actions);
+    const fired = rowsWith('fired');
+    expect(fired.length).toBeGreaterThan(0);
+    for (const row of fired) {
       const target = targetOf(row);
-      expect(target.tagName).toBe('A');
-      expect(target.getAttribute('href')).toBe(VOID_LINE_HREF);
+      expect(target.tagName).toBe('BUTTON');
+      expect(target.getAttribute('type')).toBe('button');
+      press(target);
     }
+    // One void sheet per row pressed, each for that row's own line (B-16).
+    expect(asked).toEqual(fired.map((row) => ({ openVoid: { kind: 'line', lineId: row.dataset.lineId } })));
+    expect(new Set(fired.map((row) => row.dataset.lineId)).size).toBe(fired.length);
+  });
+
+  it.each(['default', 'overflow', 'pressed'] as const)('%s: a PENDING row body is the button that opens the line editor', (state) => {
+    const { asked, actions } = recording();
+    render(state, actions);
+    for (const row of rowsWith('pending')) {
+      const target = targetOf(row);
+      expect(target.matches('button.order-line__target[type="button"]')).toBe(true);
+      press(target);
+    }
+    expect(asked).toEqual(rowsWith('pending').map(() => ({ navigate: EDIT_LINE_SEARCH })));
+  });
+
+  it('the close bar’s four actions are buttons: Void order opens the void sheet over this order, the rest move the screen', () => {
+    const { asked, actions } = recording();
+    render('default', actions);
+    const bar = [...host.querySelectorAll<HTMLElement>('.order-actions > *')];
+    expect(bar.map((b) => [b.tagName, b.getAttribute('type'), b.textContent])).toEqual([
+      ['BUTTON', 'button', 'Discount'],
+      ['BUTTON', 'button', 'Void order'],
+      ['BUTTON', 'button', 'Send to kitchen'],
+      ['BUTTON', 'button', 'Settle'],
+    ]);
+    for (const b of bar) press(b);
+    expect(asked).toEqual([
+      { navigate: '?state=sheet-discount' },
+      { openVoid: { kind: 'order' } },
+      { navigate: '?state=fireerror' },
+      { navigate: '?state=settle' },
+    ]);
   });
 
   it('the remove control removes the line with no prompt, landing on the artifact’s figures', () => {
-    render('default');
-    const href = rowsWith('pending')[0]!.querySelector('a.order-line__remove')!.getAttribute('href')!;
-    render(orderViewFrom(href));
+    const { asked, actions } = recording();
+    render('default', actions);
+    press(rowsWith('pending')[0]!.querySelector('button.order-line__remove')!);
+    expect(asked).toHaveLength(1);
+    const search = (asked[0] as { navigate: string }).navigate;
+    render(orderViewFrom(search));
     expect(rowsWith('pending')).toEqual([]);
     expect(text('.round-head__tag')).toEqual([FIRED_TAG, FIRED_TAG]);
     expect(text('.totals dd')).toEqual(['165.000', '−16.500', '7.425', '155.925', '13.500']);
@@ -195,7 +268,7 @@ describe.each(['lock-draft', 'lock-lease'] as const)('%s: settlement lock', (sta
   });
 
   it('draws every close-bar action unavailable in place', () => {
-    expect(host.querySelectorAll('.order-actions a')).toHaveLength(0);
+    expect(host.querySelectorAll('.order-actions a, .order-actions button')).toHaveLength(0);
     expect(text('.order-actions .action--off')).toEqual(['Discount', 'Void order', 'Send to kitchen', 'Settle']);
   });
 
@@ -231,7 +304,7 @@ describe('pressed', () => {
     render('pressed');
     const held = [...host.querySelectorAll('.is-pressed')];
     expect(held).toHaveLength(1);
-    expect(held[0]!.matches('a.order-line__target')).toBe(true);
+    expect(held[0]!.matches('button.order-line__target')).toBe(true);
     expect(held[0]!.parentElement!.dataset.lineStatus).toBe('fired');
   });
 
@@ -250,7 +323,7 @@ describe('empty and overflow', () => {
     expect(host.querySelector('.order-empty')).not.toBeNull();
     expect(host.querySelector('.order-panel__count')!.textContent).toBe('Empty');
     expect(text('.totals dd')).toEqual(['0', '0']);
-    expect(host.querySelectorAll('.order-actions a')).toHaveLength(0);
+    expect(host.querySelectorAll('.order-actions a, .order-actions button')).toHaveLength(0);
   });
 
   it('overflow: the totals and close bar sit outside the scrolling list', () => {

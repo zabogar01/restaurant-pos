@@ -8,7 +8,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { OrderScreen } from '../src/OrderPanel.js';
 import { ORDER_FIXTURES, ORDER_STATES, type OrderLine, type OrderState, type OrderView, type RoundGroup } from '../src/orderFixtures.js';
 import { firedWork, givenReason, voidRule } from '../src/void.js';
-import { LINE_REASONS, ORDER_REASONS, VOID_FIXTURES, shownOrder, type ShownOrder, type VoidSheetFixture } from '../src/voidFixtures.js';
+import {
+  LINE_REASONS,
+  ORDER_REASONS,
+  VOID_FIXTURES,
+  lineBody,
+  shownOrder,
+  type ShownOrder,
+  type VoidSheetFixture,
+} from '../src/voidFixtures.js';
 import { OTHER_REASON, VoidSheet } from '../src/VoidSheets.js';
 
 // The void family (F2j). What this file is for:
@@ -618,17 +626,154 @@ describe.each(VOID_STATES)('%s: I-12 still holds', (state) => {
         expect(control.closest('.order-line')!.getAttribute('data-line-status')).toBe('pending');
         expect(control.className).toBe('order-line__remove');
         expect(control.getAttribute('aria-label')).toMatch(/^Remove /);
-        expect(control.getAttribute('href')).toMatch(/[?&]gone=/);
+        expect(control.matches('button[type="button"]')).toBe(true);
         expect(control.closest('[inert]')).not.toBeNull();
       }
     }
   });
+
+  it('what a slot holds is the removal: with the sheet’s inert lifted, pressing it takes the line off by ?gone=', () => {
+    render(state);
+    const remove = host.querySelector('.order-line__remove')!;
+    device().querySelectorAll('[inert]').forEach((el) => el.removeAttribute('inert'));
+    press(remove);
+    expect(window.location.search).toMatch(/[?&]gone=/);
+  });
 });
 
-it('the fired row body still leads to the line’s void sheet', () => {
-  render('default');
-  const body = panelRows('fired')[0]!.querySelector('.order-line__target')!;
-  expect(body.getAttribute('href')).toBe('?state=sheet-voidline');
+// ---- The panel's void paths carry the actual line and order (FE-009) ----
+//
+// Every fired row body used to lead to ?state=sheet-voidline, which is the
+// Burger's sheet: tapping Soda offered to void the Burger, and behind a real
+// command that is a cancellation ticket for work nobody asked to cancel
+// (B-16). Void order likewise led to one fixture's order, so the panel changed
+// under the cashier. Both now open the sheet as component state over the order
+// on screen, for what was tapped.
+
+const cardName = () => sheet()!.querySelector('.void-subject b')!.textContent;
+const cardAmount = () => sheet()!.querySelector('.void-subject__row > span:last-child')!.textContent;
+const orderValue = () => sheet()!.querySelector('.void-value__amount')!.textContent;
+const pressRow = (lineId: string) => press(device().querySelector(lineBody(lineId))!);
+const pressVoidOrder = () => press(device().querySelector('.order-actions [data-action="void-order"]')!);
+
+describe('a fired row body opens the void sheet for that line, and no other (acceptance criterion 1)', () => {
+  it.each(['default', 'pressed', 'overflow', 'eightysix', 'zero'] as const)('%s: every fired row opens its own line’s sheet', (state) => {
+    render(state);
+    const fired = panelRows('fired').map((row) => ({
+      id: row.dataset.lineId!,
+      name: row.querySelector('.order-line__name')!.textContent,
+      amount: row.querySelector('.order-line__amount')!.textContent,
+    }));
+    expect(fired.length).toBeGreaterThan(0);
+    for (const row of fired) {
+      render(state);
+      pressRow(row.id);
+      expect(title()).toBe('Void a line already sent to the kitchen');
+      expect([cardName(), cardAmount()]).toEqual([row.name, row.amount]);
+    }
+  });
+
+  it('two different fired rows open two different targets: Soda is not the Burger', () => {
+    render('default');
+    pressRow('burger');
+    const burger = [cardName(), cardAmount()];
+    render('default');
+    pressRow('soda');
+    const soda = [cardName(), cardAmount()];
+    expect(burger).toEqual(['Burger', '135.000']);
+    expect(soda).toEqual(['Soda', '30.000']);
+    expect(soda).not.toEqual(burger);
+  });
+
+  it('the manager is asked to approve the line tapped, with its reason, and the void lands back on the same order', () => {
+    render('overflow');
+    pressRow('of-wings');
+    press(inSheet('Kitchen cannot make it'));
+    press(inSheet('Continue'));
+    expect(request()).toBe('Void a fired line — Chicken Wings 270.000 — reason: kitchen cannot make it');
+    approve();
+    expect(sheet()).toBeNull();
+    expect(urlState()).toBe('overflow');
+    expect(panelRows('fired')).toHaveLength(6);
+  });
+
+  it('opens as component state: the URL and the history are untouched, and the panel behind is inert', () => {
+    render('default');
+    const before = { search: window.location.search, length: window.history.length };
+    pressRow('soda');
+    expect(sheet()).not.toBeNull();
+    expect({ search: window.location.search, length: window.history.length }).toEqual(before);
+    expect(host.querySelector('.order-screen__body')!.hasAttribute('inert')).toBe(true);
+    expect(document.activeElement).toBe(sheet());
+  });
+
+  it('Cancel and Escape close it on the same order, with focus back on the row that opened it', () => {
+    for (const close of [() => press(inSheet('Cancel')), escape]) {
+      render('overflow');
+      pressRow('of-beer');
+      close();
+      expect(sheet()).toBeNull();
+      expect(urlState()).toBe('overflow');
+      expect(document.activeElement).toBe(device().querySelector(lineBody('of-beer')));
+      expect(device().querySelector('[inert]')).toBeNull();
+    }
+  });
+
+  it('a second opening is a fresh sheet: no reason carried over from another line', () => {
+    render('default');
+    pressRow('burger');
+    press(inSheet('Sent to the wrong table'));
+    press(inSheet('Cancel'));
+    pressRow('soda');
+    expect(cardName()).toBe('Soda');
+    expect(reasons().filter((r) => r.getAttribute('aria-pressed') === 'true')).toEqual([]);
+    expect(commit().tagName).toBe('SPAN');
+  });
+});
+
+describe('Void order opens the void sheet over the order on screen (acceptance criterion 1)', () => {
+  it('default: the order holding fired work, so the gated variant, at the panel’s total', () => {
+    render('default');
+    pressVoidOrder();
+    expect(title()).toBe('Void this order');
+    expect(tag()).toBe('MANAGER REQUIRED');
+    expect(orderValue()).toBe(grandTotal());
+    expect(orderValue()).toBe('382.725');
+  });
+
+  it('default with the Steak removed: the panel’s own figure, 155.925', () => {
+    render('default', 'steak');
+    pressVoidOrder();
+    expect(orderValue()).toBe('155.925');
+    expect(orderValue()).toBe(grandTotal());
+  });
+
+  it('overflow: its own order — six fired lines, not the table order’s two', () => {
+    render('overflow');
+    pressVoidOrder();
+    expect(orderValue()).toBe(grandTotal());
+    expect(orderValue()).toBe('1.244.250');
+    expect(sheet()!.querySelector('.notice__title')!.textContent).toBe('6 lines have already been sent to the kitchen');
+  });
+
+  it('the panel does not change under the cashier: Keep order returns to the same order, focus on Void order', () => {
+    render('overflow');
+    const rowsBefore = [...host.querySelectorAll('.order-line__name')].map((n) => n.textContent);
+    pressVoidOrder();
+    expect([...host.querySelectorAll('.order-line__name')].map((n) => n.textContent)).toEqual(rowsBefore);
+    press(inSheet('Keep order'));
+    expect(urlState()).toBe('overflow');
+    expect([...host.querySelectorAll('.order-line__name')].map((n) => n.textContent)).toEqual(rowsBefore);
+    expect(document.activeElement!.textContent).toBe('Void order');
+  });
+
+  it('the order’s request names the order on screen', () => {
+    render('overflow');
+    pressVoidOrder();
+    press(inSheet('Customer left'));
+    press(inSheet('Continue'));
+    expect(request()).toBe('Void an order holding fired lines — Order · T1 1.244.250 — reason: customer left');
+  });
 });
 
 // ---- Dialogs (acceptance criterion 8) ----
@@ -674,10 +819,18 @@ it('the openers are the fired Burger’s row body and the close bar’s Void ord
   render('default');
   const lineOpener = device().querySelector(VOID_FIXTURES['sheet-voidline']!.opener)!;
   expect(lineOpener.textContent).toContain('Burger');
-  expect(lineOpener.getAttribute('href')).toBe('?state=sheet-voidline');
+  expect(lineOpener.matches('button[type="button"]')).toBe(true);
   for (const s of ['sheet-voidorder', 'sheet-voidorder-fired'] as const) {
-    expect(device().querySelector(VOID_FIXTURES[s]!.opener)!.textContent).toBe('Void order');
+    const orderOpener = device().querySelector(VOID_FIXTURES[s]!.opener)!;
+    expect(orderOpener.textContent).toBe('Void order');
+    expect(orderOpener.matches('button[type="button"]')).toBe(true);
   }
+  // And each opens what its fixture draws: the Burger's sheet, and the order's.
+  press(lineOpener);
+  expect(cardName()).toBe('Burger');
+  render('default');
+  press(device().querySelector(VOID_FIXTURES['sheet-voidorder']!.opener)!);
+  expect(title()).toBe('Void this order');
 });
 
 // ---- Money ----

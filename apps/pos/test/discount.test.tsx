@@ -644,8 +644,10 @@ describe('the five states', () => {
 
   it('zero: removing the pending Steak keeps the total at zero', () => {
     render('zero');
-    const remove = host.querySelector<HTMLAnchorElement>('.order-line__remove')!;
-    expect(remove.getAttribute('href')).toBe('?state=zero&gone=steak');
+    const remove = host.querySelector<HTMLButtonElement>('.order-line__remove')!;
+    expect(remove.getAttribute('type')).toBe('button');
+    act(() => remove.click());
+    expect(window.location.search).toBe('?state=zero&gone=steak');
     expect(ORDER_FIXTURES.zero.totalsWithout!.steak!.total).toBe(0n);
     expect(ORDER_FIXTURES.zero.totalsWithout!.steak!.discount!.amount).toBe(-165_000n);
   });

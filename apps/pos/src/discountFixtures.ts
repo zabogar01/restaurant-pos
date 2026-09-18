@@ -79,7 +79,7 @@ const onTableOrder = {
   // The close bar's Discount. The artifact also opens the change sheet from a
   // "change" link on the totals' discount row, which the panel (F2a) does not
   // draw; see the handoff.
-  opener: '.order-actions a[href="?state=sheet-discount"]',
+  opener: '.order-actions [data-action="discount"]',
   cancel: { state: 'default' },
   landsOn,
 } satisfies Omit<DiscountSheetFixture, 'trail'>;

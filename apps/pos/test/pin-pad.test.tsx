@@ -204,3 +204,46 @@ function attributeValues(): string[] {
     [...el.attributes].map((a) => `${a.name}=${a.value}`)
   );
 }
+
+// FE-009, correction 3 (lead ruling on FE-006): a PIN that did not work is
+// announced the moment its notice appears, on both pads. A notice that is not
+// the answer to a PIN — the draft waiting, the session a manager ended — is
+// not an alert.
+describe('a failure notice is announced, on both pads', () => {
+  const alerts = () => [...host.querySelectorAll('.notice[role="alert"]')].map((n) => n.querySelector('.notice__title')!.textContent);
+  const notices = () => host.querySelectorAll('.notice');
+
+  it.each([
+    ['error', 'PIN not recognised'],
+    ['permission-denied', 'This account is deactivated'],
+    ['throttled', 'Sign-in locked for 4 min 12 s'],
+  ] as const)('the lock screen, %s: its notice is role="alert"', (state, title) => {
+    render(state);
+    expect(notices()).toHaveLength(1);
+    expect(alerts()).toEqual([title]);
+  });
+
+  it.each(['invalidated', 'draft'] as const)('the lock screen, %s: a notice, not an alert', (state) => {
+    render(state);
+    expect(notices()).toHaveLength(1);
+    expect(alerts()).toEqual([]);
+  });
+
+  it.each([
+    ['approval-error', 'PIN not recognised'],
+    ['approval-throttled', 'Manager approvals locked for 4 min 38 s'],
+    ['approval-denied', 'That PIN is not a manager'],
+  ] as const)('the approval prompt, %s: its notice is role="alert"', (state, title) => {
+    window.history.replaceState(null, '', `/pos/order?state=${state}`);
+    act(() => root.render(<OrderScreen key={++mounts} view={{ state }} />));
+    expect(notices()).toHaveLength(1);
+    expect(alerts()).toEqual([title]);
+  });
+
+  it('the approval prompt awaiting a PIN has no notice and no alert', () => {
+    window.history.replaceState(null, '', '/pos/order?state=approval');
+    act(() => root.render(<OrderScreen key={++mounts} view={{ state: 'approval' }} />));
+    expect(notices()).toHaveLength(0);
+    expect(host.querySelectorAll('[role="alert"]')).toHaveLength(0);
+  });
+});

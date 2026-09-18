@@ -85,8 +85,22 @@ function liveControls(container: ParentNode): HTMLElement[] {
 const hrefState = (href: string) => new URLSearchParams(href.split('?')[1] ?? '').get('state') ?? 'default';
 
 /**
+ * A void sheet open on the frame, named after the state that draws it: the line
+ * sheet carries the line's card, the order sheet the order's value. Since
+ * FE-009 the panel opens a void sheet as component state, over the line or the
+ * order tapped, and writes no URL — so a URL alone can no longer show that a
+ * control reached one.
+ */
+function voidSheetOpen(): string | undefined {
+  const flow = device().querySelector('.void-flow');
+  if (!flow) return undefined;
+  return flow.querySelector('.void-subject') ? 'sheet-voidline' : 'sheet-voidorder';
+}
+
+/**
  * Where each live control on the frame leads. An anchor by its href; a button by
- * pressing it, on a fresh render, and reading the URL it leaves behind.
+ * pressing it, on a fresh render, and reading the void sheet it opened in place
+ * or else the URL it leaves behind.
  */
 function destinations(state: OrderState, prepare: () => void = () => {}): string[] {
   render(state);
@@ -101,7 +115,7 @@ function destinations(state: OrderState, prepare: () => void = () => {}): string
       out.push(hrefState(el.getAttribute('href')!));
     } else {
       press(el);
-      out.push(urlState());
+      out.push(voidSheetOpen() ?? urlState());
     }
   }
   return out;
@@ -121,6 +135,19 @@ describe('the reachability detector can see a gated path', () => {
     const found = destinations('sheet-item', stripInert);
     expect(found).toContain('sheet-voidline');
     expect(found).toContain('sheet-voidorder');
+  });
+
+  it('sees a void sheet opened in place, which writes no URL', () => {
+    render('default');
+    press(device().querySelector('.order-line[data-line-id="soda"] > .order-line__target')!);
+    expect(urlState()).toBe('default');
+    expect(voidSheetOpen()).toBe('sheet-voidline');
+    render('default');
+    press(device().querySelector('.order-actions [data-action="void-order"]')!);
+    expect(urlState()).toBe('default');
+    expect(voidSheetOpen()).toBe('sheet-voidorder');
+    render('default');
+    expect(voidSheetOpen()).toBeUndefined();
   });
 
   it('ignores a control inside an inert subtree, and nothing else', () => {
@@ -144,7 +171,9 @@ describe.each([...BUILT, ...F2I_SHEETS])('%s: no control reaches a PIN-gated sta
 
   it('the panel’s void paths are still drawn behind it, and inert', () => {
     render(state);
-    const voidPaths = device().querySelectorAll('a[href="?state=sheet-voidline"], a[href="?state=sheet-voidorder"]');
+    const voidPaths = device().querySelectorAll(
+      '.order-line[data-line-status="fired"] > button.order-line__target, .order-actions button[data-action="void-order"]'
+    );
     expect(voidPaths.length).toBeGreaterThan(0);
     for (const a of voidPaths) expect(a.closest('[inert]')).not.toBeNull();
   });
@@ -207,11 +236,88 @@ describe.each([
 
 it('each opener is a control in the state the sheet closes to', () => {
   render('default');
-  expect(device().querySelector(SHEET_FIXTURES['sheet-item']!.opener)!.tagName).toBe('A');
+  expect(device().querySelector(SHEET_FIXTURES['sheet-item']!.opener)!.tagName).toBe('BUTTON');
   render('eightysix');
   const lineOpener = device().querySelector(SHEET_FIXTURES['sheet-line']!.opener)!;
-  expect(lineOpener.tagName).toBe('A');
+  expect(lineOpener.tagName).toBe('BUTTON');
   expect(lineOpener.textContent).toContain('Steak');
+});
+
+// ---- Back never re-opens a sheet (FE-009, correction 4) ----
+//
+// SITEMAP §1: a [SHEET] is not a route and not back-stackable, nor is a
+// [MODAL]. Opening one from the order screen and leaving it again both replace
+// the current history entry, so no entry is ever left behind that holds a
+// sheet, and the browser's Back goes to wherever the cashier was before.
+
+/** The browser's Back, and the popstate that follows it. */
+async function back() {
+  await act(async () => {
+    const popped = new Promise<void>((done) => window.addEventListener('popstate', () => done(), { once: true }));
+    window.history.back();
+    await popped;
+  });
+}
+
+/** Lands on the order screen at `state` as a navigation would: a history entry for `earlier`, then one for `state`. */
+function arrive(earlier: OrderState, state: OrderState) {
+  window.history.replaceState(null, '', `/pos/order?state=${earlier}`);
+  window.history.pushState(null, '', `/pos/order?state=${state}`);
+  act(() => root.render(<OrderScreen key={++mount} view={{ state }} />));
+}
+
+const opens: ReadonlyArray<[family: string, from: OrderState, open: string, close: string]> = [
+  ['F2c, the item sheet', 'default', '.menu-tile[data-item="soda"]', 'Cancel'],
+  ['F2c, the line editor', 'default', '.order-line[data-line-status="pending"] > .order-line__target', 'Back'],
+  ['F2i, the discount picker', 'default', '.order-actions [data-action="discount"]', 'Cancel'],
+  ['F2j, a fired line’s void', 'default', '.order-line[data-line-id="soda"] > .order-line__target', 'Cancel'],
+  ['F2j, the order’s void', 'default', '.order-actions [data-action="void-order"]', 'Keep order'],
+];
+
+describe.each(opens)('%s: opened from the order and closed, no sheet is left in the history', (_family, from, open, close) => {
+  it('opening and closing leave the history as long as it was', () => {
+    arrive('eightysix', from);
+    const length = window.history.length;
+    press(device().querySelector(open)!);
+    expect(dialog()).not.toBeNull();
+    expect(window.history.length).toBe(length);
+    press(buttonNamed(close));
+    expect(dialog()).toBeNull();
+    expect(window.history.length).toBe(length);
+  });
+
+  it('Back then goes to where the cashier was before, and opens no sheet', async () => {
+    arrive('eightysix', from);
+    press(device().querySelector(open)!);
+    press(buttonNamed(close));
+    await back();
+    expect(urlState()).toBe('eightysix');
+    expect(dialog()).toBeNull();
+    expect(device().querySelector('[inert]')).toBeNull();
+  });
+});
+
+// A sheet reached by its own URL — as the review harness reaches every one —
+// closes by replacing that entry, so Back cannot return to it either.
+describe.each([
+  ['sheet-item', 'Cancel'],
+  ['sheet-item86', 'Cancel'],
+  ['sheet-line', 'Back'],
+  ['sheet-discount', 'Cancel'],
+  ['sheet-voidline', 'Cancel'],
+  ['sheet-voidorder', 'Keep order'],
+  ['sheet-voidorder-fired', 'Keep order'],
+] as const)('%s, reached by URL: closing it leaves no way Back into it', (state, close) => {
+  it(`${close} replaces the sheet’s entry, and Back goes to the entry before it`, async () => {
+    arrive('eightysix', state);
+    const length = window.history.length;
+    press(buttonNamed(close));
+    expect(dialog()).toBeNull();
+    expect(window.history.length).toBe(length);
+    await back();
+    expect(urlState()).toBe('eightysix');
+    expect(dialog()).toBeNull();
+  });
 });
 
 // ---- M-2, the item configuration sheet ----

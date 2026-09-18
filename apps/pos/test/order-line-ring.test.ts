@@ -64,7 +64,8 @@ describe('the clearance rule can fail', () => {
 
 describe('the pressed order-line ring stays off the trailing slot', () => {
   const row = ruleFor('.order-line');
-  const ringSelectors = ['a.order-line__target:active', '.order-line__target.is-pressed'];
+  // A live row body is a <button> (FE-009), so its :active rule is button-qualified.
+  const ringSelectors = ['button.order-line__target:active', '.order-line__target.is-pressed'];
 
   it('reads the row geometry from registry tokens', () => {
     expect(row).toHaveLength(1);

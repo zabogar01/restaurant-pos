@@ -7,10 +7,12 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   CATALOG_NOTICE,
-  ITEM_HREF,
+  ITEM_SEARCH,
   LOADING_LABEL,
   LOCK_NOTICE,
+  MENU_CATEGORIES,
   MENU_ITEMS,
+  categorySearch,
 } from '../src/menuFixtures.js';
 import { formatAmount } from '../src/money.js';
 import { OrderScreen } from '../src/OrderPanel.js';
@@ -36,11 +38,19 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  window.history.replaceState(null, '', '/pos/order');
 });
 
+// A fresh mount every time: OrderScreen holds its view in state, so a second
+// render into the same root after a press would keep the pressed-to view.
+let mount = 0;
 function render(state: OrderState) {
-  act(() => root.render(<OrderScreen view={{ state }} />));
+  window.history.replaceState(null, '', `/pos/order?state=${state}`);
+  act(() => root.render(<OrderScreen key={++mount} view={{ state }} />));
 }
+
+const press = (el: Element) => act(() => (el as HTMLElement).click());
+const sheetTitle = () => host.querySelector('[role="dialog"] h2')?.textContent ?? null;
 
 const device = () => host.querySelector('.pos-device')!;
 const menu = () => host.querySelector('.order-screen__menu')!;
@@ -65,11 +75,29 @@ describe('default', () => {
     expect(host.querySelectorAll('.menu-category--selected')).toHaveLength(1);
   });
 
-  it('draws every item as a tile, in the artifact’s order, each a link to the item sheet', () => {
+  it('draws every item as a tile, in the artifact’s order, each a button that opens the item sheet', () => {
     expect(ids(tiles())).toEqual(MENU_ITEMS.map((i) => i.id));
-    for (const tile of tiles()) {
-      expect(tile.tagName).toBe('A');
-      expect(tile.getAttribute('href')).toBe(ITEM_HREF);
+    for (const [i, item] of MENU_ITEMS.entries()) {
+      render('default');
+      const tile = tiles()[i]!;
+      expect(tile.dataset.item).toBe(item.id);
+      expect(tile.tagName).toBe('BUTTON');
+      expect(tile.getAttribute('type')).toBe('button');
+      press(tile);
+      expect(window.location.search).toBe(ITEM_SEARCH);
+      expect(sheetTitle()).toBe('Burger');
+    }
+  });
+
+  it('draws every category as a button that moves the screen to it', () => {
+    for (const [i, category] of MENU_CATEGORIES.entries()) {
+      render('default');
+      const row = categories()[i]!;
+      expect(row.tagName).toBe('BUTTON');
+      expect(row.getAttribute('type')).toBe('button');
+      press(row);
+      expect(window.location.search).toBe(categorySearch(category.id));
+      expect(sheetTitle()).toBeNull();
     }
   });
 
@@ -118,10 +146,15 @@ describe('eightysix: disabled in place (ruling C-3)', () => {
     expect(steak.hasAttribute('role')).toBe(false);
   });
 
-  it('leaves every other tile a working link', () => {
+  it('leaves every other tile a working button', () => {
     const others = tiles().filter((t) => t.dataset.item !== 'steak');
     expect(others).toHaveLength(MENU_ITEMS.length - 1);
-    for (const t of others) expect(t.matches(`a.menu-tile[href="${ITEM_HREF}"]:not(.menu-tile--off)`)).toBe(true);
+    for (const t of others) expect(t.matches('button.menu-tile[type="button"]:not(.menu-tile--off)')).toBe(true);
+    for (const id of others.map((t) => t.dataset.item)) {
+      render('eightysix');
+      press(host.querySelector(`[data-item="${id}"]`)!);
+      expect(window.location.search).toBe(ITEM_SEARCH);
+    }
   });
 });
 
@@ -129,7 +162,7 @@ describe.each(GRID_STATES)('%s: the grid never reflows', (state) => {
   it('draws every item in the default order, and an unavailable tile is never a link', () => {
     render(state);
     expect(ids(tiles())).toEqual(MENU_ITEMS.map((i) => i.id));
-    expect(host.querySelectorAll('a.menu-tile--off, .menu-tile--off a')).toHaveLength(0);
+    expect(host.querySelectorAll('a.menu-tile--off, button.menu-tile--off, .menu-tile--off a, .menu-tile--off button')).toHaveLength(0);
   });
 });
 
@@ -139,7 +172,7 @@ describe('pressed', () => {
     expect(text(categories().filter((c) => c.classList.contains('is-pressed')))).toEqual(['Mains', 'Sides']);
     const held = tiles().filter((t) => t.classList.contains('is-pressed'));
     expect(ids(held)).toEqual(['fries']);
-    expect(held[0]!.tagName).toBe('A');
+    expect(held[0]!.tagName).toBe('BUTTON');
   });
 
   it('is not drawn on the menu in any other state', () => {
@@ -231,6 +264,34 @@ describe.each(LOCK_STATES)('%s: the route out (acceptance criterion 1)', (state)
   });
 });
 
+// FE-009, acceptance criterion 2 (ruling of 2026-09-17): everything on the
+// frame that acts on the order is a <button type="button">. An anchor is for
+// leaving the screen, and the only one is a lock notice's route out.
+describe.each(ORDER_STATES.map((s) => s.id))('%s: acting controls are buttons, and an anchor only leaves', (state) => {
+  it('every anchor on the frame is a lock notice’s route out, and every button is type="button"', () => {
+    render(state);
+    const anchors = [...device().querySelectorAll('a')];
+    const lock = state === 'lock-draft' ? 'draft' : state === 'lock-lease' ? 'lease' : undefined;
+    expect(anchors.map((a) => a.textContent)).toEqual(lock ? [LOCK_NOTICE[lock].action.label] : []);
+    for (const a of anchors) expect(a.matches('.menu-notice a.action[href]')).toBe(true);
+    for (const b of device().querySelectorAll('button')) expect(b.getAttribute('type')).toBe('button');
+  });
+
+  it('every tile, category, row body, remove control and close-bar action drawn live is a button', () => {
+    render(state);
+    const acting = device().querySelectorAll(
+      '.menu-tile:not(.menu-tile--off), .menu-category, .order-line:not(.order-line--voided) > .order-line__target, .order-line__remove, .order-actions > :not(.action--off)'
+    );
+    for (const el of acting) {
+      // Under a lock a row body is drawn inert as a div (I-12); everything else here acts.
+      if (lock(state) && el.matches('.order-line__target')) expect(el.tagName).toBe('DIV');
+      else expect(el.tagName).toBe('BUTTON');
+    }
+  });
+});
+
+const lock = (state: OrderState) => state === 'lock-draft' || state === 'lock-lease';
+
 it('the two lock notices never share a string (C-5), nor with the panel tags', () => {
   const strings = (l: 'draft' | 'lease') => [LOCK_NOTICE[l].title, LOCK_NOTICE[l].body, LOCK_NOTICE[l].action.label, LOCK_NOTICE[l].action.href];
   for (const s of strings('draft')) expect(strings('lease')).not.toContain(s);
@@ -240,8 +301,9 @@ it('the two lock notices never share a string (C-5), nor with the panel tags', (
 
 // The ring is a stylesheet fact, so it is checked in the stylesheet: every
 // rule that draws the pressed ring on a tile or a category row must qualify it
-// with the anchor element. An 86'd tile is a div, so it can then match neither
-// :active nor .is-pressed — nothing happened, so nothing says it did.
+// with the control's element — a <button> since FE-009, an anchor before it.
+// An 86'd tile is a div, so it can then match neither :active nor .is-pressed
+// — nothing happened, so nothing says it did.
 
 const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../src/pos.css'), 'utf8');
 
@@ -255,10 +317,10 @@ function selectorsDeclaring(stylesheet: string, needle: string): string[] {
   return out;
 }
 
-/** Menu selectors that could ring something that is not a link. */
+/** Menu selectors that could ring something that is not a control. */
 function unqualifiedMenuRings(stylesheet: string): string[] {
   return selectorsDeclaring(stylesheet, '--frost-pressed-ring').filter(
-    (s) => /menu-(tile|category)/.test(s) && !/^a\.menu-(tile|category)\b/.test(s)
+    (s) => /menu-(tile|category)/.test(s) && !/^(a|button)\.menu-(tile|category)\b/.test(s)
   );
 }
 
@@ -272,8 +334,12 @@ describe('the ring detector can see a ring an 86’d tile could match', () => {
     ]);
   });
 
-  it('accepts an anchor-qualified rule, and ignores rules without the ring', () => {
+  it('accepts an anchor- or button-qualified rule, and ignores rules without the ring', () => {
     expect(unqualifiedMenuRings('a.menu-tile:active { box-shadow: var(--frost-pressed-ring); }')).toEqual([]);
+    expect(unqualifiedMenuRings('button.menu-tile:active { box-shadow: var(--frost-pressed-ring); }')).toEqual([]);
+    expect(unqualifiedMenuRings('div.menu-tile:active { box-shadow: var(--frost-pressed-ring); }')).toEqual([
+      'div.menu-tile:active',
+    ]);
     expect(unqualifiedMenuRings('.menu-tile { color: var(--frost-text); }')).toEqual([]);
   });
 });
@@ -281,12 +347,12 @@ describe('the ring detector can see a ring an 86’d tile could match', () => {
 describe('pos.css: the menu pressed ring', () => {
   it('rings a tile and a category row', () => {
     const ringed = selectorsDeclaring(css, '--frost-pressed-ring');
-    for (const s of ['a.menu-tile:active', 'a.menu-tile.is-pressed', 'a.menu-category:active', 'a.menu-category.is-pressed']) {
+    for (const s of ['button.menu-tile:active', 'button.menu-tile.is-pressed', 'button.menu-category:active', 'button.menu-category.is-pressed']) {
       expect(ringed).toContain(s);
     }
   });
 
-  it('qualifies every menu ring with the anchor, so an 86’d tile can never take one', () => {
+  it('qualifies every menu ring with the control’s element, so an 86’d tile can never take one', () => {
     expect(unqualifiedMenuRings(css)).toEqual([]);
   });
 

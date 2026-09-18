@@ -39,12 +39,12 @@ export const MENU_ITEMS: ReadonlyArray<MenuItem> = [
 
 // A tile's destination: the item configuration sheet (M-2). The artifact
 // configures Burger only, so every tile opens Burger's sheet.
-export const ITEM_HREF = '?state=sheet-item';
+export const ITEM_SEARCH = '?state=sheet-item';
 
 // A category's destination. The artifact has items for Mains only, so no
 // other category has a grid to show; this is the default state with the
 // category named, and today it lands on Mains.
-export const categoryHref = (id: CategoryId) => `?state=default&category=${id}`;
+export const categorySearch = (id: CategoryId) => `?state=default&category=${id}`;
 
 export type LockNotice = {
   title: string;

@@ -424,6 +424,17 @@ button {
   text-decoration: none;
 }
 
+/* A live row body is a <button> (ruling of 2026-09-17): it draws as the
+ * locked row's div does, with none of the user agent's button box. The
+ * pressed ring's padding below outranks this padding. */
+button.order-line__target {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
 .order-line__quantity {
   width: var(--frost-line-quantity-width);
   font-size: var(--frost-text-15);
@@ -437,11 +448,13 @@ button {
 }
 
 .order-line__name {
+  display: block;
   font-size: var(--frost-text-15);
   font-weight: var(--frost-weight-medium);
 }
 
 .order-line__detail {
+  display: block;
   font-size: var(--frost-text-12);
   line-height: var(--frost-leading-body);
   color: var(--frost-muted);
@@ -473,6 +486,8 @@ button {
   background: var(--frost-elevated);
   color: var(--frost-destructive);
   text-decoration: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 .order-line__remove .icon {
@@ -567,19 +582,21 @@ button {
   color: var(--frost-unavailable-text);
 }
 
-/* Pressed. Every enabled boxed control on the panel: the row body, the remove
- * control, the close-bar actions. An unavailable action is a span and a
- * locked or voided row body is a div, so neither can match — nothing happened,
- * so nothing says it did. .is-pressed is the fixture's held press. */
-a.order-line__target:active,
+/* Pressed. Every enabled boxed control on the panel: the row body and the
+ * remove control here, the close-bar actions by button.action (the sheets'
+ * rule, below). a.action is the lock notice's route out, the one anchor on the
+ * screen. An unavailable action is a span and a locked or voided row body is a
+ * div, so neither can match — nothing happened, so nothing says it did.
+ * .is-pressed is the fixture's held press. */
+button.order-line__target:active,
 .order-line__target.is-pressed,
-a.order-line__remove:active,
+button.order-line__remove:active,
 a.action:active {
   box-shadow: var(--frost-pressed-ring);
 }
 
-a.order-line__target:focus-visible:active,
-a.order-line__remove:focus-visible:active,
+button.order-line__target:focus-visible:active,
+button.order-line__remove:focus-visible:active,
 a.action:focus-visible:active {
   box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
 }
@@ -591,7 +608,7 @@ a.action:focus-visible:active {
  * must stay inside the row's padding and short of the gap to the slot.
  * test/order-line-ring.test.ts pins that, so retuning --frost-space-2 cannot
  * push the ring into the slot unnoticed. */
-a.order-line__target:active,
+button.order-line__target:active,
 .order-line__target.is-pressed {
   margin: calc(-1 * var(--frost-space-2));
   padding: var(--frost-space-2);
@@ -599,12 +616,12 @@ a.order-line__target:active,
 }
 
 @media (hover: hover) {
-  a.order-line__target:hover .order-line__name {
+  button.order-line__target:hover .order-line__name {
     text-decoration: underline;
     text-underline-offset: var(--frost-link-underline-offset);
   }
 
-  a.order-line__remove:hover {
+  button.order-line__remove:hover {
     background: var(--frost-destructive-soft);
   }
 
@@ -636,15 +653,20 @@ a.order-line__target:active,
 }
 
 .menu-category {
+  width: 100%;
   height: var(--frost-category-height);
   display: flex;
   align-items: center;
   padding: 0 var(--frost-space-4);
+  border: 0;
   border-bottom: var(--frost-divider-stroke);
+  background: none;
   color: var(--frost-text);
   font-size: var(--frost-text-15);
   font-weight: var(--frost-weight-regular);
+  text-align: start;
   text-decoration: none;
+  cursor: pointer;
 }
 
 /* Selection fills; pressing strokes (A7). */
@@ -683,7 +705,14 @@ a.order-line__target:active,
   color: var(--frost-text);
   font-size: var(--frost-text-15);
   font-weight: var(--frost-weight-medium);
+  text-align: start;
   text-decoration: none;
+}
+
+/* An available tile is a <button> (ruling of 2026-09-17); an 86'd one is a
+ * div and keeps the default cursor. */
+button.menu-tile {
+  cursor: pointer;
 }
 
 .menu-tile__price {
@@ -776,15 +805,15 @@ a.order-line__target:active,
 /* Pressed (A7): a tile, a category row. Element-qualified, so an 86'd tile —
  * a div — can match neither :active nor the fixture's .is-pressed.
  * test/menu-region.test.tsx pins that. */
-a.menu-tile:active,
-a.menu-tile.is-pressed,
-a.menu-category:active,
-a.menu-category.is-pressed {
+button.menu-tile:active,
+button.menu-tile.is-pressed,
+button.menu-category:active,
+button.menu-category.is-pressed {
   box-shadow: var(--frost-pressed-ring);
 }
 
-a.menu-tile:focus-visible:active,
-a.menu-category:focus-visible:active {
+button.menu-tile:focus-visible:active,
+button.menu-category:focus-visible:active {
   box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
 }
 
@@ -793,13 +822,13 @@ a.menu-category:focus-visible:active {
  * outside this query a tapped tile would be left looking selected once the
  * pressed ring goes. test/hover-scoped.test.ts enforces the query. */
 @media (hover: hover) {
-  a.menu-tile:hover {
+  button.menu-tile:hover {
     background: var(--frost-selected);
     border-color: var(--frost-primary);
     color: var(--frost-selected-text);
   }
 
-  a.menu-tile:hover .menu-tile__price {
+  button.menu-tile:hover .menu-tile__price {
     color: inherit;
   }
 }

@@ -82,6 +82,7 @@ export const APPROVAL_FIXTURES: Partial<Record<OrderState, ApprovalFixture>> = {
     notice: {
       title: 'PIN not recognised',
       body: '3 attempts remaining before manager approvals are locked for five minutes.',
+      failure: true,
     },
   },
 
@@ -92,6 +93,7 @@ export const APPROVAL_FIXTURES: Partial<Record<OrderState, ApprovalFixture>> = {
     notice: {
       title: 'Manager approvals locked for 4 min 38 s',
       body: 'Five failed approval attempts. Signing in as a cashier does not clear this.',
+      failure: true,
     },
   },
 
@@ -101,6 +103,7 @@ export const APPROVAL_FIXTURES: Partial<Record<OrderState, ApprovalFixture>> = {
     notice: {
       title: 'That PIN is not a manager',
       body: 'This action needs a manager. The attempt has been recorded.',
+      failure: true,
     },
   },
 };

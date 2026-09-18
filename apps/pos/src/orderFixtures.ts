@@ -127,12 +127,11 @@ export const LOCK_TAG: Record<SettlementLock, string> = {
 export const FIRED_TAG = 'MANAGER TO VOID';
 export const PENDING_TAG = 'REMOVE FREELY';
 
-// The row body's destination: the void sheet (FR-H4, F2j) for a FIRED line,
-// the line editor (F2c) for a PENDING one. Each names the artifact's fixture
-// state. The void state draws the Burger's sheet whichever fired row opened
-// it; see the FE-008 handoff.
-export const VOID_LINE_HREF = '?state=sheet-voidline';
-export const EDIT_LINE_HREF = '?state=sheet-line';
+// A PENDING row body's destination: the line editor (F2c), by the artifact's
+// fixture state. A FIRED row body opens the void sheet (FR-H4, F2j) for its own
+// line, as component state over the order on screen (OrderPanel.tsx), so it
+// names no state at all.
+export const EDIT_LINE_SEARCH = '?state=sheet-line';
 
 const serviceAndTax = (subtotal: Money, service: Money, total: Money, tax: Money, discount?: Adjustment): Totals => ({
   subtotal,

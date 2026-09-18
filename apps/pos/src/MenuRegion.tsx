@@ -1,22 +1,24 @@
 import { formatAmount } from './money.js';
 import {
   CATALOG_NOTICE,
-  ITEM_HREF,
+  ITEM_SEARCH,
   LOADING_LABEL,
   LOCK_NOTICE,
   MENU_CATEGORIES,
   MENU_FIXTURES,
   MENU_ITEMS,
   SELECTED_CATEGORY,
-  categoryHref,
+  categorySearch,
   type MenuItem,
 } from './menuFixtures.js';
 import type { OrderState, SettlementLock } from './orderFixtures.js';
 
 // POS-03, F2b: the menu region left of the order panel — the category rail and
 // the tile grid, or, under a settlement lock, the notice that carries the route
-// out of it.
-export function MenuRegion({ state }: { state: OrderState }) {
+// out of it. A tile and a category act on the order screen, so each is a
+// <button>; the route out leaves it for settlement, so it is the one anchor
+// (ruling of 2026-09-17).
+export function MenuRegion({ state, navigate = () => {} }: { state: OrderState; navigate?: (search: string) => void }) {
   const fixture = MENU_FIXTURES[state];
 
   // Under either lock the rail and grid are absent, not inert: adding a line is
@@ -40,16 +42,17 @@ export function MenuRegion({ state }: { state: OrderState }) {
           const selected = c.id === SELECTED_CATEGORY;
           const pressed = fixture.pressedCategories?.includes(c.id) ?? false;
           return (
-            <a
+            <button
               key={c.id}
+              type="button"
               className={['menu-category', selected && 'menu-category--selected', pressed && 'is-pressed']
                 .filter(Boolean)
                 .join(' ')}
-              href={categoryHref(c.id)}
               aria-current={selected ? 'true' : undefined}
+              onClick={() => navigate(categorySearch(c.id))}
             >
               {c.name}
-            </a>
+            </button>
           );
         })}
       </nav>
@@ -77,6 +80,7 @@ export function MenuRegion({ state }: { state: OrderState }) {
                 item={item}
                 off={fixture.eightySixed?.includes(item.id) ?? false}
                 pressed={item.id === fixture.pressedItem}
+                navigate={navigate}
               />
             ))}
           </div>
@@ -87,12 +91,22 @@ export function MenuRegion({ state }: { state: OrderState }) {
 }
 
 // Ruling C-3: an 86'd tile is disabled in place. It keeps its slot in the grid
-// and its box, greys, and carries the 86 tag. It is a div, not a link, so it is
-// not a control and no pressed rule can match it: nothing happened, so nothing
-// says it did. It is never removed and never moved to the end — a cashier's
-// hand knows where Steak is, and a reflowed grid puts another item under it.
-function Tile({ item, off, pressed }: { item: MenuItem; off: boolean; pressed: boolean }) {
-  const price = <div className="menu-tile__price">{formatAmount(item.price)}</div>;
+// and its box, greys, and carries the 86 tag. It is a div, not a button, so it
+// is not a control and no pressed rule can match it: nothing happened, so
+// nothing says it did. It is never removed and never moved to the end — a
+// cashier's hand knows where Steak is, and a reflowed grid puts another item
+// under it.
+function Tile({
+  item,
+  off,
+  pressed,
+  navigate,
+}: {
+  item: MenuItem;
+  off: boolean;
+  pressed: boolean;
+  navigate: (search: string) => void;
+}) {
 
   if (off) {
     return (
@@ -100,16 +114,23 @@ function Tile({ item, off, pressed }: { item: MenuItem; off: boolean; pressed: b
         <div>
           {item.name} <span className="tag-86">86</span>
         </div>
-        {price}
+        <div className="menu-tile__price">{formatAmount(item.price)}</div>
       </div>
     );
   }
 
+  // Spans, not divs: a <button> holds phrasing content only. The tile is a
+  // flex column, so each is laid out as the 86'd tile's divs are.
   return (
-    <a className={pressed ? 'menu-tile is-pressed' : 'menu-tile'} href={ITEM_HREF} data-item={item.id}>
-      <div>{item.name}</div>
-      {price}
-    </a>
+    <button
+      type="button"
+      className={pressed ? 'menu-tile is-pressed' : 'menu-tile'}
+      data-item={item.id}
+      onClick={() => navigate(ITEM_SEARCH)}
+    >
+      <span>{item.name}</span>
+      <span className="menu-tile__price">{formatAmount(item.price)}</span>
+    </button>
   );
 }
 
