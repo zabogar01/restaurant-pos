@@ -50,7 +50,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, and the approval prompt. Head `6180c56` |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, and the discount and void families. Head `affd42a` |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -119,8 +119,13 @@ and remediated over three passes.
      that a manager may re-enter their own PIN as approver. **Built first
      because both gated families lead here**, so it is built once rather than
      twice.
-   - **F2i — [FE-007](tasks/FE-007-discount-family.md), in flight with
-     `builder9` from 2026-09-18.** The discount family. Unblocked by F2g.
+   - **F2i — [FE-007](tasks/FE-007-discount-family.md). DONE 2026-09-18**,
+     lead-verified. The discount family, 624 tests.
+   - **F2j — [FE-008](tasks/FE-008-void-family.md). DONE 2026-09-18**,
+     lead-verified. The void family, 753 tests. **Found the panel offering to
+     void the wrong line** — see below.
+   - **F2e is now the priority**, and is no longer tidying: it carries four
+     corrections to committed work, one of them `B-16`-adjacent.
    - **F2j — the void family**: `sheet-voidline`, `sheet-voidorder`,
      `sheet-voidorder-fired`. Depends on F2g.
    - **F2h** — `error`, `fireerror`, `fireblocked`, and the 86'd line in the
@@ -471,7 +476,7 @@ Roster verified against `herdr agent list` on 2026-09-15.
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-15 and renamed it `lead` |
-| `builder9` | claude | `w2:pM` | live, working | Started 2026-09-18 on [FE-007](tasks/FE-007-discount-family.md), F2i — the discount family |
+| `builder10` | claude | `w2:pN` | live, idle | **Delivered [FE-008](tasks/FE-008-void-family.md)** (F2j). Found the panel offering to void the wrong line and refused to reach into committed work to fix it |
 
 `architect`, `designer`, `design-reviewer`, `designer2`, `builder1`, `builder2`
 and `builder3` were all shut down on 2026-09-14 to free memory. Their panes no
@@ -585,6 +590,70 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## F2i and F2j landed — two data-driven gates, and a wrong-work cancellation
+
+[FE-007](tasks/FE-007-discount-family.md) (`builder9`, `0b66d36`) and
+[FE-008](tasks/FE-008-void-family.md) (`builder10`, `affd42a`). **753 tests
+across 17 files**, up from 472.
+
+**Both gates proven by breaking them.** Ungating a free-form-to-preset
+replacement failed 5 tests; collapsing `FR-H3` into `FR-H2` — so an unfired
+order's void is no longer audited — failed 2. Each gate is a **pure module the
+sheets ask** (`discount.ts`, `void.ts`); no component decides its own gate,
+which is how a rule ends up correct only in the state the artifact happens to
+draw.
+
+**The button ruling paid for itself.** F2i **verified focused-and-pressed**, the
+check FE-003 and FE-004 both had to report undone. Space activates a `<button>`.
+
+### THE SERIOUS ONE — the panel offers to void the wrong line
+
+**Every fired row body links to one fixture sheet, so tapping Soda offers to
+void the Burger.** *Void order* always lands on a fixture order rather than the
+one on screen, so the panel changes under the cashier. **The artifact does the
+same**, so this was inherited, not introduced.
+
+Behind a real command that is **a cancellation ticket for work nobody asked to
+cancel** — exactly what `B-16` exists to prevent, because paper cannot be
+un-printed. `builder10` found it, established it belonged to F2a's committed
+code, and did not reach into it.
+
+**F2e now carries four corrections and is the priority:**
+
+1. Acting controls become `<button>` across F2a and F2b.
+2. `role="alert"` on both PIN pads' failure notices.
+3. F2c's sheets replace history rather than pushing (SITEMAP §1).
+4. **The panel's void paths carry the actual line and order.** Only possible
+   once (1) is done — which is why these are one job, not four.
+
+### Three artifact defects, one shape — the heuristic is now earned
+
+1. DESIGN-004: a live close offered on a stale balance.
+2. F2g: a live confirm offered during the approval lockout.
+3. F2j: `sheet-voidorder` asserting *"Nothing has been sent to the kitchen"*
+   beside a panel holding two fired rounds.
+
+**Each is correct in isolation and wrong in combination, and each was found by
+building the combination rather than by reading either half.** That is what to
+hand the design branch — not three fixes, one way of looking.
+
+### The lead's sixth and seventh errors
+
+- **FE-007 accepted sheets pushing history.** SITEMAP §1 gives a `[SHEET]`
+  neither a route nor a back-stack entry. Caught by `builder9`; corrected in
+  F2e.
+- **FE-008 repeated the artifact's contradiction**, asserting the two order
+  sheets showed "different orders" when the fact that mattered was that the
+  artifact's `sheet-voidorder` sits over fired work. Caught by `builder10`.
+
+Seven slices, seven task-file errors, every one caught by the person building
+rather than the person planning. **The mitigation is working and the cause is
+not fixed:** the lead writes from a reading of a derived document, and the
+implementer reads the source. Continue to say, in every task file, that the
+contract wins and the task file is the defect.
 
 ---
 
