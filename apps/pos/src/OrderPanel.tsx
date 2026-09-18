@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ApprovalPrompt } from './Approval.js';
 import { APPROVAL_FIXTURES } from './approvalFixtures.js';
+import { DISCOUNT_FIXTURES } from './discountFixtures.js';
+import { DiscountSheet } from './DiscountSheets.js';
 import { Icon } from './icons.js';
 import { MenuRegion } from './MenuRegion.js';
 import { formatAmount } from './money.js';
@@ -36,15 +38,20 @@ import { SheetView } from './Sheets.js';
 // the panel stays legible and cannot be operated. That is what keeps the
 // panel's void paths (a fired row body, Void order) out of reach from a sheet
 // a cashier opened to do something ungated; test/sheets.test.tsx proves it.
+//
+// The discount sheets (F2i) are one family: they move between themselves and
+// raise the manager prompt as their own component state, so no approval is
+// ever a URL (DiscountSheets.tsx).
 export function OrderScreen({ view: initial = orderViewFrom(window.location.search) }: { view?: OrderView }) {
   const [view, setView] = useState(initial);
   const device = useRef<HTMLDivElement>(null);
   const returnFocusTo = useRef<string | undefined>(undefined);
   const sheet = SHEET_FIXTURES[view.state];
   const approval = APPROVAL_FIXTURES[view.state];
+  const discount = DISCOUNT_FIXTURES[view.state];
 
   function go(next: OrderView) {
-    returnFocusTo.current = (sheet ?? approval)?.opener;
+    returnFocusTo.current = (sheet ?? approval ?? discount)?.opener;
     // A modal is not back-stackable (SITEMAP §1): leaving the approval prompt
     // replaces its history entry, so Back never re-opens an approval.
     if (approval) window.history.replaceState(null, '', viewSearch(next));
@@ -65,7 +72,7 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
   }, [view]);
 
   // React 18 has no inert prop; an empty string renders the bare attribute.
-  const inert = sheet || approval ? { inert: '' } : {};
+  const inert = sheet || approval || discount ? { inert: '' } : {};
 
   return (
     <>
@@ -77,6 +84,7 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
         </div>
         {sheet && <SheetView key={view.state} sheet={sheet} go={go} />}
         {approval && <ApprovalPrompt key={view.state} approval={approval} go={go} />}
+        {discount && <DiscountSheet key={view.state} fixture={discount} go={go} />}
       </div>
       {import.meta.env.DEV && <OrderFixtureStates current={view.state} />}
     </>

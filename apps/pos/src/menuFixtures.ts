@@ -121,4 +121,10 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   'approval-error': {},
   'approval-throttled': {},
   'approval-denied': {},
+  // The discount sheets and zero: the artifact's default grid behind each.
+  'sheet-discount': {},
+  'sheet-freeform': {},
+  'sheet-remove': {},
+  'sheet-remove-freeform': {},
+  zero: {},
 };

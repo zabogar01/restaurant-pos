@@ -23,7 +23,7 @@ export function SheetView({ sheet, go }: { sheet: SheetFixture; go: (view: Order
   return sheet.kind === 'item' ? <ItemSheet sheet={sheet} go={go} /> : <LineSheet sheet={sheet} go={go} />;
 }
 
-function SheetFrame({
+export function SheetFrame({
   title,
   aside,
   foot,

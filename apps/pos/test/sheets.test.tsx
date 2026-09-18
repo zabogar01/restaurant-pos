@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { OrderScreen } from '../src/OrderPanel.js';
 import { ORDER_STATES, type OrderState } from '../src/orderFixtures.js';
 import { APPROVAL_FIXTURES } from '../src/approvalFixtures.js';
+import { DISCOUNT_FIXTURES } from '../src/discountFixtures.js';
 import { QUANTITY_MAX, SHEET_FIXTURES, unitPrice, type ItemSheetFixture } from '../src/sheetFixtures.js';
 
 // POS-03's ungated sheets (F2c). Three properties are the point:
@@ -49,14 +50,17 @@ const press = (el: Element) => act(() => (el as HTMLElement).click());
 const buttonNamed = (name: string) =>
   [...dialog()!.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent) === name)!;
 
-// F2c as the task file lists it. Four are held pending a lead ruling, because
-// the inventory makes each one carry a gated path (see the FE-005 handoff).
-// The reachability check runs over every one of the seven that is served, so a
-// held state is checked the moment it is added.
+// F2c as the task file lists it. Four were held pending a lead ruling, because
+// the inventory makes each one carry a gated path (see the FE-005 handoff), and
+// F2i (FE-007) now serves them; test/discount.test.tsx is theirs. The
+// reachability check below also runs over F2i's four sheets, restated for a
+// gated family: a gated control opens the prompt in place and writes no URL,
+// so every URL a control leaves behind is still somewhere ungated.
 const F2C_STATES = ['sheet-item', 'sheet-item86', 'sheet-line', 'sheet-discount', 'sheet-freeform', 'sheet-remove', 'zero'];
 const HELD = ['sheet-discount', 'sheet-freeform', 'sheet-remove', 'zero'];
 const served = (s: string): s is OrderState => ORDER_STATES.some((o) => o.id === s);
-const BUILT = F2C_STATES.filter(served);
+const BUILT = F2C_STATES.filter((s) => !HELD.includes(s)).filter(served);
+const F2I_SHEETS = Object.keys(DISCOUNT_FIXTURES) as OrderState[];
 
 const GATED = [
   'sheet-voidline',
@@ -105,9 +109,9 @@ function destinations(state: OrderState, prepare: () => void = () => {}): string
 const stripInert = () => device().querySelectorAll('[inert]').forEach((el) => el.removeAttribute('inert'));
 
 describe('the F2c states', () => {
-  it('serves exactly the three built, and none of the four held', () => {
+  it('serves the three it built, and the four it held are served now by F2i', () => {
     expect(BUILT).toEqual(['sheet-item', 'sheet-item86', 'sheet-line']);
-    expect(HELD.filter(served)).toEqual([]);
+    expect(HELD.filter(served)).toEqual(HELD);
   });
 });
 
@@ -125,7 +129,7 @@ describe('the reachability detector can see a gated path', () => {
   });
 });
 
-describe.each(BUILT)('%s: no control reaches a PIN-gated state (acceptance criterion 1)', (state) => {
+describe.each([...BUILT, ...F2I_SHEETS])('%s: no control reaches a PIN-gated state (acceptance criterion 1)', (state) => {
   it('every live control on the frame leads somewhere ungated', () => {
     const found = destinations(state);
     expect(found.length).toBeGreaterThan(0);
@@ -340,9 +344,10 @@ describe('sheet-line', () => {
 });
 
 // The approval prompt's states hold a dialog and an inert background of their
-// own; test/approval.test.tsx checks that no sheet is drawn in them.
+// own; test/approval.test.tsx checks that no sheet is drawn in them. The
+// discount sheets are test/discount.test.tsx's.
 describe('no sheet in any other state', () => {
-  it.each(ORDER_STATES.map((s) => s.id).filter((s) => !BUILT.includes(s) && !APPROVAL_FIXTURES[s]))('%s', (state) => {
+  it.each(ORDER_STATES.map((s) => s.id).filter((s) => !BUILT.includes(s) && !APPROVAL_FIXTURES[s] && !DISCOUNT_FIXTURES[s]))('%s', (state) => {
     render(state);
     expect(dialog()).toBeNull();
     expect(device().querySelector('[inert]')).toBeNull();

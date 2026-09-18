@@ -1062,6 +1062,145 @@ button.action:focus-visible:active {
   height: var(--frost-approval-key-height);
 }
 
+/* ==== M-3 discount sheets (F2i) ====
+ * frost/pos/order.html: the sheet-discount, sheet-freeform and sheet-remove
+ * blocks. The sheet frame, labels, notes and pressed ring are F2c's rules
+ * above, unchanged.
+ *
+ * The artifact draws a control that needs a manager as a secondary button
+ * with a dashed border ("Other amount — needs a manager"). docs/DESIGN.md
+ * reserves dashed for *not available*; this one is available, through the
+ * prompt. Drawn as the artifact draws it and raised in the FE-007 handoff.
+ *
+ * Absent from the registry, and omitted until it carries them: the Percent
+ * and Fixed amount buttons' 150px width and the value field's 220px width
+ * (the field is sized by its input instead), and the 6px above the applied
+ * discount's note, which takes the nearest step of the spacing scale. */
+
+/* The family's wrapper takes no box, so the sheet sits where F2c's do; it
+ * exists to go inert while the manager prompt is open over it. */
+.discount-flow {
+  display: contents;
+}
+
+.discount-aside {
+  color: var(--frost-muted);
+}
+
+.discount-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--frost-space-2);
+  margin-bottom: var(--frost-space-6);
+}
+
+.discount-option--gated {
+  border-style: dashed;
+}
+
+/* docs/DESIGN.md tag: 10px 500, 0.025em, 1.3, 2px 5px, 1px control border,
+ * 2px corners, white. */
+.discount-tag {
+  margin-left: auto;
+  padding: var(--frost-tag-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  font-size: var(--frost-text-10);
+  font-weight: var(--frost-weight-medium);
+  line-height: var(--frost-leading-tag);
+  letter-spacing: var(--frost-tracking-tag);
+}
+
+.discount-kinds {
+  display: flex;
+  gap: var(--frost-space-2);
+  margin-bottom: var(--frost-space-5);
+}
+
+/* The numeric field (docs/DESIGN.md): 56px, 1px control border, 2px corners,
+ * white, 0 14px, 500, 20px. The input inside it takes the field's type and
+ * none of its own chrome; the field draws the focus ring. */
+.discount-field {
+  height: var(--frost-field-height);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--frost-space-1);
+  padding: var(--frost-field-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font-size: var(--frost-text-20);
+  font-weight: var(--frost-weight-medium);
+}
+
+.discount-field:focus-within {
+  box-shadow: var(--frost-focus-ring);
+}
+
+.discount-field__input {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.discount-field__input:focus-visible {
+  box-shadow: none;
+}
+
+/* A7's invalid field (frost-states.css §2): a refused value thickens the
+ * border to 2px amber, the fill stays white, and a line in the same amber
+ * under the field names the rule and the limit. A7's 13px left padding, which
+ * keeps the figure from shifting by the extra 1px, has no token and is
+ * omitted: the figure moves 1px right. */
+.discount-field--invalid {
+  border: var(--frost-invalid-border);
+}
+
+.discount-field__refusal {
+  display: block;
+  margin-top: var(--frost-space-1);
+  color: var(--frost-invalid);
+  font-size: var(--frost-text-14);
+  font-weight: var(--frost-weight-medium);
+}
+
+.discount-note {
+  margin-top: var(--frost-space-5);
+}
+
+/* docs/DESIGN.md card: white, 1px divider border, 2px corners, 20px; an 18px
+ * 500 spruce title with 16px below. */
+.discount-applied {
+  margin-bottom: var(--frost-space-5);
+  padding: var(--frost-card-padding);
+  border: var(--frost-divider-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+}
+
+.discount-applied__title {
+  margin-bottom: var(--frost-space-4);
+  color: var(--frost-primary);
+  font-size: var(--frost-text-18);
+  font-weight: var(--frost-weight-medium);
+}
+
+.discount-applied__row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.discount-applied__note {
+  margin-top: var(--frost-space-2);
+  color: var(--frost-muted);
+  font-size: var(--frost-text-12);
+}
+
 /* ---- Development-only fixture links, outside the device frame ---- */
 
 .fixture-states {

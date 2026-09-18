@@ -1,4 +1,6 @@
 import type { Money } from '@pos/money';
+import { orderTotals } from './discount.js';
+import { COMP, OTHER_15 } from './discountFixtures.js';
 
 // POS-03's order panel as fixtures, selected by ?state= as the reviewed
 // artifact selects them (docs/design/visual-directions/frost/pos/order.html,
@@ -12,8 +14,13 @@ import type { Money } from '@pos/money';
 // menuFixtures.ts. F2c adds three sheet states, drawn over the table order;
 // the sheets' own fixtures are in sheetFixtures.ts. F2g adds the manager
 // approval prompt's four states, drawn over the table order; its fixtures are
-// in approvalFixtures.ts. The gated sheets that lead to it are F2i and F2j;
-// the fire-error states are F2h.
+// in approvalFixtures.ts. F2i adds the discount sheets and zero; the sheets'
+// own fixtures are in discountFixtures.ts. Two of its states draw an order the
+// artifact never figured — this order comped, and this order carrying a
+// free-form discount — so their totals are computed by orderTotals from the
+// discount they carry, the arithmetic test/discount.test.tsx holds to the
+// artifact's own figures. The void sheets are F2j; the fire-error states are
+// F2h.
 
 export type LineStatus = 'pending' | 'fired' | 'voided';
 
@@ -74,7 +81,12 @@ export type OrderState =
   | 'approval'
   | 'approval-error'
   | 'approval-throttled'
-  | 'approval-denied';
+  | 'approval-denied'
+  | 'sheet-discount'
+  | 'sheet-freeform'
+  | 'sheet-remove'
+  | 'sheet-remove-freeform'
+  | 'zero';
 
 export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'default', label: 'Two rounds fired, one line pending' },
@@ -93,6 +105,11 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'approval-error', label: 'Modal — wrong PIN' },
   { id: 'approval-throttled', label: 'Modal — approval cooldown' },
   { id: 'approval-denied', label: 'Modal — cashier PIN refused' },
+  { id: 'sheet-discount', label: 'Sheet — preset picker' },
+  { id: 'sheet-freeform', label: 'Sheet — free-form discount' },
+  { id: 'sheet-remove', label: 'Sheet — remove/replace discount' },
+  { id: 'sheet-remove-freeform', label: 'Sheet — remove/replace a free-form discount' },
+  { id: 'zero', label: 'Zero total (100% comp)' },
 ];
 
 // ruling C-5: the two locks never share a string.
@@ -261,6 +278,31 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   'approval-error': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
   'approval-throttled': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
   'approval-denied': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+
+  // F2i's sheets open over the table order and its Staff meal preset, as the
+  // artifact draws them.
+  'sheet-discount': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'sheet-freeform': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'sheet-remove': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+
+  // The state FE-007 adds: the same order carrying a free-form discount, so the
+  // panel beside the change sheet shows the discount the sheet says is applied.
+  'sheet-remove-freeform': {
+    title: 'Order · T1',
+    groups: tableOrder,
+    totals: orderTotals(405_000n, OTHER_15),
+    totalsWithout: { steak: orderTotals(165_000n, OTHER_15) },
+  },
+
+  // The comp the picker's Comp lands on, over the order it was chosen on. The
+  // artifact figures its own two-line order (165.000); this is the same
+  // arithmetic over the table order the picker sits beside.
+  zero: {
+    title: 'Order · T1',
+    groups: tableOrder,
+    totals: orderTotals(405_000n, COMP),
+    totalsWithout: { steak: orderTotals(165_000n, COMP) },
+  },
 };
 
 export type OrderView = { state: OrderState; gone?: string };
