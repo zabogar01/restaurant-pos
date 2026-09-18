@@ -115,4 +115,10 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   'sheet-item': {},
   'sheet-item86': { eightySixed: ['steak'] },
   'sheet-line': {},
+  // The approval prompt covers the whole screen; the grid behind it is the
+  // artifact's default one.
+  approval: {},
+  'approval-error': {},
+  'approval-throttled': {},
+  'approval-denied': {},
 };

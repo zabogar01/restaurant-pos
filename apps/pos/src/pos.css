@@ -985,6 +985,83 @@ button.action:focus-visible:active {
   }
 }
 
+/* ==== M-1 manager approval prompt (F2g) ====
+ * frost/pos/order.html, the approval block, and docs/DESIGN.md (Modal and
+ * sheet; Overlays; PIN pad key). A 560px modal centred over the whole order
+ * screen on the 38% scrim, with the lock screen's pad at the approval
+ * dialog's own reviewed geometry: three 72px columns of 72×72 keys. The pad's
+ * dots, key faces, Continue, disabled Continue and pressed ring are POS-01's
+ * rules above, unchanged; only the column width and key height differ. */
+
+.modal-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--frost-scrim);
+}
+
+.modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--frost-modal-width);
+  background: var(--frost-elevated);
+  border: var(--frost-overlay-border);
+  border-radius: var(--frost-radius-surface);
+  box-shadow: var(--frost-overlay-shadow);
+}
+
+/* The dialog takes focus so a screen reader lands on its name. It is not a
+ * control, so it draws no ring; its keys and Cancel do. */
+.modal:focus-visible {
+  outline: none;
+  box-shadow: var(--frost-overlay-shadow);
+}
+
+.modal__head {
+  padding: var(--frost-overlay-head-padding);
+  background: var(--frost-surface);
+  border-bottom: var(--frost-divider-stroke);
+}
+
+.modal__title {
+  margin: 0;
+  font-size: var(--frost-text-18);
+  font-weight: var(--frost-weight-medium);
+}
+
+.modal__request {
+  margin-top: var(--frost-space-1);
+  color: var(--frost-muted);
+}
+
+.modal__body {
+  padding: var(--frost-overlay-body-padding);
+}
+
+.modal__foot {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--frost-space-3);
+  padding: var(--frost-overlay-foot-padding);
+  background: var(--frost-surface);
+  border-top: var(--frost-divider-stroke);
+}
+
+.modal__note {
+  align-self: center;
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+.keypad--approval {
+  grid-template-columns: var(--frost-approval-columns);
+}
+
+.keypad--approval .key {
+  height: var(--frost-approval-key-height);
+}
+
 /* ---- Development-only fixture links, outside the device frame ---- */
 
 .fixture-states {

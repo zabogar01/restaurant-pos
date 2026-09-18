@@ -7,6 +7,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { OrderScreen } from '../src/OrderPanel.js';
 import { ORDER_STATES, type OrderState } from '../src/orderFixtures.js';
+import { APPROVAL_FIXTURES } from '../src/approvalFixtures.js';
 import { QUANTITY_MAX, SHEET_FIXTURES, unitPrice, type ItemSheetFixture } from '../src/sheetFixtures.js';
 
 // POS-03's ungated sheets (F2c). Three properties are the point:
@@ -338,8 +339,10 @@ describe('sheet-line', () => {
   });
 });
 
+// The approval prompt's states hold a dialog and an inert background of their
+// own; test/approval.test.tsx checks that no sheet is drawn in them.
 describe('no sheet in any other state', () => {
-  it.each(ORDER_STATES.map((s) => s.id).filter((s) => !BUILT.includes(s)))('%s', (state) => {
+  it.each(ORDER_STATES.map((s) => s.id).filter((s) => !BUILT.includes(s) && !APPROVAL_FIXTURES[s]))('%s', (state) => {
     render(state);
     expect(dialog()).toBeNull();
     expect(device().querySelector('[inert]')).toBeNull();

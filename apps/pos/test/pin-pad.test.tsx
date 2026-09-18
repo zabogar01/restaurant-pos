@@ -4,10 +4,13 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App.js';
 import { LOCK_STATES } from '../src/fixtures.js';
+import { OrderScreen } from '../src/OrderPanel.js';
 
 // B-12: no PIN value in any log, error message, DOM attribute or stored value.
 // The pad is driven the way a finger drives it — clicks on the rendered keys —
-// and the evidence is read from the page, the console and storage.
+// and the evidence is read from the page, the console and storage. Both pads
+// that exist, the lock screen's and the manager approval prompt's, are held to
+// the same tests below.
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -91,22 +94,80 @@ describe('entry display', () => {
   });
 });
 
-describe('B-12: the PIN never leaves the pad', () => {
+// B-12 is one test over both pads. The lock screen's pad (POS-01) and the
+// manager approval prompt's (M-1) are the same component at two geometries, so
+// each block below runs against each, mounted the way a cashier meets it.
+type Pad = {
+  name: string;
+  mount: () => void;
+  /** Where the page is after Continue: the lock screen stays, the approval prompt lands on the order. */
+  afterSubmit: string;
+};
+
+let mounts = 0;
+const PADS: ReadonlyArray<Pad> = [
+  {
+    name: 'the lock screen (POS-01)',
+    mount: () => {
+      window.history.replaceState(null, '', '/pos/');
+      act(() => root.render(<App key={++mounts} state="incident" />));
+    },
+    afterSubmit: '/pos/',
+  },
+  {
+    name: 'the manager approval prompt (M-1)',
+    mount: () => {
+      window.history.replaceState(null, '', '/pos/order?state=approval');
+      act(() => root.render(<OrderScreen key={++mounts} view={{ state: 'approval' }} />));
+    },
+    afterSubmit: '/pos/order?state=default',
+  },
+];
+
+describe('both pads are the one pad', () => {
+  it('each mount finds exactly one keypad of twelve keys, in the same order', () => {
+    const layouts = PADS.map((pad) => {
+      pad.mount();
+      expect(host.querySelectorAll('.keypad')).toHaveLength(1);
+      return [...host.querySelectorAll('.keypad > button.key')].map((k) => k.getAttribute('aria-label') ?? k.textContent);
+    });
+    expect(layouts[0]).toHaveLength(12);
+    expect(layouts[1]).toEqual(layouts[0]);
+  });
+});
+
+describe.each(PADS)('B-12 on $name: the PIN never leaves the pad', ({ mount, afterSubmit }) => {
   it('renders byte-identical markup for different PINs of the same length', () => {
-    render();
+    mount();
     type('123456');
     const first = host.innerHTML;
     act(() => key('Continue').click());
 
     act(() => root.unmount());
     root = createRoot(host);
-    render();
+    mount();
     type('987650');
     expect(host.innerHTML).toBe(first);
   });
 
+  it('renders byte-identical markup for different PINs at every partial length', () => {
+    // Partially masked is still a leak: a last digit shown for a moment, a
+    // length hint beyond the dots. Compared after each digit, not only at six.
+    const snapshots = (pin: string) => {
+      mount();
+      const out = [...pin].map((d) => {
+        act(() => key(d).click());
+        return host.innerHTML;
+      });
+      act(() => root.unmount());
+      root = createRoot(host);
+      return out;
+    };
+    expect(snapshots('240613')).toEqual(snapshots('759382'));
+  });
+
   it('puts no entered digit into any attribute or into the entry display', () => {
-    render();
+    mount();
     // Attributes that carry a numeral at rest: tabindex, SVG geometry, the count.
     const withDigits = () => attributeValues().filter((v) => /\d/.test(v));
     const atRest = withDigits();
@@ -119,20 +180,21 @@ describe('B-12: the PIN never leaves the pad', () => {
     expect(host.querySelector('.pin-dots')!.textContent).toBe('');
   });
 
-  it('writes nothing to the console, storage, the URL or the title', () => {
+  it('writes nothing to the console, storage, cookies or the title, and the URL carries no digit of it', () => {
     const spies = (['log', 'info', 'warn', 'error', 'debug', 'trace'] as const).map((m) =>
       vi.spyOn(console, m)
     );
-    const url = window.location.href;
-    render('incident');
+    mount();
     type('531264');
     act(() => key('Continue').click());
-    type('9');
+    if (host.querySelector('.keypad')) type('9');
 
     for (const spy of spies) expect(spy).not.toHaveBeenCalled();
     expect(localStorage.length).toBe(0);
     expect(sessionStorage.length).toBe(0);
-    expect(window.location.href).toBe(url);
+    expect(document.cookie).toBe('');
+    expect(window.location.pathname + window.location.search).toBe(afterSubmit);
+    expect(window.location.hash).toBe('');
     expect(document.title).not.toMatch(/\d/);
   });
 });

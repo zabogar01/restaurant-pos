@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ApprovalPrompt } from './Approval.js';
+import { APPROVAL_FIXTURES } from './approvalFixtures.js';
 import { Icon } from './icons.js';
 import { MenuRegion } from './MenuRegion.js';
 import { formatAmount } from './money.js';
@@ -39,10 +41,14 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
   const device = useRef<HTMLDivElement>(null);
   const returnFocusTo = useRef<string | undefined>(undefined);
   const sheet = SHEET_FIXTURES[view.state];
+  const approval = APPROVAL_FIXTURES[view.state];
 
   function go(next: OrderView) {
-    returnFocusTo.current = sheet?.opener;
-    window.history.pushState(null, '', viewSearch(next));
+    returnFocusTo.current = (sheet ?? approval)?.opener;
+    // A modal is not back-stackable (SITEMAP §1): leaving the approval prompt
+    // replaces its history entry, so Back never re-opens an approval.
+    if (approval) window.history.replaceState(null, '', viewSearch(next));
+    else window.history.pushState(null, '', viewSearch(next));
     setView(next);
   }
 
@@ -59,7 +65,7 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
   }, [view]);
 
   // React 18 has no inert prop; an empty string renders the bare attribute.
-  const inert = sheet ? { inert: '' } : {};
+  const inert = sheet || approval ? { inert: '' } : {};
 
   return (
     <>
@@ -70,6 +76,7 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
           <OrderPanel view={view} />
         </div>
         {sheet && <SheetView key={view.state} sheet={sheet} go={go} />}
+        {approval && <ApprovalPrompt key={view.state} approval={approval} go={go} />}
       </div>
       {import.meta.env.DEV && <OrderFixtureStates current={view.state} />}
     </>

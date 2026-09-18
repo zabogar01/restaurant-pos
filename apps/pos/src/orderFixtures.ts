@@ -10,8 +10,10 @@ import type { Money } from '@pos/money';
 // only the menu region (eightysix, loading, catalog); the panel draws the table
 // order in each, see ORDER_FIXTURES. The menu region's own fixtures are in
 // menuFixtures.ts. F2c adds three sheet states, drawn over the table order;
-// the sheets' own fixtures are in sheetFixtures.ts. The gated sheets and the
-// approval PIN are F2g; the fire-error states are F2h.
+// the sheets' own fixtures are in sheetFixtures.ts. F2g adds the manager
+// approval prompt's four states, drawn over the table order; its fixtures are
+// in approvalFixtures.ts. The gated sheets that lead to it are F2i and F2j;
+// the fire-error states are F2h.
 
 export type LineStatus = 'pending' | 'fired' | 'voided';
 
@@ -68,7 +70,11 @@ export type OrderState =
   | 'catalog'
   | 'sheet-item'
   | 'sheet-item86'
-  | 'sheet-line';
+  | 'sheet-line'
+  | 'approval'
+  | 'approval-error'
+  | 'approval-throttled'
+  | 'approval-denied';
 
 export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'default', label: 'Two rounds fired, one line pending' },
@@ -83,6 +89,10 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'sheet-item', label: 'Sheet — item configuration' },
   { id: 'sheet-item86', label: 'Sheet — item 86’d mid-choice' },
   { id: 'sheet-line', label: 'Sheet — line editor' },
+  { id: 'approval', label: 'Modal — manager approval' },
+  { id: 'approval-error', label: 'Modal — wrong PIN' },
+  { id: 'approval-throttled', label: 'Modal — approval cooldown' },
+  { id: 'approval-denied', label: 'Modal — cashier PIN refused' },
 ];
 
 // ruling C-5: the two locks never share a string.
@@ -244,6 +254,13 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   'sheet-item': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
   'sheet-item86': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
   'sheet-line': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+
+  // F2g's approval prompt opens over the table order: the artifact's request
+  // is to void its fired Burger.
+  approval: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'approval-error': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'approval-throttled': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'approval-denied': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
 };
 
 export type OrderView = { state: OrderState; gone?: string };
