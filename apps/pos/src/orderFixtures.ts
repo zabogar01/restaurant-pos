@@ -9,8 +9,9 @@ import type { Money } from '@pos/money';
 // F2a built the panel and its six states. F2b adds three states that change
 // only the menu region (eightysix, loading, catalog); the panel draws the table
 // order in each, see ORDER_FIXTURES. The menu region's own fixtures are in
-// menuFixtures.ts. The sheets, the approval PIN and the fire-error states are
-// F2c.
+// menuFixtures.ts. F2c adds three sheet states, drawn over the table order;
+// the sheets' own fixtures are in sheetFixtures.ts. The gated sheets and the
+// approval PIN are F2g; the fire-error states are F2h.
 
 export type LineStatus = 'pending' | 'fired' | 'voided';
 
@@ -64,7 +65,10 @@ export type OrderState =
   | 'lock-lease'
   | 'eightysix'
   | 'loading'
-  | 'catalog';
+  | 'catalog'
+  | 'sheet-item'
+  | 'sheet-item86'
+  | 'sheet-line';
 
 export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'default', label: 'Two rounds fired, one line pending' },
@@ -76,6 +80,9 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'eightysix', label: 'Item 86’d — disabled in place' },
   { id: 'loading', label: 'Loading the menu' },
   { id: 'catalog', label: 'Menu changed while ordering' },
+  { id: 'sheet-item', label: 'Sheet — item configuration' },
+  { id: 'sheet-item86', label: 'Sheet — item 86’d mid-choice' },
+  { id: 'sheet-line', label: 'Sheet — line editor' },
 ];
 
 // ruling C-5: the two locks never share a string.
@@ -87,9 +94,9 @@ export const LOCK_TAG: Record<SettlementLock, string> = {
 export const FIRED_TAG = 'MANAGER TO VOID';
 export const PENDING_TAG = 'REMOVE FREELY';
 
-// The row body's destination. The void sheet (FR-H4) and the line editor are
-// F2c and do not exist yet, so these name the artifact's fixture states and
-// today resolve to the default state.
+// The row body's destination. The void sheet (FR-H4) is F2g and does not exist
+// yet, so it names the artifact's fixture state and today resolves to the
+// default state. The line editor is F2c's sheet-line.
 export const VOID_LINE_HREF = '?state=sheet-voidline';
 export const EDIT_LINE_HREF = '?state=sheet-line';
 
@@ -229,9 +236,22 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   eightysix: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
   loading: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
   catalog: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+
+  // F2c's sheets open over the table order, as the artifact draws them: the
+  // panel beside a sheet is the order the cashier is acting on. The artifact
+  // also tags the pending Steak line 86 in sheet-item86; the 86'd line in the
+  // panel is F2h's.
+  'sheet-item': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'sheet-item86': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'sheet-line': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
 };
 
 export type OrderView = { state: OrderState; gone?: string };
+
+/** The query string that selects a view: the inverse of orderViewFrom. */
+export function viewSearch({ state, gone }: OrderView): string {
+  return gone ? `?state=${state}&gone=${encodeURIComponent(gone)}` : `?state=${state}`;
+}
 
 /** ?state= picks the fixture; ?gone= is a PENDING line the remove control took away. */
 export function orderViewFrom(search: string): OrderView {

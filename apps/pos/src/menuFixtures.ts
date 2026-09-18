@@ -37,9 +37,8 @@ export const MENU_ITEMS: ReadonlyArray<MenuItem> = [
   { id: 'wine', name: 'House Wine', price: 80_000n },
 ];
 
-// A tile's destination. The item configuration sheet (M-2) is F2c and does not
-// exist yet, so this names the artifact's fixture state and today resolves to
-// the default state.
+// A tile's destination: the item configuration sheet (M-2). The artifact
+// configures Burger only, so every tile opens Burger's sheet.
 export const ITEM_HREF = '?state=sheet-item';
 
 // A category's destination. The artifact has items for Mains only, so no
@@ -111,4 +110,9 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   eightysix: { eightySixed: ['steak'] },
   loading: { loading: true },
   catalog: { catalogChanged: true },
+  // The grid behind each sheet is the artifact's. In sheet-item86 the artifact
+  // 86s Steak in the grid, although the sheet's notice says Burger was 86'd.
+  'sheet-item': {},
+  'sheet-item86': { eightySixed: ['steak'] },
+  'sheet-line': {},
 };

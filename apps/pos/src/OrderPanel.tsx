@@ -1,3 +1,4 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from './icons.js';
 import { MenuRegion } from './MenuRegion.js';
 import { formatAmount } from './money.js';
@@ -10,6 +11,7 @@ import {
   PENDING_TAG,
   VOID_LINE_HREF,
   orderViewFrom,
+  viewSearch,
   type Modifier,
   type OrderLine,
   type OrderState,
@@ -18,19 +20,56 @@ import {
   type SettlementLock,
   type Totals,
 } from './orderFixtures.js';
+import { SHEET_FIXTURES } from './sheetFixtures.js';
+import { SheetView } from './Sheets.js';
 
-// POS-03: the running order panel (F2a) beside the menu region (F2b). The
-// header bar is not built yet; it is held empty at the artifact's height so the
-// panel sits where the artifact puts it on the 1280×800 frame.
-export function OrderScreen({ view = orderViewFrom(window.location.search) }: { view?: OrderView }) {
+// POS-03: the running order panel (F2a) beside the menu region (F2b), with a
+// sheet (F2c) over them when one is open. The header bar is not built yet; it
+// is held empty at the artifact's height so the panel sits where the artifact
+// puts it on the 1280×800 frame.
+//
+// A sheet's buttons act in place: they change the view and the URL without
+// reloading, so that closing a sheet can hand focus back to the control that
+// opened it. While a sheet is open everything else on the frame is inert —
+// the panel stays legible and cannot be operated. That is what keeps the
+// panel's void paths (a fired row body, Void order) out of reach from a sheet
+// a cashier opened to do something ungated; test/sheets.test.tsx proves it.
+export function OrderScreen({ view: initial = orderViewFrom(window.location.search) }: { view?: OrderView }) {
+  const [view, setView] = useState(initial);
+  const device = useRef<HTMLDivElement>(null);
+  const returnFocusTo = useRef<string | undefined>(undefined);
+  const sheet = SHEET_FIXTURES[view.state];
+
+  function go(next: OrderView) {
+    returnFocusTo.current = sheet?.opener;
+    window.history.pushState(null, '', viewSearch(next));
+    setView(next);
+  }
+
+  useEffect(() => {
+    const onPop = () => setView(orderViewFrom(window.location.search));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!returnFocusTo.current) return;
+    device.current?.querySelector<HTMLElement>(returnFocusTo.current)?.focus();
+    returnFocusTo.current = undefined;
+  }, [view]);
+
+  // React 18 has no inert prop; an empty string renders the bare attribute.
+  const inert = sheet ? { inert: '' } : {};
+
   return (
     <>
-      <div className="pos-device">
-        <div className="order-screen__bar" aria-hidden="true" />
-        <div className="order-screen__body">
+      <div className="pos-device" ref={device}>
+        <div className="order-screen__bar" aria-hidden="true" {...inert} />
+        <div className="order-screen__body" {...inert}>
           <MenuRegion state={view.state} />
           <OrderPanel view={view} />
         </div>
+        {sheet && <SheetView key={view.state} sheet={sheet} go={go} />}
       </div>
       {import.meta.env.DEV && <OrderFixtureStates current={view.state} />}
     </>

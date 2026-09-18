@@ -61,6 +61,7 @@ button {
 /* ---- Device frame: 1280×800 landscape, fixed, not responsive ---- */
 
 .pos-device {
+  position: relative;
   width: var(--frost-pos-width);
   height: var(--frost-pos-height);
   display: flex;
@@ -800,6 +801,187 @@ a.menu-category:focus-visible:active {
 
   a.menu-tile:hover .menu-tile__price {
     color: inherit;
+  }
+}
+
+/* ==== POS-03 sheets (F2c) ====
+ * frost/pos/order.html: the item configuration sheet (M-2) and the line
+ * editor. docs/DESIGN.md, Overlays and Modal and sheet: the sheet sits below
+ * the 64px header and leaves the 460px order panel uncovered, on the scrim,
+ * white with 2px corners and a 1px spruce boundary, no shadow; head and foot
+ * on canvas with a divider; heading 18px 500; the body scrolls.
+ *
+ * Absent from the registry, and omitted until it carries them — each control
+ * is sized by its own padding instead:
+ *   - the size options' 150px width and the extras' 180px width;
+ *   - the quantity steppers' 88px width and the quantity field's 120px width.
+ * --frost-menu-columns (150px), --frost-receipt-reprint-width (180px) and
+ * --frost-pin-columns (88px) share those numbers for unrelated controls on
+ * other surfaces, so none of them is used here.
+ * The sheet's inline margins (20px, 24px, 8px) and the option rows' 8px and
+ * 12px gaps are spacing facts and take the spacing scale. */
+
+.sheet-scrim,
+.sheet {
+  position: absolute;
+  top: var(--frost-sheet-top);
+  right: var(--frost-sheet-right);
+  bottom: 0;
+  left: 0;
+}
+
+.sheet-scrim {
+  background: var(--frost-scrim);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  background: var(--frost-elevated);
+  border: var(--frost-overlay-border);
+  border-radius: var(--frost-radius-surface);
+  box-shadow: var(--frost-overlay-shadow);
+}
+
+/* The dialog takes focus when it opens so a screen reader lands on its name.
+ * It is not a control, so it draws no ring; its buttons do. */
+.sheet:focus-visible {
+  outline: none;
+  box-shadow: var(--frost-overlay-shadow);
+}
+
+.sheet__head {
+  flex: none;
+  height: var(--frost-sheet-header-height);
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-3);
+  padding: var(--frost-overlay-head-padding);
+  background: var(--frost-surface);
+  border-bottom: var(--frost-divider-stroke);
+}
+
+.sheet__title {
+  margin: 0;
+  font-size: var(--frost-text-18);
+  font-weight: var(--frost-weight-medium);
+}
+
+.sheet__aside {
+  margin-left: auto;
+}
+
+.sheet__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--frost-overlay-body-padding);
+}
+
+.sheet__foot {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--frost-space-3);
+  padding: var(--frost-overlay-foot-padding);
+  background: var(--frost-surface);
+  border-top: var(--frost-divider-stroke);
+}
+
+.sheet__notice {
+  margin: 0 0 var(--frost-space-5);
+}
+
+/* A field label (docs/DESIGN.md, Hierarchy): 12px 400 muted. */
+.sheet__label {
+  display: block;
+  margin-bottom: var(--frost-space-1);
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+.sheet-group + .sheet-group {
+  margin-top: var(--frost-space-5);
+}
+
+.sheet-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--frost-space-2);
+}
+
+.sheet-option--stacked {
+  flex-direction: column;
+}
+
+.sheet-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--frost-space-6);
+  font-size: var(--frost-text-20);
+}
+
+.sheet-total__amount {
+  font-weight: var(--frost-weight-semibold);
+}
+
+.sheet-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-3);
+  margin-bottom: var(--frost-space-6);
+}
+
+/* The numeric field (docs/DESIGN.md, Numeric field): 56px, 1px control
+ * border, 2px corners, white, 0 14px, 500, 20px. It shows the quantity; it is
+ * not typed into. */
+.sheet-stepper__value {
+  height: var(--frost-field-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--frost-field-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font-size: var(--frost-text-20);
+  font-weight: var(--frost-weight-medium);
+}
+
+.sheet__note {
+  margin: 0;
+  color: var(--frost-muted);
+}
+
+.sheet__note + .sheet__note {
+  margin-top: var(--frost-space-2);
+}
+
+button.action {
+  cursor: pointer;
+}
+
+/* Pressed (A7) on every sheet control. Element-qualified: Add to order on an
+ * 86'd item is a span, so it can match neither rule — nothing happened, so
+ * nothing says it did. test/sheets.test.tsx pins that. */
+button.action:active {
+  box-shadow: var(--frost-pressed-ring);
+}
+
+button.action:focus-visible:active {
+  box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
+}
+
+@media (hover: hover) {
+  button.action:hover {
+    background: var(--frost-group);
+    border-color: var(--frost-primary);
+  }
+
+  button.action--primary:hover {
+    background: var(--frost-primary-hover);
+    color: var(--frost-primary-text);
   }
 }
 

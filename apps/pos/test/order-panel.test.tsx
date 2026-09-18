@@ -70,7 +70,7 @@ describe('the slot guard can see a swallowed slot', () => {
 });
 
 describe('fixture states', () => {
-  it('has exactly the six states of F2a and the three of F2b', () => {
+  it('has exactly the six states of F2a, the three of F2b and the three of F2c', () => {
     expect(ORDER_STATES.map((s) => s.id)).toEqual([
       'default',
       'empty',
@@ -81,6 +81,9 @@ describe('fixture states', () => {
       'eightysix',
       'loading',
       'catalog',
+      'sheet-item',
+      'sheet-item86',
+      'sheet-line',
     ]);
   });
 
