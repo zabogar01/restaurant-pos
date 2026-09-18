@@ -50,7 +50,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region and the item and line sheets. Head `5edd874` |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, and the approval prompt. Head `6180c56` |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -112,7 +112,9 @@ and remediated over three passes.
    - **F2c — [FE-005](tasks/FE-005-ungated-sheets.md). DONE 2026-09-18 for
      three of its seven states; four were correctly refused.** Account under
      *F2c: three built, four refused* below.**
-   - **F2g — M-1, the approval prompt.** Next. `approval`, `approval-error`,
+   - **F2g — [FE-006](tasks/FE-006-approval-prompt.md). DONE 2026-09-18,
+     lead-verified.** M-1, the approval prompt. 472 tests, up from 356.
+     Account under *F2g landed* below. `approval`, `approval-error`,
      `approval-throttled`, `approval-denied`. `B-13`, `B-14`, and §19's ruling
      that a manager may re-enter their own PIN as approver. **Built first
      because both gated families lead here**, so it is built once rather than
@@ -470,6 +472,7 @@ Roster verified against `herdr agent list` on 2026-09-15.
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-15 and renamed it `lead` |
 | `builder4` | claude | `w2:pF` | live, idle | **Delivered [FE-002](tasks/FE-002-apply-a7-states.md)** (roadmap A9), lead-verified. Took a baseline `npm run verify` before touching anything, found PostgreSQL down and started it. Kept alive only until the owner has looked at A9; its context is spent, so **F2 goes to a fresh implementer**, not to this one |
+| `builder8` | claude | `w2:pK` | live, idle | **Delivered [FE-006](tasks/FE-006-approval-prompt.md)** (F2g), lead-verified. Found the artifact drawing a live confirm key during the approval lockout and refused to copy it. Context spent |
 | `builder7` | claude | `w2:pJ` | live, idle | **Delivered [FE-005](tasks/FE-005-ungated-sheets.md)** (F2c), three of seven states, refusing four on inventory grounds. Interrupted mid-task by the machine sleeping and resumed with context intact. Context spent; F2g gets a fresh agent |
 | `builder6` | claude | `w2:pH` | live, idle | **Delivered [FE-004](tasks/FE-004-menu-region.md)** (F2b), lead-verified. Caught two wrong premises in its own task file and checked rather than followed them. Context spent; F2c goes to a fresh implementer |
 | `builder5` | claude | `w2:pG` | live, idle | **Delivered [FE-003](tasks/FE-003-order-panel.md)** (F2a), lead-verified. Raised eleven departures as lead calls rather than deciding them, and found that a locked panel has no route out. Context spent; **F2b goes to a fresh implementer** |
@@ -574,6 +577,83 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## F2g landed — one PIN guarantee for both pads, and the artifact was wrong
+
+[FE-006](tasks/FE-006-approval-prompt.md), `builder8`, committed `6180c56`.
+**Lead-verified: 472 tests across 15 files, up from 356.**
+
+**`B-12` proven by leaking a digit.** The lead added `data-d={entry[i]}` to one
+PIN dot — an attribute on an element that already exists, the subtlest leak
+available — and **all thirteen tests in `pin-pad.test.tsx` failed**. The suite is
+parameterised over *both* pads and checks byte-identical markup at **every
+partial length**, no digit in any attribute, and nothing reaching console,
+storage, cookies, the title or the URL.
+
+**The keypad was reused with its geometry as a class**, and that is what makes
+one test cover both pads. Worth more than either pad's independence, and the
+right answer to a question the task file left genuinely open.
+
+**`B-14` is enforced by absence** — no approve-all, no caching, no re-use, no
+remaining-time indicator on the approval itself, no path by which a back-office
+session skips the prompt.
+
+### The artifact is wrong in the throttled state, and this is the second of its kind
+
+The Frost artifact **and the wireframe** share one keypad across all four
+approval states, with a live confirm key. Read literally that **draws an
+approval succeeding during the `MANAGER_APPROVAL` cooldown**, which `FR-A5` and
+`AC-19` forbid — and M-1 names `FR-A5` as a requirement of the throttled state.
+`builder8` drew the confirm inert using POS-01's **reviewed** LOGIN-cooldown
+treatment and asked. Accepted: reusing a reviewed treatment is not invention,
+and the alternative was drawing a forbidden state.
+
+**Both defects implementation has found in reviewed design artifacts have the
+same shape.** DESIGN-004's critical finding was a live close offered on a stale
+balance; this is a live confirm offered during a lockout. **A control shared
+across states is where to look** — the sharing is precisely what hides the one
+state in which it is wrong. This belongs on the design branch as a review
+heuristic, not just as a fix.
+
+### A `B-20` question found by building, not by reading
+
+`loading` looked like a reuse and is not. The lock screen's verifying treatment
+exists and `PinPad` already has the prop — but the approval modal adds something
+the lock screen never had: **Cancel sits in the footer while the PIN is in
+flight.**
+
+If Cancel stays live during verification, the footer's *"Cancelling changes
+nothing on the order"* **may be false**, because the server can approve and
+execute after it is pressed. If Cancel is withdrawn, that is a new decision.
+**Owed to a designer**, with `docs/DESIGN.md` open item 6 noted: the lock
+screen's verifying style is itself unreviewed.
+
+`no manager available` (PRD §6) is drawn by nothing. Named, not filled, A7's
+shape, goes to a designer.
+
+### Binding on F2i and F2j
+
+**`?state=approval` is a review harness, not a route.** SITEMAP §1 says a
+`[MODAL]` is neither a route nor back-stackable, so the prompt replaces history
+rather than pushing it and Back never reopens an approval. **Those slices open
+the prompt as component state from their sheets** — writing an approval URL is
+exactly what SITEMAP forbids.
+
+### Ruled and scheduled: `role="alert"` on both pads, in F2e
+
+`builder8` left the failure notices without an ARIA role because neither pad has
+one and the two should agree. Right reasoning, wrong outcome to leave standing:
+**a wrong PIN that is never announced is a real defect** for a screen-reader
+user. **F2e adds it to both pads**, since that slice already opens both files
+for the button conversion. Batching stops a third slice reaching into reviewed
+work for one attribute.
+
+**Still carried:** focus is not trapped in the dialog — Tab reaches the dev
+fixture links below the frame, never the inert order. Acceptable in a harness
+whose leak is dev-only; **not acceptable at ship.** Same finding as FE-005's,
+so it is now twice.
 
 ---
 

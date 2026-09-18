@@ -7,7 +7,14 @@ next, not what happens eventually.
 
 Owned by the Claude product lead. No other agent writes to this file.
 
-Last updated 2026-09-18, after F2c delivered three of its seven states and
+Last updated 2026-09-18, after F2g landed the approval prompt. Two items were
+added to the lead's housekeeping from it: a designer owes what Cancel does while
+an approval is verifying (a `B-20` question, not a styling one), and the design
+branch owes a review note — both defects implementation has found in reviewed
+artifacts were a control shared across states, hiding the one state where it is
+wrong.
+
+Previously, after F2c delivered three of its seven states and
 correctly refused four. **Slice by authority, not by component** — that is the
 lesson four task files have now paid for, and the reason the gated work is
 planned as M-1 first, then the two families that depend on it.
@@ -128,6 +135,8 @@ Small, none of it blocking, all of it recorded so it does not get lost.
 | ~~Decide what to do with `.impeccable/`~~ | **Done** 2026-09-14: ignored entirely as build residue. `REVIEW.md`'s cited captures will therefore not exist in a clone |
 | ~~Fix the Phase 0 plan's stale paragraphs~~ | **Done** 2026-09-14: both tax-model paragraphs corrected, and the token package's invented placeholder palette now points at the Frost registry instead of contradicting it |
 | Propose PRD §9 time-zone wording | The PRD never names a restaurant time zone; receipt and business-day timestamps both need one. Contract document, so the owner approves the wording |
+| Rule what Cancel does while an approval is verifying | Found by building F2g. If Cancel stays live during verification, *"Cancelling changes nothing on the order"* may be false — the server can approve and execute after it is pressed. `B-20` territory. A designer's, then review |
+| Send the design branch a review heuristic | Both artifact defects implementation has found — DESIGN-004's live close on a stale balance, F2g's live confirm during lockout — were **one control shared across states**. That is where to look |
 | Settle ruling I-8 | Back-office kitchen-ticket reprint is granted by `FR-E3` and unaudited by `FR-J3`. Drawn as the requirements read. Needs a ruling, not a workaround |
 
 ---
@@ -164,12 +173,12 @@ A task that feels like it needs two sessions is two tasks.
 | F2a | [FE-003](tasks/FE-003-order-panel.md) — the running order panel: fire-round groups, the three line signatures, money, totals, both settlement locks. Six states | **Done** 2026-09-17, lead-verified: 213 tests across 12 files, up from 120, and all three new guards proven red by the lead injecting the defect each catches. Committed `89a100e` | `builder5` |
 | F2b | [FE-004](tasks/FE-004-menu-region.md) — the menu region | **Done** 2026-09-17, lead-verified: 273 tests across 13 files, and criterion 1 proven by deleting the route out and watching four tests fail, two of them whole-screen checks spanning F2a's panel. Committed `eca409c` | `builder6` |
 | F2c | [FE-005](tasks/FE-005-ungated-sheets.md) — item config, item-86'd-mid-choice, the line editor | **Done 2026-09-18 for three of seven states**, lead-verified: 356 tests across 14 files, and criterion 1 proven by pointing a sheet control at a gated state. Committed `5edd874`. **Four states were correctly refused** — the task file put the discount sheets on the ungated side and the inventory says two of the three are gated | `builder7` |
-| F2g | **M-1, the approval prompt**: `approval`, `approval-error`, `approval-throttled`, `approval-denied`. `B-13`, `B-14`, and §19's ruling that a manager may re-enter their own PIN as approver | **Next, and first of the gated work.** Both gated families lead here, so it is built once before either | unassigned |
+| F2g | [FE-006](tasks/FE-006-approval-prompt.md) — M-1, the approval prompt, four states | **Done** 2026-09-18, lead-verified: 472 tests across 15 files, and `B-12` proven by leaking one digit into one dot attribute and failing all thirteen PIN tests. One guarantee covers both pads. Committed `6180c56`. **Found the artifact drawing a live confirm key during the approval lockout** and refused it | `builder8` |
 | F2i | The discount family, moved out of F2c 2026-09-18: `sheet-discount`, `sheet-freeform`, `sheet-remove`, `zero` | Not started. Depends on F2g | unassigned |
 | F2j | The void family: `sheet-voidline`, `sheet-voidorder`, `sheet-voidorder-fired` | Not started. Depends on F2g | unassigned |
 | F2h | `error`, `fireerror`, `fireblocked`, and the 86'd line in the order panel | Not started. Split out of F2c 2026-09-18 | unassigned |
 | F2d | Quick-sale / counter mode | Not started. **Split out of F2b** 2026-09-17: it changes the order's identity and the panel header, not just the menu, so it is its own slice rather than a state smuggled into the grid | unassigned |
-| F2e | Convert acting controls from `<a>` to `<button>` across F2a and F2b | Not started. **Ruled 2026-09-17** after two slices reported the same unverifiable focused-and-pressed state: Space does not activate a link. Tiles, categories, line bodies and the remove control act on the order and are buttons; anchors are for leaving the screen. A refactor of committed work, so its own task | unassigned |
+| F2e | Convert acting controls from `<a>` to `<button>` across F2a and F2b, **and add `role="alert"` to both PIN pads' failure notices** | Not started. **Ruled 2026-09-17** after two slices reported the same unverifiable focused-and-pressed state: Space does not activate a link. Tiles, categories, line bodies and the remove control act on the order and are buttons; anchors are for leaving the screen. A refactor of committed work, so its own task | unassigned |
 | F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 fixed | Not started. Consumes `--frost-invalid`, which A9 landed unused | unassigned |
 | F4 | The remaining POS screens, then the back office | Not started | unassigned |
 
