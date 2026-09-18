@@ -50,7 +50,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, and the discount and void families. Head `affd42a` |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, and F2e's corrections. Head `6b183b1` |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -124,8 +124,13 @@ and remediated over three passes.
    - **F2j — [FE-008](tasks/FE-008-void-family.md). DONE 2026-09-18**,
      lead-verified. The void family, 753 tests. **Found the panel offering to
      void the wrong line** — see below.
-   - **F2e is now the priority**, and is no longer tidying: it carries four
-     corrections to committed work, one of them `B-16`-adjacent.
+   - **F2e — [FE-009](tasks/FE-009-corrections.md). DONE 2026-09-18**,
+     lead-verified. Four corrections to committed work; 853 tests.
+     **The wrong-line void is fixed and guarded.**
+   - **F2k — finish the opener fix.** Next. The same defect has three more
+     homes, and **one of them feeds a gate**: the discount picker reads a
+     fixture's applied discount, which is exactly what `needsManager` uses for
+     `FR-F8`.
    - **F2j — the void family**: `sheet-voidline`, `sheet-voidorder`,
      `sheet-voidorder-fired`. Depends on F2g.
    - **F2h** — `error`, `fireerror`, `fireblocked`, and the 86'd line in the
@@ -476,7 +481,8 @@ Roster verified against `herdr agent list` on 2026-09-15.
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-15 and renamed it `lead` |
-| `builder10` | claude | `w2:pN` | live, idle | **Delivered [FE-008](tasks/FE-008-void-family.md)** (F2j). Found the panel offering to void the wrong line and refused to reach into committed work to fix it |
+| `builder11` | claude | `w2:pP` | live, idle | **Delivered [FE-009](tasks/FE-009-corrections.md)** (F2e). Went looking beyond its brief and found the same defect on three more openers |
+| `builder10` | claude | `w2:pN` | closed | **Delivered [FE-008](tasks/FE-008-void-family.md)** (F2j). Found the panel offering to void the wrong line and refused to reach into committed work to fix it |
 
 `architect`, `designer`, `design-reviewer`, `designer2`, `builder1`, `builder2`
 and `builder3` were all shut down on 2026-09-14 to free memory. Their panes no
@@ -628,6 +634,48 @@ code, and did not reach into it.
 3. F2c's sheets replace history rather than pushing (SITEMAP §1).
 4. **The panel's void paths carry the actual line and order.** Only possible
    once (1) is done — which is why these are one job, not four.
+
+### F2e fixed it, and proved the guards survived the refactor
+
+[FE-009](tasks/FE-009-corrections.md), `builder11`, `6b183b1`. **853 tests**, no
+test deleted or loosened. The lead injected three defects rather than one,
+because a slice that edits reviewed work can weaken a guard silently:
+
+- **The wrong-line void, reintroduced: 12 tests fail.** Guarded now, not merely
+  absent.
+- **`B-12` re-leaked: 22 tests fail**, up from 13 before the refactor. The
+  guarantee came through **stronger**.
+- **`I-12` re-violated: fails across every state.** The guard was **widened** to
+  read *"anchor or button ancestor"* — following the element, not loosening the
+  assertion.
+
+A first `I-12` injection of the lead's hit the non-interactive branch and
+passed, proving nothing. **An injection that does not reproduce the real defect
+is not evidence**; the second one did and caught it.
+
+### The defect has three more homes, and one feeds a gate — F2k
+
+`builder11` went looking rather than stopping at its brief:
+
+- **Discount opens a fixture order**, so the picker's *applied* discount is the
+  fixture's — **which is precisely what `needsManager` reads for `FR-F8`**. The
+  gate then decides from the wrong fact. That is the defect inside a gated
+  family and it is not cosmetic.
+- Every pending row body opens the Steak's editor; every tile opens the
+  Burger's sheet.
+
+**F2k finishes it**, and carries a ruling F2e surfaced: **a change that stays on
+POS-03 replaces history; only leaving POS-03 pushes.** SITEMAP gives `[INLINE]`
+Back-stackable: No, and today Back after a removal puts the line back — a
+removal undone by a browser control.
+
+**Sharpened while ruling it:** "an anchor is for leaving" read two ways. The
+better rule is **an anchor goes to a screen that already exists; a button makes
+something happen and only incidentally arrives somewhere.** So Settle is a
+button, and *Manager: take over payment* becomes one — `FR-G14` makes lease
+takeover a gated action, not a link.
+
+---
 
 ### Three artifact defects, one shape — the heuristic is now earned
 
