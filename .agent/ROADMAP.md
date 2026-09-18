@@ -7,7 +7,12 @@ next, not what happens eventually.
 
 Owned by the Claude product lead. No other agent writes to this file.
 
-Last updated 2026-09-17, after F2b landed. F2 is now five rows, not one: the
+Last updated 2026-09-18, after F2c delivered three of its seven states and
+correctly refused four. **Slice by authority, not by component** — that is the
+lesson four task files have now paid for, and the reason the gated work is
+planned as M-1 first, then the two families that depend on it.
+
+Previously, 2026-09-17, after F2b landed. F2 is now five rows, not one: the
 POS-03 fixture carries about twenty-six states, and splitting it is the reason
 each slice has been reviewable. F2e was added the same day from a ruling, not
 from a plan — two slices in a row could not verify a focused press, because
@@ -158,7 +163,11 @@ A task that feels like it needs two sessions is two tasks.
 | F2 | POS order workspace | **Split into three** 2026-09-16. The Frost fixture is 664 lines and carries about 26 states; FE-001 was one screen with 8 states and produced 114 tests. F2 as one task was three sessions pretending to be one | — |
 | F2a | [FE-003](tasks/FE-003-order-panel.md) — the running order panel: fire-round groups, the three line signatures, money, totals, both settlement locks. Six states | **Done** 2026-09-17, lead-verified: 213 tests across 12 files, up from 120, and all three new guards proven red by the lead injecting the defect each catches. Committed `89a100e` | `builder5` |
 | F2b | [FE-004](tasks/FE-004-menu-region.md) — the menu region | **Done** 2026-09-17, lead-verified: 273 tests across 13 files, and criterion 1 proven by deleting the route out and watching four tests fail, two of them whole-screen checks spanning F2a's panel. Committed `eca409c` | `builder6` |
-| F2c | The sheets, the approval PIN flow, `error`, `fireerror`, `fireblocked`, and the 86'd line in the panel | **Next.** Every new acting control is a `<button>` — see the semantics ruling in MEMORY.md | unassigned |
+| F2c | [FE-005](tasks/FE-005-ungated-sheets.md) — item config, item-86'd-mid-choice, the line editor | **Done 2026-09-18 for three of seven states**, lead-verified: 356 tests across 14 files, and criterion 1 proven by pointing a sheet control at a gated state. Committed `5edd874`. **Four states were correctly refused** — the task file put the discount sheets on the ungated side and the inventory says two of the three are gated | `builder7` |
+| F2g | **M-1, the approval prompt**: `approval`, `approval-error`, `approval-throttled`, `approval-denied`. `B-13`, `B-14`, and §19's ruling that a manager may re-enter their own PIN as approver | **Next, and first of the gated work.** Both gated families lead here, so it is built once before either | unassigned |
+| F2i | The discount family, moved out of F2c 2026-09-18: `sheet-discount`, `sheet-freeform`, `sheet-remove`, `zero` | Not started. Depends on F2g | unassigned |
+| F2j | The void family: `sheet-voidline`, `sheet-voidorder`, `sheet-voidorder-fired` | Not started. Depends on F2g | unassigned |
+| F2h | `error`, `fireerror`, `fireblocked`, and the 86'd line in the order panel | Not started. Split out of F2c 2026-09-18 | unassigned |
 | F2d | Quick-sale / counter mode | Not started. **Split out of F2b** 2026-09-17: it changes the order's identity and the panel header, not just the menu, so it is its own slice rather than a state smuggled into the grid | unassigned |
 | F2e | Convert acting controls from `<a>` to `<button>` across F2a and F2b | Not started. **Ruled 2026-09-17** after two slices reported the same unverifiable focused-and-pressed state: Space does not activate a link. Tiles, categories, line bodies and the remove control act on the order and are buttons; anchors are for leaving the screen. A refactor of committed work, so its own task | unassigned |
 | F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 fixed | Not started. Consumes `--frost-invalid`, which A9 landed unused | unassigned |

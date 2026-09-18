@@ -50,7 +50,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel and the menu region. Head `eca409c` |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region and the item and line sheets. Head `5edd874` |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -109,8 +109,20 @@ and remediated over three passes.
    - **F2b — [FE-004](tasks/FE-004-menu-region.md). DONE 2026-09-17,
      lead-verified.** The menu region. 273 tests, up from 213. **The locked
      order now has a route out**, and the check spans both slices — see below.
-   - **F2c** — the sheets, the approval PIN flow, `error`, `fireerror`,
-     `fireblocked`.
+   - **F2c — [FE-005](tasks/FE-005-ungated-sheets.md). DONE 2026-09-18 for
+     three of its seven states; four were correctly refused.** Account under
+     *F2c: three built, four refused* below.**
+   - **F2g — M-1, the approval prompt.** Next. `approval`, `approval-error`,
+     `approval-throttled`, `approval-denied`. `B-13`, `B-14`, and §19's ruling
+     that a manager may re-enter their own PIN as approver. **Built first
+     because both gated families lead here**, so it is built once rather than
+     twice.
+   - **F2i — the discount family**, moved out of F2c 2026-09-18:
+     `sheet-discount`, `sheet-freeform`, `sheet-remove`, `zero`. Depends on F2g.
+   - **F2j — the void family**: `sheet-voidline`, `sheet-voidorder`,
+     `sheet-voidorder-fired`. Depends on F2g.
+   - **F2h** — `error`, `fireerror`, `fireblocked`, and the 86'd line in the
+     panel, which is `fireblocked`'s setup and was deferred out of F2b.
    - **F2d — quick-sale / counter mode**, split out of F2b on 2026-09-17. It
      changes the order's identity (`T1` becomes `counter`) and the panel header,
      not just the menu, so it is its own slice rather than a state smuggled into
@@ -141,6 +153,14 @@ content; the permitted rate range.
 - **`git log` is the check, not the handoff.** One agent reported committing
   work that was never committed; another reported `done` having never read its
   assignment. Both looked identical to success from the outside.
+- **Idle is not done, and 2026-09-18 proved it a third way.** `builder7` went
+  idle on F2c with source files on disk and `npm run verify` passing at 298
+  tests — and **no handoff and no test file**, because the machine slept
+  mid-response one step before it wrote them. A passing suite said nothing,
+  because the tests that would have failed had not been written yet. **The
+  check that caught it was reading the handoff section and finding it still the
+  empty template.** An empty handoff is the cheapest possible signal; look for
+  it before looking at anything else.
 - **Never `git add -A` while an implementer is live.** The lead swept a
   mid-mutation-run working tree into a docs commit. It happened to be clean.
 
@@ -450,6 +470,7 @@ Roster verified against `herdr agent list` on 2026-09-15.
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-15 and renamed it `lead` |
 | `builder4` | claude | `w2:pF` | live, idle | **Delivered [FE-002](tasks/FE-002-apply-a7-states.md)** (roadmap A9), lead-verified. Took a baseline `npm run verify` before touching anything, found PostgreSQL down and started it. Kept alive only until the owner has looked at A9; its context is spent, so **F2 goes to a fresh implementer**, not to this one |
+| `builder7` | claude | `w2:pJ` | live, idle | **Delivered [FE-005](tasks/FE-005-ungated-sheets.md)** (F2c), three of seven states, refusing four on inventory grounds. Interrupted mid-task by the machine sleeping and resumed with context intact. Context spent; F2g gets a fresh agent |
 | `builder6` | claude | `w2:pH` | live, idle | **Delivered [FE-004](tasks/FE-004-menu-region.md)** (F2b), lead-verified. Caught two wrong premises in its own task file and checked rather than followed them. Context spent; F2c goes to a fresh implementer |
 | `builder5` | claude | `w2:pG` | live, idle | **Delivered [FE-003](tasks/FE-003-order-panel.md)** (F2a), lead-verified. Raised eleven departures as lead calls rather than deciding them, and found that a locked panel has no route out. Context spent; **F2b goes to a fresh implementer** |
 
@@ -553,6 +574,69 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## F2c: three built, four refused — and the lesson is how to slice
+
+[FE-005](tasks/FE-005-ungated-sheets.md), `builder7`, committed `5edd874`.
+**Lead-verified: 356 tests across 14 files, up from 273.** Criterion 1 proven by
+pointing the item sheet's *Add to order* at `sheet-voidline` and watching
+*"every live control on the frame leads somewhere ungated"* fail.
+
+**The guard proves both halves of its own detector** — that it finds the panel's
+void paths once the background stops being inert, and that it ignores a control
+inside an inert subtree. A reachability check without the second half passes by
+failing to look. This is the sharpest test written on this project so far.
+
+**Looked at:** `sheet-item86` keeps Large and Extra cheese filled and the line
+total at 135.000, says why the item went, and renders *Add to order* greyed and
+dashed while Cancel stays live.
+
+### The refusal is the valuable part
+
+FE-005 put all three M-3 discount nodes on the ungated side.
+SCREEN-INVENTORY says the opposite in one sentence: *preset picker (ungated,
+FR-F2), free-form entry (**gated**, FR-F3), remove/replace (**gated by the whole
+transition**, FR-F8).*
+
+`builder7` was therefore handed a contradiction. Hiding the gated entries would
+have satisfied criterion 1 and broken the inventory's rule that denial is
+*"never a hidden control"*. Leaving them in would have failed criterion 1. **It
+built the three states that were genuinely ungated, held four, and asked** —
+with a proposed ruling and a test file already wired so any held state is
+checked the moment it is added.
+
+### RULED — slice by authority, not by component
+
+**Four consecutive slices have now had a task file of the lead's be wrong where
+a reviewed document was right.** The pattern is finally specific: the lead has
+been grouping work by *what it looks like on screen* — "the sheets", "the menu
+region" — while the inventory groups it by *who is permitted to do it*.
+
+- `sheet-freeform`, `sheet-remove`, `sheet-discount` and `zero` move to the
+  gated family. A sheet is one node to a cashier; shipping its ungated half
+  early would put a gated control on screen with nothing behind it.
+- **Criterion 1 is restated for every future slice:** *no control this slice
+  adds reaches a gated state except through the approval prompt. A panel's
+  existing void paths are `I-12`'s and stay.* As originally written it could not
+  hold for a non-sheet state, because behind `zero` the panel is live by design.
+- **The gated work is three slices, shared piece first:** M-1 the approval
+  prompt, then the discount family, then the void family. Both families lead to
+  M-1, so it is built once.
+
+### Idle is not done — proved a third way
+
+`builder7` was stopped mid-response by the machine sleeping, one step before it
+wrote its tests. It went **idle with source on disk and the suite green at
+298** — with no tests for the new code and an empty handoff template. **A
+passing suite proved nothing, because the tests that would have failed did not
+exist yet.**
+
+The signal that caught it was the **empty handoff section**, checked before
+anything else. It was resumed in the same session with its context intact and
+finished the work; nothing was lost and nothing was rebuilt. **Check the handoff
+is written before checking anything it claims.**
 
 ---
 
