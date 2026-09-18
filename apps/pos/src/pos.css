@@ -1201,6 +1201,124 @@ button.action:focus-visible:active {
   font-size: var(--frost-text-12);
 }
 
+/* ==== Void sheets (F2j) ====
+ * frost/pos/order.html: the sheet-voidline, sheet-voidorder and
+ * sheet-voidorder-fired blocks. The sheet frame, labels, notices, unavailable
+ * action and pressed ring are the rules above, unchanged; no rule here sets a
+ * hover of its own.
+ *
+ * The artifact draws the unfired sheet's *Void order* as a primary (spruce)
+ * button. docs/DESIGN.md names Void order as destructive and allows a final
+ * destructive action a brick fill. Drawn as the artifact draws it and raised
+ * in the FE-008 handoff.
+ *
+ * The *Other* reason's text field is not in the artifact, and docs/DESIGN.md
+ * Open item 4 says no text input has been styled. It takes the numeric
+ * field's box (56px, 1px control border, 2px corners, white, 0 14px) at the
+ * body's type, full width. PROVISIONAL. */
+
+/* The family's wrapper takes no box, so the sheet sits where F2c's do; it
+ * exists to go inert while the manager prompt is open over it. */
+.void-flow {
+  display: contents;
+}
+
+/* docs/DESIGN.md tag: 10px 500, 0.025em, 1.3, 2px 5px, 1px control border,
+ * 2px corners, white. The discount sheets' MANAGER REQUIRED tag, repeated:
+ * both should become one sheet tag when the sheets are next touched. */
+.void-tag {
+  margin-left: auto;
+  padding: var(--frost-tag-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  font-size: var(--frost-text-10);
+  font-weight: var(--frost-weight-medium);
+  line-height: var(--frost-leading-tag);
+  letter-spacing: var(--frost-tracking-tag);
+}
+
+/* docs/DESIGN.md card: white, 1px divider border, 2px corners, 20px. Its
+ * note is the card's muted 12px, 4px below. */
+.void-subject {
+  margin-bottom: var(--frost-space-4);
+  padding: var(--frost-card-padding);
+  border: var(--frost-divider-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+}
+
+.void-subject__row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.void-subject__note {
+  margin-top: var(--frost-space-1);
+  color: var(--frost-muted);
+  font-size: var(--frost-text-12);
+}
+
+.void-notice {
+  margin: 0 0 var(--frost-space-4);
+}
+
+/* The artifact's reasons: compact buttons (48px at 13px) in a column 8px
+ * apart, text set from the left. A chosen reason takes the primary fill. */
+.void-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--frost-space-2);
+}
+
+.void-reason {
+  justify-content: flex-start;
+}
+
+.void-other-label {
+  margin-top: var(--frost-space-4);
+}
+
+.void-field {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--frost-field-height);
+  padding: var(--frost-field-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font: inherit;
+}
+
+/* A7's invalid field (frost-states.css §2), as the discount sheet draws it: a
+ * 2px amber border, the fill still white, and the rule in the same amber
+ * under the field. A7's 13px left padding has no token and is omitted. */
+.void-field--invalid {
+  border: var(--frost-invalid-border);
+}
+
+.void-field__refusal {
+  display: block;
+  margin-top: var(--frost-space-1);
+  color: var(--frost-invalid);
+  font-size: var(--frost-text-14);
+  font-weight: var(--frost-weight-medium);
+}
+
+/* The artifact's order value: 20px, 20px below what precedes it, the figure
+ * bold. */
+.void-value {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--frost-space-5);
+  font-size: var(--frost-text-20);
+}
+
+.void-value__amount {
+  font-weight: var(--frost-weight-semibold);
+}
+
 /* ---- Development-only fixture links, outside the device frame ---- */
 
 .fixture-states {

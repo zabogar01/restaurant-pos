@@ -9,6 +9,7 @@ import { OrderScreen } from '../src/OrderPanel.js';
 import { ORDER_STATES, type OrderState } from '../src/orderFixtures.js';
 import { APPROVAL_FIXTURES } from '../src/approvalFixtures.js';
 import { DISCOUNT_FIXTURES } from '../src/discountFixtures.js';
+import { VOID_FIXTURES } from '../src/voidFixtures.js';
 import { QUANTITY_MAX, SHEET_FIXTURES, unitPrice, type ItemSheetFixture } from '../src/sheetFixtures.js';
 
 // POS-03's ungated sheets (F2c). Three properties are the point:
@@ -345,9 +346,10 @@ describe('sheet-line', () => {
 
 // The approval prompt's states hold a dialog and an inert background of their
 // own; test/approval.test.tsx checks that no sheet is drawn in them. The
-// discount sheets are test/discount.test.tsx's.
+// discount sheets are test/discount.test.tsx's, the void sheets
+// test/void.test.tsx's.
 describe('no sheet in any other state', () => {
-  it.each(ORDER_STATES.map((s) => s.id).filter((s) => !BUILT.includes(s) && !APPROVAL_FIXTURES[s] && !DISCOUNT_FIXTURES[s]))('%s', (state) => {
+  it.each(ORDER_STATES.map((s) => s.id).filter((s) => !BUILT.includes(s) && !APPROVAL_FIXTURES[s] && !DISCOUNT_FIXTURES[s] && !VOID_FIXTURES[s]))('%s', (state) => {
     render(state);
     expect(dialog()).toBeNull();
     expect(device().querySelector('[inert]')).toBeNull();

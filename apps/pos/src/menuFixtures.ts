@@ -127,4 +127,8 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   'sheet-remove': {},
   'sheet-remove-freeform': {},
   zero: {},
+  // The void sheets: the artifact's default grid behind each.
+  'sheet-voidline': {},
+  'sheet-voidorder': {},
+  'sheet-voidorder-fired': {},
 };

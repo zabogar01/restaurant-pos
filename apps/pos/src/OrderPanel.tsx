@@ -26,6 +26,8 @@ import {
 } from './orderFixtures.js';
 import { SHEET_FIXTURES } from './sheetFixtures.js';
 import { SheetView } from './Sheets.js';
+import { VOID_FIXTURES, shownOrder } from './voidFixtures.js';
+import { VoidSheet } from './VoidSheets.js';
 
 // POS-03: the running order panel (F2a) beside the menu region (F2b), with a
 // sheet (F2c) over them when one is open. The header bar is not built yet; it
@@ -41,7 +43,8 @@ import { SheetView } from './Sheets.js';
 //
 // The discount sheets (F2i) are one family: they move between themselves and
 // raise the manager prompt as their own component state, so no approval is
-// ever a URL (DiscountSheets.tsx).
+// ever a URL (DiscountSheets.tsx). The void sheets (F2j) do the same, and read
+// the order the panel shows beside them (VoidSheets.tsx).
 export function OrderScreen({ view: initial = orderViewFrom(window.location.search) }: { view?: OrderView }) {
   const [view, setView] = useState(initial);
   const device = useRef<HTMLDivElement>(null);
@@ -49,9 +52,10 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
   const sheet = SHEET_FIXTURES[view.state];
   const approval = APPROVAL_FIXTURES[view.state];
   const discount = DISCOUNT_FIXTURES[view.state];
+  const voiding = VOID_FIXTURES[view.state];
 
   function go(next: OrderView) {
-    returnFocusTo.current = (sheet ?? approval ?? discount)?.opener;
+    returnFocusTo.current = (sheet ?? approval ?? discount ?? voiding)?.opener;
     // A modal is not back-stackable (SITEMAP §1): leaving the approval prompt
     // replaces its history entry, so Back never re-opens an approval.
     if (approval) window.history.replaceState(null, '', viewSearch(next));
@@ -72,7 +76,7 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
   }, [view]);
 
   // React 18 has no inert prop; an empty string renders the bare attribute.
-  const inert = sheet || approval || discount ? { inert: '' } : {};
+  const inert = sheet || approval || discount || voiding ? { inert: '' } : {};
 
   return (
     <>
@@ -85,6 +89,7 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
         {sheet && <SheetView key={view.state} sheet={sheet} go={go} />}
         {approval && <ApprovalPrompt key={view.state} approval={approval} go={go} />}
         {discount && <DiscountSheet key={view.state} fixture={discount} go={go} />}
+        {voiding && <VoidSheet key={view.state} fixture={voiding} order={shownOrder(view)} go={go} />}
       </div>
       {import.meta.env.DEV && <OrderFixtureStates current={view.state} />}
     </>

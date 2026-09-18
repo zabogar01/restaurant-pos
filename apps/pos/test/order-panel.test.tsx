@@ -70,7 +70,7 @@ describe('the slot guard can see a swallowed slot', () => {
 });
 
 describe('fixture states', () => {
-  it('has exactly the six states of F2a, the three of F2b, the three of F2c, the four of F2g and the five of F2i', () => {
+  it('has exactly the six states of F2a, the three of F2b, the three of F2c, the four of F2g, the five of F2i and the three of F2j', () => {
     expect(ORDER_STATES.map((s) => s.id)).toEqual([
       'default',
       'empty',
@@ -93,12 +93,15 @@ describe('fixture states', () => {
       'sheet-remove',
       'sheet-remove-freeform',
       'zero',
+      'sheet-voidline',
+      'sheet-voidorder',
+      'sheet-voidorder-fired',
     ]);
   });
 
   it('is reachable by ?state=, and anything else is the default', () => {
     for (const { id } of ORDER_STATES) expect(orderViewFrom(`?state=${id}`).state).toBe(id);
-    expect(orderViewFrom('?state=sheet-voidline').state).toBe('default');
+    expect(orderViewFrom('?state=fireerror').state).toBe('default');
     expect(orderViewFrom('').state).toBe('default');
   });
 });

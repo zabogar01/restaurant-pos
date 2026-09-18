@@ -19,8 +19,8 @@ import { COMP, OTHER_15 } from './discountFixtures.js';
 // artifact never figured — this order comped, and this order carrying a
 // free-form discount — so their totals are computed by orderTotals from the
 // discount they carry, the arithmetic test/discount.test.tsx holds to the
-// artifact's own figures. The void sheets are F2j; the fire-error states are
-// F2h.
+// artifact's own figures. F2j adds the three void sheets; their own fixtures
+// are in voidFixtures.ts. The fire-error states are F2h.
 
 export type LineStatus = 'pending' | 'fired' | 'voided';
 
@@ -86,7 +86,10 @@ export type OrderState =
   | 'sheet-freeform'
   | 'sheet-remove'
   | 'sheet-remove-freeform'
-  | 'zero';
+  | 'zero'
+  | 'sheet-voidline'
+  | 'sheet-voidorder'
+  | 'sheet-voidorder-fired';
 
 export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'default', label: 'Two rounds fired, one line pending' },
@@ -110,6 +113,9 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'sheet-remove', label: 'Sheet — remove/replace discount' },
   { id: 'sheet-remove-freeform', label: 'Sheet — remove/replace a free-form discount' },
   { id: 'zero', label: 'Zero total (100% comp)' },
+  { id: 'sheet-voidline', label: 'Sheet — void fired line' },
+  { id: 'sheet-voidorder', label: 'Sheet — void order (unfired)' },
+  { id: 'sheet-voidorder-fired', label: 'Sheet — void order (holds fired)' },
 ];
 
 // ruling C-5: the two locks never share a string.
@@ -121,9 +127,10 @@ export const LOCK_TAG: Record<SettlementLock, string> = {
 export const FIRED_TAG = 'MANAGER TO VOID';
 export const PENDING_TAG = 'REMOVE FREELY';
 
-// The row body's destination. The void sheet (FR-H4) is F2g and does not exist
-// yet, so it names the artifact's fixture state and today resolves to the
-// default state. The line editor is F2c's sheet-line.
+// The row body's destination: the void sheet (FR-H4, F2j) for a FIRED line,
+// the line editor (F2c) for a PENDING one. Each names the artifact's fixture
+// state. The void state draws the Burger's sheet whichever fired row opened
+// it; see the FE-008 handoff.
 export const VOID_LINE_HREF = '?state=sheet-voidline';
 export const EDIT_LINE_HREF = '?state=sheet-line';
 
@@ -177,6 +184,18 @@ const tableTotals = serviceAndTax(405_000n, 18_225n, 382_725n, 33_136n, {
   label: 'Staff meal 10%',
   amount: -40_500n,
 });
+
+// The same three lines before anything was sent to the kitchen, for the one
+// sheet that is only true of such an order: voiding an order with nothing
+// fired (FR-H3). The artifact draws that sheet beside its two fired rounds,
+// which contradicts the sheet's own notice; see the FE-008 handoff. Same
+// lines, same figures: firing changes no price.
+const unfiredTableOrder: ReadonlyArray<RoundGroup> = [
+  {
+    kind: 'pending',
+    lines: tableOrder.flatMap((g) => g.lines).map((l) => ({ ...l, status: 'pending' as const })),
+  },
+];
 
 const tableTotalsWithout = {
   steak: serviceAndTax(165_000n, 7_425n, 155_925n, 13_500n, { label: 'Staff meal 10%', amount: -16_500n }),
@@ -303,6 +322,13 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
     totals: orderTotals(405_000n, COMP),
     totalsWithout: { steak: orderTotals(165_000n, COMP) },
   },
+
+  // F2j's void sheets. The fired-line void and the order holding fired work
+  // open over the table order, as every other sheet does; the unfired order's
+  // void opens over that order with nothing yet sent.
+  'sheet-voidline': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'sheet-voidorder': { title: 'Order · T1', groups: unfiredTableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'sheet-voidorder-fired': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
 };
 
 export type OrderView = { state: OrderState; gone?: string };
