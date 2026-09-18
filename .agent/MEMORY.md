@@ -471,17 +471,25 @@ Roster verified against `herdr agent list` on 2026-09-15.
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-15 and renamed it `lead` |
-| `builder4` | claude | `w2:pF` | live, idle | **Delivered [FE-002](tasks/FE-002-apply-a7-states.md)** (roadmap A9), lead-verified. Took a baseline `npm run verify` before touching anything, found PostgreSQL down and started it. Kept alive only until the owner has looked at A9; its context is spent, so **F2 goes to a fresh implementer**, not to this one |
-| `builder8` | claude | `w2:pK` | live, idle | **Delivered [FE-006](tasks/FE-006-approval-prompt.md)** (F2g), lead-verified. Found the artifact drawing a live confirm key during the approval lockout and refused to copy it. Context spent |
-| `builder7` | claude | `w2:pJ` | live, idle | **Delivered [FE-005](tasks/FE-005-ungated-sheets.md)** (F2c), three of seven states, refusing four on inventory grounds. Interrupted mid-task by the machine sleeping and resumed with context intact. Context spent; F2g gets a fresh agent |
-| `builder6` | claude | `w2:pH` | live, idle | **Delivered [FE-004](tasks/FE-004-menu-region.md)** (F2b), lead-verified. Caught two wrong premises in its own task file and checked rather than followed them. Context spent; F2c goes to a fresh implementer |
-| `builder5` | claude | `w2:pG` | live, idle | **Delivered [FE-003](tasks/FE-003-order-panel.md)** (F2a), lead-verified. Raised eleven departures as lead calls rather than deciding them, and found that a locked panel has no route out. Context spent; **F2b goes to a fresh implementer** |
+| `builder9` | claude | `w2:pM` | live, working | Started 2026-09-18 on [FE-007](tasks/FE-007-discount-family.md), F2i — the discount family |
 
 `architect`, `designer`, `design-reviewer`, `designer2`, `builder1`, `builder2`
 and `builder3` were all shut down on 2026-09-14 to free memory. Their panes no
 longer exist. Nothing was lost: both working trees were clean and every handoff
 is committed under `.agent/tasks/`. Any future work needs a fresh agent started
 into a fresh pane — no scrollback survives.
+
+**Eight implementers have been closed, not kept.** `builder1`–`builder3` on
+2026-09-14; **`builder4`–`builder8` on 2026-09-18 at the owner's instruction**,
+once each had delivered and the tree was clean.
+
+**The policy, settled 2026-09-18:** close an implementer once its slice is
+delivered and committed. Its context is spent on that slice, the owner's ruling
+is a fresh implementer per task anyway, and the durable record is the committed
+handoff — not the pane. **Keep an agent alive only when its scrollback holds
+something that was never written down.** That has happened exactly once:
+`designer2`, whose pane was the only record of how the token registry had been
+extracted. Every builder here wrote a full handoff, so none qualified.
 
 What the dead roster is still worth knowing for:
 
