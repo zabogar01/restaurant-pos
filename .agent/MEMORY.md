@@ -3,7 +3,10 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-17, from repository evidence on
+Last updated: 2026-09-20. A fresh lead session took `w2:p1` on 2026-09-18,
+re-verified the branch head and the Herdr roster, and corrected the Active
+agents table; on 2026-09-20 it closed `builder11` and wrote FE-010. The
+2026-09-17 edit was made from repository evidence on
 `agent/phase-0-foundations` and the live Herdr roster. That edit recorded F2a
 (FE-003) as done and lead-verified, and ruled the eleven departures its
 implementer raised. The 2026-09-16 edit recorded A9 and ruled the order-line
@@ -39,7 +42,7 @@ and the Frost design system. A fresh clone has all of it. Nothing is merged to
 
 ---
 
-## START HERE — resume point, 2026-09-17
+## START HERE — resume point, 2026-09-20
 
 Every agent from the 2026-09-14 session was shut down deliberately to free
 memory. **Nothing was lost:** both working trees were clean and every handoff
@@ -50,7 +53,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, and F2e's corrections. Head `6b183b1` |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, and F2e's corrections. Head `e5e0230`, working tree clean, verified 2026-09-18 |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -127,10 +130,12 @@ and remediated over three passes.
    - **F2e — [FE-009](tasks/FE-009-corrections.md). DONE 2026-09-18**,
      lead-verified. Four corrections to committed work; 853 tests.
      **The wrong-line void is fixed and guarded.**
-   - **F2k — finish the opener fix.** Next. The same defect has three more
-     homes, and **one of them feeds a gate**: the discount picker reads a
-     fixture's applied discount, which is exactly what `needsManager` uses for
-     `FR-F8`.
+   - **F2k — [FE-010](tasks/FE-010-opener-fix.md). Written 2026-09-20, ready,
+     unassigned.** Finish the opener fix. Writing it from the code rather than
+     from the roadmap line changed it twice — a **fourth** home nobody had
+     counted, and the discount case is both worse and less alarming than it
+     read. Account under *F2k, as written* below. **The menu tile is held**, and
+     that is a design question, not scope.
    - **F2j — the void family**: `sheet-voidline`, `sheet-voidorder`,
      `sheet-voidorder-fired`. Depends on F2g.
    - **F2h** — `error`, `fireerror`, `fireblocked`, and the 86'd line in the
@@ -474,15 +479,14 @@ Coordinated through Herdr in workspace `w2`. Herdr routes messages between
 panes; it stores nothing durable. Anything that must survive the session
 belongs in this file.
 
-Roster verified against `herdr agent list` on 2026-09-15.
-
-**One agent is live. The eight-agent roster this section carried is gone.**
+Roster verified against `herdr agent list` on 2026-09-20. **One agent is live,
+and `herdr agent list` returns exactly one.** Every implementer's pane is gone.
 
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
-| `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-15 and renamed it `lead` |
-| `builder11` | claude | `w2:pP` | live, idle | **Delivered [FE-009](tasks/FE-009-corrections.md)** (F2e). Went looking beyond its brief and found the same defect on three more openers |
-| `builder10` | claude | `w2:pN` | closed | **Delivered [FE-008](tasks/FE-008-void-family.md)** (F2j). Found the panel offering to void the wrong line and refused to reach into committed work to fix it |
+| `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `builder11` | claude | — | closed 2026-09-20 | **Delivered [FE-009](tasks/FE-009-corrections.md)** (F2e). Went looking beyond its brief and found the same defect on three more openers. Closed under the standing policy once FE-010 had been written from its findings: its slice is committed and its handoff is the record |
+| `builder10` | claude | — | closed | **Delivered [FE-008](tasks/FE-008-void-family.md)** (F2j). Found the panel offering to void the wrong line and refused to reach into committed work to fix it |
 
 `architect`, `designer`, `design-reviewer`, `designer2`, `builder1`, `builder2`
 and `builder3` were all shut down on 2026-09-14 to free memory. Their panes no
@@ -655,7 +659,9 @@ is not evidence**; the second one did and caught it.
 
 ### The defect has three more homes, and one feeds a gate — F2k
 
-`builder11` went looking rather than stopping at its brief:
+**Four, as it turned out.** The lead found the category's while writing FE-010;
+see *F2k, as written* below. `builder11` went looking rather than stopping at
+its brief, and found these three:
 
 - **Discount opens a fixture order**, so the picker's *applied* discount is the
   fixture's — **which is precisely what `needsManager` reads for `FR-F8`**. The
@@ -668,6 +674,52 @@ is not evidence**; the second one did and caught it.
 POS-03 replaces history; only leaving POS-03 pushes.** SITEMAP gives `[INLINE]`
 Back-stackable: No, and today Back after a removal puts the line back — a
 removal undone by a browser control.
+
+### F2k, as written — the count went up, and one claim went down
+
+[FE-010](tasks/FE-010-opener-fix.md), 2026-09-20. The lead wrote it from
+`apps/pos/src` rather than from the roadmap line, and that changed it twice.
+
+**A fourth home, counted by nobody.** `categorySearch` is
+`` `?state=default&category=${id}` `` — **the state is hardcoded**, so tapping a
+category on `overflow` moves the cashier to the table order. Finding B's exact
+shape on a control that was never on the list. Worse in a second way:
+`orderViewFrom` parses only `state` and `gone`, so `category=` is written and
+never read, while `SELECTED_CATEGORY` is the constant `'mains'` — press *Drinks*
+and the rail still draws Mains selected. **The URL asserts what the screen
+contradicts.**
+
+**The discount case is worse than reported, and its consequence is smaller.**
+Both halves matter:
+
+- **Worse:** no order fixture carries a `DiscountSnapshot` at all.
+  `Totals.discount` is an `Adjustment` — a label string and an amount, with no
+  `source`, and `source` is the only field `FR-F8` turns on. **The fact the gate
+  needs is not on the order**, which is why the sheets read it from a fixture.
+- **Smaller:** the gate's *answer* coincides today. It differs only between a
+  preset and a free-form applied discount, and the one order carrying a
+  free-form discount is `sheet-remove-freeform` — a **sheet** state, whose
+  background is inert, so the close bar's Discount cannot be pressed from it.
+  Every order you can press it from carries a preset or nothing.
+
+MEMORY.md and the FE-009 handoff both said *"the gate then decides from the
+wrong fact"*, which is true, and both read as though the gate is deciding
+**wrongly**, which it is not yet. **The correction is the lead's own, found by
+checking rather than by repeating.** The requirement it produces is sharper than
+the alarm was: F2k adds a non-sheet order carrying a free-form discount, so
+that making the input right has a case where it changes the answer. A guard with
+no such case proves nothing — the same lesson as the `I-12` injection that hit
+the non-interactive branch and passed.
+
+**The tile is held, and the reason is not scope.** The other three openers need
+data the app has — a line id, a view, a state. The item sheet needs an **option
+set**, and the artifact configures Burger only, so eleven of twelve tiles have
+no reviewed sheet. Every route out invents: Burger's extras on a steak, or an
+option-less sheet the artifact never draws. **That is `A7`'s shape — a design
+decision, not a wiring bug** — so it goes to a designer with a proposal (the
+tile carries the item's identity; option groups render only where a reviewed set
+exists) rather than being ruled from a task file. `DESIGN-005`'s designer set
+the precedent: invent, revert, ask.
 
 **Sharpened while ruling it:** "an anchor is for leaving" read two ways. The
 better rule is **an anchor goes to a screen that already exists; a button makes

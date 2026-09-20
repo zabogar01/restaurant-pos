@@ -7,7 +7,14 @@ next, not what happens eventually.
 
 Owned by the Claude product lead. No other agent writes to this file.
 
-Last updated 2026-09-18, after F2g landed the approval prompt. Two items were
+Last updated 2026-09-20, when F2k's task file was written and `builder11`
+closed. Writing FE-010 from the code rather than from the roadmap line found a
+fourth home for the opener defect — the category rail — and corrected how the
+discount case had been stated here; both are recorded in MEMORY.md under *F2k,
+as written*. A third housekeeping item was added: the menu tile's item sheet is
+a design question, not a wiring bug.
+
+Previously 2026-09-18, after F2g landed the approval prompt. Two items were
 added to the lead's housekeeping from it: a designer owes what Cancel does while
 an approval is verifying (a `B-20` question, not a styling one), and the design
 branch owes a review note — both defects implementation has found in reviewed
@@ -129,6 +136,7 @@ Small, none of it blocking, all of it recorded so it does not get lost.
 
 | Item | Why it is not done yet |
 |---|---|
+| Rule the menu tile's item sheet | Held out of F2k. Every tile opens Burger's sheet because the artifact configures Burger only, so eleven of twelve items have no reviewed option set. Lead's proposal, in [FE-010](tasks/FE-010-opener-fix.md): the tile carries the item's **identity** (name and price, which `MENU_ITEMS` already holds) and option groups render only where a reviewed set exists. That is one new composition — a designer's, then review |
 | ~~Commit the documentation state~~ | **Done** 2026-09-14: six commits on `agent/design-direction`, working tree clean. Not merged to `main` — the owner merges |
 | ~~Close [DESIGN-002](tasks/DESIGN-002-wireframe-review.md)~~ | **Done** 2026-09-14. Ruled: the quick-sale line editor is a second *form* of the existing sheet, not a seventh modal — the count stands at 7 / 13 / 6. Four items carried forward as wireframe slack |
 | ~~Bring [DESIGN-001](tasks/DESIGN-001-external-visual-direction.md) up to date~~ | **Done** 2026-09-14, closed. Delivered in-repo rather than through an external tool; six of eight acceptance criteria met, two met-with-a-limit |
@@ -179,7 +187,7 @@ A task that feels like it needs two sessions is two tasks.
 | F2h | `error`, `fireerror`, `fireblocked`, and the 86'd line in the order panel | Not started. Split out of F2c 2026-09-18 | unassigned |
 | F2d | Quick-sale / counter mode | Not started. **Split out of F2b** 2026-09-17: it changes the order's identity and the panel header, not just the menu, so it is its own slice rather than a state smuggled into the grid | unassigned |
 | F2e | [FE-009](tasks/FE-009-corrections.md) — four corrections to committed work | **Done** 2026-09-18, lead-verified: 853 tests, no test deleted or loosened. Reintroducing the wrong-line defect fails 12 tests; `B-12` came through **stronger** (22 failures, up from 13); the `I-12` guard was widened to recognise a button and still catches a nested slot. Committed `6b183b1` | `builder11` |
-| F2k | **Finish the opener fix.** Every sheet opened from the panel or menu opens over the *current* order and line — discount, line-edit, tile — and inline changes replace rather than push (SITEMAP `[INLINE]`: not back-stackable). **The discount case feeds a gate:** the picker's applied discount is a fixture's, which is what `needsManager` reads for `FR-F8` | **Next.** F2e fixed the path where getting it wrong prints paper; this fixes the rest | unassigned |
+| F2k | [FE-010](tasks/FE-010-opener-fix.md) — **finish the opener fix.** The discount family and the line editor open over the *current* order and line; the category keeps the order on screen and the rail follows it; inline changes replace rather than push (SITEMAP `[INLINE]`: not back-stackable). **The discount case feeds a gate:** the picker's applied discount is a fixture's, which is what `needsManager` reads for `FR-F8` | **Written 2026-09-20, ready, unassigned.** Two things the task file adds that the roadmap line did not have — **the category's opener hardcodes `?state=default`** (a fourth home nobody had counted), and **no order fixture carries a `DiscountSnapshot` at all**, so the gate's fact is not on the order. **The menu tile is held**, not built: eleven of twelve items have no reviewed option set, which makes it an `A7`-shaped design gap rather than a wiring bug | unassigned |
 | F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 fixed | Not started. Consumes `--frost-invalid`, which A9 landed unused | unassigned |
 | F4 | The remaining POS screens, then the back office | Not started | unassigned |
 
