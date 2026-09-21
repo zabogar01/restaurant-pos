@@ -3,8 +3,21 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-14, from repository evidence at `ad186db` on
-`agent/phase-0-foundations` and the live Herdr roster.
+Last updated: 2026-09-20. A fresh lead session took `w2:p1` on 2026-09-18,
+re-verified the branch head and the Herdr roster, and corrected the Active
+agents table; on 2026-09-20 it closed `builder11` and wrote FE-010. The
+2026-09-17 edit was made from repository evidence on
+`agent/phase-0-foundations` and the live Herdr roster. That edit recorded F2a
+(FE-003) as done and lead-verified, and ruled the eleven departures its
+implementer raised. The 2026-09-16 edit recorded A9 and ruled the order-line
+ring offset; the 2026-09-15 edit corrected the branch head and an Active agents
+table that listed seven agents that no longer existed.
+
+**A9 is committed.** Two commits on `agent/phase-0-foundations`: `0625be9`
+carries the implementation — the 172-token registry, `frost-states.css`,
+`pos.css` and the hover test — and `c80bb87` carries FE-002, this file and
+`.agent/ROADMAP.md`. **F2a followed in `89a100e`, F2b in `eca409c`.** A fresh clone has all of it.
+Still not merged to `main`; that is the owner's.
 
 The 2026-09-10 revision of this file was written at 11:50 and went stale the
 same afternoon: DESIGN-002 ran two further passes, and an entire visual
@@ -29,7 +42,7 @@ and the Frost design system. A fresh clone has all of it. Nothing is merged to
 
 ---
 
-## START HERE — resume point, 2026-09-15
+## START HERE — resume point, 2026-09-20
 
 Every agent from the 2026-09-14 session was shut down deliberately to free
 memory. **Nothing was lost:** both working trees were clean and every handoff
@@ -40,7 +53,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen. Head `da314a5` |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, and F2e's corrections. Head `e5e0230`, working tree clean, verified 2026-09-18 |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -56,14 +69,83 @@ and remediated over three passes.
 
 **What is next, in order:**
 
-1. **A9 — apply the three A7 states to `apps/pos`.** Small. The pressed ring,
-   the invalid field, and the 13px round tag exist in
-   `frost-states.css` on the design branch and must reach
-   `packages/tokens` and the POS. Note the hover rule: **every hover must be
-   scoped to `@media (hover: hover)`**, or a synthesised touch hover will leave
-   a tile looking selected.
-2. **F2 — the POS order workspace.** Unblocked. The densest screen: menu grid,
-   running order, the three line signatures, 86'd tiles disabled in place.
+1. **A9 — [FE-002](tasks/FE-002-apply-a7-states.md). DONE 2026-09-16,
+   lead-verified.** Full account under *A9 landed* below. Written after checking
+   what `apps/pos` actually contains, which changed the task: **only the pressed
+   ring had a control to land on.**
+   The lock screen has twelve keys, Continue and the emergency action — and no
+   text field and no round-group heading, so the invalid state and the 13px tag
+   have no surface and are deferred to F3 and F2 rather than given an invented
+   home. A7's own precedent: its designer needed a state to demonstrate the
+   invalid field, invented one, **then reverted it and asked.**
+
+   Three things the lead found while writing it, none of them in the roadmap
+   line:
+
+   - **The code branch's registry is the 169-token pre-A7 version.** The four
+     A7 tokens live only on `agent/design-direction`. This branch has never
+     modified `docs/design/tokens/`, so `git checkout agent/design-direction --`
+     on three paths is clean and loses nothing. Only those three paths cross;
+     `docs/DESIGN.md` and the rest are the owner's merge.
+   - **The pressed ring collides with the focus ring**, and only in the
+     rendering, not the geometry. `pos.css` sets `box-shadow` for
+     `:focus-visible`; `box-shadow` is one property, so a naive `:active` rule
+     erases the focus ring at the moment of the press. Both must go in one
+     declaration.
+   - **`pos.css` has no `:hover` rule at all today**, so the hover scoping has
+     nothing to scope — which is exactly why FE-002 makes it a *test* rather
+     than a rule. A8 caught A7's designer writing a comment saying an
+     implementation should gate hover; a comment fixes nothing and hands the
+     bug to whoever writes the code. F2 builds the menu grid, which is where it
+     bites.
+2. **F2 — split into three, 2026-09-16.** The roadmap line called it one task.
+   The Frost fixture for POS-03 is **664 lines carrying about twenty-six
+   states**, and FE-001 was one screen with eight states that produced 114
+   tests. F2 as written was three sessions pretending to be one, and the owner's
+   own rule is that a task needing two sessions is two tasks. Counting the
+   screen before assigning it is now the second time that changed a task — the
+   first was A9, which shrank.
+
+   - **F2a — [FE-003](tasks/FE-003-order-panel.md). DONE 2026-09-17,
+     lead-verified.** The running order panel. 213 tests, up from 120. Account
+     under *F2a landed* below.
+   - **F2b — [FE-004](tasks/FE-004-menu-region.md). DONE 2026-09-17,
+     lead-verified.** The menu region. 273 tests, up from 213. **The locked
+     order now has a route out**, and the check spans both slices — see below.
+   - **F2c — [FE-005](tasks/FE-005-ungated-sheets.md). DONE 2026-09-18 for
+     three of its seven states; four were correctly refused.** Account under
+     *F2c: three built, four refused* below.**
+   - **F2g — [FE-006](tasks/FE-006-approval-prompt.md). DONE 2026-09-18,
+     lead-verified.** M-1, the approval prompt. 472 tests, up from 356.
+     Account under *F2g landed* below. `approval`, `approval-error`,
+     `approval-throttled`, `approval-denied`. `B-13`, `B-14`, and §19's ruling
+     that a manager may re-enter their own PIN as approver. **Built first
+     because both gated families lead here**, so it is built once rather than
+     twice.
+   - **F2i — [FE-007](tasks/FE-007-discount-family.md). DONE 2026-09-18**,
+     lead-verified. The discount family, 624 tests.
+   - **F2j — [FE-008](tasks/FE-008-void-family.md). DONE 2026-09-18**,
+     lead-verified. The void family, 753 tests. **Found the panel offering to
+     void the wrong line** — see below.
+   - **F2e — [FE-009](tasks/FE-009-corrections.md). DONE 2026-09-18**,
+     lead-verified. Four corrections to committed work; 853 tests.
+     **The wrong-line void is fixed and guarded.**
+   - **F2k — [FE-010](tasks/FE-010-opener-fix.md). DONE 2026-09-21**,
+     lead-verified and independently reviewed. 897 tests. Account under *F2k
+     landed* below. **The first slice whose task-file error an implementer could
+     not have caught**, and the reason an independent review earned its place. Finish the opener fix. Writing it from the code rather than
+     from the roadmap line changed it twice — a **fourth** home nobody had
+     counted, and the discount case is both worse and less alarming than it
+     read. Account under *F2k, as written* below. **The menu tile is held**, and
+     that is a design question, not scope.
+   - **F2j — the void family**: `sheet-voidline`, `sheet-voidorder`,
+     `sheet-voidorder-fired`. Depends on F2g.
+   - **F2h** — `error`, `fireerror`, `fireblocked`, and the 86'd line in the
+     panel, which is `fireblocked`'s setup and was deferred out of F2b.
+   - **F2d — quick-sale / counter mode**, split out of F2b on 2026-09-17. It
+     changes the order's identity (`T1` becomes `counter`) and the panel header,
+     not just the menu, so it is its own slice rather than a state smuggled into
+     the grid.
 
 **How this session works** — the owner's two standing instructions:
 
@@ -73,8 +155,10 @@ and remediated over three passes.
   the command and URL that shows the work. An agent that starts a second screen
   has ended its task.
 
-**To see the work:** `npm run dev -w apps/pos` → `http://127.0.0.1:5173/pos/`
-for the app; for the design fixtures, serve
+**To see the work:** `npm run dev -w apps/pos`, then `http://127.0.0.1:5173/pos/`
+for the lock screen and `/pos/order` for the order panel — six states on
+`?state=`: `default`, `empty`, `overflow`, `pressed`, `lock-draft`, `lock-lease`.
+For the design fixtures, for the design fixtures, serve
 `../restaurant-pos-design/docs/design/visual-directions/` and open
 `index.html`.
 
@@ -88,6 +172,14 @@ content; the permitted rate range.
 - **`git log` is the check, not the handoff.** One agent reported committing
   work that was never committed; another reported `done` having never read its
   assignment. Both looked identical to success from the outside.
+- **Idle is not done, and 2026-09-18 proved it a third way.** `builder7` went
+  idle on F2c with source files on disk and `npm run verify` passing at 298
+  tests — and **no handoff and no test file**, because the machine slept
+  mid-response one step before it wrote them. A passing suite said nothing,
+  because the tests that would have failed had not been written yet. **The
+  check that caught it was reading the handoff section and finding it still the
+  empty template.** An empty handoff is the cheapest possible signal; look for
+  it before looking at anything else.
 - **Never `git add -A` while an implementer is live.** The lead swept a
   mid-mutation-run working tree into a docs commit. It happened to be clean.
 
@@ -95,9 +187,11 @@ content; the permitted rate range.
 
 ## Current phase
 
-**Phase 0, started 2026-09-14. Task 1 of twelve is done and verified; Task 2 is
-running.** The implementation gate opened the same day with every condition met
-and in git history.
+**Phase 0, started 2026-09-14. Backend tasks 1 and 2 of twelve are done and
+lead-verified; tasks 3–12 are paused behind the owner's frontend-first
+instruction.** The frontend track has delivered FE-001 (lock screen, owner
+approved) and FE-002 (A9). The implementation gate opened 2026-09-14 with every
+condition met and in git history.
 
 **The repository has code now.** `package.json`, npm workspaces,
 `tsconfig.base.json`, `docker-compose.yml` running PostgreSQL 16 on
@@ -387,34 +481,59 @@ Coordinated through Herdr in workspace `w2`. Herdr routes messages between
 panes; it stores nothing durable. Anything that must survive the session
 belongs in this file.
 
-Roster verified against `herdr agent list` on 2026-09-14.
+Roster verified against `herdr agent list` on 2026-09-21. **Two agents are
+live.** Every earlier implementer's pane is gone.
+
+**An implementer is live right now, so `git add -A` is forbidden** — stage by
+path. The lead once swept a mid-mutation-run working tree into a docs commit;
+it happened to be clean, and a deliberately broken file would have been
+committed as real work.
 
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
-| `lead` | claude | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-14 and named it |
-| `architect` | codex | `w2:p2` | live, idle | Delivered the reconciliation 2026-09-10 after 36 minutes. Owns architecture questions |
-| `designer` | claude, **Opus 5** | `w2:p3` | live, working **in the design worktree** at `../restaurant-pos-design`. Holds [DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) | Same pane, **new session with no memory of the earlier work** — owner's instruction, 2026-09-14. Holds [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) from where `designer2` stopped. The session that authored the sitemap, screen inventory, prototype and all three DESIGN-002 passes was exited to clear 345k tokens of context |
-| `design-reviewer` | codex | `w2:p9` | live, working | Returned the eight findings that drove DESIGN-002 pass 3, and wrote the visual finish review in `visual-directions/REVIEW.md` |
-| `builder1` | claude | `w2:pB` | live, idle | First implementer. **Delivered [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md)** and a handoff worth reading — it found three defects in the plan itself |
-| `builder2` | claude | `w2:pC` | live, idle | **Delivered [PHASE0-002](tasks/PHASE0-002-money-module.md)**, 81 tests. Backend is paused behind it |
-| `builder3` | claude | `w2:pD` | live, idle | First frontend implementer. **Delivered [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md)** — POS bundle, Frost tokens, lock screen, 8 states |
-| `designer2` | codex, gpt-6-astra | `w2:pA` | live, idle, **out of quota** | Started 2026-09-14 and equipped with the Impeccable skill. Delivered the token set, then stopped before `docs/DESIGN.md`. DESIGN-003 was reassigned off it the same day; kept alive because its scrollback is the only record of how the tokens were extracted |
+| `builder12` | claude | `w2:pQ` | live, idle | **Delivered [FE-010](tasks/FE-010-opener-fix.md)** (F2k) and its four post-review corrections. Its handoff has two entries; both are the record |
+| `code-reviewer` | **codex** | `w2:pR` | live, idle | **Reviewed FE-010 independently** — [.agent/reviews/FE-010-review.md](reviews/FE-010-review.md). Three findings, the worst of them the lead's. **The first review agent used on implementation work**, and it found the class no implementer can |
+| `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `builder11` | claude | — | closed 2026-09-20 | **Delivered [FE-009](tasks/FE-009-corrections.md)** (F2e). Went looking beyond its brief and found the same defect on three more openers. Closed under the standing policy once FE-010 had been written from its findings: its slice is committed and its handoff is the record |
+| `builder10` | claude | — | closed | **Delivered [FE-008](tasks/FE-008-void-family.md)** (F2j). Found the panel offering to void the wrong line and refused to reach into committed work to fix it |
 
-**Both codex agents share one account quota and both exhausted it at 15:11 on
-2026-09-14**, mid-task in `designer2`'s case. The window resets at 15:25. This
-is worth knowing before parallelising codex agents again: running two hard jobs
-concurrently on one account spends the budget twice as fast and stops both at
-once. `architect` finished first and lost only its closing report; `designer2`
-lost the second half of its task.
+`architect`, `designer`, `design-reviewer`, `designer2`, `builder1`, `builder2`
+and `builder3` were all shut down on 2026-09-14 to free memory. Their panes no
+longer exist. Nothing was lost: both working trees were clean and every handoff
+is committed under `.agent/tasks/`. Any future work needs a fresh agent started
+into a fresh pane — no scrollback survives.
 
-`designer` (claude) and `design-reviewer` (codex) are idle and available.
-`design-reviewer` wrote the visual finish review and is the natural reviewer for
-whatever `designer2` returns — but it draws on the same exhausted quota.
+**Eight implementers have been closed, not kept.** `builder1`–`builder3` on
+2026-09-14; **`builder4`–`builder8` on 2026-09-18 at the owner's instruction**,
+once each had delivered and the tree was clean.
 
-The previous revision of this file recorded `designer` as **gone** and an
-unassigned idle Claude at `w2:p8`. Both were wrong by the time anyone read
-them: the designer was reinstated and did the bulk of the afternoon's work, and
-`w2:p8` no longer exists. `design-reviewer` was never recorded at all.
+**The policy, settled 2026-09-18:** close an implementer once its slice is
+delivered and committed. Its context is spent on that slice, the owner's ruling
+is a fresh implementer per task anyway, and the durable record is the committed
+handoff — not the pane. **Keep an agent alive only when its scrollback holds
+something that was never written down.** That has happened exactly once:
+`designer2`, whose pane was the only record of how the token registry had been
+extracted. Every builder here wrote a full handoff, so none qualified.
+
+What the dead roster is still worth knowing for:
+
+- **The two codex agents shared one account quota and both exhausted it at
+  15:11 on 2026-09-14**, mid-task in `designer2`'s case. Running two hard jobs
+  concurrently on one account spends the budget twice as fast and stops both at
+  once. `architect` finished first and lost only its closing report; `designer2`
+  lost the second half of its task.
+- **Fable 5.1 hit a monthly spend limit** the same afternoon and never processed
+  the A7 prompt at all. The owner's Fable preference is overridden by
+  availability, not by choice.
+
+Twice now this section has been confidently wrong about who is alive — the
+2026-09-10 revision recorded `designer` as gone while it did the bulk of that
+afternoon's work, and the 2026-09-14 revision listed seven agents that had
+already been shut down. **Verify the roster against `herdr agent list` before
+trusting this table, and rewrite it when it disagrees.**
+
+A third git worktree exists at `.claude/worktrees/keen-chebyshev-ccf255`,
+detached at `78153ab`. It is leftover tooling state, not a work location.
 
 There is no task file for the architecture work. `B2` was carried out against
 the proposal document itself, and the architect's account of it exists only in
@@ -490,6 +609,646 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## F2k landed — and the review caught what seven implementers would not have
+
+[FE-010](tasks/FE-010-opener-fix.md), `builder12`. **Lead-verified: 17 files,
+897 tests**, up from 853, typecheck clean. Every opener now carries the order on
+screen: the discount family, the line editor and the category. **The `FR-F8`
+gate reads the order's own `DiscountSnapshot`**, which no order fixture carried
+before — `Totals.discount` is a label and an amount, and `source` is the one
+field the gate turns on.
+
+`other-discount` is the state that gives the guard teeth: the table order
+carrying `OTHER_15` without its sheet, the only **non-sheet** order where the
+fixture's answer and the order's answer differ. Pointing the picker back at the
+fixture's `applied` **fails 7 tests**, proven by the lead, not accepted.
+
+### THE LESSON — the eighth task-file error, and the first the implementer could not catch
+
+Seven slices running, an implementer has caught a wrong task file by reading the
+reviewed document instead. **This time the implementer followed the task file
+faithfully and was wrong with it**, and only an independent reviewer found it.
+
+`AC7` told `builder12` that *Send to kitchen* leaves POS-03 and should push
+history. **`SITEMAP.md:154` puts `[INLINE] Fire result` under POS-03**, and §1
+gives `[INLINE]` Route: No, Back-stackable: No. Only *Settle* leaves — POS-04 is
+`[SCREEN]`, "its own route, not a sheet over POS-03". The implementation and two
+tests encoded the error exactly as written.
+
+**The mitigation this project has relied on for seven slices has a blind spot,
+and this is its shape:** *an implementer catches a wrong task file only where it
+happens to read the source document for something else.* Where the task file is
+confidently specific about a document the slice does not otherwise open, it goes
+straight through. **An independent review is not a luxury on a slice that
+encodes a rule** — it is the only thing that sees this class.
+
+### Invented provenance, rejected — and the precedent it follows
+
+`appliedNoteFor` derived the change sheet's *"Applied by Ana R. at 19:44"* from
+the discount's `source`. The artifact attaches that sentence to **Staff meal**
+(`frost/pos/order.html:529-531`) and to nothing else, so deriving it asserted
+**who applied a Comp and when, for an application nobody recorded.**
+
+`builder12` raised it as a judgement call and argued the alternative — a change
+sheet with no note — is a composition the artifact never draws. Right objection.
+**Ruled: draw the gap rather than fill it.** A7 set the precedent when its four
+designed tokens took `source: null`, explicit rather than missing. **An invented
+provenance is worse than a visible absence**, and a `PROVISIONAL COPY` comment
+authorises nothing. `zero` now carries no note, and what a Comp's change sheet
+should say is a designer's.
+
+### The category: the URL lied, then the rail did
+
+F2k made the rail's selection follow the press. That traded an invisible lie for
+a visible one — **a rail reading *Drinks* over a Mains grid tells the cashier
+something false about what they are looking at**, where a wrong `?category=`
+told them nothing. Reverted whole: the rail stays on Mains and nothing writes
+`?category=` at all. Reverting only one half would have restored the original
+contradiction, which the reviewer named before it could happen.
+
+**The order-retention fix stands, and is tested harder** — the check now runs
+over `overflow`, because on the table order the defect is invisible: `default`
+is where the press was going anyway.
+
+### A lead error of process, not of fact
+
+**The lead injected defects into the working tree while the reviewer was reading
+it.** The reviewer watched `OrderPanel.tsx` mutate mid-`verify`, stopped, and
+asked whether it was looking at the submitted slice. It was right to; it could
+not have known. Both files were restored byte-for-byte and it confirmed the
+`apps/pos` diff hash identical either side of its final green run.
+
+**Inject before handing over a tree, or say so first.** A reviewer that cannot
+trust the tree is reviewing nothing.
+
+### What the review cleared, in its own words
+
+No `FR-F8` bypass on any reachable path. `I-12`, `B-12` and the reachability
+assertions **not weakened**, with the detector's limits documented rather than
+oversold — it is not an approval oracle, and should not be cited as one.
+`other-discount` is not an invention. Two judgement calls accepted: a
+panel-opened discount lands on the view on screen (a named fixture limitation —
+applying Comp from `default` no longer shows comped totals, and `?state=zero`
+still draws that result), and `?gone=` survives a sheet close.
+
+---
+
+## F2i and F2j landed — two data-driven gates, and a wrong-work cancellation
+
+[FE-007](tasks/FE-007-discount-family.md) (`builder9`, `0b66d36`) and
+[FE-008](tasks/FE-008-void-family.md) (`builder10`, `affd42a`). **753 tests
+across 17 files**, up from 472.
+
+**Both gates proven by breaking them.** Ungating a free-form-to-preset
+replacement failed 5 tests; collapsing `FR-H3` into `FR-H2` — so an unfired
+order's void is no longer audited — failed 2. Each gate is a **pure module the
+sheets ask** (`discount.ts`, `void.ts`); no component decides its own gate,
+which is how a rule ends up correct only in the state the artifact happens to
+draw.
+
+**The button ruling paid for itself.** F2i **verified focused-and-pressed**, the
+check FE-003 and FE-004 both had to report undone. Space activates a `<button>`.
+
+### THE SERIOUS ONE — the panel offers to void the wrong line
+
+**Every fired row body links to one fixture sheet, so tapping Soda offers to
+void the Burger.** *Void order* always lands on a fixture order rather than the
+one on screen, so the panel changes under the cashier. **The artifact does the
+same**, so this was inherited, not introduced.
+
+Behind a real command that is **a cancellation ticket for work nobody asked to
+cancel** — exactly what `B-16` exists to prevent, because paper cannot be
+un-printed. `builder10` found it, established it belonged to F2a's committed
+code, and did not reach into it.
+
+**F2e now carries four corrections and is the priority:**
+
+1. Acting controls become `<button>` across F2a and F2b.
+2. `role="alert"` on both PIN pads' failure notices.
+3. F2c's sheets replace history rather than pushing (SITEMAP §1).
+4. **The panel's void paths carry the actual line and order.** Only possible
+   once (1) is done — which is why these are one job, not four.
+
+### F2e fixed it, and proved the guards survived the refactor
+
+[FE-009](tasks/FE-009-corrections.md), `builder11`, `6b183b1`. **853 tests**, no
+test deleted or loosened. The lead injected three defects rather than one,
+because a slice that edits reviewed work can weaken a guard silently:
+
+- **The wrong-line void, reintroduced: 12 tests fail.** Guarded now, not merely
+  absent.
+- **`B-12` re-leaked: 22 tests fail**, up from 13 before the refactor. The
+  guarantee came through **stronger**.
+- **`I-12` re-violated: fails across every state.** The guard was **widened** to
+  read *"anchor or button ancestor"* — following the element, not loosening the
+  assertion.
+
+A first `I-12` injection of the lead's hit the non-interactive branch and
+passed, proving nothing. **An injection that does not reproduce the real defect
+is not evidence**; the second one did and caught it.
+
+### The defect has three more homes, and one feeds a gate — F2k
+
+**Four, as it turned out.** The lead found the category's while writing FE-010;
+see *F2k, as written* below. `builder11` went looking rather than stopping at
+its brief, and found these three:
+
+- **Discount opens a fixture order**, so the picker's *applied* discount is the
+  fixture's — **which is precisely what `needsManager` reads for `FR-F8`**. The
+  gate then decides from the wrong fact. That is the defect inside a gated
+  family and it is not cosmetic.
+- Every pending row body opens the Steak's editor; every tile opens the
+  Burger's sheet.
+
+**F2k finishes it**, and carries a ruling F2e surfaced: **a change that stays on
+POS-03 replaces history; only leaving POS-03 pushes.** SITEMAP gives `[INLINE]`
+Back-stackable: No, and today Back after a removal puts the line back — a
+removal undone by a browser control.
+
+### F2k, as written — the count went up, and one claim went down
+
+[FE-010](tasks/FE-010-opener-fix.md), 2026-09-20. The lead wrote it from
+`apps/pos/src` rather than from the roadmap line, and that changed it twice.
+
+**A fourth home, counted by nobody.** `categorySearch` is
+`` `?state=default&category=${id}` `` — **the state is hardcoded**, so tapping a
+category on `overflow` moves the cashier to the table order. Finding B's exact
+shape on a control that was never on the list. Worse in a second way:
+`orderViewFrom` parses only `state` and `gone`, so `category=` is written and
+never read, while `SELECTED_CATEGORY` is the constant `'mains'` — press *Drinks*
+and the rail still draws Mains selected. **The URL asserts what the screen
+contradicts.**
+
+**The discount case is worse than reported, and its consequence is smaller.**
+Both halves matter:
+
+- **Worse:** no order fixture carries a `DiscountSnapshot` at all.
+  `Totals.discount` is an `Adjustment` — a label string and an amount, with no
+  `source`, and `source` is the only field `FR-F8` turns on. **The fact the gate
+  needs is not on the order**, which is why the sheets read it from a fixture.
+- **Smaller:** the gate's *answer* coincides today. It differs only between a
+  preset and a free-form applied discount, and the one order carrying a
+  free-form discount is `sheet-remove-freeform` — a **sheet** state, whose
+  background is inert, so the close bar's Discount cannot be pressed from it.
+  Every order you can press it from carries a preset or nothing.
+
+MEMORY.md and the FE-009 handoff both said *"the gate then decides from the
+wrong fact"*, which is true, and both read as though the gate is deciding
+**wrongly**, which it is not yet. **The correction is the lead's own, found by
+checking rather than by repeating.** The requirement it produces is sharper than
+the alarm was: F2k adds a non-sheet order carrying a free-form discount, so
+that making the input right has a case where it changes the answer. A guard with
+no such case proves nothing — the same lesson as the `I-12` injection that hit
+the non-interactive branch and passed.
+
+**The tile is held, and the reason is not scope.** The other three openers need
+data the app has — a line id, a view, a state. The item sheet needs an **option
+set**, and the artifact configures Burger only, so eleven of twelve tiles have
+no reviewed sheet. Every route out invents: Burger's extras on a steak, or an
+option-less sheet the artifact never draws. **That is `A7`'s shape — a design
+decision, not a wiring bug** — so it goes to a designer with a proposal (the
+tile carries the item's identity; option groups render only where a reviewed set
+exists) rather than being ruled from a task file. `DESIGN-005`'s designer set
+the precedent: invent, revert, ask.
+
+**Sharpened while ruling it:** "an anchor is for leaving" read two ways. The
+better rule is **an anchor goes to a screen that already exists; a button makes
+something happen and only incidentally arrives somewhere.** So Settle is a
+button, and *Manager: take over payment* becomes one — `FR-G14` makes lease
+takeover a gated action, not a link.
+
+---
+
+### Three artifact defects, one shape — the heuristic is now earned
+
+1. DESIGN-004: a live close offered on a stale balance.
+2. F2g: a live confirm offered during the approval lockout.
+3. F2j: `sheet-voidorder` asserting *"Nothing has been sent to the kitchen"*
+   beside a panel holding two fired rounds.
+
+**Each is correct in isolation and wrong in combination, and each was found by
+building the combination rather than by reading either half.** That is what to
+hand the design branch — not three fixes, one way of looking.
+
+### The lead's sixth and seventh errors
+
+- **FE-007 accepted sheets pushing history.** SITEMAP §1 gives a `[SHEET]`
+  neither a route nor a back-stack entry. Caught by `builder9`; corrected in
+  F2e.
+- **FE-008 repeated the artifact's contradiction**, asserting the two order
+  sheets showed "different orders" when the fact that mattered was that the
+  artifact's `sheet-voidorder` sits over fired work. Caught by `builder10`.
+
+Seven slices, seven task-file errors, every one caught by the person building
+rather than the person planning. **The mitigation is working and the cause is
+not fixed:** the lead writes from a reading of a derived document, and the
+implementer reads the source. Continue to say, in every task file, that the
+contract wins and the task file is the defect.
+
+---
+
+## F2g landed — one PIN guarantee for both pads, and the artifact was wrong
+
+[FE-006](tasks/FE-006-approval-prompt.md), `builder8`, committed `6180c56`.
+**Lead-verified: 472 tests across 15 files, up from 356.**
+
+**`B-12` proven by leaking a digit.** The lead added `data-d={entry[i]}` to one
+PIN dot — an attribute on an element that already exists, the subtlest leak
+available — and **all thirteen tests in `pin-pad.test.tsx` failed**. The suite is
+parameterised over *both* pads and checks byte-identical markup at **every
+partial length**, no digit in any attribute, and nothing reaching console,
+storage, cookies, the title or the URL.
+
+**The keypad was reused with its geometry as a class**, and that is what makes
+one test cover both pads. Worth more than either pad's independence, and the
+right answer to a question the task file left genuinely open.
+
+**`B-14` is enforced by absence** — no approve-all, no caching, no re-use, no
+remaining-time indicator on the approval itself, no path by which a back-office
+session skips the prompt.
+
+### The artifact is wrong in the throttled state, and this is the second of its kind
+
+The Frost artifact **and the wireframe** share one keypad across all four
+approval states, with a live confirm key. Read literally that **draws an
+approval succeeding during the `MANAGER_APPROVAL` cooldown**, which `FR-A5` and
+`AC-19` forbid — and M-1 names `FR-A5` as a requirement of the throttled state.
+`builder8` drew the confirm inert using POS-01's **reviewed** LOGIN-cooldown
+treatment and asked. Accepted: reusing a reviewed treatment is not invention,
+and the alternative was drawing a forbidden state.
+
+**Both defects implementation has found in reviewed design artifacts have the
+same shape.** DESIGN-004's critical finding was a live close offered on a stale
+balance; this is a live confirm offered during a lockout. **A control shared
+across states is where to look** — the sharing is precisely what hides the one
+state in which it is wrong. This belongs on the design branch as a review
+heuristic, not just as a fix.
+
+### A `B-20` question found by building, not by reading
+
+`loading` looked like a reuse and is not. The lock screen's verifying treatment
+exists and `PinPad` already has the prop — but the approval modal adds something
+the lock screen never had: **Cancel sits in the footer while the PIN is in
+flight.**
+
+If Cancel stays live during verification, the footer's *"Cancelling changes
+nothing on the order"* **may be false**, because the server can approve and
+execute after it is pressed. If Cancel is withdrawn, that is a new decision.
+**Owed to a designer**, with `docs/DESIGN.md` open item 6 noted: the lock
+screen's verifying style is itself unreviewed.
+
+`no manager available` (PRD §6) is drawn by nothing. Named, not filled, A7's
+shape, goes to a designer.
+
+### Binding on F2i and F2j
+
+**`?state=approval` is a review harness, not a route.** SITEMAP §1 says a
+`[MODAL]` is neither a route nor back-stackable, so the prompt replaces history
+rather than pushing it and Back never reopens an approval. **Those slices open
+the prompt as component state from their sheets** — writing an approval URL is
+exactly what SITEMAP forbids.
+
+### Ruled and scheduled: `role="alert"` on both pads, in F2e
+
+`builder8` left the failure notices without an ARIA role because neither pad has
+one and the two should agree. Right reasoning, wrong outcome to leave standing:
+**a wrong PIN that is never announced is a real defect** for a screen-reader
+user. **F2e adds it to both pads**, since that slice already opens both files
+for the button conversion. Batching stops a third slice reaching into reviewed
+work for one attribute.
+
+**Still carried:** focus is not trapped in the dialog — Tab reaches the dev
+fixture links below the frame, never the inert order. Acceptable in a harness
+whose leak is dev-only; **not acceptable at ship.** Same finding as FE-005's,
+so it is now twice.
+
+---
+
+## F2c: three built, four refused — and the lesson is how to slice
+
+[FE-005](tasks/FE-005-ungated-sheets.md), `builder7`, committed `5edd874`.
+**Lead-verified: 356 tests across 14 files, up from 273.** Criterion 1 proven by
+pointing the item sheet's *Add to order* at `sheet-voidline` and watching
+*"every live control on the frame leads somewhere ungated"* fail.
+
+**The guard proves both halves of its own detector** — that it finds the panel's
+void paths once the background stops being inert, and that it ignores a control
+inside an inert subtree. A reachability check without the second half passes by
+failing to look. This is the sharpest test written on this project so far.
+
+**Looked at:** `sheet-item86` keeps Large and Extra cheese filled and the line
+total at 135.000, says why the item went, and renders *Add to order* greyed and
+dashed while Cancel stays live.
+
+### The refusal is the valuable part
+
+FE-005 put all three M-3 discount nodes on the ungated side.
+SCREEN-INVENTORY says the opposite in one sentence: *preset picker (ungated,
+FR-F2), free-form entry (**gated**, FR-F3), remove/replace (**gated by the whole
+transition**, FR-F8).*
+
+`builder7` was therefore handed a contradiction. Hiding the gated entries would
+have satisfied criterion 1 and broken the inventory's rule that denial is
+*"never a hidden control"*. Leaving them in would have failed criterion 1. **It
+built the three states that were genuinely ungated, held four, and asked** —
+with a proposed ruling and a test file already wired so any held state is
+checked the moment it is added.
+
+### CORRECTION, 2026-09-18 — the lead over-read the inventory on `FR-F8`
+
+FE-005's verification ruled that remove/replace of a discount is *wholly*
+gated, calling it "stricter even than the handoff put it". **That was wrong.**
+It was taken from SCREEN-INVENTORY's compressed summary — *"remove/replace
+(gated by the whole transition, FR-F8)"* — rather than from `FR-F8` itself.
+
+The PRD is more precise, and the PRD is the contract:
+
+> The approval gate covers the **whole transition**: removing or replacing a
+> **free-form** discount requires manager approval **even if its replacement is
+> a preset**; removing or replacing a **preset is ungated unless the replacement
+> is free-form**.
+
+"Whole transition" means the gate inspects **both ends** — what is removed and
+what replaces it — not that every path through the sheet is gated. **The
+artifact draws this correctly**, which is why three of its controls are ungated
+in the one case it shows.
+
+**What the error changed:** nothing built. F2c still correctly held those
+sheets, because two of the three paths do reach the prompt. **What it changed is
+F2i**, which is now a richer slice: the gate is *data-driven* and needs a
+fixture for a free-form discount applied, where all three controls are gated.
+
+**The lesson generalises the existing one.** "Slice by authority" was right;
+this adds: **the inventory is derived from the PRD, and a compressed summary
+loses precision in exactly the direction that sounds safer.** Go to the
+requirement.
+
+### RULED — slice by authority, not by component
+
+**Four consecutive slices have now had a task file of the lead's be wrong where
+a reviewed document was right.** The pattern is finally specific: the lead has
+been grouping work by *what it looks like on screen* — "the sheets", "the menu
+region" — while the inventory groups it by *who is permitted to do it*.
+
+- `sheet-freeform`, `sheet-remove`, `sheet-discount` and `zero` move to the
+  gated family. A sheet is one node to a cashier; shipping its ungated half
+  early would put a gated control on screen with nothing behind it.
+- **Criterion 1 is restated for every future slice:** *no control this slice
+  adds reaches a gated state except through the approval prompt. A panel's
+  existing void paths are `I-12`'s and stay.* As originally written it could not
+  hold for a non-sheet state, because behind `zero` the panel is live by design.
+- **The gated work is three slices, shared piece first:** M-1 the approval
+  prompt, then the discount family, then the void family. Both families lead to
+  M-1, so it is built once.
+
+### Idle is not done — proved a third way
+
+`builder7` was stopped mid-response by the machine sleeping, one step before it
+wrote its tests. It went **idle with source on disk and the suite green at
+298** — with no tests for the new code and an empty handoff template. **A
+passing suite proved nothing, because the tests that would have failed did not
+exist yet.**
+
+The signal that caught it was the **empty handoff section**, checked before
+anything else. It was resumed in the same session with its context intact and
+finished the work; nothing was lost and nothing was rebuilt. **Check the handoff
+is written before checking anything it claims.**
+
+---
+
+## F2b landed — the locked order has a way out, and the check spans the seam
+
+[FE-004](tasks/FE-004-menu-region.md) closed 2026-09-17, delivered by
+`builder6`, committed `eca409c`. **Lead-verified: 273 tests across 13 files, up
+from 213.**
+
+**Acceptance criterion 1 was proven by deleting it.** Removing both route-out
+actions failed four tests, named *"carries exactly one action, a link that goes
+somewhere"* and *"whole screen: the panel stays inert and readable, and the
+notice's action is the only way out"*, once per lock. **The cross-slice check is
+a test, not a reviewer remembering to look across the seam.** That is better
+than the task asked for, and it is the pattern to repeat wherever one slice
+completes another.
+
+**Looked at:** `lock-draft` gives the cashier exactly one control on the whole
+frame — the route out — beside a fully legible panel. `eightysix` holds Steak
+greyed and dashed in slot three of row one, grid unreflowed.
+
+### The lead's task file was wrong twice, and the implementer checked both
+
+- **It claimed the registry carries nothing for the category rail or the `86`
+  tag. It carries all seven tokens.** The lead's grep was too narrow — `cat-`
+  misses `category-`, `86` misses `unavailable-` — and the conclusion went into
+  the task as fact.
+- **It said `loading` shows neither rail nor grid.** The artifact keeps the rail;
+  only the grid gives way to the skeleton.
+
+**That is the third consecutive slice where a task file was wrong and a reviewed
+artifact was right** (FE-003 mis-listed the three line signatures). The rule is
+now explicit and belongs in every task file: **a task file is derived. Where it
+disagrees with the artifact or the inventory, raise it and follow the artifact.**
+Three implementers have now done exactly that, which is the process working —
+but the lead is the one generating the errors, so the lead writes less
+confidently: state a premise as a premise, not as a finding.
+
+### RULED — `<button>` for acting, `<a>` for going, 2026-09-17
+
+**Two consecutive slices reported the same unverified gap:** focused-and-pressed
+could not be checked, because a mouse press drops `:focus-visible` and **Space
+does not activate a link**. Repetition across slices is a signal, not an
+accident.
+
+The real question underneath is semantic. In the finished product a menu tile
+*adds a line*, a category *filters the grid*, an order-line body *opens a
+sheet*, and the × *removes a line*. None of those is navigation. They are links
+today only because the Frost fixtures are static HTML that moves by URL, and
+**fixture plumbing must not dictate the app's semantics.**
+
+- **Anything that acts on the order is a `<button>`.** Tiles, categories, line
+  bodies, the remove control, the close-bar actions.
+- **Anchors are for going somewhere** — the route out of a lock, which genuinely
+  leaves for the settlement screen.
+
+**Scope, deliberately limited.** This is a refactor across two committed,
+reviewed slices, so it is **its own task (F2e), not a blocker on F2c** and not a
+silent edit. What F2c must do is **stop the debt growing: every new acting
+control is a `<button>`.** Once F2e lands, focused-and-pressed becomes checkable
+by the keyboard method FE-002 already established, and that check goes into the
+suite rather than into another handoff's "not checked" list.
+
+### Also carried
+
+- **Three placeholder route names now exist** — `?state=settle`,
+  `?state=settle-pending`, `?state=settle-takeover`. **F3 reconciles all three**;
+  it is the first thing F3's task file will say.
+- **The panel in `eightysix` and `loading` is not the artifact's**, because
+  panel markup was out of bounds for F2b. The artifact tags the pending Steak
+  *line* with `86` and skeletons the panel while loading. **The 86'd line is
+  F2c's** — it is the setup for `fireblocked`.
+- **Hover-on-touch could not be emulated.** `Emulation.setEmulatedMedia` did not
+  take, so `builder6` declared the check **void** rather than reporting a pass it
+  had not earned. Worth naming as the standard: a check that did not run is not
+  a check that passed.
+
+---
+
+## F2a landed — the order panel, with I-12 checked rather than described
+
+[FE-003](tasks/FE-003-order-panel.md) closed 2026-09-17 on
+`agent/phase-0-foundations`, delivered by `builder5`, committed `89a100e`.
+**Lead-verified: 213 tests across 12 files, up from 120; typecheck clean.**
+
+**The three new guards were each proven red by the lead**, by injecting the
+defect each claims to catch rather than accepting that it had been proven:
+widening the ring offset failed the clearance tests; `Number()` on money failed
+both the detector and the exactness check; wrapping a row in an anchor failed
+the `I-12` slot guard in three states.
+
+**`tsc` does not catch `Number()` on a bigint**, because `Number()` accepts one.
+That makes the test the only guard on the money trap `builder2` measured, and it
+is the reason the rule had to be a test rather than a note in a handoff.
+
+**The `I-12` guard now catches automatically what DESIGN-002 pass 3 found by
+hand** — a fired row built as one anchor that swallowed its own reserved slot,
+violating the ruling in its own markup. That defect cost a review pass once.
+
+**Looked at, not inferred:** a held pending row rings the body and stops clear
+of the × box, which is `I-12` made visible and cannot be proven from CSS. The
+measured clearance is 4px — the 12px gap minus the 8px offset, the number the
+ruling predicts. `lock-draft` renders every slot empty, no row a control, the
+reason on every header, rows fully legible: inert, not absent.
+
+### A locked panel currently strands the cashier — F2b must fix it
+
+The artifact puts the lock notice — *Back to payment*, *Manager: take over
+payment* — in the **menu region**, which F2a does not own. So the panel is
+correct and the *screen* is not: under either lock there is no visible route
+out. `builder5` found this and **refused to invent a button in the panel**,
+which was right in both directions.
+
+**This is an acceptance criterion for F2b, not a note.** A slice boundary that
+leaves a user stranded is only acceptable while the next slice is known to close
+it, and that only holds if it is written down as a requirement.
+
+### Owner decision owed before F3 — does IDR show its symbol
+
+FE-003's task text said the symbol is the frontend's job; the reviewed artifact
+draws every amount bare (`135.000`). `builder5` followed the artifact and
+flagged the contradiction rather than choosing silently. **Provisionally ruled:
+follow the artifact.** Whether `Rp` appears is one decision for every screen
+that shows money, and **F3 is where it stops being cosmetic**, because that is
+money shown to a customer at the point of payment. Raised with the owner
+2026-09-16; unanswered.
+
+### A lead error worth keeping
+
+FE-003's task file listed the "three line signatures" as PENDING, FIRED and the
+locked case. **The locked case is `I-12` holding, not a signature** — which the
+same file says correctly two paragraphs later and then contradicts in its own
+list. SCREEN-INVENTORY's third signature is VOIDED. `builder5` followed the
+inventory over the task file and drew VOIDED rows. The lesson is the ordinary
+one: a task file is a derived document, and where it disagrees with the
+inventory the inventory wins.
+
+### Accepted costs, recorded rather than fixed
+
+- **Five artifact literals were omitted rather than approximated**, leaving the
+  totals block about 6px tighter. Omitting beats inventing under
+  `no-invented-values`, and each is commented in `pos.css`. One is not merely
+  spacing: the empty notice's `700` heading renders as semibold 600. If the
+  owner wants the artifact's exact block, the fix is registry tokens.
+- **The `Number(` detector is blunt** — it bans the call across all of `src` and
+  an alias slips through. Adequate; the limit is stated, not hidden.
+- **Focused-and-pressed was not verified in a browser** on the new controls.
+  Space does not activate a link, so FE-002's keyboard method does not carry
+  over. A real gap, small, honestly reported, and it belongs in F2b's browser
+  pass.
+- **`?state=settle` is `builder5`'s placeholder name**; the artifact links to
+  `settlement.html`. F3 settles it.
+
+---
+
+## A9 landed — the pressed ring is in the POS, and the hover rule is a test
+
+[FE-002](tasks/FE-002-apply-a7-states.md) closed 2026-09-16 on
+`agent/phase-0-foundations`, delivered by `builder4`. **Lead-verified: 120 tests
+across 9 files, typecheck clean, 172 tokens, and the three design artifacts
+byte-identical to `agent/design-direction`.** The lead also opened two of the
+screenshots and looked at them.
+
+**What is now true of the code branch:** the registry is the 172-token A7
+version, `frost-states.css` is present, and every enabled boxed control on the
+lock screen — twelve keys, Continue, the emergency action — draws
+`--frost-pressed-ring` while held. The disabled Continue draws nothing, because
+a disabled control's press did nothing.
+
+Three things worth carrying:
+
+- **The focus ring and the pressed ring collide, and only in the rendering.**
+  `frost-states.css` says the inset ring never collides with the outside focus
+  ring, which is true of the geometry. But `box-shadow` is one property, so a
+  naive `:active` rule *replaces* the focus ring — a keyboard user would watch
+  it vanish at the moment of the press. Both shadows go in one declaration. The
+  lead found this while writing the task, not in review, which is the cheap
+  place to find it.
+- **The hover rule is now a test, not a comment.** A8's most expensive lesson
+  was that A7's designer wrote a comment saying an implementation should gate
+  hover, and `design-reviewer` rejected it: a comment fixes nothing and hands
+  the bug to whoever writes the code. `apps/pos/test/hover-scoped.test.ts` fails
+  on any `:hover` in `apps/pos/src` outside `@media (hover: hover)`. It carries
+  detector self-tests so it cannot pass vacuously while `pos.css` has no hover
+  rule at all — which it does not, today. **The lead proved it red** by
+  appending an unscoped `.key:hover` and watching the suite fail, rather than
+  accepting that it had been proven.
+- **The implementer ran a negative control.** It could not hold `:active`
+  through the Chrome tool, which only clicks, so it drove the same Chrome over
+  the DevTools Protocol, held the press, and read computed style — then removed
+  the collision fix and confirmed the focus halo disappears. Proving a fix by
+  also proving its absence breaks things is the standard A7's review set, met
+  here without being asked.
+
+### The order-line ring offset — RULED, 2026-09-16
+
+`frost-states.css:58` rings a pressed order line with
+`border-radius: 2px; margin: -8px; padding: 8px`, so the ring clears the text
+without moving it. Those are literal lengths, and `no-invented-values.test.ts`
+rejects literal lengths in `apps/pos/src`. F2 is the screen that hits it.
+
+`builder4` found what the lead had not: **DESIGN-005 already gives the token
+form** — `margin: calc(-1 * var(--frost-space-2)); padding: var(--frost-space-2);
+border-radius: var(--frost-radius-surface)`. The registry has
+`--frost-space-2: 8px` and `--frost-radius-surface: 2px`, and the length regex
+has no unit to catch inside the `calc`. So the route exists and no exemption is
+needed. It did not decide whether a *space* token may carry a ring offset, and
+was right not to.
+
+**Lead's ruling: use the token form, and F2 must carry a test that pins the
+relationship.** The offset is a genuine spacing fact, not a coincidence of equal
+numbers — the states sheet derives it from the row's own padding and says 8px
+"stays inside the row's padding and short of the 12px gap to the slot". So it
+should track the spacing scale. But that creates a coupling nothing watches: if
+`--frost-space-2` is ever retuned for layout, the ring silently crosses the gap
+into the trailing slot and `I-12` breaks visually with no test failing.
+
+The test asserts the offset stays within the row's padding and short of the slot
+gap. This is the same move as the hover test and for the same reason: an
+invisible coupling becomes a checked one. **An implementer that finds the test
+inconvenient raises it; it does not widen the exemption.**
+
+### Housekeeping left running
+
+- **PostgreSQL is up.** `builder4`'s baseline `npm run verify` failed seven
+  tests in `apps/server/test/migrate.test.ts` with `ECONNREFUSED ::1:5433`
+  because the container was down. It ran `npm run db:up`, got 114/114, then
+  started. Container `restaurant-pos-db-1` is still running.
+- **A Vite dev server on 5173 is not `builder4`'s.** It was already listening
+  when the task started, serving this checkout's `apps/pos`. Left alone.
+- **The browser evidence is gone with the session.** Screenshots and the
+  DevTools script lived in a scratchpad, not the repository. The claims they
+  support are written down; the suite and the detector are the durable check.
 
 ---
 

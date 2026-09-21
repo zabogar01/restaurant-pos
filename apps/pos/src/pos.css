@@ -1,4 +1,4 @@
-/* POS-01 lock screen, Frost.
+/* POS-01 lock screen and POS-03 order panel (F2a), Frost.
  *
  * Every colour, size, weight and space here is a var(--frost-*) from
  * @pos/tokens, which re-exports docs/design/tokens/frost.css. The only
@@ -6,11 +6,20 @@
  * 1px border width docs/DESIGN.md states for every border ("Borders are 1px
  * everywhere", Shapes). test/no-invented-values.test.ts enforces that.
  *
- * Pressed / active touch state: deliberately none. Frost has no pressed
- * treatment (docs/DESIGN.md Open item 2, tracked as A7). This screen stays
- * usable without one because every key press changes the entry display — a
- * digit fills a dot, delete empties one, Continue clears them. See the FE-001
- * handoff.
+ * Pressed: every enabled boxed control — the twelve keys, Continue, the
+ * emergency action — draws --frost-pressed-ring while a finger or pointer is
+ * down. Designed under A7 (DESIGN-005, docs/design/visual-directions/
+ * frost-states.css): selection fills, pressing strokes. The ring is inset and
+ * in currentColor, so one rule reads ink on a cream key, white on the ink
+ * Continue and brick on the white emergency action, with no new colour. The
+ * lock screen was usable without it (every key changes the dots; FE-001), but
+ * the rule is universal, and the order and tender screens will need it.
+ * The disabled Continue gets no ring: its press did nothing, so nothing says
+ * it did.
+ *
+ * Hover: only on the order screen, and every rule sits inside
+ * @media (hover: hover), because touch browsers hold :hover after a tap.
+ * test/hover-scoped.test.ts enforces that.
  */
 
 *,
@@ -52,6 +61,7 @@ button {
 /* ---- Device frame: 1280×800 landscape, fixed, not responsive ---- */
 
 .pos-device {
+  position: relative;
   width: var(--frost-pos-width);
   height: var(--frost-pos-height);
   display: flex;
@@ -203,6 +213,20 @@ button {
   color: var(--frost-primary-text);
 }
 
+/* box-shadow is one property, so a pressed rule on its own would replace the
+ * :focus-visible ring above and a keyboard user pressing Space would watch
+ * focus vanish. Focused and pressed draws both: the outer focus ring and the
+ * inset pressed ring never overlap. */
+.key:active:not(.key--continue-disabled),
+.emergency-banner__action:active {
+  box-shadow: var(--frost-pressed-ring);
+}
+
+.key:focus-visible:active:not(.key--continue-disabled),
+.emergency-banner__action:focus-visible:active {
+  box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
+}
+
 /* LOGIN cooldown. Dashed means not available (docs/DESIGN.md, Shapes); the
  * artifact draws this key cream with a dashed border and grey arrow. */
 .key--continue-disabled {
@@ -252,6 +276,1076 @@ button {
   height: var(--frost-space-3);
   margin: var(--frost-space-3) auto;
   background: var(--frost-group);
+}
+
+/* ==== POS-03 order panel (F2a) ====
+ * frost/pos/order.html, the panel region. The header bar is held empty at its
+ * artifact height. The menu region (F2b) follows the panel below. */
+
+.order-screen__bar {
+  flex: none;
+  height: var(--frost-pos-header-height);
+  background: var(--frost-elevated);
+  border-bottom: var(--frost-divider-stroke);
+}
+
+.order-screen__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.order-screen__menu {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.order-panel {
+  width: var(--frost-order-panel-width);
+  flex: none;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--frost-elevated);
+  border-left: var(--frost-control-stroke);
+}
+
+/* The artifact's 10px gap between title and count has no token; the count is
+ * pushed right by its auto margin, so the gap never shows. */
+.order-panel__head {
+  flex: none;
+  height: var(--frost-order-head-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--frost-space-4);
+  border-bottom: var(--frost-divider-stroke);
+  font-size: var(--frost-text-16);
+}
+
+.order-panel__title {
+  margin: 0;
+  font-size: inherit;
+  font-weight: var(--frost-weight-medium);
+}
+
+.order-panel__count {
+  margin-left: auto;
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+/* Only the lines scroll. The totals and the close bar are flex: none siblings,
+ * so an overflowing order never pushes them off the frame. */
+.order-lines {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--frost-scrollbar);
+}
+
+/* Inline on the artifact: margin 20px, padding 32px, a 700-weight title with a
+ * 6px gap. The registry has no 700 weight and no 6px, so the title is
+ * semibold and sits directly on its line. */
+.order-empty {
+  margin: var(--frost-space-5);
+  padding: var(--frost-space-8);
+  border: 1px dashed var(--frost-control-border);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-surface);
+  color: var(--frost-muted);
+  text-align: center;
+}
+
+.order-empty__title {
+  font-weight: var(--frost-weight-semibold);
+}
+
+/* A fixed band: it stays one line whatever a state puts in it, or the group
+ * rhythm the panel is scanned by breaks. */
+.round-head {
+  height: var(--frost-round-height);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--frost-space-4);
+  background: var(--frost-group);
+  border-bottom: var(--frost-divider-stroke);
+  color: var(--frost-muted);
+  font-size: var(--frost-text-11);
+  font-weight: var(--frost-weight-medium);
+  letter-spacing: var(--frost-tracking-round);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* The one statement of what a tap on the rows below will do, since a fired
+ * row's slot is empty (I-12). 13px, the floor for anything a cashier acts on
+ * (A7, DESIGN-005). The artifact's inline margin-left: auto lives here. */
+.round-head__tag {
+  margin-left: auto;
+  padding: var(--frost-round-tag-padding);
+  border: 1px solid transparent;
+  border-radius: var(--frost-radius-surface);
+  font-size: var(--frost-round-tag-size);
+  font-weight: var(--frost-weight-medium);
+  line-height: var(--frost-leading-tag);
+  letter-spacing: var(--frost-tracking-round);
+}
+
+.round-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Every row has one geometry: a tap target and a trailing slot that is its
+ * sibling, separated by the row gap. test/order-line-ring.test.ts reads the
+ * padding and gap tokens here. */
+.order-line {
+  min-height: var(--frost-line-min-height);
+  display: flex;
+  gap: var(--frost-line-gap);
+  align-items: flex-start;
+  padding: var(--frost-line-padding);
+  border-bottom: var(--frost-divider-stroke);
+  background: var(--frost-elevated);
+}
+
+.order-line__target {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--frost-line-body-min-height);
+  display: flex;
+  gap: var(--frost-line-gap);
+  align-items: flex-start;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* A live row body is a <button> (ruling of 2026-09-17): it draws as the
+ * locked row's div does, with none of the user agent's button box. The
+ * pressed ring's padding below outranks this padding. */
+button.order-line__target {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
+.order-line__quantity {
+  width: var(--frost-line-quantity-width);
+  font-size: var(--frost-text-15);
+  color: var(--frost-muted);
+}
+
+.order-line__body {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.order-line__name {
+  display: block;
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-medium);
+}
+
+.order-line__detail {
+  display: block;
+  font-size: var(--frost-text-12);
+  line-height: var(--frost-leading-body);
+  color: var(--frost-muted);
+}
+
+.order-line__amount {
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-medium);
+  white-space: nowrap;
+}
+
+/* Reserved on every row, filled only on a removable one, so the amount column
+ * never shifts between row types. */
+.order-line__slot {
+  flex: none;
+  width: var(--frost-line-slot-width);
+  height: var(--frost-line-slot-height);
+  align-self: center;
+}
+
+.order-line__remove {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--frost-destructive);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-destructive);
+  text-decoration: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.order-line__remove .icon {
+  width: var(--frost-key-icon-size);
+  height: var(--frost-key-icon-size);
+}
+
+.order-line--voided {
+  background: var(--frost-void-surface);
+}
+
+.order-line--voided .order-line__name,
+.order-line--voided .order-line__amount {
+  text-decoration: line-through;
+  color: var(--frost-unavailable-text);
+}
+
+.order-line--voided .order-line__detail {
+  color: var(--frost-unavailable-text);
+}
+
+/* Totals. The artifact pads each row 3px 0 and sets the grand total 6px below
+ * the row above; neither length is in the registry, so both are omitted. */
+.totals {
+  flex: none;
+  margin: 0;
+  padding: var(--frost-totals-padding);
+  border-top: var(--frost-control-stroke);
+  background: var(--frost-elevated);
+  font-size: var(--frost-text-14);
+}
+
+.totals__row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.totals__row dd {
+  margin: 0;
+}
+
+.totals__row--grand {
+  margin: 0 calc(-1 * var(--frost-grand-total-bleed));
+  padding: var(--frost-grand-total-bleed);
+  border-top: var(--frost-divider-stroke);
+  background: var(--frost-group);
+  font-size: var(--frost-text-24);
+  font-weight: var(--frost-weight-medium);
+}
+
+.totals__row--included {
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+.order-actions {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--frost-actions-gap);
+  padding: var(--frost-actions-padding);
+  border-top: var(--frost-divider-stroke);
+  background: var(--frost-elevated);
+}
+
+.action {
+  height: var(--frost-action-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--frost-button-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-button);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-medium);
+  text-align: center;
+  text-decoration: none;
+}
+
+.action--primary {
+  background: var(--frost-primary);
+  border-color: var(--frost-primary);
+  color: var(--frost-primary-text);
+}
+
+/* Dashed means not available (docs/DESIGN.md, Shapes). Drawn in place. */
+.action--off {
+  background: var(--frost-unavailable);
+  border: 1px dashed var(--frost-disabled-border);
+  color: var(--frost-unavailable-text);
+}
+
+/* Pressed. Every enabled boxed control on the panel: the row body and the
+ * remove control here, the close-bar actions by button.action (the sheets'
+ * rule, below). a.action is the lock notice's route out, the one anchor on the
+ * screen. An unavailable action is a span and a locked or voided row body is a
+ * div, so neither can match — nothing happened, so nothing says it did.
+ * .is-pressed is the fixture's held press. */
+button.order-line__target:active,
+.order-line__target.is-pressed,
+button.order-line__remove:active,
+a.action:active {
+  box-shadow: var(--frost-pressed-ring);
+}
+
+button.order-line__target:focus-visible:active,
+button.order-line__remove:focus-visible:active,
+a.action:focus-visible:active {
+  box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
+}
+
+/* The ring rings the tap target only, never the slot beside it (I-12). The
+ * row's padding belongs to the row, so the ring is pushed out from the text by
+ * an equal negative margin and padding: the text does not move and the ring
+ * gains room. The offset reuses a spacing token (lead ruling, 2026-09-16), and
+ * must stay inside the row's padding and short of the gap to the slot.
+ * test/order-line-ring.test.ts pins that, so retuning --frost-space-2 cannot
+ * push the ring into the slot unnoticed. */
+button.order-line__target:active,
+.order-line__target.is-pressed {
+  margin: calc(-1 * var(--frost-space-2));
+  padding: var(--frost-space-2);
+  border-radius: var(--frost-radius-surface);
+}
+
+@media (hover: hover) {
+  button.order-line__target:hover .order-line__name {
+    text-decoration: underline;
+    text-underline-offset: var(--frost-link-underline-offset);
+  }
+
+  button.order-line__remove:hover {
+    background: var(--frost-destructive-soft);
+  }
+
+  a.action:hover {
+    background: var(--frost-group);
+    border-color: var(--frost-primary);
+  }
+
+  a.action--primary:hover {
+    background: var(--frost-primary-hover);
+    color: var(--frost-primary-text);
+  }
+}
+
+/* ==== POS-03 menu region (F2b) ====
+ * frost/pos/order.html: the category rail, the tile grid, the menu notices and
+ * the menu skeleton. Under a settlement lock the rail and grid are absent and
+ * the lock notice carries the route out. */
+
+/* Category rail. White in Frost (docs/DESIGN.md, Neutral). The artifact pads
+ * each row 0 16px; the registry has no rail padding token, so the row takes
+ * the spacing scale's 16px, as the order panel head does. */
+.menu-categories {
+  width: var(--frost-category-width);
+  flex: none;
+  overflow: hidden;
+  background: var(--frost-elevated);
+  border-right: var(--frost-divider-stroke);
+}
+
+.menu-category {
+  width: 100%;
+  height: var(--frost-category-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--frost-space-4);
+  border: 0;
+  border-bottom: var(--frost-divider-stroke);
+  background: none;
+  color: var(--frost-text);
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-regular);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Selection fills; pressing strokes (A7). */
+.menu-category--selected {
+  background: var(--frost-selected);
+  color: var(--frost-selected-text);
+  font-weight: var(--frost-weight-semibold);
+}
+
+.menu-area {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--frost-surface);
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: var(--frost-menu-columns);
+  gap: var(--frost-menu-gap);
+  padding: var(--frost-menu-padding);
+  align-content: start;
+  overflow: hidden;
+}
+
+.menu-tile {
+  height: var(--frost-tile-height);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--frost-tile-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-medium);
+  text-align: start;
+  text-decoration: none;
+}
+
+/* An available tile is a <button> (ruling of 2026-09-17); an 86'd one is a
+ * div and keeps the default cursor. */
+button.menu-tile {
+  cursor: pointer;
+}
+
+.menu-tile__price {
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-regular);
+  color: var(--frost-muted);
+}
+
+/* 86'd (ruling C-3): the same box in the same slot, greyed and dashed. Dashed
+ * means not available (docs/DESIGN.md, Shapes). A div, so no pressed or hover
+ * rule below can match it. */
+.menu-tile--off {
+  background: var(--frost-unavailable);
+  border: 1px dashed var(--frost-unavailable-border);
+  color: var(--frost-unavailable-text);
+}
+
+.menu-tile--off .menu-tile__price {
+  color: var(--frost-unavailable-text);
+}
+
+/* docs/DESIGN.md tag-86: the tag type (10px 500, 0.025em, 1.3), 2px 5px, 2px
+ * corners, grey fill, white text. */
+.tag-86 {
+  display: inline-block;
+  vertical-align: middle;
+  padding: var(--frost-tag-padding);
+  border: 1px solid var(--frost-unavailable-tag-surface);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-unavailable-tag-surface);
+  color: var(--frost-primary-text);
+  font-size: var(--frost-text-10);
+  font-weight: var(--frost-weight-medium);
+  line-height: var(--frost-leading-tag);
+  letter-spacing: var(--frost-tracking-tag);
+}
+
+/* Menu notices sit 12px 16px in from the menu area's edges, as the artifact's
+ * do; the lock screen's notice keeps its own margin. */
+.menu-notice {
+  margin: var(--frost-space-3) var(--frost-space-4);
+}
+
+/* The route out of a lock: a compact action, 48px at 13px (docs/DESIGN.md,
+ * Buttons). The artifact sets it inline to width 220px (Back to payment) or
+ * 260px (Manager: take over payment) with a 10px top margin. None of the three
+ * lengths is in the registry, so the action is sized by its padding and sits
+ * directly under the text until the registry carries them. */
+.action--compact {
+  height: var(--frost-action-compact-height);
+  font-size: var(--frost-text-13);
+}
+
+.menu-notice__action {
+  display: inline-flex;
+}
+
+/* Inherited, not reviewed: docs/DESIGN.md Open item 8 says the loading label
+ * and skeleton were never restyled for Frost. Mapped as the lock screen's
+ * verifying state maps them. The artifact pads this block 24px inline; the
+ * structure sheet's .1em letter-spacing on the label has no token and is
+ * omitted. PROVISIONAL. */
+.menu-loading {
+  padding: var(--frost-space-6);
+}
+
+.menu-loading__label {
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+.menu-loading__bar {
+  height: var(--frost-space-3);
+  margin: var(--frost-space-2) 0;
+  background: var(--frost-group);
+}
+
+.menu-loading__bar--80 {
+  width: 80%;
+}
+
+.menu-loading__bar--60 {
+  width: 60%;
+}
+
+.menu-loading__bar--40 {
+  width: 40%;
+}
+
+/* Pressed (A7): a tile, a category row. Element-qualified, so an 86'd tile —
+ * a div — can match neither :active nor the fixture's .is-pressed.
+ * test/menu-region.test.tsx pins that. */
+button.menu-tile:active,
+button.menu-tile.is-pressed,
+button.menu-category:active,
+button.menu-category.is-pressed {
+  box-shadow: var(--frost-pressed-ring);
+}
+
+button.menu-tile:focus-visible:active,
+button.menu-category:focus-visible:active {
+  box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
+}
+
+/* Tile hover is the selected treatment (docs/DESIGN.md, Menu tile). Touch
+ * browsers synthesise :hover on tap and hold it after the finger lifts, so
+ * outside this query a tapped tile would be left looking selected once the
+ * pressed ring goes. test/hover-scoped.test.ts enforces the query. */
+@media (hover: hover) {
+  button.menu-tile:hover {
+    background: var(--frost-selected);
+    border-color: var(--frost-primary);
+    color: var(--frost-selected-text);
+  }
+
+  button.menu-tile:hover .menu-tile__price {
+    color: inherit;
+  }
+}
+
+/* ==== POS-03 sheets (F2c) ====
+ * frost/pos/order.html: the item configuration sheet (M-2) and the line
+ * editor. docs/DESIGN.md, Overlays and Modal and sheet: the sheet sits below
+ * the 64px header and leaves the 460px order panel uncovered, on the scrim,
+ * white with 2px corners and a 1px spruce boundary, no shadow; head and foot
+ * on canvas with a divider; heading 18px 500; the body scrolls.
+ *
+ * Absent from the registry, and omitted until it carries them — each control
+ * is sized by its own padding instead:
+ *   - the size options' 150px width and the extras' 180px width;
+ *   - the quantity steppers' 88px width and the quantity field's 120px width.
+ * --frost-menu-columns (150px), --frost-receipt-reprint-width (180px) and
+ * --frost-pin-columns (88px) share those numbers for unrelated controls on
+ * other surfaces, so none of them is used here.
+ * The sheet's inline margins (20px, 24px, 8px) and the option rows' 8px and
+ * 12px gaps are spacing facts and take the spacing scale. */
+
+.sheet-scrim,
+.sheet {
+  position: absolute;
+  top: var(--frost-sheet-top);
+  right: var(--frost-sheet-right);
+  bottom: 0;
+  left: 0;
+}
+
+.sheet-scrim {
+  background: var(--frost-scrim);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  background: var(--frost-elevated);
+  border: var(--frost-overlay-border);
+  border-radius: var(--frost-radius-surface);
+  box-shadow: var(--frost-overlay-shadow);
+}
+
+/* The dialog takes focus when it opens so a screen reader lands on its name.
+ * It is not a control, so it draws no ring; its buttons do. */
+.sheet:focus-visible {
+  outline: none;
+  box-shadow: var(--frost-overlay-shadow);
+}
+
+.sheet__head {
+  flex: none;
+  height: var(--frost-sheet-header-height);
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-3);
+  padding: var(--frost-overlay-head-padding);
+  background: var(--frost-surface);
+  border-bottom: var(--frost-divider-stroke);
+}
+
+.sheet__title {
+  margin: 0;
+  font-size: var(--frost-text-18);
+  font-weight: var(--frost-weight-medium);
+}
+
+.sheet__aside {
+  margin-left: auto;
+}
+
+.sheet__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--frost-overlay-body-padding);
+}
+
+.sheet__foot {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--frost-space-3);
+  padding: var(--frost-overlay-foot-padding);
+  background: var(--frost-surface);
+  border-top: var(--frost-divider-stroke);
+}
+
+.sheet__notice {
+  margin: 0 0 var(--frost-space-5);
+}
+
+/* A field label (docs/DESIGN.md, Hierarchy): 12px 400 muted. */
+.sheet__label {
+  display: block;
+  margin-bottom: var(--frost-space-1);
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+.sheet-group + .sheet-group {
+  margin-top: var(--frost-space-5);
+}
+
+.sheet-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--frost-space-2);
+}
+
+.sheet-option--stacked {
+  flex-direction: column;
+}
+
+.sheet-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--frost-space-6);
+  font-size: var(--frost-text-20);
+}
+
+.sheet-total__amount {
+  font-weight: var(--frost-weight-semibold);
+}
+
+.sheet-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-3);
+  margin-bottom: var(--frost-space-6);
+}
+
+/* The numeric field (docs/DESIGN.md, Numeric field): 56px, 1px control
+ * border, 2px corners, white, 0 14px, 500, 20px. It shows the quantity; it is
+ * not typed into. */
+.sheet-stepper__value {
+  height: var(--frost-field-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--frost-field-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font-size: var(--frost-text-20);
+  font-weight: var(--frost-weight-medium);
+}
+
+.sheet__note {
+  margin: 0;
+  color: var(--frost-muted);
+}
+
+.sheet__note + .sheet__note {
+  margin-top: var(--frost-space-2);
+}
+
+button.action {
+  cursor: pointer;
+}
+
+/* Pressed (A7) on every sheet control. Element-qualified: Add to order on an
+ * 86'd item is a span, so it can match neither rule — nothing happened, so
+ * nothing says it did. test/sheets.test.tsx pins that. */
+button.action:active {
+  box-shadow: var(--frost-pressed-ring);
+}
+
+button.action:focus-visible:active {
+  box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
+}
+
+@media (hover: hover) {
+  button.action:hover {
+    background: var(--frost-group);
+    border-color: var(--frost-primary);
+  }
+
+  button.action--primary:hover {
+    background: var(--frost-primary-hover);
+    color: var(--frost-primary-text);
+  }
+}
+
+/* ==== M-1 manager approval prompt (F2g) ====
+ * frost/pos/order.html, the approval block, and docs/DESIGN.md (Modal and
+ * sheet; Overlays; PIN pad key). A 560px modal centred over the whole order
+ * screen on the 38% scrim, with the lock screen's pad at the approval
+ * dialog's own reviewed geometry: three 72px columns of 72×72 keys. The pad's
+ * dots, key faces, Continue, disabled Continue and pressed ring are POS-01's
+ * rules above, unchanged; only the column width and key height differ. */
+
+.modal-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--frost-scrim);
+}
+
+.modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--frost-modal-width);
+  background: var(--frost-elevated);
+  border: var(--frost-overlay-border);
+  border-radius: var(--frost-radius-surface);
+  box-shadow: var(--frost-overlay-shadow);
+}
+
+/* The dialog takes focus so a screen reader lands on its name. It is not a
+ * control, so it draws no ring; its keys and Cancel do. */
+.modal:focus-visible {
+  outline: none;
+  box-shadow: var(--frost-overlay-shadow);
+}
+
+.modal__head {
+  padding: var(--frost-overlay-head-padding);
+  background: var(--frost-surface);
+  border-bottom: var(--frost-divider-stroke);
+}
+
+.modal__title {
+  margin: 0;
+  font-size: var(--frost-text-18);
+  font-weight: var(--frost-weight-medium);
+}
+
+.modal__request {
+  margin-top: var(--frost-space-1);
+  color: var(--frost-muted);
+}
+
+.modal__body {
+  padding: var(--frost-overlay-body-padding);
+}
+
+.modal__foot {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--frost-space-3);
+  padding: var(--frost-overlay-foot-padding);
+  background: var(--frost-surface);
+  border-top: var(--frost-divider-stroke);
+}
+
+.modal__note {
+  align-self: center;
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+.keypad--approval {
+  grid-template-columns: var(--frost-approval-columns);
+}
+
+.keypad--approval .key {
+  height: var(--frost-approval-key-height);
+}
+
+/* ==== M-3 discount sheets (F2i) ====
+ * frost/pos/order.html: the sheet-discount, sheet-freeform and sheet-remove
+ * blocks. The sheet frame, labels, notes and pressed ring are F2c's rules
+ * above, unchanged.
+ *
+ * The artifact draws a control that needs a manager as a secondary button
+ * with a dashed border ("Other amount — needs a manager"). docs/DESIGN.md
+ * reserves dashed for *not available*; this one is available, through the
+ * prompt. Drawn as the artifact draws it and raised in the FE-007 handoff.
+ *
+ * Absent from the registry, and omitted until it carries them: the Percent
+ * and Fixed amount buttons' 150px width and the value field's 220px width
+ * (the field is sized by its input instead), and the 6px above the applied
+ * discount's note, which takes the nearest step of the spacing scale. */
+
+/* The family's wrapper takes no box, so the sheet sits where F2c's do; it
+ * exists to go inert while the manager prompt is open over it. */
+.discount-flow {
+  display: contents;
+}
+
+.discount-aside {
+  color: var(--frost-muted);
+}
+
+.discount-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--frost-space-2);
+  margin-bottom: var(--frost-space-6);
+}
+
+.discount-option--gated {
+  border-style: dashed;
+}
+
+/* docs/DESIGN.md tag: 10px 500, 0.025em, 1.3, 2px 5px, 1px control border,
+ * 2px corners, white. */
+.discount-tag {
+  margin-left: auto;
+  padding: var(--frost-tag-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  font-size: var(--frost-text-10);
+  font-weight: var(--frost-weight-medium);
+  line-height: var(--frost-leading-tag);
+  letter-spacing: var(--frost-tracking-tag);
+}
+
+.discount-kinds {
+  display: flex;
+  gap: var(--frost-space-2);
+  margin-bottom: var(--frost-space-5);
+}
+
+/* The numeric field (docs/DESIGN.md): 56px, 1px control border, 2px corners,
+ * white, 0 14px, 500, 20px. The input inside it takes the field's type and
+ * none of its own chrome; the field draws the focus ring. */
+.discount-field {
+  height: var(--frost-field-height);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--frost-space-1);
+  padding: var(--frost-field-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font-size: var(--frost-text-20);
+  font-weight: var(--frost-weight-medium);
+}
+
+.discount-field:focus-within {
+  box-shadow: var(--frost-focus-ring);
+}
+
+.discount-field__input {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.discount-field__input:focus-visible {
+  box-shadow: none;
+}
+
+/* A7's invalid field (frost-states.css §2): a refused value thickens the
+ * border to 2px amber, the fill stays white, and a line in the same amber
+ * under the field names the rule and the limit. A7's 13px left padding, which
+ * keeps the figure from shifting by the extra 1px, has no token and is
+ * omitted: the figure moves 1px right. */
+.discount-field--invalid {
+  border: var(--frost-invalid-border);
+}
+
+.discount-field__refusal {
+  display: block;
+  margin-top: var(--frost-space-1);
+  color: var(--frost-invalid);
+  font-size: var(--frost-text-14);
+  font-weight: var(--frost-weight-medium);
+}
+
+.discount-note {
+  margin-top: var(--frost-space-5);
+}
+
+/* docs/DESIGN.md card: white, 1px divider border, 2px corners, 20px; an 18px
+ * 500 spruce title with 16px below. */
+.discount-applied {
+  margin-bottom: var(--frost-space-5);
+  padding: var(--frost-card-padding);
+  border: var(--frost-divider-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+}
+
+.discount-applied__title {
+  margin-bottom: var(--frost-space-4);
+  color: var(--frost-primary);
+  font-size: var(--frost-text-18);
+  font-weight: var(--frost-weight-medium);
+}
+
+.discount-applied__row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.discount-applied__note {
+  margin-top: var(--frost-space-2);
+  color: var(--frost-muted);
+  font-size: var(--frost-text-12);
+}
+
+/* ==== Void sheets (F2j) ====
+ * frost/pos/order.html: the sheet-voidline, sheet-voidorder and
+ * sheet-voidorder-fired blocks. The sheet frame, labels, notices, unavailable
+ * action and pressed ring are the rules above, unchanged; no rule here sets a
+ * hover of its own.
+ *
+ * The artifact draws the unfired sheet's *Void order* as a primary (spruce)
+ * button. docs/DESIGN.md names Void order as destructive and allows a final
+ * destructive action a brick fill. Drawn as the artifact draws it and raised
+ * in the FE-008 handoff.
+ *
+ * The *Other* reason's text field is not in the artifact, and docs/DESIGN.md
+ * Open item 4 says no text input has been styled. It takes the numeric
+ * field's box (56px, 1px control border, 2px corners, white, 0 14px) at the
+ * body's type, full width. PROVISIONAL. */
+
+/* The family's wrapper takes no box, so the sheet sits where F2c's do; it
+ * exists to go inert while the manager prompt is open over it. */
+.void-flow {
+  display: contents;
+}
+
+/* docs/DESIGN.md tag: 10px 500, 0.025em, 1.3, 2px 5px, 1px control border,
+ * 2px corners, white. The discount sheets' MANAGER REQUIRED tag, repeated:
+ * both should become one sheet tag when the sheets are next touched. */
+.void-tag {
+  margin-left: auto;
+  padding: var(--frost-tag-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  font-size: var(--frost-text-10);
+  font-weight: var(--frost-weight-medium);
+  line-height: var(--frost-leading-tag);
+  letter-spacing: var(--frost-tracking-tag);
+}
+
+/* docs/DESIGN.md card: white, 1px divider border, 2px corners, 20px. Its
+ * note is the card's muted 12px, 4px below. */
+.void-subject {
+  margin-bottom: var(--frost-space-4);
+  padding: var(--frost-card-padding);
+  border: var(--frost-divider-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+}
+
+.void-subject__row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.void-subject__note {
+  margin-top: var(--frost-space-1);
+  color: var(--frost-muted);
+  font-size: var(--frost-text-12);
+}
+
+.void-notice {
+  margin: 0 0 var(--frost-space-4);
+}
+
+/* The artifact's reasons: compact buttons (48px at 13px) in a column 8px
+ * apart, text set from the left. A chosen reason takes the primary fill. */
+.void-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--frost-space-2);
+}
+
+.void-reason {
+  justify-content: flex-start;
+}
+
+.void-other-label {
+  margin-top: var(--frost-space-4);
+}
+
+.void-field {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--frost-field-height);
+  padding: var(--frost-field-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font: inherit;
+}
+
+/* A7's invalid field (frost-states.css §2), as the discount sheet draws it: a
+ * 2px amber border, the fill still white, and the rule in the same amber
+ * under the field. A7's 13px left padding has no token and is omitted. */
+.void-field--invalid {
+  border: var(--frost-invalid-border);
+}
+
+.void-field__refusal {
+  display: block;
+  margin-top: var(--frost-space-1);
+  color: var(--frost-invalid);
+  font-size: var(--frost-text-14);
+  font-weight: var(--frost-weight-medium);
+}
+
+/* The artifact's order value: 20px, 20px below what precedes it, the figure
+ * bold. */
+.void-value {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--frost-space-5);
+  font-size: var(--frost-text-20);
+}
+
+.void-value__amount {
+  font-weight: var(--frost-weight-semibold);
 }
 
 /* ---- Development-only fixture links, outside the device frame ---- */

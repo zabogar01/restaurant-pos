@@ -6,6 +6,7 @@ const paths = {
   arrow: 'M5 12h14m-6-6 6 6-6 6',
   back: 'M19 12H5m6-6-6 6 6 6',
   alert: 'M12 6v8m0 4h.01',
+  close: 'm6 6 12 12M18 6 6 18',
 } as const;
 
 export function Icon({ name }: { name: keyof typeof paths }) {

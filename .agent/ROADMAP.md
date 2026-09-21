@@ -7,9 +7,30 @@ next, not what happens eventually.
 
 Owned by the Claude product lead. No other agent writes to this file.
 
-Last updated 2026-09-14, after auditing what actually happened on 2026-09-10.
-The previous revision was written at 11:50 that day and missed the afternoon
-entirely.
+Last updated 2026-09-20, when F2k's task file was written and `builder11`
+closed. Writing FE-010 from the code rather than from the roadmap line found a
+fourth home for the opener defect — the category rail — and corrected how the
+discount case had been stated here; both are recorded in MEMORY.md under *F2k,
+as written*. A third housekeeping item was added: the menu tile's item sheet is
+a design question, not a wiring bug.
+
+Previously 2026-09-18, after F2g landed the approval prompt. Two items were
+added to the lead's housekeeping from it: a designer owes what Cancel does while
+an approval is verifying (a `B-20` question, not a styling one), and the design
+branch owes a review note — both defects implementation has found in reviewed
+artifacts were a control shared across states, hiding the one state where it is
+wrong.
+
+Previously, after F2c delivered three of its seven states and
+correctly refused four. **Slice by authority, not by component** — that is the
+lesson four task files have now paid for, and the reason the gated work is
+planned as M-1 first, then the two families that depend on it.
+
+Previously, 2026-09-17, after F2b landed. F2 is now five rows, not one: the
+POS-03 fixture carries about twenty-six states, and splitting it is the reason
+each slice has been reviewable. F2e was added the same day from a ruling, not
+from a plan — two slices in a row could not verify a focused press, because
+Space does not activate a link.
 
 ---
 
@@ -28,10 +49,10 @@ decisions, neither of which holds up Phase 0.
 | A3 | [DESIGN-001](tasks/DESIGN-001-external-visual-direction.md) — visual direction | **Delivered and chosen. FROST, 2026-09-14.** Two light directions were built in-repo from the owner's reference; Paper is rejected and left untouched | Owner |
 | A4 | [DESIGN-003](tasks/DESIGN-003-frost-design-system.md) — convert Frost into `docs/DESIGN.md` and a token set | **Done** 2026-09-14. `docs/DESIGN.md` plus a 169-token registry, every token carrying file, line, selector and property. Lead-verified: 169/169/169 three-way, 12 random provenance claims checked, all passed | `designer2` then `designer` |
 | A5 | Decide whether a dark palette ships | Not started. Light only was delivered, deliberately | Owner |
-| A6 | Review the Frost conversion | **In flight**, started 2026-09-14. Lead-verified for completeness and provenance; this pass is for design judgement — sourced-but-wrong values, resolutions that promote a fixture accident to a rule, declared absences that are not actually absent | `design-reviewer` |
+| A6 | Review the Frost conversion | **Done** 2026-09-14. Ten findings, one critical — a live close offered on a stale balance. Nine fixed, one raised; remediation committed `ca0a4db`. See [DESIGN-004](tasks/DESIGN-004-frost-review-remediation.md). Finding 6 became A7 | `design-reviewer` |
 | A7 | [DESIGN-005](tasks/DESIGN-005-a7-three-missing-states.md) — pressed/active touch state, field invalid state, the fired row's gated-path tag | **Done** 2026-09-14, three passes. Four designed tokens, `source: null` plus a `designed` block; reviewed stylesheets untouched | `designer` |
 | A8 | Review DESIGN-005 | **Done** 2026-09-14. Eight findings, one high — a press still collapsed into a selection on touch. All fixed or answered | `design-reviewer` |
-| A9 | Apply the three states to `apps/pos` | Not started. Small frontend task | unassigned |
+| A9 | [FE-002](tasks/FE-002-apply-a7-states.md) — apply the three states to `apps/pos` | **Done** 2026-09-16, lead-verified: 120 tests across 9 files, 172 tokens, the three design artifacts byte-identical to the design branch, and the hover detector proven red by the lead's own unscoped rule. Only the pressed ring had a surface; the invalid field and the round tag arrive unused, deliberately, for F3 and F2 | `builder4` |
 
 A3's deliverable is real and reviewed: open
 [docs/design/visual-directions/index.html](../docs/design/visual-directions/index.html)
@@ -44,9 +65,10 @@ trace to a built Frost artifact. Nothing else in the repository waits on it —
 Phase 0 ships two client shells with a PIN pad and a login form and needs no
 palette.
 
-Five agents are live, all idle: `lead`, `designer` (Fable 5.1, delivered A4),
-`architect` (delivered B4), `designer2` (delivered A4's token registry before a
-quota limit stopped it), and `design-reviewer`, which is next up on A6.
+**Live as of 2026-09-17: `lead`, plus `builder4`, `builder5` and `builder6`
+idle with their slices delivered.** Each implementer's context is spent on the
+slice it built, so **every new slice gets a fresh agent in a fresh pane** — that
+is the owner's subagent-driven ruling, not a preference.
 
 ### Track B — Architecture
 
@@ -114,12 +136,17 @@ Small, none of it blocking, all of it recorded so it does not get lost.
 
 | Item | Why it is not done yet |
 |---|---|
+| Rule what a category press does before there is a second catalogue | Found building F2k. The rail's selection was made to follow the press, and a rail reading *Drinks* above a *Mains* grid tells the cashier something false. Reverted 2026-09-21: the rail stays on Mains and the URL stops carrying `category=`. The press still keeps the order on screen, which was the real bug. A designer's, then review |
+| Rule a Comp's application history on the change sheet | Found building F2k. The artifact attaches *"Applied by Ana R. at 19:44"* to **Staff meal** only. Deriving that note from the discount's `source` extended it to a Comp nobody applied, and was rejected — the sheet now draws no note there, explicit rather than invented, following A7's `source: null` precedent. What a Comp's change sheet should say is a composition the artifact never draws. A designer's, then review |
+| Rule the menu tile's item sheet | Held out of F2k. Every tile opens Burger's sheet because the artifact configures Burger only, so eleven of twelve items have no reviewed option set. Lead's proposal, in [FE-010](tasks/FE-010-opener-fix.md): the tile carries the item's **identity** (name and price, which `MENU_ITEMS` already holds) and option groups render only where a reviewed set exists. That is one new composition — a designer's, then review |
 | ~~Commit the documentation state~~ | **Done** 2026-09-14: six commits on `agent/design-direction`, working tree clean. Not merged to `main` — the owner merges |
 | ~~Close [DESIGN-002](tasks/DESIGN-002-wireframe-review.md)~~ | **Done** 2026-09-14. Ruled: the quick-sale line editor is a second *form* of the existing sheet, not a seventh modal — the count stands at 7 / 13 / 6. Four items carried forward as wireframe slack |
 | ~~Bring [DESIGN-001](tasks/DESIGN-001-external-visual-direction.md) up to date~~ | **Done** 2026-09-14, closed. Delivered in-repo rather than through an external tool; six of eight acceptance criteria met, two met-with-a-limit |
 | ~~Decide what to do with `.impeccable/`~~ | **Done** 2026-09-14: ignored entirely as build residue. `REVIEW.md`'s cited captures will therefore not exist in a clone |
 | ~~Fix the Phase 0 plan's stale paragraphs~~ | **Done** 2026-09-14: both tax-model paragraphs corrected, and the token package's invented placeholder palette now points at the Frost registry instead of contradicting it |
 | Propose PRD §9 time-zone wording | The PRD never names a restaurant time zone; receipt and business-day timestamps both need one. Contract document, so the owner approves the wording |
+| Rule what Cancel does while an approval is verifying | Found by building F2g. If Cancel stays live during verification, *"Cancelling changes nothing on the order"* may be false — the server can approve and execute after it is pressed. `B-20` territory. A designer's, then review |
+| Send the design branch a review heuristic | Both artifact defects implementation has found — DESIGN-004's live close on a stale balance, F2g's live confirm during lockout — were **one control shared across states**. That is where to look |
 | Settle ruling I-8 | Back-office kitchen-ticket reprint is granted by `FR-E3` and unaudited by `FR-J3`. Drawn as the requirements read. Needs a ruling, not a workaround |
 
 ---
@@ -150,10 +177,20 @@ A task that feels like it needs two sessions is two tasks.
 
 | # | Task | State | Owner |
 |---|---|---|---|
-| F1 | [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens wired, lock/PIN screen at 1280×800 | **In flight**, started 2026-09-14 | `builder3` |
+| F1 | [FE-001](tasks/FE-001-pos-shell-and-lock-screen.md) — POS bundle, Frost tokens wired, lock/PIN screen at 1280×800 | **Done** 2026-09-14, lead-verified: 114 tests across 8 files, typecheck clean, opened in a browser | `builder3` |
 | F1 review | Owner opened FE-001 and approved it, 2026-09-14 | **Done.** "Screen's fine" | Owner |
-| F2 | POS order workspace — the densest screen: menu grid, running order, three line signatures, 86'd tiles | **Unblocked** 2026-09-14: A7 and A8 are done, so the pressed state exists before the screen that needs it | unassigned |
-| F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 is fixing | Not started | unassigned |
+| F2 | POS order workspace | **Split into three** 2026-09-16. The Frost fixture is 664 lines and carries about 26 states; FE-001 was one screen with 8 states and produced 114 tests. F2 as one task was three sessions pretending to be one | — |
+| F2a | [FE-003](tasks/FE-003-order-panel.md) — the running order panel: fire-round groups, the three line signatures, money, totals, both settlement locks. Six states | **Done** 2026-09-17, lead-verified: 213 tests across 12 files, up from 120, and all three new guards proven red by the lead injecting the defect each catches. Committed `89a100e` | `builder5` |
+| F2b | [FE-004](tasks/FE-004-menu-region.md) — the menu region | **Done** 2026-09-17, lead-verified: 273 tests across 13 files, and criterion 1 proven by deleting the route out and watching four tests fail, two of them whole-screen checks spanning F2a's panel. Committed `eca409c` | `builder6` |
+| F2c | [FE-005](tasks/FE-005-ungated-sheets.md) — item config, item-86'd-mid-choice, the line editor | **Done 2026-09-18 for three of seven states**, lead-verified: 356 tests across 14 files, and criterion 1 proven by pointing a sheet control at a gated state. Committed `5edd874`. **Four states were correctly refused** — the task file put the discount sheets on the ungated side and the inventory says two of the three are gated | `builder7` |
+| F2g | [FE-006](tasks/FE-006-approval-prompt.md) — M-1, the approval prompt, four states | **Done** 2026-09-18, lead-verified: 472 tests across 15 files, and `B-12` proven by leaking one digit into one dot attribute and failing all thirteen PIN tests. One guarantee covers both pads. Committed `6180c56`. **Found the artifact drawing a live confirm key during the approval lockout** and refused it | `builder8` |
+| F2i | [FE-007](tasks/FE-007-discount-family.md) — the discount family, five states | **Done** 2026-09-18, lead-verified: 624 tests, and the `FR-F8` gate proven by ungating one transition. Committed `0b66d36` | `builder9` |
+| F2j | [FE-008](tasks/FE-008-void-family.md) — the void family, three states | **Done** 2026-09-18, lead-verified: 753 tests, and the audit distinction proven by collapsing it. Committed `affd42a`. **Found the panel offering to void the wrong line** | `builder10` |
+| F2h | `error`, `fireerror`, `fireblocked`, and the 86'd line in the order panel | Not started. Split out of F2c 2026-09-18 | unassigned |
+| F2d | Quick-sale / counter mode | Not started. **Split out of F2b** 2026-09-17: it changes the order's identity and the panel header, not just the menu, so it is its own slice rather than a state smuggled into the grid | unassigned |
+| F2e | [FE-009](tasks/FE-009-corrections.md) — four corrections to committed work | **Done** 2026-09-18, lead-verified: 853 tests, no test deleted or loosened. Reintroducing the wrong-line defect fails 12 tests; `B-12` came through **stronger** (22 failures, up from 13); the `I-12` guard was widened to recognise a button and still catches a nested slot. Committed `6b183b1` | `builder11` |
+| F2k | [FE-010](tasks/FE-010-opener-fix.md) — **finish the opener fix.** The discount family and the line editor open over the *current* order and line; the category keeps the order on screen and the rail follows it; inline changes replace rather than push (SITEMAP `[INLINE]`: not back-stackable). **The discount case feeds a gate:** the picker's applied discount is a fixture's, which is what `needsManager` reads for `FR-F8` | **Done 2026-09-21**, lead-verified at 897 tests across 17 files and **independently reviewed** ([review](reviews/FE-010-review.md)) — three findings, all corrected; the gate proven by pointing the picker back at the fixture (7 failures), the fire-history rule by restoring the push (3), and the rejected Comp note by re-adding it (2). **The worst finding was the lead's own acceptance criterion**, and it is the first one an implementer could not have caught, because it followed the task file faithfully. Two things the task file adds that the roadmap line did not have — **the category's opener hardcodes `?state=default`** (a fourth home nobody had counted), and **no order fixture carries a `DiscountSnapshot` at all**, so the gate's fact is not on the order. **The menu tile is held**, not built: eleven of twelve items have no reviewed option set, which makes it an `A7`-shaped design gap rather than a wiring bug | `builder12` |
+| F3 | POS settlement — tender panel, prefilled amounts, the rejected-close state DESIGN-004 fixed | Not started. Consumes `--frost-invalid`, which A9 landed unused | unassigned |
 | F4 | The remaining POS screens, then the back office | Not started | unassigned |
 
 F1 is deliberately the smallest thing that proves the chain end to end: Vite
@@ -168,7 +205,7 @@ Branch **`agent/phase-0-foundations`**, cut 2026-09-14 from
 | # | Task | State | Owner |
 |---|---|---|---|
 | 1 | Monorepo scaffold, PostgreSQL, migration runner — [PHASE0-001](tasks/PHASE0-001-monorepo-postgres-migrations.md) | **Done** 2026-09-14, lead-verified. 7 tests, typecheck clean | `builder1` |
-| 2 | Money module — [PHASE0-002](tasks/PHASE0-002-money-module.md) | **In flight.** Allowed to finish: it is a shared package the frontend needs, since `B-1` governs money on screen as much as in the database | `builder2` |
+| 2 | Money module — [PHASE0-002](tasks/PHASE0-002-money-module.md) | **Done** 2026-09-14, lead-verified: 81 tests across 5 files, typecheck clean. One ruling owed before Task 3 — brand `Rate`, leave `Money` as `bigint` — not yet applied | `builder2` |
 | 3–12 | Schema and grants, PIN, audit, throttling, sessions, HTTPS server, auth routes, approval, client shells, acceptance tests | **Paused** until the owner has reviewed the frontend | unassigned |
 
 Task files are written by the lead one at a time rather than all twelve up

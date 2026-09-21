@@ -62,7 +62,7 @@ function LockScreen({ state }: { state: LockState }) {
               </div>
             )}
             {notice && (
-              <div className={notice.soft ? 'notice notice--soft' : 'notice'}>
+              <div className={notice.soft ? 'notice notice--soft' : 'notice'} role={notice.failure ? 'alert' : undefined}>
                 <div className="notice__title">{notice.title}</div>
                 <div>{notice.body}</div>
               </div>

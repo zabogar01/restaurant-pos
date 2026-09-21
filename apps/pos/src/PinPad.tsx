@@ -16,8 +16,14 @@ type PinPadProps = {
   verifying?: boolean;
   /** Continue is shown but inert — the LOGIN cooldown. */
   continueDisabled?: boolean;
-  /** Rendered between the entry display and the keypad, where POS-01 puts its notices. */
+  /** Rendered between the entry display and the keypad, where POS-01 and M-1 put their notices. */
   children?: ReactNode;
+  /**
+   * Which reviewed geometry the keys take: POS-01's 88×88 (--frost-pin-*) or
+   * the approval dialog's 72×72 (--frost-approval-*). A class and nothing
+   * else, so both pads share one digit store and one B-12 test.
+   */
+  geometry?: 'lock' | 'approval';
 };
 
 /**
@@ -26,7 +32,13 @@ type PinPadProps = {
  * so the markup after entering 1-2-3 is byte-identical to the markup after
  * 9-8-7 — test/pin-pad.test.tsx holds it to that.
  */
-export function PinPad({ onSubmit, verifying = false, continueDisabled = false, children }: PinPadProps) {
+export function PinPad({
+  onSubmit,
+  verifying = false,
+  continueDisabled = false,
+  children,
+  geometry = 'lock',
+}: PinPadProps) {
   const digits = useRef('');
   const [count, setCount] = useState(0);
 
@@ -71,7 +83,7 @@ export function PinPad({ onSubmit, verifying = false, continueDisabled = false, 
       {children}
 
       {!verifying && (
-        <div className="keypad">
+        <div className={geometry === 'approval' ? 'keypad keypad--approval' : 'keypad'}>
           {DIGIT_ROWS.flat().map((d) => (
             <button key={d} type="button" className="key" onClick={() => press(d)}>
               {d}

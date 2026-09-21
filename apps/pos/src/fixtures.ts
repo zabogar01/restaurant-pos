@@ -13,7 +13,17 @@ export type LockState =
   | 'draft'
   | 'incident';
 
-export type Notice = { title: string; body: string; soft?: boolean };
+export type Notice = {
+  title: string;
+  body: string;
+  soft?: boolean;
+  /**
+   * The answer to a PIN just entered, when it did not succeed. Announced the
+   * moment it appears (role="alert"), on both pads: a wrong PIN nobody hears
+   * about is a defect for a screen-reader user.
+   */
+  failure?: true;
+};
 
 export const LOCK_STATES: ReadonlyArray<{ id: LockState; label: string }> = [
   { id: 'default', label: 'Resting' },
@@ -31,6 +41,7 @@ export const NOTICES: Partial<Record<LockState, Notice>> = {
   error: {
     title: 'PIN not recognised',
     body: '2 attempts remaining before a five-minute cooldown.',
+    failure: true,
   },
   // PROVISIONAL COPY. SCREEN-INVENTORY POS-01 declares this state ("a PIN
   // belonging to a deactivated user", FR-B3) but the reviewed artifact has no
@@ -38,11 +49,13 @@ export const NOTICES: Partial<Record<LockState, Notice>> = {
   'permission-denied': {
     title: 'This account is deactivated',
     body: 'Ask a manager to restore your access in the back office.',
+    failure: true,
   },
   throttled: {
     title: 'Sign-in locked for 4 min 12 s',
     body:
       'Five failed attempts. This cooldown applies to sign-in only and is held by the server for the whole installation.',
+    failure: true,
   },
   invalidated: {
     title: 'Your session was ended by a manager',
