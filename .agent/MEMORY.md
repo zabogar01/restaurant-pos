@@ -481,19 +481,16 @@ Coordinated through Herdr in workspace `w2`. Herdr routes messages between
 panes; it stores nothing durable. Anything that must survive the session
 belongs in this file.
 
-Roster verified against `herdr agent list` on 2026-09-21. **Two agents are
-live.** Every earlier implementer's pane is gone.
-
-**An implementer is live right now, so `git add -A` is forbidden** — stage by
-path. The lead once swept a mid-mutation-run working tree into a docs commit;
-it happened to be clean, and a deliberately broken file would have been
-committed as real work.
+Roster verified against `herdr agent list` on 2026-09-21, **after closing both
+of F2k's agents at the owner's instruction.** **`lead` is the only live agent**,
+and `herdr agent list` returns exactly one row. Every implementer and reviewer
+pane is gone.
 
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
-| `builder12` | claude | `w2:pQ` | live, idle | **Delivered [FE-010](tasks/FE-010-opener-fix.md)** (F2k) and its four post-review corrections. Its handoff has two entries; both are the record |
-| `code-reviewer` | **codex** | `w2:pR` | live, idle | **Reviewed FE-010 independently** — [.agent/reviews/FE-010-review.md](reviews/FE-010-review.md). Three findings, the worst of them the lead's. **The first review agent used on implementation work**, and it found the class no implementer can |
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `builder12` | claude | — | closed 2026-09-21 | **Delivered [FE-010](tasks/FE-010-opener-fix.md)** (F2k) and its four post-review corrections. Its handoff carries two entries and both are the record. Committed in `705fb6c` |
+| `code-reviewer` | **codex** | — | closed 2026-09-21 | **Reviewed FE-010 independently** — [reviews/FE-010-review.md](reviews/FE-010-review.md). Three findings, the worst of them the lead's own acceptance criterion. **The first review agent used on implementation work**, and it caught the class no implementer can. Use one again on any slice that encodes a rule |
 | `builder11` | claude | — | closed 2026-09-20 | **Delivered [FE-009](tasks/FE-009-corrections.md)** (F2e). Went looking beyond its brief and found the same defect on three more openers. Closed under the standing policy once FE-010 had been written from its findings: its slice is committed and its handoff is the record |
 | `builder10` | claude | — | closed | **Delivered [FE-008](tasks/FE-008-void-family.md)** (F2j). Found the panel offering to void the wrong line and refused to reach into committed work to fix it |
 
