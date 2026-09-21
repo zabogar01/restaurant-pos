@@ -19,7 +19,9 @@ import {
   DISCOUNT_FIXTURES,
   OTHER_15,
   PRESETS,
+  OTHER_15_NOTE,
   STAFF_MEAL,
+  STAFF_MEAL_NOTE,
   type DiscountSheetFixture,
 } from '../src/discountFixtures.js';
 import { DiscountSheet } from '../src/DiscountSheets.js';
@@ -714,5 +716,232 @@ describe('pos.css: a gated control is a button that rings', () => {
   it('the discount rules set no hover of their own', () => {
     const section = css.slice(css.indexOf('.discount-flow'), css.indexOf('.fixture-states'));
     expect(section).not.toMatch(/:hover/);
+  });
+});
+
+// ---- F2k: the close bar's Discount opens over the order on screen ----
+
+// The defect this closes: Discount named ?state=sheet-discount, a fixture
+// state, so pressing it replaced the order on screen with the table order AND
+// handed needsManager that fixture's `applied` — the one fact FR-F8 reads —
+// instead of the one the order in front of the cashier carries.
+
+/** Press the close bar's Discount on the order on screen. */
+const pressDiscount = () => press(device().querySelector('.order-actions [data-action="discount"]')!);
+
+/** The order carrying a free-form discount, reachable without a sheet (criterion 3). */
+const FREEFORM_ORDER: OrderState = 'other-discount';
+
+describe('the discount family opens over the order on screen (criterion 1)', () => {
+  it.each(['default', 'overflow', 'zero', FREEFORM_ORDER] as const)('%s: no URL, no history entry', (state) => {
+    render(state);
+    const before = { search: window.location.search, length: window.history.length, lines: lineNames(), totals: totalsRows() };
+    pressDiscount();
+    expect(sheet()).not.toBeNull();
+    expect(window.location.search).toBe(before.search);
+    expect(window.history.length).toBe(before.length);
+    // The panel beside the sheet is still the order the cashier was reading.
+    expect(lineNames()).toEqual(before.lines);
+    expect(totalsRows()).toEqual(before.totals);
+  });
+
+  it('overflow: the panel keeps its own ten lines and its own total, not the table order’s', () => {
+    render('overflow');
+    pressDiscount();
+    expect(lineNames()).toHaveLength(10);
+    expect(totalsRows().at(-2)).toEqual(['Total', '1.244.250']);
+    expect(host.querySelector('.order-panel__title')!.textContent).toBe('Order · T1');
+  });
+
+  it('an order carrying nothing opens the picker; an order carrying a discount opens the change sheet', () => {
+    // FR-F1 and B-22: one discount per order, so an applied discount can only
+    // be removed or replaced (FR-F8), which is the change sheet.
+    render('overflow');
+    pressDiscount();
+    expect(sheet()!.querySelector('#sheet-title')!.textContent).toBe('Discount');
+    expect(sheet()!.querySelector('.discount-applied')).toBeNull();
+
+    for (const state of ['default', 'zero', FREEFORM_ORDER] as const) {
+      render(state);
+      pressDiscount();
+      expect(sheet()!.querySelector('#sheet-title')!.textContent).toBe('Change discount');
+      const applied = ORDER_FIXTURES[state].applied!;
+      expect(sheet()!.querySelector('.discount-applied__row span')!.textContent).toBe(
+        `${applied.name} — ${applied.value.kind === 'percent' ? `${applied.value.percent}%` : ''}`
+      );
+    }
+  });
+
+  it('the change sheet takes the discount off the panel’s own subtotal, ?gone= included', () => {
+    render('default');
+    press(host.querySelector('.order-line[data-line-id="steak"] button.order-line__remove')!);
+    expect(totalsRows()[0]).toEqual(['Subtotal', '165.000']);
+    pressDiscount();
+    // 10% of 165.000, the subtotal the panel shows — not 40.500, the table
+    // order's figure the fixture carries.
+    expect(sheet()!.querySelectorAll('.discount-applied__row span')[1]!.textContent).toBe('−16.500');
+  });
+
+  it('Cancel closes it on the same order, with focus back on Discount', () => {
+    render('overflow');
+    pressDiscount();
+    press(inSheet('Cancel'));
+    expect(sheet()).toBeNull();
+    expect(urlState()).toBe('overflow');
+    expect(lineNames()).toHaveLength(10);
+    expect(document.activeElement!.textContent).toBe('Discount');
+    expect(device().querySelector('[inert]')).toBeNull();
+  });
+});
+
+describe('the gate reads the order, not a fixture (criteria 2 and 3)', () => {
+  const gatedIn = (name: string) => inSheet(name).dataset.gated === 'true';
+
+  it('free-form applied: replacing with a preset and removing are both gated (FR-F8)', () => {
+    render(FREEFORM_ORDER);
+    pressDiscount();
+    expect(gatedIn('Replace with another preset — needs a manager')).toBe(true);
+    expect(gatedIn('Remove the discount — needs a manager')).toBe(true);
+    // And every preset behind that door is gated too.
+    press(inSheet('Replace with another preset — needs a manager'));
+    for (const p of PRESETS) expect(gatedIn(`${p.name} — ${p.value.kind === 'percent' ? `${p.value.percent}%` : '50.000 off'} — needs a manager`)).toBe(true);
+  });
+
+  it('free-form applied: removing reaches the manager prompt, and writes no URL', () => {
+    render(FREEFORM_ORDER);
+    pressDiscount();
+    const before = { search: window.location.search, length: window.history.length };
+    press(inSheet('Remove the discount — needs a manager'));
+    expect(prompt()).not.toBeNull();
+    expect(prompt()!.querySelector('#approval-title')!.textContent).toBe('Manager PIN');
+    expect(window.location.search).toBe(before.search);
+    expect(window.history.length).toBe(before.length);
+  });
+
+  it('free-form applied: replacing with a preset reaches the manager prompt', () => {
+    render(FREEFORM_ORDER);
+    pressDiscount();
+    press(inSheet('Replace with another preset — needs a manager'));
+    press(inSheet('Regular customer — 5% — needs a manager'));
+    expect(prompt()).not.toBeNull();
+    expect(prompt()!.textContent).toContain('Replace Other discount 15%');
+  });
+
+  it('preset applied: replacing with a preset and removing are both ungated', () => {
+    render('default');
+    pressDiscount();
+    expect(gatedIn('Replace with another preset')).toBe(false);
+    expect(gatedIn('Remove the discount')).toBe(false);
+    press(inSheet('Remove the discount'));
+    expect(prompt()).toBeNull();
+    expect(sheet()).toBeNull();
+    expect(urlState()).toBe('default');
+  });
+
+  it('preset applied: replacing with a free-form is gated (FR-F3)', () => {
+    render('default');
+    pressDiscount();
+    expect(gatedIn('Replace with another amount — needs a manager')).toBe(true);
+  });
+
+  it('nothing applied: a preset is ungated and free-form is gated (FR-F2, FR-F3)', () => {
+    render('overflow');
+    pressDiscount();
+    for (const p of PRESETS) expect(inSheet(`${p.name} — ${p.value.kind === 'percent' ? `${p.value.percent}%` : '50.000 off'}`).dataset.gated).toBe('false');
+    expect(gatedIn('Other amount — needs a manager')).toBe(true);
+  });
+
+  // The teeth. These two orders draw the same lines and differ only in the
+  // discount they carry, and the fixture's own `applied` is STAFF_MEAL for
+  // both. Point the sheet back at the fixture and this pair collapses.
+  it('two orders with the same lines gate differently, because the gate reads the order', () => {
+    const answers = (['default', FREEFORM_ORDER] as const).map((state) => {
+      render(state);
+      expect(lineNames()).toEqual(['Burger', 'Soda', 'Steak']);
+      pressDiscount();
+      return buttons(sheet()!)
+        .filter((b) => b.dataset.gated !== undefined)
+        .map((b) => b.dataset.gated);
+    });
+    expect(answers[0]).toEqual(['false', 'true', 'false']);
+    expect(answers[1]).toEqual(['true', 'true', 'true']);
+  });
+});
+
+describe('an order carries its applied discount as a snapshot (criterion 2)', () => {
+  it('every fixture’s snapshot and its printed discount row are the same discount', () => {
+    for (const { id } of ORDER_STATES) {
+      const fixture = ORDER_FIXTURES[id];
+      expect(Boolean(fixture.applied)).toBe(Boolean(fixture.totals.discount));
+      if (!fixture.applied) continue;
+      // The snapshot's source is the fact FR-F8 reads; the row is the same
+      // discount printed, so its label and amount must agree with it.
+      const { label, amount } = fixture.totals.discount!;
+      expect(label).toBe(`${fixture.applied.name} ${fixture.applied.value.kind === 'percent' ? `${fixture.applied.value.percent}%` : ''}`.trim());
+      expect(amount).toBe(-discountAmount(fixture.totals.subtotal, fixture.applied.value));
+      for (const totals of Object.values(fixture.totalsWithout ?? {})) {
+        expect(totals.discount!.amount).toBe(-discountAmount(totals.subtotal, fixture.applied.value));
+      }
+    }
+  });
+
+  it('other-discount is the free-form order, and the only non-sheet one', () => {
+    const carrying = ORDER_STATES.filter(({ id }) => ORDER_FIXTURES[id].applied?.source === 'free-form').map((s) => s.id);
+    expect(carrying).toEqual(['sheet-remove-freeform', FREEFORM_ORDER]);
+    expect(ORDER_FIXTURES[FREEFORM_ORDER].applied).toEqual(OTHER_15);
+    // Same order as sheet-remove-freeform draws, without the sheet.
+    expect(ORDER_FIXTURES[FREEFORM_ORDER].totals).toEqual(ORDER_FIXTURES['sheet-remove-freeform'].totals);
+    render(FREEFORM_ORDER);
+    expect(sheet()).toBeNull();
+    expect(totalsRows()).toEqual([
+      ['Subtotal', '405.000'],
+      ['Other discount 15%', '−60.750'],
+      ['Service charge 5%', '17.213'],
+      ['Total', '361.463'],
+      ['Includes tax 10%', '31.295'],
+    ]);
+  });
+});
+
+// ---- The change sheet's application history belongs to one application ----
+
+// Ruled 2026-09-21 after review. F2k first derived this line from the
+// snapshot's `source`, which handed Comp the actor and time the artifact
+// attaches to Staff meal — asserting who comped this order and when, which
+// nobody established. The gap is drawn rather than filled.
+
+describe('appliedNote is the order’s own, never derived from the discount’s source', () => {
+  it('the artifact’s Staff meal note reaches the change sheet on the order it describes', () => {
+    render('default');
+    pressDiscount();
+    expect(sheet()!.querySelector('.discount-applied__note')!.textContent).toBe(
+      'Applied by Ana R. at 19:44. Preset, no approval.'
+    );
+  });
+
+  it('zero carries no note, and the change sheet draws the gap', () => {
+    // Comp is a preset, as Staff meal is. A note derived from `source` would
+    // give this order Staff meal's actor and time; this is that test.
+    expect(ORDER_FIXTURES['zero'].applied!.source).toBe('preset');
+    expect(ORDER_FIXTURES['zero'].appliedNote).toBeUndefined();
+    render('zero');
+    pressDiscount();
+    expect(sheet()!.querySelector('#sheet-title')!.textContent).toBe('Change discount');
+    expect(sheet()!.querySelector('.discount-applied__row span')!.textContent).toBe('Comp — 100%');
+    expect(sheet()!.querySelector('.discount-applied__note')).toBeNull();
+  });
+
+  it('no order borrows another’s application history', () => {
+    // Every note on an order is one of the two written down, and each belongs
+    // to the application it describes: the artifact's Staff meal line, and
+    // FE-007's provisional free-form line.
+    for (const { id } of ORDER_STATES) {
+      const { applied, appliedNote } = ORDER_FIXTURES[id];
+      if (appliedNote === undefined) continue;
+      expect(applied).toBeDefined();
+      expect(appliedNote).toBe(applied!.source === 'preset' ? STAFF_MEAL_NOTE : OTHER_15_NOTE);
+      // A note is only ever the preset one when the discount *is* Staff meal.
+      if (appliedNote === STAFF_MEAL_NOTE) expect(applied).toEqual(STAFF_MEAL);
+    }
   });
 });

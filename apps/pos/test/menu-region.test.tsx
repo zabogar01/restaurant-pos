@@ -12,7 +12,6 @@ import {
   LOCK_NOTICE,
   MENU_CATEGORIES,
   MENU_ITEMS,
-  categorySearch,
 } from '../src/menuFixtures.js';
 import { formatAmount } from '../src/money.js';
 import { OrderScreen } from '../src/OrderPanel.js';
@@ -89,17 +88,33 @@ describe('default', () => {
     }
   });
 
-  it('draws every category as a button that moves the screen to it', () => {
-    for (const [i, category] of MENU_CATEGORIES.entries()) {
-      render('default');
-      const row = categories()[i]!;
-      expect(row.tagName).toBe('BUTTON');
-      expect(row.getAttribute('type')).toBe('button');
-      press(row);
-      expect(window.location.search).toBe(categorySearch(category.id));
-      expect(sheetTitle()).toBeNull();
+  // Pressed from `overflow` as well as `default`: on the table order the old
+  // defect is invisible, because ?state=default is where it was going anyway.
+  it.each(['default', 'overflow'] as const)(
+    '%s: draws every category as a button that keeps the order, and writes no category to the URL',
+    (state) => {
+      for (const [i] of MENU_CATEGORIES.entries()) {
+        render(state);
+        const names = [...host.querySelectorAll('.order-line__name')].map((n) => n.textContent);
+        const row = categories()[i]!;
+        expect(row.tagName).toBe('BUTTON');
+        expect(row.getAttribute('type')).toBe('button');
+        press(row);
+        // The order is where it was: the press no longer names ?state=default,
+        // which moved every other order to the table order.
+        expect(window.location.search).toBe(`?state=${state}`);
+        expect([...host.querySelectorAll('.order-line__name')].map((n) => n.textContent)).toEqual(names);
+        expect(sheetTitle()).toBeNull();
+        // And it writes no ?category=, because nothing honours one. Ruled
+        // 2026-09-21: the rail keeps Mains while the grid can only draw Mains,
+        // rather than asserting a selection the grid contradicts.
+        expect(window.location.search).not.toContain('category');
+        expect(text(categories().filter((c) => c.getAttribute('aria-current') === 'true'))).toEqual(['Mains']);
+        expect(host.querySelectorAll('.menu-category--selected')).toHaveLength(1);
+        expect(ids(tiles())).toEqual(MENU_ITEMS.map((i) => i.id));
+      }
     }
-  });
+  );
 
   it('prices each tile from its bigint as a grouped figure', () => {
     expect(text([...host.querySelectorAll('.menu-tile__price')])).toEqual(MENU_ITEMS.map((i) => formatAmount(i.price)));

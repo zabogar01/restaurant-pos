@@ -18,6 +18,7 @@ export const MENU_CATEGORIES = [
 
 export type CategoryId = (typeof MENU_CATEGORIES)[number]['id'];
 
+/** The category the rail starts on, and the only one the artifact draws a grid for. */
 export const SELECTED_CATEGORY: CategoryId = 'mains';
 
 // The artifact's one grid, in its order. It is drawn under Mains although it
@@ -41,10 +42,15 @@ export const MENU_ITEMS: ReadonlyArray<MenuItem> = [
 // configures Burger only, so every tile opens Burger's sheet.
 export const ITEM_SEARCH = '?state=sheet-item';
 
-// A category's destination. The artifact has items for Mains only, so no
-// other category has a grid to show; this is the default state with the
-// category named, and today it lands on Mains.
-export const categorySearch = (id: CategoryId) => `?state=default&category=${id}`;
+// A category press has no destination. It is an [INLINE] change of POS-03
+// (SITEMAP §1): the order stays exactly as it is and the history entry is
+// replaced. It used to name ?state=default, which moved every order to the
+// table order (fixed in F2k).
+//
+// Nothing else changes yet. The artifact has items for Mains only, so no other
+// category has a grid to show — FE-004's accepted limitation — and the rail
+// keeps SELECTED_CATEGORY rather than drawing a selection the grid
+// contradicts (ruled 2026-09-21; see MenuRegion.tsx).
 
 export type LockNotice = {
   title: string;
@@ -127,6 +133,7 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   'sheet-remove': {},
   'sheet-remove-freeform': {},
   zero: {},
+  'other-discount': {},
   // The void sheets: the artifact's default grid behind each.
   'sheet-voidline': {},
   'sheet-voidorder': {},

@@ -1,3 +1,4 @@
+import type { DiscountSnapshot } from './discount.js';
 import { ORDER_FIXTURES, type OrderLine, type OrderState, type OrderView, type RoundGroup, type Totals } from './orderFixtures.js';
 import type { VoidReason } from './void.js';
 
@@ -85,8 +86,19 @@ export function panelVoid(target: VoidSheetFixture['target'], view: OrderView): 
 /** A row's tap target, by its line's id. */
 export const lineBody = (lineId: string) => `.order-line[data-line-id="${lineId}"] > .order-line__target`;
 
-/** The order as the panel beside the sheet shows it. */
-export type ShownOrder = { title: string; groups: ReadonlyArray<RoundGroup>; totals: Totals };
+/**
+ * The order as the panel beside the sheet shows it, including the discount it
+ * carries as a snapshot (FR-F4): `totals.discount` is that same discount
+ * printed, and carries no `source`, which is the fact FR-F8's gate reads.
+ * `appliedNote` is that application's own history, where the order has one.
+ */
+export type ShownOrder = {
+  title: string;
+  groups: ReadonlyArray<RoundGroup>;
+  totals: Totals;
+  applied?: DiscountSnapshot;
+  appliedNote?: string;
+};
 
 /**
  * The order the panel draws for a view, so the sheet reads the same lines and
@@ -101,6 +113,8 @@ export function shownOrder({ state, gone }: OrderView): ShownOrder {
   return {
     title: fixture.title,
     totals: removed ? fixture.totalsWithout![removed]! : fixture.totals,
+    ...(fixture.applied && { applied: fixture.applied }),
+    ...(fixture.appliedNote && { appliedNote: fixture.appliedNote }),
     groups: fixture.groups
       .map((g) => ({ ...g, lines: g.lines.filter((l) => l.id !== removed) }))
       .filter((g) => g.lines.length > 0),

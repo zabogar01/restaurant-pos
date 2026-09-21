@@ -4,7 +4,6 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { OrderPanel, type PanelActions } from '../src/OrderPanel.js';
 import {
-  EDIT_LINE_SEARCH,
   FIRED_TAG,
   LOCK_TAG,
   ORDER_STATES,
@@ -43,11 +42,18 @@ function render(view: OrderView | OrderState, actions?: PanelActions) {
 }
 
 /** Panel actions that record what the panel asked for. */
+type Asked =
+  | { navigate: string; leaves: boolean }
+  | { openVoid: unknown }
+  | { openLine: string }
+  | { openDiscount: true };
 function recording() {
-  const asked: Array<{ navigate: string } | { openVoid: unknown }> = [];
+  const asked: Asked[] = [];
   const actions: PanelActions = {
-    navigate: (search) => asked.push({ navigate: search }),
+    navigate: (search, leaves = false) => asked.push({ navigate: search, leaves }),
     openVoid: (target) => asked.push({ openVoid: target }),
+    openLine: (lineId) => asked.push({ openLine: lineId }),
+    openDiscount: () => asked.push({ openDiscount: true }),
   };
   return { asked, actions };
 }
@@ -103,7 +109,7 @@ describe('the slot guard can see a swallowed slot', () => {
 });
 
 describe('fixture states', () => {
-  it('has exactly the six states of F2a, the three of F2b, the three of F2c, the four of F2g, the five of F2i and the three of F2j', () => {
+  it('has exactly the six states of F2a, the three of F2b, the three of F2c, the four of F2g, the five of F2i, the three of F2j and the one of F2k', () => {
     expect(ORDER_STATES.map((s) => s.id)).toEqual([
       'default',
       'empty',
@@ -126,6 +132,7 @@ describe('fixture states', () => {
       'sheet-remove',
       'sheet-remove-freeform',
       'zero',
+      'other-discount',
       'sheet-voidline',
       'sheet-voidorder',
       'sheet-voidorder-fired',
@@ -203,18 +210,26 @@ describe('unlocked rows', () => {
     expect(new Set(fired.map((row) => row.dataset.lineId)).size).toBe(fired.length);
   });
 
-  it.each(['default', 'overflow', 'pressed'] as const)('%s: a PENDING row body is the button that opens the line editor', (state) => {
-    const { asked, actions } = recording();
-    render(state, actions);
-    for (const row of rowsWith('pending')) {
-      const target = targetOf(row);
-      expect(target.matches('button.order-line__target[type="button"]')).toBe(true);
-      press(target);
+  it.each(['default', 'overflow', 'pressed'] as const)(
+    '%s: a PENDING row body is the button that opens the line editor for that line',
+    (state) => {
+      const { asked, actions } = recording();
+      render(state, actions);
+      const pending = rowsWith('pending');
+      expect(pending.length).toBeGreaterThan(0);
+      for (const row of pending) {
+        const target = targetOf(row);
+        expect(target.matches('button.order-line__target[type="button"]')).toBe(true);
+        press(target);
+      }
+      // One editor per row pressed, each for that row's own line: tapping
+      // Coffee must not open the Steak's editor.
+      expect(asked).toEqual(pending.map((row) => ({ openLine: row.dataset.lineId })));
+      expect(new Set(pending.map((row) => row.dataset.lineId)).size).toBe(pending.length);
     }
-    expect(asked).toEqual(rowsWith('pending').map(() => ({ navigate: EDIT_LINE_SEARCH })));
-  });
+  );
 
-  it('the close bar’s four actions are buttons: Void order opens the void sheet over this order, the rest move the screen', () => {
+  it('the close bar’s four actions are buttons: two open a sheet over this order, and only Settle leaves POS-03', () => {
     const { asked, actions } = recording();
     render('default', actions);
     const bar = [...host.querySelectorAll<HTMLElement>('.order-actions > *')];
@@ -225,11 +240,15 @@ describe('unlocked rows', () => {
       ['BUTTON', 'button', 'Settle'],
     ]);
     for (const b of bar) press(b);
+    // Discount and Void order name no state at all: each opens its sheet over
+    // the order on screen. Firing stays on POS-03 — the fire result is an
+    // [INLINE] state of this screen (SITEMAP §2) — so only Settle, which
+    // leaves for POS-04, asks to push a history entry.
     expect(asked).toEqual([
-      { navigate: '?state=sheet-discount' },
+      { openDiscount: true },
       { openVoid: { kind: 'order' } },
-      { navigate: '?state=fireerror' },
-      { navigate: '?state=settle' },
+      { navigate: '?state=fireerror', leaves: false },
+      { navigate: '?state=settle', leaves: true },
     ]);
   });
 
@@ -239,6 +258,7 @@ describe('unlocked rows', () => {
     press(rowsWith('pending')[0]!.querySelector('button.order-line__remove')!);
     expect(asked).toHaveLength(1);
     const search = (asked[0] as { navigate: string }).navigate;
+    expect(asked[0]).toEqual({ navigate: '?state=default&gone=steak', leaves: false });
     render(orderViewFrom(search));
     expect(rowsWith('pending')).toEqual([]);
     expect(text('.round-head__tag')).toEqual([FIRED_TAG, FIRED_TAG]);

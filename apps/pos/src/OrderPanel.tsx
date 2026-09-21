@@ -1,13 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ApprovalPrompt } from './Approval.js';
 import { APPROVAL_FIXTURES } from './approvalFixtures.js';
-import { DISCOUNT_FIXTURES } from './discountFixtures.js';
+import { DISCOUNT_ACTION, DISCOUNT_FIXTURES, panelDiscount } from './discountFixtures.js';
 import { DiscountSheet } from './DiscountSheets.js';
 import { Icon } from './icons.js';
 import { MenuRegion } from './MenuRegion.js';
 import { formatAmount } from './money.js';
 import {
-  EDIT_LINE_SEARCH,
   FIRED_TAG,
   LOCK_TAG,
   ORDER_FIXTURES,
@@ -23,7 +22,7 @@ import {
   type SettlementLock,
   type Totals,
 } from './orderFixtures.js';
-import { SHEET_FIXTURES } from './sheetFixtures.js';
+import { SHEET_FIXTURES, panelLine } from './sheetFixtures.js';
 import { SheetView } from './Sheets.js';
 import { VOID_FIXTURES, VOID_ORDER_ACTION, panelVoid, shownOrder, type VoidSheetFixture } from './voidFixtures.js';
 import { VoidSheet } from './VoidSheets.js';
@@ -49,27 +48,51 @@ import { VoidSheet } from './VoidSheets.js';
 // The discount sheets (F2i) are one family: they move between themselves and
 // raise the manager prompt as their own component state, so no approval is
 // ever a URL (DiscountSheets.tsx). The void sheets (F2j) do the same, and read
-// the order the panel shows beside them (VoidSheets.tsx). Opened from the
-// panel, a void sheet is component state too: it is handed the very line or
-// order the cashier tapped, never a fixture's, so a tap on one fired row can
-// only ever offer to void that row (B-16).
+// the order the panel shows beside them (VoidSheets.tsx).
+//
+// Every sheet a control on the panel opens is component state (F2e, F2k). It
+// is handed the very line, order and figures the cashier is looking at, never
+// a fixture's: a tap on one fired row can only ever offer to void that row
+// (B-16), a tap on one pending row can only ever edit that row, and the gate
+// on a discount change reads the discount this order carries (FR-F8). None of
+// them writes a URL or a history entry.
 export function OrderScreen({ view: initial = orderViewFrom(window.location.search) }: { view?: OrderView }) {
   const [view, setView] = useState(initial);
   const [voidOpened, setVoidOpened] = useState<VoidSheetFixture['target']>();
+  const [lineOpened, setLineOpened] = useState<string>();
+  const [discountOpened, setDiscountOpened] = useState(false);
   const device = useRef<HTMLDivElement>(null);
   const returnFocusTo = useRef<string | undefined>(undefined);
-  const sheet = SHEET_FIXTURES[view.state];
+  const order = shownOrder(view);
+  const sheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, order) : undefined);
   const approval = APPROVAL_FIXTURES[view.state];
-  const discount = DISCOUNT_FIXTURES[view.state];
+  const discount = DISCOUNT_FIXTURES[view.state] ?? (discountOpened ? panelDiscount(view, order) : undefined);
   const voiding = VOID_FIXTURES[view.state] ?? (voidOpened && panelVoid(voidOpened, view));
 
-  function navigate(search: string) {
+  const closeOpened = () => {
+    setVoidOpened(undefined);
+    setLineOpened(undefined);
+    setDiscountOpened(false);
+  };
+
+  /**
+   * SITEMAP §1: a [SHEET], a [MODAL] and an [INLINE] state are none of them
+   * back-stackable, so a change that stays on POS-03 replaces the history
+   * entry. **Only Settle pushes**, because POS-04 is the only [SCREEN] this
+   * screen leaves for — "its own route, not a sheet over POS-03". Firing does
+   * not leave: SITEMAP §2 puts the fire result under POS-03 as an [INLINE]
+   * state (corrected 2026-09-21 after review; F2k first shipped Fire as a
+   * departure, following a task file that was wrong). Back after removing a
+   * line therefore leaves the screen rather than putting the line back (the
+   * ruling of 2026-09-18).
+   */
+  function navigate(search: string, leaves = false) {
     const next = orderViewFrom(search);
     const open = sheet ?? approval ?? discount ?? voiding;
     returnFocusTo.current = open?.opener;
-    if (open || overlayAt(next.state)) window.history.replaceState(null, '', search);
-    else window.history.pushState(null, '', search);
-    setVoidOpened(undefined);
+    if (leaves && !open && !overlayAt(next.state)) window.history.pushState(null, '', search);
+    else window.history.replaceState(null, '', search);
+    closeOpened();
     setView(next);
   }
 
@@ -77,7 +100,7 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
 
   useEffect(() => {
     const onPop = () => {
-      setVoidOpened(undefined);
+      closeOpened();
       setView(orderViewFrom(window.location.search));
     };
     window.addEventListener('popstate', onPop);
@@ -92,20 +115,26 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
 
   // React 18 has no inert prop; an empty string renders the bare attribute.
   const inert = sheet || approval || discount || voiding ? { inert: '' } : {};
+  // A sheet opened over a particular line or order is remounted when that
+  // target changes, so tapping a second row draws the second row's sheet.
   const voidKey = voidOpened ? `opened-${voidOpened.kind === 'line' ? voidOpened.lineId : 'order'}` : view.state;
+  const lineKey = lineOpened !== undefined ? `opened-${lineOpened}` : view.state;
 
   return (
     <>
       <div className="pos-device" ref={device}>
         <div className="order-screen__bar" aria-hidden="true" {...inert} />
         <div className="order-screen__body" {...inert}>
-          <MenuRegion state={view.state} navigate={navigate} />
-          <OrderPanel view={view} actions={{ navigate, openVoid: setVoidOpened }} />
+          <MenuRegion view={view} navigate={navigate} />
+          <OrderPanel
+            view={view}
+            actions={{ navigate, openVoid: setVoidOpened, openLine: setLineOpened, openDiscount: () => setDiscountOpened(true) }}
+          />
         </div>
-        {sheet && <SheetView key={view.state} sheet={sheet} go={go} />}
+        {sheet && <SheetView key={lineKey} sheet={sheet} go={go} />}
         {approval && <ApprovalPrompt key={view.state} approval={approval} go={go} />}
-        {discount && <DiscountSheet key={view.state} fixture={discount} go={go} />}
-        {voiding && <VoidSheet key={voidKey} fixture={voiding} order={shownOrder(view)} go={go} />}
+        {discount && <DiscountSheet key={discountOpened ? 'opened' : view.state} fixture={discount} go={go} />}
+        {voiding && <VoidSheet key={voidKey} fixture={voiding} order={order} go={go} />}
       </div>
       {import.meta.env.DEV && <OrderFixtureStates current={view.state} />}
     </>
@@ -117,17 +146,19 @@ const overlayAt = (state: OrderState) =>
   Boolean(SHEET_FIXTURES[state] ?? APPROVAL_FIXTURES[state] ?? DISCOUNT_FIXTURES[state] ?? VOID_FIXTURES[state]);
 
 /**
- * What the panel's controls do. navigate moves the screen to a ?state= view;
- * openVoid opens the void sheet over the order on screen, for the line or the
- * order the cashier tapped. Drawn on its own, as its tests draw it, the panel's
- * controls do nothing.
+ * What the panel's controls do. navigate moves the screen to a ?state= view,
+ * and says whether it leaves POS-03; the three openers open a sheet over the
+ * order on screen, for the line, order or discount the cashier tapped. Drawn
+ * on its own, as its tests draw it, the panel's controls do nothing.
  */
 export type PanelActions = {
-  navigate: (search: string) => void;
+  navigate: (search: string, leaves?: boolean) => void;
   openVoid: (target: VoidSheetFixture['target']) => void;
+  openLine: (lineId: string) => void;
+  openDiscount: () => void;
 };
 
-const NO_ACTIONS: PanelActions = { navigate: () => {}, openVoid: () => {} };
+const NO_ACTIONS: PanelActions = { navigate: () => {}, openVoid: () => {}, openLine: () => {}, openDiscount: () => {} };
 
 export function OrderPanel({ view, actions = NO_ACTIONS }: { view: OrderView; actions?: PanelActions }) {
   const fixture = ORDER_FIXTURES[view.state];
@@ -164,7 +195,7 @@ export function OrderPanel({ view, actions = NO_ACTIONS }: { view: OrderView; ac
           <RoundGroupView
             key={group.kind === 'fired' ? `round-${group.round}` : 'pending'}
             group={group}
-            state={view.state}
+            view={view}
             lock={lock}
             pressedLineId={pressedLineId}
             actions={actions}
@@ -180,13 +211,13 @@ export function OrderPanel({ view, actions = NO_ACTIONS }: { view: OrderView; ac
 
 function RoundGroupView({
   group,
-  state,
+  view,
   lock,
   pressedLineId,
   actions,
 }: {
   group: RoundGroup;
-  state: OrderState;
+  view: OrderView;
   lock: SettlementLock | undefined;
   pressedLineId: string | undefined;
   actions: PanelActions;
@@ -211,7 +242,7 @@ function RoundGroupView({
           <LineRow
             key={line.id}
             line={line}
-            state={state}
+            view={view}
             locked={lock !== undefined}
             pressed={line.id === pressedLineId}
             actions={actions}
@@ -236,13 +267,13 @@ function RoundGroupView({
 // test/order-panel.test.tsx guards the markup.
 function LineRow({
   line,
-  state,
+  view,
   locked,
   pressed,
   actions,
 }: {
   line: OrderLine;
-  state: OrderState;
+  view: OrderView;
   locked: boolean;
   pressed: boolean;
   actions: PanelActions;
@@ -253,7 +284,7 @@ function LineRow({
       ? undefined
       : line.status === 'fired'
         ? () => actions.openVoid({ kind: 'line', lineId: line.id })
-        : () => actions.navigate(EDIT_LINE_SEARCH);
+        : () => actions.openLine(line.id);
   const removable = !locked && line.status === 'pending';
 
   return (
@@ -275,7 +306,7 @@ function LineRow({
             type="button"
             className="order-line__remove"
             aria-label={`Remove ${line.name}`}
-            onClick={() => actions.navigate(`?state=${state}&gone=${encodeURIComponent(line.id)}`)}
+            onClick={() => actions.navigate(viewSearch({ ...view, gone: line.id }))}
           >
             <Icon name="close" />
           </button>
@@ -339,16 +370,22 @@ function TotalsView({ totals }: { totals: Totals }) {
   );
 }
 
-// The close bar. Void order opens the void sheet over the order on screen, and
-// the sheet's gate reads that order (VoidSheets.tsx). Discount names the
-// discount picker's fixture state. Send to kitchen and Settle name states that
-// do not exist yet (F2h, F3) and today resolve to the default state. Under a
-// lock, and on an empty order, all four are drawn unavailable in place.
+// The close bar. Discount and Void order open a sheet over the order on
+// screen, and each sheet's gate reads that order (DiscountSheets.tsx,
+// VoidSheets.tsx): neither names a state. Send to kitchen and Settle name
+// states that do not exist yet (F2h, F3) and today resolve to the default
+// state. Under a lock, and on an empty order, all four are drawn unavailable
+// in place.
+//
+// `leaves` marks the one control that leaves POS-03, and so the only one that
+// pushes a history entry: Settle, for POS-04, which SITEMAP §2 gives its own
+// route. Firing stays here — the fire result is an [INLINE] state of this
+// screen (SITEMAP §2, FR-E3), so it replaces like every other inline change.
 const ACTIONS = [
-  { id: 'discount', label: 'Discount', search: '?state=sheet-discount' },
+  { id: DISCOUNT_ACTION, label: 'Discount' },
   { id: VOID_ORDER_ACTION, label: 'Void order' },
   { id: 'fire', label: 'Send to kitchen', search: '?state=fireerror' },
-  { id: 'settle', label: 'Settle', search: '?state=settle', primary: true },
+  { id: 'settle', label: 'Settle', search: '?state=settle', leaves: true, primary: true },
 ] as const;
 
 function OrderActions({ off, actions }: { off: boolean; actions: PanelActions }) {
@@ -365,7 +402,13 @@ function OrderActions({ off, actions }: { off: boolean; actions: PanelActions })
             type="button"
             className={'primary' in a ? 'action action--primary' : 'action'}
             data-action={a.id}
-            onClick={() => ('search' in a ? actions.navigate(a.search) : actions.openVoid({ kind: 'order' }))}
+            onClick={() =>
+              'search' in a
+                ? actions.navigate(a.search, 'leaves' in a)
+                : a.id === DISCOUNT_ACTION
+                  ? actions.openDiscount()
+                  : actions.openVoid({ kind: 'order' })
+            }
           >
             {a.label}
           </button>

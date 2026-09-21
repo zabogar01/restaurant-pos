@@ -1,6 +1,7 @@
 import type { Money } from '@pos/money';
 import { snapshotOf, type DiscountSnapshot, type FreeFormEntry, type Preset } from './discount.js';
 import type { OrderState, OrderView } from './orderFixtures.js';
+import type { ShownOrder } from './voidFixtures.js';
 
 // POS-03's discount sheets (M-3, F2i) as fixtures, selected by the same
 // ?state= as the order screen. Presets and copy are the reviewed artifact's
@@ -62,6 +63,23 @@ export const OTHER_15: DiscountSnapshot = { source: 'free-form', name: FREE_FORM
 /** The table order's subtotal (orderFixtures.ts), which every discount sheet here acts on. */
 export const TABLE_SUBTOTAL: Money = 405_000n;
 
+// The change sheet's line under the applied discount: who applied it, when,
+// and on what authority. **Each belongs to one application event and is never
+// derived** — F2k briefly computed the note from the snapshot's `source`, which
+// extended the artifact's sentence to applications nobody recorded; ruled out
+// 2026-09-21. An order whose discount has no reviewed history carries no note
+// (see `zero` in orderFixtures.ts).
+
+/** The artifact's own line under Staff meal on the table order (frost/pos/order.html:529-531). */
+export const STAFF_MEAL_NOTE = 'Applied by Ana R. at 19:44. Preset, no approval.';
+
+/**
+ * PROVISIONAL COPY (FE-007). The artifact draws only a preset applied, so this
+ * order's free-form application has no reviewed line; the approver's name is
+ * the one the artifact's voided line carries. Carried context, not F2k's.
+ */
+export const OTHER_15_NOTE = 'Applied by Ana R. at 19:44. Free-form, approved by M. Iqbal.';
+
 // The artifact routes its presets to ?state=default, except Comp, which it
 // routes to zero; the confirm key after an approval lands on default too.
 // Removing a discount it routes to ?state=empty — the order with no lines —
@@ -71,15 +89,20 @@ export const TABLE_SUBTOTAL: Money = 405_000n;
 const landsOn = (change: DiscountSnapshot | 'remove'): OrderView =>
   change !== 'remove' && change.presetId === 'comp' ? { state: 'zero' } : { state: 'default' };
 
+/** The close bar's Discount, which opens the discount family over the order on screen. */
+export const DISCOUNT_ACTION = 'discount';
+const DISCOUNT_OPENER = `.order-actions [data-action="${DISCOUNT_ACTION}"]`;
+
 const onTableOrder = {
   applied: STAFF_MEAL,
-  appliedNote: 'Applied by Ana R. at 19:44. Preset, no approval.',
+  appliedNote: STAFF_MEAL_NOTE,
   subtotal: TABLE_SUBTOTAL,
   presets: PRESETS,
-  // The close bar's Discount. The artifact also opens the change sheet from a
-  // "change" link on the totals' discount row, which the panel (F2a) does not
-  // draw; see the handoff.
-  opener: '.order-actions [data-action="discount"]',
+  // The artifact also opens the change sheet from a "change" link on the
+  // totals' discount row, which the panel (F2a) does not draw; see the FE-007
+  // handoff. Since F2k, Discount itself opens the change sheet when the order
+  // already carries a discount (panelDiscount, below).
+  opener: DISCOUNT_OPENER,
   cancel: { state: 'default' },
   landsOn,
 } satisfies Omit<DiscountSheetFixture, 'trail'>;
@@ -100,7 +123,40 @@ export const DISCOUNT_FIXTURES: Partial<Record<OrderState, DiscountSheetFixture>
   'sheet-remove-freeform': {
     ...onTableOrder,
     applied: OTHER_15,
-    appliedNote: 'Applied by Ana R. at 19:44. Free-form, approved by M. Iqbal.',
+    appliedNote: OTHER_15_NOTE,
     trail: ['change'],
   },
 };
+
+/**
+ * The discount sheet the close bar's Discount opens: over the order on screen,
+ * carrying the discount *that order* holds — never a fixture's (FR-F8 reads
+ * `applied`, and a fixture's `applied` is another order's fact).
+ *
+ * Which sheet opens follows from FR-F1 and B-22, one discount per order: an
+ * order carrying nothing needs the picker, and an order already carrying one
+ * can only have it removed or replaced, which is the change sheet (FR-F8). The
+ * picker is one press away from it, "Replace with another preset".
+ *
+ * The subtotal is the panel's own, so a ?gone= removal the panel honours moves
+ * the figure the sheet takes the discount from. Cancel and every landing stay
+ * on the view the cashier was looking at: no state draws an order once its
+ * discount has changed, and moving to another fixture's order would change the
+ * panel under the person who pressed Discount — the ruling of 2026-09-18 for
+ * the void, which is the same defect. The ?state=sheet-discount fixtures keep
+ * the artifact's own routing for review.
+ */
+export function panelDiscount(view: OrderView, order: ShownOrder): DiscountSheetFixture {
+  const applied = order.applied;
+  return {
+    // The note is the order's own, never computed from the snapshot: an order
+    // whose application nobody recorded gets none, and the sheet draws the gap.
+    ...(applied && { applied, ...(order.appliedNote && { appliedNote: order.appliedNote }) }),
+    subtotal: order.totals.subtotal,
+    presets: PRESETS,
+    trail: [applied ? 'change' : 'picker'],
+    opener: DISCOUNT_OPENER,
+    cancel: view,
+    landsOn: () => view,
+  };
+}

@@ -85,22 +85,28 @@ function liveControls(container: ParentNode): HTMLElement[] {
 const hrefState = (href: string) => new URLSearchParams(href.split('?')[1] ?? '').get('state') ?? 'default';
 
 /**
- * A void sheet open on the frame, named after the state that draws it: the line
- * sheet carries the line's card, the order sheet the order's value. Since
- * FE-009 the panel opens a void sheet as component state, over the line or the
- * order tapped, and writes no URL — so a URL alone can no longer show that a
- * control reached one.
+ * A sheet open on the frame that no URL names, reported as the state that
+ * draws its twin. Since FE-009 the panel opens the void sheet as component
+ * state, and since F2k the discount family and the line editor too: each is
+ * handed the line or order tapped and writes no URL, so a URL alone can no
+ * longer show that a control reached one. Extended before the guard below is
+ * relied on — a detector that only knows about URLs goes quietly blind as each
+ * family moves off them, which is the trap FE-009 documented.
  */
-function voidSheetOpen(): string | undefined {
+function openedInPlace(): string | undefined {
   const flow = device().querySelector('.void-flow');
-  if (!flow) return undefined;
-  return flow.querySelector('.void-subject') ? 'sheet-voidline' : 'sheet-voidorder';
+  if (flow) return flow.querySelector('.void-subject') ? 'sheet-voidline' : 'sheet-voidorder';
+  const discount = device().querySelector('.discount-flow');
+  if (discount) return discount.querySelector('.discount-applied') ? 'sheet-remove' : 'sheet-discount';
+  const line = device().querySelector('[role="dialog"] .sheet-stepper');
+  if (line) return 'sheet-line';
+  return undefined;
 }
 
 /**
  * Where each live control on the frame leads. An anchor by its href; a button by
- * pressing it, on a fresh render, and reading the void sheet it opened in place
- * or else the URL it leaves behind.
+ * pressing it, on a fresh render, and reading the sheet it opened in place or
+ * else the URL it leaves behind.
  */
 function destinations(state: OrderState, prepare: () => void = () => {}): string[] {
   render(state);
@@ -115,7 +121,7 @@ function destinations(state: OrderState, prepare: () => void = () => {}): string
       out.push(hrefState(el.getAttribute('href')!));
     } else {
       press(el);
-      out.push(voidSheetOpen() ?? urlState());
+      out.push(openedInPlace() ?? urlState());
     }
   }
   return out;
@@ -141,13 +147,32 @@ describe('the reachability detector can see a gated path', () => {
     render('default');
     press(device().querySelector('.order-line[data-line-id="soda"] > .order-line__target')!);
     expect(urlState()).toBe('default');
-    expect(voidSheetOpen()).toBe('sheet-voidline');
+    expect(openedInPlace()).toBe('sheet-voidline');
     render('default');
     press(device().querySelector('.order-actions [data-action="void-order"]')!);
     expect(urlState()).toBe('default');
-    expect(voidSheetOpen()).toBe('sheet-voidorder');
+    expect(openedInPlace()).toBe('sheet-voidorder');
     render('default');
-    expect(voidSheetOpen()).toBeUndefined();
+    expect(openedInPlace()).toBeUndefined();
+  });
+
+  // F2k moves three more openers off the URL. Without this the guard would be
+  // blind to every one of them the way it nearly went blind to the void.
+  it('sees the discount family and the line editor opened in place, which write no URL', () => {
+    render('overflow');
+    press(device().querySelector('.order-actions [data-action="discount"]')!);
+    expect(urlState()).toBe('overflow');
+    expect(openedInPlace()).toBe('sheet-discount');
+
+    render('default'); // carries a preset, so Discount opens the change sheet
+    press(device().querySelector('.order-actions [data-action="discount"]')!);
+    expect(urlState()).toBe('default');
+    expect(openedInPlace()).toBe('sheet-remove');
+
+    render('overflow');
+    press(device().querySelector('.order-line[data-line-id="of-coffee"] > .order-line__target')!);
+    expect(urlState()).toBe('overflow');
+    expect(openedInPlace()).toBe('sheet-line');
   });
 
   it('ignores a control inside an inert subtree, and nothing else', () => {
@@ -509,5 +534,161 @@ describe('pos.css: the sheet pressed ring', () => {
 
   it('no ring can land on an unavailable action', () => {
     expect(ringsAnOffAction(css)).toEqual([]);
+  });
+});
+
+// ---- F2k: the line editor opens over the line that was tapped ----
+
+// The defect this closes: every PENDING row body navigated to
+// ?state=sheet-line, one fixture's sheet. Tapping Coffee on overflow opened
+// the *Steak's* editor, whose Remove line took the Steak — on an order that
+// then turned into the table order.
+
+const rowBody = (lineId: string) => device().querySelector(`.order-line[data-line-id="${lineId}"] > .order-line__target`)!;
+const pendingIds = () =>
+  [...device().querySelectorAll<HTMLElement>('.order-line[data-line-status="pending"]')].map((r) => r.dataset.lineId!);
+const title = () => dialog()!.querySelector('#sheet-title')!.textContent;
+
+describe('the line editor opens for the line that was tapped (criterion 4)', () => {
+  it.each(['default', 'overflow'] as const)('%s: each pending row opens its own editor, named after that line', (state) => {
+    render(state);
+    const ids = pendingIds();
+    expect(ids.length).toBeGreaterThan(0);
+    const titles: string[] = [];
+    for (const id of ids) {
+      render(state);
+      const name = device().querySelector(`.order-line[data-line-id="${id}"] .order-line__name`)!.textContent;
+      press(rowBody(id));
+      expect(title()).toBe(`${name} — pending`);
+      titles.push(title()!);
+    }
+    // Two different rows open two different editors — which is the defect.
+    expect(new Set(titles).size).toBe(ids.length);
+  });
+
+  it('overflow: tapping Coffee opens Coffee’s editor, not the Steak’s, and keeps the order', () => {
+    render('overflow');
+    const length = window.history.length;
+    press(rowBody('of-coffee'));
+    expect(title()).toBe('Coffee — pending');
+    expect(urlState()).toBe('overflow');
+    expect(window.history.length).toBe(length);
+    expect([...device().querySelectorAll('.order-line__name')]).toHaveLength(10);
+    // Quantity is that line's, not the fixture's 1.
+    expect(dialog()!.querySelector('.sheet-stepper__value')!.textContent).toBe('2');
+  });
+
+  it('overflow: Remove line asks for the line that was tapped, and the panel honours it', () => {
+    for (const [id, name, subtotal] of [
+      ['of-coffee', 'Coffee', '1.115.000'],
+      ['of-cheese', 'Cheesecake', '1.125.000'],
+      ['of-wine', 'House Wine', '1.105.000'],
+    ] as const) {
+      render('overflow');
+      press(rowBody(id));
+      expect(title()).toBe(`${name} — pending`);
+      press(buttonNamed('Remove line'));
+      expect(dialog()).toBeNull();
+      expect(window.location.search).toBe(`?state=overflow&gone=${id}`);
+      expect([...device().querySelectorAll('.order-line__name')].map((n) => n.textContent)).not.toContain(name);
+      expect(device().querySelector('.totals dd')!.textContent).toBe(subtotal);
+    }
+  });
+
+  it('Back keeps the order the cashier was looking at, and hands focus to the row', () => {
+    render('overflow');
+    press(rowBody('of-wine'));
+    press(buttonNamed('Back'));
+    expect(dialog()).toBeNull();
+    expect(urlState()).toBe('overflow');
+    expect(document.activeElement).toBe(rowBody('of-wine'));
+    expect(device().querySelector('[inert]')).toBeNull();
+  });
+
+  it('?state=sheet-line still draws the artifact’s own editor for review', () => {
+    render('sheet-line');
+    expect(title()).toBe('Steak — pending');
+    expect(SHEET_FIXTURES['sheet-line']!.opener).toBe('.order-line[data-line-status="pending"] > .order-line__target');
+  });
+});
+
+// ---- F2k: only leaving POS-03 pushes a history entry (criterion 7) ----
+
+// SITEMAP §1 gives [INLINE] Back-stackable: No. A category press and a ×
+// removal are both inline changes of POS-03, so each replaces its entry. Before
+// this, Back after a × put the removed line back — a removal undone by a
+// browser control.
+
+describe('inline changes replace the history entry; only leaving POS-03 pushes one (criterion 7)', () => {
+  it.each([
+    ['a category press', '.menu-categories .menu-category:nth-child(3)'],
+    ['the × on a pending row', '.order-line[data-line-id="steak"] button.order-line__remove'],
+    // Firing does not leave POS-03: SITEMAP §2 puts the fire result under it
+    // as an [INLINE] state (FR-E3), and §1 gives [INLINE] Back-stackable: No.
+    // F2k first shipped this as a departure, following a task file that was
+    // wrong; corrected 2026-09-21 after review.
+    ['Send to kitchen', '.order-actions [data-action="fire"]'],
+  ] as const)('%s replaces it', (_what, selector) => {
+    arrive('eightysix', 'default');
+    const length = window.history.length;
+    press(device().querySelector(selector)!);
+    expect(window.history.length).toBe(length);
+  });
+
+  it('Settle pushes one, because POS-04 is its own screen', () => {
+    arrive('eightysix', 'default');
+    const length = window.history.length;
+    press(device().querySelector('.order-actions [data-action="settle"]')!);
+    expect(window.history.length).toBe(length + 1);
+    // ?state=settle is written but not served yet (F3), so the view falls back
+    // to the default order. The entry is what this test is about.
+    expect(window.location.search).toBe('?state=settle');
+  });
+
+  it('Back after Send to kitchen does not traverse the firing: it leaves the screen', async () => {
+    arrive('eightysix', 'default');
+    press(device().querySelector('.order-actions [data-action="fire"]')!);
+    await back();
+    expect(urlState()).toBe('eightysix');
+    expect(dialog()).toBeNull();
+  });
+
+  it('Back after a × does not put the line back: it leaves the screen', async () => {
+    arrive('eightysix', 'default');
+    press(device().querySelector('.order-line[data-line-id="steak"] button.order-line__remove')!);
+    expect(window.location.search).toBe('?state=default&gone=steak');
+    expect([...device().querySelectorAll('.order-line__name')].map((n) => n.textContent)).toEqual(['Burger', 'Soda']);
+    await back();
+    expect(urlState()).toBe('eightysix');
+    expect(window.location.search).not.toContain('gone=');
+  });
+
+  it('Back after a category press leaves the screen too, and opens no sheet', async () => {
+    arrive('eightysix', 'default');
+    press(device().querySelector('.menu-categories .menu-category:nth-child(3)')!);
+    expect(window.location.search).toBe('?state=default');
+    await back();
+    expect(urlState()).toBe('eightysix');
+    expect(dialog()).toBeNull();
+  });
+
+  it('a category press keeps the order on screen, ?gone= included (criterion 5)', () => {
+    render('overflow');
+    press(device().querySelector('.order-line[data-line-id="of-coffee"] button.order-line__remove')!);
+    const before = [...device().querySelectorAll('.order-line__name')].map((n) => n.textContent);
+    const total = device().querySelector('.totals__row--grand dd')!.textContent;
+    expect(before).not.toContain('Coffee');
+
+    press(device().querySelector('.menu-categories .menu-category:nth-child(3)')!);
+
+    // The order it was pressed on, down to the line the × took away. Before
+    // F2k this landed on ?state=default: another order entirely.
+    expect(window.location.search).toBe('?state=overflow&gone=of-coffee');
+    expect([...device().querySelectorAll('.order-line__name')].map((n) => n.textContent)).toEqual(before);
+    expect(device().querySelector('.totals__row--grand dd')!.textContent).toBe(total);
+    // Nothing else moves: the rail keeps Mains, because the grid can only draw
+    // Mains (ruled 2026-09-21), and the URL asserts no category.
+    expect(device().querySelector('.menu-category--selected')!.textContent).toBe('Mains');
+    expect(device().querySelectorAll('.menu-category--selected')).toHaveLength(1);
   });
 });

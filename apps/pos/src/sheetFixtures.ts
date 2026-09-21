@@ -1,5 +1,6 @@
 import type { Money } from '@pos/money';
 import type { OrderState, OrderView } from './orderFixtures.js';
+import { lineBody, linesOf, type ShownOrder } from './voidFixtures.js';
 
 // POS-03's ungated sheets (F2c) as fixtures, selected by the same ?state= as
 // the panel. Options, prices and copy are the reviewed artifact's
@@ -53,6 +54,17 @@ export function unitPrice(base: Money, deltas: ReadonlyArray<Money>): Money {
   return total < 0n ? 0n : total;
 }
 
+/** The editor's heading, as the artifact writes it over the pending Steak. */
+const lineEditorTitle = (name: string) => `${name} — pending`;
+
+// The artifact's two notes on the line editor. Both are about a PENDING line
+// in general, not about the Steak, so every line's editor carries them.
+const PENDING_NOTES: ReadonlyArray<string> = [
+  'This line has not been sent to the kitchen. Removing it needs no approval and is not recorded.',
+  'You can also remove it straight from the order line without opening this sheet. This sheet exists for ' +
+    'quantity, which has nowhere else to live.',
+];
+
 // The artifact routes each sheet's actions to fixture states. Its Cancel is
 // order.html (the default state); its Add goes to eightysix and its line
 // editor's Back goes to eightysix too. Those are the artifact's choices, kept
@@ -95,15 +107,40 @@ export const SHEET_FIXTURES: Partial<Record<OrderState, SheetFixture>> = {
   // editor's opener.
   'sheet-line': {
     kind: 'line',
-    title: 'Steak — pending',
+    title: lineEditorTitle('Steak'),
     quantity: 1,
-    notes: [
-      'This line has not been sent to the kitchen. Removing it needs no approval and is not recorded.',
-      'You can also remove it straight from the order line without opening this sheet. This sheet exists for ' +
-        'quantity, which has nowhere else to live.',
-    ],
+    notes: PENDING_NOTES,
     opener: '.order-line[data-line-status="pending"] > .order-line__target',
     back: { state: 'eightysix' },
     remove: { state: 'default', gone: 'steak' },
   },
 };
+
+/**
+ * The line editor a PENDING row body opens: for the line the cashier tapped,
+ * on the order on screen — never a fixture's line. Its title names that line
+ * and its *Remove line* asks for that line, which is the same act the row's ×
+ * performs, and the panel honours it the same way: only where the fixture has
+ * figures for the removal, and never under a lock (OrderPanel.tsx). A removal
+ * the fixtures cannot draw does nothing, exactly as it does from the ×.
+ *
+ * Back keeps the order the cashier was looking at, as a panel-opened void does
+ * (the ruling of 2026-09-18). ?state=sheet-line keeps the artifact's own
+ * routing for review.
+ *
+ * Undefined for a line that is not a PENDING line of the order on screen: only
+ * a PENDING row body opens this sheet (I-12), so there is nothing to draw.
+ */
+export function panelLine(lineId: string, view: OrderView, order: ShownOrder): LineSheetFixture | undefined {
+  const line = linesOf(order).find((l) => l.line.id === lineId)?.line;
+  if (!line || line.status !== 'pending') return undefined;
+  return {
+    kind: 'line',
+    title: lineEditorTitle(line.name),
+    quantity: line.quantity,
+    notes: PENDING_NOTES,
+    opener: lineBody(lineId),
+    back: view,
+    remove: { ...view, gone: lineId },
+  };
+}

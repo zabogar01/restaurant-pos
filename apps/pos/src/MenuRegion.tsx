@@ -8,18 +8,30 @@ import {
   MENU_FIXTURES,
   MENU_ITEMS,
   SELECTED_CATEGORY,
-  categorySearch,
   type MenuItem,
 } from './menuFixtures.js';
-import type { OrderState, SettlementLock } from './orderFixtures.js';
+import { viewSearch, type OrderView, type SettlementLock } from './orderFixtures.js';
 
 // POS-03, F2b: the menu region left of the order panel — the category rail and
 // the tile grid, or, under a settlement lock, the notice that carries the route
 // out of it. A tile and a category act on the order screen, so each is a
 // <button>; the route out leaves it for settlement, so it is the one anchor
 // (ruling of 2026-09-17).
-export function MenuRegion({ state, navigate = () => {} }: { state: OrderState; navigate?: (search: string) => void }) {
-  const fixture = MENU_FIXTURES[state];
+//
+// A category press is an [INLINE] change of this screen (SITEMAP §1): it stays
+// on the order the cashier is looking at, and replaces the history entry. It
+// used to name ?state=default, which moved every order to the table order, and
+// wrote a ?category= nothing read (fixed in F2k).
+//
+// **The rail's selection does not move, and that is deliberate.** F2k first
+// made it follow the press; ruled out 2026-09-21, because the artifact has a
+// grid for Mains only, so a rail reading *Drinks* above the Mains grid tells
+// the cashier something false about what is in front of them — the same defect
+// as the URL that used to lie, moved somewhere they can see. So the press
+// keeps the order and changes nothing else. **What it should do before there
+// is a second catalogue is a designer's question, not this slice's.**
+export function MenuRegion({ view, navigate = () => {} }: { view: OrderView; navigate?: (search: string) => void }) {
+  const fixture = MENU_FIXTURES[view.state];
 
   // Under either lock the rail and grid are absent, not inert: adding a line is
   // one of the five blocked actions and the grid is the surface that performs
@@ -49,7 +61,7 @@ export function MenuRegion({ state, navigate = () => {} }: { state: OrderState; 
                 .filter(Boolean)
                 .join(' ')}
               aria-current={selected ? 'true' : undefined}
-              onClick={() => navigate(categorySearch(c.id))}
+              onClick={() => navigate(viewSearch(view))}
             >
               {c.name}
             </button>

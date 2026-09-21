@@ -1,6 +1,6 @@
 import type { Money } from '@pos/money';
-import { orderTotals } from './discount.js';
-import { COMP, OTHER_15 } from './discountFixtures.js';
+import { orderTotals, type DiscountSnapshot } from './discount.js';
+import { COMP, OTHER_15, OTHER_15_NOTE, STAFF_MEAL, STAFF_MEAL_NOTE } from './discountFixtures.js';
 
 // POS-03's order panel as fixtures, selected by ?state= as the reviewed
 // artifact selects them (docs/design/visual-directions/frost/pos/order.html,
@@ -58,6 +58,23 @@ export type OrderFixture = {
   title: string;
   groups: ReadonlyArray<RoundGroup>;
   totals: Totals;
+  /**
+   * The discount the order carries, snapshotted (FR-F4, B-8). `totals.discount`
+   * is the same discount as the panel prints it — a label and an amount — and
+   * carries no `source`, which is the one fact FR-F8's gate reads. The sheets
+   * read this; test/discount.test.tsx holds the two to each other.
+   */
+  applied?: DiscountSnapshot;
+  /**
+   * Who applied that discount, when, and on what authority — the change
+   * sheet's line under it. **Tied to the application it describes, never
+   * derived**: the artifact attaches its actor and time to Staff meal on this
+   * order (frost/pos/order.html:529-531) and to nothing else, and reusing the
+   * sentence for another application asserts a fact nobody established. An
+   * order whose discount has no reviewed application history carries none, and
+   * the sheet draws the gap (see `zero`).
+   */
+  appliedNote?: string;
   lock?: SettlementLock;
   /** The FIRED line drawn held down, because a fixture cannot hold a finger. */
   pressedLineId?: string;
@@ -87,6 +104,7 @@ export type OrderState =
   | 'sheet-remove'
   | 'sheet-remove-freeform'
   | 'zero'
+  | 'other-discount'
   | 'sheet-voidline'
   | 'sheet-voidorder'
   | 'sheet-voidorder-fired';
@@ -113,6 +131,7 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'sheet-remove', label: 'Sheet — remove/replace discount' },
   { id: 'sheet-remove-freeform', label: 'Sheet — remove/replace a free-form discount' },
   { id: 'zero', label: 'Zero total (100% comp)' },
+  { id: 'other-discount', label: 'Free-form discount applied' },
   { id: 'sheet-voidline', label: 'Sheet — void fired line' },
   { id: 'sheet-voidorder', label: 'Sheet — void order (unfired)' },
   { id: 'sheet-voidorder-fired', label: 'Sheet — void order (holds fired)' },
@@ -127,11 +146,11 @@ export const LOCK_TAG: Record<SettlementLock, string> = {
 export const FIRED_TAG = 'MANAGER TO VOID';
 export const PENDING_TAG = 'REMOVE FREELY';
 
-// A PENDING row body's destination: the line editor (F2c), by the artifact's
-// fixture state. A FIRED row body opens the void sheet (FR-H4, F2j) for its own
-// line, as component state over the order on screen (OrderPanel.tsx), so it
-// names no state at all.
-export const EDIT_LINE_SEARCH = '?state=sheet-line';
+// Neither row body names a state. A PENDING row body opens the line editor
+// (F2c) for its own line, and a FIRED row body the void sheet (FR-H4, F2j) for
+// its own line: both as component state over the order on screen
+// (OrderPanel.tsx), so a tap can only ever act on the line that was tapped.
+// ?state=sheet-line still draws the artifact's own editor for review.
 
 const serviceAndTax = (subtotal: Money, service: Money, total: Money, tax: Money, discount?: Adjustment): Totals => ({
   subtotal,
@@ -201,7 +220,7 @@ const tableTotalsWithout = {
 };
 
 export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
-  default: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  default: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 
   empty: { title: 'Order · T1', groups: [], totals: { subtotal: 0n, total: 0n } },
 
@@ -266,42 +285,43 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
     title: 'Order · T1',
     groups: tableOrder,
     totals: tableTotals,
+    applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE,
     totalsWithout: tableTotalsWithout,
     pressedLineId: 'soda',
   },
 
-  'lock-draft': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, lock: 'draft' },
+  'lock-draft': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, lock: 'draft' },
 
-  'lock-lease': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, lock: 'lease' },
+  'lock-lease': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, lock: 'lease' },
 
   // F2b's states change the menu region. The panel draws the table order, as
   // the artifact's catalog state does. Its eightysix state also tags the
   // pending Steak line 86, and its loading state replaces the lines and totals
   // with a skeleton; both are panel markup this slice does not touch.
-  eightysix: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  loading: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  catalog: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  eightysix: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  loading: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  catalog: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 
   // F2c's sheets open over the table order, as the artifact draws them: the
   // panel beside a sheet is the order the cashier is acting on. The artifact
   // also tags the pending Steak line 86 in sheet-item86; the 86'd line in the
   // panel is F2h's.
-  'sheet-item': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  'sheet-item86': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  'sheet-line': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'sheet-item': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item86': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-line': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 
   // F2g's approval prompt opens over the table order: the artifact's request
   // is to void its fired Burger.
-  approval: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  'approval-error': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  'approval-throttled': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  'approval-denied': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  approval: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'approval-error': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'approval-throttled': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'approval-denied': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 
   // F2i's sheets open over the table order and its Staff meal preset, as the
   // artifact draws them.
-  'sheet-discount': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  'sheet-freeform': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  'sheet-remove': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'sheet-discount': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-freeform': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-remove': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 
   // The state FE-007 adds: the same order carrying a free-form discount, so the
   // panel beside the change sheet shows the discount the sheet says is applied.
@@ -309,27 +329,68 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
     title: 'Order · T1',
     groups: tableOrder,
     totals: orderTotals(405_000n, OTHER_15),
+    applied: OTHER_15,
+    appliedNote: OTHER_15_NOTE,
     totalsWithout: { steak: orderTotals(165_000n, OTHER_15) },
   },
 
   // The comp the picker's Comp lands on, over the order it was chosen on. The
   // artifact figures its own two-line order (165.000); this is the same
   // arithmetic over the table order the picker sits beside.
+  //
+  // **No appliedNote, deliberately.** The artifact gives this Comp no
+  // application history: nothing says who comped this order or when, and
+  // borrowing Staff meal's actor and time would assert a different event's
+  // facts. Ruled 2026-09-21 — draw the gap rather than fill it, as A7's four
+  // designed tokens carry an explicit null source rather than a plausible one.
+  // **The composition is owed to a designer:** the artifact draws no change
+  // sheet without the note.
   zero: {
     title: 'Order · T1',
     groups: tableOrder,
     totals: orderTotals(405_000n, COMP),
+    applied: COMP,
     totalsWithout: { steak: orderTotals(165_000n, COMP) },
+  },
+
+  // The state F2k adds, and the only non-sheet order that carries a free-form
+  // discount: exactly what sheet-remove-freeform draws, without the sheet. It
+  // exists because the gate's answer only differs from a fixture's here —
+  // FR-F8 gates the whole transition off a free-form discount, so from this
+  // order every preset and the removal need a manager, and from every other
+  // reachable order they do not. Same lines, same figures, same snapshot.
+  'other-discount': {
+    title: 'Order · T1',
+    groups: tableOrder,
+    totals: orderTotals(405_000n, OTHER_15),
+    applied: OTHER_15,
+    appliedNote: OTHER_15_NOTE,
+    totalsWithout: { steak: orderTotals(165_000n, OTHER_15) },
   },
 
   // F2j's void sheets. The fired-line void and the order holding fired work
   // open over the table order, as every other sheet does; the unfired order's
   // void opens over that order with nothing yet sent.
-  'sheet-voidline': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  'sheet-voidorder': { title: 'Order · T1', groups: unfiredTableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
-  'sheet-voidorder-fired': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, totalsWithout: tableTotalsWithout },
+  'sheet-voidline': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-voidorder': { title: 'Order · T1', groups: unfiredTableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-voidorder-fired': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 };
 
+/**
+ * What POS-03 is showing: which fixture order, and which PENDING line the
+ * remove control took away. A removal is an [INLINE] state of the screen
+ * (SITEMAP §1), so reaching it replaces the history entry rather than pushing
+ * one.
+ *
+ * **The rail's category is deliberately not here.** F2k briefly carried it, so
+ * that pressing a category moved the rail's selection; ruled out 2026-09-21,
+ * because the artifact has a grid for Mains only and a rail reading *Drinks*
+ * over the Mains grid tells the cashier something false about what they are
+ * looking at. A URL that asserted a category nothing honoured was the same
+ * defect where nobody sees it, so both halves went together: nothing writes
+ * ?category=, and nothing reads it. What a category press should do before
+ * there is a second catalogue is a designer's question.
+ */
 export type OrderView = { state: OrderState; gone?: string };
 
 /** The query string that selects a view: the inverse of orderViewFrom. */
