@@ -130,8 +130,10 @@ and remediated over three passes.
    - **F2e — [FE-009](tasks/FE-009-corrections.md). DONE 2026-09-18**,
      lead-verified. Four corrections to committed work; 853 tests.
      **The wrong-line void is fixed and guarded.**
-   - **F2k — [FE-010](tasks/FE-010-opener-fix.md). Written 2026-09-20, ready,
-     unassigned.** Finish the opener fix. Writing it from the code rather than
+   - **F2k — [FE-010](tasks/FE-010-opener-fix.md). DONE 2026-09-21**,
+     lead-verified and independently reviewed. 897 tests. Account under *F2k
+     landed* below. **The first slice whose task-file error an implementer could
+     not have caught**, and the reason an independent review earned its place. Finish the opener fix. Writing it from the code rather than
      from the roadmap line changed it twice — a **fourth** home nobody had
      counted, and the discount case is both worse and less alarming than it
      read. Account under *F2k, as written* below. **The menu tile is held**, and
@@ -479,11 +481,18 @@ Coordinated through Herdr in workspace `w2`. Herdr routes messages between
 panes; it stores nothing durable. Anything that must survive the session
 belongs in this file.
 
-Roster verified against `herdr agent list` on 2026-09-20. **One agent is live,
-and `herdr agent list` returns exactly one.** Every implementer's pane is gone.
+Roster verified against `herdr agent list` on 2026-09-21. **Two agents are
+live.** Every earlier implementer's pane is gone.
+
+**An implementer is live right now, so `git add -A` is forbidden** — stage by
+path. The lead once swept a mid-mutation-run working tree into a docs commit;
+it happened to be clean, and a deliberately broken file would have been
+committed as real work.
 
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
+| `builder12` | claude | `w2:pQ` | live, idle | **Delivered [FE-010](tasks/FE-010-opener-fix.md)** (F2k) and its four post-review corrections. Its handoff has two entries; both are the record |
+| `code-reviewer` | **codex** | `w2:pR` | live, idle | **Reviewed FE-010 independently** — [.agent/reviews/FE-010-review.md](reviews/FE-010-review.md). Three findings, the worst of them the lead's. **The first review agent used on implementation work**, and it found the class no implementer can |
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
 | `builder11` | claude | — | closed 2026-09-20 | **Delivered [FE-009](tasks/FE-009-corrections.md)** (F2e). Went looking beyond its brief and found the same defect on three more openers. Closed under the standing policy once FE-010 had been written from its findings: its slice is committed and its handoff is the record |
 | `builder10` | claude | — | closed | **Delivered [FE-008](tasks/FE-008-void-family.md)** (F2j). Found the panel offering to void the wrong line and refused to reach into committed work to fix it |
@@ -600,6 +609,90 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## F2k landed — and the review caught what seven implementers would not have
+
+[FE-010](tasks/FE-010-opener-fix.md), `builder12`. **Lead-verified: 17 files,
+897 tests**, up from 853, typecheck clean. Every opener now carries the order on
+screen: the discount family, the line editor and the category. **The `FR-F8`
+gate reads the order's own `DiscountSnapshot`**, which no order fixture carried
+before — `Totals.discount` is a label and an amount, and `source` is the one
+field the gate turns on.
+
+`other-discount` is the state that gives the guard teeth: the table order
+carrying `OTHER_15` without its sheet, the only **non-sheet** order where the
+fixture's answer and the order's answer differ. Pointing the picker back at the
+fixture's `applied` **fails 7 tests**, proven by the lead, not accepted.
+
+### THE LESSON — the eighth task-file error, and the first the implementer could not catch
+
+Seven slices running, an implementer has caught a wrong task file by reading the
+reviewed document instead. **This time the implementer followed the task file
+faithfully and was wrong with it**, and only an independent reviewer found it.
+
+`AC7` told `builder12` that *Send to kitchen* leaves POS-03 and should push
+history. **`SITEMAP.md:154` puts `[INLINE] Fire result` under POS-03**, and §1
+gives `[INLINE]` Route: No, Back-stackable: No. Only *Settle* leaves — POS-04 is
+`[SCREEN]`, "its own route, not a sheet over POS-03". The implementation and two
+tests encoded the error exactly as written.
+
+**The mitigation this project has relied on for seven slices has a blind spot,
+and this is its shape:** *an implementer catches a wrong task file only where it
+happens to read the source document for something else.* Where the task file is
+confidently specific about a document the slice does not otherwise open, it goes
+straight through. **An independent review is not a luxury on a slice that
+encodes a rule** — it is the only thing that sees this class.
+
+### Invented provenance, rejected — and the precedent it follows
+
+`appliedNoteFor` derived the change sheet's *"Applied by Ana R. at 19:44"* from
+the discount's `source`. The artifact attaches that sentence to **Staff meal**
+(`frost/pos/order.html:529-531`) and to nothing else, so deriving it asserted
+**who applied a Comp and when, for an application nobody recorded.**
+
+`builder12` raised it as a judgement call and argued the alternative — a change
+sheet with no note — is a composition the artifact never draws. Right objection.
+**Ruled: draw the gap rather than fill it.** A7 set the precedent when its four
+designed tokens took `source: null`, explicit rather than missing. **An invented
+provenance is worse than a visible absence**, and a `PROVISIONAL COPY` comment
+authorises nothing. `zero` now carries no note, and what a Comp's change sheet
+should say is a designer's.
+
+### The category: the URL lied, then the rail did
+
+F2k made the rail's selection follow the press. That traded an invisible lie for
+a visible one — **a rail reading *Drinks* over a Mains grid tells the cashier
+something false about what they are looking at**, where a wrong `?category=`
+told them nothing. Reverted whole: the rail stays on Mains and nothing writes
+`?category=` at all. Reverting only one half would have restored the original
+contradiction, which the reviewer named before it could happen.
+
+**The order-retention fix stands, and is tested harder** — the check now runs
+over `overflow`, because on the table order the defect is invisible: `default`
+is where the press was going anyway.
+
+### A lead error of process, not of fact
+
+**The lead injected defects into the working tree while the reviewer was reading
+it.** The reviewer watched `OrderPanel.tsx` mutate mid-`verify`, stopped, and
+asked whether it was looking at the submitted slice. It was right to; it could
+not have known. Both files were restored byte-for-byte and it confirmed the
+`apps/pos` diff hash identical either side of its final green run.
+
+**Inject before handing over a tree, or say so first.** A reviewer that cannot
+trust the tree is reviewing nothing.
+
+### What the review cleared, in its own words
+
+No `FR-F8` bypass on any reachable path. `I-12`, `B-12` and the reachability
+assertions **not weakened**, with the detector's limits documented rather than
+oversold — it is not an approval oracle, and should not be cited as one.
+`other-discount` is not an invention. Two judgement calls accepted: a
+panel-opened discount lands on the view on screen (a named fixture limitation —
+applying Comp from `default` no longer shows comped totals, and `?state=zero`
+still draws that result), and `?gone=` survives a sheet close.
 
 ---
 
