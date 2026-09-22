@@ -174,12 +174,15 @@ sheets, the approval prompt, the discount and void families, the corrections,
 the openers, the fire and rejection states, and the quick sale. POS-03 draws
 every state the reviewed artifact has for it.
 
-**Next is FS, the order store** — [FE-014](tasks/FE-014-order-store.md),
-inserted ahead of F3 by the owner on 2026-09-22. **Then F3, settlement**, whose
-first act is reconciling three placeholder route names (`?state=settle`,
-`settle-pending`, `settle-takeover`) plus F2h's `?state=incidents`, and reading
-`settlement.html` **from the design worktree**, because this branch's copy still
-carries DESIGN-004's critical defect.
+**FS landed** — [FE-014](tasks/FE-014-order-store.md), committed `3ad3282`,
+pushed. POS-03 has one mutable order: add a line, remove it, watch the total
+move.
+
+**F3 is split into four**, 2026-09-22, on the same evidence F2 was — the
+settlement artifact is 352 lines carrying **21 distinct states**. **F3a is
+[FE-015](tasks/FE-015-settlement-shell.md)**, in progress with `builder17`
+(codex, `gpt-5.6-sol`). Account under *F3 split, and a routing problem nobody
+had counted* below.
 
 **How this session works** — the owner's two standing instructions:
 
@@ -541,6 +544,7 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `builder17` | **codex, `gpt-5.6-sol`** | `w2:p0` | live | Building [FE-015](tasks/FE-015-settlement-shell.md) (F3a). **First implementer on codex** — the owner moved workers there for this session because the Claude session was near its limit. Started clean and interactive-ready, with no CLI update prompt |
 | `builder16` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-014](tasks/FE-014-order-store.md)** (FS), committed `3ad3282`. **Caught two task-file errors before writing a single line** — the seam claim, and a save control that exists neither in the code nor in the artifact — and stopped both times rather than building on them. Predicted the `empty` divergence in its own handoff, which is how the lead knew where to look. Closed under the standing policy: slice committed, handoff committed |
 | `code-reviewer` | **codex, gpt-6-astra** | — | closed 2026-09-22 | **Reviewed F2h and F2d independently** — [reviews/F2h-F2d-review.md](reviews/F2h-F2d-review.md). Two P2 findings, one of them a reproducible defect no test caught; cleared the two rulings while correcting the authority cited for one. **Second review agent used on implementation work, and the second to earn its place.** It started blocked on a CLI update prompt — answer *Skip*, never *Update now* |
 | `builder15` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-013](tasks/FE-013-review-corrections.md)**, both review corrections, committed `2654e5c`. Split a table-specific assertion out of a generic sweep rather than loosening it, and raised what "close" meant rather than guessing |
@@ -663,6 +667,63 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## F3 split, and a routing problem nobody had counted
+
+**Counted before assigning, which has now changed a task four times.** The
+settlement artifact is **352 lines carrying 21 distinct states**, against
+POS-01's 8 (one slice, 114 tests) and POS-03's ~26 (eleven slices, 1022 tests).
+SCREEN-INVENTORY's POS-04 lists seventeen behaviours plus a walkable tender walk
+and a *Must not invent* section every line of which is load-bearing. **F3 as one
+task was three sessions pretending to be one.** Split into F3a–F3d **by
+authority, not by component** — F2c's lesson.
+
+### The two facts the roadmap line never had
+
+**POS-04 is a `[SCREEN]`, and this app cannot currently reach a second one.**
+`main.tsx:10` picks the screen **once, at module load**
+(`/\/order\/?$/.test(window.location.pathname)`), while `SETTLE_BTN`
+(`OrderPanel.tsx:558`) navigates by same-document `pushState`. **No document
+load happens, so nothing re-evaluates that regex** and the screen never changes.
+Eleven slices never noticed because POS-03 was the only screen.
+
+**And the order would not survive the trip.** `useOrderStore` is `useState`
+inside `OrderScreen` (`orderStore.ts:130`), so unmounting POS-03 destroys the
+order — a settlement screen that cannot see the order the cashier just built is
+the whole point missed. **So F3a's real work is lifting the store above both
+screens and routing client-side**, which is not what "build the tender panel"
+sounds like. Written from the code, again, and again it changed the task.
+
+### DESIGN-004's defect, stated concretely at last
+
+The lead diffed the two copies rather than repeating the warning. In **this
+branch's** `settlement.html` the `error` state — *"the order changed while you
+were collecting payment"* — draws the **same totals as every other state**
+(155.925) and a **balance of `0`**: a close offered on a stale balance with
+nothing shown outstanding, at the moment the order underneath changed.
+
+The **worktree's remediated copy** gives `error` its own figures — subtotal
+205.000, discount −20.500, service 9.225, **total 193.725**, tax 16.773 — and a
+balance of **37.800**, which is 193.725 − 155.925, what is actually still owed.
+That is F3c's state, not F3a's, but it is why the path is not a formality.
+
+### The constraint F3a carries for the three slices after it
+
+**F3a must not encode "over balance is impossible" anywhere.** Cash may exceed
+the balance and card may not (`FR-G3`, `FR-G4`, `B-5`), and that divergence is
+F3b's. So the question *may this amount be added, for this method, against this
+balance?* goes into a pure `tender.ts` from the first line, beside `fire.ts`,
+`discount.ts` and `void.ts`. F3b extends the module; if it has to unpick a
+component that decided for itself, F3a was built wrong. **Four slices have each
+paid for this already.**
+
+### Model, this session
+
+The owner moved workers to **codex `gpt-5.6-sol`** for this session, the Claude
+session being near its limit. `builder17` started clean and interactive-ready on
+it — **no CLI update prompt**, which the 2026-09-22 `code-reviewer` had hit.
 
 ---
 
