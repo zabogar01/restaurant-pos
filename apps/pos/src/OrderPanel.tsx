@@ -9,6 +9,7 @@ import { Icon } from './icons.js';
 import { MENU_FIXTURES } from './menuFixtures.js';
 import { MenuRegion } from './MenuRegion.js';
 import { formatAmount } from './money.js';
+import { useOrderStore } from './orderStore.js';
 import {
   FIRED_TAG,
   LOCK_TAG,
@@ -31,7 +32,7 @@ import {
 } from './orderFixtures.js';
 import { SHEET_FIXTURES, panelLine } from './sheetFixtures.js';
 import { SheetView } from './Sheets.js';
-import { VOID_FIXTURES, VOID_ORDER_ACTION, panelVoid, shownOrder, type VoidSheetFixture } from './voidFixtures.js';
+import { VOID_FIXTURES, VOID_ORDER_ACTION, panelVoid, shownOrder, type ShownOrder, type VoidSheetFixture } from './voidFixtures.js';
 import { VoidSheet } from './VoidSheets.js';
 
 // POS-03: the running order panel (F2a) beside the menu region (F2b), with a
@@ -70,7 +71,10 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
   const [discountOpened, setDiscountOpened] = useState(false);
   const device = useRef<HTMLDivElement>(null);
   const returnFocusTo = useRef<string | undefined>(undefined);
+  // The sheets and the void sheet still read the fixture-only derivation
+  // (FE-014's correction to this task): none of them are wired to the store.
   const order = shownOrder(view);
+  const store = useOrderStore(view);
   const sheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, order) : undefined);
   const approval = APPROVAL_FIXTURES[view.state];
   const discount = DISCOUNT_FIXTURES[view.state] ?? (discountOpened ? panelDiscount(view, order) : undefined);
@@ -145,10 +149,11 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
           <MenuRegion view={view} navigate={navigate} />
           <OrderPanel
             view={view}
+            order={store.order}
             actions={{ navigate, openVoid: setVoidOpened, openLine: setLineOpened, openDiscount: () => setDiscountOpened(true) }}
           />
         </div>
-        {sheet && <SheetView key={lineKey} sheet={sheet} go={go} />}
+        {sheet && <SheetView key={lineKey} sheet={sheet} go={go} addLine={store.addLine} />}
         {approval && <ApprovalPrompt key={view.state} approval={approval} go={go} />}
         {discount && <DiscountSheet key={discountOpened ? 'opened' : view.state} fixture={discount} go={go} />}
         {voiding && <VoidSheet key={voidKey} fixture={voiding} order={order} go={go} />}
@@ -177,18 +182,22 @@ export type PanelActions = {
 
 const NO_ACTIONS: PanelActions = { navigate: () => {}, openVoid: () => {}, openLine: () => {}, openDiscount: () => {} };
 
-export function OrderPanel({ view, actions = NO_ACTIONS }: { view: OrderView; actions?: PanelActions }) {
+export function OrderPanel({
+  view,
+  order = shownOrder(view),
+  actions = NO_ACTIONS,
+}: {
+  view: OrderView;
+  order?: ShownOrder;
+  actions?: PanelActions;
+}) {
+  // lock, pressedLineId and incident are view-level facts, never part of a
+  // ShownOrder (FE-014's correction): a lock and a held-down row are drawn
+  // over whichever order is on screen, not carried by the order itself.
   const fixture = ORDER_FIXTURES[view.state];
   const { lock, pressedLineId } = fixture;
-  const type = orderVariant(fixture);
-
-  // A removal is only honoured where the artifact has figures for it, and never
-  // under a lock: removing a PENDING line is a void (FR-H1, AC-3).
-  const gone = !lock && view.gone && fixture.totalsWithout?.[view.gone] ? view.gone : undefined;
-  const totals = gone ? fixture.totalsWithout![gone]! : fixture.totals;
-  const groups = fixture.groups
-    .map((g) => ({ ...g, lines: g.lines.filter((l) => l.id !== gone) }))
-    .filter((g) => g.lines.length > 0);
+  const type = orderVariant(order);
+  const { totals, groups } = order;
 
   const count = groups.flatMap((g) => g.lines).filter((l) => l.status !== 'voided').length;
   const empty = groups.length === 0;
@@ -229,7 +238,7 @@ export function OrderPanel({ view, actions = NO_ACTIONS }: { view: OrderView; ac
     <section className="order-panel" aria-labelledby="order-title" data-lock={lock}>
       <header className="order-panel__head">
         <h2 id="order-title" className="order-panel__title">
-          {fixture.title}
+          {order.title}
         </h2>
         <span className="order-panel__count">{empty ? 'Empty' : orderCountLabel(type, count)}</span>
       </header>

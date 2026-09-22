@@ -14,6 +14,8 @@ export type ItemOption = { id: string; name: string; delta: Money };
 
 export type ItemSheetFixture = {
   kind: 'item';
+  /** The menu item Add to order appends (FE-014): every tile opens Burger's sheet, so this is always 'burger'. */
+  itemId: string;
   name: string;
   price: Money;
   sizes: ReadonlyArray<ItemOption>;
@@ -83,6 +85,7 @@ const QUICK_NOTES: ReadonlyArray<string> = [
 // which is what the artifact's order.html shows.
 const burger: Omit<ItemSheetFixture, 'unavailable'> = {
   kind: 'item',
+  itemId: 'burger',
   name: 'Burger',
   price: 100_000n,
   sizes: [
