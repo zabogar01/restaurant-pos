@@ -63,6 +63,15 @@ const served = (s: string): s is OrderState => ORDER_STATES.some((o) => o.id ===
 const BUILT = F2C_STATES.filter((s) => !HELD.includes(s)).filter(served);
 const F2I_SHEETS = Object.keys(DISCOUNT_FIXTURES) as OrderState[];
 
+// FE-013, finding 2 of the F2h/F2d review. The positive sweep used to
+// enumerate BUILT and F2I_SHEETS by hand, which left `quick-line` — a real
+// entry in SHEET_FIXTURES, added by F2d — in neither array. `SHEET_STATES` is
+// derived from `SHEET_FIXTURES` itself, so the next sheet added there is swept
+// automatically rather than needing its name added to a filter by hand: the
+// same discipline F2d's own fix used for `TABLE_STATES`/`QUICK_SALE_STATES`.
+const SHEET_STATES = Object.keys(SHEET_FIXTURES) as OrderState[];
+const REACHABILITY_STATES = [...SHEET_STATES, ...F2I_SHEETS];
+
 const GATED = [
   'sheet-voidline',
   'sheet-voidorder',
@@ -182,7 +191,12 @@ describe('the reachability detector can see a gated path', () => {
   });
 });
 
-describe.each([...BUILT, ...F2I_SHEETS])('%s: no control reaches a PIN-gated state (acceptance criterion 1)', (state) => {
+// FE-013, finding 2. Derived from SHEET_FIXTURES (via SHEET_STATES) rather
+// than a hand-kept array, so `quick-line` is swept along with the three F2c
+// sheets and F2i's four — its Back, Escape/close and Remove line are pressed
+// by `destinations` exactly as every other sheet's controls are, and a static
+// destination that escaped to a gated state would show up here.
+describe.each(REACHABILITY_STATES)('%s: no control reaches a PIN-gated state (acceptance criterion 1)', (state) => {
   it('every live control on the frame leads somewhere ungated', () => {
     const found = destinations(state);
     expect(found.length).toBeGreaterThan(0);
@@ -203,9 +217,36 @@ describe.each([...BUILT, ...F2I_SHEETS])('%s: no control reaches a PIN-gated sta
     for (const a of voidPaths) expect(a.closest('[inert]')).not.toBeNull();
   });
 
-  it('the panel stays legible beside the sheet', () => {
+  it('tags the pending line 86 exactly where its item is 86’d, and nowhere else', () => {
     render(state);
-    expect([...host.querySelectorAll('.order-line__name')].map((n) => n.textContent)).toEqual(['Burger', 'Soda', 'Steak']);
+    const tagged = [...host.querySelectorAll('.order-lines .tag-86')].map(
+      (t) => t.closest('.order-line')!.querySelector('.order-line__name')!.firstChild!.textContent
+    );
+    expect(tagged).toEqual(state === 'sheet-item86' ? ['Steak'] : []);
+  });
+});
+
+it('the reachability sweep names every fixture SHEET_FIXTURES carries, quick-line included', () => {
+  // The guard the previous shape lacked: nothing asserted that BUILT and
+  // F2I_SHEETS together still matched SHEET_FIXTURES's keys, so a fixture
+  // could exist and never be swept. SHEET_STATES is Object.keys of the same
+  // record the panel reads, so this now fails the day a fixture is added
+  // and left out — it cannot be, since REACHABILITY_STATES is built from it.
+  expect(SHEET_STATES.slice().sort()).toEqual(['quick-line', 'sheet-item', 'sheet-item86', 'sheet-line']);
+  expect(REACHABILITY_STATES).toEqual(expect.arrayContaining(SHEET_STATES));
+});
+
+// The table-specific half of the acceptance-criterion-1 checks above:
+// `sheet-item`, `sheet-item86`, `sheet-line` and F2i's sheets are all opened
+// over the table order, so the panel beside them always reads Burger, Soda,
+// Steak. `quick-line` opens over the counter order (Burger, Soda only,
+// FR-D2) and is proven separately, in test/quick-sale.test.tsx, rather than
+// forcing it through an assertion built for the other order.
+describe.each([...BUILT, ...F2I_SHEETS])('%s: the panel stays legible beside the sheet', (state) => {
+  it('reads the table order beside it', () => {
+    render(state);
+    const names = [...host.querySelectorAll('.order-line__name')].map((n) => n.firstChild!.textContent);
+    expect(names).toEqual(['Burger', 'Soda', 'Steak']);
     expect(host.querySelector('.totals')).not.toBeNull();
   });
 });
@@ -480,7 +521,12 @@ describe('sheet-line', () => {
 // discount sheets are test/discount.test.tsx's, the void sheets
 // test/void.test.tsx's.
 describe('no sheet in any other state', () => {
-  it.each(ORDER_STATES.map((s) => s.id).filter((s) => !BUILT.includes(s) && !APPROVAL_FIXTURES[s] && !DISCOUNT_FIXTURES[s] && !VOID_FIXTURES[s]))('%s', (state) => {
+  // Generalised from `!BUILT.includes(s)` in F2d: BUILT was every key
+  // SHEET_FIXTURES had until quick-line joined it, so the two were the same
+  // set. Reading SHEET_FIXTURES itself rather than the F2c-era array means a
+  // future sheet fixture excludes itself here automatically, the way this one
+  // should have without a second edit.
+  it.each(ORDER_STATES.map((s) => s.id).filter((s) => !(s in SHEET_FIXTURES) && !APPROVAL_FIXTURES[s] && !DISCOUNT_FIXTURES[s] && !VOID_FIXTURES[s]))('%s', (state) => {
     render(state);
     expect(dialog()).toBeNull();
     expect(device().querySelector('[inert]')).toBeNull();

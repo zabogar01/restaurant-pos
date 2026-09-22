@@ -1,6 +1,6 @@
 import { useRef } from 'react';
+import { EmergencyBanner } from './EmergencyBanner.js';
 import { LOCK_STATES, NOTICES, lockStateFrom, type LockState } from './fixtures.js';
-import { Icon } from './icons.js';
 import { PinPad } from './PinPad.js';
 
 export function App({ state = lockStateFrom(window.location.search) }: { state?: LockState }) {
@@ -22,21 +22,13 @@ function LockScreen({ state }: { state: LockState }) {
     <>
       {state === 'incident' && (
         // FR-E3b / ruling C-6: presence before sign-in, detail after. Names
-        // the printer, never a table, round, amount or line.
-        <div className="emergency-banner" role="alert">
-          <span className="emergency-banner__mark">
-            <Icon name="alert" />
-          </span>
-          <div>
-            <div className="emergency-banner__title">Kitchen printer needs attention</div>
-            <div className="emergency-banner__detail">
-              Tap to sign in and view. No order details are shown before sign-in.
-            </div>
-          </div>
-          <button type="button" className="emergency-banner__action" onClick={() => box.current?.focus()}>
-            Sign in to view
-          </button>
-        </div>
+        // the printer, never a table, round, amount or line. POS-03 draws the
+        // signed-in variant of this same banner (OrderPanel.tsx).
+        <EmergencyBanner
+          title="Kitchen printer needs attention"
+          detail="Tap to sign in and view. No order details are shown before sign-in."
+          action={{ label: 'Sign in to view', onPress: () => box.current?.focus() }}
+        />
       )}
 
       <main className="lock">

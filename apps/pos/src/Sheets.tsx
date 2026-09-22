@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { formatAmount } from './money.js';
 import type { OrderView } from './orderFixtures.js';
+import type { NewLine } from './orderStore.js';
 import {
   QUANTITY_MAX,
   QUANTITY_MIN,
@@ -19,8 +20,16 @@ import {
 // operated. Every control is a <button>: each acts on the order, none leaves
 // the screen (ruling of 2026-09-17).
 
-export function SheetView({ sheet, go }: { sheet: SheetFixture; go: (view: OrderView) => void }) {
-  return sheet.kind === 'item' ? <ItemSheet sheet={sheet} go={go} /> : <LineSheet sheet={sheet} go={go} />;
+export function SheetView({
+  sheet,
+  go,
+  addLine,
+}: {
+  sheet: SheetFixture;
+  go: (view: OrderView) => void;
+  addLine: (line: NewLine) => void;
+}) {
+  return sheet.kind === 'item' ? <ItemSheet sheet={sheet} go={go} addLine={addLine} /> : <LineSheet sheet={sheet} go={go} />;
 }
 
 export function SheetFrame({
@@ -77,13 +86,33 @@ const signed = (delta: bigint) => (delta < 0n ? formatAmount(delta) : `+${format
 // them back, a notice says why, and Add to order stops being a control: a
 // span, drawn unavailable in place, with nothing to press. The same shape as
 // the 86'd tile (C-3) and the disabled Continue on the lock screen.
-function ItemSheet({ sheet, go }: { sheet: ItemSheetFixture; go: (view: OrderView) => void }) {
+function ItemSheet({
+  sheet,
+  go,
+  addLine,
+}: {
+  sheet: ItemSheetFixture;
+  go: (view: OrderView) => void;
+  addLine: (line: NewLine) => void;
+}) {
   const [size, setSize] = useState(sheet.chosen.size);
   const [extras, setExtras] = useState<ReadonlyArray<string>>(sheet.chosen.extras);
 
   const deltaOf = (options: ReadonlyArray<ItemOption>, id: string) => options.find((o) => o.id === id)?.delta ?? 0n;
   const total = unitPrice(sheet.price, [deltaOf(sheet.sizes, size), ...extras.map((id) => deltaOf(sheet.extras, id))]);
   const toggle = (id: string) => setExtras((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
+
+  // FE-014, mutation 1. A modifier is shown when it is worth showing: a
+  // priced option only when it actually changes the price (the artifact never
+  // shows "Regular" beside a Burger charged at its base price), an extra
+  // whenever it is chosen, at whatever delta it carries — zero included, on
+  // the same footing as the Steak's own no-delta "Medium rare".
+  const chosenModifiers = () => {
+    const opt = (options: ReadonlyArray<ItemOption>, id: string) => options.find((o) => o.id === id)!;
+    const sizeOpt = opt(sheet.sizes, size);
+    const mods = extras.map((id) => opt(sheet.extras, id)).map(({ name, delta }) => (delta === 0n ? { name } : { name, delta }));
+    return sizeOpt.delta === 0n ? mods : [{ name: sizeOpt.name, delta: sizeOpt.delta }, ...mods];
+  };
 
   return (
     <SheetFrame
@@ -100,7 +129,14 @@ function ItemSheet({ sheet, go }: { sheet: ItemSheetFixture; go: (view: OrderVie
               Add to order
             </span>
           ) : (
-            <button type="button" className="action action--primary" onClick={() => go(sheet.add)}>
+            <button
+              type="button"
+              className="action action--primary"
+              onClick={() => {
+                addLine({ itemId: sheet.itemId, name: sheet.name, quantity: 1, modifiers: chosenModifiers() });
+                go(sheet.add);
+              }}
+            >
               Add to order
             </button>
           )}
@@ -186,6 +222,7 @@ function LineSheet({ sheet, go }: { sheet: LineSheetFixture; go: (view: OrderVie
   return (
     <SheetFrame
       title={sheet.title}
+      aside={sheet.tag && <span className="sheet__aside round-head__tag">{sheet.tag}</span>}
       onClose={() => go(sheet.back)}
       foot={
         <>

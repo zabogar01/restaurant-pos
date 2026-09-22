@@ -3,7 +3,27 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-20. A fresh lead session took `w2:p1` on 2026-09-18,
+Last updated: 2026-09-22, when **the owner asked when the frontend would have a
+working flow rather than a preview, and the answer was that nothing in the queue
+produced one.** FS — the order store — was inserted ahead of F3 and written as
+[FE-014](tasks/FE-014-order-store.md); `builder16` (Sonnet) built it in `w2:pZ`.
+Account under *FS: the question that found the gap* below. **FS is committed as
+`3ad3282`; 1216 tests across 20 files, lead-verified by running it and by
+walking the screen in a browser.** The slice's baseline was `1aeba7b` at 1136
+tests across 19 files.
+
+Previously the same day, when **F2 finished and an independent review of it
+came back with two P2 findings, both now fixed** (`2654e5c`). F2h landed as
+`456c37f`, F2d as `2ed74aa`. `builder13`, `builder14`, `builder15` and
+`code-reviewer` are all closed.
+A fresh lead session took `w2:p1` that morning, re-ran `herdr agent rename w2:p1
+lead`, and found two facts in this file stale: the header date, and a branch head
+recorded as `e5e0230` when it was `12e9ca6`. Both are corrected here. **The
+lesson is the old one in a new place:** this file went stale because the previous
+lead stopped writing after the last commit rather than at the last material
+change.
+
+Previously 2026-09-20. A fresh lead session took `w2:p1` on 2026-09-18,
 re-verified the branch head and the Herdr roster, and corrected the Active
 agents table; on 2026-09-20 it closed `builder11` and wrote FE-010. The
 2026-09-17 edit was made from repository evidence on
@@ -53,7 +73,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, and F2e's corrections. Head `e5e0230`, working tree clean, verified 2026-09-18 |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, F2e's corrections, F2k's openers, F2h's fire and rejection states, F2d's quick sale, and the review's two corrections. Head `2654e5c`, **1136 tests across 19 files**, working tree clean, verified 2026-09-22 |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -140,12 +160,26 @@ and remediated over three passes.
      that is a design question, not scope.
    - **F2j — the void family**: `sheet-voidline`, `sheet-voidorder`,
      `sheet-voidorder-fired`. Depends on F2g.
-   - **F2h** — `error`, `fireerror`, `fireblocked`, and the 86'd line in the
-     panel, which is `fireblocked`'s setup and was deferred out of F2b.
-   - **F2d — quick-sale / counter mode**, split out of F2b on 2026-09-17. It
-     changes the order's identity (`T1` becomes `counter`) and the panel header,
-     not just the menu, so it is its own slice rather than a state smuggled into
-     the grid.
+   - **F2h — [FE-011](tasks/FE-011-fire-and-rejection-states.md). DONE
+     2026-09-22**, lead-verified and committed as `456c37f`. 1077 tests across
+     18 files, up from 897. Account under *F2h landed* below. **The artifact
+     lets a cashier fire an 86'd item**, and a boundary settled it.
+   - **F2d — [FE-012](tasks/FE-012-quick-sale.md). DONE 2026-09-22**,
+     lead-verified and committed as `2ed74aa`. 1127 tests across 19 files.
+     Account under *F2d landed* below. **The first slice built by a Sonnet
+     implementer**, and the order finally has a type.
+
+**F2 IS COMPLETE.** Eleven slices — the panel, the menu region, the ungated
+sheets, the approval prompt, the discount and void families, the corrections,
+the openers, the fire and rejection states, and the quick sale. POS-03 draws
+every state the reviewed artifact has for it.
+
+**Next is FS, the order store** — [FE-014](tasks/FE-014-order-store.md),
+inserted ahead of F3 by the owner on 2026-09-22. **Then F3, settlement**, whose
+first act is reconciling three placeholder route names (`?state=settle`,
+`settle-pending`, `settle-takeover`) plus F2h's `?state=incidents`, and reading
+`settlement.html` **from the design worktree**, because this branch's copy still
+carries DESIGN-004's critical defect.
 
 **How this session works** — the owner's two standing instructions:
 
@@ -156,8 +190,13 @@ and remediated over three passes.
   has ended its task.
 
 **To see the work:** `npm run dev -w apps/pos`, then `http://127.0.0.1:5173/pos/`
-for the lock screen and `/pos/order` for the order panel — six states on
-`?state=`: `default`, `empty`, `overflow`, `pressed`, `lock-draft`, `lock-lease`.
+for the lock screen and `/pos/order` for the order workspace. Every state hangs
+off `?state=` and the dev-only nav under the frame links them all — 27 of them
+now, from `default` through the sheets and the approval prompt to F2h's
+`fireblocked`, `fireblocked-overflow`, `error` and `fireerror`. **The two worth
+opening first** are `fireblocked` (press the Steak's `×`: the refusal clears and
+*Send to kitchen* comes back) and `fireerror` (round 1 `printed`, round 2 `not
+printed`, under a banner that says why).
 For the design fixtures, for the design fixtures, serve
 `../restaurant-pos-design/docs/design/visual-directions/` and open
 `index.html`.
@@ -481,19 +520,34 @@ Coordinated through Herdr in workspace `w2`. Herdr routes messages between
 panes; it stores nothing durable. Anything that must survive the session
 belongs in this file.
 
-Roster verified against `herdr agent list` on 2026-09-21. **Two agents are
-live.** Every earlier implementer's pane is gone.
+Roster verified against `herdr agent list` on 2026-09-22, twice. The first check
+that morning found **`lead` alone**; a fresh lead session took `w2:p1` that
+afternoon, re-ran `herdr agent rename w2:p1 lead`, started `builder16` on
+FE-014, and closed it once FS was committed. **Verified again after that close:
+`lead` is the only live agent.**
 
-**An implementer is live right now, so `git add -A` is forbidden** — stage by
-path. The lead once swept a mid-mutation-run working tree into a docs commit;
-it happened to be clean, and a deliberately broken file would have been
-committed as real work.
+**MODEL POLICY — owner's instruction, 2026-09-22.** **Implementers run on
+Sonnet**, not Opus: the expensive judgement happens in the lead's pane when the
+task file is written, and a slice specified that closely does not need Opus to
+build it. **Review agents run on codex.** The lead stays on Opus. Start a builder
+with `herdr agent start builderN --kind claude --pane <id> -- --model sonnet`.
+
+**`builder13` was left on Opus for F2h deliberately**, and the reason is a rule
+worth keeping: the instruction arrived when it was nine files into the slice, and
+killing an implementer mid-mutation leaves a half-built tree with no handoff —
+the failure `builder7` demonstrated and the one the lead's own `git add -A`
+nearly caused. **Change an agent's model between slices, never inside one.**
 
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
-| `builder12` | claude | `w2:pQ` | live, idle | **Delivered [FE-010](tasks/FE-010-opener-fix.md)** (F2k) and its four post-review corrections. Its handoff has two entries; both are the record |
-| `code-reviewer` | **codex** | `w2:pR` | live, idle | **Reviewed FE-010 independently** — [.agent/reviews/FE-010-review.md](reviews/FE-010-review.md). Three findings, the worst of them the lead's. **The first review agent used on implementation work**, and it found the class no implementer can |
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `builder16` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-014](tasks/FE-014-order-store.md)** (FS), committed `3ad3282`. **Caught two task-file errors before writing a single line** — the seam claim, and a save control that exists neither in the code nor in the artifact — and stopped both times rather than building on them. Predicted the `empty` divergence in its own handoff, which is how the lead knew where to look. Closed under the standing policy: slice committed, handoff committed |
+| `code-reviewer` | **codex, gpt-6-astra** | — | closed 2026-09-22 | **Reviewed F2h and F2d independently** — [reviews/F2h-F2d-review.md](reviews/F2h-F2d-review.md). Two P2 findings, one of them a reproducible defect no test caught; cleared the two rulings while correcting the authority cited for one. **Second review agent used on implementation work, and the second to earn its place.** It started blocked on a CLI update prompt — answer *Skip*, never *Update now* |
+| `builder15` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-013](tasks/FE-013-review-corrections.md)**, both review corrections, committed `2654e5c`. Split a table-specific assertion out of a generic sweep rather than loosening it, and raised what "close" meant rather than guessing |
+| `builder14` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-012](tasks/FE-012-quick-sale.md)** (F2d), the first slice under the owner's model policy. Kept `fire.ts` untouched while giving the close bar a second shape, and took the lead's classify-by-the-fact correction in two minutes. Committed in `2ed74aa` |
+| `builder13` | claude, Opus 5 | — | closed 2026-09-22 | **Delivered [FE-011](tasks/FE-011-fire-and-rejection-states.md)** (F2h) and two rounds of additions the lead ruled after verifying. Found that the artifact lets a cashier fire an 86'd item and raised it rather than scoping the rule back; reported a Prettier accident that no diff would have shown. Committed in `456c37f` |
+| `builder12` | claude | — | closed 2026-09-21 | **Delivered [FE-010](tasks/FE-010-opener-fix.md)** (F2k) and its four post-review corrections. Its handoff carries two entries and both are the record. Committed in `705fb6c` |
+| `code-reviewer` | **codex** | — | closed 2026-09-21 | **Reviewed FE-010 independently** — [reviews/FE-010-review.md](reviews/FE-010-review.md). Three findings, the worst of them the lead's own acceptance criterion. **The first review agent used on implementation work**, and it caught the class no implementer can. Use one again on any slice that encodes a rule |
 | `builder11` | claude | — | closed 2026-09-20 | **Delivered [FE-009](tasks/FE-009-corrections.md)** (F2e). Went looking beyond its brief and found the same defect on three more openers. Closed under the standing policy once FE-010 had been written from its findings: its slice is committed and its handoff is the record |
 | `builder10` | claude | — | closed | **Delivered [FE-008](tasks/FE-008-void-family.md)** (F2j). Found the panel offering to void the wrong line and refused to reach into committed work to fix it |
 
@@ -609,6 +663,475 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## FS: the question that found the gap
+
+**The owner asked, 2026-09-22:** *"when will the MVP of front end with the proper
+flow working instead of the html like menu preview?"*
+
+**The answer was that nothing in the queue produced one**, and that is the
+finding. Eleven slices built POS-03's twenty-seven states faithfully and every
+one is a fixture selected by `?state=`. A tile press does not add a line; it
+navigates to a different pre-written order. `orderFixtures.ts` says so in its own
+header — *"Nothing is computed here: every total is the artifact's own figure"* —
+so this was never hidden. **It was simply never scheduled.**
+
+The frontend-first instruction of 2026-09-14 traded the backend away to see
+screens sooner, and it worked. What nobody noticed is that it also traded away
+the spine that makes screens compose, and **no roadmap row ever owned it.** F3
+and F4 are more screens. Phase 0 tasks 3–12 are the server. The mutable order in
+between belonged to neither.
+
+### What the repository actually holds, counted rather than recalled
+
+- `apps/pos`: 3,996 lines of real React and TypeScript, 1136 tests. **Not HTML**,
+  and the rule modules (`fire.ts`, `discount.ts`, `void.ts`) genuinely decide
+  from the order's data. But no mutable order exists.
+- `apps/server`: a pool, a migration runner, and `0001_extensions.sql`. **No
+  schema, no API, no auth.**
+- **2 of 7 POS screens** built (POS-01 lock, POS-03 order workspace). 0 of 13
+  back office.
+
+### The ruling, and why the store goes before F3
+
+Three things stand between here and a working flow: a client order store (~2–3
+slices, **was in no plan**), the remaining screens (~10–12 slices), and the
+backend (Phase 0 tasks 3–12). At F2's observed cadence — eleven slices over
+2026-09-16 to 2026-09-22 — that is roughly a walkable flow in days, all screens
+in two weeks, a persisted authenticated MVP in about four.
+
+**Owner chose the store first.** The reason that decided it: settlement is the
+screen where a running balance matters most, and specifying F3's tender panel
+against a balance that cannot change means writing F3 twice.
+
+### What made the task file cheap to write, and it was already there
+
+**`shownOrder` (`voidFixtures.ts:120`) is the seam, and it already exists.**
+Every consumer on the screen reads a `ShownOrder` and nothing else. The store
+replaces where one comes from without changing what one is — so no component
+signature moves, and the gate modules keep answering from a plain order.
+
+**`orderTotals` (`discount.ts:108`) is the arithmetic, and F2i already built and
+tested it** against the artifact's own figures. The store needs to invent no
+money rule at all: lines → subtotal → `orderTotals`.
+
+**`?gone=` was already a primitive mutation**, honoured only where a fixture
+pre-figured `totalsWithout[id]`. That guard is exactly what the store replaces,
+and it hands the slice its sharpest test: **the store's computed total after
+removing the Steak must equal `tableTotalsWithout.steak`, the artifact's own
+reviewed figure.** Arithmetic proven against a human-reviewed number rather than
+against itself.
+
+### Held, and each named rather than filled
+
+Fire, discount mutation, void, settle and persistence are all out, each for a
+stated reason. **Fire is the one worth remembering:** a fired round needs a time
+and a delivery outcome, `RoundGroup` requires both, this app has no clock and the
+artifact draws no such composition. Held since F2h as a designer's question, and
+this slice does not resolve it. The store makes *Send to kitchen* no more real
+than it is today — but `fire.ts` now reads real lines, so removing an 86'd line
+clears the refusal for real rather than through a pre-figured total.
+
+### THE NINTH TASK-FILE ERROR — and the lead asserted a seam without counting it
+
+**`builder16` read the code instead of the task file and stopped before writing
+anything.** FE-014 claimed `shownOrder` was the one seam every consumer reads.
+**It is not.** `OrderPanel` takes `view`, reads `ORDER_FIXTURES[view.state]`
+(`:181`) and **re-derives the order itself** (`:187-191`) — the `?gone=` guard,
+the totals pick and the group filter, a duplicate of `shownOrder`'s body.
+`OrderScreen` computes `shownOrder(view)` at `:73` and hands it **only to the
+sheets**.
+
+So a store placed behind `shownOrder` alone would have changed the sheets while
+the panel — lines, quantities, count, totals — kept drawing the static fixture.
+
+**Lead-verified before ruling**, by grep rather than by agreement: two direct
+`ORDER_FIXTURES[…]` reads in `OrderPanel` against one `shownOrder` call.
+
+**Ruled:** collapse the two derivations into one by giving `OrderPanel` the order
+as an **optional** prop defaulting to `shownOrder(view)`. Optional is not style —
+`test/order-panel.test.tsx:41` mounts the panel directly with no order, so a
+required prop would force editing tests to fit the store and destroy the slice's
+only safety property.
+
+**The lesson is the lead's, and it is a new shape.** Eight previous task-file
+errors were wrong *facts* — a wrong ruling, a wrong route, a wrong authority.
+This one was a wrong *claim about structure*, asserted from reading one function
+and not counting its callers. **A seam is a claim about every consumer, so it
+must be counted, not inferred** — `grep -rn "ORDER_FIXTURES\[" apps/pos/src/`
+would have taken ten seconds and the task file would have been right.
+
+Two `ORDER_FIXTURES` reads stay on the fixture deliberately: the emergency banner
+(`FR-E3`, application-wide, not order data) and the menu's 86 list (`FR-C6`, the
+menu's fact). `fire.ts` must keep taking lines and the 86 list as two inputs.
+
+### THE TENTH — and this one is a hole in the reviewed design, not in the code
+
+`builder16` stopped a second time, on mutation 2. FE-014 said *"the line editor's
+save (M-5) navigates to a fixture"*, implying a control that needed rerouting.
+**There is no save control, in the code or in the artifact.**
+
+**Lead-verified, both sides.** `LineSheetFixture` (`sheetFixtures.ts:31-41`)
+carries `back` and `remove` and no save target. `LineSheet` (`Sheets.tsx:183`)
+holds the stepper's quantity in local `useState`, and its own comment already
+said so: *"this fixture has no command to send it with, so the panel does not
+follow."* And in the reviewed artifact — `order.html:449-476`, **both**
+`sheet-line` and `quick-line` — the foot is exactly `Back` and `Remove line`.
+
+**So `FR-D5` and `FR-M5` have no reachable path in the reviewed design at all.**
+The sheet the requirements point at for quantity is, as drawn, a removal sheet
+with an inert stepper beside it. That is the largest artifact gap this project
+has found, and it is on the lead's housekeeping as a designer's question.
+
+**Ruled:** the store gets a tested `setQuantity` with **no caller**, commented as
+such. A Save button would invent a composition the artifact never draws, and the
+precedent is settled twice over — A7's four designed tokens took `source: null`,
+and F2k's derived *"Applied by Ana R."* note was rejected in favour of drawing
+the gap. A9 is the precedent for landing something unused on purpose:
+`--frost-invalid` and the 13px round tag arrived with no surface, for a later
+slice.
+
+### Two errors in one task file, and what actually distinguishes them
+
+Both are the lead's. They are not the same mistake:
+
+- **The seam** was a claim the lead could have checked in ten seconds and did
+  not — `grep -rn "ORDER_FIXTURES\[" apps/pos/src/`.
+- **The save control** was a claim the lead could only have checked by opening
+  the artifact and counting the buttons in the sheet's foot. The task file was
+  written from the *panel* and the *menu*, which is where the slice's interesting
+  work is, and the line editor got a sentence written from memory of what a line
+  editor usually has.
+
+**The generalisation:** a task file is reliable exactly as far as the lead
+actually read, and the places it goes wrong are the ones the lead considered
+incidental. Both errors sat in the one-line-per-row mutation table — the part
+that looked like bookkeeping.
+
+### THE FLOW WORKS — walked in a browser, not read in a diff
+
+`builder16` delivered. **Lead-verified by running it: 1152 tests across 20
+files**, up from 1136, typecheck clean, **no existing test modified**, and
+`fire.ts`, `discount.ts` and `void.ts` untouched. Then walked at 1280×800:
+
+- `quick`, add a Burger through the item sheet: **165.000 → 300.000**, service
+  charge 15.000, total 315.000, count *3 items · not yet sent*.
+- Remove that line — **an id no fixture ever pre-figured** — and it goes, back to
+  165.000. The old `totalsWithout` guard could not have done this.
+- `fireblocked-overflow`, void the 86'd Coffee: the refusal clears, **Send to
+  kitchen comes back live while Cheesecake and House Wine are still pending**,
+  1.185.000 → 1.115.000. `FR-E4`'s second half, through a real mutation.
+- Remove the last line and the order empties properly: *No items yet*, and
+  Discount, Void order and Settle all go inert.
+
+**`shownOrder` is untouched and still feeds the sheets**; the panel now reads the
+store. `setQuantity` landed with no caller and a comment saying why.
+
+### THE THIRD DEFECT FOUND BY OPENING THE SCREEN — and it was a consequence of the lead's own ruling
+
+**`?state=empty` drew four totals rows where the reviewed fixture defines two.**
+`ORDER_FIXTURES.empty` is `{ subtotal: 0n, total: 0n }` — no `serviceCharge`, no
+`taxIncluded` — and `OrderPanel` renders both rows conditionally *precisely so a
+fixture can omit them*. It is **the only fixture with a hand-written totals
+shape**; every other one comes from `serviceAndTax` or `orderTotals`, which is
+why it was the only divergence.
+
+`builder16` predicted this exactly and flagged it, then reasoned that because no
+test drives `empty` through `OrderScreen` it *"never surfaces"*. **The prediction
+was right and the conclusion was wrong: it surfaces to a human on the dedicated
+state.** A passing suite said nothing, for the third time in this project.
+
+**The structural cause is the lead's optional-prop ruling.** Making `order`
+optional on `OrderPanel`, defaulting to `shownOrder(view)`, is what preserved the
+1136 tests — and it created **two render paths that can disagree**.
+`order-panel.test.tsx` is the panel's own dedicated test file and it exercises
+the path the application does not use. `empty` is tested only there, which is
+exactly why it leaked.
+
+**Ruled, and the first half matters more than the second:**
+
+1. **A parity sweep**, added not edited: for every state, the store's initial
+   order must deep-equal `shownOrder({ state })`; and for every `totalsWithout`
+   entry, the store seeded with that `gone` must produce the same totals
+   `shownOrder` does. That pins the two paths to each other and generalises AC3
+   from three spot checks to every pre-figured removal in the repository. **It
+   would have caught this on the first run.** With the instruction that a
+   hand-figured total disagreeing with computed arithmetic is a finding about the
+   artifact — stop and report, never adjust the fixture to match the code.
+2. **A zero-line order returns the bare shape.** `orderTotals` is not touched:
+   `zero` is a 100% comp whose discounted total is also zero and it is reviewed
+   **with** both rows, so suppressing zero-value rows inside the engine would
+   break a reviewed state. The distinction is **lines, not money** — an order
+   with no lines states no charges; an order discounted to nothing still states
+   its service line.
+
+**Both done. 1216 tests across 20 files**, up from 1152; the sweep is 64 cases
+(27 states + 37 pre-figured removals), `empty` was the single failure, and
+nothing existing was edited. **Lead-proved red, not accepted:** deleting the
+zero-line guard fails exactly one test, named `empty: the store's initial order
+deep-equals shownOrder`. Restored byte-for-byte, 1216 green after.
+
+**A second result fell out of the sweep, and it is worth keeping.** All 37
+pre-figured removals agree with `orderTotals` exactly — **no hand-figured
+`totalsWithout` in this repository disagrees with the engine.** That is an
+independent arithmetic audit of every figure F2a through F2j wrote down by hand
+against the module F2i built, and it passed on the first run. The figures and
+the engine are the same arithmetic, which nothing had ever checked before.
+
+**Generalise it:** when a safety property is bought by giving a component a
+default, the default becomes a second implementation, and the tests that use it
+stop being evidence about the screen. Pin the two together in the same slice that
+creates them.
+
+### The criteria name their red cases, deliberately
+
+FE-014's eight acceptance criteria each name the case where a right answer
+differs from a wrong one. **This project has recorded that trap three times and
+then walked into it a fourth**, while writing the slice that fixed the second.
+Writing *"prove it red"* is not the same as naming the case that goes red, and
+the fix is to name it in the task file where the lead is doing the thinking
+rather than in the implementer's head where it is not.
+
+---
+
+## The second independent review — and the lead wrote a criterion that could be met without being met
+
+[reviews/F2h-F2d-review.md](reviews/F2h-F2d-review.md), by a **codex** agent
+(`gpt-6-astra`) over `456c37f` and `2ed74aa`, at the owner's instruction that
+review agents run on codex. **Verdict: request changes, two P2 findings**, both
+fixed in [FE-013](tasks/FE-013-review-corrections.md) by `builder15` and
+committed as `2654e5c`. 1136 tests.
+
+**It cleared what mattered most, with citations rather than agreement:** `B-17`
+really is the authority for the refusal firing in all three 86'd states, and the
+inert-versus-absent fire rulings are compatible — but **not for the reason the
+lead gave.** `C-1` is about zero-total refunds; the temporary-versus-permanent
+reading lives in `I-12`, and the quick sale's absent control is `C-2` and
+`FR-E5` directly. *"Cite C-2/FR-E5 directly for this case, rather than treating
+C-1 alone as its authority."* The rulings stand; the reasoning was loose.
+
+### THE FINDING — Try again put back a line the cashier had removed
+
+`?state=error`, remove the Steak (155.925), press **Try again**: the Steak
+returns and the total goes to 382.725. *Try again* navigated to
+`{ state: 'default' }` and dropped the view's `gone`. **The notice beside it
+says "The order is exactly as it was. Nothing was half-applied"** — `B-20`, and
+the state's own definition in SCREEN-INVENTORY.
+
+**The test that should have caught it passed on the defect**, because it started
+from the untouched `error` fixture, where `error` and `default` draw the same
+lines, so before and after coincided.
+
+**This is the lead's error first.** FE-011's criterion 5 said *"returns to the
+order the notice was drawn over"* — satisfiable without being met, because no
+case in it made the right answer differ from the wrong one. **The project has
+now recorded that exact trap three times** (the `I-12` injection that hit the
+non-interactive branch; F2k's `other-discount`; F2h's `fireblocked-overflow`)
+and then walked into it while writing the slice that fixed the second one.
+**Writing "prove it red" in a criterion is not the same as naming the case that
+goes red.**
+
+### The second: a guard that swept everything except the new sheet
+
+F2d fixed the *negative* sheet sweep to read `SHEET_FIXTURES`; the **positive**
+one — the sweep that actually presses controls — still enumerated a hand-kept
+list, so `quick-line` was in neither. The reviewer traced the consequence and
+**was careful about what it was not**: the destinations are correct, there is no
+approval bypass, *"this finding is a blind guard, not an observed approval
+bypass. I did not alter files or inject this regression, and do not claim a
+mutation-run result."* Both sweeps now derive from the fixture map and assert
+they cover all of it.
+
+### Carried from the review, and it is the lead's
+
+**`OrderLine.itemId` is optional, and a line with no identity can never block a
+fire.** The pending Cheesecake has none because the grid does not sell it.
+*"A missing tile does not establish availability."* Not reachable in these
+fixtures, so not a finding — but **this rule must not be promoted into a
+production guarantee** when the backend arrives and every line has a real item.
+
+---
+
+## F2d landed — the order has a type, and F2 is finished
+
+[FE-012](tasks/FE-012-quick-sale.md), `builder14`, committed `2ed74aa`.
+**Lead-verified: 1127 tests across 19 files**, up from 1077, typecheck clean.
+`quick` and `quick-line` — POS-03's second variant, which every slice until now
+skipped.
+
+**The slice's whole shape is one fact.** `OrderFixture` gains `type` — the PRD's
+own `table` or `quick_sale` (`PRD.md:40`, `FR-D2`) — and four differences fall
+out of reading it: the count says *"2 items · not yet sent"*, the group heading
+speaks about the order rather than a round, the line editor takes its quick form,
+and **the close bar loses the fire control entirely.** No component branches on
+`?state=`, which is the per-state flag F2h spent a slice removing from the fire
+rule. Proven by the sharpest test in the slice: **a table-order fixture handed
+the quick type draws the quick affordances, and a quick order handed the table
+type draws the table ones.**
+
+### Absent, not inert — and it is the opposite of what F2h built
+
+`FR-E5` and ruling `C-2`: a quick sale presents **no fire control at all**,
+because one control meaning *send to kitchen* on a table order and nothing on a
+counter sale teaches the cashier the control is unreliable. Ruling `C-1` draws
+the line this sits on: **inert is for a condition that passes**, and a quick sale
+can never fire.
+
+F2h, one day earlier, made that same control go **inert** for two conditions that
+do pass (`FR-E4`'s 86'd line, `FR-E1`'s empty queue). **Both rulings are right
+and they meet on one control**, which is exactly where an implementer reaches for
+the nearest existing mechanism. `builder14` did not: the close bar composes its
+control set from the type and asks `fire.ts` only about a table order, so
+`fire.ts` is untouched by this slice.
+
+### The lead's correction: classify by the fact, in the tests too
+
+The slice derived everything from the type except its own tests, where
+`TABLE_STATES` was `ALL_STATES` minus two **names**. Not a hole — a new
+quick-sale state would have landed in that list and failed the *"never absent"*
+guard loudly, which is the safe direction — but the fix for that failure is to
+add a name to a filter, and the list then grows by hand forever. `FR-G13` and
+`AC-29`'s **leased quick-sale order** is already waiting to be the first.
+
+Both sets now derive from `orderVariant(ORDER_FIXTURES[state])`, the function
+production reads. **Generalise it:** where production reads a fact and a test
+reads a name, the test is one rename away from lying.
+
+### Sonnet built this one
+
+The owner's model policy landed mid-F2h, so F2d is the first slice by a Sonnet
+implementer. It delivered, raised one judgement call (make `type` optional with a
+`table` default rather than touch 28 fixtures — **accepted**, because
+`orderVariant` centralises the default and restating what a fixture already is
+would be churn), took the correction in two minutes, and proved it red two ways.
+**Nothing about the slice reads as cheaper work.** What made it work is what
+always makes it work here: the task file was written from the code and the
+artifact before the implementer started.
+
+---
+
+## F2h landed — a boundary beat the artifact, twice
+
+[FE-011](tasks/FE-011-fire-and-rejection-states.md), `builder13`, committed
+`456c37f`. **Lead-verified: 1077 tests across 18 files**, up from 897, typecheck
+clean, and walked in a browser. `fireblocked`, `error` and `fireerror`, plus the
+two corrections F2b deferred — the `86` tag on a PENDING line and the panel's
+loading skeleton.
+
+**The refusal is a rule, not a picture.** `fire.ts` sits beside `discount.ts` and
+`void.ts`: `blockingLines` answers which PENDING lines refuse the fire, and the
+notice's count and named item come from that answer. This is what makes `FR-E4`'s
+second half — *"until that line is voided or the item is restored"* — actually
+happen: remove the offending line and the notice goes and the control returns,
+with nothing anywhere saying so.
+
+### THE FINDING — the artifact lets a cashier fire an 86'd item
+
+`eightysix`, `sheet-item86` and `fireblocked` **all draw the same pending Steak
+and all 86 the same Steak.** The artifact draws the refusal notice in
+`fireblocked` alone and leaves *Send to kitchen* **live in the other two**.
+
+`B-17` is a boundary — *"a pending line holding one blocks the fire"* — and
+CLAUDE.md says a boundary is not subject to an agent's judgement at all. So the
+rule fires in all three, and `eightysix` and `fireblocked` now **render
+identically** for this order. That is the finding, not a defect: the artifact
+drew two steps of one story as two states, and a rule that reads the order cannot
+tell them apart. `builder13` built the rule, refused to scope it back — that
+would have been the per-state flag the task forbade — and raised it.
+
+**Fifth instance of the shared-control heuristic, running backwards.** The other
+four were one control shared across states, wrong in one of them. Here the
+*notice* was scoped while the *control* it explains was not.
+
+### The lead's own finding, and it came from looking rather than from tests
+
+**A fully fired order still offered *Send to kitchen*.** Visible on `fireerror`
+and on `fireblocked&gone=steak`: every line FIRED, nothing to send, control live
+— directly under a banner saying the ticket did not print. `FR-E1` has a fire
+collect every PENDING line; `FR-E2` and `B-16` send only lines not previously
+fired; SCREEN-INVENTORY's *Must not invent* says **no reprint-the-whole-order
+control, ever**, and `FR-E3` puts the real reprint on POS-07. A live control
+there reads as *send it again*.
+
+Ruled: fire is unavailable when the order holds no PENDING line, **inert in
+place, not absent** — the condition is temporary, which is ruling C-1's line.
+1077 tests include the general form: fire is live exactly when a PENDING line
+exists and nothing blocks it, over every state and the `&gone=` views.
+
+**This is the second defect in this project found by a lead opening the screen
+rather than reading the diff**, and neither was visible in a passing suite.
+
+### The ruling that cost a case, and the state that bought it back
+
+Making a fully fired order unfireable **retired half of an acceptance
+criterion**: at `fireblocked&gone=steak` the Steak was the only pending line, so
+removing it cleared the block *and* emptied the order, and *Send to kitchen*
+stayed off for the second reason. `builder13` flagged exactly that rather than
+quietly keeping a criterion that no longer held.
+
+So **`fireblocked-overflow`** exists: the long order with **one of its three**
+pending lines 86'd. Void Coffee and the block clears **while Cheesecake and House
+Wine are still pending** — the fire returns for `FR-E4`'s reason, not because the
+order ran out of work. Its `groups`, `totals` and `totalsWithout` are the **same
+objects** `overflow` uses, asserted by identity rather than by eye.
+
+**Same argument as F2k's `other-discount`, and it is now twice:** a rule whose
+correct answer is never distinguishable from the wrong one has not been tested.
+When a ruling removes such a case, replace it or lose the guard.
+
+### `fireerror`: round 2 reads *not printed*
+
+Ruled by the lead while writing the task, built as ruled. The artifact serves
+`fireerror` from a round group shared with every unlocked state, so its header
+says `printed` a few pixels under a banner saying the ticket did not.
+`RoundGroup.printed` was already a boolean and `OrderPanel` already rendered both
+words — **no new copy, composition or value.** `I-7` makes that header the
+cashier's answer to *"did this go to the kitchen?"*, and here the answer is no.
+
+`builder13` added the better reason for the state's shape: **`fireerror` holds no
+PENDING line because `FR-E1` collects every one of them**, so a fire cannot leave
+one behind. The artifact's composition is coherent after all; only its round
+header was not.
+
+### Reported rather than hidden: Prettier ate the file
+
+`npx prettier --write` on `orderFixtures.ts` reformatted the whole hand-formatted
+file to defaults — **541 lines** — because this repository has no Prettier config
+and does not depend on it. `builder13` restored from `HEAD` and re-applied every
+change as a scripted pass, then said so, **because nothing in the diff would ever
+have shown it**. The lead checked independently: 66 removed, 208 added, 28
+identical, and **zero lines differing only in quote style.**
+
+**The repository wants either a Prettier config or nobody running Prettier.** On
+the housekeeping list; the two are indistinguishable until someone does this.
+
+### Held, and each one named rather than filled
+
+- **`UNKNOWN` is the real gap, not `PRINTED`.** `FR-E3` gives `UNKNOWN` equal
+  standing to `FAILED`, and the banner's *"the kitchen has not seen this work"*
+  is precisely the sentence `UNKNOWN` cannot say. No reviewed copy exists. A
+  designer's.
+- **The fire transition.** Firing produces a new round with a time and an
+  outcome; the artifact draws no such composition and the app has no clock, so
+  *Send to kitchen* does nothing visibly — FE-001's PIN precedent.
+- **The plural refusal copy is provisional** and now **guarded**: a test asserts
+  no reviewed state produces more than one blocking line, so the day a fixture
+  does, the invented plural cannot ship unseen. A9's ring-offset pattern.
+- **`aria-describedby` on a `<span aria-disabled>` is browse-mode only**, not
+  Tab-reachable. Nothing is silent, but a cashier tabbing the close bar does not
+  hear why. That is a question about **every** `action--off`.
+
+### What the design branch is owed from this slice
+
+1. The artifact leaves *Send to kitchen* live in `eightysix` and `sheet-item86`,
+   which `B-17` forbids.
+2. `fireerror`'s round header contradicts its own banner.
+3. **The refusal names a line the cashier cannot see.** At 1280×800 the notice is
+   visible and the Steak row it names is scrolled out of the lines area — and the
+   `×` that resolves it is on that invisible row. The artifact's own layout does
+   the same. Found by opening it.
 
 ---
 

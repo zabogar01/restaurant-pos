@@ -20,7 +20,10 @@ import { COMP, OTHER_15, OTHER_15_NOTE, STAFF_MEAL, STAFF_MEAL_NOTE } from './di
 // free-form discount — so their totals are computed by orderTotals from the
 // discount they carry, the arithmetic test/discount.test.tsx holds to the
 // artifact's own figures. F2j adds the three void sheets; their own fixtures
-// are in voidFixtures.ts. The fire-error states are F2h.
+// are in voidFixtures.ts. F2h adds the three fire and rejection states —
+// fireblocked, error, fireerror — and pays off the two corrections F2b and F2c
+// deferred: the 86 tag on a PENDING line, and the panel's loading skeleton. Its
+// rule lives in fire.ts, beside discount.ts and void.ts.
 
 export type LineStatus = 'pending' | 'fired' | 'voided';
 
@@ -30,6 +33,22 @@ export type OrderLine = {
   id: string;
   quantity: number;
   name: string;
+  /**
+   * The menu item this line is for (`MENU_ITEMS`), which is what makes the
+   * line's availability knowable: FR-E4 blocks the fire on a PENDING line
+   * "holding an item that is 86'd", and the unavailability fact lives on the
+   * menu (`MENU_FIXTURES[state].eightySixed`). fire.ts reads the two together.
+   *
+   * The identification is the artifact's own — its grid prices Steak at
+   * 240.000 and its pending line is a Steak at 240.000 — so nothing is
+   * invented here.
+   *
+   * **Optional, because not every line has a tile.** `overflow` holds a
+   * Cheesecake the grid does not sell. A line without one can never block a
+   * fire and never takes the 86 tag: an item nobody can identify is not an
+   * item anybody has 86'd.
+   */
+  itemId?: string;
   modifiers?: ReadonlyArray<Modifier>;
   /** A voided line's record: when, and who approved it. */
   note?: string;
@@ -54,8 +73,76 @@ export type Totals = {
 /** FR-G12 (this tab's tender draft) or FR-G13 (another client's lease). */
 export type SettlementLock = 'draft' | 'lease';
 
+/**
+ * FR-E3's persistent emergency incident, as the screen above the order draws
+ * it. The copy is the artifact's. This is the signed-in variant of the banner
+ * FE-001 built for POS-01 (EmergencyBanner.tsx): FR-E3b withholds *detail*
+ * before sign-in, and POS-03 is behind the PIN, so here it names the table and
+ * the round.
+ *
+ * **Open incidents is a placeholder destination.** It goes to POS-07, *Print
+ * incidents* (SITEMAP; the artifact's incidents.html), which is F4's and is not
+ * built. `?state=incidents` is named after the artifact's screen and today
+ * resolves to the default state, exactly as F2b's two `?state=settle*` lock
+ * routes do. **F4 reconciles it.**
+ *
+ * It genuinely leaves POS-03, so it is an anchor, and it is the only anchor
+ * this screen carries outside a lock notice.
+ */
+export type EmergencyIncident = { title: string; detail: string; action: { label: string; href: string } };
+
+export const FIRE_INCIDENT: EmergencyIncident = {
+  title: 'Kitchen ticket did not print — Table 1, round 2',
+  detail: 'The order is unaffected. The kitchen has not seen this work.',
+  action: { label: 'Open incidents', href: '?state=incidents' },
+};
+
+/**
+ * FR-D2, the PRD's own vocabulary (`docs/PRD.md:40`): "One bill. Type is
+ * `table` or `quick_sale`." F2d reads this, not `?state=`, to decide the
+ * count string, the pending group's heading, the close bar's shape and the
+ * line editor's form — four consequences of one fact rather than four places
+ * that ask `view.state`.
+ *
+ * Optional, defaulting to `table`: the two dozen fixtures already committed
+ * as table orders are not touched to spell out what they already are (every
+ * consumer reads it through `orderVariant`, below). `quick` and `quick-line`
+ * are the only fixtures that set it.
+ */
+export type OrderVariant = 'table' | 'quick_sale';
+
+/** An `OrderFixture`'s variant, defaulted. The one place `?? 'table'` lives. */
+export function orderVariant(fixture: Pick<OrderFixture, 'type'>): OrderVariant {
+  return fixture.type ?? 'table';
+}
+
+/**
+ * The panel's item count, in the artifact's own words: a quick sale adds
+ * "· not yet sent" because nothing on it has gone to the kitchen yet
+ * (FR-E5); a table order's count says only how many lines it holds. Derived
+ * from the variant, not from which state produced it — a pure function
+ * proves as much by taking `type` as a parameter rather than reading a
+ * fixture.
+ */
+export function orderCountLabel(type: OrderVariant, count: number): string {
+  const items = count === 1 ? '1 item' : `${count} items`;
+  return type === 'quick_sale' ? `${items} · not yet sent` : items;
+}
+
+/**
+ * The pending group's heading. On a table order it answers "did this go to
+ * the kitchen?" (I-7) about one round among others; on a quick sale nothing
+ * has, ever, until close (FR-E5), so the artifact's heading is a statement
+ * about the whole order rather than about a round.
+ */
+export function pendingGroupHeading(type: OrderVariant): string {
+  return type === 'quick_sale' ? 'Not sent to the kitchen yet' : 'Pending · not sent to the kitchen';
+}
+
 export type OrderFixture = {
   title: string;
+  /** FR-D2. Optional; read through `orderVariant`, never compared directly. */
+  type?: OrderVariant;
   groups: ReadonlyArray<RoundGroup>;
   totals: Totals;
   /**
@@ -76,6 +163,12 @@ export type OrderFixture = {
    */
   appliedNote?: string;
   lock?: SettlementLock;
+  /**
+   * An unresolved kitchen print incident, drawn above the screen (FR-E3).
+   * Application-wide and never actor-scoped, so it is not a state of the order
+   * — but with no server it is the fixture that says which state shows it.
+   */
+  incident?: EmergencyIncident;
   /** The FIRED line drawn held down, because a fixture cannot hold a finger. */
   pressedLineId?: string;
   /** The artifact's figures after removing one PENDING line, by line id. */
@@ -107,7 +200,13 @@ export type OrderState =
   | 'other-discount'
   | 'sheet-voidline'
   | 'sheet-voidorder'
-  | 'sheet-voidorder-fired';
+  | 'sheet-voidorder-fired'
+  | 'fireblocked'
+  | 'fireblocked-overflow'
+  | 'error'
+  | 'fireerror'
+  | 'quick'
+  | 'quick-line';
 
 export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'default', label: 'Two rounds fired, one line pending' },
@@ -135,6 +234,12 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'sheet-voidline', label: 'Sheet — void fired line' },
   { id: 'sheet-voidorder', label: 'Sheet — void order (unfired)' },
   { id: 'sheet-voidorder-fired', label: 'Sheet — void order (holds fired)' },
+  { id: 'fireblocked', label: 'Fire blocked — 86’d pending line' },
+  { id: 'fireblocked-overflow', label: 'Fire blocked — one of three pending lines' },
+  { id: 'error', label: 'Command rejected' },
+  { id: 'fireerror', label: 'Fire printed FAILED' },
+  { id: 'quick', label: 'Quick sale' },
+  { id: 'quick-line', label: 'Quick sale — line editor' },
 ];
 
 // ruling C-5: the two locks never share a string.
@@ -174,6 +279,7 @@ const tableOrder: ReadonlyArray<RoundGroup> = [
         id: 'burger',
         quantity: 1,
         name: 'Burger',
+        itemId: 'burger',
         modifiers: [
           { name: 'Large', delta: 20_000n },
           { name: 'Extra cheese', delta: 15_000n },
@@ -188,12 +294,20 @@ const tableOrder: ReadonlyArray<RoundGroup> = [
     round: 2,
     firedAt: '19:58',
     printed: true,
-    lines: [{ id: 'soda', quantity: 1, name: 'Soda', amount: 30_000n, status: 'fired' }],
+    lines: [{ id: 'soda', quantity: 1, name: 'Soda', itemId: 'soda', amount: 30_000n, status: 'fired' }],
   },
   {
     kind: 'pending',
     lines: [
-      { id: 'steak', quantity: 1, name: 'Steak', modifiers: [{ name: 'Medium rare' }], amount: 240_000n, status: 'pending' },
+      {
+        id: 'steak',
+        quantity: 1,
+        name: 'Steak',
+        itemId: 'steak',
+        modifiers: [{ name: 'Medium rare' }],
+        amount: 240_000n,
+        status: 'pending',
+      },
     ],
   },
 ];
@@ -215,8 +329,123 @@ const unfiredTableOrder: ReadonlyArray<RoundGroup> = [
   },
 ];
 
+// FR-E3's failure, over the order a fire leaves behind. **No pending line**,
+// and that is a requirement rather than a layout choice: FR-E1 has a fire
+// collect *every* PENDING line, so an order whose round 2 has just been fired
+// has none left from before it. The artifact agrees — its fireerror draws the
+// two fired rounds, its own default totals and nothing pending.
+//
+// **Round 2 reads `not printed`, and that is a deliberate correction to the
+// artifact.** The artifact serves fireerror from one round group shared with
+// every other unlocked state, so its round 2 header says `printed` while the
+// banner a few pixels above says the ticket did not print. I-7 makes that
+// header the cashier's answer to "did this go to the kitchen?", and in this
+// state the honest answer is no. Nothing new is modelled: RoundGroup.printed
+// is already a boolean and OrderPanel already renders both words; no fixture
+// had yet used false. Raised in the FE-011 handoff as a finding for the design
+// branch, where it is the fourth instance of one heuristic — a control or a
+// string shared across states hides the one state in which it is wrong.
+const fireErrorOrder: ReadonlyArray<RoundGroup> = tableOrder
+  .filter((g): g is Extract<RoundGroup, { kind: 'fired' }> => g.kind === 'fired')
+  .map((g) => (g.round === 2 ? { ...g, printed: false } : g));
+
 const tableTotalsWithout = {
   steak: serviceAndTax(165_000n, 7_425n, 155_925n, 13_500n, { label: 'Staff meal 10%', amount: -16_500n }),
+};
+
+// The long order (F2a's overflow), lifted out of its fixture unchanged so that
+// fireblocked-overflow can hold the same order: same lines, same ids, same
+// figures. Nothing about overflow itself changed.
+const overflowOrder: ReadonlyArray<RoundGroup> = [
+    {
+      kind: 'fired',
+      round: 1,
+      firedAt: '19:42',
+      printed: true,
+      lines: [
+        {
+          id: 'of-burger',
+          quantity: 2,
+          name: 'Burger',
+          itemId: 'burger',
+          modifiers: [{ name: 'Large' }, { name: 'Extra cheese' }],
+          amount: 270_000n,
+          status: 'fired',
+        },
+        { id: 'of-fish', quantity: 1, name: 'Fish & Chips', itemId: 'fish', amount: 140_000n, status: 'fired' },
+        { id: 'of-soda', quantity: 4, name: 'Soda', itemId: 'soda', amount: 120_000n, status: 'fired' },
+        {
+          id: 'of-salad',
+          quantity: 1,
+          name: 'Caesar Salad',
+          itemId: 'salad',
+          note: 'Voided 19:51 · approved by M. Iqbal',
+          amount: 75_000n,
+          status: 'voided',
+        },
+      ],
+    },
+    {
+      kind: 'fired',
+      round: 2,
+      firedAt: '19:58',
+      printed: true,
+      lines: [
+        { id: 'of-wings', quantity: 3, name: 'Chicken Wings', itemId: 'wings', amount: 270_000n, status: 'fired' },
+        { id: 'of-beer', quantity: 2, name: 'Beer', itemId: 'beer', amount: 130_000n, status: 'fired' },
+        { id: 'of-rings', quantity: 1, name: 'Onion Rings', itemId: 'rings', amount: 45_000n, status: 'fired' },
+      ],
+    },
+    {
+      kind: 'pending',
+      lines: [
+        { id: 'of-coffee', quantity: 2, name: 'Coffee', itemId: 'coffee', amount: 70_000n, status: 'pending' },
+        { id: 'of-cheese', quantity: 1, name: 'Cheesecake', amount: 60_000n, status: 'pending' },
+        { id: 'of-wine', quantity: 1, name: 'House Wine', itemId: 'wine', amount: 80_000n, status: 'pending' },
+      ],
+    },
+];
+
+const overflowTotals = serviceAndTax(1_185_000n, 59_250n, 1_244_250n, 107_727n);
+
+const overflowTotalsWithout = {
+  'of-coffee': serviceAndTax(1_115_000n, 55_750n, 1_170_750n, 101_364n),
+  'of-cheese': serviceAndTax(1_125_000n, 56_250n, 1_181_250n, 102_273n),
+  'of-wine': serviceAndTax(1_105_000n, 55_250n, 1_160_250n, 100_455n),
+};
+
+// F2d's counter order (FR-D2). One pending group — nothing on a quick sale is
+// ever fired before close (FR-E5), so it never has a round to group by. Same
+// Burger and Soda the table order carries, same itemIds, at the artifact's
+// own quick-sale prices (no size or cheese delta named here — the artifact's
+// quick grid draws Burger at its base modifiers, matching order.html's
+// q-burger line).
+const quickOrder: ReadonlyArray<RoundGroup> = [
+  {
+    kind: 'pending',
+    lines: [
+      {
+        id: 'q-burger',
+        quantity: 1,
+        name: 'Burger',
+        itemId: 'burger',
+        modifiers: [
+          { name: 'Large', delta: 20_000n },
+          { name: 'Extra cheese', delta: 15_000n },
+        ],
+        amount: 135_000n,
+        status: 'pending',
+      },
+      { id: 'q-soda', quantity: 1, name: 'Soda', itemId: 'soda', amount: 30_000n, status: 'pending' },
+    ],
+  },
+];
+
+const quickTotals = serviceAndTax(165_000n, 8_250n, 173_250n, 15_000n);
+
+const quickTotalsWithout = {
+  'q-burger': serviceAndTax(30_000n, 1_500n, 31_500n, 2_727n),
+  'q-soda': serviceAndTax(135_000n, 6_750n, 141_750n, 12_273n),
 };
 
 export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
@@ -224,62 +453,7 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
 
   empty: { title: 'Order · T1', groups: [], totals: { subtotal: 0n, total: 0n } },
 
-  overflow: {
-    title: 'Order · T1',
-    groups: [
-      {
-        kind: 'fired',
-        round: 1,
-        firedAt: '19:42',
-        printed: true,
-        lines: [
-          {
-            id: 'of-burger',
-            quantity: 2,
-            name: 'Burger',
-            modifiers: [{ name: 'Large' }, { name: 'Extra cheese' }],
-            amount: 270_000n,
-            status: 'fired',
-          },
-          { id: 'of-fish', quantity: 1, name: 'Fish & Chips', amount: 140_000n, status: 'fired' },
-          { id: 'of-soda', quantity: 4, name: 'Soda', amount: 120_000n, status: 'fired' },
-          {
-            id: 'of-salad',
-            quantity: 1,
-            name: 'Caesar Salad',
-            note: 'Voided 19:51 · approved by M. Iqbal',
-            amount: 75_000n,
-            status: 'voided',
-          },
-        ],
-      },
-      {
-        kind: 'fired',
-        round: 2,
-        firedAt: '19:58',
-        printed: true,
-        lines: [
-          { id: 'of-wings', quantity: 3, name: 'Chicken Wings', amount: 270_000n, status: 'fired' },
-          { id: 'of-beer', quantity: 2, name: 'Beer', amount: 130_000n, status: 'fired' },
-          { id: 'of-rings', quantity: 1, name: 'Onion Rings', amount: 45_000n, status: 'fired' },
-        ],
-      },
-      {
-        kind: 'pending',
-        lines: [
-          { id: 'of-coffee', quantity: 2, name: 'Coffee', amount: 70_000n, status: 'pending' },
-          { id: 'of-cheese', quantity: 1, name: 'Cheesecake', amount: 60_000n, status: 'pending' },
-          { id: 'of-wine', quantity: 1, name: 'House Wine', amount: 80_000n, status: 'pending' },
-        ],
-      },
-    ],
-    totals: serviceAndTax(1_185_000n, 59_250n, 1_244_250n, 107_727n),
-    totalsWithout: {
-      'of-coffee': serviceAndTax(1_115_000n, 55_750n, 1_170_750n, 101_364n),
-      'of-cheese': serviceAndTax(1_125_000n, 56_250n, 1_181_250n, 102_273n),
-      'of-wine': serviceAndTax(1_105_000n, 55_250n, 1_160_250n, 100_455n),
-    },
-  },
+  overflow: { title: 'Order · T1', groups: overflowOrder, totals: overflowTotals, totalsWithout: overflowTotalsWithout },
 
   pressed: {
     title: 'Order · T1',
@@ -295,17 +469,20 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   'lock-lease': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, lock: 'lease' },
 
   // F2b's states change the menu region. The panel draws the table order, as
-  // the artifact's catalog state does. Its eightysix state also tags the
-  // pending Steak line 86, and its loading state replaces the lines and totals
-  // with a skeleton; both are panel markup this slice does not touch.
+  // the artifact's catalog state does. eightysix's pending Steak now carries
+  // the 86 tag and loading now draws the panel's skeleton — both deferred out
+  // of F2b as panel markup, both paid off in F2h. Neither is a fixture flag:
+  // the tag is read off this order's lines against the menu's 86'd items
+  // (fire.ts), and the skeleton is read off the menu fixture's own loading.
   eightysix: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   loading: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   catalog: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 
   // F2c's sheets open over the table order, as the artifact draws them: the
-  // panel beside a sheet is the order the cashier is acting on. The artifact
-  // also tags the pending Steak line 86 in sheet-item86; the 86'd line in the
-  // panel is F2h's.
+  // panel beside a sheet is the order the cashier is acting on. sheet-item86's
+  // menu fixture 86s Steak, so its pending Steak line carries the 86 tag too —
+  // the same one fact, which is what makes that a correction to committed work
+  // rather than a new state.
   'sheet-item': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-item86': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-line': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
@@ -374,6 +551,67 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   'sheet-voidline': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-voidorder': { title: 'Order · T1', groups: unfiredTableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-voidorder-fired': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+
+  // F2h's four states.
+  //
+  // fireblocked is the table order with its menu fixture 86'ing Steak
+  // (menuFixtures.ts), which is the whole of the state: the panel reads that
+  // one fact and fire.ts answers from the order's own lines, so nothing here
+  // says "the fire is blocked". It keeps totalsWithout, because the refusal
+  // must resolve — ?state=fireblocked&gone=steak voids the offending line.
+  fireblocked: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+
+  // **The long order with one of its three pending lines 86'd, and the reason
+  // it exists is that no other state can show FR-E4's second half.**
+  //
+  // "Firing is blocked ... *until that line is voided or the item is
+  // restored*" needs an order where voiding the offending line leaves work
+  // still to send. On fireblocked the Steak is the only PENDING line, so
+  // voiding it clears the block and empties the order in the same press, and
+  // Send to kitchen stays unavailable for the *other* reason — true, but it
+  // hides the requirement. Here Coffee is one of three, so the block clears
+  // while Cheesecake and House Wine are still pending and the control comes
+  // back for the reason FR-E4 actually gives.
+  //
+  // Nothing is invented: the same long order, the grid's own Coffee at 35.000
+  // against a 2 × 35.000 line, C-3's greyed tile in place, the singular
+  // refusal copy, and totalsWithout['of-coffee'] which F2a already figured. A
+  // state on an existing screen is not a node (DESIGN-002's precedent), and
+  // F2k's other-discount is the precedent for adding one precisely so a rule's
+  // answer can differ from every other state's.
+  'fireblocked-overflow': { title: 'Order · T1', groups: overflowOrder, totals: overflowTotals, totalsWithout: overflowTotalsWithout },
+
+  // B-20: a rejected command leaves the order exactly as it was, so this is
+  // the order every other state draws, unchanged. The notice is the menu
+  // region's (menuFixtures.ts), over a live grid — adding the line again is
+  // the point of the state.
+  error: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+
+  // The artifact's own fireerror figures: its default two-line order, which is
+  // this order with the Steak fired away. No totalsWithout, because there is
+  // no PENDING line to remove.
+  fireerror: {
+    title: 'Order · T1',
+    groups: fireErrorOrder,
+    totals: tableTotalsWithout.steak,
+    applied: STAFF_MEAL,
+    appliedNote: STAFF_MEAL_NOTE,
+    incident: FIRE_INCIDENT,
+  },
+
+  // F2d's two states. quick draws the counter order; quick-line is the line
+  // editor's quick form (M-5, SCREEN-INVENTORY), opened statically over the
+  // same order for review — the panel behind a sheet is the order the sheet
+  // was opened over (the same rule as sheet-line and every other F2c/F2i/F2j
+  // sheet).
+  quick: { title: 'Order · counter', type: 'quick_sale', groups: quickOrder, totals: quickTotals, totalsWithout: quickTotalsWithout },
+  'quick-line': {
+    title: 'Order · counter',
+    type: 'quick_sale',
+    groups: quickOrder,
+    totals: quickTotals,
+    totalsWithout: quickTotalsWithout,
+  },
 };
 
 /**

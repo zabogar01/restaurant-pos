@@ -1,5 +1,13 @@
 import type { DiscountSnapshot } from './discount.js';
-import { ORDER_FIXTURES, type OrderLine, type OrderState, type OrderView, type RoundGroup, type Totals } from './orderFixtures.js';
+import {
+  ORDER_FIXTURES,
+  type OrderLine,
+  type OrderState,
+  type OrderVariant,
+  type OrderView,
+  type RoundGroup,
+  type Totals,
+} from './orderFixtures.js';
 import type { VoidReason } from './void.js';
 
 // POS-03's void sheets (F2j) as fixtures, selected by the same ?state= as the
@@ -94,6 +102,8 @@ export const lineBody = (lineId: string) => `.order-line[data-line-id="${lineId}
  */
 export type ShownOrder = {
   title: string;
+  /** FR-D2. Optional, defaulting to `table` (`orderVariant` in orderFixtures.ts). */
+  type?: OrderVariant;
   groups: ReadonlyArray<RoundGroup>;
   totals: Totals;
   applied?: DiscountSnapshot;
@@ -112,6 +122,7 @@ export function shownOrder({ state, gone }: OrderView): ShownOrder {
   const removed = !fixture.lock && gone && fixture.totalsWithout?.[gone] ? gone : undefined;
   return {
     title: fixture.title,
+    ...(fixture.type && { type: fixture.type }),
     totals: removed ? fixture.totalsWithout![removed]! : fixture.totals,
     ...(fixture.applied && { applied: fixture.applied }),
     ...(fixture.appliedNote && { appliedNote: fixture.appliedNote }),

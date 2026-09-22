@@ -15,7 +15,7 @@ import {
 } from '../src/menuFixtures.js';
 import { formatAmount } from '../src/money.js';
 import { OrderScreen } from '../src/OrderPanel.js';
-import { LOCK_TAG, ORDER_STATES, type OrderState } from '../src/orderFixtures.js';
+import { FIRE_INCIDENT, LOCK_TAG, ORDER_STATES, type OrderState } from '../src/orderFixtures.js';
 
 // POS-03's menu region (F2b), rendered as the whole order screen so the panel
 // beside it is checked in the same states. Three rulings are the point:
@@ -212,7 +212,9 @@ describe('loading', () => {
     expect(host.querySelector('.menu-grid')).toBeNull();
     expect(tiles()).toEqual([]);
     expect(host.querySelector('.menu-loading__label')!.textContent).toBe(LOADING_LABEL);
-    expect(host.querySelectorAll('.menu-loading__bar')).toHaveLength(3);
+    // Renamed out of .menu-loading__bar in F2h: the order panel draws the same
+    // bars in the same widths while the menu loads, so the class is shared.
+    expect(host.querySelectorAll('.menu-area .skel-bar')).toHaveLength(3);
   });
 
   it('keeps the category rail, as the artifact does', () => {
@@ -283,12 +285,17 @@ describe.each(LOCK_STATES)('%s: the route out (acceptance criterion 1)', (state)
 // frame that acts on the order is a <button type="button">. An anchor is for
 // leaving the screen, and the only one is a lock notice's route out.
 describe.each(ORDER_STATES.map((s) => s.id))('%s: acting controls are buttons, and an anchor only leaves', (state) => {
-  it('every anchor on the frame is a lock notice’s route out, and every button is type="button"', () => {
+  it('every anchor on the frame leaves POS-03, and every button is type="button"', () => {
     render(state);
     const anchors = [...device().querySelectorAll('a')];
     const lock = state === 'lock-draft' ? 'draft' : state === 'lock-lease' ? 'lease' : undefined;
-    expect(anchors.map((a) => a.textContent)).toEqual(lock ? [LOCK_NOTICE[lock].action.label] : []);
-    for (const a of anchors) expect(a.matches('.menu-notice a.action[href]')).toBe(true);
+    // F2h adds the second and last anchor this screen has: the emergency
+    // banner's route to POS-07 in fireerror. Both of them genuinely leave the
+    // screen for one that SITEMAP gives its own route, which is the whole test
+    // — an anchor is for going, a button is for acting (ruling of 2026-09-17).
+    const leaving = lock ? [LOCK_NOTICE[lock].action.label] : state === 'fireerror' ? [FIRE_INCIDENT.action.label] : [];
+    expect(anchors.map((a) => a.textContent)).toEqual(leaving);
+    for (const a of anchors) expect(a.matches('.menu-notice a.action[href], a.emergency-banner__action[href]')).toBe(true);
     for (const b of device().querySelectorAll('button')) expect(b.getAttribute('type')).toBe('button');
   });
 
