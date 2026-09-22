@@ -7,7 +7,15 @@ next, not what happens eventually.
 
 Owned by the Claude product lead. No other agent writes to this file.
 
-Last updated 2026-09-22, when **F2d landed** (`2ed74aa`, 1127 tests) and **F2
+Last updated 2026-09-22, when **F2 finished and its independent review closed**
+— two P2 findings, both fixed in `2654e5c`, **head `2654e5c`, 1136 tests across
+19 files**. F2d landed as `2ed74aa` and F2h as `456c37f`.
+
+**Use a review agent on any slice that encodes a rule.** Twice now one has found
+what the implementer could not: FE-010's wrong acceptance criterion, and F2h's
+*Try again* restoring a removed line. Both times the task file was the defect.
+
+Previously the same day, when F2d landed and **F2
 finished**. F2h landed the same day (`456c37f`, 1077 tests) and put four items on
 the lead's housekeeping. **The queue is now F3, settlement.** The owner set a
 model policy that day too: implementers on Sonnet, review agents on codex, the

@@ -3,9 +3,10 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-22, when **F2d landed as `2ed74aa` and F2 finished**.
-Earlier the same day F2h landed as `456c37f`; `builder13` and `builder14` are
-both closed.
+Last updated: 2026-09-22, when **F2 finished and an independent review of it
+came back with two P2 findings, both now fixed** (`2654e5c`). F2h landed as
+`456c37f`, F2d as `2ed74aa`. `builder13`, `builder14`, `builder15` and
+`code-reviewer` are all closed. **Head `2654e5c`, 1136 tests across 19 files.**
 A fresh lead session took `w2:p1` that morning, re-ran `herdr agent rename w2:p1
 lead`, and found two facts in this file stale: the header date, and a branch head
 recorded as `e5e0230` when it was `12e9ca6`. Both are corrected here. **The
@@ -63,7 +64,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, F2e's corrections, F2k's openers, F2h's fire and rejection states, and F2d's quick sale. Head `2ed74aa`, **1127 tests across 19 files**, working tree clean, verified 2026-09-22 |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, F2e's corrections, F2k's openers, F2h's fire and rejection states, F2d's quick sale, and the review's two corrections. Head `2654e5c`, **1136 tests across 19 files**, working tree clean, verified 2026-09-22 |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -525,6 +526,8 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `code-reviewer` | **codex, gpt-6-astra** | — | closed 2026-09-22 | **Reviewed F2h and F2d independently** — [reviews/F2h-F2d-review.md](reviews/F2h-F2d-review.md). Two P2 findings, one of them a reproducible defect no test caught; cleared the two rulings while correcting the authority cited for one. **Second review agent used on implementation work, and the second to earn its place.** It started blocked on a CLI update prompt — answer *Skip*, never *Update now* |
+| `builder15` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-013](tasks/FE-013-review-corrections.md)**, both review corrections, committed `2654e5c`. Split a table-specific assertion out of a generic sweep rather than loosening it, and raised what "close" meant rather than guessing |
 | `builder14` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-012](tasks/FE-012-quick-sale.md)** (F2d), the first slice under the owner's model policy. Kept `fire.ts` untouched while giving the close bar a second shape, and took the lead's classify-by-the-fact correction in two minutes. Committed in `2ed74aa` |
 | `builder13` | claude, Opus 5 | — | closed 2026-09-22 | **Delivered [FE-011](tasks/FE-011-fire-and-rejection-states.md)** (F2h) and two rounds of additions the lead ruled after verifying. Found that the artifact lets a cashier fire an 86'd item and raised it rather than scoping the rule back; reported a Prettier accident that no diff would have shown. Committed in `456c37f` |
 | `builder12` | claude | — | closed 2026-09-21 | **Delivered [FE-010](tasks/FE-010-opener-fix.md)** (F2k) and its four post-review corrections. Its handoff carries two entries and both are the record. Committed in `705fb6c` |
@@ -644,6 +647,64 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## The second independent review — and the lead wrote a criterion that could be met without being met
+
+[reviews/F2h-F2d-review.md](reviews/F2h-F2d-review.md), by a **codex** agent
+(`gpt-6-astra`) over `456c37f` and `2ed74aa`, at the owner's instruction that
+review agents run on codex. **Verdict: request changes, two P2 findings**, both
+fixed in [FE-013](tasks/FE-013-review-corrections.md) by `builder15` and
+committed as `2654e5c`. 1136 tests.
+
+**It cleared what mattered most, with citations rather than agreement:** `B-17`
+really is the authority for the refusal firing in all three 86'd states, and the
+inert-versus-absent fire rulings are compatible — but **not for the reason the
+lead gave.** `C-1` is about zero-total refunds; the temporary-versus-permanent
+reading lives in `I-12`, and the quick sale's absent control is `C-2` and
+`FR-E5` directly. *"Cite C-2/FR-E5 directly for this case, rather than treating
+C-1 alone as its authority."* The rulings stand; the reasoning was loose.
+
+### THE FINDING — Try again put back a line the cashier had removed
+
+`?state=error`, remove the Steak (155.925), press **Try again**: the Steak
+returns and the total goes to 382.725. *Try again* navigated to
+`{ state: 'default' }` and dropped the view's `gone`. **The notice beside it
+says "The order is exactly as it was. Nothing was half-applied"** — `B-20`, and
+the state's own definition in SCREEN-INVENTORY.
+
+**The test that should have caught it passed on the defect**, because it started
+from the untouched `error` fixture, where `error` and `default` draw the same
+lines, so before and after coincided.
+
+**This is the lead's error first.** FE-011's criterion 5 said *"returns to the
+order the notice was drawn over"* — satisfiable without being met, because no
+case in it made the right answer differ from the wrong one. **The project has
+now recorded that exact trap three times** (the `I-12` injection that hit the
+non-interactive branch; F2k's `other-discount`; F2h's `fireblocked-overflow`)
+and then walked into it while writing the slice that fixed the second one.
+**Writing "prove it red" in a criterion is not the same as naming the case that
+goes red.**
+
+### The second: a guard that swept everything except the new sheet
+
+F2d fixed the *negative* sheet sweep to read `SHEET_FIXTURES`; the **positive**
+one — the sweep that actually presses controls — still enumerated a hand-kept
+list, so `quick-line` was in neither. The reviewer traced the consequence and
+**was careful about what it was not**: the destinations are correct, there is no
+approval bypass, *"this finding is a blind guard, not an observed approval
+bypass. I did not alter files or inject this regression, and do not claim a
+mutation-run result."* Both sweeps now derive from the fixture map and assert
+they cover all of it.
+
+### Carried from the review, and it is the lead's
+
+**`OrderLine.itemId` is optional, and a line with no identity can never block a
+fire.** The pending Cheesecake has none because the grid does not sell it.
+*"A missing tile does not establish availability."* Not reachable in these
+fixtures, so not a finding — but **this rule must not be promoted into a
+production guarantee** when the backend arrives and every line has a real item.
 
 ---
 
