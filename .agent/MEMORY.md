@@ -6,9 +6,11 @@ lead. No other agent writes to this file.
 Last updated: 2026-09-22, when **the owner asked when the frontend would have a
 working flow rather than a preview, and the answer was that nothing in the queue
 produced one.** FS — the order store — was inserted ahead of F3 and written as
-[FE-014](tasks/FE-014-order-store.md); `builder16` (Sonnet) is building it in
-`w2:pZ`. Account under *FS: the question that found the gap* below. **Head
-`1aeba7b`, 1136 tests across 19 files, lead-verified by running it.**
+[FE-014](tasks/FE-014-order-store.md); `builder16` (Sonnet) built it in `w2:pZ`.
+Account under *FS: the question that found the gap* below. **FS is committed as
+`3ad3282`; 1216 tests across 20 files, lead-verified by running it and by
+walking the screen in a browser.** The slice's baseline was `1aeba7b` at 1136
+tests across 19 files.
 
 Previously the same day, when **F2 finished and an independent review of it
 came back with two P2 findings, both now fixed** (`2654e5c`). F2h landed as

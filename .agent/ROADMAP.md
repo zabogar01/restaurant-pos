@@ -9,9 +9,10 @@ Owned by the Claude product lead. No other agent writes to this file.
 
 Last updated 2026-09-22, when the owner asked when the frontend would have a
 **working flow** rather than a preview, and **nothing in this queue produced
-one.** FS — the order store — was inserted **ahead of F3** and written as
-[FE-014](tasks/FE-014-order-store.md). `builder16` is building it on Sonnet.
-**Head `1aeba7b`, 1136 tests across 19 files, lead-verified by running it.**
+one.** FS — the order store — was inserted **ahead of F3**, written as
+[FE-014](tasks/FE-014-order-store.md), built by `builder16` on Sonnet, and
+**committed as `3ad3282`. 1216 tests across 20 files**, lead-verified by running
+them and by walking the screen. The slice started from `1aeba7b` at 1136.
 
 **The gap that question found is worth naming.** Eleven slices built POS-03
 faithfully and every state is a fixture selected by `?state=`; a tile press
