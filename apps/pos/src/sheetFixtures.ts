@@ -1,5 +1,5 @@
 import type { Money } from '@pos/money';
-import type { OrderState, OrderView } from './orderFixtures.js';
+import { orderVariant, type OrderState, type OrderView } from './orderFixtures.js';
 import { lineBody, linesOf, type ShownOrder } from './voidFixtures.js';
 
 // POS-03's ungated sheets (F2c) as fixtures, selected by the same ?state= as
@@ -31,6 +31,8 @@ export type ItemSheetFixture = {
 export type LineSheetFixture = {
   kind: 'line';
   title: string;
+  /** M-5: the quick form's `NOT SENT YET`, drawn where the table form draws nothing. */
+  tag?: string;
   quantity: number;
   notes: ReadonlyArray<string>;
   opener: string;
@@ -63,6 +65,15 @@ const PENDING_NOTES: ReadonlyArray<string> = [
   'This line has not been sent to the kitchen. Removing it needs no approval and is not recorded.',
   'You can also remove it straight from the order line without opening this sheet. This sheet exists for ' +
     'quantity, which has nowhere else to live.',
+];
+
+// M-5's quick form: the same two facts, in the quick sale's own words
+// (FR-E5) — nothing on a counter sale goes to the kitchen at all until
+// settle, not merely "not yet".
+const QUICK_NOTES: ReadonlyArray<string> = [
+  'Nothing on a counter sale goes to the kitchen until you settle it, so removing this line needs no approval ' +
+    'and is not recorded.',
+  'You can also remove it straight from the order line. This sheet exists for quantity.',
 ];
 
 // The artifact routes each sheet's actions to fixture states. Its Cancel is
@@ -114,6 +125,19 @@ export const SHEET_FIXTURES: Partial<Record<OrderState, SheetFixture>> = {
     back: { state: 'eightysix' },
     remove: { state: 'default', gone: 'steak' },
   },
+
+  // M-5's quick form, over the counter order's Burger — the artifact's own
+  // routing (Back and Remove line both stay on ?state=quick).
+  'quick-line': {
+    kind: 'line',
+    title: 'Burger',
+    tag: 'NOT SENT YET',
+    quantity: 1,
+    notes: QUICK_NOTES,
+    opener: lineBody('q-burger'),
+    back: { state: 'quick' },
+    remove: { state: 'quick', gone: 'q-burger' },
+  },
 };
 
 /**
@@ -130,15 +154,24 @@ export const SHEET_FIXTURES: Partial<Record<OrderState, SheetFixture>> = {
  *
  * Undefined for a line that is not a PENDING line of the order on screen: only
  * a PENDING row body opens this sheet (I-12), so there is nothing to draw.
+ *
+ * **The form is the order's variant (FR-D2), not `view.state`.** A quick
+ * sale's editor carries the tag and the copy M-5 gives it; a table order's
+ * carries neither. Reading `order.type` (via `orderVariant`) rather than the
+ * state name is what lets a table-order object handed the quick type draw the
+ * quick affordances, and vice versa — the same discipline fire.ts's block
+ * holds to.
  */
 export function panelLine(lineId: string, view: OrderView, order: ShownOrder): LineSheetFixture | undefined {
   const line = linesOf(order).find((l) => l.line.id === lineId)?.line;
   if (!line || line.status !== 'pending') return undefined;
+  const quick = orderVariant(order) === 'quick_sale';
   return {
     kind: 'line',
-    title: lineEditorTitle(line.name),
+    title: quick ? line.name : lineEditorTitle(line.name),
+    ...(quick && { tag: 'NOT SENT YET' }),
     quantity: line.quantity,
-    notes: PENDING_NOTES,
+    notes: quick ? QUICK_NOTES : PENDING_NOTES,
     opener: lineBody(lineId),
     back: view,
     remove: { ...view, gone: lineId },

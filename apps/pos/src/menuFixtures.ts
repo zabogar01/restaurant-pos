@@ -185,4 +185,8 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   // another order names that order's state instead.
   error: { rejected: { state: 'default' } },
   fireerror: {},
+  // F2d. The menu region is untouched by the quick-sale variant — the rail
+  // and grid are the artifact's default ones behind both states.
+  quick: {},
+  'quick-line': {},
 };

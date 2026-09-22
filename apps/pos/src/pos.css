@@ -582,6 +582,13 @@ button.order-line__target {
   color: var(--frost-unavailable-text);
 }
 
+/* F2d: the quick sale's one wide primary control, on its own row (the
+ * artifact's own name, structure.css: .btn--wide). No new value — a grid
+ * placement, not a length or a colour. */
+.action--wide {
+  grid-column: 1 / -1;
+}
+
 /* Pressed. Every enabled boxed control on the panel: the row body and the
  * remove control here, the close-bar actions by button.action (the sheets'
  * rule, below). a.action is the lock notice's route out, the one anchor on the

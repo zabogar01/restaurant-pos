@@ -186,6 +186,7 @@ function LineSheet({ sheet, go }: { sheet: LineSheetFixture; go: (view: OrderVie
   return (
     <SheetFrame
       title={sheet.title}
+      aside={sheet.tag && <span className="sheet__aside round-head__tag">{sheet.tag}</span>}
       onClose={() => go(sheet.back)}
       foot={
         <>

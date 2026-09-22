@@ -97,8 +97,52 @@ export const FIRE_INCIDENT: EmergencyIncident = {
   action: { label: 'Open incidents', href: '?state=incidents' },
 };
 
+/**
+ * FR-D2, the PRD's own vocabulary (`docs/PRD.md:40`): "One bill. Type is
+ * `table` or `quick_sale`." F2d reads this, not `?state=`, to decide the
+ * count string, the pending group's heading, the close bar's shape and the
+ * line editor's form — four consequences of one fact rather than four places
+ * that ask `view.state`.
+ *
+ * Optional, defaulting to `table`: the two dozen fixtures already committed
+ * as table orders are not touched to spell out what they already are (every
+ * consumer reads it through `orderVariant`, below). `quick` and `quick-line`
+ * are the only fixtures that set it.
+ */
+export type OrderVariant = 'table' | 'quick_sale';
+
+/** An `OrderFixture`'s variant, defaulted. The one place `?? 'table'` lives. */
+export function orderVariant(fixture: Pick<OrderFixture, 'type'>): OrderVariant {
+  return fixture.type ?? 'table';
+}
+
+/**
+ * The panel's item count, in the artifact's own words: a quick sale adds
+ * "· not yet sent" because nothing on it has gone to the kitchen yet
+ * (FR-E5); a table order's count says only how many lines it holds. Derived
+ * from the variant, not from which state produced it — a pure function
+ * proves as much by taking `type` as a parameter rather than reading a
+ * fixture.
+ */
+export function orderCountLabel(type: OrderVariant, count: number): string {
+  const items = count === 1 ? '1 item' : `${count} items`;
+  return type === 'quick_sale' ? `${items} · not yet sent` : items;
+}
+
+/**
+ * The pending group's heading. On a table order it answers "did this go to
+ * the kitchen?" (I-7) about one round among others; on a quick sale nothing
+ * has, ever, until close (FR-E5), so the artifact's heading is a statement
+ * about the whole order rather than about a round.
+ */
+export function pendingGroupHeading(type: OrderVariant): string {
+  return type === 'quick_sale' ? 'Not sent to the kitchen yet' : 'Pending · not sent to the kitchen';
+}
+
 export type OrderFixture = {
   title: string;
+  /** FR-D2. Optional; read through `orderVariant`, never compared directly. */
+  type?: OrderVariant;
   groups: ReadonlyArray<RoundGroup>;
   totals: Totals;
   /**
@@ -160,7 +204,9 @@ export type OrderState =
   | 'fireblocked'
   | 'fireblocked-overflow'
   | 'error'
-  | 'fireerror';
+  | 'fireerror'
+  | 'quick'
+  | 'quick-line';
 
 export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'default', label: 'Two rounds fired, one line pending' },
@@ -192,6 +238,8 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'fireblocked-overflow', label: 'Fire blocked — one of three pending lines' },
   { id: 'error', label: 'Command rejected' },
   { id: 'fireerror', label: 'Fire printed FAILED' },
+  { id: 'quick', label: 'Quick sale' },
+  { id: 'quick-line', label: 'Quick sale — line editor' },
 ];
 
 // ruling C-5: the two locks never share a string.
@@ -366,6 +414,40 @@ const overflowTotalsWithout = {
   'of-wine': serviceAndTax(1_105_000n, 55_250n, 1_160_250n, 100_455n),
 };
 
+// F2d's counter order (FR-D2). One pending group — nothing on a quick sale is
+// ever fired before close (FR-E5), so it never has a round to group by. Same
+// Burger and Soda the table order carries, same itemIds, at the artifact's
+// own quick-sale prices (no size or cheese delta named here — the artifact's
+// quick grid draws Burger at its base modifiers, matching order.html's
+// q-burger line).
+const quickOrder: ReadonlyArray<RoundGroup> = [
+  {
+    kind: 'pending',
+    lines: [
+      {
+        id: 'q-burger',
+        quantity: 1,
+        name: 'Burger',
+        itemId: 'burger',
+        modifiers: [
+          { name: 'Large', delta: 20_000n },
+          { name: 'Extra cheese', delta: 15_000n },
+        ],
+        amount: 135_000n,
+        status: 'pending',
+      },
+      { id: 'q-soda', quantity: 1, name: 'Soda', itemId: 'soda', amount: 30_000n, status: 'pending' },
+    ],
+  },
+];
+
+const quickTotals = serviceAndTax(165_000n, 8_250n, 173_250n, 15_000n);
+
+const quickTotalsWithout = {
+  'q-burger': serviceAndTax(30_000n, 1_500n, 31_500n, 2_727n),
+  'q-soda': serviceAndTax(135_000n, 6_750n, 141_750n, 12_273n),
+};
+
 export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   default: { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 
@@ -515,6 +597,20 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
     applied: STAFF_MEAL,
     appliedNote: STAFF_MEAL_NOTE,
     incident: FIRE_INCIDENT,
+  },
+
+  // F2d's two states. quick draws the counter order; quick-line is the line
+  // editor's quick form (M-5, SCREEN-INVENTORY), opened statically over the
+  // same order for review — the panel behind a sheet is the order the sheet
+  // was opened over (the same rule as sheet-line and every other F2c/F2i/F2j
+  // sheet).
+  quick: { title: 'Order · counter', type: 'quick_sale', groups: quickOrder, totals: quickTotals, totalsWithout: quickTotalsWithout },
+  'quick-line': {
+    title: 'Order · counter',
+    type: 'quick_sale',
+    groups: quickOrder,
+    totals: quickTotals,
+    totalsWithout: quickTotalsWithout,
   },
 };
 

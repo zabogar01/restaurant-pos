@@ -493,7 +493,12 @@ describe('sheet-line', () => {
 // discount sheets are test/discount.test.tsx's, the void sheets
 // test/void.test.tsx's.
 describe('no sheet in any other state', () => {
-  it.each(ORDER_STATES.map((s) => s.id).filter((s) => !BUILT.includes(s) && !APPROVAL_FIXTURES[s] && !DISCOUNT_FIXTURES[s] && !VOID_FIXTURES[s]))('%s', (state) => {
+  // Generalised from `!BUILT.includes(s)` in F2d: BUILT was every key
+  // SHEET_FIXTURES had until quick-line joined it, so the two were the same
+  // set. Reading SHEET_FIXTURES itself rather than the F2c-era array means a
+  // future sheet fixture excludes itself here automatically, the way this one
+  // should have without a second edit.
+  it.each(ORDER_STATES.map((s) => s.id).filter((s) => !(s in SHEET_FIXTURES) && !APPROVAL_FIXTURES[s] && !DISCOUNT_FIXTURES[s] && !VOID_FIXTURES[s]))('%s', (state) => {
     render(state);
     expect(dialog()).toBeNull();
     expect(device().querySelector('[inert]')).toBeNull();

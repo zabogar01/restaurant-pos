@@ -15,11 +15,15 @@ import {
   ORDER_FIXTURES,
   ORDER_STATES,
   PENDING_TAG,
+  orderCountLabel,
+  orderVariant,
   orderViewFrom,
+  pendingGroupHeading,
   viewSearch,
   type Modifier,
   type OrderLine,
   type OrderState,
+  type OrderVariant,
   type OrderView,
   type RoundGroup,
   type SettlementLock,
@@ -176,6 +180,7 @@ const NO_ACTIONS: PanelActions = { navigate: () => {}, openVoid: () => {}, openL
 export function OrderPanel({ view, actions = NO_ACTIONS }: { view: OrderView; actions?: PanelActions }) {
   const fixture = ORDER_FIXTURES[view.state];
   const { lock, pressedLineId } = fixture;
+  const type = orderVariant(fixture);
 
   // A removal is only honoured where the artifact has figures for it, and never
   // under a lock: removing a PENDING line is a void (FR-H1, AC-3).
@@ -209,12 +214,15 @@ export function OrderPanel({ view, actions = NO_ACTIONS }: { view: OrderView; ac
   // test/fire.test.tsx pins it; raised in the FE-011 handoff.
   const unavailable = MENU_FIXTURES[view.state].eightySixed ?? [];
   const lines = groups.flatMap((g) => g.lines);
-  const refusal = fireRefusal(blockingLines(lines, unavailable));
+  // FR-E5, ruling C-2: a quick sale has no fire control at all, so it has
+  // nothing to refuse and nothing that is "not sendable yet" either — both
+  // questions presuppose a control that does not exist on this order.
+  const refusal = type === 'table' ? fireRefusal(blockingLines(lines, unavailable)) : undefined;
   // The order's other answer to "what can this send?": nothing, because every
   // line is already FIRED (FR-E1, FR-E2, B-16). Unavailable in place like the
   // refusal, but silent — it is not a refusal, it is an order that is not
   // fireable yet, and adding a line makes it fireable again.
-  const nothingToSend = sendableLines(lines).length === 0;
+  const nothingToSend = type === 'table' && sendableLines(lines).length === 0;
   const loading = MENU_FIXTURES[view.state].loading ?? false;
 
   return (
@@ -223,7 +231,7 @@ export function OrderPanel({ view, actions = NO_ACTIONS }: { view: OrderView; ac
         <h2 id="order-title" className="order-panel__title">
           {fixture.title}
         </h2>
-        <span className="order-panel__count">{empty ? 'Empty' : count === 1 ? '1 item' : `${count} items`}</span>
+        <span className="order-panel__count">{empty ? 'Empty' : orderCountLabel(type, count)}</span>
       </header>
 
       <div className="order-lines">
@@ -242,6 +250,7 @@ export function OrderPanel({ view, actions = NO_ACTIONS }: { view: OrderView; ac
                 key={group.kind === 'fired' ? `round-${group.round}` : 'pending'}
                 group={group}
                 view={view}
+                type={type}
                 lock={lock}
                 unavailable={unavailable}
                 pressedLineId={pressedLineId}
@@ -256,6 +265,7 @@ export function OrderPanel({ view, actions = NO_ACTIONS }: { view: OrderView; ac
 
       {loading ? <PanelSkeleton widths={['60', '40']} /> : <TotalsView totals={totals} />}
       <OrderActions
+        type={type}
         off={empty || lock !== undefined}
         fireOff={refusal !== undefined || nothingToSend}
         fireDescribedBy={refusal ? FIRE_REFUSAL_ID : undefined}
@@ -317,6 +327,7 @@ function FireRefusalNotice({ refusal }: { refusal: FireRefusal }) {
 function RoundGroupView({
   group,
   view,
+  type,
   lock,
   unavailable,
   pressedLineId,
@@ -324,6 +335,7 @@ function RoundGroupView({
 }: {
   group: RoundGroup;
   view: OrderView;
+  type: OrderVariant;
   lock: SettlementLock | undefined;
   unavailable: ReadonlyArray<string>;
   pressedLineId: string | undefined;
@@ -332,10 +344,9 @@ function RoundGroupView({
   // I-7: the header answers "did this go to the kitchen?". The tag is the only
   // statement of what a tap on the rows below will do, because a fired row's
   // slot is deliberately empty (I-12); under a lock it names the lock instead.
-  const heading =
-    group.kind === 'fired'
-      ? `Round ${group.round} · fired ${group.firedAt} · ${group.printed ? 'printed' : 'not printed'}`
-      : 'Pending · not sent to the kitchen';
+  // A quick sale never has a fired group (FR-E5), so pendingGroupHeading's own
+  // branch on `type` is the only place this differs from a table order.
+  const heading = group.kind === 'fired' ? `Round ${group.round} · fired ${group.firedAt} · ${group.printed ? 'printed' : 'not printed'}` : pendingGroupHeading(type);
   const tag = lock ? LOCK_TAG[lock] : group.kind === 'fired' ? FIRED_TAG : PENDING_TAG;
 
   return (
@@ -525,12 +536,32 @@ function TotalsView({ totals }: { totals: Totals }) {
 // nowhere": a fixture control with no reviewed result and no server does
 // nothing, visibly and deliberately, rather than lying about where it went.
 // **What firing shows on POS-03 is owed to a designer.**
-const ACTIONS = [
-  { id: DISCOUNT_ACTION, label: 'Discount' },
-  { id: VOID_ORDER_ACTION, label: 'Void order' },
-  { id: FIRE_ACTION, label: 'Send to kitchen' },
-  { id: 'settle', label: 'Settle', search: '?state=settle', leaves: true, primary: true },
-] as const;
+//
+// F2d, FR-E5, ruling C-2: a quick sale presents **no fire control at all** —
+// not this control gone off, the entry absent from the array below — and
+// Settle carries the fire meaning instead, in the artifact's own width and
+// words. `actionsFor` reads the order's variant, never `view.state`.
+type ActionDef = { id: string; label: string; search?: string; leaves?: boolean; primary?: boolean; wide?: boolean };
+
+const DISCOUNT_BTN: ActionDef = { id: DISCOUNT_ACTION, label: 'Discount' };
+const VOID_ORDER_BTN: ActionDef = { id: VOID_ORDER_ACTION, label: 'Void order' };
+const FIRE_BTN: ActionDef = { id: FIRE_ACTION, label: 'Send to kitchen' };
+const SETTLE_BTN: ActionDef = { id: 'settle', label: 'Settle', search: '?state=settle', leaves: true, primary: true };
+const SETTLE_WIDE_BTN: ActionDef = {
+  id: 'settle',
+  label: 'Settle — sends the order to the kitchen',
+  search: '?state=settle',
+  leaves: true,
+  primary: true,
+  wide: true,
+};
+
+/** Exported for test/quick-sale.test.tsx's proof that the close bar derives from the order's variant, not `view.state`. */
+export function actionsFor(type: OrderVariant): ReadonlyArray<ActionDef> {
+  return type === 'quick_sale'
+    ? [DISCOUNT_BTN, VOID_ORDER_BTN, SETTLE_WIDE_BTN]
+    : [DISCOUNT_BTN, VOID_ORDER_BTN, FIRE_BTN, SETTLE_BTN];
+}
 
 /**
  * Firing takes **one** control off while the other three stay live, for either
@@ -548,11 +579,13 @@ const ACTIONS = [
  * nothing.
  */
 function OrderActions({
+  type,
   off,
   fireOff,
   fireDescribedBy,
   actions,
 }: {
+  type: OrderVariant;
   off: boolean;
   fireOff: boolean;
   fireDescribedBy: string | undefined;
@@ -560,7 +593,7 @@ function OrderActions({
 }) {
   return (
     <div className="order-actions">
-      {ACTIONS.map((a) =>
+      {actionsFor(type).map((a) =>
         off || (fireOff && a.id === FIRE_ACTION) ? (
           <span
             key={a.id}
@@ -575,10 +608,10 @@ function OrderActions({
           <button
             key={a.id}
             type="button"
-            className={'primary' in a ? 'action action--primary' : 'action'}
+            className={['action', a.primary && 'action--primary', a.wide && 'action--wide'].filter(Boolean).join(' ')}
             data-action={a.id}
             onClick={() => {
-              if ('search' in a) actions.navigate(a.search, 'leaves' in a);
+              if (a.search) actions.navigate(a.search, a.leaves ?? false);
               else if (a.id === DISCOUNT_ACTION) actions.openDiscount();
               else if (a.id === VOID_ORDER_ACTION) actions.openVoid({ kind: 'order' });
               // Send to kitchen: nothing. See above — no reviewed result, no

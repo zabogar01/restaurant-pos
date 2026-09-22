@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FIRE_ACTION, blockingLines, fireRefusal, holdsUnavailable, sendableLines } from '../src/fire.js';
 import { MENU_FIXTURES, REJECTED_NOTICE } from '../src/menuFixtures.js';
 import { OrderScreen } from '../src/OrderPanel.js';
-import { FIRE_INCIDENT, ORDER_FIXTURES, ORDER_STATES, type OrderState, type OrderView } from '../src/orderFixtures.js';
+import { FIRE_INCIDENT, ORDER_FIXTURES, ORDER_STATES, orderVariant, type OrderState, type OrderView } from '../src/orderFixtures.js';
 
 // POS-03's fire and rejection states (F2h): fireblocked (FR-E4, B-17), error
 // (B-20) and fireerror (FR-E3), plus the two corrections F2b and F2c deferred
@@ -61,6 +61,17 @@ const drawnOrder = () =>
   rows().map((r) => [r.dataset.lineStatus, r.querySelector('.order-line__name')!.firstChild!.textContent, r.querySelector('.order-line__amount')!.textContent]);
 
 const ALL_STATES = ORDER_STATES.map((s) => s.id);
+/**
+ * F2d: a quick-sale order (FR-E5, ruling C-2) has no fire control at all —
+ * not inert, absent. The generic fire-availability guard below assumes a
+ * control exists to be live or off, which is false for a quick sale, so it
+ * is scoped to table orders. **Classified by the fact, not by name**: reading
+ * `orderVariant` — the same function `OrderPanel.tsx` asks — means a future
+ * quick-sale state lands here automatically, rather than needing its name
+ * added to a filter by hand.
+ */
+const TABLE_STATES = ALL_STATES.filter((s) => orderVariant(ORDER_FIXTURES[s]) === 'table');
+const QUICK_SALE_STATES = ALL_STATES.filter((s) => orderVariant(ORDER_FIXTURES[s]) === 'quick_sale');
 
 // ---------------------------------------------------------------------------
 // The rule itself (acceptance criterion 2)
@@ -580,9 +591,9 @@ describe('fireerror: the order a failed fire leaves behind', () => {
 // ---------------------------------------------------------------------------
 
 describe('the fire control is unavailable wherever the order has no PENDING line', () => {
-  /** Every ?state=, plus the two ?gone= views that take the last pending line away. */
+  /** Every table-order ?state=, plus the two ?gone= views that take the last pending line away. */
   const VIEWS: ReadonlyArray<OrderView> = [
-    ...ALL_STATES.map((state) => ({ state })),
+    ...TABLE_STATES.map((state) => ({ state })),
     { state: 'default', gone: 'steak' },
     { state: 'fireblocked', gone: 'steak' },
     { state: 'fireblocked-overflow', gone: 'of-coffee' },
@@ -627,11 +638,70 @@ describe('the fire control is unavailable wherever the order has no PENDING line
     expect(fireControl().tagName).toBe('BUTTON');
   });
 
-  it('is never absent, in any state: unavailable in place, because the condition is temporary (C-1)', () => {
-    for (const state of ALL_STATES) {
+  it('is never absent, in any table-order state: unavailable in place, because the condition is temporary (C-1)', () => {
+    for (const state of TABLE_STATES) {
       render(state);
       expect(host.querySelector(`.order-actions [data-action="${FIRE_ACTION}"]`)).not.toBeNull();
       expect(fireControl().textContent).toBe('Send to kitchen');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// F2d, FR-E5, ruling C-2: the fire control's very presence follows the
+// order's variant, never a name (acceptance criterion 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * The positive form of what `TABLE_STATES`/`QUICK_SALE_STATES` already
+ * assume: every state classified `table` by `orderVariant` draws the fire
+ * control (live or unavailable, but present), and every state classified
+ * `quick_sale` draws no fire control at all — not `aria-disabled`, not
+ * hidden, absent from the document. Both sides are read off
+ * `ORDER_FIXTURES[state].type`, so a state's own fixture is what puts it in
+ * one list or the other; nothing here spells out `quick` or `quick-line` by
+ * name.
+ */
+describe('the fire control exists exactly on table orders, by the order’s own type', () => {
+  it('table orders draw a fire control', () => {
+    expect(TABLE_STATES.length).toBeGreaterThan(0);
+    for (const state of TABLE_STATES) {
+      render(state);
+      expect(host.querySelector(`.order-actions [data-action="${FIRE_ACTION}"]`)).not.toBeNull();
+    }
+  });
+
+  it('quick-sale orders draw none, at all', () => {
+    expect(QUICK_SALE_STATES.length).toBeGreaterThan(0);
+    for (const state of QUICK_SALE_STATES) {
+      render(state);
+      expect(host.querySelector(`.order-actions [data-action="${FIRE_ACTION}"]`)).toBeNull();
+    }
+  });
+
+  it('the two sets partition every state, and the split is ORDER_FIXTURES.type, not a list of names', () => {
+    expect([...TABLE_STATES, ...QUICK_SALE_STATES].sort()).toEqual([...ALL_STATES].sort());
+    expect(TABLE_STATES.some((s) => s === 'quick' || s === 'quick-line')).toBe(false);
+    expect(QUICK_SALE_STATES).toEqual(ALL_STATES.filter((s) => ORDER_FIXTURES[s].type === 'quick_sale'));
+  });
+
+  it('proven red by flipping one fixture’s type: the classification, and the render, both follow the fact', () => {
+    const classify = () => ALL_STATES.filter((s) => orderVariant(ORDER_FIXTURES[s]) === 'table');
+    expect(classify()).not.toContain('quick');
+
+    const original = ORDER_FIXTURES.quick.type;
+    ORDER_FIXTURES.quick.type = 'table';
+    try {
+      // The classification recomputed from the same function now disagrees
+      // with the module-level TABLE_STATES/QUICK_SALE_STATES it was built
+      // from — because it is reading the fixture, not a name — and the
+      // panel itself, asked fresh, draws a fire control it drew none of a
+      // moment ago.
+      expect(classify()).toContain('quick');
+      render('quick');
+      expect(host.querySelector(`.order-actions [data-action="${FIRE_ACTION}"]`)).not.toBeNull();
+    } finally {
+      ORDER_FIXTURES.quick.type = original;
     }
   });
 });
