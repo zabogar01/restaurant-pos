@@ -3,7 +3,9 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-22, when F2h landed as `456c37f` and `builder13` closed.
+Last updated: 2026-09-22, when **F2d landed as `2ed74aa` and F2 finished**.
+Earlier the same day F2h landed as `456c37f`; `builder13` and `builder14` are
+both closed.
 A fresh lead session took `w2:p1` that morning, re-ran `herdr agent rename w2:p1
 lead`, and found two facts in this file stale: the header date, and a branch head
 recorded as `e5e0230` when it was `12e9ca6`. Both are corrected here. **The
@@ -61,7 +63,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, F2e's corrections, F2k's openers, and F2h's fire and rejection states. Head `456c37f`, **1077 tests across 18 files**, working tree clean, verified 2026-09-22 |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, F2e's corrections, F2k's openers, F2h's fire and rejection states, and F2d's quick sale. Head `2ed74aa`, **1127 tests across 19 files**, working tree clean, verified 2026-09-22 |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -152,14 +154,19 @@ and remediated over three passes.
      2026-09-22**, lead-verified and committed as `456c37f`. 1077 tests across
      18 files, up from 897. Account under *F2h landed* below. **The artifact
      lets a cashier fire an 86'd item**, and a boundary settled it.
-   - **F2d — quick-sale / counter mode. NEXT**, split out of F2b on 2026-09-17.
-     It changes the order's identity (`T1` becomes `counter`) and the panel
-     header, not just the menu, so it is its own slice rather than a state
-     smuggled into the grid. **`FR-E5` and ruling C-2 are its hardest
-     constraint: a quick sale presents no fire control at all** — settling fires
-     it — which lands directly on the close bar F2h has just taught to refuse a
-     fire. Its task file is written after F2h so it is written against what F2h
-     actually built.
+   - **F2d — [FE-012](tasks/FE-012-quick-sale.md). DONE 2026-09-22**,
+     lead-verified and committed as `2ed74aa`. 1127 tests across 19 files.
+     Account under *F2d landed* below. **The first slice built by a Sonnet
+     implementer**, and the order finally has a type.
+
+**F2 IS COMPLETE.** Eleven slices — the panel, the menu region, the ungated
+sheets, the approval prompt, the discount and void families, the corrections,
+the openers, the fire and rejection states, and the quick sale. POS-03 draws
+every state the reviewed artifact has for it. **Next is F3, settlement** — and
+F3's first act is reconciling three placeholder route names (`?state=settle`,
+`settle-pending`, `settle-takeover`) plus F2h's `?state=incidents`, and reading
+`settlement.html` **from the design worktree**, because this branch's copy still
+carries DESIGN-004's critical defect.
 
 **How this session works** — the owner's two standing instructions:
 
@@ -518,6 +525,7 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `builder14` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-012](tasks/FE-012-quick-sale.md)** (F2d), the first slice under the owner's model policy. Kept `fire.ts` untouched while giving the close bar a second shape, and took the lead's classify-by-the-fact correction in two minutes. Committed in `2ed74aa` |
 | `builder13` | claude, Opus 5 | — | closed 2026-09-22 | **Delivered [FE-011](tasks/FE-011-fire-and-rejection-states.md)** (F2h) and two rounds of additions the lead ruled after verifying. Found that the artifact lets a cashier fire an 86'd item and raised it rather than scoping the rule back; reported a Prettier accident that no diff would have shown. Committed in `456c37f` |
 | `builder12` | claude | — | closed 2026-09-21 | **Delivered [FE-010](tasks/FE-010-opener-fix.md)** (F2k) and its four post-review corrections. Its handoff carries two entries and both are the record. Committed in `705fb6c` |
 | `code-reviewer` | **codex** | — | closed 2026-09-21 | **Reviewed FE-010 independently** — [reviews/FE-010-review.md](reviews/FE-010-review.md). Three findings, the worst of them the lead's own acceptance criterion. **The first review agent used on implementation work**, and it caught the class no implementer can. Use one again on any slice that encodes a rule |
@@ -636,6 +644,64 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## F2d landed — the order has a type, and F2 is finished
+
+[FE-012](tasks/FE-012-quick-sale.md), `builder14`, committed `2ed74aa`.
+**Lead-verified: 1127 tests across 19 files**, up from 1077, typecheck clean.
+`quick` and `quick-line` — POS-03's second variant, which every slice until now
+skipped.
+
+**The slice's whole shape is one fact.** `OrderFixture` gains `type` — the PRD's
+own `table` or `quick_sale` (`PRD.md:40`, `FR-D2`) — and four differences fall
+out of reading it: the count says *"2 items · not yet sent"*, the group heading
+speaks about the order rather than a round, the line editor takes its quick form,
+and **the close bar loses the fire control entirely.** No component branches on
+`?state=`, which is the per-state flag F2h spent a slice removing from the fire
+rule. Proven by the sharpest test in the slice: **a table-order fixture handed
+the quick type draws the quick affordances, and a quick order handed the table
+type draws the table ones.**
+
+### Absent, not inert — and it is the opposite of what F2h built
+
+`FR-E5` and ruling `C-2`: a quick sale presents **no fire control at all**,
+because one control meaning *send to kitchen* on a table order and nothing on a
+counter sale teaches the cashier the control is unreliable. Ruling `C-1` draws
+the line this sits on: **inert is for a condition that passes**, and a quick sale
+can never fire.
+
+F2h, one day earlier, made that same control go **inert** for two conditions that
+do pass (`FR-E4`'s 86'd line, `FR-E1`'s empty queue). **Both rulings are right
+and they meet on one control**, which is exactly where an implementer reaches for
+the nearest existing mechanism. `builder14` did not: the close bar composes its
+control set from the type and asks `fire.ts` only about a table order, so
+`fire.ts` is untouched by this slice.
+
+### The lead's correction: classify by the fact, in the tests too
+
+The slice derived everything from the type except its own tests, where
+`TABLE_STATES` was `ALL_STATES` minus two **names**. Not a hole — a new
+quick-sale state would have landed in that list and failed the *"never absent"*
+guard loudly, which is the safe direction — but the fix for that failure is to
+add a name to a filter, and the list then grows by hand forever. `FR-G13` and
+`AC-29`'s **leased quick-sale order** is already waiting to be the first.
+
+Both sets now derive from `orderVariant(ORDER_FIXTURES[state])`, the function
+production reads. **Generalise it:** where production reads a fact and a test
+reads a name, the test is one rename away from lying.
+
+### Sonnet built this one
+
+The owner's model policy landed mid-F2h, so F2d is the first slice by a Sonnet
+implementer. It delivered, raised one judgement call (make `type` optional with a
+`table` default rather than touch 28 fixtures — **accepted**, because
+`orderVariant` centralises the default and restating what a fixture already is
+would be churn), took the correction in two minutes, and proved it red two ways.
+**Nothing about the slice reads as cheaper work.** What made it work is what
+always makes it work here: the task file was written from the code and the
+artifact before the implementer started.
 
 ---
 
