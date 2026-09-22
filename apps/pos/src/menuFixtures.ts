@@ -1,5 +1,5 @@
 import type { Money } from '@pos/money';
-import type { OrderState, SettlementLock } from './orderFixtures.js';
+import type { OrderState, OrderView, SettlementLock } from './orderFixtures.js';
 
 // POS-03's menu region as fixtures (F2b), selected by the same ?state= as the
 // panel. Categories, items, prices and every notice's copy are the reviewed
@@ -90,6 +90,24 @@ export const CATALOG_NOTICE = {
   body: 'Nothing was added. Prices have been refreshed — check the item and add it again.',
 };
 
+/**
+ * B-20, the `error` state: a command the server rejected. The copy is the
+ * artifact's. **The whole claim is that nothing happened** — so the notice
+ * carries no undo, no retry of the command, and nothing that touches the
+ * order; its one control clears the notice and leaves the cashier on the order
+ * they were already on, with the live grid to add the line again.
+ *
+ * `role="alert"`, not `role="status"`: this is the answer to something the
+ * cashier just did, and F2e ruled that a failure a screen-reader user is never
+ * told about is a real defect. CATALOG_NOTICE is the other shape — a standing
+ * condition of the screen — and keeps `role="status"`.
+ */
+export const REJECTED_NOTICE = {
+  title: 'Could not add that line',
+  body: 'The order is exactly as it was. Nothing was half-applied.',
+  action: 'Try again',
+};
+
 export const LOADING_LABEL = 'LOADING MENU';
 
 export type MenuFixture = {
@@ -102,6 +120,18 @@ export type MenuFixture = {
   /** Held down, because a fixture cannot hold a finger. */
   pressedCategories?: ReadonlyArray<CategoryId>;
   pressedItem?: string;
+  /**
+   * B-20: the order this state's rejection notice was drawn over, and so the
+   * view *Try again* returns to. **On the fixture, never in the component.**
+   * A control that named a state would land the cashier on that state's order
+   * however they arrived — the defect F2k spent a slice removing from four
+   * openers, and this would be the fifth place to reintroduce it.
+   *
+   * It is an [INLINE] change of POS-03 (SITEMAP §1), so it replaces the
+   * history entry rather than pushing one, exactly as `sheetFixtures`' own
+   * `remove: { state, gone }` does.
+   */
+  rejected?: OrderView;
 };
 
 export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
@@ -138,4 +168,21 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   'sheet-voidline': {},
   'sheet-voidorder': {},
   'sheet-voidorder-fired': {},
+  // F2h. fireblocked 86s Steak exactly as eightysix does — the state is that
+  // one fact plus the order that holds a pending Steak; the refusal itself is
+  // read off the order by fire.ts, never written here. error draws the
+  // rejection over a live grid and returns to the order it was drawn over.
+  // fireerror changes nothing on the menu: the banner is above the screen.
+  fireblocked: { eightySixed: ['steak'] },
+  // The same one fact over the long order, 86'ing an item it holds *one of
+  // three* pending lines for. Coffee, because the grid sells one at 35.000 and
+  // the order's of-coffee is 2 × 35.000 — the identification is the artifact's
+  // own, as every other itemId is.
+  'fireblocked-overflow': { eightySixed: ['coffee'] },
+  // `default` is not a destination chosen here: it is the state that draws
+  // *this* state's own order (ORDER_FIXTURES.error is the table order), which
+  // is what B-20 promises is still there. A second rejection drawn over
+  // another order names that order's state instead.
+  error: { rejected: { state: 'default' } },
+  fireerror: {},
 };

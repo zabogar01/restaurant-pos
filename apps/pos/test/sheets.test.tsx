@@ -205,8 +205,21 @@ describe.each([...BUILT, ...F2I_SHEETS])('%s: no control reaches a PIN-gated sta
 
   it('the panel stays legible beside the sheet', () => {
     render(state);
-    expect([...host.querySelectorAll('.order-line__name')].map((n) => n.textContent)).toEqual(['Burger', 'Soda', 'Steak']);
+    // F2h: in sheet-item86 the menu fixture 86s Steak, so the panel's pending
+    // Steak now carries the 86 tag beside its name — the correction F2c
+    // deferred. The line is read without it, and the tag is asserted where it
+    // belongs below.
+    const names = [...host.querySelectorAll('.order-line__name')].map((n) => n.firstChild!.textContent);
+    expect(names).toEqual(['Burger', 'Soda', 'Steak']);
     expect(host.querySelector('.totals')).not.toBeNull();
+  });
+
+  it('tags the pending line 86 exactly where its item is 86’d, and nowhere else', () => {
+    render(state);
+    const tagged = [...host.querySelectorAll('.order-lines .tag-86')].map(
+      (t) => t.closest('.order-line')!.querySelector('.order-line__name')!.firstChild!.textContent
+    );
+    expect(tagged).toEqual(state === 'sheet-item86' ? ['Steak'] : []);
   });
 });
 

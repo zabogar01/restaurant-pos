@@ -750,6 +750,19 @@ button.menu-tile {
   letter-spacing: var(--frost-tracking-tag);
 }
 
+/* FR-E4's refusal sits between the scrolling lines and the totals, so it is a
+ * flex: none band across the panel rather than a boxed notice: the artifact
+ * drops its side borders and its margin and lets it meet both edges. It must
+ * not scroll away with the lines — the cashier is reading it to find out why
+ * the control below is dead. */
+.order-notice {
+  flex: none;
+  margin: 0;
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+}
+
 /* Menu notices sit 12px 16px in from the menu area's edges, as the artifact's
  * do; the lock screen's notice keeps its own margin. */
 .menu-notice {
@@ -784,22 +797,32 @@ button.menu-tile {
   color: var(--frost-muted);
 }
 
-.menu-loading__bar {
+/* Renamed out of .menu-loading__bar in F2h: the artifact draws the same three
+ * bars in the order panel while the menu loads, in the same widths, so the bar
+ * is no longer the menu's. Same declarations, same three widths — no new
+ * length is written. */
+.skel-bar {
   height: var(--frost-space-3);
   margin: var(--frost-space-2) 0;
   background: var(--frost-group);
 }
 
-.menu-loading__bar--80 {
+.skel-bar--80 {
   width: 80%;
 }
 
-.menu-loading__bar--60 {
+.skel-bar--60 {
   width: 60%;
 }
 
-.menu-loading__bar--40 {
+.skel-bar--40 {
   width: 40%;
+}
+
+/* The panel's skeleton stands in for the lines and for the totals, so it is
+ * padded like the blocks it replaces rather than like the menu's. */
+.panel-skeleton {
+  padding: var(--frost-space-4);
 }
 
 /* Pressed (A7): a tile, a category row. Element-qualified, so an 86'd tile —

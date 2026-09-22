@@ -109,7 +109,7 @@ describe('the slot guard can see a swallowed slot', () => {
 });
 
 describe('fixture states', () => {
-  it('has exactly the six states of F2a, the three of F2b, the three of F2c, the four of F2g, the five of F2i, the three of F2j and the one of F2k', () => {
+  it('has exactly the six states of F2a, the three of F2b, the three of F2c, the four of F2g, the five of F2i, the three of F2j, the one of F2k and the four of F2h', () => {
     expect(ORDER_STATES.map((s) => s.id)).toEqual([
       'default',
       'empty',
@@ -136,12 +136,22 @@ describe('fixture states', () => {
       'sheet-voidline',
       'sheet-voidorder',
       'sheet-voidorder-fired',
+      'fireblocked',
+      'fireblocked-overflow',
+      'error',
+      'fireerror',
     ]);
   });
 
   it('is reachable by ?state=, and anything else is the default', () => {
     for (const { id } of ORDER_STATES) expect(orderViewFrom(`?state=${id}`).state).toBe(id);
-    expect(orderViewFrom('?state=fireerror').state).toBe('default');
+    // Repointed in F2h: this guards the unknown-state fallback, and fireerror
+    // is a real state now. The two names below are the placeholder
+    // destinations F2b and F2h left for screens that are not built (POS-04,
+    // POS-07), which is exactly what an unknown ?state= is in this app.
+    expect(orderViewFrom('?state=settle-pending').state).toBe('default');
+    expect(orderViewFrom('?state=incidents').state).toBe('default');
+    expect(orderViewFrom('?state=nothing-of-the-sort').state).toBe('default');
     expect(orderViewFrom('').state).toBe('default');
   });
 });
@@ -241,13 +251,13 @@ describe('unlocked rows', () => {
     ]);
     for (const b of bar) press(b);
     // Discount and Void order name no state at all: each opens its sheet over
-    // the order on screen. Firing stays on POS-03 — the fire result is an
-    // [INLINE] state of this screen (SITEMAP §2) — so only Settle, which
-    // leaves for POS-04, asks to push a history entry.
+    // the order on screen. **Send to kitchen asks for nothing**: it used to
+    // name ?state=fireerror, which would move the cashier's order to the
+    // fire-error fixture's now that fireerror is a real state. Only Settle,
+    // which leaves for POS-04, asks to push a history entry.
     expect(asked).toEqual([
       { openDiscount: true },
       { openVoid: { kind: 'order' } },
-      { navigate: '?state=fireerror', leaves: false },
       { navigate: '?state=settle', leaves: true },
     ]);
   });

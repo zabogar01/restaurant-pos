@@ -7,6 +7,7 @@ import {
   MENU_CATEGORIES,
   MENU_FIXTURES,
   MENU_ITEMS,
+  REJECTED_NOTICE,
   SELECTED_CATEGORY,
   type MenuItem,
 } from './menuFixtures.js';
@@ -30,6 +31,10 @@ import { viewSearch, type OrderView, type SettlementLock } from './orderFixtures
 // as the URL that used to lie, moved somewhere they can see. So the press
 // keeps the order and changes nothing else. **What it should do before there
 // is a second catalogue is a designer's question, not this slice's.**
+//
+// F2h adds one notice here: B-20's rejected command. It is drawn over a live
+// rail and grid, because the claim it makes is that nothing happened and the
+// way to act on it is to add the line again.
 export function MenuRegion({ view, navigate = () => {} }: { view: OrderView; navigate?: (search: string) => void }) {
   const fixture = MENU_FIXTURES[view.state];
 
@@ -77,12 +82,38 @@ export function MenuRegion({ view, navigate = () => {} }: { view: OrderView; nav
           </div>
         )}
 
+        {/*
+          B-20. The rejection is drawn over a live screen: the grid below is
+          untouched, because adding the line again is the whole point of the
+          state, and the order beside it is the order that was already there.
+
+          *Try again* is a <button>: it acts on the screen it is on rather than
+          going to one that already exists (ruling of 2026-09-17). All it can
+          truthfully do with no server is clear the notice and leave the order
+          alone — which is all B-20 claims — so it navigates to the view the
+          fixture says this rejection was drawn over, replacing the history
+          entry as every [INLINE] change of POS-03 does (SITEMAP §1).
+        */}
+        {fixture.rejected && (
+          <div className="notice menu-notice" role="alert">
+            <div className="notice__title">{REJECTED_NOTICE.title}</div>
+            <div>{REJECTED_NOTICE.body}</div>
+            <button
+              type="button"
+              className="action action--compact menu-notice__action"
+              onClick={() => navigate(viewSearch(fixture.rejected!))}
+            >
+              {REJECTED_NOTICE.action}
+            </button>
+          </div>
+        )}
+
         {fixture.loading ? (
           <div className="menu-loading" aria-busy="true">
             <div className="menu-loading__label">{LOADING_LABEL}</div>
-            <div className="menu-loading__bar menu-loading__bar--80" aria-hidden="true" />
-            <div className="menu-loading__bar menu-loading__bar--60" aria-hidden="true" />
-            <div className="menu-loading__bar menu-loading__bar--40" aria-hidden="true" />
+            <div className="skel-bar skel-bar--80" aria-hidden="true" />
+            <div className="skel-bar skel-bar--60" aria-hidden="true" />
+            <div className="skel-bar skel-bar--40" aria-hidden="true" />
           </div>
         ) : (
           <div className="menu-grid">
