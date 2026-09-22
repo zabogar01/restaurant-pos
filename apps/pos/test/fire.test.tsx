@@ -486,6 +486,34 @@ describe('error: a rejected command changed nothing (B-20)', () => {
     render('error');
     expect(drawnOrder()).toEqual(after);
   });
+
+  // FE-013, finding 1 of the F2h/F2d review. `fixture.rejected` is
+  // `{ state: 'default' }`: on its own that discards `?gone=`, so a line the
+  // cashier removed while the notice was up came back once it cleared. The
+  // notice claims nothing was half-applied (B-20) — a control on the same
+  // screen putting a line back contradicts the sentence beside it. The
+  // existing preservation test above never catches this because it starts
+  // from the untouched `error` fixture, where before and after already
+  // coincide.
+  it('a line removed under the notice stays removed once Try again clears it', () => {
+    const depth = window.history.length;
+    press(host.querySelector('[aria-label="Remove Steak"]')!);
+    expect(window.location.search).toBe('?state=error&gone=steak');
+    const afterRemove = drawnOrder();
+    expect(afterRemove).toEqual([
+      ['fired', 'Burger', '135.000'],
+      ['fired', 'Soda', '30.000'],
+    ]);
+    expect(text('.totals dd')).toEqual(['165.000', '−16.500', '7.425', '155.925', '13.500']);
+
+    press(host.querySelector('.order-screen__menu .notice button')!);
+
+    expect(window.location.search).toBe('?state=default&gone=steak');
+    expect(drawnOrder()).toEqual(afterRemove);
+    expect(text('.totals dd')).toEqual(['165.000', '−16.500', '7.425', '155.925', '13.500']);
+    expect(menuNotice()).toBeNull();
+    expect(window.history.length).toBe(depth);
+  });
 });
 
 // ---------------------------------------------------------------------------

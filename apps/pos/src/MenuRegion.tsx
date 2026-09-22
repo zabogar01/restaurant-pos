@@ -93,6 +93,15 @@ export function MenuRegion({ view, navigate = () => {} }: { view: OrderView; nav
           alone — which is all B-20 claims — so it navigates to the view the
           fixture says this rejection was drawn over, replacing the history
           entry as every [INLINE] change of POS-03 does (SITEMAP §1).
+
+          **The view's own `gone` rides along.** `fixture.rejected` names the
+          state this rejection was drawn over, not the order the cashier is
+          looking at: the state carries `gone` from the URL, not from the
+          fixture, so a line the cashier removed with the notice on screen
+          stays removed once the notice clears. Found by review — the review
+          it caught by: fixture.rejected on its own discarded `view.gone`
+          entirely, and the check that should have caught it started from the
+          untouched fixture, where nothing was ever removed to lose.
         */}
         {fixture.rejected && (
           <div className="notice menu-notice" role="alert">
@@ -101,7 +110,7 @@ export function MenuRegion({ view, navigate = () => {} }: { view: OrderView; nav
             <button
               type="button"
               className="action action--compact menu-notice__action"
-              onClick={() => navigate(viewSearch(fixture.rejected!))}
+              onClick={() => navigate(viewSearch({ ...fixture.rejected!, gone: view.gone }))}
             >
               {REJECTED_NOTICE.action}
             </button>

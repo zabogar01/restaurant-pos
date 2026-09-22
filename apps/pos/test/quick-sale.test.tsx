@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FIRE_ACTION } from '../src/fire.js';
 import { actionsFor, OrderScreen } from '../src/OrderPanel.js';
 import { ORDER_FIXTURES, orderCountLabel, orderVariant, pendingGroupHeading, type OrderState } from '../src/orderFixtures.js';
-import { panelLine } from '../src/sheetFixtures.js';
+import { panelLine, SHEET_FIXTURES } from '../src/sheetFixtures.js';
 import type { ShownOrder } from '../src/voidFixtures.js';
 
 // F2d — quick sale, POS-03's second variant. FR-D2 gives an order a type,
@@ -320,5 +320,43 @@ describe('quick-line: every control in it is a button, none a link, and nothing 
     const voidPath = device().querySelector('.order-actions button[data-action="void-order"]');
     expect(voidPath).not.toBeNull();
     expect(voidPath!.closest('[inert]')).not.toBeNull();
+  });
+});
+
+// FE-013, finding 2 of the F2h/F2d review. The reachability sweep in
+// test/sheets.test.tsx now presses these same controls generically, over
+// every fixture SHEET_FIXTURES carries; these three follow quick-line's
+// static exits by name and check where each one actually lands, which is
+// what the review found missing — the block above checks markup and an
+// inert background, never a press.
+describe('quick-line: its static Back, Escape and Remove line all land on quick, ungated', () => {
+  const buttonNamed = (name: string) =>
+    [...dialog()!.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent) === name)!;
+
+  it('Back returns to quick with the order untouched, focus on the opener', () => {
+    render('quick-line');
+    const opener = device().querySelector(SHEET_FIXTURES['quick-line']!.opener)!;
+    press(buttonNamed('Back'));
+    expect(dialog()).toBeNull();
+    expect(urlState()).toBe('quick');
+    expect(text('.order-line__name')).toEqual(['Burger', 'Soda']);
+    expect(document.activeElement).toBe(device().querySelector(SHEET_FIXTURES['quick-line']!.opener));
+    expect(opener).not.toBeNull();
+  });
+
+  it('Escape does the same as Back', () => {
+    render('quick-line');
+    act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(dialog()).toBeNull();
+    expect(urlState()).toBe('quick');
+    expect(text('.order-line__name')).toEqual(['Burger', 'Soda']);
+  });
+
+  it('Remove line removes Burger and lands on quick, still ungated', () => {
+    render('quick-line');
+    press(buttonNamed('Remove line'));
+    expect(dialog()).toBeNull();
+    expect(window.location.search).toBe('?state=quick&gone=q-burger');
+    expect(text('.order-line__name')).toEqual(['Soda']);
   });
 });
