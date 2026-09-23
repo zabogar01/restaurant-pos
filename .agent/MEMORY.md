@@ -191,6 +191,27 @@ F3b's keypad clipping, F3c's zero-balance add, and this one.
 - F3c's red cases AC-1, AC-6 and AC-10 need re-proving by mutation. F3d's AC-9
   *Leave payment* clause could not be made red, because the lifted session
   protects the drafts whatever the navigation does.
+**THE F3 REVIEW, 2026-09-23.** *Request changes*, 3 P2 and 1 P3. It confirmed
+four of the lead's items (POS-03 popstate staleness, the `PinPad` seed
+submitting `••1234`, `/pos/floor`'s copy, and the artifact defects). **It
+cleared F3c's red-case debt** by running AC-1, AC-6a and AC-10's mutations in
+memory. **It found one new defect, and that defect was the lead's:** FE-016
+rule 7 (a live Add drops `?state=`) collided with FE-017 rule 8 (the rejection
+notice stays while money is owed). The notice was gated on `state === 'error'`,
+so **the first partial correction cleared it with 27.800 still owed.** That is
+the **twelfth task-file error**, and it is a new kind: **two rulings from
+different slices that each looked right alone.** No criterion tested the point
+where they meet.
+
+**The lead also found the two-path shape a third time while writing the
+corrections.** F3d's `SettlementScreen` carries `suppliedSession ??
+localSession`. FE-018's criterion 12 required *the same hook*, which F3d met,
+**but the same hook in two instances is still two paths.** The criterion was
+too weak. So [FE-019](tasks/FE-019-f3-review-corrections.md) removes the shape
+everywhere: controlled components for the route, thin self-owning wrappers under
+the old exported names so direct tests do not change, and **no component that
+calls a state hook whose result it can discard.**
+
 - **Design-branch list, now long:** the keypad clipped in `cardover` and
   `ceiling`; `pending`'s 155.925; *Leave payment*'s href; the takeover modal's
   missing keypad; and the single-tender-cap copy.
@@ -746,6 +767,7 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, **Opus 5.5** since 2026-09-23 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `f3-reviewer` | **codex, `gpt-6-sol`** (the owner's choice for this review) | — | closed 2026-09-23 | **Reviewed F3a–F3d**: [reviews/F3-settlement-review.md](reviews/F3-settlement-review.md). Request changes, **3 P2 + 1 P3.** **Cleared the money rules**: no ordinary-control sequence over-drafts a card, exceeds the change limit, or closes below exact. **Proved F3c's three unproven red cases** by in-memory mutation, without editing a file, and found one defect nobody had. A first attempt on `gpt-6-astra` was cancelled by the owner mid-read |
 | `builder20` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-018](tasks/FE-018-payment-session.md)** (F3d), plus one lead correction to the `?gone=` guard. Proved the one-session-hook criterion properly, and flagged the one red case it could not make fail rather than claiming it |
 | `builder19` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-017](tasks/FE-017-close-outcomes.md)** (F3c). **Stopped and raised the F3a store regression** rather than patching it, and fixed it narrowly once ruled. Its red-case discipline was weaker than its predecessors', and it said so |
 | `builder18` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-016](tasks/FE-016-cash-and-card-diverge.md)** (F3b), not committed. Survived three sleep interruptions, and took both corrections, one of them the lead's own error, in minutes. Its prompt told it outright that it is an implementer rather than the lead, because CLAUDE.md sends every fresh session to the lead's role |
