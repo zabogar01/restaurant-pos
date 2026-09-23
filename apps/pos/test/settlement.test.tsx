@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { closeRefusal } from '../src/close.js';
 import { PosRoutes } from '../src/PosRoutes.js';
 import { SettlementScreen } from '../src/SettlementScreen.js';
 import type { OrderStore } from '../src/orderStore.js';
@@ -98,6 +99,32 @@ describe('POS-03 to POS-04 routing', () => {
     expect(window.location.search).toBe(`?state=${settlementState}`);
     expect(host.querySelector('.settlement-screen')).not.toBeNull();
     expect(host.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  // F3a regression (cda4d4e), fixed in F3c: lifting the store to PosRoutes
+  // left a same-screen mutation — a pending row's × — unable to reach it,
+  // because only a `leaves` navigate told the parent to re-read the URL. Pins
+  // both ends: the panel itself (so the defect is caught even if a future
+  // change makes POS-04 stop trusting the panel), and what POS-04 reads after
+  // it. Red case: with `onLocationChange?.()` moved back under `if (leaves)`,
+  // this fails on the panel's own line list and total — not only on
+  // settlement's figure — which is what proves the panel, not just the
+  // store's internal effect, was the thing not re-rendering.
+  it('a pending row removed on POS-03 stays removed on the panel and carries through to POS-04', () => {
+    window.history.replaceState(null, '', '/pos/order');
+    act(() => root.render(<PosRoutes />));
+
+    press(host.querySelector('[aria-label="Remove Steak"]')!);
+
+    expect([...host.querySelectorAll('.order-line__name')].map((line) => line.firstChild!.textContent)).toEqual([
+      'Burger',
+      'Soda',
+    ]);
+    expect(host.querySelector('.totals__row--grand dd')!.textContent).toBe('155.925');
+
+    press(host.querySelector('[data-action="settle"]')!);
+
+    expect(host.querySelector('.settlement-totals .totals__row--grand dd')!.textContent).toBe('155.925');
   });
 });
 
@@ -484,5 +511,206 @@ describe('F3b: cash and card diverge (POS-04)', () => {
     expect(host.querySelectorAll('.draft-tender')).toHaveLength(draftCount);
     expect(balance()).toBe(balanceValue);
     expect(amount()).toBe(amountValue);
+  });
+});
+
+describe('F3c: close outcomes (POS-04)', () => {
+  const key = (digits: string) => [...digits].forEach((d) => press(host.querySelector(`[data-digit="${d}"]`)!));
+  const balance = () => host.querySelector('.settlement-balance__amount')!.textContent;
+  const amount = () => host.querySelector('.tender-amount')!.textContent;
+  const add = () => press(host.querySelector('[data-action="add-tender"]')!);
+  const method = (name: 'cash' | 'card') => press(host.querySelector(`[data-method="${name}"]`)!);
+  const close = () => host.querySelector<HTMLElement>('[data-action="close-order"]')!;
+  const totalsRow = () => [...host.querySelectorAll('.settlement-totals dd')].map((dd) => dd.textContent);
+
+  it('AC-1: the live walk refuses the close on a table order with a pending line, naming it', () => {
+    window.history.replaceState(null, '', '/pos/order');
+    act(() => root.render(<PosRoutes />));
+    press(host.querySelector('[data-action="settle"]')!);
+
+    add();
+
+    expect(balance()).toBe('0');
+    const button = close();
+    expect(button.tagName).toBe('SPAN');
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.textContent).toBe('Close order & print receipt');
+    expect(button.getAttribute('aria-describedby')).toBe('close-pending-notice');
+    const notice = host.querySelector('.notice')!;
+    expect(notice.id).toBe('close-pending-notice');
+    expect(notice.textContent).toContain('Steak');
+  });
+
+  it('AC-2: a quick sale still closes, even though every line on it is PENDING', () => {
+    enterSettlementWithBurger();
+
+    add();
+
+    expect(balance()).toBe('0');
+    expect(close().tagName).toBe('BUTTON');
+  });
+
+  it('AC-3 (close.ts): classifies by the order type, never the state name', () => {
+    const pendingLine = { id: 'l1', quantity: 1, name: 'X', amount: 1_000n, status: 'pending' as const };
+    const tableOrder = { type: 'table' as const, groups: [{ kind: 'pending' as const, lines: [pendingLine] }] };
+    const quickOrder = { type: 'quick_sale' as const, groups: [{ kind: 'pending' as const, lines: [pendingLine] }] };
+
+    expect(closeRefusal(tableOrder, { balance: 0n })).toEqual({ reason: 'pending', lines: [pendingLine] });
+    expect(closeRefusal(quickOrder, { balance: 0n })).toBeUndefined();
+  });
+
+  it('AC-4: pending blocks only the close — Add stays live, the field reads the live total, and a part tender works', () => {
+    window.history.replaceState(null, '', '/pos/settlement?state=pending');
+    act(() => root.render(<PosRoutes />));
+
+    expect(amount()).toBe('382.725');
+    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('BUTTON');
+
+    method('card');
+    key('100000');
+    add();
+
+    expect(host.querySelectorAll('.draft-tender')).toHaveLength(1);
+    expect(balance()).toBe('282.725');
+    expect(close().tagName).toBe('SPAN');
+  });
+
+  it('AC-5: removing the pending line from POS-03 un-blocks the close', () => {
+    window.history.replaceState(null, '', '/pos/order');
+    act(() => root.render(<PosRoutes />));
+    press(host.querySelector('[aria-label="Remove Steak"]')!);
+    press(host.querySelector('[data-action="settle"]')!);
+
+    expect(host.querySelector('.totals__row--grand dd')!.textContent).toBe('155.925');
+
+    add();
+
+    expect(balance()).toBe('0');
+    expect(close().tagName).toBe('BUTTON');
+  });
+
+  it('AC-6a: removing the pending line from a zero-total order leaves the zero composition with Close live', () => {
+    window.history.replaceState(null, '', '/pos/order?state=zero');
+    act(() => root.render(<PosRoutes />));
+    press(host.querySelector('[aria-label="Remove Steak"]')!);
+    press(host.querySelector('[data-action="settle"]')!);
+
+    expect(balance()).toBe('0');
+    expect(host.querySelectorAll('.notice')).toHaveLength(1);
+    expect(host.querySelector('.notice__title')!.textContent).toBe('Nothing to collect');
+    expect(host.querySelector('.tender-empty__title')!.textContent).toBe('No payment to take');
+    expect(close().tagName).toBe('BUTTON');
+  });
+
+  it('AC-6b (rule 5): a zero-total table order that still carries the pending line keeps Close inert', () => {
+    window.history.replaceState(null, '', '/pos/order?state=zero');
+    act(() => root.render(<PosRoutes />));
+    press(host.querySelector('[data-action="settle"]')!);
+
+    expect(balance()).toBe('0');
+    const notices = [...host.querySelectorAll('.notice')];
+    expect(notices).toHaveLength(2);
+    expect(notices[0]!.textContent).toContain('Nothing to collect');
+    expect(notices[1]!.textContent).toContain('Steak');
+    expect(close().tagName).toBe('SPAN');
+    expect(close().textContent).toBe('Close order & print receipt');
+  });
+
+  it('AC-7: the zero composition draws no field, no keypad and no Add, and no header NOTHING RECORDED YET tag', () => {
+    window.history.replaceState(null, '', '/pos/settlement?state=zero');
+    act(() => root.render(<PosRoutes />));
+
+    expect(host.querySelector('.tender-amount')).toBeNull();
+    expect(host.querySelector('.tender-keypad')).toBeNull();
+    expect(host.querySelector('[data-action="add-tender"]')).toBeNull();
+    expect(host.querySelector('.drafts-heading')).toBeNull();
+    expect(host.querySelector('.settlement-bar .settlement-tag')).toBeNull();
+    expect(close().tagName).toBe('BUTTON');
+  });
+
+  it('AC-8: error derives 37.800 from the live order and keeps the draft', () => {
+    window.history.replaceState(null, '', '/pos/settlement?state=error');
+    act(() => root.render(<PosRoutes />));
+
+    expect(totalsRow()).toEqual(['205.000', '−20.500', '9.225', '193.725', '16.773']);
+    expect(balance()).toBe('37.800');
+    expect(host.querySelectorAll('.draft-tender')).toHaveLength(1);
+    expect(host.querySelector('.draft-tender__amount')!.textContent).toBe('155.925');
+    expect(amount()).toBe('37.800');
+    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('BUTTON');
+    expect(close().tagName).toBe('SPAN');
+    expect(host.querySelector('.notice__title')!.textContent).toBe('Close was rejected');
+
+    add();
+
+    expect(balance()).toBe('0');
+    expect(host.querySelector('.notice')).toBeNull();
+    expect(close().tagName).toBe('BUTTON');
+  });
+
+  it('AC-9: loading cannot be reached by pressing Close', () => {
+    window.history.replaceState(null, '', '/pos/settlement?state=exact');
+    act(() => root.render(<PosRoutes />));
+    const before = host.innerHTML;
+
+    press(close());
+
+    expect(host.innerHTML).toBe(before);
+    expect(window.location.pathname).toBe('/pos/settlement');
+    expect(host.querySelector('.menu-loading__label')).toBeNull();
+  });
+
+  it('AC-9b: a direct visit to loading draws the fixture composition', () => {
+    window.history.replaceState(null, '', '/pos/settlement?state=loading');
+    act(() => root.render(<PosRoutes />));
+
+    expect(host.querySelector('.menu-loading__label')!.textContent).toBe('CLOSING ORDER');
+    expect(host.querySelectorAll('.skel-bar')).toHaveLength(2);
+    expect(host.querySelectorAll('.draft-tender')).toHaveLength(1);
+    expect(balance()).toBe('0');
+    expect(close().tagName).toBe('SPAN');
+    expect(close().textContent).toBe('Closing…');
+  });
+
+  it('AC-10: the refusal rule lives in close.ts — a rule that refuses everything needs no component change', () => {
+    window.history.replaceState(null, '', '/pos/settlement?state=exact');
+    const store: OrderStore = {
+      order: shownOrder({ state: 'default', gone: 'steak' }),
+      addLine: () => {},
+      removeLine: () => {},
+      setQuantity: () => {},
+    };
+    act(() => root.render(<SettlementScreen store={store} closeRule={() => ({ reason: 'balance' })} />));
+
+    expect(close().tagName).toBe('SPAN');
+    expect(close().textContent).toBe('Close order — balance outstanding');
+  });
+
+  it('AC-11: two PENDING lines are both named, in the plural', () => {
+    const lines = [
+      { id: 'a', quantity: 1, name: 'Steak', amount: 1_000n, status: 'pending' as const },
+      { id: 'b', quantity: 1, name: 'Fries', amount: 1_000n, status: 'pending' as const },
+    ];
+    const store: OrderStore = {
+      order: {
+        title: 'Order · T1',
+        type: 'table',
+        groups: [{ kind: 'pending', lines }],
+        totals: { subtotal: 2_000n, total: 2_000n },
+      },
+      addLine: () => {},
+      removeLine: () => {},
+      setQuantity: () => {},
+    };
+    window.history.replaceState(null, '', '/pos/settlement?state=empty');
+    act(() => root.render(<SettlementScreen store={store} />));
+
+    const notice = host.querySelector('.notice')!;
+    expect(notice.querySelector('.notice__title')!.textContent).toBe(
+      'Cannot close — 2 items have not been sent to the kitchen'
+    );
+    expect(notice.textContent).toContain('Steak');
+    expect(notice.textContent).toContain('Fries');
+    expect(notice.textContent).toContain('Steak and Fries');
   });
 });

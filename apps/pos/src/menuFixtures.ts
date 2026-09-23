@@ -190,4 +190,8 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   // and grid are the artifact's default ones behind both states.
   quick: {},
   'quick-line': {},
+  // F3c's settlement `error` seed only (orderFixtures.ts) — POS-04 draws no
+  // menu region, so this fixture is never read; it exists only to satisfy
+  // the exhaustive record.
+  'settle-error': {},
 };

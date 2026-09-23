@@ -118,7 +118,13 @@ export function OrderScreen({
     else window.history.replaceState(null, '', search);
     closeOpened();
     setView(next);
-    if (leaves) onLocationChange?.();
+    // F3c's fix to a regression F3a introduced when it lifted the store
+    // (cda4d4e): the parent route owns the store `suppliedStore` points at,
+    // seeded from its own `view`. That `view` only re-reads the URL when the
+    // parent re-renders, so every navigate must tell it — not only the ones
+    // that leave the screen — or a same-screen mutation (a pending row's ×)
+    // never reaches the store Settlement carries the order through on.
+    onLocationChange?.();
   }
 
   const go = (next: OrderView) => navigate(viewSearch(next));

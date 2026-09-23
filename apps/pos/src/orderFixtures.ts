@@ -206,7 +206,8 @@ export type OrderState =
   | 'error'
   | 'fireerror'
   | 'quick'
-  | 'quick-line';
+  | 'quick-line'
+  | 'settle-error';
 
 export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'default', label: 'Two rounds fired, one line pending' },
@@ -352,6 +353,29 @@ const fireErrorOrder: ReadonlyArray<RoundGroup> = tableOrder
 const tableTotalsWithout = {
   steak: serviceAndTax(165_000n, 7_425n, 155_925n, 13_500n, { label: 'Staff meal 10%', amount: -16_500n }),
 };
+
+// F3c's settlement `error` fixture (B-20, DESIGN-004): the order the artifact
+// draws for a rejected close is the table order without the Steak — same as
+// `default`'s `gone=steak` — but with a Fries also fired into round 2 (the
+// artifact's 205.000 subtotal is 165.000 plus one Fries at the grid's own
+// 40.000). Fried, not pending: a pending line would trip rule 2's FR-G10 check
+// and put a second refusal on a state whose artifact shows only one. No
+// pending group at all, because there is nothing left to be pending — the
+// Steak that was is gone, same as `default`'s own `gone=steak`. Built off
+// `tableOrder`'s own fired rounds, not `fireErrorOrder`'s — that order's
+// round 2 is deliberately marked `not printed` for the ticket-failure banner
+// (FE-011), a fact this rejected-close state does not carry.
+const errorSettlementOrder: ReadonlyArray<RoundGroup> = tableOrder
+  .filter((g): g is Extract<RoundGroup, { kind: 'fired' }> => g.kind === 'fired')
+  .map((g) =>
+    g.round === 2
+      ? { ...g, lines: [...g.lines, { id: 'fries', quantity: 1, name: 'Fries', itemId: 'fries', amount: 40_000n, status: 'fired' as const }] }
+      : g
+  );
+
+const errorSettlementSubtotal = errorSettlementOrder
+  .flatMap((g) => g.lines)
+  .reduce((sum, line) => sum + line.amount, 0n);
 
 // The long order (F2a's overflow), lifted out of its fixture unchanged so that
 // fireblocked-overflow can hold the same order: same lines, same ids, same
@@ -611,6 +635,19 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
     groups: quickOrder,
     totals: quickTotals,
     totalsWithout: quickTotalsWithout,
+  },
+
+  // F3c's settlement `error` seed only (PosRoutes.tsx). Not one of
+  // `ORDER_STATES`, so it never appears in POS-03's fixture nav and
+  // `orderViewFrom` never resolves a URL to it — it exists solely for
+  // `useOrderStore({ state: 'settle-error' })` to seed the order a rejected
+  // close leaves behind.
+  'settle-error': {
+    title: 'Order · T1',
+    groups: errorSettlementOrder,
+    totals: orderTotals(errorSettlementSubtotal, STAFF_MEAL),
+    applied: STAFF_MEAL,
+    appliedNote: STAFF_MEAL_NOTE,
   },
 };
 

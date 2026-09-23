@@ -1815,3 +1815,25 @@ button.settlement-close__action:focus-visible:active {
 .draft-change__method {
   flex: 1;
 }
+
+/* ==== POS-04 close outcomes: pending, zero, loading, error (F3c) ==== */
+
+/* The `zero` composition's stand-in for the field, Add and keypad it replaces
+ * (rule 4) — same shape as `.drafts-empty`, but this one never scrolls, so it
+ * carries its own padding rather than borrowing the draft list's dashed box. */
+.tender-empty {
+  padding: var(--frost-space-8) var(--frost-space-4);
+  text-align: center;
+}
+
+.tender-empty__title {
+  font-weight: var(--frost-weight-semibold);
+  margin-bottom: var(--frost-space-1);
+}
+
+/* `loading`'s CLOSING ORDER label and skeleton, above the drafted lines it
+ * still draws (F2h's `.menu-loading__label` and `.skel-bar`, shared rather
+ * than duplicated — see their own comments in this file). */
+.settlement-loading {
+  margin-bottom: var(--frost-space-4);
+}
