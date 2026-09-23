@@ -1776,3 +1776,42 @@ button.settlement-close__action:focus-visible:active {
     color: var(--frost-primary-text);
   }
 }
+
+/* ==== POS-04 settlement, cash-over-balance change (F3b) ==== */
+
+.settlement-change {
+  flex: none;
+  padding: 0 var(--frost-space-5) var(--frost-space-4);
+  border-bottom: var(--frost-focus-outline);
+}
+
+.settlement-change__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--frost-text-16);
+  font-weight: var(--frost-weight-semibold);
+}
+
+.settlement-change__amount {
+  font-size: var(--frost-text-22);
+}
+
+.settlement-change__note {
+  margin: var(--frost-space-1) 0 0;
+  color: var(--frost-muted);
+  font-size: var(--frost-text-12);
+}
+
+.draft-change {
+  min-height: var(--frost-line-slot-height);
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-3);
+  border-bottom: var(--frost-divider-stroke);
+  color: var(--frost-muted);
+}
+
+.draft-change__method {
+  flex: 1;
+}

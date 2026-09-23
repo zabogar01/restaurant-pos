@@ -3,12 +3,36 @@ import { useRef, useState } from 'react';
 import { formatAmount } from './money.js';
 import { TotalsView } from './OrderPanel.js';
 import type { OrderStore } from './orderStore.js';
-import { mayAddTender, type TenderMethod } from './tender.js';
+import { cashCeilingBoundByChangeLimit, mayAddTender, settlementPosition, tenderMaximum, type TenderMethod } from './tender.js';
 
-const SETTLEMENT_STATES = ['empty', 'pressed', 'partial', 'exact', 'overflow'] as const;
+const SETTLEMENT_STATES = [
+  'empty',
+  'pressed',
+  'partial',
+  'exact',
+  'overflow',
+  'card',
+  'cardsplit',
+  'cashover',
+  'change',
+  'cardover',
+  'ceiling',
+  'exactcash',
+  'exactsplit',
+] as const;
 export type SettlementState = (typeof SETTLEMENT_STATES)[number];
 
 type DraftTender = { id: string; label: string; amount: Money };
+
+/** A keyed-by-hand amount that a direct fixture visit seeds before any Add. */
+const KEYED_SEED: Partial<Record<SettlementState, string>> = {
+  cardsplit: '100000',
+  cashover: '200000',
+  cardover: '200000',
+  ceiling: '99999999',
+};
+
+const CARD_SELECTED_STATES: ReadonlySet<SettlementState> = new Set(['card', 'cardsplit', 'cardover']);
 
 export function settlementStateFrom(search: string): SettlementState {
   const state = new URLSearchParams(search).get('state');
@@ -16,8 +40,15 @@ export function settlementStateFrom(search: string): SettlementState {
 }
 
 function initialDrafts(state: SettlementState, total: Money): ReadonlyArray<DraftTender> {
-  if (state === 'partial') return [{ id: 'fixture-card', label: 'Card', amount: 100_000n }];
-  if (state === 'exact') return [{ id: 'fixture-card', label: 'Card', amount: total }];
+  const card = (id: string, amount: Money) => ({ id, label: 'Card', amount });
+  const cash = (id: string, amount: Money) => ({ id, label: 'Cash', amount });
+
+  if (state === 'partial') return [card('fixture-card', 100_000n)];
+  if (state === 'exact') return [card('fixture-card', total)];
+  if (state === 'exactcash') return [cash('fixture-cash', total)];
+  if (state === 'exactsplit') return [card('fixture-card', 100_000n), cash('fixture-cash', total - 100_000n)];
+  if (state === 'change') return [cash('fixture-cash', 200_000n)];
+  if (state === 'ceiling') return [card('fixture-card', 100_000n)];
   if (state !== 'overflow') return [];
 
   const fixed = [
@@ -32,8 +63,122 @@ function initialDrafts(state: SettlementState, total: Money): ReadonlyArray<Draf
 }
 
 const methodLabel = (method: TenderMethod) => (method === 'cash' ? 'Cash' : 'Card');
-const draftedTotal = (drafts: ReadonlyArray<DraftTender>) => drafts.reduce((sum, draft) => sum + draft.amount, 0n);
 const paymentTitle = (title: string) => title.replace(/^Order · T(\d+)$/, 'Table $1').replace(/^Order · /, '');
+
+/** The muted sentence under the field. Cash and card never share one (SCREEN-INVENTORY I-13). */
+function tenderCaption(args: {
+  method: TenderMethod;
+  balance: Money;
+  amount: Money;
+  keyed: boolean;
+  mayAdd: boolean;
+  max: Money;
+  ceilingBound: boolean;
+  total: Money;
+}) {
+  const { method, balance, amount, keyed, mayAdd, max, ceilingBound, total } = args;
+  if (balance === 0n) return null;
+
+  if (!keyed) {
+    return method === 'card' ? (
+      <>
+        The whole balance, already filled in — and the <b>most</b> card can take. Key a smaller amount to split the
+        bill; whatever is left stays on the balance.
+      </>
+    ) : (
+      <>
+        The whole balance, already filled in. Cash <b>may</b> be more than this — key what the customer handed over
+        and the change is worked out.
+      </>
+    );
+  }
+
+  if (!mayAdd) {
+    if (method === 'card') {
+      return (
+        <>
+          Card is capped at the remaining balance, so this cannot be added. Clear it and key {formatAmount(max)} or
+          less — or take the excess in cash.
+        </>
+      );
+    }
+    if (ceilingBound) {
+      return (
+        <>
+          Cash <b>may</b> be more than the balance, but not more than the restaurant can give change for, so this
+          cannot be added.
+        </>
+      );
+    }
+    // The single-tender cap binds instead of the change limit (lead ruling: no
+    // composition drawn for this case). Both the notice and this caption talk
+    // about change, which would be false here, so neither is drawn.
+    return null;
+  }
+
+  if (amount < balance) {
+    const rest = balance - amount;
+    return (
+      <>
+        {formatAmount(amount)} of the {formatAmount(balance)} owing. Adding this leaves{' '}
+        <b>{formatAmount(rest)} on the balance</b> for the next method. That is the whole of splitting a bill — there
+        is no mode to enter.
+      </>
+    );
+  }
+
+  if (method === 'cash' && amount > balance) {
+    const hypotheticalChange = amount - balance;
+    return (
+      <>
+        More than the {formatAmount(balance)} owing, which cash is allowed to be. Adding this gives{' '}
+        <b>{formatAmount(hypotheticalChange)} change</b>; the recorded takings are still {formatAmount(total)}.
+      </>
+    );
+  }
+
+  return null;
+}
+
+/** The notice block above the field. Only card-over and change-limit-bound cash draw one. */
+function tenderNotice(args: {
+  method: TenderMethod;
+  keyed: boolean;
+  mayAdd: boolean;
+  balance: Money;
+  amount: Money;
+  max: Money;
+  ceilingBound: boolean;
+}) {
+  const { method, keyed, mayAdd, balance, amount, max, ceilingBound } = args;
+  if (!keyed || mayAdd || balance === 0n) return null;
+
+  if (method === 'card') {
+    return {
+      title: 'Card cannot be more than the balance',
+      body: (
+        <>
+          You entered {formatAmount(amount)}. The most you can take on card is <b>{formatAmount(max)}</b> — which is
+          what was already filled in. Cash is the only method that may exceed the balance.
+        </>
+      ),
+    };
+  }
+
+  if (ceilingBound) {
+    return {
+      title: 'Too much cash to give change for',
+      body: (
+        <>
+          The most cash this sale can accept is <b>{formatAmount(max)}</b> — the {formatAmount(balance)} still owing
+          plus the 9.999.999 change limit. Nothing has been recorded and the drafted payment lines are unchanged.
+        </>
+      ),
+    };
+  }
+
+  return null;
+}
 
 export function SettlementScreen({
   store,
@@ -45,16 +190,25 @@ export function SettlementScreen({
 }) {
   const state = settlementStateFrom(window.location.search);
   const total = store.order.totals.total;
-  const [method, setMethod] = useState<TenderMethod>('cash');
+  const [method, setMethod] = useState<TenderMethod>(() => (CARD_SELECTED_STATES.has(state) ? 'card' : 'cash'));
   const [drafts, setDrafts] = useState<ReadonlyArray<DraftTender>>(() => initialDrafts(state, total));
-  const balance = total - draftedTotal(drafts);
-  const [amountText, setAmountText] = useState(() => balance.toString());
-  const [keyed, setKeyed] = useState(false);
+  const { balance, change, tendered } = settlementPosition(
+    total,
+    drafts.map((draft) => draft.amount)
+  );
+  const [amountText, setAmountText] = useState(() => KEYED_SEED[state] ?? balance.toString());
+  const [keyed, setKeyed] = useState(() => state in KEYED_SEED);
   const nextDraft = useRef(0);
   const amount = amountText === '' ? 0n : BigInt(amountText);
   const mayAdd = addRule(method, amount, balance);
   const invalid = keyed && !mayAdd;
+  // At zero balance nothing can be added by any method (rule 4), and the
+  // field must draw exactly what exact/change already draw — no invalid
+  // style, no message. `invalid` above still gates Add's inert state.
+  const invalidDisplay = invalid && balance !== 0n;
   const pressed = state === 'pressed';
+  const max = tenderMaximum(method, balance);
+  const ceilingBound = cashCeilingBoundByChangeLimit(balance);
 
   const prefill = (nextBalance: Money) => {
     setAmountText(nextBalance.toString());
@@ -79,18 +233,28 @@ export function SettlementScreen({
   const addDraft = () => {
     if (!addRule(method, amount, balance)) return;
     const next = [...drafts, { id: `draft-${++nextDraft.current}`, label: methodLabel(method), amount }];
-    const nextBalance = total - draftedTotal(next);
+    const nextBalance = settlementPosition(
+      total,
+      next.map((draft) => draft.amount)
+    ).balance;
     setDrafts(next);
     prefill(nextBalance);
-    window.history.replaceState(null, '', `?state=${nextBalance === 0n ? 'exact' : 'partial'}`);
+    window.history.replaceState(null, '', '/pos/settlement');
   };
 
   const removeDraft = (id: string) => {
     const next = drafts.filter((draft) => draft.id !== id);
+    const nextBalance = settlementPosition(
+      total,
+      next.map((draft) => draft.amount)
+    ).balance;
     setDrafts(next);
-    prefill(total - draftedTotal(next));
-    window.history.replaceState(null, '', `?state=${next.length === 0 ? 'empty' : 'partial'}`);
+    prefill(nextBalance);
+    window.history.replaceState(null, '', '/pos/settlement');
   };
+
+  const notice = tenderNotice({ method, keyed, mayAdd, balance, amount, max, ceilingBound });
+  const caption = tenderCaption({ method, balance, amount, keyed, mayAdd, max, ceilingBound, total });
 
   return (
     <>
@@ -118,6 +282,19 @@ export function SettlementScreen({
             <strong className="settlement-balance__amount">{formatAmount(balance)}</strong>
           </div>
 
+          {change > 0n && (
+            <div className="settlement-change">
+              <div className="settlement-change__row">
+                <span>Change due</span>
+                <strong className="settlement-change__amount">{formatAmount(change)}</strong>
+              </div>
+              <p className="settlement-change__note">
+                Recorded revenue is the order total, {formatAmount(total)} — not the {formatAmount(tendered)} handed
+                over.
+              </p>
+            </div>
+          )}
+
           <div className="drafts-region">
             <div className="drafts-heading">
               <span>Drafted payment lines</span>
@@ -136,6 +313,12 @@ export function SettlementScreen({
                     </button>
                   </div>
                 ))
+              )}
+              {change > 0n && (
+                <div className="draft-change">
+                  <span className="draft-change__method">Change given</span>
+                  <span className="draft-change__amount">−{formatAmount(change)}</span>
+                </div>
               )}
               {state === 'overflow' && <p className="drafts-scroll-note">List scrolls. Total, balance and close stay visible.</p>}
             </div>
@@ -165,6 +348,13 @@ export function SettlementScreen({
           </div>
 
           <div className="tender-entry__body">
+            {notice && (
+              <div className="notice">
+                <div className="notice__title">{notice.title}</div>
+                <div>{notice.body}</div>
+              </div>
+            )}
+
             <div className="tender-control">
               <div className="tender-field">
                 <div className="tender-field__heading">
@@ -175,7 +365,7 @@ export function SettlementScreen({
                 </div>
                 <div
                   className={
-                    invalid
+                    invalidDisplay
                       ? 'tender-amount tender-amount--invalid'
                       : keyed
                         ? 'tender-amount tender-amount--keyed'
@@ -184,8 +374,10 @@ export function SettlementScreen({
                 >
                   {formatAmount(amount)}
                 </div>
-                {invalid && (
-                  <span className="tender-field__message">This {methodLabel(method).toLowerCase()} amount cannot be added.</span>
+                {invalidDisplay && (
+                  <span className="tender-field__message">
+                    {methodLabel(method)} maximum {formatAmount(max)}
+                  </span>
                 )}
               </div>
               {mayAdd ? (
@@ -199,14 +391,12 @@ export function SettlementScreen({
                 </button>
               ) : (
                 <span className="tender-add tender-add--off" data-action="add-tender" aria-disabled="true">
-                  {balance === 0n ? 'Nothing left' : 'Cannot add'}
+                  {balance === 0n ? 'Nothing left' : invalid ? 'Over the limit — cannot add' : 'Cannot add'}
                 </span>
               )}
             </div>
 
-            <p className="tender-help">
-              The whole balance, already filled in. Key a smaller amount to split the bill; whatever is left stays on the balance.
-            </p>
+            {caption && <p className="tender-help">{caption}</p>}
 
             <div className="tender-keypad" aria-label="Tender amount keypad">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
