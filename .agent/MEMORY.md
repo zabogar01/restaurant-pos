@@ -212,6 +212,25 @@ everywhere: controlled components for the route, thin self-owning wrappers under
 the old exported names so direct tests do not change, and **no component that
 calls a state hook whose result it can discard.**
 
+**FE-019 DONE, 2026-09-23. Lead-verified at 1331 tests across 22 files and
+walked in a browser. F3 IS CLOSED.** The walk:
+- Browser Back to `lock-lease` draws the lease lock with Settle inert, and
+  Forward returns to an unlocked `default`.
+- On `error`, a partial Card 10.000 keeps the notice at **27.800**. Covering it
+  clears the notice and turns Close live. Removing a draft afterwards does not
+  bring the notice back.
+- `/pos/floor` is an empty frame.
+- The earlier routed walks hold.
+
+**The hook audit:** `useOrderStore` and `usePaymentSession` are each called
+once in `PosRoutes` and once in their standalone wrapper. `PosRoutes` renders
+only the controlled components. **The `suppliedX ?? localX` pattern is gone
+from the codebase.**
+
+One side effect, accepted: the seeded `reauth` pad shows 2 dots, then 1 after
+the first real digit, because the seed is a picture, not an entry. It is
+fixture-only.
+
 - **Design-branch list, now long:** the keypad clipped in `cardover` and
   `ceiling`; `pending`'s 155.925; *Leave payment*'s href; the takeover modal's
   missing keypad; and the single-tender-cap copy.
@@ -768,6 +787,7 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 |---|---|---|---|---|
 | `lead` | claude, **Opus 5.5** since 2026-09-23 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
 | `f3-reviewer` | **codex, `gpt-6-sol`** (the owner's choice for this review) | — | closed 2026-09-23 | **Reviewed F3a–F3d**: [reviews/F3-settlement-review.md](reviews/F3-settlement-review.md). Request changes, **3 P2 + 1 P3.** **Cleared the money rules**: no ordinary-control sequence over-drafts a card, exceeds the change limit, or closes below exact. **Proved F3c's three unproven red cases** by in-memory mutation, without editing a file, and found one defect nobody had. A first attempt on `gpt-6-astra` was cancelled by the owner mid-read |
+| `builder21` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-019](tasks/FE-019-f3-review-corrections.md)**: all four review findings. Split both screens into controlled components plus self-owning wrappers, so no direct test changed apart from two assertions the task allowed |
 | `builder20` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-018](tasks/FE-018-payment-session.md)** (F3d), plus one lead correction to the `?gone=` guard. Proved the one-session-hook criterion properly, and flagged the one red case it could not make fail rather than claiming it |
 | `builder19` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-017](tasks/FE-017-close-outcomes.md)** (F3c). **Stopped and raised the F3a store regression** rather than patching it, and fixed it narrowly once ruled. Its red-case discipline was weaker than its predecessors', and it said so |
 | `builder18` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-016](tasks/FE-016-cash-and-card-diverge.md)** (F3b), not committed. Survived three sleep interruptions, and took both corrections, one of them the lead's own error, in minutes. Its prompt told it outright that it is an implementer rather than the lead, because CLAUDE.md sends every fresh session to the lead's role |
