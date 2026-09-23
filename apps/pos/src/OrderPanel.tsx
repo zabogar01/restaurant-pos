@@ -67,10 +67,13 @@ import { VoidSheet } from './VoidSheets.js';
 export function OrderScreen({
   view: initial = orderViewFrom(window.location.search),
   store: suppliedStore,
+  locked = false,
   onLocationChange,
 }: {
   view?: OrderView;
   store?: OrderStore;
+  /** F3d, FR-G12: a payment session is active in this tab — POS-03's own-tab lock, derived, never read from `?state=`. */
+  locked?: boolean;
   onLocationChange?: () => void;
 }) {
   const [view, setView] = useState(initial);
@@ -85,7 +88,7 @@ export function OrderScreen({
   // Direct component tests keep their historical self-contained store. The
   // application route supplies the store it owns above POS-03 and POS-04, so
   // leaving this component never discards the order the cashier built.
-  const localStore = useOrderStore(view);
+  const localStore = useOrderStore(view, locked);
   const store = suppliedStore ?? localStore;
   const sheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, order) : undefined);
   const approval = APPROVAL_FIXTURES[view.state];
@@ -167,10 +170,11 @@ export function OrderScreen({
         )}
         <div className="order-screen__bar" aria-hidden="true" {...inert} />
         <div className="order-screen__body" {...inert}>
-          <MenuRegion view={view} navigate={navigate} />
+          <MenuRegion view={view} navigate={navigate} locked={locked} />
           <OrderPanel
             view={view}
             order={store.order}
+            locked={locked}
             actions={{ navigate, openVoid: setVoidOpened, openLine: setLineOpened, openDiscount: () => setDiscountOpened(true) }}
           />
         </div>
@@ -206,17 +210,21 @@ const NO_ACTIONS: PanelActions = { navigate: () => {}, openVoid: () => {}, openL
 export function OrderPanel({
   view,
   order = shownOrder(view),
+  locked = false,
   actions = NO_ACTIONS,
 }: {
   view: OrderView;
   order?: ShownOrder;
+  /** F3d rule 2: a session-derived lock overrides whatever the fixture says, and always reads as `draft` (rule 3). */
+  locked?: boolean;
   actions?: PanelActions;
 }) {
   // lock, pressedLineId and incident are view-level facts, never part of a
   // ShownOrder (FE-014's correction): a lock and a held-down row are drawn
   // over whichever order is on screen, not carried by the order itself.
   const fixture = ORDER_FIXTURES[view.state];
-  const { lock, pressedLineId } = fixture;
+  const { pressedLineId } = fixture;
+  const lock = locked ? 'draft' : fixture.lock;
   const type = orderVariant(order);
   const { totals, groups } = order;
 

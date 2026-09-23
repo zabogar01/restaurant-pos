@@ -1,9 +1,11 @@
 import type { Money } from '@pos/money';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { closeRefusal, type CloseRefusal } from './close.js';
 import { formatAmount } from './money.js';
 import { TotalsView } from './OrderPanel.js';
 import type { OrderStore } from './orderStore.js';
+import { usePaymentSession, type DraftTender, type PaymentSession } from './paymentSession.js';
+import { PIN_LENGTH, PinPad } from './PinPad.js';
 import { cashCeilingBoundByChangeLimit, mayAddTender, settlementPosition, tenderMaximum, type TenderMethod } from './tender.js';
 
 const SETTLEMENT_STATES = [
@@ -24,10 +26,12 @@ const SETTLEMENT_STATES = [
   'zero',
   'loading',
   'error',
+  // F3d's four identity-and-lease states (FR-G9, FR-G12–G14, I-5).
+  'reauth',
+  'leaselost',
+  'settle-takeover',
 ] as const;
 export type SettlementState = (typeof SETTLEMENT_STATES)[number];
-
-type DraftTender = { id: string; label: string; amount: Money };
 
 /** A keyed-by-hand amount that a direct fixture visit seeds before any Add. */
 const KEYED_SEED: Partial<Record<SettlementState, string>> = {
@@ -39,12 +43,26 @@ const KEYED_SEED: Partial<Record<SettlementState, string>> = {
 
 const CARD_SELECTED_STATES: ReadonlySet<SettlementState> = new Set(['card', 'cardsplit', 'cardover']);
 
+/**
+ * `leaselost` and `settle-takeover` (rules 9, 10) are lease/identity
+ * fixtures, never this cashier's own payment — visiting them must never open
+ * the draft session, or the own-tab lock they leave behind on POS-03 would
+ * draw `draft`'s words over what is actually another client's lease
+ * (rule 3). `reauth` is the opposite: its whole point (rule 8, AC-9) is that
+ * the draft survives the round trip, so it opens the session like any live
+ * visit.
+ */
+export function beginsSession(state: SettlementState): boolean {
+  return state !== 'leaselost' && state !== 'settle-takeover';
+}
+
 export function settlementStateFrom(search: string): SettlementState {
   const state = new URLSearchParams(search).get('state');
   return SETTLEMENT_STATES.find((candidate) => candidate === state) ?? 'empty';
 }
 
-function initialDrafts(state: SettlementState, total: Money): ReadonlyArray<DraftTender> {
+/** Seeds the session's drafts the first time a state is visited (rule 1). */
+export function initialDrafts(state: SettlementState, total: Money): ReadonlyArray<DraftTender> {
   const card = (id: string, amount: Money) => ({ id, label: 'Card', amount });
   const cash = (id: string, amount: Money) => ({ id, label: 'Cash', amount });
 
@@ -54,11 +72,12 @@ function initialDrafts(state: SettlementState, total: Money): ReadonlyArray<Draf
   if (state === 'exactsplit') return [card('fixture-card', 100_000n), cash('fixture-cash', total - 100_000n)];
   if (state === 'change') return [cash('fixture-cash', 200_000n)];
   if (state === 'ceiling') return [card('fixture-card', 100_000n)];
-  // `loading` and `error` both draft the artifact's own Card 155.925 — a
-  // fixture figure, fixed regardless of what the live order totals to. It is
-  // the number `error`'s balance (rule 8) is derived *against*: the seeded
-  // draft never moves, only the balance the order's live total leaves.
-  if (state === 'loading' || state === 'error') return [card('fixture-card', 155_925n)];
+  // `loading`, `error` and `reauth` all draft the artifact's own Card
+  // 155.925 — a fixture figure, fixed regardless of what the live order
+  // totals to. It is the number `error`'s balance (rule 8) is derived
+  // *against*: the seeded draft never moves, only the balance the order's
+  // live total leaves.
+  if (state === 'loading' || state === 'error' || state === 'reauth') return [card('fixture-card', 155_925n)];
   if (state !== 'overflow') return [];
 
   const fixed = [
@@ -279,12 +298,183 @@ function ClosingSkeleton() {
   );
 }
 
+/** rule 6, the lead's ruling: "0 drafted payment lines" is copy nobody drew, so zero omits the sentence. */
+function draftCountSentence(count: number): string | null {
+  if (count === 0) return null;
+  const noun = count === 1 ? 'payment line' : 'payment lines';
+  return `${count === 1 ? 'One' : count} drafted ${noun} will be discarded.`;
+}
+
+/**
+ * Rule 5, I-5: the confirm-before-discard modal, copied verbatim from the
+ * artifact's `cancel` state. Ungated — no PIN, no manager, no approval — and
+ * unlike the manager approval prompt (Approval.tsx) it authorises nothing; it
+ * only asks whether to throw away what is on screen.
+ */
+function CancelPaymentModal({ draftCount, onKeep, onCancel }: { draftCount: number; onKeep: () => void; onCancel: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => box.current?.focus(), []);
+  const sentence = draftCountSentence(draftCount);
+
+  return (
+    <>
+      <div className="modal-scrim" aria-hidden="true" />
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="cancel-payment-title" tabIndex={-1} ref={box}>
+        <div className="modal__head">
+          <h2 id="cancel-payment-title" className="modal__title">
+            Cancel this payment?
+          </h2>
+        </div>
+        <div className="modal__body">
+          <p>
+            <b>Nothing has been recorded.</b> No payment line exists on the server until the order closes, so
+            cancelling discards the draft and the order goes back to being editable straight away.
+          </p>
+          <p className="settlement-cancel__note">
+            If a card was already put through on a terminal, that charge is outside this system and has to be
+            settled with the customer. This screen cannot know either way.
+          </p>
+          {sentence && <p className="settlement-cancel__note">{sentence}</p>}
+        </div>
+        <div className="modal__foot">
+          <button type="button" className="action" onClick={onKeep}>
+            Keep collecting
+          </button>
+          <button type="button" className="action action--primary" onClick={onCancel}>
+            Cancel payment
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Rule 8: `reauth`'s modal, fixture-only — no idle timer exists, so nothing
+ * live ever opens this. The PIN pad is FE-001's and F2g's (PinPad.tsx),
+ * reused with B-12's guarantee intact: `seed` only ever sets a *count*, never
+ * a digit, so no real value crosses into this fixture. Submit verifies
+ * nothing (no server); *Leave payment* keeps the draft and lands on POS-03
+ * locked, exactly like ← Order — the artifact's own href goes to an unlocked
+ * order and contradicts its own caption, so this slice does not follow it
+ * (the lead's ruling, rule 8).
+ */
+function ReauthModal({ onLeave }: { onLeave: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => box.current?.focus(), []);
+
+  return (
+    <>
+      <div className="modal-scrim" aria-hidden="true" />
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="reauth-title" tabIndex={-1} ref={box}>
+        <div className="modal__head">
+          <h2 id="reauth-title" className="modal__title">
+            Sign in to finish this payment
+          </h2>
+          <div className="modal__request">Your session timed out. The drafted payment lines are still here.</div>
+        </div>
+        <div className="modal__body">
+          <PinPad geometry="approval" seed={2} onSubmit={() => {}} />
+        </div>
+        <div className="modal__foot">
+          <button type="button" className="action" onClick={onLeave}>
+            Leave payment
+          </button>
+          <span className="modal__note">The draft stays in this tab.</span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** Rule 9: `leaselost`, reached only by a direct visit — no server exists to displace anyone. No drafts, no Cancel payment. */
+function LeaseLostModal({ onBackToFloor }: { onBackToFloor: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => box.current?.focus(), []);
+
+  return (
+    <>
+      <div className="modal-scrim" aria-hidden="true" />
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="leaselost-title" tabIndex={-1} ref={box}>
+        <div className="modal__head">
+          <h2 id="leaselost-title" className="modal__title">
+            A manager took over this payment
+          </h2>
+        </div>
+        <div className="modal__body">
+          <p>This order is now being settled elsewhere. Your drafted payment lines were never recorded and cannot be closed from here.</p>
+          <p className="settlement-cancel__note">If you had already taken a card payment, tell the manager now.</p>
+        </div>
+        <div className="modal__foot" style={{ gridTemplateColumns: '1fr' }}>
+          <button type="button" className="action action--primary" onClick={onBackToFloor}>
+            Back to floor
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Rule 10: `settle-takeover`, reached for real from POS-03's `lock-lease`
+ * action. The artifact draws manager PIN dots and no keypad — a manager
+ * cannot enter a PIN on it — so *I understand — take over* stays inert (no
+ * server exists to verify one) and this raises the missing keypad rather
+ * than inventing one. No Cancel payment.
+ */
+function TakeoverModal({ onCancel }: { onCancel: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => box.current?.focus(), []);
+
+  return (
+    <>
+      <div className="modal-scrim" aria-hidden="true" />
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="takeover-title" tabIndex={-1} ref={box}>
+        <div className="modal__head">
+          <h2 id="takeover-title" className="modal__title">
+            Take over this payment
+          </h2>
+          <span className="settlement-tag">MANAGER REQUIRED</span>
+        </div>
+        <div className="modal__body">
+          <div className="notice">
+            <div className="notice__title">A card charge may already be in progress</div>
+            <div>
+              Another client started collecting payment for Table 1 at 20:14. Taking over rejects their close. Check
+              with them before you continue.
+            </div>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <span className="tender-field__label">Manager PIN</span>
+            <div className="pin-dots" role="status" aria-label="3 of 6 digits entered">
+              {Array.from({ length: PIN_LENGTH }, (_, i) => (
+                <span key={i} className={i < 3 ? 'pin-dot pin-dot--filled' : 'pin-dot'} />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="modal__foot">
+          <button type="button" className="action" onClick={onCancel}>
+            Cancel
+          </button>
+          <span className="action action--primary" aria-disabled="true" data-action="take-over">
+            I understand — take over
+          </span>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function SettlementScreen({
   store,
+  session: suppliedSession,
   addRule = mayAddTender,
   closeRule = closeRefusal,
 }: {
   store: OrderStore;
+  /** F3d, criterion 12: the same hook PosRoutes uses. A direct component test keeps its own copy, never a parallel default. */
+  session?: PaymentSession;
   /** Test seam for proving the component has no second tender-validity rule. */
   addRule?: typeof mayAddTender;
   /** Test seam for proving the component has no second close-validity rule (rule 1, criterion 10). */
@@ -293,14 +483,22 @@ export function SettlementScreen({
   const state = settlementStateFrom(window.location.search);
   const total = store.order.totals.total;
   const [method, setMethod] = useState<TenderMethod>(() => (CARD_SELECTED_STATES.has(state) ? 'card' : 'cash'));
-  const [drafts, setDrafts] = useState<ReadonlyArray<DraftTender>>(() => initialDrafts(state, total));
+  const localSession = usePaymentSession();
+  const session = suppliedSession ?? localSession;
+  // Only a standalone render seeds here — PosRoutes has already activated (or
+  // deliberately not activated, rule 9/10) the session it hands down before
+  // this component ever mounts. Render-time, not an effect (paymentSession.ts).
+  if (!suppliedSession && !session.active && beginsSession(state)) {
+    session.activate(initialDrafts(state, total));
+  }
+  const drafts = session.drafts;
+  const [cancelOpen, setCancelOpen] = useState(false);
   const { balance, change, tendered } = settlementPosition(
     total,
     drafts.map((draft) => draft.amount)
   );
   const [amountText, setAmountText] = useState(() => KEYED_SEED[state] ?? balance.toString());
   const [keyed, setKeyed] = useState(() => state in KEYED_SEED);
-  const nextDraft = useRef(0);
   const amount = amountText === '' ? 0n : BigInt(amountText);
   const mayAdd = addRule(method, amount, balance);
   const invalid = keyed && !mayAdd;
@@ -334,12 +532,12 @@ export function SettlementScreen({
 
   const addDraft = () => {
     if (!addRule(method, amount, balance)) return;
-    const next = [...drafts, { id: `draft-${++nextDraft.current}`, label: methodLabel(method), amount }];
+    const next = [...drafts, { id: 'pending', label: methodLabel(method), amount }];
     const nextBalance = settlementPosition(
       total,
       next.map((draft) => draft.amount)
     ).balance;
-    setDrafts(next);
+    session.addDraft(methodLabel(method), amount);
     prefill(nextBalance);
     window.history.replaceState(null, '', '/pos/settlement');
   };
@@ -350,9 +548,34 @@ export function SettlementScreen({
       total,
       next.map((draft) => draft.amount)
     ).balance;
-    setDrafts(next);
+    session.removeDraft(id);
     prefill(nextBalance);
     window.history.replaceState(null, '', '/pos/settlement');
+  };
+
+  // Rule 5, I-5: ungated, no PIN, no manager. Rule 7: replaceState, not
+  // pushState — the current settlement entry (whichever one it is) is
+  // overwritten rather than kept, so browser Back from the unlocked POS-03
+  // this lands on cannot walk forward again into a settlement screen showing
+  // the discarded drafts. Session and location change in the same handler, so
+  // React batches them: PosRoutes re-renders once, already reading the new
+  // path off `window.location`.
+  const cancelPayment = () => {
+    window.history.replaceState(null, '', '/pos/order');
+    session.cancel();
+  };
+
+  const leavePayment = () => window.history.back();
+
+  /**
+   * Rule 9/10's two dead ends: neither carries a live session to end
+   * (`beginsSession` never opened one for either), so there is nothing for a
+   * state update to piggyback re-render on — PosRoutes' own popstate listener
+   * is told directly, the same signal a real Back does.
+   */
+  const navigateAway = (destination: string) => {
+    window.history.pushState(null, '', destination);
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   const notice = tenderNotice({ method, keyed, mayAdd, balance, amount, max, ceilingBound });
@@ -372,11 +595,18 @@ export function SettlementScreen({
   // that is no longer true, so it goes and Close follows the usual rule.
   const showErrorNotice = state === 'error' && balance > 0n;
   const isLoading = state === 'loading';
+  // Rule 9/10: no Cancel payment behind either lease fixture. Rules 8–10: a
+  // modal from any of the four is up, so the screen behind it goes inert
+  // (React has no `inert` prop; the empty-string attribute renders bare, as
+  // OrderScreen's own overlays do).
+  const showCancelSection = state !== 'leaselost' && state !== 'settle-takeover';
+  const overlayOpen = state === 'reauth' || state === 'leaselost' || state === 'settle-takeover' || cancelOpen;
+  const inert = overlayOpen ? { inert: '' } : {};
 
   return (
     <>
       <div className="pos-device">
-        <header className="settlement-bar">
+        <header className="settlement-bar" {...inert}>
           <button type="button" className="settlement-back" onClick={() => window.history.back()}>
             ← Order
           </button>
@@ -384,12 +614,18 @@ export function SettlementScreen({
           {/* Rule 4: a zero-total order records nothing, so nothing is "not yet recorded" either. */}
           {!isZeroTotal && <span className="settlement-tag">NOTHING RECORDED YET</span>}
           <div className="settlement-actor">
-            <span>Ana R. · Cashier</span>
-            <span className="settlement-idle">90s</span>
+            {state === 'reauth' ? (
+              <span className="settlement-tag">SIGNED OUT</span>
+            ) : (
+              <>
+                <span>Ana R. · Cashier</span>
+                <span className="settlement-idle">90s</span>
+              </>
+            )}
           </div>
         </header>
 
-        <main className="settlement-screen">
+        <main className="settlement-screen" {...inert}>
           <section className="settlement-summary" aria-label="Payment summary">
             <div className="settlement-totals" aria-label="Order total">
               <TotalsView totals={store.order.totals} />
@@ -453,6 +689,16 @@ export function SettlementScreen({
               </>
             )}
           </div>
+
+          {/* Rule 5, I-5: ungated — no PIN, no manager, no approval. Rules 9/10: absent behind either lease fixture. */}
+          {showCancelSection && (
+            <div className="settlement-cancel">
+              <button type="button" className="action action--compact" onClick={() => setCancelOpen(true)}>
+                Cancel payment
+              </button>
+              <p className="settlement-cancel__note">Releases the order so it can be edited again. Nothing has been recorded here.</p>
+            </div>
+          )}
           </section>
 
           <section className="tender-entry" aria-label="Draft a payment">
@@ -562,7 +808,12 @@ export function SettlementScreen({
           </div>
 
           <footer className="settlement-close">
-            {isLoading ? (
+            {/* Rule 8: reauth overrides whatever the live refusal rule would otherwise say — signing in comes first. */}
+            {state === 'reauth' ? (
+              <button type="button" className="settlement-close__action" data-action="close-order" onClick={() => {}}>
+                Sign in to close
+              </button>
+            ) : isLoading ? (
               <span className="settlement-close__action settlement-close__action--off" data-action="close-order" aria-disabled="true">
                 Closing…
               </span>
@@ -584,6 +835,12 @@ export function SettlementScreen({
           </section>
         </main>
       </div>
+      {state === 'reauth' && <ReauthModal onLeave={leavePayment} />}
+      {state === 'leaselost' && <LeaseLostModal onBackToFloor={() => navigateAway('/pos/floor')} />}
+      {state === 'settle-takeover' && <TakeoverModal onCancel={() => navigateAway('/pos/order?state=lock-lease')} />}
+      {cancelOpen && (
+        <CancelPaymentModal draftCount={drafts.length} onKeep={() => setCancelOpen(false)} onCancel={cancelPayment} />
+      )}
       {import.meta.env.DEV && <SettlementFixtureStates current={state} />}
     </>
   );

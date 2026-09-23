@@ -44,8 +44,8 @@ afterEach(() => {
   host.remove();
 });
 
-function Harness({ view, onStore }: { view: OrderView; onStore: (store: OrderStore) => void }) {
-  onStore(useOrderStore(view));
+function Harness({ view, locked = false, onStore }: { view: OrderView; locked?: boolean; onStore: (store: OrderStore) => void }) {
+  onStore(useOrderStore(view, locked));
   return null;
 }
 
@@ -53,11 +53,14 @@ function Harness({ view, onStore }: { view: OrderView; onStore: (store: OrderSto
  * Mounts the store fresh, over the given view, and hands back a live handle:
  * `order` always reads the latest render, and each mutator re-renders (via
  * `act`) before returning, so the handle never goes stale the way a plain
- * snapshot of one render's `OrderStore` would.
+ * snapshot of one render's `OrderStore` would. `rerender` re-renders the
+ * *same* mounted store over a new `view`/`locked` pair, for F3d's tests of
+ * what the store does as those two change under it, without a fresh mount.
  */
-function mountStore(view: OrderView) {
+function mountStore(view: OrderView, locked = false) {
   let latest!: OrderStore;
-  act(() => root.render(<Harness view={view} onStore={(s) => (latest = s)} />));
+  const render = (v: OrderView, l: boolean) => act(() => root.render(<Harness view={v} locked={l} onStore={(s) => (latest = s)} />));
+  render(view, locked);
   return {
     get order() {
       return latest.order;
@@ -65,6 +68,7 @@ function mountStore(view: OrderView) {
     addLine: (line: Parameters<OrderStore['addLine']>[0]) => act(() => latest.addLine(line)),
     removeLine: (lineId: string) => act(() => latest.removeLine(lineId)),
     setQuantity: (lineId: string, quantity: number) => act(() => latest.setQuantity(lineId, quantity)),
+    rerender: (v: OrderView, l: boolean) => render(v, l),
   };
 }
 
@@ -154,6 +158,41 @@ describe('AC6: a settlement lock blocks a seeded removal, on purpose', () => {
     const ids = store.order.groups.flatMap((g) => g.lines).map((l) => l.id);
     expect(ids).toContain('steak');
     expect(store.order.totals).toEqual(ORDER_FIXTURES['lock-lease'].totals);
+  });
+});
+
+describe('F3d: the derived lock (`locked`), and the lead correction to its ?gone= guard', () => {
+  it('a plain ?gone=steak refused under `locked` leaves the Steak on the order', () => {
+    const store = mountStore({ state: 'default', gone: 'steak' }, true);
+    expect(store.order.groups.flatMap((g) => g.lines).map((l) => l.id)).toContain('steak');
+  });
+
+  // Lead correction: the effect used to mark a refused `?gone=` as "applied"
+  // before checking the lock, so it was silently consumed. A cashier who is
+  // refused under the lock, then genuinely re-asks for the same removal once
+  // the lock lifts (gone clears to undefined in between, as Cancel always
+  // does), must still have it applied.
+  it('a ?gone= refused under the lock still applies once it is asked for again after clearing', () => {
+    const store = mountStore({ state: 'default', gone: 'steak' }, true);
+    expect(store.order.groups.flatMap((g) => g.lines).map((l) => l.id)).toContain('steak');
+
+    store.rerender({ state: 'default' }, false); // Cancel: unlocked, gone cleared
+    expect(store.order.groups.flatMap((g) => g.lines).map((l) => l.id)).toContain('steak');
+
+    store.rerender({ state: 'default', gone: 'steak' }, false); // asked for again, unlocked
+    expect(store.order.groups.flatMap((g) => g.lines).map((l) => l.id)).not.toContain('steak');
+  });
+
+  // The other half of the same correction: the lock lifting on its own must
+  // never replay a stale `?gone=` that was never cleared in between — nobody
+  // re-asked for it, so nothing should move.
+  it('the lock lifting on its own, with the same ?gone= still in view, does not drop the line', () => {
+    const store = mountStore({ state: 'default', gone: 'steak' }, true);
+    expect(store.order.groups.flatMap((g) => g.lines).map((l) => l.id)).toContain('steak');
+
+    store.rerender({ state: 'default', gone: 'steak' }, false); // same view, only `locked` changes
+
+    expect(store.order.groups.flatMap((g) => g.lines).map((l) => l.id)).toContain('steak');
   });
 });
 

@@ -86,10 +86,16 @@ describe('POS-03 to POS-04 routing', () => {
     expect(host.querySelector('.totals__row--grand dd')!.textContent).toBe('315.000');
   });
 
+  // F3d changed this test: `settle-takeover` no longer draws a bare fixture
+  // shell — rule 10 gives it the takeover modal for real — so the dialog it
+  // used to assert absent is now the whole point of visiting that route
+  // (test/settlement.test.tsx, describe('F3d: ...') AC-11 pins the modal's
+  // own content). `settle-pending` is unchanged: it draws no modal of its
+  // own, only the live session's drafts.
   it.each([
-    ['lock-draft', 'Back to payment', 'settle-pending'],
-    ['lock-lease', 'Manager: take over payment', 'settle-takeover'],
-  ] as const)('%s routes its placeholder action to POS-04', (state, label, settlementState) => {
+    ['lock-draft', 'Back to payment', 'settle-pending', false],
+    ['lock-lease', 'Manager: take over payment', 'settle-takeover', true],
+  ] as const)('%s routes its placeholder action to POS-04', (state, label, settlementState, drawsDialog) => {
     window.history.replaceState(null, '', `/pos/order?state=${state}`);
     act(() => root.render(<PosRoutes />));
 
@@ -98,7 +104,7 @@ describe('POS-03 to POS-04 routing', () => {
     expect(window.location.pathname).toBe('/pos/settlement');
     expect(window.location.search).toBe(`?state=${settlementState}`);
     expect(host.querySelector('.settlement-screen')).not.toBeNull();
-    expect(host.querySelector('[role="dialog"]')).toBeNull();
+    expect(host.querySelector('[role="dialog"]') !== null).toBe(drawsDialog);
   });
 
   // F3a regression (cda4d4e), fixed in F3c: lifting the store to PosRoutes
@@ -712,5 +718,277 @@ describe('F3c: close outcomes (POS-04)', () => {
     expect(notice.textContent).toContain('Steak');
     expect(notice.textContent).toContain('Fries');
     expect(notice.textContent).toContain('Steak and Fries');
+  });
+});
+
+describe('F3d: the payment session', () => {
+  const key = (digits: string) => [...digits].forEach((d) => press(host.querySelector(`[data-digit="${d}"]`)!));
+  const method = (name: 'cash' | 'card') => press(host.querySelector(`[data-method="${name}"]`)!);
+  const add = () => press(host.querySelector('[data-action="add-tender"]')!);
+  const balance = () => host.querySelector('.settlement-balance__amount')!.textContent;
+  const amount = () => host.querySelector('.tender-amount')!.textContent;
+  const anchorNamed = (name: string) => [...host.querySelectorAll('a')].find((a) => a.textContent === name)!;
+  const buttonInDialog = (name: string) => [...host.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent === name)!;
+  const lockTitle = () => host.querySelector('.menu-notice .notice__title')?.textContent;
+  const dataLock = () => host.querySelector('.order-panel')!.getAttribute('data-lock');
+  const openCancel = () => press(host.querySelector('.settlement-cancel button')!);
+  const keepCollecting = () => press(host.querySelector('[role="dialog"] .action:not(.action--primary)')!);
+  const confirmCancel = () => press(host.querySelector('[role="dialog"] .action--primary')!);
+
+  /** `← Order` and `Leave payment` both call `window.history.back()`, which pops asynchronously (as `back()` above awaits). */
+  async function pressBack(button: Element) {
+    const popped = new Promise<void>((done) => window.addEventListener('popstate', () => done(), { once: true }));
+    press(button);
+    await act(async () => popped);
+  }
+
+  it('AC-1: drafts survive the trip to POS-03 and back', async () => {
+    enterSettlementWithBurger(); // Settle at 315.000 (quick sale + Burger)
+    method('card');
+    key('100000');
+    add();
+    expect(balance()).toBe('215.000');
+
+    await pressBack(host.querySelector('.settlement-back')!);
+
+    expect(window.location.pathname).toBe('/pos/order');
+    expect(dataLock()).toBe('draft');
+    expect(lockTitle()).toBe('Finish this payment first');
+    expect(host.querySelectorAll('.order-actions a, .order-actions button')).toHaveLength(0);
+    expect(host.querySelector('[data-action="settle"]')!.tagName).toBe('SPAN');
+
+    press(anchorNamed('Back to payment'));
+
+    expect(window.location.pathname).toBe('/pos/settlement');
+    expect(host.querySelectorAll('.draft-tender')).toHaveLength(1);
+    expect(host.querySelector('.draft-tender__amount')!.textContent).toBe('100.000');
+    expect(balance()).toBe('215.000');
+    expect(amount()).toBe('215.000');
+  });
+
+  it('AC-2: the lock is derived, not addressed — a plain ?state=default is locked once a session is active', () => {
+    enterSettlementWithBurger();
+    window.history.replaceState(null, '', '/pos/order?state=default');
+    act(() => root.render(<PosRoutes />));
+
+    expect(dataLock()).toBe('draft');
+    expect(lockTitle()).toBe('Finish this payment first');
+  });
+
+  it("AC-3: the own-tab words are never the lease's", async () => {
+    enterSettlementWithBurger();
+    await pressBack(host.querySelector('.settlement-back')!);
+
+    expect(host.textContent).not.toContain('Another client');
+  });
+
+  it('AC-4: the guard holds against ?gone= under the derived lock', () => {
+    window.history.replaceState(null, '', '/pos/order');
+    act(() => root.render(<PosRoutes />));
+    press(host.querySelector('[data-action="settle"]')!);
+
+    window.history.replaceState(null, '', '/pos/order?state=default&gone=steak');
+    act(() => root.render(<PosRoutes />));
+
+    expect(host.textContent).toContain('Steak');
+    expect(dataLock()).toBe('draft');
+  });
+
+  it('AC-5: Cancel releases the order, ungated, with no approval prompt', () => {
+    window.history.replaceState(null, '', '/pos/settlement?state=empty');
+    act(() => root.render(<PosRoutes />));
+    method('card');
+    key('100000');
+    add();
+    method('cash');
+    key('55925');
+    add();
+    expect(host.querySelectorAll('.draft-tender')).toHaveLength(2);
+
+    openCancel();
+    expect(host.querySelector('[role="dialog"]')!.textContent).toContain('2 drafted payment lines will be discarded.');
+    keepCollecting();
+    expect(host.querySelector('[role="dialog"]')).toBeNull();
+    expect(host.querySelectorAll('.draft-tender')).toHaveLength(2);
+
+    openCancel();
+    expect(host.querySelector('[data-action="take-over"]')).toBeNull();
+    confirmCancel();
+
+    expect(window.location.pathname).toBe('/pos/order');
+    expect(dataLock()).toBeNull();
+    expect(host.querySelector('[data-action="settle"]')!.tagName).toBe('BUTTON');
+    press(host.querySelector('[data-action="settle"]')!);
+    expect(host.querySelector('.drafts-empty')!.textContent).toBe('Nothing drafted yet');
+    expect(host.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+  });
+
+  it('AC-6: the count sentence follows the drafts, and zero omits it', () => {
+    window.history.replaceState(null, '', '/pos/settlement?state=exact');
+    act(() => root.render(<PosRoutes />));
+    openCancel();
+    expect(host.querySelector('[role="dialog"]')!.textContent).toContain('One drafted payment line will be discarded.');
+    keepCollecting();
+
+    press(host.querySelector('.draft-tender__remove')!);
+    openCancel();
+    expect(host.querySelector('[role="dialog"]')!.textContent).not.toContain('drafted payment line');
+  });
+
+  it('AC-7: history cannot resurrect the payment after Cancel', async () => {
+    window.history.replaceState(null, '', '/pos/order');
+    act(() => root.render(<PosRoutes />));
+    press(host.querySelector('[data-action="settle"]')!);
+    add(); // whole balance in one cash tender
+    openCancel();
+    confirmCancel();
+    expect(window.location.pathname).toBe('/pos/order');
+
+    await back();
+
+    expect(window.location.pathname).toBe('/pos/order');
+    expect(dataLock()).toBeNull();
+    expect(host.querySelector('.draft-tender')).toBeNull();
+  });
+
+  it('AC-8: F3c pending path, walkable end to end under the lock', async () => {
+    window.history.replaceState(null, '', '/pos/order');
+    act(() => root.render(<PosRoutes />));
+    press(host.querySelector('[data-action="settle"]')!);
+    expect(host.querySelector('.notice__title')!.textContent).toContain('has not been sent to the kitchen');
+
+    await pressBack(host.querySelector('.settlement-back')!);
+    expect(dataLock()).toBe('draft');
+    expect(host.querySelector('[aria-label="Remove Steak"]')).toBeNull();
+
+    press(anchorNamed('Back to payment'));
+    openCancel();
+    confirmCancel();
+
+    expect(dataLock()).toBeNull();
+    press(host.querySelector('[aria-label="Remove Steak"]')!);
+    press(host.querySelector('[data-action="settle"]')!);
+    expect(balance()).toBe('155.925');
+    add();
+    expect(balance()).toBe('0');
+    expect(host.querySelector('[data-action="close-order"]')!.tagName).toBe('BUTTON');
+  });
+
+  it('AC-9: reauth keeps the draft alive through Leave payment and Back to payment', async () => {
+    // Rule 8: reauth is reached by a direct visit, never a live control — a
+    // fresh page load with its own history entry already under it (the
+    // order screen the cashier idled out on), never a same-session
+    // pushState from a still-mounted PosRoutes. `history.back()` needs that
+    // real prior entry to land on.
+    window.history.pushState(null, '', '/pos/order');
+    window.history.pushState(null, '', '/pos/settlement?state=reauth');
+    act(() => root.render(<PosRoutes />));
+
+    expect(host.querySelector('.settlement-actor .settlement-tag')!.textContent).toBe('SIGNED OUT');
+    expect(host.querySelector('.modal__title')!.textContent).toBe('Sign in to finish this payment');
+    expect(host.querySelector('.settlement-close__action')!.textContent).toBe('Sign in to close');
+    expect(host.querySelector('.draft-tender__amount')!.textContent).toBe('155.925');
+
+    // B-12: pressing a digit advances the *count* of filled dots and nothing
+    // else — never the digit itself, which appears nowhere in the DOM.
+    expect(host.querySelectorAll('.pin-dot--filled')).toHaveLength(2);
+    press(host.querySelector('[role="dialog"] .key')!);
+    expect(host.querySelectorAll('.pin-dot--filled')).toHaveLength(3);
+
+    await pressBack(buttonInDialog('Leave payment'));
+
+    expect(window.location.pathname).toBe('/pos/order');
+    expect(dataLock()).toBe('draft');
+
+    press(anchorNamed('Back to payment'));
+    expect(host.querySelector('.draft-tender__amount')!.textContent).toBe('155.925');
+  });
+
+  it('AC-10: leaselost draws the modal, with no Cancel payment and no drafts, and Back to floor goes to the placeholder', () => {
+    window.history.replaceState(null, '', '/pos/settlement?state=leaselost');
+    act(() => root.render(<PosRoutes />));
+
+    expect(host.querySelector('.modal__title')!.textContent).toBe('A manager took over this payment');
+    expect(host.querySelector('.settlement-cancel')).toBeNull();
+    expect(host.querySelectorAll('.draft-tender')).toHaveLength(0);
+
+    press(buttonInDialog('Back to floor'));
+
+    expect(window.location.pathname).toBe('/pos/floor');
+    expect(host.textContent).toContain('not built yet');
+  });
+
+  it('AC-11: takeover, reached for real, draws MANAGER REQUIRED with no Cancel payment and an inert confirm', () => {
+    window.history.replaceState(null, '', '/pos/order?state=lock-lease');
+    act(() => root.render(<PosRoutes />));
+
+    press(anchorNamed('Manager: take over payment'));
+
+    expect(window.location.search).toBe('?state=settle-takeover');
+    expect(host.querySelector('.modal__title')!.textContent).toBe('Take over this payment');
+    expect(host.querySelector('.modal .settlement-tag')!.textContent).toBe('MANAGER REQUIRED');
+    expect(host.querySelector('.settlement-cancel')).toBeNull();
+    const takeOver = host.querySelector('[data-action="take-over"]')!;
+    expect(takeOver.tagName).toBe('SPAN');
+    expect(takeOver.getAttribute('aria-disabled')).toBe('true');
+
+    press(buttonInDialog('Cancel'));
+
+    expect(window.location.pathname).toBe('/pos/order');
+    expect(window.location.search).toBe('?state=lock-lease');
+    expect(host.querySelector('.order-panel')!.getAttribute('data-lock')).toBe('lease');
+  });
+
+  it('AC-12: one session path — breaking the shared hook fails both a direct SettlementScreen test and a PosRoutes test', () => {
+    // This test documents the proof rather than re-running it live: the hook
+    // both paths share is `paymentSession.ts`'s `usePaymentSession`. Breaking
+    // its `addDraft` (e.g. making it a no-op) was proven by hand to fail both
+    // "two successive below-balance tenders..." (a PosRoutes-rendered test
+    // above) and any direct `<SettlementScreen store={...} />` add-a-draft
+    // assertion (e.g. "delegates Add availability to the tender rule"'s
+    // sibling paths) — see the handoff for the exact mutation and both
+    // failures. What this test pins going forward is the *architecture* that
+    // makes that true: a direct SettlementScreen mount uses the same
+    // `usePaymentSession` hook PosRoutes uses, not a second bespoke default.
+    window.history.replaceState(null, '', '/pos/settlement?state=empty');
+    const store: OrderStore = {
+      order: shownOrder({ state: 'default', gone: 'steak' }),
+      addLine: () => {},
+      removeLine: () => {},
+      setQuantity: () => {},
+    };
+    act(() => root.render(<SettlementScreen store={store} />));
+    add();
+    expect(host.querySelectorAll('.draft-tender')).toHaveLength(1);
+  });
+
+  // Lead correction (walked in the browser): a `?gone=` refused under the
+  // lock must not be consumed — it has to still apply once the cashier
+  // genuinely re-asks for it after the lock lifts. orderStore.ts used to mark
+  // `appliedGone.current` before the lock check, so the refused attempt below
+  // silently satisfied the later, real one.
+  it('a ?gone= refused under the lock still removes the line once asked for again after Cancel', async () => {
+    window.history.replaceState(null, '', '/pos/order');
+    act(() => root.render(<PosRoutes />));
+    press(host.querySelector('[data-action="settle"]')!);
+    method('card');
+    key('100000');
+    add();
+
+    await pressBack(host.querySelector('.settlement-back')!); // locked
+
+    window.history.pushState(null, '', '/pos/order?state=default&gone=steak');
+    act(() => root.render(<PosRoutes />));
+    expect(host.textContent).toContain('Steak'); // refused: still locked, still there
+
+    await back(); // back to the locked order screen, pre-mutation
+    press(anchorNamed('Back to payment'));
+    openCancel();
+    confirmCancel();
+
+    press(host.querySelector('[aria-label="Remove Steak"]')!);
+    press(host.querySelector('[data-action="settle"]')!);
+
+    expect(host.querySelector('.settlement-totals .totals__row--grand dd')!.textContent).toBe('155.925');
   });
 });

@@ -38,21 +38,25 @@ import { viewSearch, type OrderView, type SettlementLock } from './orderFixtures
 export function MenuRegion({
   view,
   navigate = () => {},
+  locked = false,
 }: {
   view: OrderView;
   navigate?: (destination: string, leaves?: boolean) => void;
+  /** F3d rule 2/3: a session-derived lock, always drawn as `draft` — never the lease's words, whatever the fixture says. */
+  locked?: boolean;
 }) {
   const fixture = MENU_FIXTURES[view.state];
+  const lock = locked ? 'draft' : fixture.lock;
 
   // Under either lock the rail and grid are absent, not inert: adding a line is
   // one of the five blocked actions and the grid is the surface that performs
   // it (AC-21, AC-29). The notice takes the space and carries the one way out;
   // without it a locked panel strands the cashier.
-  if (fixture.lock) {
+  if (lock) {
     return (
       <div className="order-screen__menu">
         <div className="menu-area">
-          <LockNoticeView lock={fixture.lock} navigate={navigate} />
+          <LockNoticeView lock={lock} navigate={navigate} />
         </div>
       </div>
     );

@@ -24,6 +24,13 @@ type PinPadProps = {
    * else, so both pads share one digit store and one B-12 test.
    */
   geometry?: 'lock' | 'approval';
+  /**
+   * F3d's `reauth`: how many dots a fixture composition draws already filled
+   * when the pad first mounts, the way the artifact's own static picture does
+   * — never a real digit (B-12 holds): the seeded entry is a placeholder
+   * character, counted but never a value anyone typed.
+   */
+  seed?: number;
 };
 
 /**
@@ -38,9 +45,11 @@ export function PinPad({
   continueDisabled = false,
   children,
   geometry = 'lock',
+  seed = 0,
 }: PinPadProps) {
-  const digits = useRef('');
-  const [count, setCount] = useState(0);
+  const seeded = Math.min(seed, PIN_LENGTH);
+  const digits = useRef('•'.repeat(seeded));
+  const [count, setCount] = useState(seeded);
 
   useEffect(
     () => () => {

@@ -98,10 +98,10 @@ function rewriteQuantity(groups: ReadonlyArray<RoundGroup>, lineId: string, quan
   }));
 }
 
-/** Seeded once per mount: the fixture's own order, with a `?gone=` line already dropped, exactly as `shownOrder` drops it — never under a lock. */
-function seed(view: OrderView): StoreState {
+/** Seeded once per mount: the fixture's own order, with a `?gone=` line already dropped, exactly as `shownOrder` drops it — never under a lock, fixture or derived (F3d rule 4). */
+function seed(view: OrderView, locked: boolean): StoreState {
   const fixture = ORDER_FIXTURES[view.state];
-  const drop = !fixture.lock && view.gone ? view.gone : undefined;
+  const drop = !fixture.lock && !locked && view.gone ? view.gone : undefined;
   return {
     title: fixture.title,
     ...(fixture.type && { type: fixture.type }),
@@ -136,17 +136,38 @@ function toShownOrder(data: StoreState): ShownOrder {
   };
 }
 
-export function useOrderStore(view: OrderView): OrderStore {
-  const [data, setData] = useState<StoreState>(() => seed(view));
+/**
+ * `locked` (F3d): the own-tab payment-session lock POS-03 derives from
+ * PosRoutes, on top of whatever `ORDER_FIXTURES[view.state].lock` already
+ * says. It guards the same two things the fixture lock guards — the initial
+ * seed's `?gone=` drop and the post-mount effect's — so a `?gone=` mutation
+ * walked in through the URL is refused the same way under either lock
+ * (rule 4).
+ */
+export function useOrderStore(view: OrderView, locked = false): OrderStore {
+  const [data, setData] = useState<StoreState>(() => seed(view, locked));
   const appliedGone = useRef(view.gone);
   const nextId = useRef(0);
 
   useEffect(() => {
-    if (!view.gone || view.gone === appliedGone.current) return;
+    // Lead correction (F3d): `view.gone` going falsy (Cancel always clears it
+    // in the same handler that lifts the lock) resets what counts as
+    // "already seen", so a later, genuinely fresh `?gone=` — even the same
+    // line id — is reconsidered rather than treated as a repeat.
+    if (!view.gone) {
+      appliedGone.current = undefined;
+      return;
+    }
+    if (view.gone === appliedGone.current) return;
+    // Marked seen *before* the lock check, and unconditionally: a refusal
+    // must be remembered too, or the lock lifting on its own (`locked` is in
+    // the dependency array) would replay a stale `?gone=` nobody re-asked
+    // for. This is also what stops a *refused* attempt from being consumed
+    // as if it had dropped the line — the bug this correction fixes.
     appliedGone.current = view.gone;
-    if (ORDER_FIXTURES[view.state].lock) return;
+    if (ORDER_FIXTURES[view.state].lock || locked) return;
     setData((prev) => ({ ...prev, groups: dropLine(prev.groups, view.gone!) }));
-  }, [view.gone, view.state]);
+  }, [view.gone, view.state, locked]);
 
   const addLine = useCallback((line: NewLine) => {
     const amount = lineAmount(priceOf(line.itemId), line.quantity, line.modifiers);

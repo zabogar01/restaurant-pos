@@ -1543,6 +1543,20 @@ button.action:focus-visible:active {
   text-align: center;
 }
 
+/* ==== F3d: Cancel payment (rule 5, I-5) ==== */
+
+.settlement-cancel {
+  flex: none;
+  padding: var(--frost-space-4) var(--frost-space-5);
+  border-top: var(--frost-divider-stroke);
+}
+
+.settlement-cancel__note {
+  margin: var(--frost-space-1) 0 0;
+  color: var(--frost-muted);
+  font-size: var(--frost-text-12);
+}
+
 .draft-tender {
   min-height: var(--frost-line-slot-height);
   display: flex;
