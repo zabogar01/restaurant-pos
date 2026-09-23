@@ -1,6 +1,6 @@
 # FE-019 — F3 review corrections: one owner per state, and three smaller fixes
 
-**Status:** Ready, unassigned. Written 2026-09-23 by `lead`.
+**Status:** Done 2026-09-23, `builder21`. Lead-verified at 1331 tests and walked in a browser. Written 2026-09-23 by `lead`.
 **Source:** [the F3 review](../reviews/F3-settlement-review.md), `f3-reviewer`
 on codex `gpt-6-sol`. The verdict was *request changes*, with three P2 findings
 and one P3. Read the review in full before you start; it is the specification
@@ -167,4 +167,153 @@ Commit nothing. Do not write `.agent/MEMORY.md` or `.agent/ROADMAP.md`.
 
 ### Implementer handoff
 
-_(empty — to be written by the implementer)_
+**Baseline confirmed** at start (commit `d2d07eb` + review, working tree only showed
+`.agent/MEMORY.md` modified by the lead — untouched by me): `npm run verify` ->
+typecheck clean, 22 files, 1327 tests passed.
+
+**Final:** `npm run verify` -> typecheck clean, 22 files, **1331 tests passed** (1327
+baseline + 4 new: 3 in `test/pin-pad.test.tsx`, 1 in `test/settlement.test.tsx`).
+
+#### What I built
+
+**1. One owner per piece of state (finding 1).** Split both routed screens into a thin
+wrapper (keeps the exported name, owns exactly one `view`/session, used only by direct
+component tests) and a controlled component (`ControlledOrderScreen`,
+`ControlledSettlementScreen`, both newly exported from `OrderPanel.tsx` /
+`SettlementScreen.tsx`) that takes view/store/session/navigate as props and owns none
+of them. `PosRoutes.tsx` now renders the two controlled components directly instead of
+the wrappers. The `optional store?`/`session?` props and both `??` defaults are gone.
+
+- `OrderScreen` (wrapper, `OrderPanel.tsx`): owns `view` (`useState`, from the URL at
+  mount) and its own `popstate` listener; calls `useOrderStore` once; renders
+  `ControlledOrderScreen`.
+- `ControlledOrderScreen` (`OrderPanel.tsx`): takes `view`, `store`, `locked`,
+  `onLocationChange` as props. Sheet-open state (`voidOpened`/`lineOpened`/
+  `discountOpened`) stays local — it's ephemeral overlay UI, not routed state, and has
+  no second owner anywhere. A location change it did not cause itself (browser
+  Back/Forward, arriving as a changed `view` prop) closes any open sheet via a
+  render-time state adjustment keyed on `viewSearch(view)` (compared by *value*, not
+  object identity — `PosRoutes` recomputes a fresh `view` object on every one of its
+  renders, including ones the order store's own state triggers with the URL
+  unchanged, and that must not read as a navigation and close a sheet mid-edit).
+- `SettlementScreen` (wrapper): owns one `usePaymentSession()` and seeds it itself
+  (no `PosRoutes` above it to have done so). `store` was never duplicated — every
+  caller, routed or direct, already supplied it.
+- `ControlledSettlementScreen`: takes `store` and `session` as props, owns neither.
+- `PosRoutes.tsx` itself needed no structural change for finding 1: it already
+  recomputed `path`/`view` fresh from `window.location` on every render (not from
+  the dummy `setLocation` state, which exists only to force a re-render on
+  `popstate`), so it already satisfied "renders the controlled components, passing
+  the view it derives from the URL on every render and on every popstate."
+
+**Hook call sites (criterion 3)** — exactly two owners each, neither discards its
+result:
+- `useOrderStore`: `PosRoutes.tsx:44` (passed to `ControlledOrderScreen`/
+  `ControlledSettlementScreen`), `OrderPanel.tsx:79` (wrapper `OrderScreen`, passed to
+  `ControlledOrderScreen`).
+- `usePaymentSession`: `PosRoutes.tsx:43` (passed down), `SettlementScreen.tsx:488`
+  (wrapper, passed to `ControlledSettlementScreen`).
+Test-only harnesses (`order-store.test.tsx`'s `Harness`) call `useOrderStore`
+directly and are not part of the app tree.
+
+**2. Seeded PIN pad (finding 2), `PinPad.tsx`.** The seed no longer writes into the
+digit ref. `digits` starts empty; a new `keyedAny` flag tracks whether any real key
+has been pressed. Displayed dot count: `verifying ? PIN_LENGTH : keyedAny ? count :
+seeded` — the seed shows only before any real key, then the real count takes over
+completely (not stacked on top of the seed). A seeded pad now accepts six real digits
+and `onSubmit` receives exactly those six characters.
+
+**3. Rejected-close notice (finding 3).** Moved the fact into the payment session
+(`paymentSession.ts`): added `rejected: boolean` and `clearRejection()`; `activate`
+takes an optional second `rejected` argument. Both seeding call sites
+(`PosRoutes.tsx:56`, `SettlementScreen.tsx` wrapper) pass `state === 'error'` at
+activation. `SettlementScreen.tsx`'s `addDraft` calls `session.clearRejection()` when
+the computed `nextBalance` reaches zero. `showErrorNotice` now reads
+`session.rejected && balance > 0n` instead of `state === 'error' && balance > 0n`, so
+it survives a partial Add (which rewrites the URL to bare `/pos/settlement`) and,
+once cleared, does not return when a later Remove reopens the balance.
+`session.cancel()` already reset the whole session, so Cancel clears it too, for free.
+
+**4. `/pos/floor`'s invented sentence (finding 4).** `PosRoutes.tsx`'s
+`FloorPlaceholder` now renders `<div className="pos-device" />` — no copy.
+
+#### Every red case, proved by a real mutation and reverted
+
+1. **Finding 1** (`OrderPanel.tsx`): renamed `ControlledOrderScreen`'s `view` prop to
+   `viewProp` and added back `const [view] = useState(viewProp)` — the exact original
+   shape. New test `AC-1/2 (finding 1)` (`settlement.test.tsx`) failed:
+   `TypeError: Cannot read properties of null` on the lease notice, because the panel
+   never left `default` after Back. Reverted.
+2. **Finding 2** (`PinPad.tsx`): put back `digits = useRef('•'.repeat(seeded))` /
+   `count = useState(seeded)`. New test `red case: today's seed used to write into
+   the digit value...` (`pin-pad.test.tsx`) failed: `onSubmit` received `'••1234'`
+   instead of `'123456'` — the exact defect the review reproduced. Reverted.
+3. **Finding 3** (`SettlementScreen.tsx`): put back
+   `showErrorNotice = state === 'error' && balance > 0n`. The rewritten `AC-8`
+   (`settlement.test.tsx`) failed: `TypeError: Cannot read properties of null` on the
+   notice title after the first partial Add — the notice vanished exactly as the
+   review reproduced. Reverted.
+4. **Criterion 3** (`OrderPanel.tsx`): renamed `ControlledOrderScreen`'s `store` prop
+   to `suppliedStore`, added back `const localStore = useOrderStore(view, locked);
+   const store = suppliedStore && localStore;` (a store the parent's mutations never
+   reach). The existing test `settles the live order the cashier built, never a
+   settlement fixture` (`settlement.test.tsx`) failed: settlement drew `165.000` /
+   `173.250` instead of `300.000` / `315.000` — the added Burger never reached
+   Settlement, because `ControlledOrderScreen` mutated its own discarded local store
+   instead of the one `PosRoutes` owns and hands to both screens. Reverted. (Note:
+   the F3c regression test — removing a pending line via `?gone=` — does *not* catch
+   this particular mutation, because `orderStore.ts` re-derives a `?gone=`-driven
+   removal from the URL on every render regardless of which store instance is asked;
+   only an imperative mutator call like `addLine` exposes the divergence, which is
+   why I picked the add-then-settle test instead.)
+
+Finding 4 (the floor sentence) has no meaningful red case beyond the assertion
+itself — it's a text deletion, not a logic path — and there was no criterion asking
+for one on it specifically.
+
+#### Judgement calls
+
+- Kept sheet-open UI state (`voidOpened`/`lineOpened`/`discountOpened`,
+  `cancelOpen`) local to the controlled components rather than lifting it to the
+  wrappers/`PosRoutes`. The task's "owns none of them" rule names view/store/session/
+  navigate specifically; this is ephemeral overlay state with no second owner
+  anywhere, not a duplicate of anything the route also holds.
+- Closed sheets on an externally-driven view change (browser Back/Forward) via a
+  render-time state adjustment compared by `viewSearch(view)` value, not by object
+  identity or a `useEffect`. An identity or effect-based comparison would either
+  misfire on every unrelated `PosRoutes` re-render (a fresh `view` object gets
+  created from the URL every render) or introduce an extra committed render showing
+  the stale sheet over the new view. Flagging this because it's the one place I
+  departed from a literal effect-based read of "closes on popstate."
+- `PosRoutes.tsx` required no structural edit for finding 1 itself (see above) —
+  only the swap from wrapper to controlled component imports, and passing the
+  `rejected` flag through to `session.activate`.
+
+#### Existing tests changed (both named, per criterion 10)
+
+1. `test/settlement.test.tsx`, `AC-9: reauth keeps the draft alive...` — changed
+   `expect(host.querySelectorAll('.pin-dot--filled')).toHaveLength(3)` to
+   `toHaveLength(1)` after the first real key press on the seeded reauth pad. This
+   was asserting the old seeded-dots-plus-real-digit stacking (finding 2's defect);
+   the fix makes the first real press show a count of 1, not the seed's 2 plus 1.
+2. `test/settlement.test.tsx`, `AC-10: leaselost draws the modal...` — changed
+   `expect(host.textContent).toContain('not built yet')` to
+   `expect(host.textContent).toBe('')` (finding 4: the floor route now renders no
+   copy at all).
+3. `test/settlement.test.tsx`'s `AC-8` was rewritten (not just renamed) to add the
+   partial-correction step (Card 10.000, notice survives, 27.800 owing) and the
+   never-returns step (remove a draft after the notice clears, notice stays gone) —
+   this is the missing coverage the review named at `settlement.test.tsx:642–672`,
+   not a change to an existing passing assertion's meaning.
+
+#### Out of scope, respected
+
+Did not touch `shownOrder(view)` sheet reads, tender/close/pending rules, keypad
+clipping, the takeover keypad, or any new copy. No PosRoutes structural change beyond
+what finding 1 and finding 3's `rejected` flag required.
+
+#### Boundaries
+
+No boundary in `docs/BOUNDARIES.md` needed breaking for this task. B-12 (no PIN
+digit anywhere in the DOM) is intact under the PinPad fix — verified by the new
+seeded B-12 test, which checks attribute values for digits before and after keying.

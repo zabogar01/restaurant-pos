@@ -466,31 +466,55 @@ function TakeoverModal({ onCancel }: { onCancel: () => void }) {
   );
 }
 
+/**
+ * The thin wrapper (FE-019, review finding 1): owns exactly one payment
+ * session (`usePaymentSession`) and seeds it itself, since no `PosRoutes`
+ * sits above it to have done so already. Renders {@link ControlledSettlementScreen}
+ * with it. `store` is unchanged — every caller, routed or direct, has always
+ * supplied it, so there was never a second store to discard here.
+ */
 export function SettlementScreen({
   store,
-  session: suppliedSession,
   addRule = mayAddTender,
   closeRule = closeRefusal,
 }: {
   store: OrderStore;
-  /** F3d, criterion 12: the same hook PosRoutes uses. A direct component test keeps its own copy, never a parallel default. */
-  session?: PaymentSession;
   /** Test seam for proving the component has no second tender-validity rule. */
   addRule?: typeof mayAddTender;
   /** Test seam for proving the component has no second close-validity rule (rule 1, criterion 10). */
   closeRule?: typeof closeRefusal;
 }) {
   const state = settlementStateFrom(window.location.search);
+  const session = usePaymentSession();
+  // Render-time, not an effect (paymentSession.ts): the first paint already
+  // carries the seeded drafts. `PosRoutes` does the equivalent seeding for the
+  // controlled screen before it ever mounts (rule 1).
+  if (!session.active && beginsSession(state)) {
+    session.activate(initialDrafts(state, store.order.totals.total), state === 'error');
+  }
+  return <ControlledSettlementScreen store={store} session={session} addRule={addRule} closeRule={closeRule} />;
+}
+
+/**
+ * The controlled component (FE-019, review finding 1): takes its store and
+ * its session as props and owns neither — no `suppliedSession ?? localSession`.
+ * `PosRoutes` renders this directly, already having activated (or, rules
+ * 9/10, deliberately not activated) the session it hands down.
+ */
+export function ControlledSettlementScreen({
+  store,
+  session,
+  addRule = mayAddTender,
+  closeRule = closeRefusal,
+}: {
+  store: OrderStore;
+  session: PaymentSession;
+  addRule?: typeof mayAddTender;
+  closeRule?: typeof closeRefusal;
+}) {
+  const state = settlementStateFrom(window.location.search);
   const total = store.order.totals.total;
   const [method, setMethod] = useState<TenderMethod>(() => (CARD_SELECTED_STATES.has(state) ? 'card' : 'cash'));
-  const localSession = usePaymentSession();
-  const session = suppliedSession ?? localSession;
-  // Only a standalone render seeds here — PosRoutes has already activated (or
-  // deliberately not activated, rule 9/10) the session it hands down before
-  // this component ever mounts. Render-time, not an effect (paymentSession.ts).
-  if (!suppliedSession && !session.active && beginsSession(state)) {
-    session.activate(initialDrafts(state, total));
-  }
   const drafts = session.drafts;
   const [cancelOpen, setCancelOpen] = useState(false);
   const { balance, change, tendered } = settlementPosition(
@@ -538,6 +562,11 @@ export function SettlementScreen({
       next.map((draft) => draft.amount)
     ).balance;
     session.addDraft(methodLabel(method), amount);
+    // Rule 8, finding 3: a corrected balance answers the rejection once and
+    // for all — the session's `rejected` fact clears here, not by reading
+    // `state === 'error'`, so a partial Add (still owing) leaves it standing
+    // and it never comes back once a later Remove reopens the balance.
+    if (nextBalance === 0n) session.clearRejection();
     prefill(nextBalance);
     window.history.replaceState(null, '', '/pos/settlement');
   };
@@ -590,10 +619,14 @@ export function SettlementScreen({
   const refusal: CloseRefusal | undefined = closeRule(store.order, { balance });
   const isZeroTotal = total === 0n;
   const pendingRefusal = refusal?.reason === 'pending' ? refusal : undefined;
-  // Rule 8's ruling: the rejected-close notice shows only while a balance is
+  // Rule 8, finding 3: the rejection is a fact about this payment session
+  // (`session.rejected`), never `state === 'error'` — a same-session partial
+  // Add rewrites the URL to bare `/pos/settlement`, which must not silence a
+  // notice whose balance is still owing. It shows only while a balance is
   // still owing — once the cashier covers it, it would be asserting a figure
-  // that is no longer true, so it goes and Close follows the usual rule.
-  const showErrorNotice = state === 'error' && balance > 0n;
+  // that is no longer true, so `addDraft` clears the fact itself and Close
+  // follows the usual rule.
+  const showErrorNotice = session.rejected && balance > 0n;
   const isLoading = state === 'loading';
   // Rule 9/10: no Cancel payment behind either lease fixture. Rules 8–10: a
   // modal from any of the four is up, so the screen behind it goes inert

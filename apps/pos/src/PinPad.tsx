@@ -48,8 +48,12 @@ export function PinPad({
   seed = 0,
 }: PinPadProps) {
   const seeded = Math.min(seed, PIN_LENGTH);
-  const digits = useRef('•'.repeat(seeded));
-  const [count, setCount] = useState(seeded);
+  // The seed is drawn, never entered: `digits` starts empty, so a seeded pad
+  // still accepts six real digits and submits only those (the F3 review's
+  // correction — the dots used to double as two real placeholder characters).
+  const digits = useRef('');
+  const [count, setCount] = useState(0);
+  const [keyedAny, setKeyedAny] = useState(false);
 
   useEffect(
     () => () => {
@@ -62,11 +66,13 @@ export function PinPad({
     if (digits.current.length >= PIN_LENGTH) return;
     digits.current += digit;
     setCount(digits.current.length);
+    setKeyedAny(true);
   }
 
   function deleteLast() {
     digits.current = digits.current.slice(0, -1);
     setCount(digits.current.length);
+    setKeyedAny(true);
   }
 
   function submit() {
@@ -74,12 +80,15 @@ export function PinPad({
     const pin = digits.current;
     digits.current = '';
     setCount(0);
+    setKeyedAny(false);
     onSubmit(pin);
   }
 
   // Verification only follows a complete entry, so while it is in flight the
-  // display shows every position filled.
-  const filled = verifying ? PIN_LENGTH : count;
+  // display shows every position filled. Before any real key is pressed, the
+  // dots show the seed (drawn only, never a value); once keying starts, the
+  // dots track the real digits entered, and the seed is never added to them.
+  const filled = verifying ? PIN_LENGTH : keyedAny ? count : seeded;
 
   return (
     <>

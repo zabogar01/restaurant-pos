@@ -132,6 +132,52 @@ describe('POS-03 to POS-04 routing', () => {
 
     expect(host.querySelector('.settlement-totals .totals__row--grand dd')!.textContent).toBe('155.925');
   });
+
+  // F3 review finding 1, red case: today's `OrderScreen` kept `view` in its
+  // own `useState(initial)` and disabled its own `popstate` listener whenever
+  // `PosRoutes` supplied `onLocationChange`, so browser Back between two
+  // `/pos/order` URLs left the mounted panel stale — unlocked, with a live
+  // Settle, at a URL that a direct visit draws locked. FE-019 removes that
+  // second `view` owner: `PosRoutes` alone reads the URL, on every render and
+  // on every `popstate`, and hands the controlled order screen whatever it
+  // reads.
+  it("AC-1/2 (finding 1): browser Back to a lease-locked URL below the mounted one re-reads the lock, and Forward reverses it", async () => {
+    window.history.pushState(null, '', '/pos/order?state=lock-lease');
+    window.history.pushState(null, '', '/pos/order?state=default');
+    act(() => root.render(<PosRoutes />));
+
+    async function forward() {
+      const popped = new Promise<void>((done) => window.addEventListener('popstate', () => done(), { once: true }));
+      act(() => window.history.forward());
+      await act(async () => popped);
+    }
+
+    await back();
+
+    expect(window.location.search).toBe('?state=lock-lease');
+    expect(host.querySelector('.menu-notice .notice__title')!.textContent).toBe(
+      'Another client is settling this order'
+    );
+    expect(host.querySelector('.order-panel')!.getAttribute('data-lock')).toBe('lease');
+    expect(host.querySelector('[data-action="settle"]')!.tagName).toBe('SPAN');
+
+    // AC-2: Forward from the locked state above returns to a live, unlocked
+    // `default` — checked before the takeover click below, which pushes a new
+    // entry and would truncate this one out of the forward stack.
+    await forward();
+    expect(window.location.search).toBe('?state=default');
+    expect(host.querySelector('.order-panel')!.getAttribute('data-lock')).toBeNull();
+    expect(host.querySelector('[data-action="settle"]')!.tagName).toBe('BUTTON');
+    expect(host.querySelector('[aria-label="Remove Steak"]')).not.toBeNull();
+
+    // Back to the lease lock, then press its one available control (AC-1's
+    // last step: it must land on the takeover modal).
+    await back();
+    press([...host.querySelectorAll('a')].find((a) => a.textContent === 'Manager: take over payment')!);
+    expect(window.location.pathname).toBe('/pos/settlement');
+    expect(window.location.search).toBe('?state=settle-takeover');
+    expect(host.querySelector('.modal__title')!.textContent).toBe('Take over this payment');
+  });
 });
 
 describe('tender entry', () => {
@@ -634,7 +680,13 @@ describe('F3c: close outcomes (POS-04)', () => {
     expect(close().tagName).toBe('BUTTON');
   });
 
-  it('AC-8: error derives 37.800 from the live order and keeps the draft', () => {
+  it('AC-8: error derives 37.800 from the live order, survives a partial correction, and never returns once answered', () => {
+    // F3 review finding 3, red case: `showErrorNotice` used to read
+    // `state === 'error'`, and `addDraft` rewrites the URL to bare
+    // `/pos/settlement` on every Add — so the *first* partial Add cleared the
+    // notice while 27.800 was still owing. FE-019 moves the fact into the
+    // payment session (`session.rejected`), cleared only once the balance
+    // itself reaches zero.
     window.history.replaceState(null, '', '/pos/settlement?state=error');
     act(() => root.render(<PosRoutes />));
 
@@ -647,11 +699,30 @@ describe('F3c: close outcomes (POS-04)', () => {
     expect(close().tagName).toBe('SPAN');
     expect(host.querySelector('.notice__title')!.textContent).toBe('Close was rejected');
 
+    // A partial correction: Card 10.000, 27.800 still owed. The notice must
+    // survive this — criterion 7's red case.
+    method('card');
+    key('10000');
+    add();
+
+    expect(balance()).toBe('27.800');
+    expect(host.querySelector('.notice__title')!.textContent).toBe('Close was rejected');
+    expect(host.querySelector('.notice')!.textContent).toContain('27.800');
+    expect(close().tagName).toBe('SPAN');
+
+    // The remaining 27.800: the notice goes and Close goes live.
     add();
 
     expect(balance()).toBe('0');
     expect(host.querySelector('.notice')).toBeNull();
     expect(close().tagName).toBe('BUTTON');
+
+    // Criterion 8: removing a draft reopens the balance, but the rejection
+    // was answered once — it must not come back.
+    press(host.querySelector('.draft-tender__remove')!);
+
+    expect(Number(balance().replace(/\./g, ''))).toBeGreaterThan(0);
+    expect(host.querySelector('.notice')).toBeNull();
   });
 
   it('AC-9: loading cannot be reached by pressing Close', () => {
@@ -891,9 +962,13 @@ describe('F3d: the payment session', () => {
 
     // B-12: pressing a digit advances the *count* of filled dots and nothing
     // else — never the digit itself, which appears nowhere in the DOM.
+    // FE-019 finding 2's correction: the two seeded dots are drawn, never
+    // entered, so the first real digit shows a count of 1, not the seed's 2
+    // plus 1 — a seeded pad must still accept six real digits and submit only
+    // those (test/pin-pad.test.tsx pins the submitted value).
     expect(host.querySelectorAll('.pin-dot--filled')).toHaveLength(2);
     press(host.querySelector('[role="dialog"] .key')!);
-    expect(host.querySelectorAll('.pin-dot--filled')).toHaveLength(3);
+    expect(host.querySelectorAll('.pin-dot--filled')).toHaveLength(1);
 
     await pressBack(buttonInDialog('Leave payment'));
 
@@ -914,8 +989,10 @@ describe('F3d: the payment session', () => {
 
     press(buttonInDialog('Back to floor'));
 
+    // FE-019 finding 4 (P3): the invented sentence is gone — the placeholder
+    // route renders the bare device frame and no copy at all.
     expect(window.location.pathname).toBe('/pos/floor');
-    expect(host.textContent).toContain('not built yet');
+    expect(host.textContent).toBe('');
   });
 
   it('AC-11: takeover, reached for real, draws MANAGER REQUIRED with no Cancel payment and an inert confirm', () => {

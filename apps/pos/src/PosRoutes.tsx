@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { App } from './App.js';
-import { OrderScreen } from './OrderPanel.js';
+import { ControlledOrderScreen } from './OrderPanel.js';
 import { orderViewFrom, type OrderView } from './orderFixtures.js';
 import { useOrderStore } from './orderStore.js';
 import { usePaymentSession } from './paymentSession.js';
-import { beginsSession, initialDrafts, SettlementScreen, settlementStateFrom } from './SettlementScreen.js';
+import { beginsSession, ControlledSettlementScreen, initialDrafts, settlementStateFrom } from './SettlementScreen.js';
 
 /**
  * A direct settlement fixture visit needs the order the reviewed POS-04
@@ -53,7 +53,7 @@ export function PosRoutes() {
   // payment, so they never open one (rules 3, 9, 10).
   const settlementFixtureState = settlementStateFrom(window.location.search);
   if (onSettlement && !session.active && beginsSession(settlementFixtureState)) {
-    session.activate(initialDrafts(settlementFixtureState, store.order.totals.total));
+    session.activate(initialDrafts(settlementFixtureState, store.order.totals.total), settlementFixtureState === 'error');
   }
 
   const readLocation = useCallback(() => setLocation(`${window.location.pathname}${window.location.search}`), []);
@@ -63,8 +63,8 @@ export function PosRoutes() {
     return () => window.removeEventListener('popstate', readLocation);
   }, [readLocation]);
 
-  if (onSettlement) return <SettlementScreen store={store} session={session} />;
-  if (onOrder) return <OrderScreen view={view} store={store} locked={session.active} onLocationChange={readLocation} />;
+  if (onSettlement) return <ControlledSettlementScreen store={store} session={session} />;
+  if (onOrder) return <ControlledOrderScreen view={view} store={store} locked={session.active} onLocationChange={readLocation} />;
   if (onFloor) return <FloorPlaceholder />;
   return <App />;
 }
@@ -72,13 +72,10 @@ export function PosRoutes() {
 /**
  * FR-G14's *Back to floor* (rule 9): POS-02 does not exist yet and is F4's.
  * A placeholder route on `?state=incidents`'s precedent (F2h) — named and
- * reached, honest that nothing is built behind it. **Renders only this
- * notice; do not build a floor here.**
+ * reached, honest that nothing is built behind it. **The floor's placeholder
+ * wording belongs to a designer (F3 review finding 4, P3): this renders the
+ * bare device frame and no copy at all.**
  */
 function FloorPlaceholder() {
-  return (
-    <div className="pos-device">
-      <p style={{ padding: 24 }}>POS-02 (the floor) is not built yet.</p>
-    </div>
-  );
+  return <div className="pos-device" />;
 }
