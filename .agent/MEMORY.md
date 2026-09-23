@@ -526,8 +526,17 @@ belongs in this file.
 Roster verified against `herdr agent list` on 2026-09-22, twice. The first check
 that morning found **`lead` alone**; a fresh lead session took `w2:p1` that
 afternoon, re-ran `herdr agent rename w2:p1 lead`, started `builder16` on
-FE-014, and closed it once FS was committed. **Verified again after that close:
+FE-014 and `builder17` on FE-015, and closed each once its slice was committed.
+**Verified against `herdr agent list` after the second close, 2026-09-23:
 `lead` is the only live agent.**
+
+**Running a codex implementer, learned on `builder17`** — two things to put in
+the prompt rather than let the agent discover: **the visual walk belongs to the
+lead** (it spent two turns trying to obtain a browser surface it cannot have),
+and **it writes the handoff wherever it judges best**, which was above the
+handoff heading rather than in the slot — so *"is the handoff section still the
+empty template?"* returned a false negative on a slice that was actually
+finished. Check the whole file, not the slot.
 
 **MODEL POLICY — owner's instruction, 2026-09-22.** **Implementers run on
 Sonnet**, not Opus: the expensive judgement happens in the lead's pane when the
@@ -544,7 +553,7 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
-| `builder17` | **codex, `gpt-5.6-sol`** | `w2:p0` | live | Building [FE-015](tasks/FE-015-settlement-shell.md) (F3a). **First implementer on codex** — the owner moved workers there for this session because the Claude session was near its limit. Started clean and interactive-ready, with no CLI update prompt |
+| `builder17` | **codex, `gpt-5.6-sol`** | — | closed 2026-09-23 | **Delivered [FE-015](tasks/FE-015-settlement-shell.md)** (F3a), committed `cda4d4e`. **First non-Claude implementer**, and it delivered a full slice with eight red-case proofs, each mutation made alone and reverted. Two things to know about running codex here: it **burned two turns hunting for a browser it was never going to get** — say up front that the visual walk is the lead's — and it **wrote its handoff above the handoff heading** rather than in the slot, so a check that greps the slot reads empty. Closed under the standing policy |
 | `builder16` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-014](tasks/FE-014-order-store.md)** (FS), committed `3ad3282`. **Caught two task-file errors before writing a single line** — the seam claim, and a save control that exists neither in the code nor in the artifact — and stopped both times rather than building on them. Predicted the `empty` divergence in its own handoff, which is how the lead knew where to look. Closed under the standing policy: slice committed, handoff committed |
 | `code-reviewer` | **codex, gpt-6-astra** | — | closed 2026-09-22 | **Reviewed F2h and F2d independently** — [reviews/F2h-F2d-review.md](reviews/F2h-F2d-review.md). Two P2 findings, one of them a reproducible defect no test caught; cleared the two rulings while correcting the authority cited for one. **Second review agent used on implementation work, and the second to earn its place.** It started blocked on a CLI update prompt — answer *Skip*, never *Update now* |
 | `builder15` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-013](tasks/FE-013-review-corrections.md)**, both review corrections, committed `2654e5c`. Split a table-specific assertion out of a generic sweep rather than loosening it, and raised what "close" meant rather than guessing |
