@@ -3,7 +3,91 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-22, when **the owner asked when the frontend would have a
+Last updated: 2026-09-23, when **a fresh lead session took `w2:p1`**, re-ran
+`herdr agent rename w2:p1 lead`, and re-verified from evidence rather than from
+this file: head `5189125`, working tree clean, **`npm run verify` green at 1255
+tests across 22 files**, typecheck clean, and `lead` the only live agent. Three
+facts here were stale and are corrected: F3a and FS were each still recorded as
+*Not committed* (they are `cda4d4e` and `3ad3282`), and the START HERE branch
+table still named head `2654e5c` at 1136 tests. Workspace `w2` also holds two
+agentless shell panes, `w2:pE` (tab `t7`, cwd `apps/pos`) and `w2:pS` (tab
+`t8`) — leftover, not work locations; the lead did not create them and has not
+closed them. The lead now runs on **Opus 5.5**.
+
+**Later the same day, the owner merged the branch into `origin/development` as
+PR #5 (`59a7f3c`).** This repository has no `main`. The integration branch is
+`development`, and the local `development` ref is stale, sitting at `c5a2807`.
+**F3b is written as [FE-016](tasks/FE-016-cash-and-card-diverge.md)** and is
+unassigned. Writing it from the code turned up four things the roadmap line did
+not have. First, the balance goes negative on a cash over-tender, which would
+refuse Close. Second, cash shows the card caption. Third, the URL rewrite after
+Add seeds a Card draft after a cash Add. Fourth, **two F3a tests encode F3a's
+placeholder rule**, so they are the only existing tests the slice may change,
+named in the task. **The lead ruled three silences in the artifact**, each
+recorded in the task. The one to watch: when the 99,999,999 single-tender cap
+binds instead of the change limit, the artifact draws no copy. The implementer
+enforces the cap and raises the missing copy.
+
+**OWNER'S RULING, 2026-09-23: there is no review per slice for F3.** One
+independent review, run by a codex review agent, covers F3a–F3d together once
+F3d is done. This overrides the roadmap's *use a review agent on any slice that
+encodes a rule* for this screen, but not in general. **`builder18` (Sonnet) was
+started on FE-016 in `w2:p11`** the same day.
+
+**THE ELEVENTH TASK-FILE ERROR. The lead stated a money formula without its
+zero case.** FE-016 gave the cash maximum as `min(balance + 9,999,999,
+99,999,999)`, and rule 4 rested on the premise that *Add is refused once the
+balance reaches zero*. **No criterion tested that premise.** `builder18`
+implemented the formula faithfully. The lead found the gap by probing the
+finished tree rather than reading the diff: from `change`, key 9.999.999 on
+Cash and Add is live, a second cash tender drafts, and **change due becomes
+10.044.074, past `FR-M5`'s 9,999,999 limit.** The fix is sent back: at zero
+balance the maximum is 0 for every method.
+
+**The lesson:** when a task file says *X holds because Y*, Y needs its own
+criterion. A premise stated in prose is a premise nobody tests.
+
+Also sent back: AC-10's `NON_CASH_METHODS` was a hand-maintained array, which
+cannot catch a new union member by itself. It is now to be derived through
+`satisfies Record<TenderMethod, …>`.
+
+**Machine sleep interrupted `builder18` three times**, and the second time
+left a red-case mutation live in `tender.ts`. The lead caught it because the
+three failures were exactly the cap tests. **After any interruption, run the
+suite and read which tests fail before prompting the agent onward.** A
+`caffeinate` guard is now run in the lead's pane during builder work.
+
+**F3b DONE, 2026-09-23. Lead-verified at 1287 tests across 22 files, typecheck
+clean, and walked in a browser. Not committed.** Both corrections landed. Each
+was proved red first, and the AC-10 fix was proved by widening the union and
+watching typecheck fail. The live walk: `quick`, add a Burger, Settle, and the
+screen shows 315.000. Keying 400.000 on Cash gives the `cashover` caption
+*"More than the 315.000 owing … 85.000 change; the recorded takings are still
+315.000"*. **Add gives balance 0, change due 85.000, *"not the 400.000 handed
+over"*, and Close live.** The URL reads bare `/pos/settlement`. Keying 5 at zero
+leaves Add reading *Nothing left*, with no notice and no field message.
+`builder18` is closed, along with its pane.
+
+**THE BROWSER FOUND A DEFECT THE TESTS COULD NOT: the reviewed artifact clips
+the keypad in both rejection states.** The lead measured it at 1280×800. The
+notice pushes the keypad down, and `.tender-entry__body` is `overflow: hidden`.
+In `cardover`, 47 of the 72px `←` key is hidden under the close bar; in
+`ceiling`, 30px is. **Those are the two states where the cashier has to delete
+digits to correct the amount.** The design worktree's own `settlement.html`
+clips worse, with the bottom row almost fully hidden in `cardover`. So the
+implementation reproduced the artifact faithfully. It is a composition defect,
+the designer's to fix, and the fourth instance of the heuristic: **one control
+shared across states, hiding the state where it is wrong.** A way out exists
+today, because tapping the method chip re-prefills the balance. Not blocking.
+Listed as housekeeping.
+
+**Also seen during the walk, and older than F3b:** after *Add to order* on
+POS-03's item sheet, the URL reads `?state=eightysix`. The store and the totals
+are right (315.000), but the URL names a fixture the cashier did not build. This
+is the same class of defect as FE-016 rule 7, on the other screen. Listed as
+housekeeping. It is not verified to come from FS, but it is likely.
+
+Previously 2026-09-22, when **the owner asked when the frontend would have a
 working flow rather than a preview, and the answer was that nothing in the queue
 produced one.** FS — the order store — was inserted ahead of F3 and written as
 [FE-014](tasks/FE-014-order-store.md); `builder16` (Sonnet) built it in `w2:pZ`.
@@ -73,7 +157,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, F2e's corrections, F2k's openers, F2h's fire and rejection states, F2d's quick sale, and the review's two corrections. Head `2654e5c`, **1136 tests across 19 files**, working tree clean, verified 2026-09-22 |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, F2e's corrections, F2k's openers, F2h's fire and rejection states, F2d's quick sale, the review's two corrections, FS's order store, and F3a's settlement shell with client-side routing. Head `5189125`, **1255 tests across 22 files**, working tree clean, verified 2026-09-23 |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -528,7 +612,8 @@ that morning found **`lead` alone**; a fresh lead session took `w2:p1` that
 afternoon, re-ran `herdr agent rename w2:p1 lead`, started `builder16` on
 FE-014 and `builder17` on FE-015, and closed each once its slice was committed.
 **Verified against `herdr agent list` after the second close, 2026-09-23:
-`lead` is the only live agent.**
+`lead` is the only live agent.** Re-verified the same day by a fresh lead
+session, which re-ran the rename.
 
 **Running a codex implementer, learned on `builder17`** — two things to put in
 the prompt rather than let the agent discover: **the visual walk belongs to the
@@ -552,7 +637,8 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
-| `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `lead` | claude, **Opus 5.5** since 2026-09-23 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `builder18` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-016](tasks/FE-016-cash-and-card-diverge.md)** (F3b), not committed. Survived three sleep interruptions, and took both corrections, one of them the lead's own error, in minutes. Its prompt told it outright that it is an implementer rather than the lead, because CLAUDE.md sends every fresh session to the lead's role |
 | `builder17` | **codex, `gpt-5.6-sol`** | — | closed 2026-09-23 | **Delivered [FE-015](tasks/FE-015-settlement-shell.md)** (F3a), committed `cda4d4e`. **First non-Claude implementer**, and it delivered a full slice with eight red-case proofs, each mutation made alone and reverted. Two things to know about running codex here: it **burned two turns hunting for a browser it was never going to get** — say up front that the visual walk is the lead's — and it **wrote its handoff above the handoff heading** rather than in the slot, so a check that greps the slot reads empty. Closed under the standing policy |
 | `builder16` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-014](tasks/FE-014-order-store.md)** (FS), committed `3ad3282`. **Caught two task-file errors before writing a single line** — the seam claim, and a save control that exists neither in the code nor in the artifact — and stopped both times rather than building on them. Predicted the `empty` divergence in its own handoff, which is how the lead knew where to look. Closed under the standing policy: slice committed, handoff committed |
 | `code-reviewer` | **codex, gpt-6-astra** | — | closed 2026-09-22 | **Reviewed F2h and F2d independently** — [reviews/F2h-F2d-review.md](reviews/F2h-F2d-review.md). Two P2 findings, one of them a reproducible defect no test caught; cleared the two rulings while correcting the authority cited for one. **Second review agent used on implementation work, and the second to earn its place.** It started blocked on a CLI update prompt — answer *Skip*, never *Update now* |
@@ -684,7 +770,7 @@ changes nothing near the finger, which is why it waited for this.
 [FE-015](tasks/FE-015-settlement-shell.md), `builder17` (**codex,
 `gpt-5.6-sol`** — the first non-Claude implementer). **Lead-verified: 1255 tests
 across 22 files**, up from 1216, typecheck clean, **no existing test modified**.
-Not committed.
+**Committed `cda4d4e`**; re-verified green 2026-09-23.
 
 **Walked end to end in a browser**, which is the check that matters here:
 
