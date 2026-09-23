@@ -62,8 +62,9 @@ export type LockNotice = {
 
 // Ruling C-5: the two locks never share a string, and each names its own route
 // out. The artifact links to settlement.html?state=pending and ?state=takeover.
-// Settlement (F3) is not built, so these are placeholder states on this screen,
-// named after the artifact's, and today resolve to the default state.
+// FE-015 reconciles the artifact's placeholder state names onto POS-04's real
+// route. The state remains in the query so later slices can supply the pending
+// and takeover compositions without another routing change.
 export const LOCK_NOTICE: Record<SettlementLock, LockNotice> = {
   draft: {
     title: 'Finish this payment first',
@@ -71,7 +72,7 @@ export const LOCK_NOTICE: Record<SettlementLock, LockNotice> = {
       'You are collecting payment for this order on this tab. Adding items, changing the discount, firing, and ' +
       'voiding — including removing a line you have not sent yet — are unavailable until you finish or cancel ' +
       'it. You can still read the order.',
-    action: { label: 'Back to payment', href: '?state=settle-pending' },
+    action: { label: 'Back to payment', href: '/pos/settlement?state=settle-pending' },
     soft: true,
   },
   lease: {
@@ -80,7 +81,7 @@ export const LOCK_NOTICE: Record<SettlementLock, LockNotice> = {
       'Payment was started elsewhere and may involve a card charge already in progress. You cannot add items, ' +
       'discount, fire, or void this order — and that includes removing a line you have not sent yet. Reading ' +
       'it is still fine.',
-    action: { label: 'Manager: take over payment', href: '?state=settle-takeover' },
+    action: { label: 'Manager: take over payment', href: '/pos/settlement?state=settle-takeover' },
     soft: false,
   },
 };

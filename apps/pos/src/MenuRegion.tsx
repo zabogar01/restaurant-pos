@@ -35,7 +35,13 @@ import { viewSearch, type OrderView, type SettlementLock } from './orderFixtures
 // F2h adds one notice here: B-20's rejected command. It is drawn over a live
 // rail and grid, because the claim it makes is that nothing happened and the
 // way to act on it is to add the line again.
-export function MenuRegion({ view, navigate = () => {} }: { view: OrderView; navigate?: (search: string) => void }) {
+export function MenuRegion({
+  view,
+  navigate = () => {},
+}: {
+  view: OrderView;
+  navigate?: (destination: string, leaves?: boolean) => void;
+}) {
   const fixture = MENU_FIXTURES[view.state];
 
   // Under either lock the rail and grid are absent, not inert: adding a line is
@@ -46,7 +52,7 @@ export function MenuRegion({ view, navigate = () => {} }: { view: OrderView; nav
     return (
       <div className="order-screen__menu">
         <div className="menu-area">
-          <LockNoticeView lock={fixture.lock} />
+          <LockNoticeView lock={fixture.lock} navigate={navigate} />
         </div>
       </div>
     );
@@ -157,7 +163,7 @@ function Tile({
   item: MenuItem;
   off: boolean;
   pressed: boolean;
-  navigate: (search: string) => void;
+  navigate: (destination: string, leaves?: boolean) => void;
 }) {
 
   if (off) {
@@ -186,13 +192,26 @@ function Tile({
   );
 }
 
-function LockNoticeView({ lock }: { lock: SettlementLock }) {
+function LockNoticeView({
+  lock,
+  navigate,
+}: {
+  lock: SettlementLock;
+  navigate: (destination: string, leaves?: boolean) => void;
+}) {
   const { title, body, action, soft } = LOCK_NOTICE[lock];
   return (
     <div className={soft ? 'notice notice--soft menu-notice' : 'notice menu-notice'} role="status" data-lock={lock}>
       <div className="notice__title">{title}</div>
       <div>{body}</div>
-      <a className="action action--compact menu-notice__action" href={action.href}>
+      <a
+        className="action action--compact menu-notice__action"
+        href={action.href}
+        onClick={(event) => {
+          event.preventDefault();
+          navigate(action.href, true);
+        }}
+      >
         {action.label}
       </a>
     </div>
