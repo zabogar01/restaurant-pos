@@ -174,12 +174,15 @@ sheets, the approval prompt, the discount and void families, the corrections,
 the openers, the fire and rejection states, and the quick sale. POS-03 draws
 every state the reviewed artifact has for it.
 
-**Next is FS, the order store** — [FE-014](tasks/FE-014-order-store.md),
-inserted ahead of F3 by the owner on 2026-09-22. **Then F3, settlement**, whose
-first act is reconciling three placeholder route names (`?state=settle`,
-`settle-pending`, `settle-takeover`) plus F2h's `?state=incidents`, and reading
-`settlement.html` **from the design worktree**, because this branch's copy still
-carries DESIGN-004's critical defect.
+**FS landed** — [FE-014](tasks/FE-014-order-store.md), committed `3ad3282`,
+pushed. POS-03 has one mutable order: add a line, remove it, watch the total
+move.
+
+**F3 is split into four**, 2026-09-22, on the same evidence F2 was — the
+settlement artifact is 352 lines carrying **21 distinct states**. **F3a is
+[FE-015](tasks/FE-015-settlement-shell.md)**, in progress with `builder17`
+(codex, `gpt-5.6-sol`). Account under *F3 split, and a routing problem nobody
+had counted* below.
 
 **How this session works** — the owner's two standing instructions:
 
@@ -523,8 +526,17 @@ belongs in this file.
 Roster verified against `herdr agent list` on 2026-09-22, twice. The first check
 that morning found **`lead` alone**; a fresh lead session took `w2:p1` that
 afternoon, re-ran `herdr agent rename w2:p1 lead`, started `builder16` on
-FE-014, and closed it once FS was committed. **Verified again after that close:
+FE-014 and `builder17` on FE-015, and closed each once its slice was committed.
+**Verified against `herdr agent list` after the second close, 2026-09-23:
 `lead` is the only live agent.**
+
+**Running a codex implementer, learned on `builder17`** — two things to put in
+the prompt rather than let the agent discover: **the visual walk belongs to the
+lead** (it spent two turns trying to obtain a browser surface it cannot have),
+and **it writes the handoff wherever it judges best**, which was above the
+handoff heading rather than in the slot — so *"is the handoff section still the
+empty template?"* returned a false negative on a slice that was actually
+finished. Check the whole file, not the slot.
 
 **MODEL POLICY — owner's instruction, 2026-09-22.** **Implementers run on
 Sonnet**, not Opus: the expensive judgement happens in the lead's pane when the
@@ -541,6 +553,7 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `builder17` | **codex, `gpt-5.6-sol`** | — | closed 2026-09-23 | **Delivered [FE-015](tasks/FE-015-settlement-shell.md)** (F3a), committed `cda4d4e`. **First non-Claude implementer**, and it delivered a full slice with eight red-case proofs, each mutation made alone and reverted. Two things to know about running codex here: it **burned two turns hunting for a browser it was never going to get** — say up front that the visual walk is the lead's — and it **wrote its handoff above the handoff heading** rather than in the slot, so a check that greps the slot reads empty. Closed under the standing policy |
 | `builder16` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-014](tasks/FE-014-order-store.md)** (FS), committed `3ad3282`. **Caught two task-file errors before writing a single line** — the seam claim, and a save control that exists neither in the code nor in the artifact — and stopped both times rather than building on them. Predicted the `empty` divergence in its own handoff, which is how the lead knew where to look. Closed under the standing policy: slice committed, handoff committed |
 | `code-reviewer` | **codex, gpt-6-astra** | — | closed 2026-09-22 | **Reviewed F2h and F2d independently** — [reviews/F2h-F2d-review.md](reviews/F2h-F2d-review.md). Two P2 findings, one of them a reproducible defect no test caught; cleared the two rulings while correcting the authority cited for one. **Second review agent used on implementation work, and the second to earn its place.** It started blocked on a CLI update prompt — answer *Skip*, never *Update now* |
 | `builder15` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-013](tasks/FE-013-review-corrections.md)**, both review corrections, committed `2654e5c`. Split a table-specific assertion out of a generic sweep rather than loosening it, and raised what "close" meant rather than guessing |
@@ -663,6 +676,133 @@ added back deliberately, and the reviewed stylesheets untouched.
 
 **F2 is unblocked.** The order workspace is the screen where a tap often
 changes nothing near the finger, which is why it waited for this.
+
+---
+
+## F3a landed — POS-04 exists, and settlement reads the order the cashier built
+
+[FE-015](tasks/FE-015-settlement-shell.md), `builder17` (**codex,
+`gpt-5.6-sol`** — the first non-Claude implementer). **Lead-verified: 1255 tests
+across 22 files**, up from 1216, typecheck clean, **no existing test modified**.
+Not committed.
+
+**Walked end to end in a browser**, which is the check that matters here:
+
+- `quick`, add a Burger, press **Settle** → `/pos/settlement`, drawing
+  **subtotal 300.000, service 15.000, total 315.000, tax 27.273** — the figures
+  the cashier just made. The artifact's own 155.925 appears nowhere. **That is
+  the whole slice in one screen**, and it is FS paying for itself.
+- Amount prefilled at the full balance under a tag reading *ALREADY FILLED IN —
+  WHOLE BALANCE*, with the caption *"Key a smaller amount to split the bill;
+  whatever is left stays on the balance."* — ruling **I-13** as copy, not as a
+  comment.
+- Key 100.000, **Add cash**: balance 315.000 → **215.000**, the field
+  **re-prefills at 215.000**, a draft row appears, and the total stays 315.000
+  (`B-6` — revenue is the total, never the tendered). **No mode was entered.**
+- Add the remainder: balance **0**, the tag becomes *FULLY ALLOCATED*, Add goes
+  inert reading *Nothing left*, and **Close order & print receipt** goes live.
+  Below zero-balance it reads *Close order — balance outstanding* and refuses
+  (`FR-G5`, `B-18`).
+- **Back returns to `/pos/order` with the order still mutated** — 315.000, not
+  the fixture. The store survives the route change, which was the slice's real
+  problem.
+- *NOTHING RECORDED YET* sits on both the header and the draft list (`FR-G9`).
+
+### The lead nearly reported a regression that was not one
+
+Three tile presses through browser automation did nothing — no sheet, no URL
+change — on two different states, after the same press had worked earlier in the
+session. It looked exactly like the routing lift had broken the menu.
+
+**A programmatic `.click()` on the same element worked immediately**, opening the
+sheet and moving the URL. The synthetic pointer events were not landing on the
+tile; **the application was never broken.** The same thing had already happened
+twice on the order panel's `×` and was written off as a missed click.
+
+**The lesson is about the instrument, not the app.** A browser-automation click
+that silently does nothing is indistinguishable from a dead control, and this
+session almost filed one as a defect on that evidence. **Confirm a suspected
+dead control with a direct DOM click before calling it a regression**, and never
+report one from failed synthetic clicks alone.
+
+### The CSS sentinel — proved rather than accepted
+
+`builder17` moved the `.fixture-states` block back ahead of its new POS-04
+section so two structural tests stopped scanning unrelated rules, and argued in
+its handoff that this preserves what they police. **A structural test that goes
+quiet because the thing it measures moved is not obviously still a test**, so
+the lead injected `.discount-flow .action:hover` and ran the pair: *"the discount
+rules set no hover of their own"* **failed**. The guard still bites; the argument
+holds. Restored, 1255 green.
+
+### Two facts to carry into F3b–F3d
+
+- `tender.ts` is the pure module the task demanded, and `mayAddTender` returning
+  false stops the component adding anything with no component change —
+  `builder17` proved that one itself. **F3b extends the module.**
+- **`OrderScreen` now takes an optional `store` prop**, defaulting to its own
+  `useOrderStore`. That is the *same shape* as FE-014's optional `order` prop —
+  the shape that produced the `empty` divergence by creating two paths. It is
+  defensible here for the same reason (direct component tests keep a
+  self-contained store), **but it is the second default of this kind and nothing
+  yet pins the two paths together.** Watch it.
+
+---
+
+## F3 split, and a routing problem nobody had counted
+
+**Counted before assigning, which has now changed a task four times.** The
+settlement artifact is **352 lines carrying 21 distinct states**, against
+POS-01's 8 (one slice, 114 tests) and POS-03's ~26 (eleven slices, 1022 tests).
+SCREEN-INVENTORY's POS-04 lists seventeen behaviours plus a walkable tender walk
+and a *Must not invent* section every line of which is load-bearing. **F3 as one
+task was three sessions pretending to be one.** Split into F3a–F3d **by
+authority, not by component** — F2c's lesson.
+
+### The two facts the roadmap line never had
+
+**POS-04 is a `[SCREEN]`, and this app cannot currently reach a second one.**
+`main.tsx:10` picks the screen **once, at module load**
+(`/\/order\/?$/.test(window.location.pathname)`), while `SETTLE_BTN`
+(`OrderPanel.tsx:558`) navigates by same-document `pushState`. **No document
+load happens, so nothing re-evaluates that regex** and the screen never changes.
+Eleven slices never noticed because POS-03 was the only screen.
+
+**And the order would not survive the trip.** `useOrderStore` is `useState`
+inside `OrderScreen` (`orderStore.ts:130`), so unmounting POS-03 destroys the
+order — a settlement screen that cannot see the order the cashier just built is
+the whole point missed. **So F3a's real work is lifting the store above both
+screens and routing client-side**, which is not what "build the tender panel"
+sounds like. Written from the code, again, and again it changed the task.
+
+### DESIGN-004's defect, stated concretely at last
+
+The lead diffed the two copies rather than repeating the warning. In **this
+branch's** `settlement.html` the `error` state — *"the order changed while you
+were collecting payment"* — draws the **same totals as every other state**
+(155.925) and a **balance of `0`**: a close offered on a stale balance with
+nothing shown outstanding, at the moment the order underneath changed.
+
+The **worktree's remediated copy** gives `error` its own figures — subtotal
+205.000, discount −20.500, service 9.225, **total 193.725**, tax 16.773 — and a
+balance of **37.800**, which is 193.725 − 155.925, what is actually still owed.
+That is F3c's state, not F3a's, but it is why the path is not a formality.
+
+### The constraint F3a carries for the three slices after it
+
+**F3a must not encode "over balance is impossible" anywhere.** Cash may exceed
+the balance and card may not (`FR-G3`, `FR-G4`, `B-5`), and that divergence is
+F3b's. So the question *may this amount be added, for this method, against this
+balance?* goes into a pure `tender.ts` from the first line, beside `fire.ts`,
+`discount.ts` and `void.ts`. F3b extends the module; if it has to unpick a
+component that decided for itself, F3a was built wrong. **Four slices have each
+paid for this already.**
+
+### Model, this session
+
+The owner moved workers to **codex `gpt-5.6-sol`** for this session, the Claude
+session being near its limit. `builder17` started clean and interactive-ready on
+it — **no CLI update prompt**, which the 2026-09-22 `code-reviewer` had hit.
 
 ---
 

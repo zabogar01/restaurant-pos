@@ -9,7 +9,7 @@ import { Icon } from './icons.js';
 import { MENU_FIXTURES } from './menuFixtures.js';
 import { MenuRegion } from './MenuRegion.js';
 import { formatAmount } from './money.js';
-import { useOrderStore } from './orderStore.js';
+import { useOrderStore, type OrderStore } from './orderStore.js';
 import {
   FIRED_TAG,
   LOCK_TAG,
@@ -64,7 +64,15 @@ import { VoidSheet } from './VoidSheets.js';
 // (B-16), a tap on one pending row can only ever edit that row, and the gate
 // on a discount change reads the discount this order carries (FR-F8). None of
 // them writes a URL or a history entry.
-export function OrderScreen({ view: initial = orderViewFrom(window.location.search) }: { view?: OrderView }) {
+export function OrderScreen({
+  view: initial = orderViewFrom(window.location.search),
+  store: suppliedStore,
+  onLocationChange,
+}: {
+  view?: OrderView;
+  store?: OrderStore;
+  onLocationChange?: () => void;
+}) {
   const [view, setView] = useState(initial);
   const [voidOpened, setVoidOpened] = useState<VoidSheetFixture['target']>();
   const [lineOpened, setLineOpened] = useState<string>();
@@ -74,7 +82,11 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
   // The sheets and the void sheet still read the fixture-only derivation
   // (FE-014's correction to this task): none of them are wired to the store.
   const order = shownOrder(view);
-  const store = useOrderStore(view);
+  // Direct component tests keep their historical self-contained store. The
+  // application route supplies the store it owns above POS-03 and POS-04, so
+  // leaving this component never discards the order the cashier built.
+  const localStore = useOrderStore(view);
+  const store = suppliedStore ?? localStore;
   const sheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, order) : undefined);
   const approval = APPROVAL_FIXTURES[view.state];
   const discount = DISCOUNT_FIXTURES[view.state] ?? (discountOpened ? panelDiscount(view, order) : undefined);
@@ -98,25 +110,28 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
    * ruling of 2026-09-18).
    */
   function navigate(search: string, leaves = false) {
-    const next = orderViewFrom(search);
+    const destination = leaves && search === '?state=settle' ? `/pos/settlement${search}` : search;
+    const next = orderViewFrom(new URL(destination, window.location.href).search);
     const open = sheet ?? approval ?? discount ?? voiding;
     returnFocusTo.current = open?.opener;
-    if (leaves && !open && !overlayAt(next.state)) window.history.pushState(null, '', search);
+    if (leaves && !open && !overlayAt(next.state)) window.history.pushState(null, '', destination);
     else window.history.replaceState(null, '', search);
     closeOpened();
     setView(next);
+    if (leaves) onLocationChange?.();
   }
 
   const go = (next: OrderView) => navigate(viewSearch(next));
 
   useEffect(() => {
+    if (onLocationChange) return;
     const onPop = () => {
       closeOpened();
       setView(orderViewFrom(window.location.search));
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, []);
+  }, [onLocationChange]);
 
   useLayoutEffect(() => {
     if (!returnFocusTo.current) return;
@@ -482,7 +497,7 @@ function modifierText({ name, delta }: Modifier): string {
   return delta < 0n ? `${name} (${formatAmount(delta)})` : `${name} (+${formatAmount(delta)})`;
 }
 
-function TotalsView({ totals }: { totals: Totals }) {
+export function TotalsView({ totals }: { totals: Totals }) {
   return (
     <dl className="totals">
       <div className="totals__row">
@@ -517,9 +532,10 @@ function TotalsView({ totals }: { totals: Totals }) {
 
 // The close bar. Discount and Void order open a sheet over the order on
 // screen, and each sheet's gate reads that order (DiscountSheets.tsx,
-// VoidSheets.tsx): neither names a state. Settle names a state that does not
-// exist yet (F3) and today resolves to the default state. Under a lock, and on
-// an empty order, all four are drawn unavailable in place.
+// VoidSheets.tsx): neither names a state. Settle's action definition keeps the
+// historical query name that the panel tests exercise; OrderScreen resolves it
+// onto POS-04's real route. Under a lock, and on an empty order, all four are
+// drawn unavailable in place.
 //
 // `leaves` marks the one control that leaves POS-03, and so the only one that
 // pushes a history entry: Settle, for POS-04, which SITEMAP §2 gives its own
