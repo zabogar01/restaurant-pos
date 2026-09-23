@@ -670,6 +670,76 @@ changes nothing near the finger, which is why it waited for this.
 
 ---
 
+## F3a landed — POS-04 exists, and settlement reads the order the cashier built
+
+[FE-015](tasks/FE-015-settlement-shell.md), `builder17` (**codex,
+`gpt-5.6-sol`** — the first non-Claude implementer). **Lead-verified: 1255 tests
+across 22 files**, up from 1216, typecheck clean, **no existing test modified**.
+Not committed.
+
+**Walked end to end in a browser**, which is the check that matters here:
+
+- `quick`, add a Burger, press **Settle** → `/pos/settlement`, drawing
+  **subtotal 300.000, service 15.000, total 315.000, tax 27.273** — the figures
+  the cashier just made. The artifact's own 155.925 appears nowhere. **That is
+  the whole slice in one screen**, and it is FS paying for itself.
+- Amount prefilled at the full balance under a tag reading *ALREADY FILLED IN —
+  WHOLE BALANCE*, with the caption *"Key a smaller amount to split the bill;
+  whatever is left stays on the balance."* — ruling **I-13** as copy, not as a
+  comment.
+- Key 100.000, **Add cash**: balance 315.000 → **215.000**, the field
+  **re-prefills at 215.000**, a draft row appears, and the total stays 315.000
+  (`B-6` — revenue is the total, never the tendered). **No mode was entered.**
+- Add the remainder: balance **0**, the tag becomes *FULLY ALLOCATED*, Add goes
+  inert reading *Nothing left*, and **Close order & print receipt** goes live.
+  Below zero-balance it reads *Close order — balance outstanding* and refuses
+  (`FR-G5`, `B-18`).
+- **Back returns to `/pos/order` with the order still mutated** — 315.000, not
+  the fixture. The store survives the route change, which was the slice's real
+  problem.
+- *NOTHING RECORDED YET* sits on both the header and the draft list (`FR-G9`).
+
+### The lead nearly reported a regression that was not one
+
+Three tile presses through browser automation did nothing — no sheet, no URL
+change — on two different states, after the same press had worked earlier in the
+session. It looked exactly like the routing lift had broken the menu.
+
+**A programmatic `.click()` on the same element worked immediately**, opening the
+sheet and moving the URL. The synthetic pointer events were not landing on the
+tile; **the application was never broken.** The same thing had already happened
+twice on the order panel's `×` and was written off as a missed click.
+
+**The lesson is about the instrument, not the app.** A browser-automation click
+that silently does nothing is indistinguishable from a dead control, and this
+session almost filed one as a defect on that evidence. **Confirm a suspected
+dead control with a direct DOM click before calling it a regression**, and never
+report one from failed synthetic clicks alone.
+
+### The CSS sentinel — proved rather than accepted
+
+`builder17` moved the `.fixture-states` block back ahead of its new POS-04
+section so two structural tests stopped scanning unrelated rules, and argued in
+its handoff that this preserves what they police. **A structural test that goes
+quiet because the thing it measures moved is not obviously still a test**, so
+the lead injected `.discount-flow .action:hover` and ran the pair: *"the discount
+rules set no hover of their own"* **failed**. The guard still bites; the argument
+holds. Restored, 1255 green.
+
+### Two facts to carry into F3b–F3d
+
+- `tender.ts` is the pure module the task demanded, and `mayAddTender` returning
+  false stops the component adding anything with no component change —
+  `builder17` proved that one itself. **F3b extends the module.**
+- **`OrderScreen` now takes an optional `store` prop**, defaulting to its own
+  `useOrderStore`. That is the *same shape* as FE-014's optional `order` prop —
+  the shape that produced the `empty` divergence by creating two paths. It is
+  defensible here for the same reason (direct component tests keep a
+  self-contained store), **but it is the second default of this kind and nothing
+  yet pins the two paths together.** Watch it.
+
+---
+
 ## F3 split, and a routing problem nobody had counted
 
 **Counted before assigning, which has now changed a task four times.** The

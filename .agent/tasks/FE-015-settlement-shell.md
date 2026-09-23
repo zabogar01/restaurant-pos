@@ -259,6 +259,126 @@ breaking one, the task is wrong — say so and stop.
 
 ## Handoff
 
+Implemented FE-015 on `agent/phase-0-foundations`; no commit was made. I read
+the settlement artifact from the required design worktree path,
+`../restaurant-pos-design/docs/design/visual-directions/frost/pos/settlement.html`,
+not this branch's copy. Its `error` state has the remediated 193.725 total and
+37.800 balance described above. I found no disagreement between this task, the
+current code, and that artifact, and needed no undrawn composition.
+
+### What changed
+
+- Added `PosRoutes.tsx`, which owns the one `useOrderStore` above POS-03 and
+  POS-04, reacts to `popstate`, and keeps the mutated order alive across both
+  directions. `main.tsx` now renders it. `OrderScreen` accepts the supplied
+  store and a location-change callback; its self-contained fallback remains
+  only so all pre-existing direct component tests continue to exercise the
+  same public surface.
+- Settle still has its historical `?state=settle` action definition, but the
+  screen departure resolves it to `/pos/settlement?state=settle` and pushes.
+  The two settlement-lock exits now land on POS-04 as
+  `?state=settle-pending` and `?state=settle-takeover`; both deliberately draw
+  the empty F3a shell, with no pending or takeover behavior.
+- Added `SettlementScreen.tsx` with the five F3a fixture states: `empty`,
+  `pressed`, `partial`, `exact`, and `overflow`. The summary receives the
+  route-owned store's `ShownOrder`; the settlement component imports neither
+  `ORDER_FIXTURES` nor a second totals calculation. A direct fixture visit is
+  seeded in the route with the artifact's 155.925 table order, while a real
+  POS-03 departure keeps the live store (315.000 in the acceptance walk).
+- Added Cash/Card selection, remaining-balance prefill, in-place keypad entry,
+  tab-local drafted tenders and removal, exact-zero close availability, and a
+  scroll-only overflow draft list. Close is intentionally inert in F3a. The
+  lease countdown present in the artifact was removed from this slice because
+  lease behavior and presentation belong to F3d.
+- Added `tender.ts`. `mayAddTender(method, amount, balance)` is the only add
+  gate; in F3a both methods accept positive amounts at or below the balance.
+  The component's injected default is a test seam proving it has no second
+  rule. F3b can change the pure module when Cash and Card diverge.
+- Added Frost-only POS-04 styles and tests in `settlement.test.tsx` and
+  `tender.test.ts`. No pre-existing test was edited, loosened, or deleted.
+
+### Decisions and scope edges
+
+- Unknown settlement query states, including the two reconciled placeholders,
+  fall back to `empty`. This lands on the real screen without inventing F3c or
+  F3d UI.
+- The overflow fixture includes artifact labels such as Meal voucher and Staff
+  account only as already-drafted display rows. Cash and Card remain the only
+  interactive methods in F3a.
+- Draft rows never say saved, submitted, or recorded; the surrounding
+  `NOTHING RECORDED YET` labels state their client-side status. There is no
+  persistence, tip, cancel, cash-over behavior, change, close outcome,
+  takeover modal, re-authentication, renewal, or expiry.
+
+### Named red-case proofs
+
+Every mutation below was made alone, its focused test was run and read, and the
+mutation was then reverted before the next one:
+
+1. Replaced the settlement totals source with the artifact fixture. The live
+   order test failed with received
+   `[165.000, −16.500, 7.425, 155.925, 13.500]` instead of
+   `[300.000, 15.000, 315.000, 27.273]`.
+2. Changed the screen departure from `pushState` to `replaceState`. The Back
+   test timed out after 5000 ms because there was no order history entry.
+   Separately, stopped supplying the lifted store to POS-03: the same Back test
+   reached the order but received lines `[Burger, Soda, Steak]` instead of
+   `[Burger, Soda, Burger]`, proving the assertion catches remount loss rather
+   than merely checking the URL.
+3. Prefilled only Cash and set Card to zero. The both-method test failed with
+   Card amount `0`, expected `155.925`.
+4. Re-prefilled from `total - current amount` instead of all drafts. The
+   two-successive-splits test got `105.925` after the second tender, expected
+   `5.925`.
+5. Made Close live for `balance >= 0n`. At one minor unit outstanding, the
+   test received `BUTTON`, expected unavailable `SPAN`.
+6. Prefixed a draft row with `Recorded`. The tab-local wording test failed on
+   `recorded cash155.925remove` matching `/saved|submitted|recorded/`.
+7. Changed `.drafts-list` from `overflow-y: auto` to `visible`. The pinning CSS
+   test failed because the required scroll rule no longer matched.
+8. Changed `mayAddTender` itself to always return false, without touching the
+   component. The component's split test received no draft rows (`[]`),
+   expected `Card100.000Remove`, proving Add follows the module.
+
+After restoring all mutations, the two new files passed 24/24 focused tests.
+
+### The `.fixture-states` CSS boundary
+
+The first full run exposed two pre-existing structural tests after the new
+POS-04 rules were initially placed before `.fixture-states`:
+
+- `discount.test.tsx` — `pos.css: a gated control is a button that rings` /
+  `the discount rules set no hover of their own`. It slices from
+  `.discount-flow` to `.fixture-states` and asserts that the discount family
+  introduces no `:hover` rule.
+- `void.test.tsx` — `pos.css: the void sheets` /
+  `set no hover and no ring of their own, so the shared pressed ring applies`.
+  It slices from `.void-flow` to `.fixture-states` and asserts no
+  `:hover`, `:active`, or `box-shadow` override in the void family.
+
+I restored `.fixture-states` as the terminator after the existing POS-03 sheet
+CSS and appended the new POS-04 section after it. This preserves the tests'
+purpose rather than hiding a finding: any hover, active, or ring rule added to
+the discount or void families before that existing terminator still enters the
+same slices and fails. The excluded rules belong to a different full screen,
+POS-04, whose interactive controls intentionally have their own reviewed hover
+and pressed-ring behavior. Leaving POS-04 inside those slices would make both
+tests reject unrelated later-screen CSS rather than police their named sheet
+families.
+
+### Verification and next handoff
+
+- Baseline before edits: `npm run verify` passed, typecheck clean, **1216 tests
+  across 20 files**.
+- Final: `npm run verify` passed, typecheck clean, **1255 tests across 22
+  files**.
+- `git diff --check` reported no whitespace errors.
+- The lead explicitly retained the 1280×800 browser walk in their pane; no
+  implementer visual verdict is claimed here. The running Vite server was not
+  started, stopped, or killed.
+- F3b owns method divergence and over-balance/change behavior; F3c owns close
+  outcomes; F3d owns lease, identity, takeover, re-authentication, and cancel.
+
 Write your handoff into the section below **before you report done.** An empty
 handoff section is the cheapest signal this project has that a task did not
 finish, and it has caught a silent failure once already.
