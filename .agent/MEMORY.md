@@ -87,6 +87,66 @@ are right (315.000), but the URL names a fixture the cashier did not build. This
 is the same class of defect as FE-016 rule 7, on the other screen. Listed as
 housekeeping. It is not verified to come from FS, but it is likely.
 
+**F3b committed, 2026-09-23: `be5051c` (feat) and `4b307b1` (docs).** Then
+**F3c was written as [FE-017](tasks/FE-017-close-outcomes.md)**, and
+**`builder19` (Sonnet) was started on it in `w2:p12`.** Writing it from the code
+found **a live `FR-G10` breach in the app as committed**. The plain table order
+carries a PENDING Steak (382.725). POS-03's Settle is ungated, and POS-04 never
+checks for pending lines, so paying in full turns Close live. The task fixes it
+on POS-04, where the artifact draws the refusal, and not by gating Settle.
+Before handing the task off, the lead also caught its own near-trap:
+`ShownOrder.type` is optional and defaults to `table`, so a bare `type ===
+'table'` would have let every table fixture close. The rule now reads the type
+through `orderVariant`.
+
+**`builder19` STOPPED AND RAISED A REGRESSION THAT F3a INTRODUCED, and the
+memory had predicted it.** The F3a section warned: *"`OrderScreen` now takes an
+optional `store` prop … the second default of this kind and nothing yet pins
+the two paths together. Watch it."* On the real route, the row's `×` never
+reaches the store `PosRoutes` owns, because `navigate` called
+`onLocationChange` only on a departure. So `PosRoutes`' view never saw
+`?gone=`, and its store never dropped the line. OrderScreen's own `localStore`
+did drop it, but it was discarded by `suppliedStore ?? localStore`. **In the
+committed app, removing a pending line on POS-03 does nothing visible, and
+POS-04 still bills for it.** FS's walk had removal working before the lift, and
+F3a's walk only exercised adding a line, which calls the store directly. The
+lead confirmed it from the code.
+
+**Ruling:** fix it narrowly in this slice, by calling `onLocationChange` on
+every navigate, and pin it with a test that goes through `PosRoutes` and fails
+on the panel's line list. **The structural fix is to collapse the two
+`useOrderStore` instances into one path.** That is housekeeping for the
+F3a–F3d review, not slice work.
+
+**Lesson:** a warning written as *watch it* is not a test. When memory flags a
+two-path shape, the next task file must carry a criterion that exercises the
+path through the real route.
+
+**F3c DONE, 2026-09-23. Lead-verified at 1306 tests across 22 files, typecheck
+clean, and walked in a browser.** On `/pos/order`, pay the whole 382.725 and
+Close is **inert**: it reads *Close order & print receipt* and points
+`aria-describedby` at the notice naming Steak. Remove the Steak on POS-03 (the
+regression fix at work), settle 155.925, pay, and Close goes live. `zero`
+without the Steak shows *Nothing to collect* with Close live; with the Steak,
+both notices show and Close is inert. `error` derives 37.800, and paying it
+clears the notice and turns Close live. `loading` is fixture-only, and Close in
+`exact` changes nothing. **No keypad clipping in `pending`, `error` or
+`loading`**, measured by the lead because the builder had no browser.
+`builder19` is closed, along with its pane.
+
+**Weaker red-case discipline than `builder17` or `builder18`:** AC-3, AC-4 and
+AC-9 are marked *"not applicable"*, and several cases were *"caught while
+drafting"* rather than proven by a reverted mutation. The builder said so
+honestly. The browser walk covers the behaviour, and **the F3a–F3d review
+should re-prove AC-1, AC-6 and AC-10 by mutation.**
+
+**Carry into F3d: drafts are destroyed on Back.** `PosRoutes` renders
+`SettlementScreen` and `OrderScreen` in exclusive branches, so returning to
+POS-03 unmounts the drafts. The order survives, the drafts do not. `FR-G9`
+says the draft *"survives actor-session idle expiry within the same browser
+tab"*, and the artifact's *Back to the order* lands on `lock-draft`. **F3d has
+to decide where drafts live.**
+
 Previously 2026-09-22, when **the owner asked when the frontend would have a
 working flow rather than a preview, and the answer was that nothing in the queue
 produced one.** FS — the order store — was inserted ahead of F3 and written as
@@ -638,6 +698,7 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, **Opus 5.5** since 2026-09-23 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `builder19` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-017](tasks/FE-017-close-outcomes.md)** (F3c). **Stopped and raised the F3a store regression** rather than patching it, and fixed it narrowly once ruled. Its red-case discipline was weaker than its predecessors', and it said so |
 | `builder18` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-016](tasks/FE-016-cash-and-card-diverge.md)** (F3b), not committed. Survived three sleep interruptions, and took both corrections, one of them the lead's own error, in minutes. Its prompt told it outright that it is an implementer rather than the lead, because CLAUDE.md sends every fresh session to the lead's role |
 | `builder17` | **codex, `gpt-5.6-sol`** | — | closed 2026-09-23 | **Delivered [FE-015](tasks/FE-015-settlement-shell.md)** (F3a), committed `cda4d4e`. **First non-Claude implementer**, and it delivered a full slice with eight red-case proofs, each mutation made alone and reverted. Two things to know about running codex here: it **burned two turns hunting for a browser it was never going to get** — say up front that the visual walk is the lead's — and it **wrote its handoff above the handoff heading** rather than in the slot, so a check that greps the slot reads empty. Closed under the standing policy |
 | `builder16` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-014](tasks/FE-014-order-store.md)** (FS), committed `3ad3282`. **Caught two task-file errors before writing a single line** — the seam claim, and a save control that exists neither in the code nor in the artifact — and stopped both times rather than building on them. Predicted the `empty` divergence in its own handoff, which is how the lead knew where to look. Closed under the standing policy: slice committed, handoff committed |
