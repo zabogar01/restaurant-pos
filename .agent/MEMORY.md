@@ -147,6 +147,54 @@ says the draft *"survives actor-session idle expiry within the same browser
 tab"*, and the artifact's *Back to the order* lands on `lock-draft`. **F3d has
 to decide where drafts live.**
 
+**F3c committed, 2026-09-23: `aa435c9` (feat) and `f0db0c3` (docs).** Then
+**F3d was written as [FE-018](tasks/FE-018-payment-session.md)**, and
+**`builder20` (Sonnet) was started on it in `w2:p13`.** The ruling on where drafts
+live: in a payment session, lifted into `PosRoutes` beside the order. POS-03's
+own-tab lock is derived from that session. **The two-path trap is pinned this
+time, not just warned about:** criterion 12 requires one session hook for both
+direct and routed tests, proved by breaking it once and watching both kinds
+fail. **Artifact defects found while writing it:** *Leave payment* links to an
+unlocked order, which contradicts its own *"The draft stays in this tab"*; and
+the takeover modal draws manager PIN dots with no keypad. Both go to the design
+branch.
+
+**F3d DONE, 2026-09-23. Lead-verified at 1327 tests across 22 files, typecheck
+clean, and walked in a browser. F3 IS COMPLETE; THE F3a–F3d REVIEW IS NEXT.**
+The walk checked five things:
+1. Drafts survive `← Order`. POS-03 locks with the tab's own words and every
+   action inert. *Back to payment* restores the draft rows and the balance.
+2. Cancel is ungated, counts the drafts it discards, and unlocks POS-03.
+3. The derived lock refuses `?gone=`.
+4. Takeover is reached for real from `lock-lease` and leaves no stray session.
+5. Under `reauth`, `B-12` holds: no keyed digit appears anywhere in the DOM.
+
+**The lead's walk found one defect in the rule-4 guard.** A `?gone=` refused
+under the lock was recorded as applied, so the genuine removal after Cancel was
+silently ignored and **the removed Steak was still billed at 382.725**. The
+builder's fix keeps remembering the refusal, so lifting the lock cannot replay
+it, and clears that memory when the URL stops carrying `gone`. The reasoning is
+sound. It is pinned by the lead's exact walk, proved red, and re-walked green.
+**This is the third defect on this screen found only by opening it:**
+F3b's keypad clipping, F3c's zero-balance add, and this one.
+
+**For the F3a–F3d review, found this session and not fixed:**
+- **POS-03 goes stale on popstate under `PosRoutes`.** `OrderScreen` holds
+  `view` in `useState(initial)` and turns off its own popstate listener when
+  routed. A popstate between two POS-03 URLs leaves the screen drawing the old
+  state: the lead saw the URL read `default` while the screen still drew
+  `lock-lease`. **This is the same two-path root as F3c's regression**, from
+  F3a's lift.
+- `PinPad`'s `seed` puts `•` placeholders into the digit store. `B-12` holds,
+  but a real submit would send them.
+- `/pos/floor` renders invented copy: *"POS-02 (the floor) is not built yet."*
+- F3c's red cases AC-1, AC-6 and AC-10 need re-proving by mutation. F3d's AC-9
+  *Leave payment* clause could not be made red, because the lifted session
+  protects the drafts whatever the navigation does.
+- **Design-branch list, now long:** the keypad clipped in `cardover` and
+  `ceiling`; `pending`'s 155.925; *Leave payment*'s href; the takeover modal's
+  missing keypad; and the single-tender-cap copy.
+
 Previously 2026-09-22, when **the owner asked when the frontend would have a
 working flow rather than a preview, and the answer was that nothing in the queue
 produced one.** FS — the order store — was inserted ahead of F3 and written as
@@ -698,6 +746,7 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
 | `lead` | claude, **Opus 5.5** since 2026-09-23 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `builder20` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-018](tasks/FE-018-payment-session.md)** (F3d), plus one lead correction to the `?gone=` guard. Proved the one-session-hook criterion properly, and flagged the one red case it could not make fail rather than claiming it |
 | `builder19` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-017](tasks/FE-017-close-outcomes.md)** (F3c). **Stopped and raised the F3a store regression** rather than patching it, and fixed it narrowly once ruled. Its red-case discipline was weaker than its predecessors', and it said so |
 | `builder18` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-016](tasks/FE-016-cash-and-card-diverge.md)** (F3b), not committed. Survived three sleep interruptions, and took both corrections, one of them the lead's own error, in minutes. Its prompt told it outright that it is an implementer rather than the lead, because CLAUDE.md sends every fresh session to the lead's role |
 | `builder17` | **codex, `gpt-5.6-sol`** | — | closed 2026-09-23 | **Delivered [FE-015](tasks/FE-015-settlement-shell.md)** (F3a), committed `cda4d4e`. **First non-Claude implementer**, and it delivered a full slice with eight red-case proofs, each mutation made alone and reverted. Two things to know about running codex here: it **burned two turns hunting for a browser it was never going to get** — say up front that the visual walk is the lead's — and it **wrote its handoff above the handoff heading** rather than in the slot, so a check that greps the slot reads empty. Closed under the standing policy |
