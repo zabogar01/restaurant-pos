@@ -1543,6 +1543,20 @@ button.action:focus-visible:active {
   text-align: center;
 }
 
+/* ==== F3d: Cancel payment (rule 5, I-5) ==== */
+
+.settlement-cancel {
+  flex: none;
+  padding: var(--frost-space-4) var(--frost-space-5);
+  border-top: var(--frost-divider-stroke);
+}
+
+.settlement-cancel__note {
+  margin: var(--frost-space-1) 0 0;
+  color: var(--frost-muted);
+  font-size: var(--frost-text-12);
+}
+
 .draft-tender {
   min-height: var(--frost-line-slot-height);
   display: flex;
@@ -1775,4 +1789,110 @@ button.settlement-close__action:focus-visible:active {
     background: var(--frost-primary-hover);
     color: var(--frost-primary-text);
   }
+}
+
+/* ==== POS-04 settlement, cash-over-balance change (F3b) ==== */
+
+.settlement-change {
+  flex: none;
+  padding: 0 var(--frost-space-5) var(--frost-space-4);
+  border-bottom: var(--frost-focus-outline);
+}
+
+.settlement-change__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--frost-text-16);
+  font-weight: var(--frost-weight-semibold);
+}
+
+.settlement-change__amount {
+  font-size: var(--frost-text-22);
+}
+
+.settlement-change__note {
+  margin: var(--frost-space-1) 0 0;
+  color: var(--frost-muted);
+  font-size: var(--frost-text-12);
+}
+
+.draft-change {
+  min-height: var(--frost-line-slot-height);
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-3);
+  border-bottom: var(--frost-divider-stroke);
+  color: var(--frost-muted);
+}
+
+.draft-change__method {
+  flex: 1;
+}
+
+/* ==== POS-04 close outcomes: pending, zero, loading, error (F3c) ==== */
+
+/* The `zero` composition's stand-in for the field, Add and keypad it replaces
+ * (rule 4) — same shape as `.drafts-empty`, but this one never scrolls, so it
+ * carries its own padding rather than borrowing the draft list's dashed box. */
+.tender-empty {
+  padding: var(--frost-space-8) var(--frost-space-4);
+  text-align: center;
+}
+
+.tender-empty__title {
+  font-weight: var(--frost-weight-semibold);
+  margin-bottom: var(--frost-space-1);
+}
+
+/* `loading`'s CLOSING ORDER label and skeleton, above the drafted lines it
+ * still draws (F2h's `.menu-loading__label` and `.skel-bar`, shared rather
+ * than duplicated — see their own comments in this file). */
+.settlement-loading {
+  margin-bottom: var(--frost-space-4);
+}
+
+/* ==== FE-020: DESIGN-006's corrections to POS-04 ====
+ * A refusal keeps the amount, message and Add on top; the keypad sits on the
+ * left and the notice and caption in a column to its right, so the notice can
+ * no longer push the Delete row under Close (frost-settlement.css). Reuses the
+ * tender key's own geometry and the 20px panel spacing; no new token. */
+
+.tender-refusal {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--frost-space-5);
+  align-items: start;
+}
+
+.tender-guidance {
+  min-width: 0;
+}
+
+.tender-guidance .notice {
+  margin: 0 0 var(--frost-space-3);
+}
+
+.tender-guidance .tender-help {
+  margin: 0;
+}
+
+/* The cancel modal's read-only list of what it will discard: a 32px row, as designed. */
+.cancel-drafts__row {
+  min-height: var(--frost-space-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--frost-space-3);
+}
+
+/* The takeover modal's compact form (frost-settlement.css .takeover-modal): a
+ * 12px notice margin and 12px around the PIN dots, so the two-step modal's
+ * 72px pad fits the 800px device with its footer inside it. */
+.takeover-modal .notice {
+  margin-bottom: var(--frost-space-3);
+}
+
+.takeover-modal .pin-dots {
+  margin: var(--frost-space-3) 0;
 }

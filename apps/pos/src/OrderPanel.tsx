@@ -64,39 +64,88 @@ import { VoidSheet } from './VoidSheets.js';
 // (B-16), a tap on one pending row can only ever edit that row, and the gate
 // on a discount change reads the discount this order carries (FR-F8). None of
 // them writes a URL or a history entry.
-export function OrderScreen({
-  view: initial = orderViewFrom(window.location.search),
-  store: suppliedStore,
+/**
+ * The thin wrapper (FE-019, review finding 1): owns exactly one `view` (via
+ * `useState`, from the URL at mount) and its own `popstate` listener, and
+ * renders {@link ControlledOrderScreen} with it. Exists so the ~30 direct
+ * component tests that mount `OrderScreen` standalone keep rendering what
+ * they render today. The routed app never uses this: `PosRoutes` renders
+ * {@link ControlledOrderScreen} directly, supplying the view it derives from
+ * the URL on every render and on every `popstate` itself — one owner, not
+ * two.
+ */
+export function OrderScreen({ view: initial = orderViewFrom(window.location.search) }: { view?: OrderView }) {
+  const [view, setView] = useState(initial);
+  const store = useOrderStore(view, false);
+
+  useEffect(() => {
+    const onPop = () => setView(orderViewFrom(window.location.search));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  const onLocationChange = () => setView(orderViewFrom(window.location.search));
+
+  return <ControlledOrderScreen view={view} store={store} onLocationChange={onLocationChange} />;
+}
+
+/**
+ * The controlled component (FE-019, review finding 1): takes its view, its
+ * store and its navigate-notification callback as props, and owns none of
+ * them — no `useState(initial)`, no `suppliedStore ?? localStore`. `PosRoutes`
+ * renders this directly for the routed app; {@link OrderScreen} renders it for
+ * every direct component test.
+ */
+export function ControlledOrderScreen({
+  view,
+  store,
+  locked = false,
   onLocationChange,
 }: {
-  view?: OrderView;
-  store?: OrderStore;
-  onLocationChange?: () => void;
+  view: OrderView;
+  store: OrderStore;
+  /** F3d, FR-G12: a payment session is active in this tab — POS-03's own-tab lock, derived, never read from `?state=`. */
+  locked?: boolean;
+  /** Told on every navigate — same-screen or leaving — so the one owner of `view` above this component re-reads the URL (see `navigate` below). */
+  onLocationChange: () => void;
 }) {
-  const [view, setView] = useState(initial);
   const [voidOpened, setVoidOpened] = useState<VoidSheetFixture['target']>();
   const [lineOpened, setLineOpened] = useState<string>();
   const [discountOpened, setDiscountOpened] = useState(false);
   const device = useRef<HTMLDivElement>(null);
   const returnFocusTo = useRef<string | undefined>(undefined);
-  // The sheets and the void sheet still read the fixture-only derivation
-  // (FE-014's correction to this task): none of them are wired to the store.
-  const order = shownOrder(view);
-  // Direct component tests keep their historical self-contained store. The
-  // application route supplies the store it owns above POS-03 and POS-04, so
-  // leaving this component never discards the order the cashier built.
-  const localStore = useOrderStore(view);
-  const store = suppliedStore ?? localStore;
-  const sheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, order) : undefined);
-  const approval = APPROVAL_FIXTURES[view.state];
-  const discount = DISCOUNT_FIXTURES[view.state] ?? (discountOpened ? panelDiscount(view, order) : undefined);
-  const voiding = VOID_FIXTURES[view.state] ?? (voidOpened && panelVoid(voidOpened, view));
 
   const closeOpened = () => {
     setVoidOpened(undefined);
     setLineOpened(undefined);
     setDiscountOpened(false);
   };
+
+  // A location change this component did not itself cause — browser
+  // Back/Forward — arrives as a new `view` prop from whichever component owns
+  // it (the wrapper below, or `PosRoutes`). Closing any open sheet is a render-
+  // time state adjustment (React's documented "adjust state while rendering"
+  // pattern, the same one paymentSession.ts and PosRoutes.tsx use), so there is
+  // no extra render showing the old sheet over the new view.
+  //
+  // Compared by value, not identity: `PosRoutes` recomputes `view` fresh from
+  // `window.location.search` on every one of its renders — including one the
+  // order store's own state triggers, with the URL unchanged — and a fresh
+  // object there must not read as a navigation and close a sheet mid-edit.
+  const viewKey = viewSearch(view);
+  const previousViewKey = useRef(viewKey);
+  if (previousViewKey.current !== viewKey) {
+    previousViewKey.current = viewKey;
+    closeOpened();
+  }
+
+  // The sheets and the void sheet still read the fixture-only derivation
+  // (FE-014's correction to this task): none of them are wired to the store.
+  const order = shownOrder(view);
+  const sheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, order) : undefined);
+  const approval = APPROVAL_FIXTURES[view.state];
+  const discount = DISCOUNT_FIXTURES[view.state] ?? (discountOpened ? panelDiscount(view, order) : undefined);
+  const voiding = VOID_FIXTURES[view.state] ?? (voidOpened && panelVoid(voidOpened, view));
 
   /**
    * SITEMAP §1: a [SHEET], a [MODAL] and an [INLINE] state are none of them
@@ -117,21 +166,15 @@ export function OrderScreen({
     if (leaves && !open && !overlayAt(next.state)) window.history.pushState(null, '', destination);
     else window.history.replaceState(null, '', search);
     closeOpened();
-    setView(next);
-    if (leaves) onLocationChange?.();
+    // FE-019 finding 1: `view` is a prop now — the wrapper or `PosRoutes`
+    // above this component owns it and re-reads the URL. F3c's fix still
+    // applies: every navigate must tell that owner, not only the ones that
+    // leave the screen, or a same-screen mutation (a pending row's ×) never
+    // reaches the store the owner passes down.
+    onLocationChange();
   }
 
   const go = (next: OrderView) => navigate(viewSearch(next));
-
-  useEffect(() => {
-    if (onLocationChange) return;
-    const onPop = () => {
-      closeOpened();
-      setView(orderViewFrom(window.location.search));
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, [onLocationChange]);
 
   useLayoutEffect(() => {
     if (!returnFocusTo.current) return;
@@ -161,10 +204,11 @@ export function OrderScreen({
         )}
         <div className="order-screen__bar" aria-hidden="true" {...inert} />
         <div className="order-screen__body" {...inert}>
-          <MenuRegion view={view} navigate={navigate} />
+          <MenuRegion view={view} navigate={navigate} locked={locked} />
           <OrderPanel
             view={view}
             order={store.order}
+            locked={locked}
             actions={{ navigate, openVoid: setVoidOpened, openLine: setLineOpened, openDiscount: () => setDiscountOpened(true) }}
           />
         </div>
@@ -200,17 +244,21 @@ const NO_ACTIONS: PanelActions = { navigate: () => {}, openVoid: () => {}, openL
 export function OrderPanel({
   view,
   order = shownOrder(view),
+  locked = false,
   actions = NO_ACTIONS,
 }: {
   view: OrderView;
   order?: ShownOrder;
+  /** F3d rule 2: a session-derived lock overrides whatever the fixture says, and always reads as `draft` (rule 3). */
+  locked?: boolean;
   actions?: PanelActions;
 }) {
   // lock, pressedLineId and incident are view-level facts, never part of a
   // ShownOrder (FE-014's correction): a lock and a held-down row are drawn
   // over whichever order is on screen, not carried by the order itself.
   const fixture = ORDER_FIXTURES[view.state];
-  const { lock, pressedLineId } = fixture;
+  const { pressedLineId } = fixture;
+  const lock = locked ? 'draft' : fixture.lock;
   const type = orderVariant(order);
   const { totals, groups } = order;
 

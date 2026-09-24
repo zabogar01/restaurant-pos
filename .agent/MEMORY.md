@@ -3,7 +3,435 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-22, when **the owner asked when the frontend would have a
+Last updated: 2026-09-24, when **a fresh lead session took `w2:p1`**, renamed it
+`lead`, and re-verified: head `6d69f2c`, tree clean, 2 commits ahead of
+`origin/agent/phase-0-foundations` (unpushed), **`npm run verify` green at 1349
+tests across 22 files**. F3, DESIGN-006 and FE-020 are closed; F4 is next and
+unassigned. **The *Immediate next handoff* section at the foot of this file is
+from 2026-09-14 and stale — read this block instead.**
+
+**THE LIVE BUG, recorded 2026-09-24 (the previous lead found it in conversation
+and never wrote it here): every menu tile adds a Burger.** `MenuRegion.tsx:191`
+navigates every tile to `ITEM_SEARCH` (`?state=sheet-item`), the Burger's sheet.
+Harmless before FS; since FS made *Add to order* real, tapping Fish & Chips adds
+a Burger with extra cheese at 135.000. The fix needs a design ruling, because
+only Burger has a reviewed option set.
+
+**POS-03 design questions, still open, in the previous lead's priority order.
+None is decided.**
+
+1. **High** — the menu tile's item sheet: what the eleven items with no reviewed
+   options show. Now the live bug above.
+2. **High** — how a line's quantity is committed. The stepper never saves;
+   `setQuantity` has no caller; `FR-D5`/`FR-M5` have no path in the design.
+3. **High** — what *Send to kitchen* shows after firing. It does nothing
+   visible, so a table order stays pending and cannot close from a live walk
+   except by removing its pending lines. Blocks the basic table flow.
+4. Medium — the wording for an `UNKNOWN` kitchen delivery (`FR-E3`). Before the
+   backend.
+5. Low — what an emptied order draws. FS chose *no lines, no charge rows*;
+   no designer has confirmed it.
+6. Medium — Cancel while an approval is verifying (`B-20`). Before the backend.
+7. Medium — whether a disabled action can take focus. DESIGN-006 settled it
+   for Close only.
+8. Low — the category press, until a second catalogue exists.
+9. Low — a Comp's *applied by* note on the change sheet.
+10. Medium — the fire-rejection notice can name a line scrolled out of view at
+    1280×800. Composition, not copy.
+
+Dropped from the design list: F2h's live-fire-on-86'd and *printed* header
+(code already right; a note for the designer, not a question), the review
+heuristic (DESIGN-006 applied it), and the two-store collapse (FE-019).
+
+**The previous lead's recommendation, not yet ruled by the owner:** one design
+task for items 1–3 — they decide whether a cashier can build a real table order
+and pay it — then the code fix. The mediums may ride along or wait. Items 1 and
+3 also shape F4's floor and kitchen screens.
+
+**OWNER RULED, 2026-09-24: the design task for 1–3 goes first.** Given in
+conversation, and now written into the task files. (1) The other eleven items
+each get their own sheet, modelled on the existing items. (2) The quantity gets
+a button that adjusts it, modelled on a Square screenshot the owner supplied.
+The screenshot **did not reach the lead** and has been asked for again.
+(3) The owner's instinct is a confirmation before firing, then the existing
+fired-round display. **The owner invited a challenge on (3).** Written as
+[DESIGN-007](../../restaurant-pos-design/.agent/tasks/DESIGN-007-order-flow-gaps.md)
+in the design worktree, with Part C held for
+[ARCH-002](tasks/ARCH-002-fire-confirmation.md). **`architect2` (claude, **Opus 5.5** — the owner: architects run on Opus 5.5 or codex `gpt-6-astra`, never a default) was
+started in `w2:p1D`** on ARCH-002, with its report due at
+`.agent/reviews/ARCH-002-fire-confirmation.md`. **Both came in the same day.** The screenshot reached `architect2`'s pane
+instead of the lead's. The lead pulled it from that session's log and saved it
+as `restaurant-pos-design/docs/design/references/square-quantity-1.png`. It
+shows Square using one sheet for adding and for editing, with the footer
+pairing `− n +` and **Save**. **The lead ruled an explicit commit from it** (no
+change applies on each press). Its Note, Taxes and description sections are out
+of scope, because the PRD grants no line note.
+**ARCH-002 recommended no confirmation dialog:** one press sends, the count
+goes on the button (*Send 2 to kitchen*), and I-11, PRODUCT.md:35-37 and
+Toast, Square and Lightspeed all agree. A live round is shown as `queued` and
+never `printed`. `RoundGroup.printed: boolean` becomes a four-value `delivery`,
+and the fire is a pure `fireOrder` in `fire.ts` behind `store.fire(firedAt)`,
+with criteria T-1 to T-8 for the code slice. **OWNER RULED 2026-09-24: one
+press, count on the button, no modal.** DESIGN-007 Part C is filled from
+ARCH-002 §4, with eight states, including POS-03 questions 4 (UNKNOWN wording)
+and 10 (a fireblocked line out of view). `architect2` is closed.
+**`designer5` (codex `gpt-6-astra`) started on DESIGN-007 in `w2:p1D`**, with
+its cwd in the design worktree. A design review follows, then an FE task that
+carries ARCH-002's T-1 to T-8.
+**DESIGN-007 DONE, 2026-09-24, uncommitted in the design worktree.** The
+`design-reviewer3` (codex `gpt-6-sol`) review found 2 P2, both the shared-rebuild
+shape: Add from `zero` dropped the comp, and Add from `overflow` erased the void.
+Round 2 removed `readVisibleModel` and carries the discount snapshot, voided
+rows and `delivery: null` explicitly. **The lead verified it with its own
+headless-Chrome script:** zero → total 0, and overflow keeps the void through
+Add and Fire. **The owner approved one sandbox escalation** for designer5's
+Playwright run. **Agents now report through `herdr agent prompt lead`**, and
+the lead runs a background `agent wait`, after the owner noticed silent
+codex agents. **Committed on the design branch, 2026-09-24, on the owner's go-ahead:
+`032a6e9` (feat) and `2da9d75` (docs), not pushed.** The code slice was
+**split into two**: [FE-021](tasks/FE-021-own-items-and-quantity.md) covers the
+per-item sheets and the quantity commit, and
+[FE-022](tasks/FE-022-one-press-fire.md) covers the one-press fire with
+`delivery` and T-1 to T-8. As one slice it would have been two sessions. FE-022
+starts after FE-021. **Owner rule, 2026-09-24:** close agents that are not in
+use, and their lead-made panes, without asking. `designer5` and
+`design-reviewer3` are closed, and panes `w2:p1D` and `w2:p1E` are closed.
+
+**Owner decisions owed (contract):** PRD §9 time zone; ruling I-8 (is a
+back-office ticket reprint audited — needed before F4's back office); whether a
+dark palette ships; and, older, whether IDR draws `Rp` (raised 2026-09-16).
+**Engineering, the lead's:** Prettier; POS-03's URL reading `?state=eightysix`
+after *Add to order*; `cancel`/`reauth`/`leaselost` modals outside
+`.pos-device`.
+
+Previously 2026-09-23, when **a fresh lead session took `w2:p1`**, re-ran
+`herdr agent rename w2:p1 lead`, and re-verified from evidence rather than from
+this file: head `5189125`, working tree clean, **`npm run verify` green at 1255
+tests across 22 files**, typecheck clean, and `lead` the only live agent. Three
+facts here were stale and are corrected: F3a and FS were each still recorded as
+*Not committed* (they are `cda4d4e` and `3ad3282`), and the START HERE branch
+table still named head `2654e5c` at 1136 tests. Workspace `w2` also holds two
+agentless shell panes, `w2:pE` (tab `t7`, cwd `apps/pos`) and `w2:pS` (tab
+`t8`) — leftover, not work locations; the lead did not create them and has not
+closed them. The lead now runs on **Opus 5.5**.
+
+**Later the same day, the owner merged the branch into `origin/development` as
+PR #5 (`59a7f3c`).** This repository has no `main`. The integration branch is
+`development`, and the local `development` ref is stale, sitting at `c5a2807`.
+**F3b is written as [FE-016](tasks/FE-016-cash-and-card-diverge.md)** and is
+unassigned. Writing it from the code turned up four things the roadmap line did
+not have. First, the balance goes negative on a cash over-tender, which would
+refuse Close. Second, cash shows the card caption. Third, the URL rewrite after
+Add seeds a Card draft after a cash Add. Fourth, **two F3a tests encode F3a's
+placeholder rule**, so they are the only existing tests the slice may change,
+named in the task. **The lead ruled three silences in the artifact**, each
+recorded in the task. The one to watch: when the 99,999,999 single-tender cap
+binds instead of the change limit, the artifact draws no copy. The implementer
+enforces the cap and raises the missing copy.
+
+**OWNER'S RULING, 2026-09-23: there is no review per slice for F3.** One
+independent review, run by a codex review agent, covers F3a–F3d together once
+F3d is done. This overrides the roadmap's *use a review agent on any slice that
+encodes a rule* for this screen, but not in general. **`builder18` (Sonnet) was
+started on FE-016 in `w2:p11`** the same day.
+
+**THE ELEVENTH TASK-FILE ERROR. The lead stated a money formula without its
+zero case.** FE-016 gave the cash maximum as `min(balance + 9,999,999,
+99,999,999)`, and rule 4 rested on the premise that *Add is refused once the
+balance reaches zero*. **No criterion tested that premise.** `builder18`
+implemented the formula faithfully. The lead found the gap by probing the
+finished tree rather than reading the diff: from `change`, key 9.999.999 on
+Cash and Add is live, a second cash tender drafts, and **change due becomes
+10.044.074, past `FR-M5`'s 9,999,999 limit.** The fix is sent back: at zero
+balance the maximum is 0 for every method.
+
+**The lesson:** when a task file says *X holds because Y*, Y needs its own
+criterion. A premise stated in prose is a premise nobody tests.
+
+Also sent back: AC-10's `NON_CASH_METHODS` was a hand-maintained array, which
+cannot catch a new union member by itself. It is now to be derived through
+`satisfies Record<TenderMethod, …>`.
+
+**Machine sleep interrupted `builder18` three times**, and the second time
+left a red-case mutation live in `tender.ts`. The lead caught it because the
+three failures were exactly the cap tests. **After any interruption, run the
+suite and read which tests fail before prompting the agent onward.** A
+`caffeinate` guard is now run in the lead's pane during builder work.
+
+**F3b DONE, 2026-09-23. Lead-verified at 1287 tests across 22 files, typecheck
+clean, and walked in a browser. Not committed.** Both corrections landed. Each
+was proved red first, and the AC-10 fix was proved by widening the union and
+watching typecheck fail. The live walk: `quick`, add a Burger, Settle, and the
+screen shows 315.000. Keying 400.000 on Cash gives the `cashover` caption
+*"More than the 315.000 owing … 85.000 change; the recorded takings are still
+315.000"*. **Add gives balance 0, change due 85.000, *"not the 400.000 handed
+over"*, and Close live.** The URL reads bare `/pos/settlement`. Keying 5 at zero
+leaves Add reading *Nothing left*, with no notice and no field message.
+`builder18` is closed, along with its pane.
+
+**THE BROWSER FOUND A DEFECT THE TESTS COULD NOT: the reviewed artifact clips
+the keypad in both rejection states.** The lead measured it at 1280×800. The
+notice pushes the keypad down, and `.tender-entry__body` is `overflow: hidden`.
+In `cardover`, 47 of the 72px `←` key is hidden under the close bar; in
+`ceiling`, 30px is. **Those are the two states where the cashier has to delete
+digits to correct the amount.** The design worktree's own `settlement.html`
+clips worse, with the bottom row almost fully hidden in `cardover`. So the
+implementation reproduced the artifact faithfully. It is a composition defect,
+the designer's to fix, and the fourth instance of the heuristic: **one control
+shared across states, hiding the state where it is wrong.** A way out exists
+today, because tapping the method chip re-prefills the balance. Not blocking.
+Listed as housekeeping.
+
+**Also seen during the walk, and older than F3b:** after *Add to order* on
+POS-03's item sheet, the URL reads `?state=eightysix`. The store and the totals
+are right (315.000), but the URL names a fixture the cashier did not build. This
+is the same class of defect as FE-016 rule 7, on the other screen. Listed as
+housekeeping. It is not verified to come from FS, but it is likely.
+
+**F3b committed, 2026-09-23: `be5051c` (feat) and `4b307b1` (docs).** Then
+**F3c was written as [FE-017](tasks/FE-017-close-outcomes.md)**, and
+**`builder19` (Sonnet) was started on it in `w2:p12`.** Writing it from the code
+found **a live `FR-G10` breach in the app as committed**. The plain table order
+carries a PENDING Steak (382.725). POS-03's Settle is ungated, and POS-04 never
+checks for pending lines, so paying in full turns Close live. The task fixes it
+on POS-04, where the artifact draws the refusal, and not by gating Settle.
+Before handing the task off, the lead also caught its own near-trap:
+`ShownOrder.type` is optional and defaults to `table`, so a bare `type ===
+'table'` would have let every table fixture close. The rule now reads the type
+through `orderVariant`.
+
+**`builder19` STOPPED AND RAISED A REGRESSION THAT F3a INTRODUCED, and the
+memory had predicted it.** The F3a section warned: *"`OrderScreen` now takes an
+optional `store` prop … the second default of this kind and nothing yet pins
+the two paths together. Watch it."* On the real route, the row's `×` never
+reaches the store `PosRoutes` owns, because `navigate` called
+`onLocationChange` only on a departure. So `PosRoutes`' view never saw
+`?gone=`, and its store never dropped the line. OrderScreen's own `localStore`
+did drop it, but it was discarded by `suppliedStore ?? localStore`. **In the
+committed app, removing a pending line on POS-03 does nothing visible, and
+POS-04 still bills for it.** FS's walk had removal working before the lift, and
+F3a's walk only exercised adding a line, which calls the store directly. The
+lead confirmed it from the code.
+
+**Ruling:** fix it narrowly in this slice, by calling `onLocationChange` on
+every navigate, and pin it with a test that goes through `PosRoutes` and fails
+on the panel's line list. **The structural fix is to collapse the two
+`useOrderStore` instances into one path.** That is housekeeping for the
+F3a–F3d review, not slice work.
+
+**Lesson:** a warning written as *watch it* is not a test. When memory flags a
+two-path shape, the next task file must carry a criterion that exercises the
+path through the real route.
+
+**F3c DONE, 2026-09-23. Lead-verified at 1306 tests across 22 files, typecheck
+clean, and walked in a browser.** On `/pos/order`, pay the whole 382.725 and
+Close is **inert**: it reads *Close order & print receipt* and points
+`aria-describedby` at the notice naming Steak. Remove the Steak on POS-03 (the
+regression fix at work), settle 155.925, pay, and Close goes live. `zero`
+without the Steak shows *Nothing to collect* with Close live; with the Steak,
+both notices show and Close is inert. `error` derives 37.800, and paying it
+clears the notice and turns Close live. `loading` is fixture-only, and Close in
+`exact` changes nothing. **No keypad clipping in `pending`, `error` or
+`loading`**, measured by the lead because the builder had no browser.
+`builder19` is closed, along with its pane.
+
+**Weaker red-case discipline than `builder17` or `builder18`:** AC-3, AC-4 and
+AC-9 are marked *"not applicable"*, and several cases were *"caught while
+drafting"* rather than proven by a reverted mutation. The builder said so
+honestly. The browser walk covers the behaviour, and **the F3a–F3d review
+should re-prove AC-1, AC-6 and AC-10 by mutation.**
+
+**Carry into F3d: drafts are destroyed on Back.** `PosRoutes` renders
+`SettlementScreen` and `OrderScreen` in exclusive branches, so returning to
+POS-03 unmounts the drafts. The order survives, the drafts do not. `FR-G9`
+says the draft *"survives actor-session idle expiry within the same browser
+tab"*, and the artifact's *Back to the order* lands on `lock-draft`. **F3d has
+to decide where drafts live.**
+
+**F3c committed, 2026-09-23: `aa435c9` (feat) and `f0db0c3` (docs).** Then
+**F3d was written as [FE-018](tasks/FE-018-payment-session.md)**, and
+**`builder20` (Sonnet) was started on it in `w2:p13`.** The ruling on where drafts
+live: in a payment session, lifted into `PosRoutes` beside the order. POS-03's
+own-tab lock is derived from that session. **The two-path trap is pinned this
+time, not just warned about:** criterion 12 requires one session hook for both
+direct and routed tests, proved by breaking it once and watching both kinds
+fail. **Artifact defects found while writing it:** *Leave payment* links to an
+unlocked order, which contradicts its own *"The draft stays in this tab"*; and
+the takeover modal draws manager PIN dots with no keypad. Both go to the design
+branch.
+
+**F3d DONE, 2026-09-23. Lead-verified at 1327 tests across 22 files, typecheck
+clean, and walked in a browser. F3 IS COMPLETE; THE F3a–F3d REVIEW IS NEXT.**
+The walk checked five things:
+1. Drafts survive `← Order`. POS-03 locks with the tab's own words and every
+   action inert. *Back to payment* restores the draft rows and the balance.
+2. Cancel is ungated, counts the drafts it discards, and unlocks POS-03.
+3. The derived lock refuses `?gone=`.
+4. Takeover is reached for real from `lock-lease` and leaves no stray session.
+5. Under `reauth`, `B-12` holds: no keyed digit appears anywhere in the DOM.
+
+**The lead's walk found one defect in the rule-4 guard.** A `?gone=` refused
+under the lock was recorded as applied, so the genuine removal after Cancel was
+silently ignored and **the removed Steak was still billed at 382.725**. The
+builder's fix keeps remembering the refusal, so lifting the lock cannot replay
+it, and clears that memory when the URL stops carrying `gone`. The reasoning is
+sound. It is pinned by the lead's exact walk, proved red, and re-walked green.
+**This is the third defect on this screen found only by opening it:**
+F3b's keypad clipping, F3c's zero-balance add, and this one.
+
+**For the F3a–F3d review, found this session and not fixed:**
+- **POS-03 goes stale on popstate under `PosRoutes`.** `OrderScreen` holds
+  `view` in `useState(initial)` and turns off its own popstate listener when
+  routed. A popstate between two POS-03 URLs leaves the screen drawing the old
+  state: the lead saw the URL read `default` while the screen still drew
+  `lock-lease`. **This is the same two-path root as F3c's regression**, from
+  F3a's lift.
+- `PinPad`'s `seed` puts `•` placeholders into the digit store. `B-12` holds,
+  but a real submit would send them.
+- `/pos/floor` renders invented copy: *"POS-02 (the floor) is not built yet."*
+- F3c's red cases AC-1, AC-6 and AC-10 need re-proving by mutation. F3d's AC-9
+  *Leave payment* clause could not be made red, because the lifted session
+  protects the drafts whatever the navigation does.
+**THE F3 REVIEW, 2026-09-23.** *Request changes*, 3 P2 and 1 P3. It confirmed
+four of the lead's items (POS-03 popstate staleness, the `PinPad` seed
+submitting `••1234`, `/pos/floor`'s copy, and the artifact defects). **It
+cleared F3c's red-case debt** by running AC-1, AC-6a and AC-10's mutations in
+memory. **It found one new defect, and that defect was the lead's:** FE-016
+rule 7 (a live Add drops `?state=`) collided with FE-017 rule 8 (the rejection
+notice stays while money is owed). The notice was gated on `state === 'error'`,
+so **the first partial correction cleared it with 27.800 still owed.** That is
+the **twelfth task-file error**, and it is a new kind: **two rulings from
+different slices that each looked right alone.** No criterion tested the point
+where they meet.
+
+**The lead also found the two-path shape a third time while writing the
+corrections.** F3d's `SettlementScreen` carries `suppliedSession ??
+localSession`. FE-018's criterion 12 required *the same hook*, which F3d met,
+**but the same hook in two instances is still two paths.** The criterion was
+too weak. So [FE-019](tasks/FE-019-f3-review-corrections.md) removes the shape
+everywhere: controlled components for the route, thin self-owning wrappers under
+the old exported names so direct tests do not change, and **no component that
+calls a state hook whose result it can discard.**
+
+**FE-019 DONE, 2026-09-23. Lead-verified at 1331 tests across 22 files and
+walked in a browser. F3 IS CLOSED.** The walk:
+- Browser Back to `lock-lease` draws the lease lock with Settle inert, and
+  Forward returns to an unlocked `default`.
+- On `error`, a partial Card 10.000 keeps the notice at **27.800**. Covering it
+  clears the notice and turns Close live. Removing a draft afterwards does not
+  bring the notice back.
+- `/pos/floor` is an empty frame.
+- The earlier routed walks hold.
+
+**The hook audit:** `useOrderStore` and `usePaymentSession` are each called
+once in `PosRoutes` and once in their standalone wrapper. `PosRoutes` renders
+only the controlled components. **The `suppliedX ?? localX` pattern is gone
+from the codebase.**
+
+One side effect, accepted: the seeded `reauth` pad shows 2 dots, then 1 after
+the first real digit, because the seed is a picture, not an entry. It is
+fixture-only.
+
+**2026-09-24: the owner pushed the branch for a PR into `development`, then
+ruled *fix the design first*, before F4, with the designer on codex
+`gpt-6-astra`.** The work is
+[DESIGN-006](../../restaurant-pos-design/.agent/tasks/DESIGN-006-settlement-corrections.md).
+It lives **in the design worktree** (`../restaurant-pos-design`, branch
+`agent/design-direction`), following DESIGN-004 and DESIGN-005. **That branch
+is already an ancestor of `origin/development`**, and `development`'s
+`settlement.html` is the remediated copy, while this branch's copy is stale.
+DESIGN-006 covers five artifact defects: the keypad clipped in `cardover` and
+`ceiling`; `pending`'s 155.925 when the true figure is 382.725; *Leave
+payment*'s href; the takeover modal's missing keypad (M-1 is the precedent);
+and no state for the single-tender cap. It also covers **six lead rulings to be
+drawn and then accepted or overturned**: zero with pending, the pending Close
+label, the partial-correction notice, the cancel count sentence, the cash split
+caption, and the tendered sum. **A design review follows, and only then the
+code corrections.** `designer3` is working in `w2:p17`. **It stopped before editing and caught
+the lead's loose wording.** A1 said *"all twelve keys"*, but the tender pad is
+ten digits, Delete and a deliberately blank cell; `zero` draws no pad; and
+modals block the pad on purpose. Ruled as `designer3` proposed: eleven tender
+controls at 88×72, the blank cell stays blank, and active PIN modals show all
+twelve of their own 72×72 controls. A1 and AC1 are corrected in the task file.
+**The `lead` name had also dropped off `w2:p1` overnight and was
+re-registered.** Check it with `herdr agent list` at the start of each day,
+not just each session.
+
+**DESIGN-006 is delivered, and the lead measured it in Chrome at 1280×800
+across all 34 states.** Every tender pad shows 11 controls at 88×72, none
+clipped. The `takeover` and `reauth` PIN pads show 12 at 72×72. No notice,
+caption or modal is clipped. AC1 passes on a rendered measurement, not on
+arithmetic.
+
+`designer3` asked for a **sandbox escalation** (headless Chrome through a
+`/private/tmp` script). **The lead declined it**, because widening an agent's
+sandbox is the owner's decision; the lead measured instead.
+
+**Three questions for the review:**
+1. `zero-pending` uses the Burger pending, where the code's fixture has the
+   Steak.
+2. The `pending` notice's copy changed.
+3. **The takeover's explicit acknowledgement became implicit in Continue.** It
+   is an `FR-G14` and audit question.
+
+**DESIGN-006 review, 2026-09-24:** *request changes*, 3 P2 + 1 P3, all
+accepted. Two of them are the shared-control shape **in the fixture's own
+navigation**: method links drop the pending, error or large-order context and
+fall back to the 155.925 baseline, and Cancel from any state opens the
+one-card modal. The takeover's explicit acknowledgement is restored as a
+distinct *I understand* step before the PIN. **The pending notice's route out
+leads to a locked order where send and void are blocked**, so the way out has
+to be Cancel. **That last point applies to the code too:** F3d's pending notice
+says *Back to the order*, which lands on the locked POS-03. It is a code
+correction once the design settles. Lead's ruling on Q1: the Burger stays; the
+design state is an example, and the code names whatever lines are live.
+**Round 2 is running as `designer4`** (`gpt-6-astra`).
+
+**Code corrections owed after DESIGN-006 settles (FE-020):**
+- `cardover` and `ceiling` get the new side-by-side composition, which is the
+  actual fix for the clipping;
+- `ceiling-single` gets its notice and caption;
+- the pending notice gets its copy and a Cancel route;
+- the takeover gets its acknowledgement step before the PIN.
+
+**DESIGN-006 is closed and committed on `agent/design-direction`: `c43fd08`
+(feat) and `35b66f9` (docs).** The lead accepted round 2 on a rendered
+measurement rather than a second review, because each correction maps to one
+finding: every state clean at 1280×800; cancel counts of 0, 1, 2, 3 and 6
+follow the source; takeover draws *I understand* first and the 12-key pad
+second. The design branch is **not pushed**, and the owner merges.
+**[FE-020](tasks/FE-020-settlement-design-corrections.md) carries the code
+corrections**, and `builder22` is working on it in `w2:p1A`.
+
+**FE-020 DONE, 2026-09-24. Lead-verified at 1349 tests across 22 files and
+walked and measured in Chrome.**
+- Refusal states: 11 controls at 88×72, none clipped, no text cut.
+- The single-tender notice draws with live figures.
+- Pending → *Cancel payment to edit the order* → modal listing *Cash
+  382.725* → unlocked → remove the Steak → **155.925**.
+- Takeover: step one is *I understand* with no keys; step two has 12 controls
+  at 72×72.
+
+**The lead's walk found one defect.** Takeover step two's Cancel sat at y=841,
+off the 800px device, because the modal was centred on the **browser
+viewport** (958px), not the device frame. On a real 1280×800 terminal the two
+coincide, **so this was partly a measurement artifact.** The modal now renders
+inside `.pos-device` as the artifact does, spanning 32→768 with Cancel at 751.
+**Not changed:** `cancel`, `reauth` and `leaselost` still render outside the
+device. They fit today, but only by the same coincidence (housekeeping).
+**POS-04 and its design now agree.**
+
+**Not yet in any design task (the older POS-03 backlog):** what an emptied
+order draws; how a line's quantity is committed; F2h's three findings;
+`UNKNOWN` kitchen delivery; what firing shows; the category press; a Comp's
+application history; the menu tile's item sheet; Cancel while an approval is
+verifying; focusable unavailable actions.
+
+- **Design-branch list, now long:** the keypad clipped in `cardover` and
+  `ceiling`; `pending`'s 155.925; *Leave payment*'s href; the takeover modal's
+  missing keypad; and the single-tender-cap copy.
+
+Previously 2026-09-22, when **the owner asked when the frontend would have a
 working flow rather than a preview, and the answer was that nothing in the queue
 produced one.** FS — the order store — was inserted ahead of F3 and written as
 [FE-014](tasks/FE-014-order-store.md); `builder16` (Sonnet) built it in `w2:pZ`.
@@ -73,7 +501,7 @@ the task files are.
 
 | Branch | Where | Holds |
 |---|---|---|
-| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, F2e's corrections, F2k's openers, F2h's fire and rejection states, F2d's quick sale, and the review's two corrections. Head `2654e5c`, **1136 tests across 19 files**, working tree clean, verified 2026-09-22 |
+| `agent/phase-0-foundations` | the main checkout | All code: scaffold, PostgreSQL, migrations, `packages/money`, `packages/tokens`, `apps/pos` with the lock screen, the A7 pressed state, the order panel, the menu region, the item and line sheets, the approval prompt, the discount and void families, F2e's corrections, F2k's openers, F2h's fire and rejection states, F2d's quick sale, the review's two corrections, FS's order store, and F3a's settlement shell with client-side routing. Head `5189125`, **1255 tests across 22 files**, working tree clean, verified 2026-09-23 |
 | `agent/design-direction` | worktree at `../restaurant-pos-design` | All design: Frost, the 172-token registry, `docs/DESIGN.md`, the three A7 states. Head `b18a356` |
 
 The design branch is **behind** the code branch on `.agent/` files, because the
@@ -528,7 +956,8 @@ that morning found **`lead` alone**; a fresh lead session took `w2:p1` that
 afternoon, re-ran `herdr agent rename w2:p1 lead`, started `builder16` on
 FE-014 and `builder17` on FE-015, and closed each once its slice was committed.
 **Verified against `herdr agent list` after the second close, 2026-09-23:
-`lead` is the only live agent.**
+`lead` is the only live agent.** Re-verified the same day by a fresh lead
+session, which re-ran the rename.
 
 **Running a codex implementer, learned on `builder17`** — two things to put in
 the prompt rather than let the agent discover: **the visual walk belongs to the
@@ -552,7 +981,19 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 
 | Name | Kind | Pane | State | Role |
 |---|---|---|---|---|
-| `lead` | claude, Opus 5 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `lead` | claude, **Opus 5.5** since 2026-09-23 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
+| `f3-reviewer` | **codex, `gpt-6-sol`** (the owner's choice for this review) | — | closed 2026-09-23 | **Reviewed F3a–F3d**: [reviews/F3-settlement-review.md](reviews/F3-settlement-review.md). Request changes, **3 P2 + 1 P3.** **Cleared the money rules**: no ordinary-control sequence over-drafts a card, exceeds the change limit, or closes below exact. **Proved F3c's three unproven red cases** by in-memory mutation, without editing a file, and found one defect nobody had. A first attempt on `gpt-6-astra` was cancelled by the owner mid-read |
+| `design-reviewer3` | **codex, `gpt-6-sol`** | — | closed 2026-09-24 | **Request changes, 2 P2, both accepted** (a 100% comp dropped on Add from `zero`; a voided line erased on Add from `overflow`, one shared rebuild). All other criteria pass, figures re-derived. Report at `restaurant-pos-design/.agent/reviews/DESIGN-007-review.md`. cwd design worktree |
+| `designer5` | **codex, `gpt-6-astra`** | — | closed 2026-09-24 | **Delivered DESIGN-007** (round 2 accepted).  54 states (25 new), 29 old states pixel-diffed, uncommitted; handoff in the task file.  **DESIGN-007**: each tile gets its own item sheet, quantity is committed through `− n +` and a named primary, and the fire states use no modal. cwd `restaurant-pos-design` |
+| `architect2` | **claude, Opus 5.5** | — | closed 2026-09-24 | **Wrote [ARCH-002](reviews/ARCH-002-fire-confirmation.md)**: no confirmation dialog, the count goes on the button, `delivery` has four values and a live round is `queued`, plus T-1 to T-8. The owner accepted it. A first start on the bare default model was interrupted by the owner |
+| `builder22` | **claude, Sonnet** | — | closed 2026-09-24 | **Delivered [FE-020](tasks/FE-020-settlement-design-corrections.md)**, POS-04 brought up to DESIGN-006, plus one lead correction. Guarded a keyed 0 so it never draws *"Cash exceeds the single-tender limit"*. Said plainly which pixels JSDOM could not see |
+| `designer4` | **codex, `gpt-6-astra`** | — | closed 2026-09-24 | **Delivered DESIGN-006 round 2.** Cancel and method links are truthful across all 34 states, and the takeover has an explicit *I understand* step. It added a fixture-only `frost-settlement.js`. Its *"Not drawn"* chip labels describe fixture coverage, not product behaviour |
+| `design-reviewer2` | **codex, `gpt-6-sol`** | — | closed 2026-09-24 | **Reviewed DESIGN-006**: [report](../../restaurant-pos-design/.agent/reviews/DESIGN-006-review.md). Request changes, 3 P2 + 1 P3. Cleared every figure and the provenance, and accepted the lead's A1 measurement. **Rejected the implicit takeover acknowledgement** under `FR-G14` and `FR-J3` |
+| `designer3` | **codex, `gpt-6-astra`** (the owner's choice) | — | closed 2026-09-24 | **Delivered DESIGN-006**, uncommitted in the design worktree: 21 → **34 states**, with every figure's arithmetic shown. Queried the lead's loose *"twelve keys"* before editing. Honoured the lead's refusal of a sandbox escalation and designed from box-model arithmetic instead |
+| `builder21` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-019](tasks/FE-019-f3-review-corrections.md)**: all four review findings. Split both screens into controlled components plus self-owning wrappers, so no direct test changed apart from two assertions the task allowed |
+| `builder20` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-018](tasks/FE-018-payment-session.md)** (F3d), plus one lead correction to the `?gone=` guard. Proved the one-session-hook criterion properly, and flagged the one red case it could not make fail rather than claiming it |
+| `builder19` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-017](tasks/FE-017-close-outcomes.md)** (F3c). **Stopped and raised the F3a store regression** rather than patching it, and fixed it narrowly once ruled. Its red-case discipline was weaker than its predecessors', and it said so |
+| `builder18` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-016](tasks/FE-016-cash-and-card-diverge.md)** (F3b), not committed. Survived three sleep interruptions, and took both corrections, one of them the lead's own error, in minutes. Its prompt told it outright that it is an implementer rather than the lead, because CLAUDE.md sends every fresh session to the lead's role |
 | `builder17` | **codex, `gpt-5.6-sol`** | — | closed 2026-09-23 | **Delivered [FE-015](tasks/FE-015-settlement-shell.md)** (F3a), committed `cda4d4e`. **First non-Claude implementer**, and it delivered a full slice with eight red-case proofs, each mutation made alone and reverted. Two things to know about running codex here: it **burned two turns hunting for a browser it was never going to get** — say up front that the visual walk is the lead's — and it **wrote its handoff above the handoff heading** rather than in the slot, so a check that greps the slot reads empty. Closed under the standing policy |
 | `builder16` | **claude, Sonnet** | — | closed 2026-09-22 | **Delivered [FE-014](tasks/FE-014-order-store.md)** (FS), committed `3ad3282`. **Caught two task-file errors before writing a single line** — the seam claim, and a save control that exists neither in the code nor in the artifact — and stopped both times rather than building on them. Predicted the `empty` divergence in its own handoff, which is how the lead knew where to look. Closed under the standing policy: slice committed, handoff committed |
 | `code-reviewer` | **codex, gpt-6-astra** | — | closed 2026-09-22 | **Reviewed F2h and F2d independently** — [reviews/F2h-F2d-review.md](reviews/F2h-F2d-review.md). Two P2 findings, one of them a reproducible defect no test caught; cleared the two rulings while correcting the authority cited for one. **Second review agent used on implementation work, and the second to earn its place.** It started blocked on a CLI update prompt — answer *Skip*, never *Update now* |
@@ -684,7 +1125,7 @@ changes nothing near the finger, which is why it waited for this.
 [FE-015](tasks/FE-015-settlement-shell.md), `builder17` (**codex,
 `gpt-5.6-sol`** — the first non-Claude implementer). **Lead-verified: 1255 tests
 across 22 files**, up from 1216, typecheck clean, **no existing test modified**.
-Not committed.
+**Committed `cda4d4e`**; re-verified green 2026-09-23.
 
 **Walked end to end in a browser**, which is the check that matters here:
 

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App.js';
 import { LOCK_STATES } from '../src/fixtures.js';
 import { OrderScreen } from '../src/OrderPanel.js';
+import { PinPad } from '../src/PinPad.js';
 
 // B-12: no PIN value in any log, error message, DOM attribute or stored value.
 // The pad is driven the way a finger drives it — clicks on the rendered keys —
@@ -245,5 +246,48 @@ describe('a failure notice is announced, on both pads', () => {
     act(() => root.render(<OrderScreen key={++mounts} view={{ state: 'approval' }} />));
     expect(notices()).toHaveLength(0);
     expect(host.querySelectorAll('[role="alert"]')).toHaveLength(0);
+  });
+});
+
+// FE-019, F3 review finding 2: `seed` used to write literal `•` characters
+// into the digit ref, so two seeded dots plus four real presses filled all
+// six positions and `onSubmit` received `••1234` — a non-numeric PIN, four
+// digits short of FR-A1's six. The seed is drawn only, never entered.
+describe('a seeded pad (F3d, review finding 2)', () => {
+  function mountSeeded(onSubmit: (pin: string) => void) {
+    act(() => root.render(<PinPad key={++mounts} geometry="approval" seed={2} onSubmit={onSubmit} />));
+  }
+
+  it('shows the seed before any keying', () => {
+    mountSeeded(() => {});
+    expect(filledDots()).toBe(2);
+  });
+
+  it('red case: today’s seed used to write into the digit value — accepts six real digits and submits exactly those, all numeric', () => {
+    const onSubmit = vi.fn();
+    mountSeeded(onSubmit);
+
+    type('123456');
+    expect(filledDots()).toBe(6); // the seed is not stacked on top of the six real presses
+
+    act(() => key('Continue').click());
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit).toHaveBeenCalledWith('123456');
+    expect(onSubmit.mock.calls[0]![0]).toMatch(/^\d{6}$/);
+  });
+
+  it('B-12 still holds: no keyed digit appears in the DOM, only the seed’s own count and then the real one', () => {
+    mountSeeded(() => {});
+    const withDigits = () => attributeValues().filter((v) => /\d/.test(v));
+    const atRest = withDigits();
+    expect(atRest).toContain('aria-label=2 of 6 digits entered');
+
+    type('480719');
+
+    expect(withDigits()).toEqual(
+      atRest.map((v) => (v === 'aria-label=2 of 6 digits entered' ? 'aria-label=6 of 6 digits entered' : v))
+    );
+    expect(host.querySelector('.pin-dots')!.textContent).toBe('');
   });
 });
