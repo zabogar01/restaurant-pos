@@ -269,7 +269,7 @@ describe('AC7: fire.ts still resolves against the store’s own lines, through t
 
   it('removing the 86’d Coffee through the real × brings Send to kitchen back while Cheesecake and House Wine are still pending', () => {
     renderScreen({ state: 'fireblocked-overflow' });
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
     expect(pendingNames()).toEqual(['Coffee', 'Cheesecake', 'House Wine']);
 
     const remove = device().querySelector<HTMLElement>('.order-line[data-line-id="of-coffee"] .order-line__remove')!;

@@ -212,14 +212,16 @@ describe('criteria 4 and 5: the line editor commits explicitly and stays in boun
 
   it('the primary is off while n equals the current quantity, and pressing it does nothing', () => {
     mountSheet('sheet-line');
-    expect(update().disabled).toBe(true);
+    expect(update().hasAttribute('disabled')).toBe(false);
+    expect(update().getAttribute('aria-disabled')).toBe('true');
     expect(update().getAttribute('aria-disabled')).toBe('true');
     press(update());
     expect(calls).toEqual([]);
     press(stepper('Increase quantity'));
-    expect(update().disabled).toBe(false);
+    expect(update().getAttribute('aria-disabled')).toBe('false');
     press(stepper('Decrease quantity'));
-    expect(update().disabled).toBe(true);
+    expect(update().hasAttribute('disabled')).toBe(false);
+    expect(update().getAttribute('aria-disabled')).toBe('true');
     press(update());
     expect(calls).toEqual([]);
   });
@@ -232,7 +234,8 @@ describe('criteria 4 and 5: the line editor commits explicitly and stays in boun
   it('− at 1 is off and never removes the line', () => {
     render('sheet-line');
     const before = [...host.querySelectorAll('.order-line')].length;
-    expect(stepper('Decrease quantity').disabled).toBe(true);
+    expect(stepper('Decrease quantity').hasAttribute('disabled')).toBe(false);
+    expect(stepper('Decrease quantity').getAttribute('aria-disabled')).toBe('true');
     press(stepper('Decrease quantity'));
     expect(dialog()).not.toBeNull();
     expect(dialog()!.querySelector('output')!.textContent).toBe('1');
@@ -247,7 +250,8 @@ describe('criteria 4 and 5: the line editor commits explicitly and stays in boun
       press(stepper('Increase quantity'));
       seen.add(Number(dialog()!.querySelector('output')!.textContent));
     });
-    expect(stepper('Increase quantity').disabled).toBe(true);
+    expect(stepper('Increase quantity').hasAttribute('disabled')).toBe(false);
+    expect(stepper('Increase quantity').getAttribute('aria-disabled')).toBe('true');
     expect(dialog()!.querySelector('output')!.textContent).toBe(String(QUANTITY_MAX));
     expect(dialog()!.textContent).toContain('Maximum 99 per line. Increase is unavailable.');
     times(150, () => {
@@ -260,10 +264,12 @@ describe('criteria 4 and 5: the line editor commits explicitly and stays in boun
 
   it('the item sheet’s stepper has the same bounds', () => {
     render('sheet-item-soda');
-    expect(stepper('Decrease quantity').disabled).toBe(true);
+    expect(stepper('Decrease quantity').hasAttribute('disabled')).toBe(false);
+    expect(stepper('Decrease quantity').getAttribute('aria-disabled')).toBe('true');
     times(150, () => press(stepper('Increase quantity')));
     expect(dialog()!.querySelector('output')!.textContent).toBe('99');
-    expect(stepper('Increase quantity').disabled).toBe(true);
+    expect(stepper('Increase quantity').hasAttribute('disabled')).toBe(false);
+    expect(stepper('Increase quantity').getAttribute('aria-disabled')).toBe('true');
     times(150, () => press(stepper('Decrease quantity')));
     expect(dialog()!.querySelector('output')!.textContent).toBe('1');
   });
@@ -376,16 +382,16 @@ describe('round 2', () => {
     it('keeps the held Steak tagged 86, and Send still refused', () => {
       render('eightysix');
       const fire = () => host.querySelector(FIRE)!;
-      expect(fire().tagName).toBe('SPAN');
+      expect(fire().tagName).toBe('BUTTON');
       press(tileFor(host, 'soda'));
       // Under the open sheet, too: the panel behind it must not say the Steak is fine.
       expect(steakRow().querySelector('.tag-86')).not.toBeNull();
-      expect(fire().tagName).toBe('SPAN');
+      expect(fire().tagName).toBe('BUTTON');
       press(buttonNamed(way));
       expect(dialog()).toBeNull();
       expect(window.location.search).toBe('?state=eightysix');
       expect(steakRow().querySelector('.tag-86')).not.toBeNull();
-      expect(fire().tagName).toBe('SPAN');
+      expect(fire().tagName).toBe('BUTTON');
       // The selection survived the sheet: still Drinks, so Steak's own category has to be selected to see it.
       expect(host.querySelector('.menu-category--selected')!.textContent).toBe('Drinks');
       press(tileFor(host, 'burger'));
@@ -436,7 +442,7 @@ describe('round 2', () => {
     expect(commit.querySelector('output')!.textContent).toBe('2');
     expect(dialog()!.querySelector('.sheet-total__amount')!.textContent).toBe('270.000');
     const add = [...commit.querySelectorAll('*')].find((e) => e.textContent?.trim() === 'Add to order')!;
-    expect(add.tagName).toBe('SPAN');
+    expect(add.tagName).toBe('BUTTON');
     expect(dialog()).not.toBeNull();
   });
 });

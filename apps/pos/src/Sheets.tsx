@@ -96,10 +96,17 @@ const signed = (delta: bigint) => (delta < 0n ? formatAmount(delta) : `+${format
 // The quantity control both sheets carry in their footer: − n +, beside the
 // sheet's one commit. It only drafts a number; nothing here touches the order.
 // − at the minimum is off and is never a removal (FR-M5): removal is Remove
-// line, a separate control. Off means a disabled button, so it stays where the
-// hand expects it.
+// line, a separate control. Off means aria-disabled, never `disabled` (FE-024):
+// it stays where the hand expects it and stays reachable by Tab, and it names
+// the bound copy under the stepper as its reason.
+const SHEET_BOUND_ID = 'sheet-bound';
+const SHEET_UNAVAILABLE_ID = 'sheet-unavailable';
+
 function QuantityStepper({ value, onChange }: { value: number; onChange: (n: number) => void }) {
-  const step = (by: number) => onChange(Math.min(QUANTITY_MAX, Math.max(QUANTITY_MIN, value + by)));
+  const step = (by: number) => {
+    const next = Math.min(QUANTITY_MAX, Math.max(QUANTITY_MIN, value + by));
+    if (next !== value) onChange(next);
+  };
   const off = (isOff: boolean) => (isOff ? 'action sheet-stepper__step action--off' : 'action sheet-stepper__step');
   return (
     <div className="sheet-stepper sheet-stepper--foot" role="group" aria-label="Quantity">
@@ -107,9 +114,9 @@ function QuantityStepper({ value, onChange }: { value: number; onChange: (n: num
         type="button"
         className={off(value <= QUANTITY_MIN)}
         aria-label="Decrease quantity"
-        disabled={value <= QUANTITY_MIN}
         aria-disabled={value <= QUANTITY_MIN}
-        onClick={() => step(-1)}
+        aria-describedby={value <= QUANTITY_MIN ? SHEET_BOUND_ID : undefined}
+        onClick={() => value > QUANTITY_MIN && step(-1)}
       >
         −
       </button>
@@ -120,9 +127,9 @@ function QuantityStepper({ value, onChange }: { value: number; onChange: (n: num
         type="button"
         className={off(value >= QUANTITY_MAX)}
         aria-label="Increase quantity"
-        disabled={value >= QUANTITY_MAX}
         aria-disabled={value >= QUANTITY_MAX}
-        onClick={() => step(1)}
+        aria-describedby={value >= QUANTITY_MAX ? SHEET_BOUND_ID : undefined}
+        onClick={() => value < QUANTITY_MAX && step(1)}
       >
         +
       </button>
@@ -141,8 +148,9 @@ function boundCopy(quantity: number, adding: boolean): string {
 // selection and the quantity. When a manager 86s the item mid-choice (FR-C6,
 // AC-12) the sheet stays open, the selections stay exactly as they were so the
 // cashier can read them back, a notice says why, and Add to order stops being a
-// control: a span, drawn unavailable in place, with nothing to press. The same
-// shape as the 86'd tile (C-3) and the disabled Continue on the lock screen.
+// control: an inert button (aria-disabled, FE-024), drawn unavailable in place,
+// that describes itself by the notice. The same shape as the 86'd tile (C-3)
+// and the disabled Continue on the lock screen.
 // There is no quantity to commit then, so no stepper.
 function ItemSheet({
   sheet,
@@ -187,9 +195,15 @@ function ItemSheet({
           <div className="sheet__commit">
             <QuantityStepper value={quantity} onChange={setQuantity} />
             {sheet.unavailable ? (
-              <span className="action action--off" aria-disabled="true">
+              <button
+                type="button"
+                className="action action--off"
+                aria-disabled="true"
+                aria-describedby={SHEET_UNAVAILABLE_ID}
+                onClick={() => {}}
+              >
                 Add to order
-              </span>
+              </button>
             ) : (
               <button
                 type="button"
@@ -203,14 +217,14 @@ function ItemSheet({
               </button>
             )}
           </div>
-          <div className="sheet__bound" aria-live="polite">
+          <div className="sheet__bound" id={SHEET_BOUND_ID} aria-live="polite">
             {boundCopy(quantity, true)}
           </div>
         </>
       }
     >
       {sheet.unavailable && (
-        <div className="notice sheet__notice" role="status">
+        <div className="notice sheet__notice" role="status" id={SHEET_UNAVAILABLE_ID}>
           <div className="notice__title">{sheet.unavailable.title}</div>
           <div>{sheet.unavailable.body}</div>
         </div>
@@ -327,10 +341,10 @@ function LineSheet({
             <button
               type="button"
               className={changed ? 'action action--primary' : 'action action--primary action--off'}
-              disabled={!changed}
               aria-disabled={!changed}
               data-action="update-quantity"
               onClick={() => {
+                if (!changed) return;
                 setQuantity(sheet.lineId, quantity);
                 go(sheet.back);
               }}
@@ -338,7 +352,7 @@ function LineSheet({
               Update to {quantity}
             </button>
           </div>
-          <div className="sheet__bound" aria-live="polite">
+          <div className="sheet__bound" id={SHEET_BOUND_ID} aria-live="polite">
             {boundCopy(quantity, false)}
           </div>
         </>

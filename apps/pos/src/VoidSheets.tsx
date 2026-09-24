@@ -117,9 +117,9 @@ export function VoidSheet({ fixture, order, go }: { fixture: VoidSheetFixture; o
           {commitLabel}
         </button>
       ) : (
-        <span className="action action--off" aria-disabled="true">
+        <button type="button" className="action action--off" aria-disabled="true" onClick={() => {}}>
           {commitLabel}
-        </span>
+        </button>
       )}
     </>
   );

@@ -208,9 +208,9 @@ describe('fireblocked: the artifact’s composition', () => {
   });
 
   it('takes Send to kitchen off and leaves Discount, Void order and Settle live', () => {
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
     expect(fireControl().getAttribute('aria-disabled')).toBe('true');
-    const live = [...host.querySelectorAll('.order-actions button')].map((b) => b.textContent);
+    const live = [...host.querySelectorAll('.order-actions button:not([aria-disabled="true"])')].map((b) => b.textContent);
     expect(live).toEqual(['Discount', 'Void order', 'Settle']);
   });
 
@@ -243,7 +243,7 @@ describe('fireblocked resolves, which is the half of FR-E4 a per-state flag cann
   it('but leaves it unavailable, because voiding the Steak left nothing to send', () => {
     render({ state: 'fireblocked', gone: 'steak' });
     expect(sendableLines(ORDER_FIXTURES.fireblocked.groups.flatMap((g) => g.lines).filter((l) => l.id !== 'steak'))).toEqual([]);
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
     expect(fireControl().getAttribute('aria-disabled')).toBe('true');
   });
 
@@ -301,7 +301,7 @@ describe('fireblocked-overflow: the block clears while the order still has work 
     expect(panelNotice()!.querySelector('.notice__title')!.textContent).toBe('Cannot send to the kitchen');
     expect(panelNotice()!.textContent).toContain('1 pending line is no longer available: Coffee.');
     expect(panelNotice()!.querySelector('b')!.textContent).toBe('Coffee');
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
   });
 
   // **The case the slice was missing.** On fireblocked the Steak is the only
@@ -386,7 +386,7 @@ describe('the 86 tag on a PENDING line, in every state where it is true', () => 
     render(state);
     expect(panelNotice()).not.toBeNull();
     for (const line of blockedIn(state)) expect(panelNotice()!.textContent).toContain(line.name);
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
     expect(fireControl().getAttribute('aria-disabled')).toBe('true');
   });
 
@@ -424,7 +424,7 @@ describe('the 86 tag on a PENDING line, in every state where it is true', () => 
     for (const state of ['lock-draft', 'lock-lease'] as const) {
       render(state);
       expect(host.querySelectorAll('.order-line__remove')).toHaveLength(0);
-      expect(host.querySelectorAll('.order-actions button')).toHaveLength(0);
+      expect(host.querySelectorAll('.order-actions button:not([aria-disabled="true"])')).toHaveLength(0);
       expect(text('.order-actions .action--off')).toEqual(['Discount', 'Void order', 'Send to kitchen', 'Settle']);
     }
   });
@@ -595,7 +595,7 @@ describe('fireerror: the order a failed fire leaves behind', () => {
   it('never gates or rolls back the sale on a print failure (B-15)', () => {
     // Discount, Void order and Settle stay live: the order is unaffected, and
     // the restaurant keeps serving when the printer jams.
-    expect([...host.querySelectorAll('.order-actions button')].map((b) => b.textContent)).toEqual([
+    expect([...host.querySelectorAll('.order-actions button:not([aria-disabled="true"])')].map((b) => b.textContent)).toEqual([
       'Discount',
       'Void order',
       'Settle',
@@ -608,7 +608,7 @@ describe('fireerror: the order a failed fire leaves behind', () => {
     // "send it again", and SCREEN-INVENTORY forbids a reprint-the-order
     // control outright — the reprint is POS-07's, per FR-E3.
     expect(sendableLines(ORDER_FIXTURES.fireerror.groups.flatMap((g) => g.lines))).toEqual([]);
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
     expect(fireControl().getAttribute('aria-disabled')).toBe('true');
     // Inert, not absent: the condition is temporary (ruling C-1).
     expect(fireControl().textContent).toBe('Send to kitchen');
@@ -648,7 +648,7 @@ describe('the fire control is unavailable wherever the order has no PENDING line
       const undrawn = MENU_FIXTURES[view.state].loading ?? false;
 
       if (locked || undrawn || sendable.length === 0 || blocked.length > 0) {
-        expect(fireControl().tagName).toBe('SPAN');
+        expect(fireControl().tagName).toBe('BUTTON');
         expect(fireControl().getAttribute('aria-disabled')).toBe('true');
       } else {
         expect(fireControl().tagName).toBe('BUTTON');
@@ -663,7 +663,7 @@ describe('the fire control is unavailable wherever the order has no PENDING line
       render(view);
       expect(host.querySelectorAll('.order-line[data-line-status="pending"]')).toHaveLength(0);
       expect(host.querySelectorAll('.order-line[data-line-status="fired"]').length).toBeGreaterThan(0);
-      expect(fireControl().tagName).toBe('SPAN');
+      expect(fireControl().tagName).toBe('BUTTON');
     }
   });
 

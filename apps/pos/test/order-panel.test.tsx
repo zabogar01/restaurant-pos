@@ -327,7 +327,7 @@ describe.each(['lock-draft', 'lock-lease'] as const)('%s: settlement lock', (sta
   });
 
   it('draws every close-bar action unavailable in place', () => {
-    expect(host.querySelectorAll('.order-actions a, .order-actions button')).toHaveLength(0);
+    expect(host.querySelectorAll('.order-actions a, .order-actions button:not([aria-disabled="true"])')).toHaveLength(0);
     expect(text('.order-actions .action--off')).toEqual(['Discount', 'Void order', 'Send to kitchen', 'Settle']);
   });
 
@@ -382,7 +382,7 @@ describe('empty and overflow', () => {
     expect(host.querySelector('.order-empty')).not.toBeNull();
     expect(host.querySelector('.order-panel__count')!.textContent).toBe('Empty');
     expect(text('.totals dd')).toEqual(['0', '0']);
-    expect(host.querySelectorAll('.order-actions a, .order-actions button')).toHaveLength(0);
+    expect(host.querySelectorAll('.order-actions a, .order-actions button:not([aria-disabled="true"])')).toHaveLength(0);
   });
 
   it('overflow: the totals and close bar sit outside the scrolling list', () => {

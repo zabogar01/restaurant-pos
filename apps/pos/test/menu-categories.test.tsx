@@ -186,7 +186,8 @@ describe('criterion 7: what applies to a tile applies in every category', () => 
     expect(tiles().some((t) => t.dataset.item === 'steak')).toBe(false);
     press(rail('Mains'));
     expect(steak().classList.contains('menu-tile--off')).toBe(true);
-    expect(steak().tagName).not.toBe('BUTTON');
+    expect(steak().tagName).toBe('BUTTON');
+    expect(steak().getAttribute('aria-disabled')).toBe('true');
   });
 
   it('fireblocked-overflow 86s Coffee, which is on Drinks', () => {

@@ -83,13 +83,21 @@ const GATED = [
   'approval-denied',
 ];
 
-/** Everything on the frame a finger or a keyboard can operate: not inside an inert subtree. */
-function liveControls(container: ParentNode): HTMLElement[] {
+/**
+ * Every Tab stop on the frame: not inside an inert subtree. An off action is
+ * still one (FE-024), so it is kept: the modality test must see it leak.
+ */
+function tabStops(container: ParentNode): HTMLElement[] {
   return [
     ...container.querySelectorAll<HTMLElement>(
       'a[href], button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])'
     ),
   ].filter((el) => !el.closest('[inert]'));
+}
+
+/** What a press can do: the tab stops that are not off. Serves `destinations`. */
+function pressable(container: ParentNode): HTMLElement[] {
+  return tabStops(container).filter((el) => el.getAttribute('aria-disabled') !== 'true');
 }
 
 const hrefState = (href: string) => new URLSearchParams(href.split('?')[1] ?? '').get('state') ?? 'default';
@@ -121,12 +129,12 @@ function openedInPlace(): string | undefined {
 function destinations(state: OrderState, prepare: () => void = () => {}): string[] {
   render(state);
   prepare();
-  const count = liveControls(device()).length;
+  const count = pressable(device()).length;
   const out: string[] = [];
   for (let i = 0; i < count; i++) {
     render(state);
     prepare();
-    const el = liveControls(device())[i]!;
+    const el = pressable(device())[i]!;
     if (el.tagName === 'A') {
       out.push(hrefState(el.getAttribute('href')!));
     } else {
@@ -188,7 +196,14 @@ describe('the reachability detector can see a gated path', () => {
   it('ignores a control inside an inert subtree, and nothing else', () => {
     const box = document.createElement('div');
     box.innerHTML = '<div inert><a href="?state=approval">x</a></div><button>y</button><a href="?state=sheet-voidline">z</a>';
-    expect(liveControls(box).map((e) => e.textContent)).toEqual(['y', 'z']);
+    expect(tabStops(box).map((e) => e.textContent)).toEqual(['y', 'z']);
+  });
+
+  it('keeps an off action as a tab stop, and leaves it out of what can be pressed', () => {
+    const box = document.createElement('div');
+    box.innerHTML = '<button aria-disabled="true">off</button><div inert><button aria-disabled="true">hidden</button></div><button>on</button>';
+    expect(tabStops(box).map((e) => e.textContent)).toEqual(['off', 'on']);
+    expect(pressable(box).map((e) => e.textContent)).toEqual(['on']);
   });
 });
 
@@ -206,7 +221,7 @@ describe.each(REACHABILITY_STATES)('%s: no control reaches a PIN-gated state (ac
 
   it('every live control on the frame is inside the sheet', () => {
     render(state);
-    for (const el of liveControls(device())) expect(dialog()!.contains(el)).toBe(true);
+    for (const el of tabStops(device())) expect(dialog()!.contains(el)).toBe(true);
   });
 
   it('the panel’s void paths are still drawn behind it, and inert', () => {
@@ -271,7 +286,7 @@ describe.each(BUILT)('%s: a dialog (acceptance criteria 4 and 5)', (state) => {
 
   it('every control in it is a <button type="button">, and none is a link', () => {
     expect(dialog()!.querySelectorAll('a')).toHaveLength(0);
-    for (const el of liveControls(dialog()!)) {
+    for (const el of tabStops(dialog()!)) {
       expect(el.tagName).toBe('BUTTON');
       expect(el.getAttribute('type')).toBe('button');
     }
@@ -461,15 +476,17 @@ describe('sheet-item86: 86’d mid-choice (acceptance criterion 3)', () => {
     expect(notice.textContent).toContain('Your selections are kept');
   });
 
-  it('has no control that adds the line: not disabled, not a dead link, not a control at all', () => {
+  it('has no live control that adds the line: an inert button, not a dead link', () => {
     const add = [...dialog()!.querySelectorAll('*')].filter((e) => e.textContent?.trim() === 'Add to order');
     expect(add).toHaveLength(1);
     const [span] = add;
-    expect(span!.tagName).toBe('SPAN');
+    expect(span!.tagName).toBe('BUTTON');
     expect(span!.matches('.action.action--off')).toBe(true);
-    expect(span!.closest('a, button, [role="button"], [tabindex]:not([role="dialog"])')).toBeNull();
+    expect(span!.getAttribute('aria-disabled')).toBe('true');
+    expect(span!.hasAttribute('disabled')).toBe(false);
+    expect(span!.closest('a, [role="button"]')).toBeNull();
     expect(span!.hasAttribute('href') || span!.hasAttribute('tabindex') || span!.hasAttribute('role')).toBe(false);
-    for (const el of liveControls(device())) expect(el.textContent).not.toContain('Add to order');
+    for (const el of pressable(device())) expect(el.textContent).not.toContain('Add to order');
   });
 
   it('pressing where Add would be does nothing', () => {
@@ -586,9 +603,9 @@ describe('the ring detector can see a ring an unavailable action could match', (
 
 describe('pos.css: the sheet pressed ring', () => {
   it('rings a pressed sheet button, and a focused one keeps its focus ring', () => {
-    expect(selectorsDeclaring(css, '--frost-pressed-ring')).toContain('button.action:active');
+    expect(selectorsDeclaring(css, '--frost-pressed-ring')).toContain('button.action:not([aria-disabled="true"]):active');
     const both = selectorsDeclaring(css, '--frost-focus-ring), var(--frost-pressed-ring');
-    expect(both).toContain('button.action:focus-visible:active');
+    expect(both).toContain('button.action:not([aria-disabled="true"]):focus-visible:active');
   });
 
   it('no ring can land on an unavailable action', () => {

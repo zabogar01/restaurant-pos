@@ -16,6 +16,8 @@ type PinPadProps = {
   verifying?: boolean;
   /** Continue is shown but inert — the LOGIN cooldown. */
   continueDisabled?: boolean;
+  /** The id of the notice that says why Continue is inert, when one is drawn (FE-024). */
+  continueDescribedBy?: string;
   /** Rendered between the entry display and the keypad, where POS-01 and M-1 put their notices. */
   children?: ReactNode;
   /**
@@ -43,6 +45,7 @@ export function PinPad({
   onSubmit,
   verifying = false,
   continueDisabled = false,
+  continueDescribedBy,
   children,
   geometry = 'lock',
   seed = 0,
@@ -118,6 +121,7 @@ export function PinPad({
             className={continueDisabled ? 'key key--continue-disabled' : 'key key--continue'}
             aria-label="Continue"
             aria-disabled={continueDisabled || undefined}
+            aria-describedby={continueDisabled ? continueDescribedBy : undefined}
             onClick={submit}
           >
             <Icon name="arrow" />

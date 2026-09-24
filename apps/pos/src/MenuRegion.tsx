@@ -154,9 +154,9 @@ export function MenuRegion({
 }
 
 // Ruling C-3: an 86'd tile is disabled in place. It keeps its slot in the grid
-// and its box, greys, and carries the 86 tag. It is a div, not a button, so it
-// is not a control and no pressed rule can match it: nothing happened, so
-// nothing says it did. It is never removed and never moved to the end — a
+// and its box, greys, and carries the 86 tag. FE-024: it is a button with
+// aria-disabled that describes itself by the tag, so Tab reaches it. Its press
+// does nothing, and the pressed rule below matches only an enabled tile. It is never removed and never moved to the end — a
 // cashier's hand knows where Steak is, and a reflowed grid puts another item
 // under it.
 function Tile({
@@ -176,12 +176,22 @@ function Tile({
 
   if (off) {
     return (
-      <div className="menu-tile menu-tile--off" aria-disabled="true" data-item={item.id}>
-        <div>
-          {item.name} <span className="tag-86">86</span>
-        </div>
-        <div className="menu-tile__price">{formatAmount(item.price)}</div>
-      </div>
+      <button
+        type="button"
+        className="menu-tile menu-tile--off"
+        aria-disabled="true"
+        aria-describedby={`tag-86-${item.id}`}
+        data-item={item.id}
+        onClick={() => {}}
+      >
+        <span>
+          {item.name}{' '}
+          <span className="tag-86" id={`tag-86-${item.id}`}>
+            86
+          </span>
+        </span>
+        <span className="menu-tile__price">{formatAmount(item.price)}</span>
+      </button>
     );
   }
 

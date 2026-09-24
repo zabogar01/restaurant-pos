@@ -598,8 +598,8 @@ button.order-line__target {
 /* Pressed. Every enabled boxed control on the panel: the row body and the
  * remove control here, the close-bar actions by button.action (the sheets'
  * rule, below). a.action is the lock notice's route out, the one anchor on the
- * screen. An unavailable action is a span and a locked or voided row body is a
- * div, so neither can match — nothing happened, so nothing says it did.
+ * screen. An unavailable action carries aria-disabled and a locked or voided row
+ * body is a div, so neither can match — nothing happened, so nothing says it did.
  * .is-pressed is the fixture's held press. */
 button.order-line__target:active,
 .order-line__target.is-pressed,
@@ -724,7 +724,7 @@ button.order-line__target:active,
 
 /* An available tile is a <button> (ruling of 2026-09-17); an 86'd one is a
  * div and keeps the default cursor. */
-button.menu-tile {
+button.menu-tile:not([aria-disabled="true"]) {
   cursor: pointer;
 }
 
@@ -735,8 +735,8 @@ button.menu-tile {
 }
 
 /* 86'd (ruling C-3): the same box in the same slot, greyed and dashed. Dashed
- * means not available (docs/DESIGN.md, Shapes). A div, so no pressed or hover
- * rule below can match it. */
+ * means not available (docs/DESIGN.md, Shapes). A button (FE-024), so the
+ * pressed and hover rules below exclude it by :not([aria-disabled="true"]). */
 .menu-tile--off {
   background: var(--frost-unavailable);
   border: 1px dashed var(--frost-unavailable-border);
@@ -862,16 +862,17 @@ button.menu-tile {
 }
 
 /* Pressed (A7): a tile, a category row. Element-qualified, so an 86'd tile —
- * a div — can match neither :active nor the fixture's .is-pressed.
+ * one carrying aria-disabled — can match neither :active nor the fixture's
+ * .is-pressed.
  * test/menu-region.test.tsx pins that. */
-button.menu-tile:active,
-button.menu-tile.is-pressed,
+button.menu-tile:not([aria-disabled="true"]):active,
+button.menu-tile:not([aria-disabled="true"]).is-pressed,
 button.menu-category:active,
 button.menu-category.is-pressed {
   box-shadow: var(--frost-pressed-ring);
 }
 
-button.menu-tile:focus-visible:active,
+button.menu-tile:not([aria-disabled="true"]):focus-visible:active,
 button.menu-category:focus-visible:active {
   box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
 }
@@ -881,13 +882,13 @@ button.menu-category:focus-visible:active {
  * outside this query a tapped tile would be left looking selected once the
  * pressed ring goes. test/hover-scoped.test.ts enforces the query. */
 @media (hover: hover) {
-  button.menu-tile:hover {
+  button.menu-tile:not([aria-disabled="true"]):hover {
     background: var(--frost-selected);
     border-color: var(--frost-primary);
     color: var(--frost-selected-text);
   }
 
-  button.menu-tile:hover .menu-tile__price {
+  button.menu-tile:not([aria-disabled="true"]):hover .menu-tile__price {
     color: inherit;
   }
 }
@@ -1080,28 +1081,28 @@ button.menu-category:focus-visible:active {
   margin-top: var(--frost-space-2);
 }
 
-button.action {
+button.action:not([aria-disabled="true"]) {
   cursor: pointer;
 }
 
 /* Pressed (A7) on every sheet control. Element-qualified: Add to order on an
- * 86'd item is a span, so it can match neither rule — nothing happened, so
+ * 86'd item is aria-disabled, so it can match neither rule — nothing happened, so
  * nothing says it did. test/sheets.test.tsx pins that. */
-button.action:active {
+button.action:not([aria-disabled="true"]):active {
   box-shadow: var(--frost-pressed-ring);
 }
 
-button.action:focus-visible:active {
+button.action:not([aria-disabled="true"]):focus-visible:active {
   box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
 }
 
 @media (hover: hover) {
-  button.action:hover {
+  button.action:not([aria-disabled="true"]):hover {
     background: var(--frost-group);
     border-color: var(--frost-primary);
   }
 
-  button.action--primary:hover {
+  button.action--primary:not([aria-disabled="true"]):hover {
     background: var(--frost-primary-hover);
     color: var(--frost-primary-text);
   }
@@ -1693,8 +1694,8 @@ button.action:focus-visible:active {
 }
 
 button.tender-method,
-button.tender-add,
-button.settlement-close__action {
+button.tender-add:not([aria-disabled="true"]),
+button.settlement-close__action:not([aria-disabled="true"]) {
   cursor: pointer;
 }
 
@@ -1825,30 +1826,30 @@ button.settlement-close__action {
 
 button.tender-method:active,
 button.tender-method.is-pressed,
-button.tender-add:active,
-button.tender-add.is-pressed,
+button.tender-add:not([aria-disabled="true"]):active,
+button.tender-add:not([aria-disabled="true"]).is-pressed,
 button.tender-key:active,
 button.tender-key.is-pressed,
-button.settlement-close__action:active {
+button.settlement-close__action:not([aria-disabled="true"]):active {
   box-shadow: var(--frost-pressed-ring);
 }
 
 button.tender-method:focus-visible:active,
-button.tender-add:focus-visible:active,
+button.tender-add:not([aria-disabled="true"]):focus-visible:active,
 button.tender-key:focus-visible:active,
-button.settlement-close__action:focus-visible:active {
+button.settlement-close__action:not([aria-disabled="true"]):focus-visible:active {
   box-shadow: var(--frost-focus-ring), var(--frost-pressed-ring);
 }
 
 @media (hover: hover) {
   button.tender-method:hover,
-  button.tender-add:hover {
+  button.tender-add:not([aria-disabled="true"]):hover {
     background: var(--frost-group);
     border-color: var(--frost-primary);
   }
 
   button.tender-method--selected:hover,
-  button.settlement-close__action:hover {
+  button.settlement-close__action:not([aria-disabled="true"]):hover {
     background: var(--frost-primary-hover);
     color: var(--frost-primary-text);
   }

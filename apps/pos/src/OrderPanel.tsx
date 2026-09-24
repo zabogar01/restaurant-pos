@@ -823,15 +823,17 @@ function OrderActions({
     <div className="order-actions">
       {actionsFor(type).map((a) =>
         off || (fireOff && a.id === FIRE_ACTION) ? (
-          <span
+          <button
             key={a.id}
+            type="button"
             className="action action--off"
             aria-disabled="true"
             data-action={a.id}
             aria-describedby={!off && a.id === FIRE_ACTION ? fireDescribedBy : undefined}
+            onClick={() => {}}
           >
             {a.id === FIRE_ACTION ? fireLabel(fireCount) : a.label}
-          </span>
+          </button>
         ) : (
           <button
             key={a.id}

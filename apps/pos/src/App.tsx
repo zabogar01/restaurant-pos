@@ -3,6 +3,8 @@ import { EmergencyBanner } from './EmergencyBanner.js';
 import { LOCK_STATES, NOTICES, lockStateFrom, type LockState } from './fixtures.js';
 import { PinPad } from './PinPad.js';
 
+const LOCK_NOTICE_ID = 'lock-notice';
+
 export function App({ state = lockStateFrom(window.location.search) }: { state?: LockState }) {
   return (
     <>
@@ -46,6 +48,7 @@ function LockScreen({ state }: { state: LockState }) {
             onSubmit={() => {}}
             verifying={state === 'loading'}
             continueDisabled={state === 'throttled'}
+            continueDescribedBy={LOCK_NOTICE_ID}
           >
             {state === 'loading' && (
               <div className="verifying">
@@ -54,7 +57,11 @@ function LockScreen({ state }: { state: LockState }) {
               </div>
             )}
             {notice && (
-              <div className={notice.soft ? 'notice notice--soft' : 'notice'} role={notice.failure ? 'alert' : undefined}>
+              <div
+                className={notice.soft ? 'notice notice--soft' : 'notice'}
+                id={LOCK_NOTICE_ID}
+                role={notice.failure ? 'alert' : undefined}
+              >
                 <div className="notice__title">{notice.title}</div>
                 <div>{notice.body}</div>
               </div>
