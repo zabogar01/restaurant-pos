@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { formatAmount } from './money.js';
-import type { OrderView } from './orderFixtures.js';
-import type { NewLine } from './orderStore.js';
+import type { OrderView, Totals } from './orderFixtures.js';
+import { previewQuantity, unitOf, type NewLine } from './orderStore.js';
+import type { ShownOrder } from './voidFixtures.js';
 import {
   QUANTITY_MAX,
   QUANTITY_MIN,
   unitPrice,
+  type ItemGroup,
   type ItemOption,
   type ItemSheetFixture,
   type LineSheetFixture,
@@ -24,12 +26,23 @@ export function SheetView({
   sheet,
   go,
   addLine,
+  setQuantity,
+  order,
+  renderTotals,
 }: {
   sheet: SheetFixture;
   go: (view: OrderView) => void;
   addLine: (line: NewLine) => void;
+  setQuantity: (lineId: string, quantity: number) => void;
+  /** The store's order: the line editor reads its line's current quantity and previews against it. */
+  order: ShownOrder;
+  renderTotals: (totals: Totals) => ReactNode;
 }) {
-  return sheet.kind === 'item' ? <ItemSheet sheet={sheet} go={go} addLine={addLine} /> : <LineSheet sheet={sheet} go={go} />;
+  return sheet.kind === 'item' ? (
+    <ItemSheet sheet={sheet} go={go} addLine={addLine} />
+  ) : (
+    <LineSheet sheet={sheet} go={go} setQuantity={setQuantity} order={order} renderTotals={renderTotals} />
+  );
 }
 
 export function SheetFrame({
@@ -80,12 +93,57 @@ export function SheetFrame({
 
 const signed = (delta: bigint) => (delta < 0n ? formatAmount(delta) : `+${formatAmount(delta)}`);
 
-// M-2. Size is choose-one, extras choose-any, and the line total follows the
-// selection. When a manager 86s the item mid-choice (FR-C6, AC-12) the sheet
-// stays open, the selections stay exactly as they were so the cashier can read
-// them back, a notice says why, and Add to order stops being a control: a
-// span, drawn unavailable in place, with nothing to press. The same shape as
-// the 86'd tile (C-3) and the disabled Continue on the lock screen.
+// The quantity control both sheets carry in their footer: − n +, beside the
+// sheet's one commit. It only drafts a number; nothing here touches the order.
+// − at the minimum is off and is never a removal (FR-M5): removal is Remove
+// line, a separate control. Off means a disabled button, so it stays where the
+// hand expects it.
+function QuantityStepper({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const step = (by: number) => onChange(Math.min(QUANTITY_MAX, Math.max(QUANTITY_MIN, value + by)));
+  const off = (isOff: boolean) => (isOff ? 'action sheet-stepper__step action--off' : 'action sheet-stepper__step');
+  return (
+    <div className="sheet-stepper sheet-stepper--foot" role="group" aria-label="Quantity">
+      <button
+        type="button"
+        className={off(value <= QUANTITY_MIN)}
+        aria-label="Decrease quantity"
+        disabled={value <= QUANTITY_MIN}
+        aria-disabled={value <= QUANTITY_MIN}
+        onClick={() => step(-1)}
+      >
+        −
+      </button>
+      <output className="sheet-stepper__value" aria-live="polite" aria-label="Quantity">
+        {value}
+      </output>
+      <button
+        type="button"
+        className={off(value >= QUANTITY_MAX)}
+        aria-label="Increase quantity"
+        disabled={value >= QUANTITY_MAX}
+        aria-disabled={value >= QUANTITY_MAX}
+        onClick={() => step(1)}
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
+/** What the artifact says under the stepper, by bound. `adding` is the item sheet, whose minimum has no line to remove. */
+function boundCopy(quantity: number, adding: boolean): string {
+  if (quantity >= QUANTITY_MAX) return `Maximum ${QUANTITY_MAX} per line. Increase is unavailable.`;
+  if (quantity <= QUANTITY_MIN) return adding ? `Minimum ${QUANTITY_MIN} per line.` : `Minimum ${QUANTITY_MIN}. Use Remove line to remove this line.`;
+  return `Quantity · whole numbers, maximum ${QUANTITY_MAX}`;
+}
+
+// M-2. Choose-one and choose-any groups, and the line total follows the
+// selection and the quantity. When a manager 86s the item mid-choice (FR-C6,
+// AC-12) the sheet stays open, the selections stay exactly as they were so the
+// cashier can read them back, a notice says why, and Add to order stops being a
+// control: a span, drawn unavailable in place, with nothing to press. The same
+// shape as the 86'd tile (C-3) and the disabled Continue on the lock screen.
+// There is no quantity to commit then, so no stepper.
 function ItemSheet({
   sheet,
   go,
@@ -95,24 +153,24 @@ function ItemSheet({
   go: (view: OrderView) => void;
   addLine: (line: NewLine) => void;
 }) {
-  const [size, setSize] = useState(sheet.chosen.size);
-  const [extras, setExtras] = useState<ReadonlyArray<string>>(sheet.chosen.extras);
+  const [picked, setPicked] = useState<Readonly<Record<string, ReadonlyArray<string>>>>(sheet.chosen);
+  const [quantity, setQuantity] = useState(QUANTITY_MIN);
 
-  const deltaOf = (options: ReadonlyArray<ItemOption>, id: string) => options.find((o) => o.id === id)?.delta ?? 0n;
-  const total = unitPrice(sheet.price, [deltaOf(sheet.sizes, size), ...extras.map((id) => deltaOf(sheet.extras, id))]);
-  const toggle = (id: string) => setExtras((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
+  const chosen = (group: ItemGroup) => group.options.filter((o) => picked[group.id]?.includes(o.id));
+  const unit = unitPrice(sheet.price, sheet.groups.flatMap((group) => chosen(group).map((o) => o.delta)));
+  const total = unit * BigInt(quantity);
+  const pick = (group: ItemGroup, id: string) =>
+    setPicked((p) => {
+      const now = p[group.id] ?? [];
+      return { ...p, [group.id]: group.many ? (now.includes(id) ? now.filter((x) => x !== id) : [...now, id]) : [id] };
+    });
 
-  // FE-014, mutation 1. A modifier is shown when it is worth showing: a
-  // priced option only when it actually changes the price (the artifact never
-  // shows "Regular" beside a Burger charged at its base price), an extra
-  // whenever it is chosen, at whatever delta it carries — zero included, on
-  // the same footing as the Steak's own no-delta "Medium rare".
-  const chosenModifiers = () => {
-    const opt = (options: ReadonlyArray<ItemOption>, id: string) => options.find((o) => o.id === id)!;
-    const sizeOpt = opt(sheet.sizes, size);
-    const mods = extras.map((id) => opt(sheet.extras, id)).map(({ name, delta }) => (delta === 0n ? { name } : { name, delta }));
-    return sizeOpt.delta === 0n ? mods : [{ name: sizeOpt.name, delta: sizeOpt.delta }, ...mods];
-  };
+  // FE-014, mutation 1; FR-D4. Every chosen option is snapshotted onto the
+  // line, a zero-delta Size such as Regular included: the line must say which
+  // one the cashier chose, whatever it cost. A zero delta is written as the
+  // bare name, as the panel draws it.
+  const chosenModifiers = () =>
+    sheet.groups.flatMap((group) => chosen(group).map(({ name, delta }) => (delta === 0n ? { name } : { name, delta })));
 
   return (
     <SheetFrame
@@ -121,25 +179,33 @@ function ItemSheet({
       onClose={() => go(sheet.cancel)}
       foot={
         <>
-          <button type="button" className="action" onClick={() => go(sheet.cancel)}>
-            Cancel
-          </button>
-          {sheet.unavailable ? (
-            <span className="action action--off" aria-disabled="true">
-              Add to order
-            </span>
-          ) : (
-            <button
-              type="button"
-              className="action action--primary"
-              onClick={() => {
-                addLine({ itemId: sheet.itemId, name: sheet.name, quantity: 1, modifiers: chosenModifiers() });
-                go(sheet.add);
-              }}
-            >
-              Add to order
+          <div className="sheet__secondary">
+            <button type="button" className="action" onClick={() => go(sheet.cancel)}>
+              Cancel
             </button>
-          )}
+          </div>
+          <div className="sheet__commit">
+            <QuantityStepper value={quantity} onChange={setQuantity} />
+            {sheet.unavailable ? (
+              <span className="action action--off" aria-disabled="true">
+                Add to order
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="action action--primary"
+                onClick={() => {
+                  addLine({ itemId: sheet.itemId, name: sheet.name, quantity, modifiers: chosenModifiers() });
+                  go(sheet.add);
+                }}
+              >
+                Add to order
+              </button>
+            )}
+          </div>
+          <div className="sheet__bound" aria-live="polite">
+            {boundCopy(quantity, true)}
+          </div>
         </>
       }
     >
@@ -150,32 +216,34 @@ function ItemSheet({
         </div>
       )}
 
-      <div className="sheet-group" role="group" aria-labelledby="sheet-sizes">
-        <span id="sheet-sizes" className="sheet__label">
-          Size — choose one
-        </span>
-        <div className="sheet-options">
-          {sheet.sizes.map((o) => (
-            <OptionButton key={o.id} option={o} selected={o.id === size} stacked onPress={() => setSize(o.id)} />
-          ))}
+      {sheet.groups.map((group) => (
+        <div key={group.id} className="sheet-group" role="group" aria-labelledby={`sheet-group-${group.id}`}>
+          <span id={`sheet-group-${group.id}`} className="sheet__label">
+            {group.name} — choose {group.many ? 'any' : 'one'}
+          </span>
+          <div className="sheet-options">
+            {group.options.map((o) => (
+              <OptionButton
+                key={o.id}
+                option={o}
+                selected={picked[group.id]?.includes(o.id) ?? false}
+                stacked={!group.many}
+                onPress={() => pick(group, o.id)}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-
-      <div className="sheet-group" role="group" aria-labelledby="sheet-extras">
-        <span id="sheet-extras" className="sheet__label">
-          Extras — choose any
-        </span>
-        <div className="sheet-options">
-          {sheet.extras.map((o) => (
-            <OptionButton key={o.id} option={o} selected={extras.includes(o.id)} onPress={() => toggle(o.id)} />
-          ))}
-        </div>
-      </div>
+      ))}
 
       <div className="sheet-total">
         <span>Line total</span>
         <span className="sheet-total__amount">{formatAmount(total)}</span>
       </div>
+      {quantity > 1 && (
+        <div className="sheet__note">
+          {formatAmount(unit)} × {quantity} = {formatAmount(total)}
+        </div>
+      )}
     </SheetFrame>
   );
 }
@@ -211,13 +279,33 @@ function OptionButton({
 }
 
 // The line editor, retained for quantity (FR-D5, FR-M5), which has nowhere
-// else to live. Its Remove is the exit from the sheet; the remove control on
-// the row is the fast path. Both are ungated: the line is PENDING (FR-H2).
-// The quantity changes only on the sheet: this fixture has no command to send
-// it with, so the panel does not follow.
-function LineSheet({ sheet, go }: { sheet: LineSheetFixture; go: (view: OrderView) => void }) {
-  const [quantity, setQuantity] = useState(sheet.quantity);
-  const step = (by: number) => setQuantity((q) => Math.min(QUANTITY_MAX, Math.max(QUANTITY_MIN, q + by)));
+// else to live. The stepper drafts a number; *Update to n* is the one thing that
+// writes it (store.setQuantity) and it is off while the draft equals the line's
+// quantity. Back discards the draft. Remove line is the separate, secondary
+// exit; the remove control on the row is the fast path. Both are ungated: the
+// line is PENDING (FR-H2), which is also why a fired line never opens this
+// sheet and so never has a stepper.
+function LineSheet({
+  sheet,
+  go,
+  setQuantity,
+  order,
+  renderTotals,
+}: {
+  sheet: LineSheetFixture;
+  go: (view: OrderView) => void;
+  setQuantity: (lineId: string, quantity: number) => void;
+  order: ShownOrder;
+  renderTotals: (totals: Totals) => ReactNode;
+}) {
+  const line = order.groups.flatMap((g) => g.lines).find((l) => l.id === sheet.lineId);
+  // The order's own quantity wins over the fixture's, so a line the cashier
+  // already updated opens at what it now says.
+  const current = line?.quantity ?? sheet.quantity;
+  const [quantity, setDraft] = useState(current);
+  const changed = quantity !== current;
+  const preview = line ? previewQuantity(order, sheet.lineId, quantity) : undefined;
+  const unit = line ? unitOf(line) : 0n;
 
   return (
     <SheetFrame
@@ -226,12 +314,33 @@ function LineSheet({ sheet, go }: { sheet: LineSheetFixture; go: (view: OrderVie
       onClose={() => go(sheet.back)}
       foot={
         <>
-          <button type="button" className="action" onClick={() => go(sheet.back)}>
-            Back
-          </button>
-          <button type="button" className="action action--primary" onClick={() => go(sheet.remove)}>
-            Remove line
-          </button>
+          <div className="sheet__secondary">
+            <button type="button" className="action" onClick={() => go(sheet.back)}>
+              Back
+            </button>
+            <button type="button" className="action" onClick={() => go(sheet.remove)}>
+              Remove line
+            </button>
+          </div>
+          <div className="sheet__commit">
+            <QuantityStepper value={quantity} onChange={setDraft} />
+            <button
+              type="button"
+              className={changed ? 'action action--primary' : 'action action--primary action--off'}
+              disabled={!changed}
+              aria-disabled={!changed}
+              data-action="update-quantity"
+              onClick={() => {
+                setQuantity(sheet.lineId, quantity);
+                go(sheet.back);
+              }}
+            >
+              Update to {quantity}
+            </button>
+          </div>
+          <div className="sheet__bound" aria-live="polite">
+            {boundCopy(quantity, false)}
+          </div>
         </>
       }
     >
@@ -239,18 +348,23 @@ function LineSheet({ sheet, go }: { sheet: LineSheetFixture; go: (view: OrderVie
         <span id="sheet-quantity" className="sheet__label">
           Quantity — whole numbers, maximum {QUANTITY_MAX}
         </span>
-        <div className="sheet-stepper">
-          <button type="button" className="action sheet-stepper__step" aria-label="Decrease quantity" onClick={() => step(-1)}>
-            −
-          </button>
-          <output className="sheet-stepper__value" aria-live="polite" aria-label="Quantity">
-            {quantity}
-          </output>
-          <button type="button" className="action sheet-stepper__step" aria-label="Increase quantity" onClick={() => step(1)}>
-            +
-          </button>
-        </div>
       </div>
+
+      {preview && (
+        <>
+          <div className="sheet-total">
+            <span>Line total</span>
+            <span className="sheet-total__amount">{formatAmount(preview.amount)}</span>
+          </div>
+          <div className="sheet__note">
+            {formatAmount(unit)} × {quantity} = {formatAmount(preview.amount)}
+          </div>
+          <div className="sheet__preview">
+            <span className="sheet__label">After update · not saved yet</span>
+            {renderTotals(preview.totals)}
+          </div>
+        </>
+      )}
 
       {sheet.notes.map((n) => (
         <p key={n} className="sheet__note">

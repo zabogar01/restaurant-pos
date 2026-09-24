@@ -394,6 +394,12 @@ button {
   letter-spacing: var(--frost-tracking-round);
 }
 
+.round-head:focus {
+  outline: var(--frost-focus-outline);
+  outline-offset: var(--frost-focus-offset);
+  box-shadow: var(--frost-focus-ring);
+}
+
 .round-lines {
   margin: 0;
   padding: 0;
@@ -770,6 +776,29 @@ button.menu-tile {
   border-radius: 0;
 }
 
+/* FIRE: the way back to a blocked line that has scrolled out of view. Compact
+ * height, never shrunk to fit. */
+.notice__show {
+  min-height: var(--frost-action-compact-height);
+  margin-top: var(--frost-space-2);
+  padding: var(--frost-button-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-button);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font: inherit;
+  font-weight: var(--frost-weight-medium);
+}
+
+/* The polite line after a fire. It holds its place when empty, so the live
+ * region exists before its text arrives. */
+.order-sent {
+  flex: none;
+  padding: 0 var(--frost-space-4);
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
 /* Menu notices sit 12px 16px in from the menu area's edges, as the artifact's
  * do; the lock screen's notice keeps its own margin. */
 .menu-notice {
@@ -1006,6 +1035,40 @@ button.menu-category:focus-visible:active {
   color: var(--frost-text);
   font-size: var(--frost-text-20);
   font-weight: var(--frost-weight-medium);
+}
+
+.sheet-stepper--foot {
+  margin-bottom: 0;
+}
+
+/* FE-021: the footer holds the secondary actions, then − n + beside the one
+ * commit, then what the bound says. The stepper and the commit share a row;
+ * the bound line spans it. */
+.sheet__secondary {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--frost-space-6);
+}
+
+.sheet__commit {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-6);
+}
+
+.sheet__commit > .action {
+  flex: 1;
+}
+
+.sheet__bound {
+  grid-column: 1 / -1;
+  color: var(--frost-muted);
+}
+
+.sheet__preview {
+  margin-top: var(--frost-space-6);
 }
 
 .sheet__note {

@@ -53,11 +53,27 @@ export type OrderLine = {
   /** A voided line's record: when, and who approved it. */
   note?: string;
   amount: Money;
+  /**
+   * The resolved unit price, snapshotted when the line was added (B-8,
+   * FR-D4): `max(0, base + chosen deltas)`. A quantity edit reprices from this,
+   * never from today's menu. Optional because a fixture line predates it and
+   * falls back to the menu.
+   */
+  unitPrice?: Money;
   status: LineStatus;
 };
 
+/**
+ * Where a fired round's kitchen ticket stands (FR-E3, ARCHITECTURE.md:250,
+ * :317-321). `queued`: committed, delivery not yet known — the only outcome a
+ * fire made in this client can honestly claim. `unknown`: the bytes *may* have
+ * reached the printer, so it is never "not printed" (B-16).
+ */
+export type Delivery = 'queued' | 'printed' | 'failed' | 'unknown';
+
 export type RoundGroup =
-  | { kind: 'fired'; round: number; firedAt: string; printed: boolean; lines: ReadonlyArray<OrderLine> }
+  // `delivery: null` — the drawing states no outcome for this round (`overflow`'s rounds), so its heading carries no delivery word.
+  | { kind: 'fired'; round: number; firedAt: string; delivery: Delivery | null; lines: ReadonlyArray<OrderLine> }
   | { kind: 'pending'; lines: ReadonlyArray<OrderLine> };
 
 export type Adjustment = { label: string; amount: Money };
@@ -98,6 +114,23 @@ export const FIRE_INCIDENT: EmergencyIncident = {
 };
 
 /**
+ * FE-022: the same emergency for the round a fire just made. FAILED and UNKNOWN
+ * share the banner class and the route to POS-07 (FR-E3); the copy is DESIGN-007's,
+ * and UNKNOWN's tells the cashier to check with the kitchen, never that nothing printed.
+ */
+export const FIRE_INCIDENT_FAILED: EmergencyIncident = {
+  title: 'Kitchen ticket FAILED — Table 1, round 3',
+  detail: 'Ticket did not print. Open incidents to reprint; the order is unaffected.',
+  action: { label: 'Open incidents', href: '?state=incidents' },
+};
+
+export const FIRE_INCIDENT_UNKNOWN: EmergencyIncident = {
+  title: 'Kitchen ticket UNKNOWN — Table 1, round 3',
+  detail: 'Ticket may have printed. Check with the kitchen before reprinting.',
+  action: { label: 'Open incidents', href: '?state=incidents' },
+};
+
+/**
  * FR-D2, the PRD's own vocabulary (`docs/PRD.md:40`): "One bill. Type is
  * `table` or `quick_sale`." F2d reads this, not `?state=`, to decide the
  * count string, the pending group's heading, the close bar's shape and the
@@ -127,6 +160,25 @@ export function orderVariant(fixture: Pick<OrderFixture, 'type'>): OrderVariant 
 export function orderCountLabel(type: OrderVariant, count: number): string {
   const items = count === 1 ? '1 item' : `${count} items`;
   return type === 'quick_sale' ? `${items} · not yet sent` : items;
+}
+
+/**
+ * What a round's heading says about its ticket. The wording is the artifact's
+ * (DESIGN-007 Part C). **UNKNOWN has its own and never claims that nothing
+ * printed**: the bytes may have reached the printer, and a cashier who reads
+ * "not printed" asks the kitchen to cook it again (B-16). `null` says nothing.
+ */
+export const DELIVERY_WORDING: Record<Delivery, string> = {
+  queued: 'sending · unconfirmed',
+  printed: 'printed',
+  failed: 'FAILED · not printed',
+  unknown: 'UNKNOWN · may have printed',
+};
+
+/** `Round 3 · fired 20:14 · sending · unconfirmed`; a round that states no outcome ends at its time. */
+export function roundHeading(group: Extract<RoundGroup, { kind: 'fired' }>): string {
+  const head = `Round ${group.round} · fired ${group.firedAt}`;
+  return group.delivery === null ? head : `${head} · ${DELIVERY_WORDING[group.delivery]}`;
 }
 
 /**
@@ -187,6 +239,18 @@ export type OrderState =
   | 'catalog'
   | 'sheet-item'
   | 'sheet-item86'
+  | 'sheet-item-burger'
+  | 'sheet-item-wings'
+  | 'sheet-item-steak'
+  | 'sheet-item-fish'
+  | 'sheet-item-salad'
+  | 'sheet-item-soup'
+  | 'sheet-item-fries'
+  | 'sheet-item-rings'
+  | 'sheet-item-soda'
+  | 'sheet-item-coffee'
+  | 'sheet-item-beer'
+  | 'sheet-item-wine'
   | 'sheet-line'
   | 'approval'
   | 'approval-error'
@@ -205,6 +269,13 @@ export type OrderState =
   | 'fireblocked-overflow'
   | 'error'
   | 'fireerror'
+  | 'fire-ready'
+  | 'fire-queued'
+  | 'fire-printed'
+  | 'fire-failed'
+  | 'fire-unknown'
+  | 'fire-then-add'
+  | 'fire-heading-width'
   | 'quick'
   | 'quick-line'
   | 'settle-error'
@@ -222,6 +293,18 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'catalog', label: 'Menu changed while ordering' },
   { id: 'sheet-item', label: 'Sheet — item configuration' },
   { id: 'sheet-item86', label: 'Sheet — item 86’d mid-choice' },
+  { id: 'sheet-item-burger', label: 'Sheet — item: Burger' },
+  { id: 'sheet-item-wings', label: 'Sheet — item: Chicken Wings' },
+  { id: 'sheet-item-steak', label: 'Sheet — item: Steak' },
+  { id: 'sheet-item-fish', label: 'Sheet — item: Fish & Chips' },
+  { id: 'sheet-item-salad', label: 'Sheet — item: Caesar Salad' },
+  { id: 'sheet-item-soup', label: 'Sheet — item: Soup of the Day' },
+  { id: 'sheet-item-fries', label: 'Sheet — item: Fries' },
+  { id: 'sheet-item-rings', label: 'Sheet — item: Onion Rings' },
+  { id: 'sheet-item-soda', label: 'Sheet — item: Soda' },
+  { id: 'sheet-item-coffee', label: 'Sheet — item: Coffee' },
+  { id: 'sheet-item-beer', label: 'Sheet — item: Beer' },
+  { id: 'sheet-item-wine', label: 'Sheet — item: House Wine' },
   { id: 'sheet-line', label: 'Sheet — line editor' },
   { id: 'approval', label: 'Modal — manager approval' },
   { id: 'approval-error', label: 'Modal — wrong PIN' },
@@ -240,6 +323,13 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'fireblocked-overflow', label: 'Fire blocked — one of three pending lines' },
   { id: 'error', label: 'Command rejected' },
   { id: 'fireerror', label: 'Fire printed FAILED' },
+  { id: 'fire-ready', label: 'Fire — ready, 2 pending lines' },
+  { id: 'fire-queued', label: 'Fire — sending, unconfirmed' },
+  { id: 'fire-printed', label: 'Fire — printed' },
+  { id: 'fire-failed', label: 'Fire — FAILED' },
+  { id: 'fire-unknown', label: 'Fire — UNKNOWN' },
+  { id: 'fire-then-add', label: 'Fire — next pending group' },
+  { id: 'fire-heading-width', label: 'Fire — Round 12, UNKNOWN' },
   { id: 'quick', label: 'Quick sale' },
   { id: 'quick-line', label: 'Quick sale — line editor' },
 ];
@@ -275,7 +365,7 @@ const tableOrder: ReadonlyArray<RoundGroup> = [
     kind: 'fired',
     round: 1,
     firedAt: '19:42',
-    printed: true,
+    delivery: 'printed',
     lines: [
       {
         id: 'burger',
@@ -295,7 +385,7 @@ const tableOrder: ReadonlyArray<RoundGroup> = [
     kind: 'fired',
     round: 2,
     firedAt: '19:58',
-    printed: true,
+    delivery: 'printed',
     lines: [{ id: 'soda', quantity: 1, name: 'Soda', itemId: 'soda', amount: 30_000n, status: 'fired' }],
   },
   {
@@ -342,14 +432,61 @@ const unfiredTableOrder: ReadonlyArray<RoundGroup> = [
 // every other unlocked state, so its round 2 header says `printed` while the
 // banner a few pixels above says the ticket did not print. I-7 makes that
 // header the cashier's answer to "did this go to the kitchen?", and in this
-// state the honest answer is no. Nothing new is modelled: RoundGroup.printed
-// is already a boolean and OrderPanel already renders both words; no fixture
-// had yet used false. Raised in the FE-011 handoff as a finding for the design
+// state the honest answer is no. FE-022 gave the round a `delivery` outcome and
+// this round `failed`. Raised in the FE-011 handoff as a finding for the design
 // branch, where it is the fourth instance of one heuristic — a control or a
 // string shared across states hides the one state in which it is wrong.
 const fireErrorOrder: ReadonlyArray<RoundGroup> = tableOrder
   .filter((g): g is Extract<RoundGroup, { kind: 'fired' }> => g.kind === 'fired')
-  .map((g) => (g.round === 2 ? { ...g, printed: false } : g));
+  .map((g) => (g.round === 2 ? { ...g, delivery: 'failed' as const } : g));
+
+// FE-022's fire states (DESIGN-007 Part C): rounds 1 and 2, then the pending
+// Steak × 1 and Fries × 2 that one press sends. The arithmetic is the design's:
+// 135.000 + 30.000 + 240.000 + 2 × 40.000 = 485.000, which orderTotals takes to
+// 458.325 under Staff meal 10%. Firing changes no price, so every round-3
+// composition below carries the same lines and the same figures.
+const fireLines: ReadonlyArray<OrderLine> = [
+  {
+    id: 'fire-steak',
+    quantity: 1,
+    name: 'Steak',
+    itemId: 'steak',
+    modifiers: [{ name: 'Medium rare' }],
+    amount: 240_000n,
+    status: 'pending',
+  },
+  { id: 'fire-fries', quantity: 2, name: 'Fries', itemId: 'fries', amount: 80_000n, status: 'pending' },
+];
+
+const firedRounds = tableOrder.filter((g): g is Extract<RoundGroup, { kind: 'fired' }> => g.kind === 'fired');
+
+const fireReadyOrder: ReadonlyArray<RoundGroup> = [...firedRounds, { kind: 'pending', lines: fireLines }];
+
+/** Round 3 as a fixture: the same lines fired, with the delivery outcome the state draws. A live press only ever produces `queued`. */
+const fireRound3 = (delivery: Delivery): ReadonlyArray<RoundGroup> => [
+  ...firedRounds,
+  { kind: 'fired', round: 3, firedAt: '20:14', delivery, lines: fireLines.map((l) => ({ ...l, status: 'fired' as const })) },
+];
+
+// The longest heading (DESIGN-007 item 8): Burger in round 1, a Soda in each of
+// rounds 2-11, and round 12 holding Steak + Fries × 2 with UNKNOWN delivery.
+// 135.000 + 10 × 30.000 + 240.000 + 80.000 = 755.000, which orderTotals takes to 713.475.
+const fireWidthOrder: ReadonlyArray<RoundGroup> = [
+  firedRounds[0]!,
+  ...Array.from({ length: 10 }, (_, i): RoundGroup => ({
+    kind: 'fired',
+    round: i + 2,
+    firedAt: '23:00',
+    delivery: 'printed',
+    lines: [{ id: `width-soda-${i + 2}`, quantity: 1, name: 'Soda', itemId: 'soda', amount: 30_000n, status: 'fired' }],
+  })),
+  { kind: 'fired', round: 12, firedAt: '23:59', delivery: 'unknown', lines: fireLines.map((l) => ({ ...l, status: 'fired' as const })) },
+];
+
+const fireThenAddOrder: ReadonlyArray<RoundGroup> = [
+  ...fireRound3('queued'),
+  { kind: 'pending', lines: [{ id: 'fire-coffee', quantity: 1, name: 'Coffee', itemId: 'coffee', amount: 35_000n, status: 'pending' }] },
+];
 
 const tableTotalsWithout = {
   steak: serviceAndTax(165_000n, 7_425n, 155_925n, 13_500n, { label: 'Staff meal 10%', amount: -16_500n }),
@@ -383,7 +520,7 @@ const ceilingSettlementOrder: ReadonlyArray<RoundGroup> = [
     kind: 'fired',
     round: 1,
     firedAt: '19:40',
-    printed: true,
+    delivery: 'printed',
     lines: [{ id: 'banquet', quantity: 1, name: 'Banquet', amount: 100_000_000n, status: 'fired' }],
   },
 ];
@@ -400,7 +537,7 @@ const overflowOrder: ReadonlyArray<RoundGroup> = [
       kind: 'fired',
       round: 1,
       firedAt: '19:42',
-      printed: true,
+      delivery: null,
       lines: [
         {
           id: 'of-burger',
@@ -428,7 +565,7 @@ const overflowOrder: ReadonlyArray<RoundGroup> = [
       kind: 'fired',
       round: 2,
       firedAt: '19:58',
-      printed: true,
+      delivery: null,
       lines: [
         { id: 'of-wings', quantity: 3, name: 'Chicken Wings', itemId: 'wings', amount: 270_000n, status: 'fired' },
         { id: 'of-beer', quantity: 2, name: 'Beer', itemId: 'beer', amount: 130_000n, status: 'fired' },
@@ -524,6 +661,18 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   // rather than a new state.
   'sheet-item': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-item86': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-burger': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-wings': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-steak': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-fish': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-salad': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-soup': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-fries': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-rings': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-soda': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-coffee': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-beer': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-wine': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-line': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 
   // F2g's approval prompt opens over the table order: the artifact's request
@@ -638,6 +787,38 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
     incident: FIRE_INCIDENT,
   },
 
+  // FE-022. fire-ready is the state a press acts on; fire-queued is what a live
+  // press leaves; printed, failed and unknown exist only as fixtures — a live
+  // fire is never anything but queued (ARCH-002 §2.3).
+  'fire-ready': { title: 'Order · T1', groups: fireReadyOrder, totals: orderTotals(485_000n, STAFF_MEAL), applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE },
+  'fire-queued': { title: 'Order · T1', groups: fireRound3('queued'), totals: orderTotals(485_000n, STAFF_MEAL), applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE },
+  'fire-printed': { title: 'Order · T1', groups: fireRound3('printed'), totals: orderTotals(485_000n, STAFF_MEAL), applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE },
+  'fire-failed': {
+    title: 'Order · T1',
+    groups: fireRound3('failed'),
+    totals: orderTotals(485_000n, STAFF_MEAL),
+    applied: STAFF_MEAL,
+    appliedNote: STAFF_MEAL_NOTE,
+    incident: FIRE_INCIDENT_FAILED,
+  },
+  'fire-unknown': {
+    title: 'Order · T1',
+    groups: fireRound3('unknown'),
+    totals: orderTotals(485_000n, STAFF_MEAL),
+    applied: STAFF_MEAL,
+    appliedNote: STAFF_MEAL_NOTE,
+    incident: FIRE_INCIDENT_UNKNOWN,
+  },
+  'fire-heading-width': {
+    title: 'Order · T1',
+    groups: fireWidthOrder,
+    totals: orderTotals(755_000n, STAFF_MEAL),
+    applied: STAFF_MEAL,
+    appliedNote: STAFF_MEAL_NOTE,
+    incident: { ...FIRE_INCIDENT_UNKNOWN, title: 'Kitchen ticket UNKNOWN — Table 1, round 12' },
+  },
+  'fire-then-add': { title: 'Order · T1', groups: fireThenAddOrder, totals: orderTotals(520_000n, STAFF_MEAL), applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE },
+
   // F2d's two states. quick draws the counter order; quick-line is the line
   // editor's quick form (M-5, SCREEN-INVENTORY), opened statically over the
   // same order for review — the panel behind a sheet is the order the sheet
@@ -676,6 +857,50 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
 };
 
 /**
+ * FE-021: the states an item sheet may be opened from — an allow-list, by this
+ * rule: a workspace state in which a menu tile is actually pressable. Never an
+ * overlay (a sheet, the approval prompt: drawn over a place, not a place) and
+ * never a state whose grid is inert (a lock, the loading skeleton). A `from`
+ * outside it parses as no origin, because the URL is the boundary and can be
+ * bookmarked or edited.
+ *
+ * The value says what leaving the sheet does with the origin:
+ * - `keeps` — a persistent condition of the order or the menu that neither
+ *   Cancel nor a successful Add changes: 86 availability and the FE-011
+ *   refusal, the incident banner, and the order's own context (long, comped,
+ *   discounted, quick). Both return to the origin.
+ * - `clears-on-add` — a transient notice or draw that is still true when the
+ *   sheet is cancelled but that a successful Add makes false ("nothing was
+ *   added", "the order is exactly as it was", an empty order). Cancel returns
+ *   to the origin; Add goes to `default`, the order kept.
+ * - `clears` — a transient interaction that has already ended by the time the
+ *   sheet closes (a held tap). Neither Cancel nor Add restores it: both go to
+ *   `default`.
+ */
+export const ITEM_SHEET_ORIGINS: Partial<Record<OrderState, 'keeps' | 'clears-on-add' | 'clears'>> = {
+  default: 'keeps',
+  overflow: 'keeps',
+  zero: 'keeps',
+  'other-discount': 'keeps',
+  quick: 'keeps',
+  eightysix: 'keeps',
+  fireblocked: 'keeps',
+  'fireblocked-overflow': 'keeps',
+  fireerror: 'keeps',
+  'fire-ready': 'keeps',
+  'fire-queued': 'keeps',
+  'fire-printed': 'keeps',
+  'fire-failed': 'keeps',
+  'fire-unknown': 'keeps',
+  'fire-then-add': 'keeps',
+  'fire-heading-width': 'keeps',
+  empty: 'clears-on-add',
+  catalog: 'clears-on-add',
+  error: 'clears-on-add',
+  pressed: 'clears',
+};
+
+/**
  * What POS-03 is showing: which fixture order, and which PENDING line the
  * remove control took away. A removal is an [INLINE] state of the screen
  * (SITEMAP §1), so reaching it replaces the history entry rather than pushing
@@ -690,11 +915,22 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
  * ?category=, and nothing reads it. What a category press should do before
  * there is a second catalogue is a designer's question.
  */
-export type OrderView = { state: OrderState; gone?: string };
+export type OrderView = {
+  state: OrderState;
+  gone?: string;
+  /**
+   * FE-021: set only on an item sheet (`sheet-item-<id>`) — the state the tile
+   * was pressed on. The sheet returns there on Cancel and Add, and the menu
+   * and panel behind it keep that state's availability, so opening a sheet
+   * never un-86's a held line (B-17). Absent means `default`.
+   */
+  from?: OrderState;
+};
 
 /** The query string that selects a view: the inverse of orderViewFrom. */
-export function viewSearch({ state, gone }: OrderView): string {
-  return gone ? `?state=${state}&gone=${encodeURIComponent(gone)}` : `?state=${state}`;
+export function viewSearch({ state, gone, from }: OrderView): string {
+  const base = gone ? `?state=${state}&gone=${encodeURIComponent(gone)}` : `?state=${state}`;
+  return from ? `${base}&from=${from}` : base;
 }
 
 /** ?state= picks the fixture; ?gone= is a PENDING line the remove control took away. */
@@ -702,5 +938,8 @@ export function orderViewFrom(search: string): OrderView {
   const params = new URLSearchParams(search);
   const state = ORDER_STATES.find((s) => s.id === params.get('state'))?.id ?? 'default';
   const gone = params.get('gone');
-  return gone ? { state, gone } : { state };
+  // `from` means something only on an item sheet, and only a place a tile can be pressed.
+  const asked = params.get('from') as OrderState | null;
+  const from = state.startsWith('sheet-item-') && asked && asked in ITEM_SHEET_ORIGINS ? asked : undefined;
+  return { state, ...(gone && { gone }), ...(from && { from }) };
 }

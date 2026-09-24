@@ -7,7 +7,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   CATALOG_NOTICE,
-  ITEM_SEARCH,
+  itemDestination,
   LOADING_LABEL,
   LOCK_NOTICE,
   MENU_CATEGORIES,
@@ -83,8 +83,8 @@ describe('default', () => {
       expect(tile.tagName).toBe('BUTTON');
       expect(tile.getAttribute('type')).toBe('button');
       press(tile);
-      expect(window.location.search).toBe(ITEM_SEARCH);
-      expect(sheetTitle()).toBe('Burger');
+      expect(window.location.search).toBe(itemDestination(item.id));
+      expect(sheetTitle()).toBe(item.name);
     }
   });
 
@@ -168,7 +168,7 @@ describe('eightysix: disabled in place (ruling C-3)', () => {
     for (const id of others.map((t) => t.dataset.item)) {
       render('eightysix');
       press(host.querySelector(`[data-item="${id}"]`)!);
-      expect(window.location.search).toBe(ITEM_SEARCH);
+      expect(window.location.search).toBe(itemDestination(id!, 'eightysix'));
     }
   });
 });
@@ -293,7 +293,12 @@ describe.each(ORDER_STATES.map((s) => s.id))('%s: acting controls are buttons, a
     // banner's route to POS-07 in fireerror. Both of them genuinely leave the
     // screen for one that SITEMAP gives its own route, which is the whole test
     // — an anchor is for going, a button is for acting (ruling of 2026-09-17).
-    const leaving = lock ? [LOCK_NOTICE[lock].action.label] : state === 'fireerror' ? [FIRE_INCIDENT.action.label] : [];
+    // FE-022: fire-failed and fire-unknown draw the same banner, with the same route.
+    const leaving = lock
+      ? [LOCK_NOTICE[lock].action.label]
+      : ['fireerror', 'fire-failed', 'fire-unknown', 'fire-heading-width'].includes(state)
+        ? [FIRE_INCIDENT.action.label]
+        : [];
     expect(anchors.map((a) => a.textContent)).toEqual(leaving);
     for (const a of anchors) expect(a.matches('.menu-notice a.action[href], a.emergency-banner__action[href]')).toBe(true);
     for (const b of device().querySelectorAll('button')) expect(b.getAttribute('type')).toBe('button');

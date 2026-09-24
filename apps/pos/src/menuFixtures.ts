@@ -1,5 +1,5 @@
 import type { Money } from '@pos/money';
-import type { OrderState, OrderView, SettlementLock } from './orderFixtures.js';
+import { ORDER_FIXTURES, type OrderState, type OrderView, type SettlementLock } from './orderFixtures.js';
 
 // POS-03's menu region as fixtures (F2b), selected by the same ?state= as the
 // panel. Categories, items, prices and every notice's copy are the reviewed
@@ -38,9 +38,9 @@ export const MENU_ITEMS: ReadonlyArray<MenuItem> = [
   { id: 'wine', name: 'House Wine', price: 80_000n },
 ];
 
-// A tile's destination: the item configuration sheet (M-2). The artifact
-// configures Burger only, so every tile opens Burger's sheet.
-export const ITEM_SEARCH = '?state=sheet-item';
+/** A tile's destination: its own item's configuration sheet (M-2), one state per item (FE-021). */
+export const itemDestination = (itemId: string, from?: OrderState) =>
+  `?state=sheet-item-${itemId}${from && from !== 'default' && !from.startsWith('sheet-item') ? `&from=${from}` : ''}`;
 
 // A category press has no destination. It is an [INLINE] change of POS-03
 // (SITEMAP §1): the order stays exactly as it is and the history entry is
@@ -150,6 +150,18 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   // The grid behind each sheet is the artifact's. In sheet-item86 the artifact
   // 86s Steak in the grid, although the sheet's notice says Burger was 86'd.
   'sheet-item': {},
+  'sheet-item-burger': {},
+  'sheet-item-wings': {},
+  'sheet-item-steak': {},
+  'sheet-item-fish': {},
+  'sheet-item-salad': {},
+  'sheet-item-soup': {},
+  'sheet-item-fries': {},
+  'sheet-item-rings': {},
+  'sheet-item-soda': {},
+  'sheet-item-coffee': {},
+  'sheet-item-beer': {},
+  'sheet-item-wine': {},
   'sheet-item86': { eightySixed: ['steak'] },
   'sheet-line': {},
   // The approval prompt covers the whole screen; the grid behind it is the
@@ -186,6 +198,13 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   // another order names that order's state instead.
   error: { rejected: { state: 'default' } },
   fireerror: {},
+  'fire-ready': {},
+  'fire-queued': {},
+  'fire-printed': {},
+  'fire-failed': {},
+  'fire-unknown': {},
+  'fire-then-add': {},
+  'fire-heading-width': {},
   // F2d. The menu region is untouched by the quick-sale variant — the rail
   // and grid are the artifact's default ones behind both states.
   quick: {},
@@ -197,3 +216,19 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   // FE-020's `ceiling-single` seed, on the same terms as `settle-error`.
   'settle-ceiling': {},
 };
+
+/**
+ * The view-level facts an open item sheet takes from the state it was opened
+ * from (`view.from`), in one place so a new one cannot be missed: an item
+ * sheet's own fixture states none of them, and reading it would un-86 a held
+ * line, drop the menu's notice, or hide the application-wide incident banner
+ * (FR-E3) behind a sheet. Anything view-level that is *about the place, not the
+ * sheet* is read here, never as `X[view.state]`.
+ */
+export function originFacts(view: OrderView) {
+  const origin = view.from ?? view.state;
+  return { menu: MENU_FIXTURES[origin], incident: ORDER_FIXTURES[origin].incident, lock: ORDER_FIXTURES[origin].lock };
+}
+
+/** The menu fixture a view draws: an item sheet draws the state it was opened from, so what was 86'd stays 86'd. */
+export const menuFixtureFor = (view: OrderView): MenuFixture => originFacts(view).menu;

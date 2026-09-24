@@ -196,6 +196,8 @@ describe('fireblocked: the artifact’s composition', () => {
       'order-panel__head',
       'order-lines',
       'notice',
+      // FE-022: the polite status line a fire's result is announced in. Empty until a press.
+      'order-sent',
       'totals',
       'order-actions',
     ]);
@@ -549,8 +551,8 @@ describe('fireerror: the emergency banner (FR-E3)', () => {
     expect(FIRE_INCIDENT.action.href).toBe('?state=incidents');
   });
 
-  it('is drawn in no other state', () => {
-    for (const state of ALL_STATES.filter((s) => s !== 'fireerror')) {
+  it('is drawn in no other state, but the three fire fixtures that share its class (FE-022)', () => {
+    for (const state of ALL_STATES.filter((s) => !['fireerror', 'fire-failed', 'fire-unknown', 'fire-heading-width'].includes(s))) {
       render(state);
       expect(host.querySelector('.emergency-banner')).toBeNull();
     }
@@ -577,11 +579,11 @@ describe('fireerror: the order a failed fire leaves behind', () => {
   });
 
   it('reads round 2 as NOT printed, against the banner that says the ticket did not print (I-7)', () => {
-    expect(text('.round-head__label')).toEqual(['Round 1 · fired 19:42 · printed', 'Round 2 · fired 19:58 · not printed']);
+    expect(text('.round-head__label')).toEqual(['Round 1 · fired 19:42 · printed', 'Round 2 · fired 19:58 · FAILED · not printed']);
   });
 
-  it('is the only state whose print wording changes: every other round still reads printed', () => {
-    for (const state of ALL_STATES.filter((s) => s !== 'fireerror')) {
+  it('only fireerror and fire-failed (the same failure, one round later) say not printed; every other round never does', () => {
+    for (const state of ALL_STATES.filter((s) => !['fireerror', 'fire-failed'].includes(s))) {
       render(state);
       expect(text('.round-head__label').filter((l) => l!.includes('not printed'))).toEqual([]);
     }
@@ -639,8 +641,10 @@ describe('the fire control is unavailable wherever the order has no PENDING line
       const sendable = sendableLines(drawn);
       const blocked = blockingLines(drawn, MENU_FIXTURES[view.state].eightySixed ?? []);
       const locked = fixture.lock !== undefined || drawn.length === 0;
+      // FE-022: a skeleton draws no lines, so a live Send there would fire what is not drawn.
+      const undrawn = MENU_FIXTURES[view.state].loading ?? false;
 
-      if (locked || sendable.length === 0 || blocked.length > 0) {
+      if (locked || undrawn || sendable.length === 0 || blocked.length > 0) {
         expect(fireControl().tagName).toBe('SPAN');
         expect(fireControl().getAttribute('aria-disabled')).toBe('true');
       } else {
@@ -670,7 +674,8 @@ describe('the fire control is unavailable wherever the order has no PENDING line
     for (const state of TABLE_STATES) {
       render(state);
       expect(host.querySelector(`.order-actions [data-action="${FIRE_ACTION}"]`)).not.toBeNull();
-      expect(fireControl().textContent).toBe('Send to kitchen');
+      // FE-022: the label carries the pending count where there is one; one-press-fire.test.tsx pins it per state.
+      expect(fireControl().textContent).toMatch(/^Send (\d+ )?to kitchen$/);
     }
   });
 });
@@ -738,16 +743,20 @@ describe('the fire control exists exactly on table orders, by the order’s own 
 // Firing moves nothing (acceptance criterion 8)
 // ---------------------------------------------------------------------------
 
-describe('Send to kitchen produces no result, and above all moves nothing', () => {
+// FE-022 changed this block: Send to kitchen used to do nothing, and this
+// asserted the order was exactly as it was. It now sends, so the one change to
+// the order is that its pending lines are fired; the URL, the history and every
+// overlay are still exactly as they were.
+describe('Send to kitchen moves only the order: its pending lines become fired, and nothing else', () => {
   it.each(['default', 'overflow', 'other-discount'] as const)(
-    '%s: the order, the URL and the history are exactly as they were, and no sheet opens',
+    '%s: the URL and the history are exactly as they were, no sheet opens, and only the pending lines change status',
     (state) => {
       render(state);
       const before = drawnOrder();
       const url = window.location.search;
       const depth = window.history.length;
       press(fireControl());
-      expect(drawnOrder()).toEqual(before);
+      expect(drawnOrder()).toEqual(before.map(([status, ...rest]) => [status === 'pending' ? 'fired' : status, ...rest]));
       expect(window.location.search).toBe(url);
       expect(window.history.length).toBe(depth);
       expect(host.querySelector('[role="dialog"]')).toBeNull();
@@ -822,8 +831,22 @@ describe('the controls F2h adds lead somewhere ungated', () => {
     expect(ORDER_STATES.some((s) => s.id === target)).toBe(false);
   });
 
-  it('fireblocked’s notice carries no control at all: the resolution is the line’s own remove', () => {
+  // FE-022 changed this test: the notice used to carry no control at all. It now
+  // carries one, *Show Steak*, which only scrolls to the blocked line and focuses
+  // it — a button, never an anchor, and it opens nothing.
+  it('fireblocked’s notice carries one control, Show Steak; the resolution is still the line’s own remove', () => {
     render('fireblocked');
-    expect(panelNotice()!.querySelectorAll('a, button, [tabindex]')).toHaveLength(0);
+    expect(panelNotice()!.querySelectorAll('a, [tabindex]')).toHaveLength(0);
+    const controls = [...panelNotice()!.querySelectorAll('button')];
+    expect(controls.map((b) => b.textContent)).toEqual(['Show Steak']);
+    const original = Element.prototype.scrollIntoView; // jsdom has none; one-press-fire.test.tsx asserts the call
+    Element.prototype.scrollIntoView = () => {};
+    try {
+      press(controls[0]!);
+    } finally {
+      if (original) Element.prototype.scrollIntoView = original;
+      else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+    expect(host.querySelector('[role="dialog"]')).toBeNull();
   });
 });

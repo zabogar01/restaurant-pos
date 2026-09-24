@@ -1,4 +1,4 @@
-import type { LineStatus } from './orderFixtures.js';
+import type { LineStatus, OrderVariant, RoundGroup } from './orderFixtures.js';
 
 // The fire rules the POS draws from (FR-E1, FR-E4, B-17). Pure: no component,
 // no fixture, no state. The panel asks this module; it never decides for
@@ -116,5 +116,58 @@ export function fireRefusal(blocking: ReadonlyArray<{ name: string }>): FireRefu
     resolution: one
       ? 'Void that line or ask a manager to put the item back on.'
       : 'Void those lines or ask a manager to put the items back on.',
+  };
+}
+
+/** Why a fire did nothing. A `FireRefusal` is FR-E4's named refusal; the rest are silent. */
+export type FireRefused = FireRefusal | 'nothing' | 'locked' | 'quick_sale';
+
+export type FireInput = {
+  type: OrderVariant;
+  /** The items the menu has 86'd (FR-E4). Read again here, never trusted from what was drawn (FR-C6). */
+  unavailable: ReadonlyArray<string>;
+  /** FR-G12 / FR-G13: a tender draft in this tab, or another client's lease. */
+  locked: boolean;
+  /** When the cashier pressed. An argument, because this module reads no clock (ARCH-002 §2.2). */
+  firedAt: string;
+};
+
+/**
+ * The fire, applied (ARCH-002 §3): every PENDING line becomes one new fired
+ * round, and nothing else about the order changes — no price, no earlier round,
+ * no voided line (FR-E1, FR-E2, B-16).
+ *
+ * **A refusal returns the very same `groups`** (B-20: no partial state), so a
+ * caller can compare by reference and a second press in the same tick, which
+ * finds nothing pending, changes nothing.
+ *
+ * The refusals are the fire's own rules, checked here whatever the panel drew:
+ * a quick sale has no fire (FR-E5, C-2); a lock blocks it (FR-G12/G13); an
+ * order with nothing pending has nothing to send, so there is never an empty
+ * round; and a PENDING 86'd line blocks it (FR-E4, B-17).
+ *
+ * The new round is `queued`: committed, delivery unknown. A client with no
+ * printer can claim nothing more (ARCH-002 §2.3).
+ */
+export function fireOrder<G extends RoundGroup>(
+  groups: ReadonlyArray<G>,
+  { type, unavailable, locked, firedAt }: FireInput
+): { groups: ReadonlyArray<G | RoundGroup>; refused?: undefined } | { groups: ReadonlyArray<G>; refused: FireRefused } {
+  const refuse = (refused: FireRefused) => ({ groups, refused });
+  if (type === 'quick_sale') return refuse('quick_sale');
+  if (locked) return refuse('locked');
+  const lines = groups.flatMap((g) => g.lines);
+  const sending = sendableLines(lines);
+  if (sending.length === 0) return refuse('nothing');
+  const blocked = fireRefusal(blockingLines(lines, unavailable));
+  if (blocked) return refuse(blocked);
+
+  const fired = groups.filter((g) => g.kind === 'fired');
+  const round = fired.reduce((max, g) => (g.kind === 'fired' ? Math.max(max, g.round) : max), 0) + 1;
+  return {
+    groups: [
+      ...fired,
+      { kind: 'fired', round, firedAt, delivery: 'queued', lines: sending.map((l) => ({ ...l, status: 'fired' as const })) },
+    ],
   };
 }

@@ -6,7 +6,7 @@ import { DiscountSheet } from './DiscountSheets.js';
 import { EmergencyBanner } from './EmergencyBanner.js';
 import { FIRE_ACTION, blockingLines, fireRefusal, holdsUnavailable, sendableLines, type FireRefusal } from './fire.js';
 import { Icon } from './icons.js';
-import { MENU_FIXTURES } from './menuFixtures.js';
+import { MENU_FIXTURES, menuFixtureFor, originFacts } from './menuFixtures.js';
 import { MenuRegion } from './MenuRegion.js';
 import { formatAmount } from './money.js';
 import { useOrderStore, type OrderStore } from './orderStore.js';
@@ -14,12 +14,14 @@ import {
   FIRED_TAG,
   LOCK_TAG,
   ORDER_FIXTURES,
+  ITEM_SHEET_ORIGINS,
   ORDER_STATES,
   PENDING_TAG,
   orderCountLabel,
   orderVariant,
   orderViewFrom,
   pendingGroupHeading,
+  roundHeading,
   viewSearch,
   type Modifier,
   type OrderLine,
@@ -74,7 +76,13 @@ import { VoidSheet } from './VoidSheets.js';
  * the URL on every render and on every `popstate` itself — one owner, not
  * two.
  */
-export function OrderScreen({ view: initial = orderViewFrom(window.location.search) }: { view?: OrderView }) {
+export function OrderScreen({
+  view: initial = orderViewFrom(window.location.search),
+  clock,
+}: {
+  view?: OrderView;
+  clock?: Clock;
+}) {
   const [view, setView] = useState(initial);
   const store = useOrderStore(view, false);
 
@@ -86,7 +94,7 @@ export function OrderScreen({ view: initial = orderViewFrom(window.location.sear
 
   const onLocationChange = () => setView(orderViewFrom(window.location.search));
 
-  return <ControlledOrderScreen view={view} store={store} onLocationChange={onLocationChange} />;
+  return <ControlledOrderScreen view={view} store={store} onLocationChange={onLocationChange} {...(clock && { clock })} />;
 }
 
 /**
@@ -101,9 +109,12 @@ export function ControlledOrderScreen({
   store,
   locked = false,
   onLocationChange,
+  clock = browserClock,
 }: {
   view: OrderView;
   store: OrderStore;
+  /** The time a fire is stamped with, injected (ARCH-002 §2.2). Tests pass a fixed one. */
+  clock?: Clock;
   /** F3d, FR-G12: a payment session is active in this tab — POS-03's own-tab lock, derived, never read from `?state=`. */
   locked?: boolean;
   /** Told on every navigate — same-screen or leaving — so the one owner of `view` above this component re-reads the URL (see `navigate` below). */
@@ -112,6 +123,14 @@ export function ControlledOrderScreen({
   const [voidOpened, setVoidOpened] = useState<VoidSheetFixture['target']>();
   const [lineOpened, setLineOpened] = useState<string>();
   const [discountOpened, setDiscountOpened] = useState(false);
+  // FE-022: the round a press just made. `after` is the highest round before
+  // it, so the effect below can tell the fire's own round from any other.
+  const [firing, setFiring] = useState<{ after: number }>();
+  const [sentRound, setSentRound] = useState<number>();
+  // The groups as the fire left them: the status belongs to the press, so any
+  // later change to the order ends it (never a render condition like "nothing is pending").
+  const sentGroups = useRef<ReadonlyArray<RoundGroup>>();
+  const justAdded = useRef(false);
   const device = useRef<HTMLDivElement>(null);
   const returnFocusTo = useRef<string | undefined>(undefined);
 
@@ -142,7 +161,57 @@ export function ControlledOrderScreen({
   // The sheets and the void sheet still read the fixture-only derivation
   // (FE-014's correction to this task): none of them are wired to the store.
   const order = shownOrder(view);
-  const sheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, order) : undefined);
+
+  // After a fire the pressed control is inert in place, so focus would fall to
+  // the document. It goes to the new round's heading instead (DESIGN-007), and a
+  // polite status line says what happened. Both wait for the round to exist in
+  // the store's groups, which is why this is an effect and not the handler.
+  const lastRound = latestRound(store.order.groups);
+  useLayoutEffect(() => {
+    if (!firing || lastRound <= firing.after) return;
+    setFiring(undefined);
+    sentGroups.current = store.order.groups;
+    setSentRound(lastRound);
+  }, [firing, lastRound, store.order.groups]);
+  useLayoutEffect(() => {
+    if (sentRound !== undefined && store.order.groups !== sentGroups.current) setSentRound(undefined);
+  }, [sentRound, store.order.groups]);
+  // Focus and scroll wait for the status text to be drawn, so the space it takes
+  // is already gone from the list: the last row cannot end up under it.
+  useLayoutEffect(() => {
+    if (sentRound === undefined) return;
+    const heading = device.current?.querySelector<HTMLElement>(`[data-round="${sentRound}"]`);
+    if (!heading) return;
+    // Made focusable only now: a heading is not a control, and no other state of
+    // this screen has a tabindex on the order's lines.
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+    // The whole round, as far as the list allows: the last line first, then the
+    // heading, so a round taller than the list shows its heading and its top.
+    const rows = heading.closest('.round-group')?.querySelectorAll<HTMLElement>('.order-line');
+    reveal(rows?.[rows.length - 1]);
+    reveal(heading);
+  }, [sentRound]);
+  // The line an item sheet's Add just made, brought into view (FE-021 follow-up).
+  useLayoutEffect(() => {
+    if (!justAdded.current) return;
+    justAdded.current = false;
+    const pending = store.order.groups.find((g) => g.kind === 'pending');
+    const last = pending?.lines[pending.lines.length - 1];
+    if (last) reveal(device.current?.querySelector<HTMLElement>(`[data-line-id="${last.id}"]`));
+  }, [store.order.groups]);
+  // A line editor is for a line on the order the cashier is looking at — the
+  // store's, which holds lines added since the fixture was drawn (FE-021).
+  const fixtureSheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, store.order) : undefined);
+  // An item sheet opened from a tile returns to where the tile was pressed.
+  // What Cancel and a successful Add return to is the origin's own policy
+  // (ITEM_SHEET_ORIGINS): a persistent condition returns to both, a notice
+  // only to Cancel, and a finished interaction to neither.
+  const policy = view.from ? ITEM_SHEET_ORIGINS[view.from] : undefined;
+  const cancelTo: OrderView = { state: view.from && policy !== 'clears' ? view.from : 'default' };
+  const addTo: OrderView = { state: view.from && policy === 'keeps' ? view.from : 'default' };
+  const sheet =
+    fixtureSheet?.kind === 'item' && view.state.startsWith('sheet-item-') ? { ...fixtureSheet, cancel: cancelTo, add: addTo } : fixtureSheet;
   const approval = APPROVAL_FIXTURES[view.state];
   const discount = DISCOUNT_FIXTURES[view.state] ?? (discountOpened ? panelDiscount(view, order) : undefined);
   const voiding = VOID_FIXTURES[view.state] ?? (voidOpened && panelVoid(voidOpened, view));
@@ -183,6 +252,7 @@ export function ControlledOrderScreen({
   }, [view]);
 
   // React 18 has no inert prop; an empty string renders the bare attribute.
+  const { incident } = originFacts(view);
   const inert = sheet || approval || discount || voiding ? { inert: '' } : {};
   // A sheet opened over a particular line or order is remounted when that
   // target changes, so tapping a second row draws the second row's sheet.
@@ -199,9 +269,7 @@ export function ControlledOrderScreen({
           rest of the frame while a sheet is open: a sheet owns the screen, and
           the incident is still there behind it.
         */}
-        {ORDER_FIXTURES[view.state].incident && (
-          <EmergencyBanner {...ORDER_FIXTURES[view.state].incident!} inert={inert} />
-        )}
+        {incident && <EmergencyBanner {...incident} inert={inert} />}
         <div className="order-screen__bar" aria-hidden="true" {...inert} />
         <div className="order-screen__body" {...inert}>
           <MenuRegion view={view} navigate={navigate} locked={locked} />
@@ -209,10 +277,33 @@ export function ControlledOrderScreen({
             view={view}
             order={store.order}
             locked={locked}
-            actions={{ navigate, openVoid: setVoidOpened, openLine: setLineOpened, openDiscount: () => setDiscountOpened(true) }}
+            sentRound={sentRound}
+            actions={{
+              navigate,
+              openVoid: setVoidOpened,
+              openLine: setLineOpened,
+              openDiscount: () => setDiscountOpened(true),
+              fire: () => {
+                setFiring({ after: latestRound(store.order.groups) });
+                store.fire(clock());
+              },
+            }}
           />
         </div>
-        {sheet && <SheetView key={lineKey} sheet={sheet} go={go} addLine={store.addLine} />}
+        {sheet && (
+          <SheetView
+            key={lineKey}
+            sheet={sheet}
+            go={go}
+            addLine={(line) => {
+              justAdded.current = true;
+              store.addLine(line);
+            }}
+            setQuantity={store.setQuantity}
+            order={store.order}
+            renderTotals={(totals) => <TotalsView totals={totals} />}
+          />
+        )}
         {approval && <ApprovalPrompt key={view.state} approval={approval} go={go} />}
         {discount && <DiscountSheet key={discountOpened ? 'opened' : view.state} fixture={discount} go={go} />}
         {voiding && <VoidSheet key={voidKey} fixture={voiding} order={order} go={go} />}
@@ -237,18 +328,41 @@ export type PanelActions = {
   openVoid: (target: VoidSheetFixture['target']) => void;
   openLine: (lineId: string) => void;
   openDiscount: () => void;
+  /** Send to kitchen: one press, no confirmation (ARCH-002). Stamped with the injected clock by the screen. */
+  fire: () => void;
 };
 
-const NO_ACTIONS: PanelActions = { navigate: () => {}, openVoid: () => {}, openLine: () => {}, openDiscount: () => {} };
+const NO_ACTIONS: PanelActions = { navigate: () => {}, openVoid: () => {}, openLine: () => {}, openDiscount: () => {}, fire: () => {} };
+
+/** Where a fire gets its time. The one place this screen reads a clock (ARCH-002 §2.2). */
+export type Clock = () => string;
+
+/** The browser's local time at the press, as `HH:MM` like the fixtures' `19:42`. The zone is still an open owner decision (PRD §9). */
+const browserClock: Clock = () => {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+};
+
+/** Brings a row or heading into view with the least scrolling. jsdom has no scrollIntoView. */
+function reveal(el: Element | null | undefined) {
+  el?.scrollIntoView?.({ block: 'nearest' });
+}
+
+function latestRound(groups: ReadonlyArray<RoundGroup>): number {
+  return groups.reduce((max, g) => (g.kind === 'fired' ? Math.max(max, g.round) : max), 0);
+}
 
 export function OrderPanel({
   view,
   order = shownOrder(view),
   locked = false,
+  sentRound,
   actions = NO_ACTIONS,
 }: {
   view: OrderView;
   order?: ShownOrder;
+  /** The round the cashier's last press sent; the status line reads it while nothing is pending again. */
+  sentRound?: number | undefined;
   /** F3d rule 2: a session-derived lock overrides whatever the fixture says, and always reads as `draft` (rule 3). */
   locked?: boolean;
   actions?: PanelActions;
@@ -258,7 +372,8 @@ export function OrderPanel({
   // over whichever order is on screen, not carried by the order itself.
   const fixture = ORDER_FIXTURES[view.state];
   const { pressedLineId } = fixture;
-  const lock = locked ? 'draft' : fixture.lock;
+  // The place's own lock, through the same accessor the store's fire reads.
+  const lock = locked ? 'draft' : originFacts(view).lock;
   const type = orderVariant(order);
   const { totals, groups } = order;
 
@@ -284,7 +399,7 @@ export function OrderPanel({
   // three. Scoping the notice back to one state would be the per-state flag
   // again, and would let a cashier fire an 86'd Steak from `eightysix`.
   // test/fire.test.tsx pins it; raised in the FE-011 handoff.
-  const unavailable = MENU_FIXTURES[view.state].eightySixed ?? [];
+  const unavailable = menuFixtureFor(view).eightySixed ?? [];
   const lines = groups.flatMap((g) => g.lines);
   // FR-E5, ruling C-2: a quick sale has no fire control at all, so it has
   // nothing to refuse and nothing that is "not sendable yet" either — both
@@ -294,11 +409,28 @@ export function OrderPanel({
   // line is already FIRED (FR-E1, FR-E2, B-16). Unavailable in place like the
   // refusal, but silent — it is not a refusal, it is an order that is not
   // fireable yet, and adding a line makes it fireable again.
-  const nothingToSend = type === 'table' && sendableLines(lines).length === 0;
+  const sending = sendableLines(lines);
+  const nothingToSend = type === 'table' && sending.length === 0;
+  const panel = useRef<HTMLElement>(null);
+  const blocking = blockingLines(lines, unavailable);
+  // DESIGN-007 fireblocked: the offending row is scrolled into view when the state is first drawn.
+  const firstBlocked = blocking[0]?.id;
+  useLayoutEffect(() => {
+    if (firstBlocked) reveal(panel.current?.querySelector<HTMLElement>(`[data-line-id="${firstBlocked}"]`));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- first draw only
+  }, []);
   const loading = MENU_FIXTURES[view.state].loading ?? false;
+  // While the menu loads the panel draws a skeleton, not the lines (F2h). A live
+  // Send there would fire an order the cashier cannot see, and the pending group
+  // on screen is the whole confirmation (ARCH-002 §1.2). So it is inert in place,
+  // and it names no count for lines that are not drawn. Under a lock or on an
+  // empty order it is inert for a reason the count would only contradict: the
+  // bare label, as DESIGN-007 leaves the lock states. A refusal (FR-E4) keeps the
+  // count, because the order still holds those lines and the notice names them.
+  const fireCount = loading || empty || lock !== undefined ? 0 : sending.length;
 
   return (
-    <section className="order-panel" aria-labelledby="order-title" data-lock={lock}>
+    <section className="order-panel" aria-labelledby="order-title" data-lock={lock} ref={panel}>
       <header className="order-panel__head">
         <h2 id="order-title" className="order-panel__title">
           {order.title}
@@ -333,13 +465,28 @@ export function OrderPanel({
         )}
       </div>
 
-      {refusal && <FireRefusalNotice refusal={refusal} />}
+      {refusal && (
+        <FireRefusalNotice
+          refusal={refusal}
+          onShow={(lineId) => {
+            reveal(panel.current?.querySelector<HTMLElement>(`[data-line-id="${lineId}"]`));
+            panel.current?.querySelector<HTMLElement>(`[data-line-id="${lineId}"] .order-line__target`)?.focus({ preventScroll: true });
+          }}
+          blocking={blocking}
+        />
+      )}
+      {type === 'table' && (
+        <div className="order-sent" role="status" aria-live="polite">
+          {sentRound !== undefined ? `Round ${sentRound} sent to the kitchen` : ''}
+        </div>
+      )}
 
       {loading ? <PanelSkeleton widths={['60', '40']} /> : <TotalsView totals={totals} />}
       <OrderActions
         type={type}
         off={empty || lock !== undefined}
-        fireOff={refusal !== undefined || nothingToSend}
+        fireOff={refusal !== undefined || nothingToSend || loading}
+        fireCount={fireCount}
         fireDescribedBy={refusal ? FIRE_REFUSAL_ID : undefined}
         actions={actions}
       />
@@ -378,7 +525,15 @@ function PanelSkeleton({ widths }: { widths: ReadonlyArray<'80' | '60' | '40'> }
  */
 const FIRE_REFUSAL_ID = 'fire-refusal';
 
-function FireRefusalNotice({ refusal }: { refusal: FireRefusal }) {
+function FireRefusalNotice({
+  refusal,
+  blocking,
+  onShow,
+}: {
+  refusal: FireRefusal;
+  blocking: ReadonlyArray<OrderLine>;
+  onShow: (lineId: string) => void;
+}) {
   return (
     <div className="notice order-notice" role="status" id={FIRE_REFUSAL_ID}>
       <div className="notice__title">{refusal.title}</div>
@@ -392,6 +547,12 @@ function FireRefusalNotice({ refusal }: { refusal: FireRefusal }) {
         ))}
         . {refusal.resolution}
       </div>
+      {/* POS-03 question 10: the named line can be scrolled out of view, so each one has a way back to it. */}
+      {blocking.map((line) => (
+        <button key={line.id} type="button" className="notice__show" onClick={() => onShow(line.id)}>
+          Show {line.name}
+        </button>
+      ))}
     </div>
   );
 }
@@ -418,12 +579,12 @@ function RoundGroupView({
   // slot is deliberately empty (I-12); under a lock it names the lock instead.
   // A quick sale never has a fired group (FR-E5), so pendingGroupHeading's own
   // branch on `type` is the only place this differs from a table order.
-  const heading = group.kind === 'fired' ? `Round ${group.round} · fired ${group.firedAt} · ${group.printed ? 'printed' : 'not printed'}` : pendingGroupHeading(type);
+  const heading = group.kind === 'fired' ? roundHeading(group) : pendingGroupHeading(type);
   const tag = lock ? LOCK_TAG[lock] : group.kind === 'fired' ? FIRED_TAG : PENDING_TAG;
 
   return (
     <section className="round-group" aria-label={heading}>
-      <h3 className="round-head">
+      <h3 className="round-head" {...(group.kind === 'fired' && { 'data-round': group.round })}>
         <span className="round-head__label">{heading}</span>
         <span className="round-head__tag">{tag}</span>
       </h3>
@@ -590,25 +751,14 @@ export function TotalsView({ totals }: { totals: Totals }) {
 // route. Firing stays here — the fire result is an [INLINE] state of this
 // screen (SITEMAP §2, FR-E3).
 //
-// **Send to kitchen names no state and produces no result, deliberately.** It
-// used to carry `?state=fireerror`, which was harmless only while fireerror
-// was not a state: once it is one, pressing Send to kitchen from `overflow` or
-// `other-discount` swaps the cashier's order for the fire-error fixture's —
-// F2k's opener defect in a fifth place.
-//
-// It does nothing instead of doing something plausible, because the result of
-// firing *this* order is a new fired round holding the lines that were
-// pending, with a time and a delivery outcome, and **the artifact draws no
-// such composition while this app has no clock**: every round header's time is
-// a literal of the artifact's (19:42, 19:58), so minting one for a round
-// nobody fired would invent data. The artifact's own Send to kitchen is
-// inconsistent with its own default state for the same reason — it lands on an
-// order whose pending Steak has vanished rather than been fired.
-//
-// This is FE-001's PIN again, which "is compared against nothing and goes
-// nowhere": a fixture control with no reviewed result and no server does
-// nothing, visibly and deliberately, rather than lying about where it went.
-// **What firing shows on POS-03 is owed to a designer.**
+// **Send to kitchen names no state.** It used to carry `?state=fireerror`,
+// which swapped the cashier's order for a fixture's the moment fireerror became
+// a state (F2k's opener defect in a fifth place). FE-022 gives it its real
+// result: it calls `store.fire`, which folds the pending lines into one `queued`
+// round through `fireOrder` (fire.ts). The result is an [INLINE] change of this
+// screen, so it writes no `?state=` and no history entry, and the press asks no
+// confirmation: the pending group on screen is the confirmation and the count on
+// the control says how many (ARCH-002).
 //
 // F2d, FR-E5, ruling C-2: a quick sale presents **no fire control at all** —
 // not this control gone off, the entry absent from the array below — and
@@ -619,6 +769,9 @@ type ActionDef = { id: string; label: string; search?: string; leaves?: boolean;
 const DISCOUNT_BTN: ActionDef = { id: DISCOUNT_ACTION, label: 'Discount' };
 const VOID_ORDER_BTN: ActionDef = { id: VOID_ORDER_ACTION, label: 'Void order' };
 const FIRE_BTN: ActionDef = { id: FIRE_ACTION, label: 'Send to kitchen' };
+
+/** The fire control's words: how many lines it will send (DESIGN-007 — lines, not units), or the bare label when there are none. */
+export const fireLabel = (count: number) => (count > 0 ? `Send ${count} to kitchen` : FIRE_BTN.label);
 const SETTLE_BTN: ActionDef = { id: 'settle', label: 'Settle', search: '?state=settle', leaves: true, primary: true };
 const SETTLE_WIDE_BTN: ActionDef = {
   id: 'settle',
@@ -656,11 +809,13 @@ function OrderActions({
   off,
   fireOff,
   fireDescribedBy,
+  fireCount,
   actions,
 }: {
   type: OrderVariant;
   off: boolean;
   fireOff: boolean;
+  fireCount: number;
   fireDescribedBy: string | undefined;
   actions: PanelActions;
 }) {
@@ -675,7 +830,7 @@ function OrderActions({
             data-action={a.id}
             aria-describedby={!off && a.id === FIRE_ACTION ? fireDescribedBy : undefined}
           >
-            {a.label}
+            {a.id === FIRE_ACTION ? fireLabel(fireCount) : a.label}
           </span>
         ) : (
           <button
@@ -687,12 +842,10 @@ function OrderActions({
               if (a.search) actions.navigate(a.search, a.leaves ?? false);
               else if (a.id === DISCOUNT_ACTION) actions.openDiscount();
               else if (a.id === VOID_ORDER_ACTION) actions.openVoid({ kind: 'order' });
-              // Send to kitchen: nothing. See above — no reviewed result, no
-              // clock, and no fixture to land on. It must not move the order,
-              // the URL or the history.
+              else if (a.id === FIRE_ACTION) actions.fire();
             }}
           >
-            {a.label}
+            {a.id === FIRE_ACTION ? fireLabel(fireCount) : a.label}
           </button>
         )
       )}

@@ -8,7 +8,7 @@ next, not what happens eventually.
 Owned by the Claude product lead. No other agent writes to this file.
 
 Last updated 2026-09-24. F3, DESIGN-006 and FE-020 are done (head `6d69f2c`,
-1349 tests). **Next: F5a (FE-021), then F5b (FE-022).** DESIGN-007 is done. It was one design task for POS-03's
+1349 tests). **F5a (FE-021) and F5b (FE-022) done 2026-09-24. Next: F4.** DESIGN-007 is done. It was one design task for POS-03's
 three high items — the tile's item sheet (live bug: every tile adds a Burger),
 committing a line's quantity, and what firing shows — then the code fix, before
 F4. Full list in MEMORY.md's top block.
@@ -262,8 +262,8 @@ A task that feels like it needs two sessions is two tasks.
 | F3 review | **Done 2026-09-23**, [report](reviews/F3-settlement-review.md). Request changes, 3 P2 + 1 P3; the money rules cleared. | codex `gpt-6-sol` |
 | F3e | [FE-019](tasks/FE-019-f3-review-corrections.md): the review's corrections. **One owner per piece of state** (the popstate staleness and the two-path shape behind three defects), PIN-seed placeholders, the rejection notice lost on a partial correction (**the lead's error: two rulings collided**), and the floor copy removed | **Done 2026-09-23.** Lead-verified at **1331 tests** and walked in a browser; the `?? local` pattern is gone. **F3 is closed** | `builder21` |
 | A11 | [DESIGN-007](../../restaurant-pos-design/.agent/tasks/DESIGN-007-order-flow-gaps.md): POS-03's three high gaps. Each tile gets its own item, the quantity is committed explicitly (the owner's Square reference), and sending to the kitchen takes one press ([ARCH-002](reviews/ARCH-002-fire-confirmation.md), accepted by the owner) | **Done 2026-09-24.** The review found 2 P2, both fixed in round 2 and lead-verified in headless Chrome. Committed on the design branch as `032a6e9` and `2da9d75`, not pushed | `designer5` (codex `gpt-6-astra`) |
-| F5a | [FE-021](tasks/FE-021-own-items-and-quantity.md): each tile adds its own item (**fixes the live "every tile adds a Burger" bug**), and a line's quantity saves (`FR-D5`, `FR-M5`) | Written 2026-09-24, unassigned | — |
-| F5b | [FE-022](tasks/FE-022-one-press-fire.md): Send to kitchen sends in one press. `delivery` gets four values plus `null`, the send is a pure `fireOrder` (T-1 to T-8), and **a table order can finally close from a live walk** | Written 2026-09-24. Starts after F5a | — |
+| F5a | [FE-021](tasks/FE-021-own-items-and-quantity.md): each tile adds its own item (**fixes the live "every tile adds a Burger" bug**), and a line's quantity saves (`FR-D5`, `FR-M5`) | **Done 2026-09-24**, accepted after 5 rounds (1645 tests / 23 files), `7268943`/`10a6ecb` | `builder23` (closed) |
+| F5b | [FE-022](tasks/FE-022-one-press-fire.md): Send to kitchen sends in one press. `delivery` gets four values plus `null`, the send is a pure `fireOrder` (T-1 to T-8), and **a table order can finally close from a live walk** | **Done 2026-09-24**, accepted after 3 rounds (1796 tests / 25 files) | `builder24` (closed) |
 | F4 | The remaining POS screens, then the back office | Not started; after F5a–F5b | unassigned |
 
 F1 is deliberately the smallest thing that proves the chain end to end: Vite
