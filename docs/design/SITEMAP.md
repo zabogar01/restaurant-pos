@@ -155,14 +155,21 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │
 ├── POS-04 [SCREEN] Settlement .......................... FR-G1–G14, M5
 │   │   Its own route, not a sheet over POS-03. Entering it acquires the
-│   │   CheckoutLease (FR-G13); leaving it releases or abandons the draft.
+│   │   CheckoutLease (FR-G13); re-authentication preserves this tab's draft.
+│   │   DESIGN-006 adds 13 fixture states inside the existing nodes below:
+│   │   ceiling-single; zero-pending; pending-paid; error-keyed/partial/
+│   │   settled/removed; cancel-empty/multi; cashsplit/partialcash/
+│   │   exactcashsplit; change-mixed. See SCREEN-INVENTORY POS-04.
+│   │   34 Frost settlement states; no node added or retyped. Counts unchanged.
+│   │   Round 2 adds source-preserving cancel=1 and takeover ack=1 fixture
+│   │   parameters within the existing modals, not additional named states.
 │   ├── [INLINE] Balance remaining / fully allocated ............ FR-G5
 │   ├── [INLINE] Draft tender list (client-side, unstored) ...... FR-G9
 │   ├── [INLINE] Tender amount PREFILLED with the remaining
 │   │             balance, editable in place. No split mode ..... FR-G2, G3, B-5, I-13
 │   ├── [INLINE] Cash tender pad — persistent right-column panel,
 │   │             never dismissed; choosing a method swaps it .... FR-G4, M5
-│   │   └── [INLINE] Above change ceiling — max cash shown ..... FR-M5
+│   │   └── [INLINE] Above cash limit — change or single-tender cap ..... FR-M5
 │   ├── [INLINE] Card tender pad — same panel, card rules ....... FR-G3
 │   │   └── [INLINE] Above remaining balance — rejected, max shown FR-G3
 │   ├── [INLINE] Custom named tender — same panel ............... FR-G1
