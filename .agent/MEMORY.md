@@ -3,7 +3,108 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-23, when **a fresh lead session took `w2:p1`**, re-ran
+Last updated: 2026-09-24, when **a fresh lead session took `w2:p1`**, renamed it
+`lead`, and re-verified: head `6d69f2c`, tree clean, 2 commits ahead of
+`origin/agent/phase-0-foundations` (unpushed), **`npm run verify` green at 1349
+tests across 22 files**. F3, DESIGN-006 and FE-020 are closed; F4 is next and
+unassigned. **The *Immediate next handoff* section at the foot of this file is
+from 2026-09-14 and stale — read this block instead.**
+
+**THE LIVE BUG, recorded 2026-09-24 (the previous lead found it in conversation
+and never wrote it here): every menu tile adds a Burger.** `MenuRegion.tsx:191`
+navigates every tile to `ITEM_SEARCH` (`?state=sheet-item`), the Burger's sheet.
+Harmless before FS; since FS made *Add to order* real, tapping Fish & Chips adds
+a Burger with extra cheese at 135.000. The fix needs a design ruling, because
+only Burger has a reviewed option set.
+
+**POS-03 design questions, still open, in the previous lead's priority order.
+None is decided.**
+
+1. **High** — the menu tile's item sheet: what the eleven items with no reviewed
+   options show. Now the live bug above.
+2. **High** — how a line's quantity is committed. The stepper never saves;
+   `setQuantity` has no caller; `FR-D5`/`FR-M5` have no path in the design.
+3. **High** — what *Send to kitchen* shows after firing. It does nothing
+   visible, so a table order stays pending and cannot close from a live walk
+   except by removing its pending lines. Blocks the basic table flow.
+4. Medium — the wording for an `UNKNOWN` kitchen delivery (`FR-E3`). Before the
+   backend.
+5. Low — what an emptied order draws. FS chose *no lines, no charge rows*;
+   no designer has confirmed it.
+6. Medium — Cancel while an approval is verifying (`B-20`). Before the backend.
+7. Medium — whether a disabled action can take focus. DESIGN-006 settled it
+   for Close only.
+8. Low — the category press, until a second catalogue exists.
+9. Low — a Comp's *applied by* note on the change sheet.
+10. Medium — the fire-rejection notice can name a line scrolled out of view at
+    1280×800. Composition, not copy.
+
+Dropped from the design list: F2h's live-fire-on-86'd and *printed* header
+(code already right; a note for the designer, not a question), the review
+heuristic (DESIGN-006 applied it), and the two-store collapse (FE-019).
+
+**The previous lead's recommendation, not yet ruled by the owner:** one design
+task for items 1–3 — they decide whether a cashier can build a real table order
+and pay it — then the code fix. The mediums may ride along or wait. Items 1 and
+3 also shape F4's floor and kitchen screens.
+
+**OWNER RULED, 2026-09-24: the design task for 1–3 goes first.** Given in
+conversation, and now written into the task files. (1) The other eleven items
+each get their own sheet, modelled on the existing items. (2) The quantity gets
+a button that adjusts it, modelled on a Square screenshot the owner supplied.
+The screenshot **did not reach the lead** and has been asked for again.
+(3) The owner's instinct is a confirmation before firing, then the existing
+fired-round display. **The owner invited a challenge on (3).** Written as
+[DESIGN-007](../../restaurant-pos-design/.agent/tasks/DESIGN-007-order-flow-gaps.md)
+in the design worktree, with Part C held for
+[ARCH-002](tasks/ARCH-002-fire-confirmation.md). **`architect2` (claude, **Opus 5.5** — the owner: architects run on Opus 5.5 or codex `gpt-6-astra`, never a default) was
+started in `w2:p1D`** on ARCH-002, with its report due at
+`.agent/reviews/ARCH-002-fire-confirmation.md`. **Both came in the same day.** The screenshot reached `architect2`'s pane
+instead of the lead's. The lead pulled it from that session's log and saved it
+as `restaurant-pos-design/docs/design/references/square-quantity-1.png`. It
+shows Square using one sheet for adding and for editing, with the footer
+pairing `− n +` and **Save**. **The lead ruled an explicit commit from it** (no
+change applies on each press). Its Note, Taxes and description sections are out
+of scope, because the PRD grants no line note.
+**ARCH-002 recommended no confirmation dialog:** one press sends, the count
+goes on the button (*Send 2 to kitchen*), and I-11, PRODUCT.md:35-37 and
+Toast, Square and Lightspeed all agree. A live round is shown as `queued` and
+never `printed`. `RoundGroup.printed: boolean` becomes a four-value `delivery`,
+and the fire is a pure `fireOrder` in `fire.ts` behind `store.fire(firedAt)`,
+with criteria T-1 to T-8 for the code slice. **OWNER RULED 2026-09-24: one
+press, count on the button, no modal.** DESIGN-007 Part C is filled from
+ARCH-002 §4, with eight states, including POS-03 questions 4 (UNKNOWN wording)
+and 10 (a fireblocked line out of view). `architect2` is closed.
+**`designer5` (codex `gpt-6-astra`) started on DESIGN-007 in `w2:p1D`**, with
+its cwd in the design worktree. A design review follows, then an FE task that
+carries ARCH-002's T-1 to T-8.
+**DESIGN-007 DONE, 2026-09-24, uncommitted in the design worktree.** The
+`design-reviewer3` (codex `gpt-6-sol`) review found 2 P2, both the shared-rebuild
+shape: Add from `zero` dropped the comp, and Add from `overflow` erased the void.
+Round 2 removed `readVisibleModel` and carries the discount snapshot, voided
+rows and `delivery: null` explicitly. **The lead verified it with its own
+headless-Chrome script:** zero → total 0, and overflow keeps the void through
+Add and Fire. **The owner approved one sandbox escalation** for designer5's
+Playwright run. **Agents now report through `herdr agent prompt lead`**, and
+the lead runs a background `agent wait`, after the owner noticed silent
+codex agents. **Committed on the design branch, 2026-09-24, on the owner's go-ahead:
+`032a6e9` (feat) and `2da9d75` (docs), not pushed.** The code slice was
+**split into two**: [FE-021](tasks/FE-021-own-items-and-quantity.md) covers the
+per-item sheets and the quantity commit, and
+[FE-022](tasks/FE-022-one-press-fire.md) covers the one-press fire with
+`delivery` and T-1 to T-8. As one slice it would have been two sessions. FE-022
+starts after FE-021. **Owner rule, 2026-09-24:** close agents that are not in
+use, and their lead-made panes, without asking. `designer5` and
+`design-reviewer3` are closed, and panes `w2:p1D` and `w2:p1E` are closed.
+
+**Owner decisions owed (contract):** PRD §9 time zone; ruling I-8 (is a
+back-office ticket reprint audited — needed before F4's back office); whether a
+dark palette ships; and, older, whether IDR draws `Rp` (raised 2026-09-16).
+**Engineering, the lead's:** Prettier; POS-03's URL reading `?state=eightysix`
+after *Add to order*; `cancel`/`reauth`/`leaselost` modals outside
+`.pos-device`.
+
+Previously 2026-09-23, when **a fresh lead session took `w2:p1`**, re-ran
 `herdr agent rename w2:p1 lead`, and re-verified from evidence rather than from
 this file: head `5189125`, working tree clean, **`npm run verify` green at 1255
 tests across 22 files**, typecheck clean, and `lead` the only live agent. Three
@@ -882,6 +983,9 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 |---|---|---|---|---|
 | `lead` | claude, **Opus 5.5** since 2026-09-23 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
 | `f3-reviewer` | **codex, `gpt-6-sol`** (the owner's choice for this review) | — | closed 2026-09-23 | **Reviewed F3a–F3d**: [reviews/F3-settlement-review.md](reviews/F3-settlement-review.md). Request changes, **3 P2 + 1 P3.** **Cleared the money rules**: no ordinary-control sequence over-drafts a card, exceeds the change limit, or closes below exact. **Proved F3c's three unproven red cases** by in-memory mutation, without editing a file, and found one defect nobody had. A first attempt on `gpt-6-astra` was cancelled by the owner mid-read |
+| `design-reviewer3` | **codex, `gpt-6-sol`** | — | closed 2026-09-24 | **Request changes, 2 P2, both accepted** (a 100% comp dropped on Add from `zero`; a voided line erased on Add from `overflow`, one shared rebuild). All other criteria pass, figures re-derived. Report at `restaurant-pos-design/.agent/reviews/DESIGN-007-review.md`. cwd design worktree |
+| `designer5` | **codex, `gpt-6-astra`** | — | closed 2026-09-24 | **Delivered DESIGN-007** (round 2 accepted).  54 states (25 new), 29 old states pixel-diffed, uncommitted; handoff in the task file.  **DESIGN-007**: each tile gets its own item sheet, quantity is committed through `− n +` and a named primary, and the fire states use no modal. cwd `restaurant-pos-design` |
+| `architect2` | **claude, Opus 5.5** | — | closed 2026-09-24 | **Wrote [ARCH-002](reviews/ARCH-002-fire-confirmation.md)**: no confirmation dialog, the count goes on the button, `delivery` has four values and a live round is `queued`, plus T-1 to T-8. The owner accepted it. A first start on the bare default model was interrupted by the owner |
 | `builder22` | **claude, Sonnet** | — | closed 2026-09-24 | **Delivered [FE-020](tasks/FE-020-settlement-design-corrections.md)**, POS-04 brought up to DESIGN-006, plus one lead correction. Guarded a keyed 0 so it never draws *"Cash exceeds the single-tender limit"*. Said plainly which pixels JSDOM could not see |
 | `designer4` | **codex, `gpt-6-astra`** | — | closed 2026-09-24 | **Delivered DESIGN-006 round 2.** Cancel and method links are truthful across all 34 states, and the takeover has an explicit *I understand* step. It added a fixture-only `frost-settlement.js`. Its *"Not drawn"* chip labels describe fixture coverage, not product behaviour |
 | `design-reviewer2` | **codex, `gpt-6-sol`** | — | closed 2026-09-24 | **Reviewed DESIGN-006**: [report](../../restaurant-pos-design/.agent/reviews/DESIGN-006-review.md). Request changes, 3 P2 + 1 P3. Cleared every figure and the provenance, and accepted the lead's A1 measurement. **Rejected the implicit takeover acknowledgement** under `FR-G14` and `FR-J3` |
