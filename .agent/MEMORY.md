@@ -231,6 +231,101 @@ One side effect, accepted: the seeded `reauth` pad shows 2 dots, then 1 after
 the first real digit, because the seed is a picture, not an entry. It is
 fixture-only.
 
+**2026-09-24: the owner pushed the branch for a PR into `development`, then
+ruled *fix the design first*, before F4, with the designer on codex
+`gpt-6-astra`.** The work is
+[DESIGN-006](../../restaurant-pos-design/.agent/tasks/DESIGN-006-settlement-corrections.md).
+It lives **in the design worktree** (`../restaurant-pos-design`, branch
+`agent/design-direction`), following DESIGN-004 and DESIGN-005. **That branch
+is already an ancestor of `origin/development`**, and `development`'s
+`settlement.html` is the remediated copy, while this branch's copy is stale.
+DESIGN-006 covers five artifact defects: the keypad clipped in `cardover` and
+`ceiling`; `pending`'s 155.925 when the true figure is 382.725; *Leave
+payment*'s href; the takeover modal's missing keypad (M-1 is the precedent);
+and no state for the single-tender cap. It also covers **six lead rulings to be
+drawn and then accepted or overturned**: zero with pending, the pending Close
+label, the partial-correction notice, the cancel count sentence, the cash split
+caption, and the tendered sum. **A design review follows, and only then the
+code corrections.** `designer3` is working in `w2:p17`. **It stopped before editing and caught
+the lead's loose wording.** A1 said *"all twelve keys"*, but the tender pad is
+ten digits, Delete and a deliberately blank cell; `zero` draws no pad; and
+modals block the pad on purpose. Ruled as `designer3` proposed: eleven tender
+controls at 88×72, the blank cell stays blank, and active PIN modals show all
+twelve of their own 72×72 controls. A1 and AC1 are corrected in the task file.
+**The `lead` name had also dropped off `w2:p1` overnight and was
+re-registered.** Check it with `herdr agent list` at the start of each day,
+not just each session.
+
+**DESIGN-006 is delivered, and the lead measured it in Chrome at 1280×800
+across all 34 states.** Every tender pad shows 11 controls at 88×72, none
+clipped. The `takeover` and `reauth` PIN pads show 12 at 72×72. No notice,
+caption or modal is clipped. AC1 passes on a rendered measurement, not on
+arithmetic.
+
+`designer3` asked for a **sandbox escalation** (headless Chrome through a
+`/private/tmp` script). **The lead declined it**, because widening an agent's
+sandbox is the owner's decision; the lead measured instead.
+
+**Three questions for the review:**
+1. `zero-pending` uses the Burger pending, where the code's fixture has the
+   Steak.
+2. The `pending` notice's copy changed.
+3. **The takeover's explicit acknowledgement became implicit in Continue.** It
+   is an `FR-G14` and audit question.
+
+**DESIGN-006 review, 2026-09-24:** *request changes*, 3 P2 + 1 P3, all
+accepted. Two of them are the shared-control shape **in the fixture's own
+navigation**: method links drop the pending, error or large-order context and
+fall back to the 155.925 baseline, and Cancel from any state opens the
+one-card modal. The takeover's explicit acknowledgement is restored as a
+distinct *I understand* step before the PIN. **The pending notice's route out
+leads to a locked order where send and void are blocked**, so the way out has
+to be Cancel. **That last point applies to the code too:** F3d's pending notice
+says *Back to the order*, which lands on the locked POS-03. It is a code
+correction once the design settles. Lead's ruling on Q1: the Burger stays; the
+design state is an example, and the code names whatever lines are live.
+**Round 2 is running as `designer4`** (`gpt-6-astra`).
+
+**Code corrections owed after DESIGN-006 settles (FE-020):**
+- `cardover` and `ceiling` get the new side-by-side composition, which is the
+  actual fix for the clipping;
+- `ceiling-single` gets its notice and caption;
+- the pending notice gets its copy and a Cancel route;
+- the takeover gets its acknowledgement step before the PIN.
+
+**DESIGN-006 is closed and committed on `agent/design-direction`: `c43fd08`
+(feat) and `35b66f9` (docs).** The lead accepted round 2 on a rendered
+measurement rather than a second review, because each correction maps to one
+finding: every state clean at 1280×800; cancel counts of 0, 1, 2, 3 and 6
+follow the source; takeover draws *I understand* first and the 12-key pad
+second. The design branch is **not pushed**, and the owner merges.
+**[FE-020](tasks/FE-020-settlement-design-corrections.md) carries the code
+corrections**, and `builder22` is working on it in `w2:p1A`.
+
+**FE-020 DONE, 2026-09-24. Lead-verified at 1349 tests across 22 files and
+walked and measured in Chrome.**
+- Refusal states: 11 controls at 88×72, none clipped, no text cut.
+- The single-tender notice draws with live figures.
+- Pending → *Cancel payment to edit the order* → modal listing *Cash
+  382.725* → unlocked → remove the Steak → **155.925**.
+- Takeover: step one is *I understand* with no keys; step two has 12 controls
+  at 72×72.
+
+**The lead's walk found one defect.** Takeover step two's Cancel sat at y=841,
+off the 800px device, because the modal was centred on the **browser
+viewport** (958px), not the device frame. On a real 1280×800 terminal the two
+coincide, **so this was partly a measurement artifact.** The modal now renders
+inside `.pos-device` as the artifact does, spanning 32→768 with Cancel at 751.
+**Not changed:** `cancel`, `reauth` and `leaselost` still render outside the
+device. They fit today, but only by the same coincidence (housekeeping).
+**POS-04 and its design now agree.**
+
+**Not yet in any design task (the older POS-03 backlog):** what an emptied
+order draws; how a line's quantity is committed; F2h's three findings;
+`UNKNOWN` kitchen delivery; what firing shows; the category press; a Comp's
+application history; the menu tile's item sheet; Cancel while an approval is
+verifying; focusable unavailable actions.
+
 - **Design-branch list, now long:** the keypad clipped in `cardover` and
   `ceiling`; `pending`'s 155.925; *Leave payment*'s href; the takeover modal's
   missing keypad; and the single-tender-cap copy.
@@ -787,6 +882,10 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 |---|---|---|---|---|
 | `lead` | claude, **Opus 5.5** since 2026-09-23 | `w2:p1` | live | Product lead and coordinator. Sole writer of this file and `.agent/ROADMAP.md`. A fresh session took this pane on 2026-09-18 and renamed it `lead` again — **the name is not durable.** It follows the pane's occupant and is cleared when that occupant is replaced, so a new lead session must re-run `herdr agent rename <pane> lead` before any other agent can address it by name |
 | `f3-reviewer` | **codex, `gpt-6-sol`** (the owner's choice for this review) | — | closed 2026-09-23 | **Reviewed F3a–F3d**: [reviews/F3-settlement-review.md](reviews/F3-settlement-review.md). Request changes, **3 P2 + 1 P3.** **Cleared the money rules**: no ordinary-control sequence over-drafts a card, exceeds the change limit, or closes below exact. **Proved F3c's three unproven red cases** by in-memory mutation, without editing a file, and found one defect nobody had. A first attempt on `gpt-6-astra` was cancelled by the owner mid-read |
+| `builder22` | **claude, Sonnet** | — | closed 2026-09-24 | **Delivered [FE-020](tasks/FE-020-settlement-design-corrections.md)**, POS-04 brought up to DESIGN-006, plus one lead correction. Guarded a keyed 0 so it never draws *"Cash exceeds the single-tender limit"*. Said plainly which pixels JSDOM could not see |
+| `designer4` | **codex, `gpt-6-astra`** | — | closed 2026-09-24 | **Delivered DESIGN-006 round 2.** Cancel and method links are truthful across all 34 states, and the takeover has an explicit *I understand* step. It added a fixture-only `frost-settlement.js`. Its *"Not drawn"* chip labels describe fixture coverage, not product behaviour |
+| `design-reviewer2` | **codex, `gpt-6-sol`** | — | closed 2026-09-24 | **Reviewed DESIGN-006**: [report](../../restaurant-pos-design/.agent/reviews/DESIGN-006-review.md). Request changes, 3 P2 + 1 P3. Cleared every figure and the provenance, and accepted the lead's A1 measurement. **Rejected the implicit takeover acknowledgement** under `FR-G14` and `FR-J3` |
+| `designer3` | **codex, `gpt-6-astra`** (the owner's choice) | — | closed 2026-09-24 | **Delivered DESIGN-006**, uncommitted in the design worktree: 21 → **34 states**, with every figure's arithmetic shown. Queried the lead's loose *"twelve keys"* before editing. Honoured the lead's refusal of a sandbox escalation and designed from box-model arithmetic instead |
 | `builder21` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-019](tasks/FE-019-f3-review-corrections.md)**: all four review findings. Split both screens into controlled components plus self-owning wrappers, so no direct test changed apart from two assertions the task allowed |
 | `builder20` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-018](tasks/FE-018-payment-session.md)** (F3d), plus one lead correction to the `?gone=` guard. Proved the one-session-hook criterion properly, and flagged the one red case it could not make fail rather than claiming it |
 | `builder19` | **claude, Sonnet** | — | closed 2026-09-23 | **Delivered [FE-017](tasks/FE-017-close-outcomes.md)** (F3c). **Stopped and raised the F3a store regression** rather than patching it, and fixed it narrowly once ruled. Its red-case discipline was weaker than its predecessors', and it said so |
