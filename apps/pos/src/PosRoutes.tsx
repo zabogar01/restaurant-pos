@@ -11,7 +11,8 @@ import { beginsSession, ControlledSettlementScreen, initialDrafts, settlementSta
  * artifact's state actually draws (F3c): `pending` keeps the Steak — the live
  * rule (FR-G10) is the whole point of that state; `zero` is the order with
  * the Steak gone under a 100% comp, so nothing is left pending; `error` adds
- * the Fries a rejected close leaves fired behind. Every other fixture state
+ * the Fries a rejected close leaves fired behind; `ceiling-single` is the 100.000.000 order under Staff meal 10%
+ * whose 94.500.000 balance binds the single-tender cap (FE-020). Every other fixture state
  * keeps F3a's original seed, the default table after its pending Steak is
  * gone. A real departure from POS-03 seeds from that screen instead and
  * persists across the route change, which is the flow this slice exists to
@@ -22,6 +23,7 @@ function settlementSeed(search: string): OrderView {
   if (settlementState === 'pending') return { state: 'default' };
   if (settlementState === 'zero') return { state: 'zero', gone: 'steak' };
   if (settlementState === 'error') return { state: 'settle-error' };
+  if (settlementState === 'ceiling-single') return { state: 'settle-ceiling' };
   return { state: 'default', gone: 'steak' };
 }
 

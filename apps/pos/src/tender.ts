@@ -16,15 +16,20 @@ export const SINGLE_TENDER_LIMIT: Money = 99_999_999n;
 export function tenderMaximum(method: TenderMethod, balance: Money): Money {
   if (balance <= 0n) return 0n;
   if (method === 'cash') {
-    const changeLimited = balance + CASH_CHANGE_LIMIT;
+    const changeLimited = cashChangeLimitedMaximum(balance);
     return changeLimited < SINGLE_TENDER_LIMIT ? changeLimited : SINGLE_TENDER_LIMIT;
   }
   return balance;
 }
 
+/** The balance plus the change limit, before the single-tender cap is applied (FR-M5). */
+export function cashChangeLimitedMaximum(balance: Money): Money {
+  return balance + CASH_CHANGE_LIMIT;
+}
+
 /** True when the cash ceiling is the change limit rather than the single-tender cap (FR-M5). */
 export function cashCeilingBoundByChangeLimit(balance: Money): boolean {
-  return balance + CASH_CHANGE_LIMIT <= SINGLE_TENDER_LIMIT;
+  return cashChangeLimitedMaximum(balance) <= SINGLE_TENDER_LIMIT;
 }
 
 /**

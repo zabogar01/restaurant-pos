@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { act } from 'react';
@@ -460,8 +460,10 @@ describe('F3b: cash and card diverge (POS-04)', () => {
     key('100000000');
     expect(amount()).toBe('100.000.000');
     expect(host.querySelector('.tender-field__message')!.textContent).toBe('Cash maximum 99.999.999');
-    expect(host.querySelector('.notice')).toBeNull();
-    expect(host.querySelector('.tender-help')).toBeNull();
+    // FE-020 changed this: FE-016 drew no notice or caption here because no copy
+    // existed. It does now, and it names the single-tender cap, never the change limit.
+    expect(host.querySelector('.notice__title')!.textContent).toBe('Cash exceeds the single-tender limit');
+    expect(host.querySelector('.tender-help')!.textContent).toContain('key 99.999.999 or less.');
   });
 
   it('AC-6: a rejected tender changes nothing (B-20)', () => {
@@ -1005,9 +1007,10 @@ describe('F3d: the payment session', () => {
     expect(host.querySelector('.modal__title')!.textContent).toBe('Take over this payment');
     expect(host.querySelector('.modal .settlement-tag')!.textContent).toBe('MANAGER REQUIRED');
     expect(host.querySelector('.settlement-cancel')).toBeNull();
-    const takeOver = host.querySelector('[data-action="take-over"]')!;
-    expect(takeOver.tagName).toBe('SPAN');
-    expect(takeOver.getAttribute('aria-disabled')).toBe('true');
+    // FE-020 changed this: the inert *I understand — take over* span is gone.
+    // Step one is the acknowledgement (see the FE-020 takeover test); Cancel still leaves.
+    expect(host.querySelector('[data-action="take-over"]')).toBeNull();
+    expect(buttonInDialog('I understand').tagName).toBe('BUTTON');
 
     press(buttonInDialog('Cancel'));
 
@@ -1067,5 +1070,227 @@ describe('F3d: the payment session', () => {
     press(host.querySelector('[data-action="settle"]')!);
 
     expect(host.querySelector('.settlement-totals .totals__row--grand dd')!.textContent).toBe('155.925');
+  });
+});
+
+describe('FE-020: DESIGN-006 corrections to POS-04', () => {
+  const key = (digits: string) => [...digits].forEach((d) => press(host.querySelector(`[data-digit="${d}"]`)!));
+  const method = (name: 'cash' | 'card') => press(host.querySelector(`[data-method="${name}"]`)!);
+  const add = () => press(host.querySelector('[data-action="add-tender"]')!);
+  const visit = (search: string) => {
+    window.history.replaceState(null, '', `/pos/settlement${search}`);
+    act(() => root.render(<PosRoutes />));
+  };
+  const buttonInDialog = (name: string) => [...host.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent === name);
+  const openCancelFromNotice = () => press(host.querySelector('[data-action="cancel-payment-from-notice"]')!);
+
+  describe('the refusal composition: keypad beside the notice', () => {
+    it.each(['cardover', 'ceiling', 'ceiling-single'])('%s: notice and caption sit in a column beside the keypad, below the amount', (state) => {
+      visit(`?state=${state}`);
+
+      const refusal = host.querySelector('.tender-refusal')!;
+      const keypad = refusal.querySelector(':scope > .tender-keypad')!;
+      const guidance = refusal.querySelector(':scope > .tender-guidance')!;
+      expect(keypad.querySelector('[aria-label="Delete last digit"]')).not.toBeNull();
+      expect(guidance.querySelector('.notice')).not.toBeNull();
+      expect(guidance.querySelector('.tender-help')).not.toBeNull();
+      // Nothing above the amount: the notice no longer precedes the control that pushes the keypad down.
+      expect(host.querySelector('.tender-entry__body > .notice')).toBeNull();
+      const body = host.querySelector('.tender-entry__body')!;
+      expect(body.firstElementChild!.classList.contains('tender-control')).toBe(true);
+      expect(host.querySelector('.tender-control')!.compareDocumentPosition(refusal) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('every other state keeps its composition: no refusal wrapper, caption above the keypad', () => {
+      visit('?state=cardsplit');
+
+      expect(host.querySelector('.tender-refusal')).toBeNull();
+      const body = host.querySelector('.tender-entry__body')!;
+      expect([...body.children].map((c) => c.className)).toEqual(['tender-control', 'tender-help', 'tender-keypad']);
+    });
+  });
+
+  describe('the single-tender cap gets its notice and caption', () => {
+    it('ceiling-single seeds from orderTotals: 94.500.000 owing on a 100.000.000 subtotal', () => {
+      visit('?state=ceiling-single');
+
+      expect([...host.querySelectorAll('.settlement-totals dd')].map((dd) => dd.textContent)).toEqual([
+        '100.000.000',
+        '−10.000.000',
+        '4.500.000',
+        '94.500.000',
+        '8.181.818',
+      ]);
+      expect(host.querySelector('.settlement-balance__amount')!.textContent).toBe('94.500.000');
+    });
+
+    it('draws the artifact copy with live figures, and none of the change-limit copy', () => {
+      visit('?state=ceiling-single');
+
+      expect(host.querySelector('.notice__title')!.textContent).toBe('Cash exceeds the single-tender limit');
+      expect(host.querySelector('.notice')!.textContent).toContain(
+        'You entered 100.000.000. One payment line can hold at most 99.999.999, even when the change would be within 9.999.999. Nothing has been recorded; the draft is unchanged.'
+      );
+      expect(host.querySelector('.tender-help')!.textContent).toBe(
+        'The 94.500.000 balance plus the 9.999.999 change limit is 104.499.999. The lower, single-tender cap applies: key 99.999.999 or less.'
+      );
+      expect(host.querySelector('.tender-field__message')!.textContent).toBe('Cash maximum 99.999.999');
+      expect(host.textContent).not.toContain('Too much cash to give change for');
+      expect(host.textContent).not.toContain('can accept');
+    });
+
+    it('follows the binding limit: the change limit binding draws its own copy, not the single-tender one', () => {
+      visit('?state=ceiling');
+
+      expect(host.querySelector('.notice__title')!.textContent).toBe('Too much cash to give change for');
+      expect(host.textContent).not.toContain('single-tender');
+    });
+
+    it('a keyed 0 against the single-tender cap is not "over" it', () => {
+      visit('?state=ceiling-single');
+      for (let i = 0; i < 9; i++) press(host.querySelector('[aria-label="Delete last digit"]')!);
+
+      expect(host.querySelector('.tender-amount')!.textContent).toBe('0');
+      expect(host.textContent).not.toContain('single-tender');
+    });
+  });
+
+  describe('the pending notice routes through Cancel', () => {
+    const noticeText = () => host.querySelector('#close-pending-notice')!.textContent!;
+
+    it('names Cancel payment, drops Back to the order, and omits the discard sentence with no drafts', () => {
+      window.history.replaceState(null, '', '/pos/order');
+      act(() => root.render(<PosRoutes />));
+      press(host.querySelector('[data-action="settle"]')!);
+
+      expect(noticeText()).toContain('Steak is still pending. Cancel payment before sending or voiding it; payment in progress blocks both.');
+      expect(noticeText()).not.toContain('Cancelling discards');
+      expect(noticeText()).not.toContain('Back to the order');
+      expect(host.querySelector('[data-action="cancel-payment-from-notice"]')!.textContent).toBe('Cancel payment to edit the order');
+    });
+
+    it('one draft: names it; two or more: counts them', () => {
+      visit('?state=pending');
+      add();
+      expect(noticeText()).toContain('Cancelling discards the Cash 382.725 draft.');
+
+      press(host.querySelector('.draft-tender__remove')!);
+      method('card');
+      key('100000');
+      add();
+      method('cash');
+      add();
+      expect(host.querySelectorAll('.draft-tender')).toHaveLength(2);
+      expect(noticeText()).toContain('Cancelling discards 2 drafted payment lines.');
+    });
+
+    it('walks: Settle, Cancel payment to edit the order, confirm, Remove Steak, Settle, 155.925', () => {
+      window.history.replaceState(null, '', '/pos/order');
+      act(() => root.render(<PosRoutes />));
+      press(host.querySelector('[data-action="settle"]')!);
+
+      openCancelFromNotice();
+      expect(host.querySelector('[role="dialog"]')!.querySelector('#cancel-payment-title')!.textContent).toBe('Cancel this payment?');
+      press(buttonInDialog('Cancel payment')!);
+
+      expect(window.location.pathname).toBe('/pos/order');
+      expect(host.querySelector('.order-panel')!.getAttribute('data-lock')).toBeNull();
+      press(host.querySelector('[aria-label="Remove Steak"]')!);
+      press(host.querySelector('[data-action="settle"]')!);
+      expect(host.querySelector('.settlement-totals .totals__row--grand dd')!.textContent).toBe('155.925');
+    });
+  });
+
+  describe('the cancel modal lists what it will discard', () => {
+    const dialog = () => host.querySelector('[role="dialog"]')!;
+    const rows = () => [...dialog().querySelectorAll('.cancel-drafts__row')].map((row) => row.textContent);
+
+    it('two drafts: two read-only rows, no Remove control, and the count sentence', () => {
+      visit('?state=exactsplit');
+      press(host.querySelector('.settlement-cancel button')!);
+
+      expect(rows()).toEqual(['Card100.000', 'Cash55.925']);
+      expect(dialog().querySelector('.draft-tender__remove')).toBeNull();
+      expect(dialog().querySelector('.cancel-drafts button')).toBeNull();
+      expect(dialog().textContent).toContain('2 drafted payment lines will be discarded.');
+    });
+
+    it('a Change given row is shown and not counted', () => {
+      visit('?state=change');
+      press(host.querySelector('.settlement-cancel button')!);
+
+      expect(rows()).toEqual(['Cash200.000', 'Change given−44.075']);
+      expect(dialog().textContent).toContain('One drafted payment line will be discarded.');
+    });
+
+    it('no drafts: no list at all', () => {
+      visit('?state=empty');
+      press(host.querySelector('.settlement-cancel button')!);
+
+      expect(dialog().querySelector('.cancel-drafts')).toBeNull();
+    });
+  });
+
+  describe('the takeover is two steps', () => {
+    const visitTakeover = () => {
+      window.history.replaceState(null, '', '/pos/order?state=lock-lease');
+      act(() => root.render(<PosRoutes />));
+      press([...host.querySelectorAll('a')].find((a) => a.textContent === 'Manager: take over payment')!);
+    };
+    const pinControls = () => host.querySelectorAll('.modal .keypad button');
+
+    it('step one draws the acknowledgement and no PIN pad; I understand draws all 12 controls and the caption', () => {
+      visitTakeover();
+
+      expect(host.querySelector('.modal')!.textContent).toContain('Acknowledge this risk before entering your PIN.');
+      expect(pinControls()).toHaveLength(0);
+      expect(host.querySelector('.pin-dots')).toBeNull();
+
+      press(buttonInDialog('I understand')!);
+
+      expect(pinControls()).toHaveLength(12);
+      expect(host.querySelector('.keypad--approval')).not.toBeNull();
+      expect(host.querySelector('.modal__foot')!.textContent).toContain(
+        'Risk acknowledged. Continue submits the manager PIN for this takeover only.'
+      );
+      expect(buttonInDialog('I understand')).toBeUndefined();
+      expect(buttonInDialog('Cancel')).toBeDefined();
+    });
+
+    // Lead correction: step two measured 758px tall and its Cancel fell below the
+    // 800px device, because the modal centred on the viewport rather than the frame.
+    // JSDOM has no layout, so this pins the structure that decides it, not pixels.
+    it('the modal sits inside the device frame and takes the artifact\'s compact spacing', () => {
+      visitTakeover();
+      press(buttonInDialog('I understand')!);
+
+      const modal = host.querySelector('.modal')!;
+      expect(modal.closest('.pos-device')).not.toBeNull();
+      expect(modal.classList.contains('takeover-modal')).toBe(true);
+      expect(host.querySelector('.modal-scrim')!.closest('.pos-device')).not.toBeNull();
+      expect(css).toMatch(/\.takeover-modal \.notice\s*\{\s*margin-bottom: var\(--frost-space-3\)/);
+      expect(css).toMatch(/\.takeover-modal \.pin-dots\s*\{\s*margin: var\(--frost-space-3\) 0/);
+    });
+
+    it('remounting starts at step one again', () => {
+      visitTakeover();
+      press(buttonInDialog('I understand')!);
+      expect(pinControls()).toHaveLength(12);
+
+      remount();
+
+      expect(pinControls()).toHaveLength(0);
+      expect(buttonInDialog('I understand')).toBeDefined();
+    });
+  });
+
+  it('the chips stay live: no "Not drawn" text anywhere in apps/', () => {
+    const roots = ['../src', '../../server/src'].map((r) => resolve(dirname(fileURLToPath(import.meta.url)), r));
+    const files = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? (e.name === 'node_modules' ? [] : files(resolve(dir, e.name))) : [resolve(dir, e.name)]
+      );
+    const hits = roots.flatMap(files).filter((f) => readFileSync(f, 'utf8').includes('Not drawn'));
+    expect(hits).toEqual([]);
   });
 });

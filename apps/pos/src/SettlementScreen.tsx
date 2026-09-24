@@ -5,8 +5,16 @@ import { formatAmount } from './money.js';
 import { TotalsView } from './OrderPanel.js';
 import type { OrderStore } from './orderStore.js';
 import { usePaymentSession, type DraftTender, type PaymentSession } from './paymentSession.js';
-import { PIN_LENGTH, PinPad } from './PinPad.js';
-import { cashCeilingBoundByChangeLimit, mayAddTender, settlementPosition, tenderMaximum, type TenderMethod } from './tender.js';
+import { PinPad } from './PinPad.js';
+import {
+  CASH_CHANGE_LIMIT,
+  cashChangeLimitedMaximum,
+  cashCeilingBoundByChangeLimit,
+  mayAddTender,
+  settlementPosition,
+  tenderMaximum,
+  type TenderMethod,
+} from './tender.js';
 
 const SETTLEMENT_STATES = [
   'empty',
@@ -20,6 +28,7 @@ const SETTLEMENT_STATES = [
   'change',
   'cardover',
   'ceiling',
+  'ceiling-single',
   'exactcash',
   'exactsplit',
   'pending',
@@ -39,6 +48,8 @@ const KEYED_SEED: Partial<Record<SettlementState, string>> = {
   cashover: '200000',
   cardover: '200000',
   ceiling: '99999999',
+  // FE-020: the artifact's 100.000.000 keyed against the 94.500.000 balance.
+  'ceiling-single': '100000000',
 };
 
 const CARD_SELECTED_STATES: ReadonlySet<SettlementState> = new Set(['card', 'cardsplit', 'cardover']);
@@ -139,10 +150,17 @@ function tenderCaption(args: {
         </>
       );
     }
-    // The single-tender cap binds instead of the change limit (lead ruling: no
-    // composition drawn for this case). Both the notice and this caption talk
-    // about change, which would be false here, so neither is drawn.
-    return null;
+    // The single-tender cap binds instead of the change limit (FE-020): the
+    // change-limit copy above would be false here. Only an over-max amount
+    // gets this — a keyed 0 is not "over" anything.
+    if (amount <= max) return null;
+    return (
+      <>
+        The {formatAmount(balance)} balance plus the {formatAmount(CASH_CHANGE_LIMIT)} change limit is{' '}
+        {formatAmount(cashChangeLimitedMaximum(balance))}. The lower, single-tender cap applies: key{' '}
+        <b>{formatAmount(max)} or less</b>.
+      </>
+    );
   }
 
   if (amount < balance) {
@@ -169,7 +187,7 @@ function tenderCaption(args: {
   return null;
 }
 
-/** The notice block above the field. Only card-over and change-limit-bound cash draw one. */
+/** The refusal notice. Card-over, change-limit-bound cash and single-tender-bound cash draw one. */
 function tenderNotice(args: {
   method: TenderMethod;
   keyed: boolean;
@@ -194,19 +212,28 @@ function tenderNotice(args: {
     };
   }
 
-  if (ceilingBound) {
+  if (!ceilingBound) {
+    if (amount <= max) return null;
     return {
-      title: 'Too much cash to give change for',
+      title: 'Cash exceeds the single-tender limit',
       body: (
         <>
-          The most cash this sale can accept is <b>{formatAmount(max)}</b> — the {formatAmount(balance)} still owing
-          plus the 9.999.999 change limit. Nothing has been recorded and the drafted payment lines are unchanged.
+          You entered {formatAmount(amount)}. One payment line can hold at most <b>{formatAmount(max)}</b>, even when the
+          change would be within {formatAmount(CASH_CHANGE_LIMIT)}. Nothing has been recorded; the draft is unchanged.
         </>
       ),
     };
   }
 
-  return null;
+  return {
+    title: 'Too much cash to give change for',
+    body: (
+      <>
+        The most cash this sale can accept is <b>{formatAmount(max)}</b> — the {formatAmount(balance)} still owing plus
+        the 9.999.999 change limit. Nothing has been recorded and the drafted payment lines are unchanged.
+      </>
+    ),
+  };
 }
 
 const PENDING_NOTICE_ID = 'close-pending-notice';
@@ -222,24 +249,47 @@ function boldNames(names: ReadonlyArray<string>) {
 }
 
 /**
- * The pending-close notice (FR-G10, rule 7), copied from the artifact's
- * singular sentence and pluralised the way `fireRefusal` (fire.ts) pluralises
- * its own — the artifact never drew two blocking lines either, so both
- * plurals are PROVISIONAL COPY for a designer, exactly as fire.ts's is.
- * *Back to the order* behaves exactly like the bar's own `← Order`.
+ * The sentence the pending notice and the cancel modal share about what
+ * cancelling throws away: none omits it, one names it ("the Cash 382.725
+ * draft", the artifact's own), two or more count them the way the cancel
+ * modal does (FE-020, the lead's ruling on plurals).
  */
-function PendingCloseNotice({ lines }: { lines: ReadonlyArray<{ name: string }> }) {
+function discardSentence(drafts: ReadonlyArray<DraftTender>): string | null {
+  if (drafts.length === 0) return null;
+  if (drafts.length === 1) return `Cancelling discards the ${drafts[0]!.label} ${formatAmount(drafts[0]!.amount)} draft.`;
+  return `Cancelling discards ${drafts.length} drafted payment lines.`;
+}
+
+/**
+ * The pending-close notice (FR-G10, rule 7), copied from the artifact and
+ * pluralised the way `fireRefusal` (fire.ts) pluralises its own — the artifact
+ * never drew two blocking lines either, so the plurals are PROVISIONAL COPY
+ * for a designer, exactly as fire.ts's is. Its action opens the live cancel
+ * modal (FE-020, DESIGN-006 finding 4): *Back to the order* landed on a
+ * locked POS-03, where send and void are blocked, so it pointed nowhere.
+ */
+function PendingCloseNotice({
+  lines,
+  drafts,
+  onCancelPayment,
+}: {
+  lines: ReadonlyArray<{ name: string }>;
+  drafts: ReadonlyArray<DraftTender>;
+  onCancelPayment: () => void;
+}) {
   const one = lines.length === 1;
+  const discards = discardSentence(drafts);
   return (
     <div className="notice" id={PENDING_NOTICE_ID}>
       <div className="notice__title">
         Cannot close — {lines.length} item{one ? '' : 's'} {one ? 'has' : 'have'} not been sent to the kitchen
       </div>
       <div>
-        {boldNames(lines.map((l) => l.name))} {one ? 'is' : 'are'} still pending. Send {one ? 'it' : 'them'} or void{' '}
-        {one ? 'it' : 'them'} first — which means leaving this payment, because a draft blocks both.{' '}
-        <button type="button" className="settlement-back" onClick={() => window.history.back()}>
-          Back to the order
+        {boldNames(lines.map((l) => l.name))} {one ? 'is' : 'are'} still pending. Cancel payment before sending or
+        voiding {one ? 'it' : 'them'}; payment in progress blocks both.
+        {discards && ` ${discards}`}{' '}
+        <button type="button" className="settlement-back" data-action="cancel-payment-from-notice" onClick={onCancelPayment}>
+          Cancel payment to edit the order
         </button>
       </div>
     </div>
@@ -311,10 +361,20 @@ function draftCountSentence(count: number): string | null {
  * unlike the manager approval prompt (Approval.tsx) it authorises nothing; it
  * only asks whether to throw away what is on screen.
  */
-function CancelPaymentModal({ draftCount, onKeep, onCancel }: { draftCount: number; onKeep: () => void; onCancel: () => void }) {
+function CancelPaymentModal({
+  drafts,
+  change,
+  onKeep,
+  onCancel,
+}: {
+  drafts: ReadonlyArray<DraftTender>;
+  change: Money;
+  onKeep: () => void;
+  onCancel: () => void;
+}) {
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => box.current?.focus(), []);
-  const sentence = draftCountSentence(draftCount);
+  const sentence = draftCountSentence(drafts.length);
 
   return (
     <>
@@ -335,6 +395,23 @@ function CancelPaymentModal({ draftCount, onKeep, onCancel }: { draftCount: numb
             settled with the customer. This screen cannot know either way.
           </p>
           {sentence && <p className="settlement-cancel__note">{sentence}</p>}
+          {/* Read-only: the rows the cashier is about to lose, with no Remove. A Change given row is shown, never counted. */}
+          {drafts.length > 0 && (
+            <div className="cancel-drafts" aria-label="Draft being discarded">
+              {drafts.map((draft) => (
+                <div className="cancel-drafts__row" key={draft.id}>
+                  <span>{draft.label}</span>
+                  <span>{formatAmount(draft.amount)}</span>
+                </div>
+              ))}
+              {change > 0n && (
+                <div className="cancel-drafts__row">
+                  <span>Change given</span>
+                  <span>−{formatAmount(change)}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="modal__foot">
           <button type="button" className="action" onClick={onKeep}>
@@ -417,19 +494,23 @@ function LeaseLostModal({ onBackToFloor }: { onBackToFloor: () => void }) {
 
 /**
  * Rule 10: `settle-takeover`, reached for real from POS-03's `lock-lease`
- * action. The artifact draws manager PIN dots and no keypad — a manager
- * cannot enter a PIN on it — so *I understand — take over* stays inert (no
- * server exists to verify one) and this raises the missing keypad rather
- * than inventing one. No Cancel payment.
+ * action. FR-G14 and FR-J3 want the risk acknowledged *before* the PIN, and
+ * the review rejected folding it into Continue (FE-020, DESIGN-006), so this
+ * is two steps in component state: the warning and *I understand*, then the
+ * M-1 PIN pad. The design's `?ack=1` is a fixture device; the step here is
+ * state, so a remount starts again at step one. Continue verifies nothing —
+ * no server exists — on FE-001's and F3d's precedent, and B-12 holds because
+ * the pad's digits never leave its ref. No Cancel payment.
  */
 function TakeoverModal({ onCancel }: { onCancel: () => void }) {
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => box.current?.focus(), []);
+  const [acknowledged, setAcknowledged] = useState(false);
 
   return (
     <>
       <div className="modal-scrim" aria-hidden="true" />
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="takeover-title" tabIndex={-1} ref={box}>
+      <div className="modal takeover-modal" role="dialog" aria-modal="true" aria-labelledby="takeover-title" tabIndex={-1} ref={box}>
         <div className="modal__head">
           <h2 id="takeover-title" className="modal__title">
             Take over this payment
@@ -441,25 +522,27 @@ function TakeoverModal({ onCancel }: { onCancel: () => void }) {
             <div className="notice__title">A card charge may already be in progress</div>
             <div>
               Another client started collecting payment for Table 1 at 20:14. Taking over rejects their close. Check
-              with them before you continue.
+              with them before you continue. Acknowledge this risk before entering your PIN.
             </div>
           </div>
-          <div style={{ marginTop: 16 }}>
-            <span className="tender-field__label">Manager PIN</span>
-            <div className="pin-dots" role="status" aria-label="3 of 6 digits entered">
-              {Array.from({ length: PIN_LENGTH }, (_, i) => (
-                <span key={i} className={i < 3 ? 'pin-dot pin-dot--filled' : 'pin-dot'} />
-              ))}
+          {acknowledged && (
+            <div className="takeover-pin">
+              <span className="tender-field__label">Manager PIN</span>
+              <PinPad geometry="approval" onSubmit={() => {}} />
             </div>
-          </div>
+          )}
         </div>
         <div className="modal__foot">
           <button type="button" className="action" onClick={onCancel}>
             Cancel
           </button>
-          <span className="action action--primary" aria-disabled="true" data-action="take-over">
-            I understand — take over
-          </span>
+          {acknowledged ? (
+            <span className="modal__note">Risk acknowledged. Continue submits the manager PIN for this takeover only.</span>
+          ) : (
+            <button type="button" className="action action--primary" data-action="acknowledge-takeover" onClick={() => setAcknowledged(true)}>
+              I understand
+            </button>
+          )}
         </div>
       </div>
     </>
@@ -607,6 +690,29 @@ export function ControlledSettlementScreen({
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
+  const keypad = (
+    <div className="tender-keypad" aria-label="Tender amount keypad">
+      {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+        <button
+          key={digit}
+          type="button"
+          className={pressed && digit === '5' ? 'tender-key is-pressed' : 'tender-key'}
+          data-digit={digit}
+          onClick={() => keyDigit(digit)}
+        >
+          {digit}
+        </button>
+      ))}
+      <span className="tender-key tender-key--blank" aria-hidden="true" />
+      <button type="button" className="tender-key" data-digit="0" onClick={() => keyDigit('0')}>
+        0
+      </button>
+      <button type="button" className="tender-key" aria-label="Delete last digit" onClick={deleteDigit}>
+        ←
+      </button>
+    </div>
+  );
+
   const notice = tenderNotice({ method, keyed, mayAdd, balance, amount, max, ceilingBound });
   const caption = tenderCaption({ method, balance, amount, keyed, mayAdd, max, ceilingBound, total });
 
@@ -686,7 +792,9 @@ export function ControlledSettlementScreen({
             {/* rule 4, criterion 6: keyed on the live total, not the `zero` state name. */}
             {isZeroTotal && <ZeroCloseNotice />}
             {/* rule 5: where a zero total and a pending line meet, the pending notice sits below the zero one. */}
-            {pendingRefusal && <PendingCloseNotice lines={pendingRefusal.lines} />}
+            {pendingRefusal && (
+              <PendingCloseNotice lines={pendingRefusal.lines} drafts={drafts} onCancelPayment={() => setCancelOpen(true)} />
+            )}
             {showErrorNotice && <ErrorCloseNotice total={total} balance={balance} />}
             {isLoading && <ClosingSkeleton />}
             {!isZeroTotal && (
@@ -762,13 +870,6 @@ export function ControlledSettlementScreen({
               <ZeroTenderEmpty />
             ) : (
               <>
-                {notice && (
-                  <div className="notice">
-                    <div className="notice__title">{notice.title}</div>
-                    <div>{notice.body}</div>
-                  </div>
-                )}
-
                 <div className="tender-control">
                   <div className="tender-field">
                     <div className="tender-field__heading">
@@ -814,28 +915,24 @@ export function ControlledSettlementScreen({
                   )}
                 </div>
 
-                {caption && <p className="tender-help">{caption}</p>}
-
-                <div className="tender-keypad" aria-label="Tender amount keypad">
-                  {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
-                    <button
-                      key={digit}
-                      type="button"
-                      className={pressed && digit === '5' ? 'tender-key is-pressed' : 'tender-key'}
-                      data-digit={digit}
-                      onClick={() => keyDigit(digit)}
-                    >
-                      {digit}
-                    </button>
-                  ))}
-                  <span className="tender-key tender-key--blank" aria-hidden="true" />
-                  <button type="button" className="tender-key" data-digit="0" onClick={() => keyDigit('0')}>
-                    0
-                  </button>
-                  <button type="button" className="tender-key" aria-label="Delete last digit" onClick={deleteDigit}>
-                    ←
-                  </button>
-                </div>
+                {/* DESIGN-006: in a refusal the keypad sits beside the notice, so the Delete row is never pushed under Close. */}
+                {notice ? (
+                  <div className="tender-refusal">
+                    {keypad}
+                    <div className="tender-guidance">
+                      <div className="notice">
+                        <div className="notice__title">{notice.title}</div>
+                        <div>{notice.body}</div>
+                      </div>
+                      {caption && <p className="tender-help">{caption}</p>}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {caption && <p className="tender-help">{caption}</p>}
+                    {keypad}
+                  </>
+                )}
               </>
             )}
           </div>
@@ -867,12 +964,13 @@ export function ControlledSettlementScreen({
           </footer>
           </section>
         </main>
+        {/* Inside the device, not beside it: the modal centres on the 800px frame, as the artifact's does, so its footer cannot fall below it. */}
+        {state === 'settle-takeover' && <TakeoverModal onCancel={() => navigateAway('/pos/order?state=lock-lease')} />}
       </div>
       {state === 'reauth' && <ReauthModal onLeave={leavePayment} />}
       {state === 'leaselost' && <LeaseLostModal onBackToFloor={() => navigateAway('/pos/floor')} />}
-      {state === 'settle-takeover' && <TakeoverModal onCancel={() => navigateAway('/pos/order?state=lock-lease')} />}
       {cancelOpen && (
-        <CancelPaymentModal draftCount={drafts.length} onKeep={() => setCancelOpen(false)} onCancel={cancelPayment} />
+        <CancelPaymentModal drafts={drafts} change={change} onKeep={() => setCancelOpen(false)} onCancel={cancelPayment} />
       )}
       {import.meta.env.DEV && <SettlementFixtureStates current={state} />}
     </>

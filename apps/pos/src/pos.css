@@ -1851,3 +1851,48 @@ button.settlement-close__action:focus-visible:active {
 .settlement-loading {
   margin-bottom: var(--frost-space-4);
 }
+
+/* ==== FE-020: DESIGN-006's corrections to POS-04 ====
+ * A refusal keeps the amount, message and Add on top; the keypad sits on the
+ * left and the notice and caption in a column to its right, so the notice can
+ * no longer push the Delete row under Close (frost-settlement.css). Reuses the
+ * tender key's own geometry and the 20px panel spacing; no new token. */
+
+.tender-refusal {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--frost-space-5);
+  align-items: start;
+}
+
+.tender-guidance {
+  min-width: 0;
+}
+
+.tender-guidance .notice {
+  margin: 0 0 var(--frost-space-3);
+}
+
+.tender-guidance .tender-help {
+  margin: 0;
+}
+
+/* The cancel modal's read-only list of what it will discard: a 32px row, as designed. */
+.cancel-drafts__row {
+  min-height: var(--frost-space-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--frost-space-3);
+}
+
+/* The takeover modal's compact form (frost-settlement.css .takeover-modal): a
+ * 12px notice margin and 12px around the PIN dots, so the two-step modal's
+ * 72px pad fits the 800px device with its footer inside it. */
+.takeover-modal .notice {
+  margin-bottom: var(--frost-space-3);
+}
+
+.takeover-modal .pin-dots {
+  margin: var(--frost-space-3) 0;
+}

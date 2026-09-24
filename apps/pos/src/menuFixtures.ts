@@ -194,4 +194,6 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   // menu region, so this fixture is never read; it exists only to satisfy
   // the exhaustive record.
   'settle-error': {},
+  // FE-020's `ceiling-single` seed, on the same terms as `settle-error`.
+  'settle-ceiling': {},
 };

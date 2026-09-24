@@ -207,7 +207,8 @@ export type OrderState =
   | 'fireerror'
   | 'quick'
   | 'quick-line'
-  | 'settle-error';
+  | 'settle-error'
+  | 'settle-ceiling';
 
 export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'default', label: 'Two rounds fired, one line pending' },
@@ -372,6 +373,20 @@ const errorSettlementOrder: ReadonlyArray<RoundGroup> = tableOrder
       ? { ...g, lines: [...g.lines, { id: 'fries', quantity: 1, name: 'Fries', itemId: 'fries', amount: 40_000n, status: 'fired' as const }] }
       : g
   );
+
+// F3's `ceiling-single` seed (FE-020): one fired 100.000.000 line under Staff
+// meal 10%, so `orderTotals` — never a typed figure — yields the artifact's
+// 94.500.000 balance, the one that binds the single-tender cap instead of the
+// change limit. Fired, not pending, for the same reason as `error`'s Fries.
+const ceilingSettlementOrder: ReadonlyArray<RoundGroup> = [
+  {
+    kind: 'fired',
+    round: 1,
+    firedAt: '19:40',
+    printed: true,
+    lines: [{ id: 'banquet', quantity: 1, name: 'Banquet', amount: 100_000_000n, status: 'fired' }],
+  },
+];
 
 const errorSettlementSubtotal = errorSettlementOrder
   .flatMap((g) => g.lines)
@@ -646,6 +661,15 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
     title: 'Order · T1',
     groups: errorSettlementOrder,
     totals: orderTotals(errorSettlementSubtotal, STAFF_MEAL),
+    applied: STAFF_MEAL,
+    appliedNote: STAFF_MEAL_NOTE,
+  },
+
+  // FE-020's `ceiling-single` seed (PosRoutes.tsx); not one of `ORDER_STATES`, like `settle-error`.
+  'settle-ceiling': {
+    title: 'Order · T1',
+    groups: ceilingSettlementOrder,
+    totals: orderTotals(100_000_000n, STAFF_MEAL),
     applied: STAFF_MEAL,
     appliedNote: STAFF_MEAL_NOTE,
   },
