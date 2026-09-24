@@ -1,0 +1,36 @@
+{
+  "name": "DESIGN-007 Frost order-flow compositions",
+  "source": null,
+  "designed": {
+    "task": ".agent/tasks/DESIGN-007-order-flow-gaps.md",
+    "date": "2026-09-24",
+    "by": "designer5",
+    "status": "designed under DESIGN-007; awaiting independent design review",
+    "stylesheet": "docs/design/visual-directions/frost-order-flow.css",
+    "shown": "Frost POS-03 item, quantity and fire fixtures",
+    "why": "Keep explicit quantity commits together and keep delivery wording out of the fired tag's column. These are new compositions, not extracted provenance."
+  },
+  "compositions": {
+    "quantity-footer": {
+      "layout": "secondary actions on their own row; 88px stepper next to the 88px primary commit; bounds below",
+      "reused": "88px Frost PIN key; 72px secondary button; 88px output; 8/12/24px Frost spacing; 150px option/secondary control width",
+      "designed": "An 88px primary height aligns with the quantity keys; the existing standard action remains 72px elsewhere."
+    },
+    "round-delivery-heading": {
+      "grid-template-columns": "minmax(0, 1fr) max-content",
+      "min-height": "48px",
+      "gap": "12px",
+      "padding-block": "8px",
+      "designed": "A minimum-height two-column heading replaces the 32px one-line band only in the new round rendering; text wraps only within the delivery column. 48px, 12px and 8px are existing Frost dimensions, newly composed here."
+    },
+    "draft-preview": {
+      "reused": "Existing totals class, 24px section separation, 12px top and 8px side padding",
+      "designed": "Preview totals are labeled unsaved and kept inside the sheet; committed totals remain in the order panel."
+    },
+    "status-and-recovery": {
+      "reused": "14px notice text, 8px/16px spacing, existing border color and 48px compact action",
+      "designed": "Polite status between list and totals; Show Steak scrolls and focuses the blocked line without changing the order."
+    }
+  },
+  "tokens": "No new palette, typography or scalar size tokens. Existing source registries and their source stylesheets remain unchanged."
+}

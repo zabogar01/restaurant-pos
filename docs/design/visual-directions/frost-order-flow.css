@@ -1,0 +1,29 @@
+/* DESIGN-007, designer5. Frost-only composition, isolated from provenance
+   sources. Existing dimensions: sheet 20px padding; gaps 8/12/16/24px;
+   controls 72px; quantity keys reuse Frost's 88px PIN key geometry.
+   New composition values are declared honestly in frost-order-flow.design.json. */
+.flow-price { margin-left: auto; }
+.flow-sheet .sheet__body { overflow-y: auto; min-height: 0; }
+.flow-options { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.flow-options .btn { width: 150px; }
+.flow-options.flow-extras .btn { width: 180px; }
+.flow-line-total { display: flex; justify-content: space-between; margin-top: 24px; font-size: 20px; }
+.flow-line-total + .muted { margin-top: 8px; }
+.flow-unavailable { margin: 0 0 20px; }
+.flow-foot { display: flex; flex-direction: column; gap: 8px; }
+.flow-secondary { display: flex; justify-content: space-between; gap: 24px; }
+.flow-secondary .btn { min-width: 150px; }
+.flow-commit { display: flex; gap: 24px; align-items: center; }
+.flow-stepper { display: flex; gap: 12px; flex: none; align-items: center; }
+.flow-stepper .btn, .flow-stepper .field { width: 88px; height: 88px; justify-content: center; }
+.flow-save { flex: 1; height: 88px; }
+.flow-bound { font-size: 14px; }
+.flow-preview { margin-top: 24px; padding: 12px 8px 0; }
+/* Two independent columns. Delivery may use a second line, never the tag's
+   column. Same treatment for every outcome so longer copy loses no meaning. */
+.flow-round { height: auto; min-height: 48px; display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 12px; white-space: normal; overflow: visible; padding-top: 8px; padding-bottom: 8px; }
+.flow-round > span:first-child { min-width: 0; }
+.flow-round .tag { white-space: nowrap; margin-left: 0; }
+.flow-round:focus { position: relative; z-index: 1; outline-offset: -2px; }
+.flow-status { padding: 8px 16px; font-size: 14px; border-top: 1px solid var(--border); }
+.flow-show-line { width: 150px; margin-top: 8px; }

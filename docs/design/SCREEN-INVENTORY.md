@@ -185,8 +185,36 @@ affordances only.
   draft. This is the case FR-G10 exists to catch, and it is drawn on both
   sides: the locked order workspace and POS-04's *table order with PENDING
   lines* refusal.
-- *fire result* — PRINTED, FAILED, or UNKNOWN. FAILED/UNKNOWN escalates to the
-  global emergency banner (FR-E3).
+- *fire result* — QUEUED (sending, delivery unconfirmed), PRINTED, FAILED,
+  or UNKNOWN. FAILED/UNKNOWN escalates to the global emergency banner (FR-E3).
+  **DESIGN-007 / ARCH-002, owner ruled 2026-09-24:** one press sends every
+  pending line; no confirmation dialog. The control counts **lines**, not the
+  sum of their quantities. The pending group is the review before sending.
+  The new round receives focus, the pending group disappears, and a polite
+  status says “Round 3 sent to the kitchen”. Sending never claims paper and
+  never blocks Settle. The fire control stays inert in place with no pending
+  lines; adding a new pending group restores it.
+  FAILED reads “FAILED · not printed”; UNKNOWN reads “UNKNOWN · may have
+  printed” and tells the cashier to check with the kitchen before reprinting.
+  Both use the emergency banner and POS-07 recovery route; neither enables a
+  resend. Delivery text and the manager tag occupy separate heading columns,
+  including Round 12 at 23:59. These are states of the existing fire-result
+  inline node, not new screens or modals.
+- *item configuration / quantity commit* — DESIGN-007 gives each of the twelve
+  menu tiles its own `sheet-item-<id>` fixture. `sheet-item` remains Burger's
+  alias, `sheet-item86` remains its unavailable state, and Soda has no option
+  groups. These are illustrative option sets, not a production catalogue.
+  Quantity keys (88px) sit beside Add to order. Pending-line editors use the
+  same footer beside “Update to n”, disabled when unchanged. Back/Cancel
+  discard; Add/Update commits. Minus at 1 and plus at 99 are disabled, with a
+  visible bound. Remove line stays separate. Fired lines have no stepper.
+  Draft totals are labeled unsaved inside the sheet; order-panel figures stay
+  committed until Update. Table and counter variants both have changed and
+  maximum-quantity fixtures. See DESIGN-007's handoff for states and arithmetic.
+- *blocked-line recovery* — DESIGN-007 keeps the notice and totals fixed,
+  scrolls the 86’d pending Steak into view initially, and provides Show Steak
+  to scroll/focus it again after browsing older rounds. It never changes a
+  line or asks for a confirmation.
 - *zero-total* — a 100% discount leaves a zero total that is still closable
   (FR-G11).
 
