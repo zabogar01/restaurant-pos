@@ -7,9 +7,9 @@ import {
   MENU_CATEGORIES,
   menuFixtureFor,
   originFacts,
-  MENU_ITEMS,
+  itemsIn,
   REJECTED_NOTICE,
-  SELECTED_CATEGORY,
+  type CategoryId,
   type MenuItem,
 } from './menuFixtures.js';
 import { viewSearch, type OrderState, type OrderView, type SettlementLock } from './orderFixtures.js';
@@ -20,28 +20,27 @@ import { viewSearch, type OrderState, type OrderView, type SettlementLock } from
 // <button>; the route out leaves it for settlement, so it is the one anchor
 // (ruling of 2026-09-17).
 //
-// A category press is an [INLINE] change of this screen (SITEMAP §1): it stays
-// on the order the cashier is looking at, and replaces the history entry. It
-// used to name ?state=default, which moved every order to the table order, and
-// wrote a ?category= nothing read (fixed in F2k).
-//
-// **The rail's selection does not move, and that is deliberate.** F2k first
-// made it follow the press; ruled out 2026-09-21, because the artifact has a
-// grid for Mains only, so a rail reading *Drinks* above the Mains grid tells
-// the cashier something false about what is in front of them — the same defect
-// as the URL that used to lie, moved somewhere they can see. So the press
-// keeps the order and changes nothing else. **What it should do before there
-// is a second catalogue is a designer's question, not this slice's.**
+// A category press is an [INLINE] change of this screen (SITEMAP §1): it
+// selects that category and the grid shows its items (FE-023, the owner's
+// ruling of 2026-09-24). It writes no URL and no history entry, and the order
+// is untouched. The selection lives beside the order store, so it survives an
+// item sheet opening and closing. This supersedes the ruling of 2026-09-21
+// that the selection did not move, which existed only because the artifact
+// drew one grid.
 //
 // F2h adds one notice here: B-20's rejected command. It is drawn over a live
 // rail and grid, because the claim it makes is that nothing happened and the
 // way to act on it is to add the line again.
 export function MenuRegion({
   view,
+  category,
+  selectCategory,
   navigate = () => {},
   locked = false,
 }: {
   view: OrderView;
+  category: CategoryId;
+  selectCategory: (category: CategoryId) => void;
   navigate?: (destination: string, leaves?: boolean) => void;
   /** F3d rule 2/3: a session-derived lock, always drawn as `draft` — never the lease's words, whatever the fixture says. */
   locked?: boolean;
@@ -67,7 +66,7 @@ export function MenuRegion({
     <div className="order-screen__menu">
       <nav className="menu-categories" aria-label="Menu categories">
         {MENU_CATEGORIES.map((c) => {
-          const selected = c.id === SELECTED_CATEGORY;
+          const selected = c.id === category;
           const pressed = fixture.pressedCategories?.includes(c.id) ?? false;
           return (
             <button
@@ -77,7 +76,7 @@ export function MenuRegion({
                 .filter(Boolean)
                 .join(' ')}
               aria-current={selected ? 'true' : undefined}
-              onClick={() => navigate(viewSearch(view))}
+              onClick={() => selectCategory(c.id)}
             >
               {c.name}
             </button>
@@ -137,7 +136,7 @@ export function MenuRegion({
           </div>
         ) : (
           <div className="menu-grid">
-            {MENU_ITEMS.map((item) => (
+            {itemsIn(category).map((item) => (
               <Tile
                 key={item.id}
                 item={item}

@@ -11,6 +11,7 @@ import { APPROVAL_FIXTURES } from '../src/approvalFixtures.js';
 import { DISCOUNT_FIXTURES } from '../src/discountFixtures.js';
 import { VOID_FIXTURES } from '../src/voidFixtures.js';
 import { ITEM_SHEET_STATES, QUANTITY_MAX, SHEET_FIXTURES, unitPrice, type ItemSheetFixture } from '../src/sheetFixtures.js';
+import { tileFor } from './tile-for.js';
 
 // POS-03's ungated sheets (F2c). Three properties are the point:
 // - no control in any F2c state reaches a PIN-gated state (I-12, B-16: a gated
@@ -334,6 +335,12 @@ function arrive(earlier: OrderState, state: OrderState) {
   act(() => root.render(<OrderScreen key={++mount} view={{ state }} />));
 }
 
+// A tile is drawn only under its own category (FE-023): press the category first, as a cashier does.
+const openerFor = (open: string) => {
+  const tile = /^\.menu-tile\[data-item="(\w+)"\]$/.exec(open);
+  return tile ? tileFor(device(), tile[1]!) : device().querySelector(open)!;
+};
+
 const opens: ReadonlyArray<[family: string, from: OrderState, open: string, close: string]> = [
   ['F2c, the item sheet', 'default', '.menu-tile[data-item="soda"]', 'Cancel'],
   ['F2c, the line editor', 'default', '.order-line[data-line-status="pending"] > .order-line__target', 'Back'],
@@ -346,7 +353,7 @@ describe.each(opens)('%s: opened from the order and closed, no sheet is left in 
   it('opening and closing leave the history as long as it was', () => {
     arrive('eightysix', from);
     const length = window.history.length;
-    press(device().querySelector(open)!);
+    press(openerFor(open));
     expect(dialog()).not.toBeNull();
     expect(window.history.length).toBe(length);
     press(buttonNamed(close));
@@ -356,7 +363,7 @@ describe.each(opens)('%s: opened from the order and closed, no sheet is left in 
 
   it('Back then goes to where the cashier was before, and opens no sheet', async () => {
     arrive('eightysix', from);
-    press(device().querySelector(open)!);
+    press(openerFor(open));
     press(buttonNamed(close));
     await back();
     expect(urlState()).toBe('eightysix');
@@ -738,9 +745,9 @@ describe('inline changes replace the history entry; only leaving POS-03 pushes o
     expect(window.location.search).toBe('?state=overflow&gone=of-coffee');
     expect([...device().querySelectorAll('.order-line__name')].map((n) => n.textContent)).toEqual(before);
     expect(device().querySelector('.totals__row--grand dd')!.textContent).toBe(total);
-    // Nothing else moves: the rail keeps Mains, because the grid can only draw
-    // Mains (ruled 2026-09-21), and the URL asserts no category.
-    expect(device().querySelector('.menu-category--selected')!.textContent).toBe('Mains');
+    // Only the selection moves (FE-023): the third category is Drinks, and the
+    // URL asserts no category.
+    expect(device().querySelector('.menu-category--selected')!.textContent).toBe('Drinks');
     expect(device().querySelectorAll('.menu-category--selected')).toHaveLength(1);
   });
 });

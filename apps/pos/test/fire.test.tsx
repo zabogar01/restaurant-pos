@@ -273,14 +273,16 @@ describe('fireblocked resolves, which is the half of FR-E4 a per-state flag cann
 describe('fireblocked-overflow: the block clears while the order still has work to send', () => {
   const OF = 'fireblocked-overflow' as const;
 
-  it('86s Coffee in place and leaves the other eleven tiles alone (C-3)', () => {
+  it('86s Coffee in place and leaves the other four Drinks tiles alone (C-3)', () => {
     render(OF);
+    // Coffee is a Drink (FE-023): 86'd in place under its own category.
+    act(() => [...host.querySelectorAll<HTMLElement>('.menu-category')].find((c) => c.textContent === 'Drinks')!.click());
     const coffee = host.querySelector<HTMLElement>('.menu-tile[data-item="coffee"]')!;
     expect(coffee.classList.contains('menu-tile--off')).toBe(true);
     expect(coffee.querySelector('.tag-86')!.textContent).toBe('86');
     expect(host.querySelectorAll('.menu-tile--off')).toHaveLength(1);
     // Never removed, never moved: a hand already going for Coffee finds Coffee.
-    expect([...host.querySelectorAll<HTMLElement>('.menu-grid > .menu-tile')].findIndex((t) => t.dataset.item === 'coffee')).toBe(9);
+    expect([...host.querySelectorAll<HTMLElement>('.menu-grid > .menu-tile')].findIndex((t) => t.dataset.item === 'coffee')).toBe(2);
   });
 
   it('holds three PENDING lines and tags only the one holding the 86’d item', () => {
@@ -444,7 +446,8 @@ describe('error: a rejected command changed nothing (B-20)', () => {
   });
 
   it('leaves the grid live: adding the line again is the point of the state', () => {
-    expect(host.querySelectorAll('.menu-grid > .menu-tile')).toHaveLength(12);
+    // Mains' four tiles: the grid shows the selected category (FE-023).
+    expect(host.querySelectorAll('.menu-grid > .menu-tile')).toHaveLength(4);
     expect(host.querySelectorAll('.menu-tile--off')).toHaveLength(0);
     expect(host.querySelectorAll('.menu-category')).toHaveLength(4);
   });

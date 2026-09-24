@@ -2,7 +2,7 @@ import type { Money } from '@pos/money';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { orderTotals, type DiscountSnapshot } from './discount.js';
 import { fireOrder } from './fire.js';
-import { MENU_ITEMS, originFacts } from './menuFixtures.js';
+import { DEFAULT_CATEGORY, MENU_ITEMS, originFacts, type CategoryId } from './menuFixtures.js';
 import {
   ORDER_FIXTURES,
   type Modifier,
@@ -48,6 +48,13 @@ export type NewLine = {
 
 export type OrderStore = {
   order: ShownOrder;
+  /**
+   * The menu category the rail has selected (FE-023). Not part of the order and
+   * not in the URL: it has the store's lifetime, so an item sheet opening and
+   * closing never drops the cashier back on Mains. A fresh mount starts there.
+   */
+  category: CategoryId;
+  selectCategory: (category: CategoryId) => void;
   /** Appends a PENDING line, priced from `MENU_ITEMS`. Mutation 1 (item sheet's *Add to order*). */
   addLine: (line: NewLine) => void;
   /** Drops a line outright, from any group, whether or not a fixture ever pre-figured it. Mutation 3 (a row's ×). */
@@ -171,6 +178,7 @@ function toShownOrder(data: StoreState): ShownOrder {
  */
 export function useOrderStore(view: OrderView, locked = false): OrderStore {
   const [data, setData] = useState<StoreState>(() => seed(view, locked));
+  const [category, selectCategory] = useState<CategoryId>(DEFAULT_CATEGORY);
   const appliedGone = useRef(view.gone);
   const nextId = useRef(0);
   // What the fire reads at the moment of the press: the view it is on and the
@@ -238,5 +246,5 @@ export function useOrderStore(view: OrderView, locked = false): OrderStore {
     });
   }, []);
 
-  return { order: toShownOrder(data), addLine, removeLine, setQuantity, fire };
+  return { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire };
 }

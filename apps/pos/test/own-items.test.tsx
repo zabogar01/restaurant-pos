@@ -14,6 +14,7 @@ import { ITEM_SHEET_STATES, QUANTITY_MAX, SHEET_FIXTURES, panelLine, type ItemSh
 import { SheetView } from '../src/Sheets.js';
 import { shownOrder } from '../src/voidFixtures.js';
 import { formatAmount } from '../src/money.js';
+import { tileFor } from './tile-for.js';
 
 // FE-021 Part A: every tile opens its own item. The shape this kills is one
 // destination shared by twelve controls (it used to be Burger's sheet).
@@ -60,16 +61,19 @@ const ARTIFACT: Record<string, Row> = {
   fries: ['Fries', 40000, [['Seasoning', false, [['Salt', 0], ['Chilli', 0]], [0]], ['Extras', true, [['Cheese sauce', 10000]], []]]],
   rings: ['Onion Rings', 45000, [['Dip', false, [['Ketchup', 0], ['Garlic mayo', 5000]], [1]]]],
   soda: ['Soda', 30000, []],
+  // FE-023: the two items the categorisation added. Neither has option groups; prices are fixture data.
+  water: ['Mineral Water', 20000, []],
   coffee: ['Coffee', 35000, [['Size', false, [['Regular', 0], ['Large', 10000]], [1]], ['Extras', true, [['Extra shot', 10000]], []]]],
   beer: ['Beer', 65000, [['Size', false, [['Regular', 0], ['Large', 25000]], [1]]]],
   wine: ['House Wine', 80000, [['Pour', false, [['Standard', 0], ['Small', -20000]], [1]]]],
+  cheesecake: ['Cheesecake', 60000, []],
 };
 
-describe('criterion 1: each of the twelve tiles adds its own item', () => {
+describe('criterion 1: each of the fourteen tiles adds its own item', () => {
   it.each(MENU_ITEMS.map((i) => [i.id, i] as const))('%s: tap, Add, the new pending line is that item', (id, item) => {
     render('default');
     const before = pendingRows().length;
-    press(host.querySelector(`.menu-tile[data-item="${id}"]`)!);
+    press(tileFor(host, id));
     expect(dialog()!.querySelector('h2')!.textContent).toBe(item.name);
     press(buttonNamed('Add to order'));
 
@@ -89,7 +93,7 @@ describe('criterion 1: each of the twelve tiles adds its own item', () => {
     expect(added.querySelector('.order-line__amount')!.textContent).toBe(formatAmount(BigInt(price + deltas)));
   });
 
-  it('the twelve states exist, with sheet-item still Burger’s alias', () => {
+  it('the fourteen states exist, with sheet-item still Burger’s alias', () => {
     expect(ITEM_SHEET_STATES).toEqual(MENU_ITEMS.map((i) => `sheet-item-${i.id}`));
     expect((SHEET_FIXTURES['sheet-item' as never] as ItemSheetFixture).itemId).toBe('burger');
   });
@@ -133,7 +137,7 @@ describe('criterion 3: Add at n = 2', () => {
     render('default');
     const beforeSubtotal = ORDER_FIXTURES.default.totals.subtotal;
     const rows = pendingRows().length;
-    press(host.querySelector('.menu-tile[data-item="burger"]')!);
+    press(tileFor(host, 'burger'));
     press(buttonNamed('Increase quantity'));
     // Large + Extra cheese by default: unit 135.000.
     expect(dialog()!.querySelector('.sheet-total__amount')!.textContent).toBe('270.000');
@@ -148,7 +152,7 @@ describe('criterion 3: Add at n = 2', () => {
 
   it('with a modifier price too: Fish & Chips with Chilli mayo (+5.000) × 2 is 290.000', () => {
     render('default');
-    press(host.querySelector('.menu-tile[data-item="fish"]')!);
+    press(tileFor(host, 'fish'));
     press(dialog()!.querySelector('[data-option="chilli-mayo"]')!);
     // The artifact pre-selects Extra fish (+60.000); take it off, so the unit is 140.000 + 5.000.
     press(dialog()!.querySelector('[data-option="extra-fish"]')!);
@@ -161,7 +165,7 @@ describe('criterion 3: Add at n = 2', () => {
 
   it('adds at quantity 1 when the stepper is untouched', () => {
     render('default');
-    press(host.querySelector('.menu-tile[data-item="soda"]')!);
+    press(tileFor(host, 'soda'));
     press(buttonNamed('Add to order'));
     expect(pendingRows().at(-1)!.querySelector('.order-line__quantity')!.textContent).toBe('1');
   });
@@ -320,7 +324,7 @@ describe('criterion 6: the figures after Update, from ?state=sheet-line (Steak 1
 describe('criterion 7: comp and void survive an Add', () => {
   it('Soda added from zero: total 0, Comp 100% kept', () => {
     render('zero');
-    press(host.querySelector('.menu-tile[data-item="soda"]')!);
+    press(tileFor(host, 'soda'));
     press(buttonNamed('Add to order'));
     expect(grand()).toBe('0');
     expect(Object.keys(totalsRows()).some((k) => k.startsWith('Comp'))).toBe(true);
@@ -328,7 +332,7 @@ describe('criterion 7: comp and void survive an Add', () => {
 
   it('Soda added from overflow: the voided Caesar Salad row stays, total 1.275.750', () => {
     render('overflow');
-    press(host.querySelector('.menu-tile[data-item="soda"]')!);
+    press(tileFor(host, 'soda'));
     press(buttonNamed('Add to order'));
     const names = [...host.querySelectorAll('.order-line__name')].map((n) => n.firstChild!.textContent);
     expect(names).toContain('Caesar Salad');
@@ -356,7 +360,7 @@ describe('round 2', () => {
 
   it('P1: a line added live opens its own editor and updates to 2', () => {
     render('default');
-    press(host.querySelector('.menu-tile[data-item="fish"]')!);
+    press(tileFor(host, 'fish'));
     press(buttonNamed('Add to order'));
     press(host.querySelector('.order-line[data-line-id^="fish-"] > .order-line__target')!);
     expect(dialog()!.querySelector('h2')!.textContent).toBe('Fish & Chips — pending');
@@ -373,7 +377,7 @@ describe('round 2', () => {
       render('eightysix');
       const fire = () => host.querySelector(FIRE)!;
       expect(fire().tagName).toBe('SPAN');
-      press(host.querySelector('.menu-tile[data-item="soda"]')!);
+      press(tileFor(host, 'soda'));
       // Under the open sheet, too: the panel behind it must not say the Steak is fine.
       expect(steakRow().querySelector('.tag-86')).not.toBeNull();
       expect(fire().tagName).toBe('SPAN');
@@ -382,20 +386,24 @@ describe('round 2', () => {
       expect(window.location.search).toBe('?state=eightysix');
       expect(steakRow().querySelector('.tag-86')).not.toBeNull();
       expect(fire().tagName).toBe('SPAN');
+      // The selection survived the sheet: still Drinks, so Steak's own category has to be selected to see it.
+      expect(host.querySelector('.menu-category--selected')!.textContent).toBe('Drinks');
+      press(tileFor(host, 'burger'));
+      press(buttonNamed('Cancel'));
       expect(host.querySelector('.menu-tile--off[data-item="steak"]')).not.toBeNull();
     });
   });
 
   it('P2: an item sheet entered from default returns to default', () => {
     render('default');
-    press(host.querySelector('.menu-tile[data-item="soda"]')!);
+    press(tileFor(host, 'soda'));
     press(buttonNamed('Cancel'));
     expect(window.location.search).toBe('?state=default');
   });
 
   it('P4: a chosen zero-delta Size goes into the line’s modifiers', () => {
     render('default');
-    press(host.querySelector('.menu-tile[data-item="coffee"]')!);
+    press(tileFor(host, 'coffee'));
     press(dialog()!.querySelector('[data-option="regular"]')!);
     press(buttonNamed('Add to order'));
     expect(pendingRows().at(-1)!.textContent).toContain('Regular');
@@ -403,7 +411,7 @@ describe('round 2', () => {
 
   it('P4: Burger Regular too', () => {
     render('default');
-    press(host.querySelector('.menu-tile[data-item="burger"]')!);
+    press(tileFor(host, 'burger'));
     press(dialog()!.querySelector('[data-option="regular"]')!);
     press(buttonNamed('Add to order'));
     expect(pendingRows().at(-1)!.textContent).toContain('Regular');
@@ -436,7 +444,7 @@ describe('round 2', () => {
 describe('round 3', () => {
   const NOTICES = ['Could not add that line', 'Nothing was added'];
   const noticeShown = () => NOTICES.some((n) => host.textContent!.includes(n));
-  const soda = () => press(host.querySelector('.menu-tile[data-item="soda"]')!);
+  const soda = () => press(tileFor(host, 'soda'));
 
   it.each(['error', 'catalog'])('9: a successful Add from %s leaves no notice claiming nothing changed', (origin) => {
     render(origin);
@@ -524,14 +532,14 @@ describe('round 4: the incident banner survives an open item sheet', () => {
   it('opening Soda from fireerror: the banner is present while the sheet is open, and after Cancel and Add', () => {
     render('fireerror');
     expect(banner()).not.toBeNull();
-    press(host.querySelector('.menu-tile[data-item="soda"]')!);
+    press(tileFor(host, 'soda'));
     expect(dialog()).not.toBeNull();
     expect(banner()).not.toBeNull();
     expect(banner()!.closest('[inert]') ?? banner()!.hasAttribute('inert')).toBeTruthy();
     press(buttonNamed('Cancel'));
     expect(banner()).not.toBeNull();
     // ...and after a successful Add (the title says both).
-    press(host.querySelector('.menu-tile[data-item="soda"]')!);
+    press(tileFor(host, 'soda'));
     press(buttonNamed('Add to order'));
     expect(dialog()).toBeNull();
     expect(banner()).not.toBeNull();
@@ -544,7 +552,7 @@ describe('round 4: the incident banner survives an open item sheet', () => {
 
   it.each(withIncident)('every origin with an incident (%s): the banner is there with its sheet open', (origin) => {
     render(origin);
-    press(host.querySelector('.menu-tile[data-item="soda"]')!);
+    press(tileFor(host, 'soda'));
     expect(dialog()).not.toBeNull();
     expect(banner()).not.toBeNull();
     expect(banner()!.textContent).toContain(ORDER_FIXTURES[origin].incident!.title);
@@ -561,7 +569,7 @@ describe('round 5: a held tap has ended', () => {
 
   it.each(['Cancel', 'Add to order'])('%s from pressed: no row or tile is marked pressed, and it lands on default', (way) => {
     render('pressed');
-    press(host.querySelector('.menu-tile[data-item="soda"]')!);
+    press(tileFor(host, 'soda'));
     press(buttonNamed(way));
     expect(window.location.search).toBe('?state=default');
     expect(isPressed()).toBe(0);
@@ -570,7 +578,7 @@ describe('round 5: a held tap has ended', () => {
   it('Cancel from error and catalog still returns to the origin: their notice is still true', () => {
     for (const origin of ['error', 'catalog']) {
       render(origin);
-      press(host.querySelector('.menu-tile[data-item="soda"]')!);
+      press(tileFor(host, 'soda'));
       press(buttonNamed('Cancel'));
       expect(window.location.search).toBe(`?state=${origin}`);
     }

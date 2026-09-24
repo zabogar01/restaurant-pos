@@ -44,7 +44,8 @@ export type OrderLine = {
    * invented here.
    *
    * **Optional, because not every line has a tile.** `overflow` holds a
-   * Cheesecake the grid does not sell. A line without one can never block a
+   * Cheesecake line with no `itemId` (historical fixture data, not the
+   * Desserts tile's item). A line without one can never block a
    * fire and never takes the 86 tag: an item nobody can identify is not an
    * item anybody has 86'd.
    */
@@ -248,9 +249,11 @@ export type OrderState =
   | 'sheet-item-fries'
   | 'sheet-item-rings'
   | 'sheet-item-soda'
+  | 'sheet-item-water'
   | 'sheet-item-coffee'
   | 'sheet-item-beer'
   | 'sheet-item-wine'
+  | 'sheet-item-cheesecake'
   | 'sheet-line'
   | 'approval'
   | 'approval-error'
@@ -302,9 +305,11 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'sheet-item-fries', label: 'Sheet — item: Fries' },
   { id: 'sheet-item-rings', label: 'Sheet — item: Onion Rings' },
   { id: 'sheet-item-soda', label: 'Sheet — item: Soda' },
+  { id: 'sheet-item-water', label: 'Sheet — item: Mineral Water' },
   { id: 'sheet-item-coffee', label: 'Sheet — item: Coffee' },
   { id: 'sheet-item-beer', label: 'Sheet — item: Beer' },
   { id: 'sheet-item-wine', label: 'Sheet — item: House Wine' },
+  { id: 'sheet-item-cheesecake', label: 'Sheet — item: Cheesecake' },
   { id: 'sheet-line', label: 'Sheet — line editor' },
   { id: 'approval', label: 'Modal — manager approval' },
   { id: 'approval-error', label: 'Modal — wrong PIN' },
@@ -670,9 +675,11 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   'sheet-item-fries': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-item-rings': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-item-soda': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-water': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-item-coffee': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-item-beer': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-item-wine': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-cheesecake': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-line': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 
   // F2g's approval prompt opens over the table order: the artifact's request
@@ -906,14 +913,11 @@ export const ITEM_SHEET_ORIGINS: Partial<Record<OrderState, 'keeps' | 'clears-on
  * (SITEMAP §1), so reaching it replaces the history entry rather than pushing
  * one.
  *
- * **The rail's category is deliberately not here.** F2k briefly carried it, so
- * that pressing a category moved the rail's selection; ruled out 2026-09-21,
- * because the artifact has a grid for Mains only and a rail reading *Drinks*
- * over the Mains grid tells the cashier something false about what they are
- * looking at. A URL that asserted a category nothing honoured was the same
- * defect where nobody sees it, so both halves went together: nothing writes
- * ?category=, and nothing reads it. What a category press should do before
- * there is a second catalogue is a designer's question.
+ * **The rail's category is deliberately not here.** A category press is an
+ * [INLINE] change that leaves the URL and history alone, so the selection
+ * lives beside the order store (`useOrderStore`), not in the view (FE-023,
+ * superseding the ruling of 2026-09-21 that the selection did not move). A
+ * ?category= would be a second source for it.
  */
 export type OrderView = {
   state: OrderState;

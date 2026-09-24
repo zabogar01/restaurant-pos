@@ -8,6 +8,7 @@ import { OrderScreen } from '../src/OrderPanel.js';
 import { ORDER_FIXTURES, ORDER_STATES, orderVariant, type Delivery, type OrderState, type OrderView } from '../src/orderFixtures.js';
 import { PosRoutes } from '../src/PosRoutes.js';
 import { useOrderStore, type OrderStore } from '../src/orderStore.js';
+import { tileFor } from './tile-for.js';
 
 // FE-022: Send to kitchen sends, in one press (ARCH-002 §3, DESIGN-007 Part C).
 // Criteria 9-13 of the task; T-1..T-8 are in fire-order.test.ts.
@@ -159,7 +160,7 @@ describe('the press', () => {
   it('the status line goes when a new pending line makes the fire live again', () => {
     render('fire-ready');
     press(fireControl()!);
-    press(host.querySelector('.menu-tile[data-item="coffee"]')!);
+    press(tileFor(host, 'coffee'));
     press(buttonNamed('Add to order'));
     expect(statusLine()?.textContent ?? '').toBe('');
     expect(fireControl()!.textContent).toBe('Send 1 to kitchen');
@@ -170,7 +171,7 @@ describe('the press', () => {
     render('fire-ready');
     press(fireControl()!);
     expect(statusLine()!.textContent).toBe('Round 3 sent to the kitchen');
-    press(host.querySelector('.menu-tile[data-item="coffee"]')!);
+    press(tileFor(host, 'coffee'));
     press(buttonNamed('Add to order'));
     press(buttonNamed('Remove Coffee'));
     expect(fireControl()!.tagName).toBe('SPAN');
@@ -193,7 +194,7 @@ describe('the press', () => {
 
   it('B: after Add from an item sheet the new pending line is brought into view', () => {
     render('default');
-    press(host.querySelector('.menu-tile[data-item="fries"]')!);
+    press(tileFor(host, 'fries'));
     press(buttonNamed('Add to order'));
     const added = [...host.querySelectorAll<HTMLElement>('.order-line[data-line-status="pending"]')].at(-1)!;
     expect(added.textContent).toContain('Fries');
@@ -401,7 +402,7 @@ describe('12: idempotence', () => {
 describe('13: history survives a fire', () => {
   it('from overflow, Add then Fire keeps the voided salad and adds no delivery word to rounds 1-2', () => {
     render('overflow');
-    press(host.querySelector('.menu-tile[data-item="burger"]')!);
+    press(tileFor(host, 'burger'));
     press(buttonNamed('Add to order'));
     expect(fireControl()!.textContent).toBe('Send 4 to kitchen');
     press(fireControl()!);
@@ -453,7 +454,7 @@ describe('10: the whole-screen walk (FR-G10)', () => {
     window.history.replaceState(null, '', '/pos/order');
     act(() => root.render(<PosRoutes />));
     // The default order carries a pending Steak; without a fire FR-G10 refuses Close.
-    press(host.querySelector('.menu-tile[data-item="burger"]')!);
+    press(tileFor(host, 'burger'));
     press(buttonNamed('Add to order'));
     expect(host.querySelector<HTMLElement>('[data-action="fire"]')!.textContent).toBe('Send 2 to kitchen');
     press(host.querySelector('[data-action="fire"]')!);
@@ -475,7 +476,7 @@ describe('10: the whole-screen walk (FR-G10)', () => {
   it('control: without the fire, the same walk keeps Close inert on the pending lines', () => {
     window.history.replaceState(null, '', '/pos/order');
     act(() => root.render(<PosRoutes />));
-    press(host.querySelector('.menu-tile[data-item="burger"]')!);
+    press(tileFor(host, 'burger'));
     press(buttonNamed('Add to order'));
     press(settle());
     press(host.querySelector('[data-action="add-tender"]')!);
@@ -514,7 +515,7 @@ describe('E: an item sheet opened from every fire-* origin keeps the panel’s c
     (origin) => {
       render(origin);
       const before = [fireControl()!.tagName, fireControl()!.textContent, statusLine()?.textContent];
-      press(host.querySelector('.menu-tile[data-item="soda"]')!);
+      press(tileFor(host, 'soda'));
       expect(host.querySelector('.sheet')).not.toBeNull();
       expect([fireControl()!.tagName, fireControl()!.textContent, statusLine()?.textContent]).toEqual(before);
       expect(host.querySelector('.emergency-banner') !== null).toBe(ORDER_FIXTURES[origin].incident !== undefined);

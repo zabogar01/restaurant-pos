@@ -29,7 +29,7 @@ export type FireLine = { status: LineStatus; itemId?: string; name: string };
  * not on the order any more.
  *
  * A line with no `itemId` can never block: not every line has a tile
- * (`overflow` holds a Cheesecake the grid does not sell), and an item nobody
+ * (`overflow` holds a Cheesecake line with no `itemId`), and an item nobody
  * can identify is not an item anybody has 86'd.
  */
 export function holdsUnavailable<L extends FireLine>(line: L, unavailable: ReadonlyArray<string>): boolean {

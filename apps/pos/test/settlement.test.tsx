@@ -329,6 +329,8 @@ describe('tender entry', () => {
       order: shownOrder({ state: 'default', gone: 'steak' }),
       addLine: () => {},
       removeLine: () => {},
+      category: 'mains',
+      selectCategory: () => {},
       setQuantity: () => {},
       fire: () => {},
     };
@@ -449,6 +451,8 @@ describe('F3b: cash and card diverge (POS-04)', () => {
       order: { ...shownOrder({ state: 'default', gone: 'steak' }), totals: { subtotal: 95_000_000n, total: 95_000_000n } },
       addLine: () => {},
       removeLine: () => {},
+      category: 'mains',
+      selectCategory: () => {},
       setQuantity: () => {},
       fire: () => {},
     };
@@ -759,6 +763,8 @@ describe('F3c: close outcomes (POS-04)', () => {
       order: shownOrder({ state: 'default', gone: 'steak' }),
       addLine: () => {},
       removeLine: () => {},
+      category: 'mains',
+      selectCategory: () => {},
       setQuantity: () => {},
       fire: () => {},
     };
@@ -782,6 +788,8 @@ describe('F3c: close outcomes (POS-04)', () => {
       },
       addLine: () => {},
       removeLine: () => {},
+      category: 'mains',
+      selectCategory: () => {},
       setQuantity: () => {},
       fire: () => {},
     };
@@ -1039,6 +1047,8 @@ describe('F3d: the payment session', () => {
       order: shownOrder({ state: 'default', gone: 'steak' }),
       addLine: () => {},
       removeLine: () => {},
+      category: 'mains',
+      selectCategory: () => {},
       setQuantity: () => {},
       fire: () => {},
     };
