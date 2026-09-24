@@ -394,6 +394,12 @@ button {
   letter-spacing: var(--frost-tracking-round);
 }
 
+.round-head:focus {
+  outline: var(--frost-focus-outline);
+  outline-offset: var(--frost-focus-offset);
+  box-shadow: var(--frost-focus-ring);
+}
+
 .round-lines {
   margin: 0;
   padding: 0;
@@ -768,6 +774,29 @@ button.menu-tile {
   border-left: 0;
   border-right: 0;
   border-radius: 0;
+}
+
+/* FIRE: the way back to a blocked line that has scrolled out of view. Compact
+ * height, never shrunk to fit. */
+.notice__show {
+  min-height: var(--frost-action-compact-height);
+  margin-top: var(--frost-space-2);
+  padding: var(--frost-button-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-button);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font: inherit;
+  font-weight: var(--frost-weight-medium);
+}
+
+/* The polite line after a fire. It holds its place when empty, so the live
+ * region exists before its text arrives. */
+.order-sent {
+  flex: none;
+  padding: 0 var(--frost-space-4);
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
 }
 
 /* Menu notices sit 12px 16px in from the menu area's edges, as the artifact's

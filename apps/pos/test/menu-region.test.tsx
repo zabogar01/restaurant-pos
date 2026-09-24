@@ -293,7 +293,12 @@ describe.each(ORDER_STATES.map((s) => s.id))('%s: acting controls are buttons, a
     // banner's route to POS-07 in fireerror. Both of them genuinely leave the
     // screen for one that SITEMAP gives its own route, which is the whole test
     // — an anchor is for going, a button is for acting (ruling of 2026-09-17).
-    const leaving = lock ? [LOCK_NOTICE[lock].action.label] : state === 'fireerror' ? [FIRE_INCIDENT.action.label] : [];
+    // FE-022: fire-failed and fire-unknown draw the same banner, with the same route.
+    const leaving = lock
+      ? [LOCK_NOTICE[lock].action.label]
+      : ['fireerror', 'fire-failed', 'fire-unknown', 'fire-heading-width'].includes(state)
+        ? [FIRE_INCIDENT.action.label]
+        : [];
     expect(anchors.map((a) => a.textContent)).toEqual(leaving);
     for (const a of anchors) expect(a.matches('.menu-notice a.action[href], a.emergency-banner__action[href]')).toBe(true);
     for (const b of device().querySelectorAll('button')) expect(b.getAttribute('type')).toBe('button');

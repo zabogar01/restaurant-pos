@@ -6,6 +6,7 @@ import {
   LOCK_NOTICE,
   MENU_CATEGORIES,
   menuFixtureFor,
+  originFacts,
   MENU_ITEMS,
   REJECTED_NOTICE,
   SELECTED_CATEGORY,
@@ -46,7 +47,7 @@ export function MenuRegion({
   locked?: boolean;
 }) {
   const fixture = menuFixtureFor(view);
-  const lock = locked ? 'draft' : fixture.lock;
+  const lock = locked ? 'draft' : originFacts(view).lock;
 
   // Under either lock the rail and grid are absent, not inert: adding a line is
   // one of the five blocked actions and the grid is the surface that performs

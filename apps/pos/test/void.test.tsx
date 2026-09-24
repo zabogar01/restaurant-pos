@@ -329,7 +329,7 @@ describe('the order sheet draws whichever variant the order calls for, not the ?
     totals: { subtotal: total, total },
   });
   const oneFired = order([
-    { kind: 'fired', round: 1, firedAt: '20:00', printed: false, lines: [line('fired', 'x')] },
+    { kind: 'fired', round: 1, firedAt: '20:00', delivery: 'failed', lines: [line('fired', 'x')] },
     { kind: 'pending', lines: [line('pending', 'y')] },
   ]);
   const nothingFired = order([{ kind: 'pending', lines: [line('pending', 'y')] }]);

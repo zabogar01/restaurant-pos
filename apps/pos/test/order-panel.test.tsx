@@ -46,7 +46,8 @@ type Asked =
   | { navigate: string; leaves: boolean }
   | { openVoid: unknown }
   | { openLine: string }
-  | { openDiscount: true };
+  | { openDiscount: true }
+  | { fire: true };
 function recording() {
   const asked: Asked[] = [];
   const actions: PanelActions = {
@@ -54,6 +55,7 @@ function recording() {
     openVoid: (target) => asked.push({ openVoid: target }),
     openLine: (lineId) => asked.push({ openLine: lineId }),
     openDiscount: () => asked.push({ openDiscount: true }),
+    fire: () => asked.push({ fire: true }),
   };
   return { asked, actions };
 }
@@ -152,6 +154,14 @@ describe('fixture states', () => {
       'fireblocked-overflow',
       'error',
       'fireerror',
+      // FE-022's seven fire fixtures (DESIGN-007 Part C), between fireerror and the quick sale.
+      'fire-ready',
+      'fire-queued',
+      'fire-printed',
+      'fire-failed',
+      'fire-unknown',
+      'fire-then-add',
+      'fire-heading-width',
       'quick',
       'quick-line',
     ]);
@@ -260,7 +270,8 @@ describe('unlocked rows', () => {
     expect(bar.map((b) => [b.tagName, b.getAttribute('type'), b.textContent])).toEqual([
       ['BUTTON', 'button', 'Discount'],
       ['BUTTON', 'button', 'Void order'],
-      ['BUTTON', 'button', 'Send to kitchen'],
+      // FE-022: the label carries the pending count (default holds one pending Steak).
+      ['BUTTON', 'button', 'Send 1 to kitchen'],
       ['BUTTON', 'button', 'Settle'],
     ]);
     for (const b of bar) press(b);
@@ -268,10 +279,12 @@ describe('unlocked rows', () => {
     // the order on screen. **Send to kitchen asks for nothing**: it used to
     // name ?state=fireerror, which would move the cashier's order to the
     // fire-error fixture's now that fireerror is a real state. Only Settle,
-    // which leaves for POS-04, asks to push a history entry.
+    // which leaves for POS-04, asks to push a history entry. FE-022: Send asks
+    // the screen to fire, and names no state.
     expect(asked).toEqual([
       { openDiscount: true },
       { openVoid: { kind: 'order' } },
+      { fire: true },
       { navigate: '?state=settle', leaves: true },
     ]);
   });
@@ -373,7 +386,7 @@ describe('empty and overflow', () => {
   it('overflow: the totals and close bar sit outside the scrolling list', () => {
     render('overflow');
     const panel = host.querySelector('.order-panel')!;
-    expect([...panel.children].map((c) => c.className)).toEqual(['order-panel__head', 'order-lines', 'totals', 'order-actions']);
+    expect([...panel.children].map((c) => c.className)).toEqual(['order-panel__head', 'order-lines', 'order-sent', 'totals', 'order-actions']);
     expect(rows().length).toBeGreaterThanOrEqual(10);
     expect(host.querySelector('.order-panel__count')!.textContent).toBe('9 items');
   });

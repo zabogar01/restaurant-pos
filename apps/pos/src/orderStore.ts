@@ -1,7 +1,8 @@
 import type { Money } from '@pos/money';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { orderTotals, type DiscountSnapshot } from './discount.js';
-import { MENU_ITEMS } from './menuFixtures.js';
+import { fireOrder } from './fire.js';
+import { MENU_ITEMS, originFacts } from './menuFixtures.js';
 import {
   ORDER_FIXTURES,
   type Modifier,
@@ -59,6 +60,14 @@ export type OrderStore = {
    * Called by the line editor's *Update to n* (FE-021).
    */
   setQuantity: (lineId: string, quantity: number) => void;
+  /**
+   * Mutation 4 (FE-022): the fire. Sends every PENDING line as one new `queued`
+   * round stamped `firedAt`, through `fireOrder` — which owns every refusal, so a
+   * press the panel should not have offered (an 86'd line, a lock, a quick sale,
+   * nothing pending) changes nothing. Applied through the functional updater, so
+   * a second call in the same tick finds nothing pending.
+   */
+  fire: (firedAt: string) => void;
 };
 
 function priceOf(itemId: string): Money {
@@ -84,6 +93,8 @@ export function unitOf(l: OrderLine): Money {
 }
 
 function dropLine(groups: ReadonlyArray<RoundGroup>, lineId: string): ReadonlyArray<RoundGroup> {
+  // Nothing matched: the same groups, so identity says whether the order changed.
+  if (!groups.some((g) => g.lines.some((l) => l.id === lineId))) return groups;
   return groups.map((g) => ({ ...g, lines: g.lines.filter((l) => l.id !== lineId) })).filter((g) => g.lines.length > 0);
 }
 
@@ -94,6 +105,7 @@ function appendPending(groups: ReadonlyArray<RoundGroup>, line: OrderLine): Read
 }
 
 function rewriteQuantity(groups: ReadonlyArray<RoundGroup>, lineId: string, quantity: number): ReadonlyArray<RoundGroup> {
+  if (!groups.some((g) => g.lines.some((l) => l.id === lineId))) return groups;
   return groups.map((g) => ({
     ...g,
     lines: g.lines.map((l) => (l.id === lineId ? { ...l, quantity, amount: unitOf(l) * BigInt(quantity) } : l)),
@@ -103,7 +115,7 @@ function rewriteQuantity(groups: ReadonlyArray<RoundGroup>, lineId: string, quan
 /** Seeded once per mount: the fixture's own order, with a `?gone=` line already dropped, exactly as `shownOrder` drops it — never under a lock, fixture or derived (F3d rule 4). */
 function seed(view: OrderView, locked: boolean): StoreState {
   const fixture = ORDER_FIXTURES[view.state];
-  const drop = !fixture.lock && !locked && view.gone ? view.gone : undefined;
+  const drop = !originFacts(view).lock && !locked && view.gone ? view.gone : undefined;
   return {
     title: fixture.title,
     ...(fixture.type && { type: fixture.type }),
@@ -151,7 +163,7 @@ function toShownOrder(data: StoreState): ShownOrder {
 
 /**
  * `locked` (F3d): the own-tab payment-session lock POS-03 derives from
- * PosRoutes, on top of whatever `ORDER_FIXTURES[view.state].lock` already
+ * PosRoutes, on top of whatever `originFacts(view).lock` already
  * says. It guards the same two things the fixture lock guards — the initial
  * seed's `?gone=` drop and the post-mount effect's — so a `?gone=` mutation
  * walked in through the URL is refused the same way under either lock
@@ -161,6 +173,11 @@ export function useOrderStore(view: OrderView, locked = false): OrderStore {
   const [data, setData] = useState<StoreState>(() => seed(view, locked));
   const appliedGone = useRef(view.gone);
   const nextId = useRef(0);
+  // What the fire reads at the moment of the press: the view it is on and the
+  // session lock. A ref, so `fire` keeps one identity and still asks the
+  // current facts rather than the ones it was created under.
+  const context = useRef({ view, locked });
+  context.current = { view, locked };
 
   useEffect(() => {
     // Lead correction (F3d): `view.gone` going falsy (Cancel always clears it
@@ -178,7 +195,7 @@ export function useOrderStore(view: OrderView, locked = false): OrderStore {
     // for. This is also what stops a *refused* attempt from being consumed
     // as if it had dropped the line — the bug this correction fixes.
     appliedGone.current = view.gone;
-    if (ORDER_FIXTURES[view.state].lock || locked) return;
+    if (originFacts(view).lock || locked) return;
     setData((prev) => ({ ...prev, groups: dropLine(prev.groups, view.gone!) }));
   }, [view.gone, view.state, locked]);
 
@@ -205,5 +222,21 @@ export function useOrderStore(view: OrderView, locked = false): OrderStore {
     setData((prev) => ({ ...prev, groups: rewriteQuantity(prev.groups, lineId, quantity) }));
   }, []);
 
-  return { order: toShownOrder(data), addLine, removeLine, setQuantity };
+  const fire = useCallback((firedAt: string) => {
+    const { view, locked } = context.current;
+    // The place's own facts, through originFacts: an item sheet draws the state
+    // it was opened from, and reading `X[view.state]` would un-86 a held line.
+    const { menu, lock } = originFacts(view);
+    setData((prev) => {
+      const result = fireOrder(prev.groups, {
+        type: prev.type ?? 'table',
+        unavailable: menu.eightySixed ?? [],
+        locked: locked || lock !== undefined,
+        firedAt,
+      });
+      return result.refused ? prev : { ...prev, groups: result.groups };
+    });
+  }, []);
+
+  return { order: toShownOrder(data), addLine, removeLine, setQuantity, fire };
 }

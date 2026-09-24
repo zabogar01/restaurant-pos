@@ -198,6 +198,13 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   // another order names that order's state instead.
   error: { rejected: { state: 'default' } },
   fireerror: {},
+  'fire-ready': {},
+  'fire-queued': {},
+  'fire-printed': {},
+  'fire-failed': {},
+  'fire-unknown': {},
+  'fire-then-add': {},
+  'fire-heading-width': {},
   // F2d. The menu region is untouched by the quick-sale variant — the rail
   // and grid are the artifact's default ones behind both states.
   quick: {},
@@ -220,7 +227,7 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
  */
 export function originFacts(view: OrderView) {
   const origin = view.from ?? view.state;
-  return { menu: MENU_FIXTURES[origin], incident: ORDER_FIXTURES[origin].incident };
+  return { menu: MENU_FIXTURES[origin], incident: ORDER_FIXTURES[origin].incident, lock: ORDER_FIXTURES[origin].lock };
 }
 
 /** The menu fixture a view draws: an item sheet draws the state it was opened from, so what was 86'd stays 86'd. */

@@ -330,6 +330,7 @@ describe('tender entry', () => {
       addLine: () => {},
       removeLine: () => {},
       setQuantity: () => {},
+      fire: () => {},
     };
     act(() => root.render(<SettlementScreen store={store} addRule={() => false} />));
 
@@ -449,6 +450,7 @@ describe('F3b: cash and card diverge (POS-04)', () => {
       addLine: () => {},
       removeLine: () => {},
       setQuantity: () => {},
+      fire: () => {},
     };
     act(() => root.render(<SettlementScreen store={store} />));
 
@@ -758,6 +760,7 @@ describe('F3c: close outcomes (POS-04)', () => {
       addLine: () => {},
       removeLine: () => {},
       setQuantity: () => {},
+      fire: () => {},
     };
     act(() => root.render(<SettlementScreen store={store} closeRule={() => ({ reason: 'balance' })} />));
 
@@ -780,6 +783,7 @@ describe('F3c: close outcomes (POS-04)', () => {
       addLine: () => {},
       removeLine: () => {},
       setQuantity: () => {},
+      fire: () => {},
     };
     window.history.replaceState(null, '', '/pos/settlement?state=empty');
     act(() => root.render(<SettlementScreen store={store} />));
@@ -1036,6 +1040,7 @@ describe('F3d: the payment session', () => {
       addLine: () => {},
       removeLine: () => {},
       setQuantity: () => {},
+      fire: () => {},
     };
     act(() => root.render(<SettlementScreen store={store} />));
     add();
