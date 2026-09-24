@@ -8,7 +8,7 @@ next, not what happens eventually.
 Owned by the Claude product lead. No other agent writes to this file.
 
 Last updated 2026-09-24. F3, DESIGN-006 and FE-020 are done (head `6d69f2c`,
-1349 tests). **F5a (FE-021) and F5b (FE-022) done 2026-09-24. Next: F4.** DESIGN-007 is done. It was one design task for POS-03's
+1349 tests). **F5a (FE-021) and F5b (FE-022) done 2026-09-24. F5c (FE-023) done. Next: F5d (FE-024), then F4.** DESIGN-007 is done. It was one design task for POS-03's
 three high items — the tile's item sheet (live bug: every tile adds a Burger),
 committing a line's quantity, and what firing shows — then the code fix, before
 F4. Full list in MEMORY.md's top block.
@@ -264,6 +264,8 @@ A task that feels like it needs two sessions is two tasks.
 | A11 | [DESIGN-007](../../restaurant-pos-design/.agent/tasks/DESIGN-007-order-flow-gaps.md): POS-03's three high gaps. Each tile gets its own item, the quantity is committed explicitly (the owner's Square reference), and sending to the kitchen takes one press ([ARCH-002](reviews/ARCH-002-fire-confirmation.md), accepted by the owner) | **Done 2026-09-24.** The review found 2 P2, both fixed in round 2 and lead-verified in headless Chrome. Committed on the design branch as `032a6e9` and `2da9d75`, not pushed | `designer5` (codex `gpt-6-astra`) |
 | F5a | [FE-021](tasks/FE-021-own-items-and-quantity.md): each tile adds its own item (**fixes the live "every tile adds a Burger" bug**), and a line's quantity saves (`FR-D5`, `FR-M5`) | **Done 2026-09-24**, accepted after 5 rounds (1645 tests / 23 files), `7268943`/`10a6ecb` | `builder23` (closed) |
 | F5b | [FE-022](tasks/FE-022-one-press-fire.md): Send to kitchen sends in one press. `delivery` gets four values plus `null`, the send is a pure `fireOrder` (T-1 to T-8), and **a table order can finally close from a live walk** | **Done 2026-09-24**, accepted after 3 rounds (1796 tests / 25 files) | `builder24` (closed) |
+| F5c | [FE-023](tasks/FE-023-menu-categories.md): a category press shows that category's items (owner ruling on POS-03 Q8; the lead's categorisation) | **Done 2026-09-24** (1921 tests / 26 files) | `builder25` (closed) |
+| F5d | [FE-024](tasks/FE-024-off-actions-focusable.md): every off action is a focusable `aria-disabled` button that says why (POS-03 Q7, lead's ruling) | Written 2026-09-24. Starts after F5c | — |
 | F4 | The remaining POS screens, then the back office | Not started; after F5a–F5b | unassigned |
 
 F1 is deliberately the smallest thing that proves the chain end to end: Vite
