@@ -53,6 +53,13 @@ export type OrderLine = {
   /** A voided line's record: when, and who approved it. */
   note?: string;
   amount: Money;
+  /**
+   * The resolved unit price, snapshotted when the line was added (B-8,
+   * FR-D4): `max(0, base + chosen deltas)`. A quantity edit reprices from this,
+   * never from today's menu. Optional because a fixture line predates it and
+   * falls back to the menu.
+   */
+  unitPrice?: Money;
   status: LineStatus;
 };
 
@@ -187,6 +194,18 @@ export type OrderState =
   | 'catalog'
   | 'sheet-item'
   | 'sheet-item86'
+  | 'sheet-item-burger'
+  | 'sheet-item-wings'
+  | 'sheet-item-steak'
+  | 'sheet-item-fish'
+  | 'sheet-item-salad'
+  | 'sheet-item-soup'
+  | 'sheet-item-fries'
+  | 'sheet-item-rings'
+  | 'sheet-item-soda'
+  | 'sheet-item-coffee'
+  | 'sheet-item-beer'
+  | 'sheet-item-wine'
   | 'sheet-line'
   | 'approval'
   | 'approval-error'
@@ -222,6 +241,18 @@ export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'catalog', label: 'Menu changed while ordering' },
   { id: 'sheet-item', label: 'Sheet — item configuration' },
   { id: 'sheet-item86', label: 'Sheet — item 86’d mid-choice' },
+  { id: 'sheet-item-burger', label: 'Sheet — item: Burger' },
+  { id: 'sheet-item-wings', label: 'Sheet — item: Chicken Wings' },
+  { id: 'sheet-item-steak', label: 'Sheet — item: Steak' },
+  { id: 'sheet-item-fish', label: 'Sheet — item: Fish & Chips' },
+  { id: 'sheet-item-salad', label: 'Sheet — item: Caesar Salad' },
+  { id: 'sheet-item-soup', label: 'Sheet — item: Soup of the Day' },
+  { id: 'sheet-item-fries', label: 'Sheet — item: Fries' },
+  { id: 'sheet-item-rings', label: 'Sheet — item: Onion Rings' },
+  { id: 'sheet-item-soda', label: 'Sheet — item: Soda' },
+  { id: 'sheet-item-coffee', label: 'Sheet — item: Coffee' },
+  { id: 'sheet-item-beer', label: 'Sheet — item: Beer' },
+  { id: 'sheet-item-wine', label: 'Sheet — item: House Wine' },
   { id: 'sheet-line', label: 'Sheet — line editor' },
   { id: 'approval', label: 'Modal — manager approval' },
   { id: 'approval-error', label: 'Modal — wrong PIN' },
@@ -524,6 +555,18 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   // rather than a new state.
   'sheet-item': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-item86': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-burger': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-wings': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-steak': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-fish': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-salad': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-soup': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-fries': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-rings': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-soda': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-coffee': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-beer': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
+  'sheet-item-wine': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
   'sheet-line': { title: 'Order · T1', groups: tableOrder, totals: tableTotals, applied: STAFF_MEAL, appliedNote: STAFF_MEAL_NOTE, totalsWithout: tableTotalsWithout },
 
   // F2g's approval prompt opens over the table order: the artifact's request
@@ -676,6 +719,43 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
 };
 
 /**
+ * FE-021: the states an item sheet may be opened from — an allow-list, by this
+ * rule: a workspace state in which a menu tile is actually pressable. Never an
+ * overlay (a sheet, the approval prompt: drawn over a place, not a place) and
+ * never a state whose grid is inert (a lock, the loading skeleton). A `from`
+ * outside it parses as no origin, because the URL is the boundary and can be
+ * bookmarked or edited.
+ *
+ * The value says what leaving the sheet does with the origin:
+ * - `keeps` — a persistent condition of the order or the menu that neither
+ *   Cancel nor a successful Add changes: 86 availability and the FE-011
+ *   refusal, the incident banner, and the order's own context (long, comped,
+ *   discounted, quick). Both return to the origin.
+ * - `clears-on-add` — a transient notice or draw that is still true when the
+ *   sheet is cancelled but that a successful Add makes false ("nothing was
+ *   added", "the order is exactly as it was", an empty order). Cancel returns
+ *   to the origin; Add goes to `default`, the order kept.
+ * - `clears` — a transient interaction that has already ended by the time the
+ *   sheet closes (a held tap). Neither Cancel nor Add restores it: both go to
+ *   `default`.
+ */
+export const ITEM_SHEET_ORIGINS: Partial<Record<OrderState, 'keeps' | 'clears-on-add' | 'clears'>> = {
+  default: 'keeps',
+  overflow: 'keeps',
+  zero: 'keeps',
+  'other-discount': 'keeps',
+  quick: 'keeps',
+  eightysix: 'keeps',
+  fireblocked: 'keeps',
+  'fireblocked-overflow': 'keeps',
+  fireerror: 'keeps',
+  empty: 'clears-on-add',
+  catalog: 'clears-on-add',
+  error: 'clears-on-add',
+  pressed: 'clears',
+};
+
+/**
  * What POS-03 is showing: which fixture order, and which PENDING line the
  * remove control took away. A removal is an [INLINE] state of the screen
  * (SITEMAP §1), so reaching it replaces the history entry rather than pushing
@@ -690,11 +770,22 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
  * ?category=, and nothing reads it. What a category press should do before
  * there is a second catalogue is a designer's question.
  */
-export type OrderView = { state: OrderState; gone?: string };
+export type OrderView = {
+  state: OrderState;
+  gone?: string;
+  /**
+   * FE-021: set only on an item sheet (`sheet-item-<id>`) — the state the tile
+   * was pressed on. The sheet returns there on Cancel and Add, and the menu
+   * and panel behind it keep that state's availability, so opening a sheet
+   * never un-86's a held line (B-17). Absent means `default`.
+   */
+  from?: OrderState;
+};
 
 /** The query string that selects a view: the inverse of orderViewFrom. */
-export function viewSearch({ state, gone }: OrderView): string {
-  return gone ? `?state=${state}&gone=${encodeURIComponent(gone)}` : `?state=${state}`;
+export function viewSearch({ state, gone, from }: OrderView): string {
+  const base = gone ? `?state=${state}&gone=${encodeURIComponent(gone)}` : `?state=${state}`;
+  return from ? `${base}&from=${from}` : base;
 }
 
 /** ?state= picks the fixture; ?gone= is a PENDING line the remove control took away. */
@@ -702,5 +793,8 @@ export function orderViewFrom(search: string): OrderView {
   const params = new URLSearchParams(search);
   const state = ORDER_STATES.find((s) => s.id === params.get('state'))?.id ?? 'default';
   const gone = params.get('gone');
-  return gone ? { state, gone } : { state };
+  // `from` means something only on an item sheet, and only a place a tile can be pressed.
+  const asked = params.get('from') as OrderState | null;
+  const from = state.startsWith('sheet-item-') && asked && asked in ITEM_SHEET_ORIGINS ? asked : undefined;
+  return { state, ...(gone && { gone }), ...(from && { from }) };
 }

@@ -7,7 +7,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   CATALOG_NOTICE,
-  ITEM_SEARCH,
+  itemDestination,
   LOADING_LABEL,
   LOCK_NOTICE,
   MENU_CATEGORIES,
@@ -83,8 +83,8 @@ describe('default', () => {
       expect(tile.tagName).toBe('BUTTON');
       expect(tile.getAttribute('type')).toBe('button');
       press(tile);
-      expect(window.location.search).toBe(ITEM_SEARCH);
-      expect(sheetTitle()).toBe('Burger');
+      expect(window.location.search).toBe(itemDestination(item.id));
+      expect(sheetTitle()).toBe(item.name);
     }
   });
 
@@ -168,7 +168,7 @@ describe('eightysix: disabled in place (ruling C-3)', () => {
     for (const id of others.map((t) => t.dataset.item)) {
       render('eightysix');
       press(host.querySelector(`[data-item="${id}"]`)!);
-      expect(window.location.search).toBe(ITEM_SEARCH);
+      expect(window.location.search).toBe(itemDestination(id!, 'eightysix'));
     }
   });
 });

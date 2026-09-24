@@ -10,7 +10,7 @@ import { ORDER_STATES, type OrderState } from '../src/orderFixtures.js';
 import { APPROVAL_FIXTURES } from '../src/approvalFixtures.js';
 import { DISCOUNT_FIXTURES } from '../src/discountFixtures.js';
 import { VOID_FIXTURES } from '../src/voidFixtures.js';
-import { QUANTITY_MAX, SHEET_FIXTURES, unitPrice, type ItemSheetFixture } from '../src/sheetFixtures.js';
+import { ITEM_SHEET_STATES, QUANTITY_MAX, SHEET_FIXTURES, unitPrice, type ItemSheetFixture } from '../src/sheetFixtures.js';
 
 // POS-03's ungated sheets (F2c). Three properties are the point:
 // - no control in any F2c state reaches a PIN-gated state (I-12, B-16: a gated
@@ -232,7 +232,9 @@ it('the reachability sweep names every fixture SHEET_FIXTURES carries, quick-lin
   // could exist and never be swept. SHEET_STATES is Object.keys of the same
   // record the panel reads, so this now fails the day a fixture is added
   // and left out — it cannot be, since REACHABILITY_STATES is built from it.
-  expect(SHEET_STATES.slice().sort()).toEqual(['quick-line', 'sheet-item', 'sheet-item86', 'sheet-line']);
+  expect(SHEET_STATES.slice().sort()).toEqual(
+    ['quick-line', 'sheet-item', 'sheet-item86', 'sheet-line', ...ITEM_SHEET_STATES].sort()
+  );
   expect(REACHABILITY_STATES).toEqual(expect.arrayContaining(SHEET_STATES));
 });
 
@@ -470,7 +472,11 @@ describe('sheet-item86: 86’d mid-choice (acceptance criterion 3)', () => {
   });
 
   it('the only way out is Cancel (or Escape)', () => {
-    expect([...dialog()!.querySelectorAll('.sheet__foot button')].map((b) => b.textContent)).toEqual(['Cancel']);
+    // Round 2: the stepper stays on the 86'd sheet, in the commit row, so
+    // "the only way out" is read off the row that holds the exits.
+    expect([...dialog()!.querySelectorAll('.sheet__secondary button')].map((b) => b.textContent)).toEqual(['Cancel']);
+    for (const step of dialog()!.querySelectorAll('.sheet__commit button')) press(step);
+    expect(dialog()).not.toBeNull();
   });
 });
 
@@ -535,7 +541,7 @@ describe('no sheet in any other state', () => {
 
 it('every amount in the sheet fixtures is a bigint', () => {
   const item = SHEET_FIXTURES['sheet-item'] as ItemSheetFixture;
-  const amounts = [item.price, ...item.sizes.map((o) => o.delta), ...item.extras.map((o) => o.delta)];
+  const amounts = [item.price, ...item.groups.flatMap((g) => g.options.map((o) => o.delta))];
   expect(amounts.filter((a) => typeof a !== 'bigint')).toEqual([]);
 });
 

@@ -56,14 +56,7 @@ export type OrderStore = {
    * price and its own modifier deltas — never a multiply of the existing
    * amount. Mutation 2.
    *
-   * **No caller in this slice, deliberately.** The line editor's quantity
-   * stepper has no commit control in the code or in the reviewed artifact
-   * (`order.html:449-476` draws only Back and Remove line on both `sheet-line`
-   * and `quick-line`) — FE-014's task file first assumed one existed and was
-   * corrected after the fact. Adding a Save button here would invent a
-   * composition the artifact never draws. Landed unused and tested directly
-   * against the store, on A9's precedent (`--frost-invalid` and the round tag,
-   * both landed with no surface for a later slice).
+   * Called by the line editor's *Update to n* (FE-021).
    */
   setQuantity: (lineId: string, quantity: number) => void;
 };
@@ -74,11 +67,20 @@ function priceOf(itemId: string): Money {
   return item.price;
 }
 
-/** `quantity × item price + modifier deltas`, floored at zero as `unitPrice` floors a sheet's own total. */
-function lineAmount(price: Money, quantity: number, modifiers: ReadonlyArray<Modifier> | undefined): Money {
-  const deltas = (modifiers ?? []).reduce((sum, m) => sum + (m.delta ?? 0n), 0n);
-  const total = price * BigInt(quantity) + deltas;
-  return total < 0n ? 0n : total;
+/** FR-C2: the unit price is `max(0, base + modifier deltas)`, and a line's amount is that unit × quantity. The clamp is on the unit, never the total. */
+function resolveUnit(price: Money, modifiers: ReadonlyArray<Modifier> | undefined): Money {
+  const unit = (modifiers ?? []).reduce((sum, m) => sum + (m.delta ?? 0n), price);
+  return unit < 0n ? 0n : unit;
+}
+
+/**
+ * The unit a quantity edit reprices from, and the preview's arithmetic label:
+ * the line's own snapshot (B-8, FR-D4). Once a line exists the catalog is never
+ * consulted again. A fixture line predates the snapshot, so its unit is its
+ * own amount ÷ quantity — exact, since a FR-C2 line's amount is unit × quantity.
+ */
+export function unitOf(l: OrderLine): Money {
+  return l.unitPrice ?? l.amount / BigInt(l.quantity);
 }
 
 function dropLine(groups: ReadonlyArray<RoundGroup>, lineId: string): ReadonlyArray<RoundGroup> {
@@ -94,7 +96,7 @@ function appendPending(groups: ReadonlyArray<RoundGroup>, line: OrderLine): Read
 function rewriteQuantity(groups: ReadonlyArray<RoundGroup>, lineId: string, quantity: number): ReadonlyArray<RoundGroup> {
   return groups.map((g) => ({
     ...g,
-    lines: g.lines.map((l) => (l.id === lineId ? { ...l, quantity, amount: lineAmount(priceOf(l.itemId!), quantity, l.modifiers) } : l)),
+    lines: g.lines.map((l) => (l.id === lineId ? { ...l, quantity, amount: unitOf(l) * BigInt(quantity) } : l)),
   }));
 }
 
@@ -122,6 +124,17 @@ function totalsFor(lines: ReadonlyArray<OrderLine>, applied: DiscountSnapshot | 
   if (lines.length === 0) return { subtotal: 0n, total: 0n };
   const subtotal = lines.filter((l) => l.status !== 'voided').reduce((sum, l) => sum + l.amount, 0n);
   return orderTotals(subtotal, applied);
+}
+
+/**
+ * What the order would read if a PENDING line's quantity were `quantity`: a
+ * pure derivation for the line editor's unsaved preview (FE-021). It never
+ * writes, and nothing but `setQuantity` changes the order.
+ */
+export function previewQuantity(order: ShownOrder, lineId: string, quantity: number) {
+  const groups = rewriteQuantity(order.groups, lineId, quantity);
+  const lines = groups.flatMap((g) => g.lines);
+  return { amount: lines.find((l) => l.id === lineId)?.amount ?? 0n, totals: totalsFor(lines, order.applied) };
 }
 
 function toShownOrder(data: StoreState): ShownOrder {
@@ -170,14 +183,15 @@ export function useOrderStore(view: OrderView, locked = false): OrderStore {
   }, [view.gone, view.state, locked]);
 
   const addLine = useCallback((line: NewLine) => {
-    const amount = lineAmount(priceOf(line.itemId), line.quantity, line.modifiers);
+    const unitPrice = resolveUnit(priceOf(line.itemId), line.modifiers);
     const newLine: OrderLine = {
       id: `${line.itemId}-${++nextId.current}`,
       quantity: line.quantity,
       name: line.name,
       itemId: line.itemId,
       ...(line.modifiers && line.modifiers.length > 0 && { modifiers: line.modifiers }),
-      amount,
+      unitPrice,
+      amount: unitPrice * BigInt(line.quantity),
       status: 'pending',
     };
     setData((prev) => ({ ...prev, groups: appendPending(prev.groups, newLine) }));

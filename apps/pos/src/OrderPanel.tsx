@@ -6,7 +6,7 @@ import { DiscountSheet } from './DiscountSheets.js';
 import { EmergencyBanner } from './EmergencyBanner.js';
 import { FIRE_ACTION, blockingLines, fireRefusal, holdsUnavailable, sendableLines, type FireRefusal } from './fire.js';
 import { Icon } from './icons.js';
-import { MENU_FIXTURES } from './menuFixtures.js';
+import { MENU_FIXTURES, menuFixtureFor, originFacts } from './menuFixtures.js';
 import { MenuRegion } from './MenuRegion.js';
 import { formatAmount } from './money.js';
 import { useOrderStore, type OrderStore } from './orderStore.js';
@@ -14,6 +14,7 @@ import {
   FIRED_TAG,
   LOCK_TAG,
   ORDER_FIXTURES,
+  ITEM_SHEET_ORIGINS,
   ORDER_STATES,
   PENDING_TAG,
   orderCountLabel,
@@ -142,7 +143,18 @@ export function ControlledOrderScreen({
   // The sheets and the void sheet still read the fixture-only derivation
   // (FE-014's correction to this task): none of them are wired to the store.
   const order = shownOrder(view);
-  const sheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, order) : undefined);
+  // A line editor is for a line on the order the cashier is looking at — the
+  // store's, which holds lines added since the fixture was drawn (FE-021).
+  const fixtureSheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, store.order) : undefined);
+  // An item sheet opened from a tile returns to where the tile was pressed.
+  // What Cancel and a successful Add return to is the origin's own policy
+  // (ITEM_SHEET_ORIGINS): a persistent condition returns to both, a notice
+  // only to Cancel, and a finished interaction to neither.
+  const policy = view.from ? ITEM_SHEET_ORIGINS[view.from] : undefined;
+  const cancelTo: OrderView = { state: view.from && policy !== 'clears' ? view.from : 'default' };
+  const addTo: OrderView = { state: view.from && policy === 'keeps' ? view.from : 'default' };
+  const sheet =
+    fixtureSheet?.kind === 'item' && view.state.startsWith('sheet-item-') ? { ...fixtureSheet, cancel: cancelTo, add: addTo } : fixtureSheet;
   const approval = APPROVAL_FIXTURES[view.state];
   const discount = DISCOUNT_FIXTURES[view.state] ?? (discountOpened ? panelDiscount(view, order) : undefined);
   const voiding = VOID_FIXTURES[view.state] ?? (voidOpened && panelVoid(voidOpened, view));
@@ -183,6 +195,7 @@ export function ControlledOrderScreen({
   }, [view]);
 
   // React 18 has no inert prop; an empty string renders the bare attribute.
+  const { incident } = originFacts(view);
   const inert = sheet || approval || discount || voiding ? { inert: '' } : {};
   // A sheet opened over a particular line or order is remounted when that
   // target changes, so tapping a second row draws the second row's sheet.
@@ -199,9 +212,7 @@ export function ControlledOrderScreen({
           rest of the frame while a sheet is open: a sheet owns the screen, and
           the incident is still there behind it.
         */}
-        {ORDER_FIXTURES[view.state].incident && (
-          <EmergencyBanner {...ORDER_FIXTURES[view.state].incident!} inert={inert} />
-        )}
+        {incident && <EmergencyBanner {...incident} inert={inert} />}
         <div className="order-screen__bar" aria-hidden="true" {...inert} />
         <div className="order-screen__body" {...inert}>
           <MenuRegion view={view} navigate={navigate} locked={locked} />
@@ -212,7 +223,17 @@ export function ControlledOrderScreen({
             actions={{ navigate, openVoid: setVoidOpened, openLine: setLineOpened, openDiscount: () => setDiscountOpened(true) }}
           />
         </div>
-        {sheet && <SheetView key={lineKey} sheet={sheet} go={go} addLine={store.addLine} />}
+        {sheet && (
+          <SheetView
+            key={lineKey}
+            sheet={sheet}
+            go={go}
+            addLine={store.addLine}
+            setQuantity={store.setQuantity}
+            order={store.order}
+            renderTotals={(totals) => <TotalsView totals={totals} />}
+          />
+        )}
         {approval && <ApprovalPrompt key={view.state} approval={approval} go={go} />}
         {discount && <DiscountSheet key={discountOpened ? 'opened' : view.state} fixture={discount} go={go} />}
         {voiding && <VoidSheet key={voidKey} fixture={voiding} order={order} go={go} />}
@@ -284,7 +305,7 @@ export function OrderPanel({
   // three. Scoping the notice back to one state would be the per-state flag
   // again, and would let a cashier fire an 86'd Steak from `eightysix`.
   // test/fire.test.tsx pins it; raised in the FE-011 handoff.
-  const unavailable = MENU_FIXTURES[view.state].eightySixed ?? [];
+  const unavailable = menuFixtureFor(view).eightySixed ?? [];
   const lines = groups.flatMap((g) => g.lines);
   // FR-E5, ruling C-2: a quick sale has no fire control at all, so it has
   // nothing to refuse and nothing that is "not sendable yet" either — both

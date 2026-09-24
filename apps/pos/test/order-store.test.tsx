@@ -7,6 +7,7 @@ import { orderTotals } from '../src/discount.js';
 import { FIRE_ACTION } from '../src/fire.js';
 import { OrderScreen } from '../src/OrderPanel.js';
 import { ORDER_FIXTURES, ORDER_STATES, type OrderState, type OrderView } from '../src/orderFixtures.js';
+import { MENU_ITEMS } from '../src/menuFixtures.js';
 import { useOrderStore, type OrderStore } from '../src/orderStore.js';
 import { shownOrder } from '../src/voidFixtures.js';
 
@@ -125,11 +126,12 @@ describe('AC4: removal works where no fixture pre-figured it', () => {
 });
 
 describe('AC5: a quantity rewrite recomputes from the unit price and its own modifier deltas', () => {
-  // The Burger on quick carries Large (+20.000) and Extra cheese (+15.000):
-  // unitPrice 135.000 at quantity 1. At quantity 3 the two implementations
-  // the criterion asks to distinguish read:
-  //   recompute:            100.000 × 3 + 35.000 = 335.000
-  //   multiply the amount:  135.000 × 3           = 405.000
+  // FR-C2: the unit price is max(0, base + modifier deltas) and a line's
+  // amount is that unit × quantity. The Burger on quick carries Large
+  // (+20.000) and Extra cheese (+15.000): unit 135.000. At quantity 3:
+  //   unit × quantity:       (100.000 + 35.000) × 3 = 405.000
+  // (The FE-014 version of this test pinned 335.000, which multiplied only the
+  // base price; the lead ruled that a FR-C2 error on 2026-09-24, FE-021.)
   it('rewrites the line in place: same line count, amount from the unit price × quantity', () => {
     const store = mountStore({ state: 'quick' });
     const before = store.order.groups.flatMap((g) => g.lines);
@@ -141,7 +143,60 @@ describe('AC5: a quantity rewrite recomputes from the unit price and its own mod
     expect(lines).toHaveLength(2); // rewritten, not appended
     const burger = lines.find((l) => l.id === 'q-burger')!;
     expect(burger.quantity).toBe(3);
-    expect(burger.amount).toBe(335_000n); // not 405_000n, the multiply-the-amount answer
+    expect(burger.amount).toBe(405_000n);
+  });
+
+  // The original purpose, kept alive: recompute from the unit, never multiply
+  // the stored amount. At quantity 1 the two agree, so this rewrites 2 → 3:
+  // multiplying the stored 270.000 by 3 would give 810.000.
+  it('recomputes from the unit on a second rewrite, never by multiplying the stored amount', () => {
+    const store = mountStore({ state: 'quick' });
+    store.setQuantity('q-burger', 2);
+    expect(store.order.groups.flatMap((g) => g.lines).find((l) => l.id === 'q-burger')!.amount).toBe(270_000n);
+    store.setQuantity('q-burger', 3);
+    expect(store.order.groups.flatMap((g) => g.lines).find((l) => l.id === 'q-burger')!.amount).toBe(405_000n);
+    store.setQuantity('q-burger', 2);
+    expect(store.order.groups.flatMap((g) => g.lines).find((l) => l.id === 'q-burger')!.amount).toBe(270_000n);
+  });
+
+  it('Add at quantity 2 with a modifier appends 2 × unit (FR-C2)', () => {
+    const store = mountStore({ state: 'quick' });
+    store.addLine({ itemId: 'burger', name: 'Burger', quantity: 2, modifiers: [{ name: 'Large', delta: 20_000n }] });
+    const added = store.order.groups.flatMap((g) => g.lines).find((l) => l.id.startsWith('burger-'))!;
+    expect(added.quantity).toBe(2);
+    expect(added.amount).toBe(240_000n);
+  });
+
+  it('clamps the unit at zero, not the total', () => {
+    const store = mountStore({ state: 'quick' });
+    store.addLine({ itemId: 'soda', name: 'Soda', quantity: 3, modifiers: [{ name: 'Deal', delta: -40_000n }] });
+    const added = store.order.groups.flatMap((g) => g.lines).find((l) => l.id.startsWith('soda-'))!;
+    expect(added.amount).toBe(0n);
+  });
+});
+
+describe('B-8/FR-D4: a line keeps the unit price it was added at', () => {
+  it('a catalog change after Add does not reprice the line on a quantity edit', () => {
+    const burger = MENU_ITEMS.find((i) => i.id === 'burger')!;
+    const was = burger.price;
+    try {
+      const store = mountStore({ state: 'quick' });
+      store.addLine({ itemId: 'burger', name: 'Burger', quantity: 1, modifiers: [{ name: 'Large', delta: 20_000n }, { name: 'Extra cheese', delta: 15_000n }] });
+      (burger as { price: bigint }).price = 120_000n;
+      const id = store.order.groups.flatMap((g) => g.lines).find((l) => l.id.startsWith('burger-'))!.id;
+      store.setQuantity(id, 2);
+      expect(store.order.groups.flatMap((g) => g.lines).find((l) => l.id === id)!.amount).toBe(270_000n);
+    } finally {
+      (burger as { price: bigint }).price = was;
+    }
+  });
+});
+
+describe('a line with no menu item reprices from its own unit', () => {
+  it('overflow’s Cheesecake (no tile): 60.000 × 2 = 120.000, no throw', () => {
+    const store = mountStore({ state: 'overflow' });
+    store.setQuantity('of-cheese', 2);
+    expect(store.order.groups.flatMap((g) => g.lines).find((l) => l.id === 'of-cheese')!.amount).toBe(120_000n);
   });
 });
 

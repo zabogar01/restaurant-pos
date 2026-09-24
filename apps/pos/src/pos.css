@@ -1008,6 +1008,40 @@ button.menu-category:focus-visible:active {
   font-weight: var(--frost-weight-medium);
 }
 
+.sheet-stepper--foot {
+  margin-bottom: 0;
+}
+
+/* FE-021: the footer holds the secondary actions, then − n + beside the one
+ * commit, then what the bound says. The stepper and the commit share a row;
+ * the bound line spans it. */
+.sheet__secondary {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--frost-space-6);
+}
+
+.sheet__commit {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-6);
+}
+
+.sheet__commit > .action {
+  flex: 1;
+}
+
+.sheet__bound {
+  grid-column: 1 / -1;
+  color: var(--frost-muted);
+}
+
+.sheet__preview {
+  margin-top: var(--frost-space-6);
+}
+
 .sheet__note {
   margin: 0;
   color: var(--frost-muted);
