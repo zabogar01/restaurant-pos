@@ -1,0 +1,38 @@
+/* DESIGN-006 — settlement composition only, 2026-09-24.
+   Reuses Frost's 88×72 tender keys, 72×72 approval keys, 10px key gap,
+   20px panel spacing, and keyed/invalid field treatments. No new token.
+   visual.css and structure.css remain unchanged for token provenance. */
+
+/* mockup.js adds tender-body to the pad's immediate parent. Keep the new
+   grouping wrapper transparent to normal layouts; the original body retains
+   that class explicitly. Only refusal states rearrange the composition. */
+.tender-lower { overflow: visible !important; }
+html:is([data-state="cardover"], [data-state="ceiling"], [data-state="ceiling-single"]) .tender-lower {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+html:is([data-state="cardover"], [data-state="ceiling"], [data-state="ceiling-single"]) .tender-lower > .keypad {
+  grid-column: 1;
+  grid-row: 1;
+}
+html:is([data-state="cardover"], [data-state="ceiling"], [data-state="ceiling-single"]) .tender-guidance {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+/* New keyed fixtures use the same treatment as cardsplit; invalid continues
+   to use frost-states.css's own invalid token, independently of warning. */
+html[data-direction="frost"]:is([data-state="cashsplit"], [data-state="error-keyed"]) .amount-field {
+  background: var(--elevated);
+  border: 2px solid var(--primary);
+  padding-left: 13px;
+}
+.takeover-modal .notice { margin-bottom: 12px; }
+
+/* Keep method slots at 56px; the second line labels missing fixture variants.
+   Reuse the existing 12px label and 32px group-row dimensions. */
+.settlement-methods .btn { flex-direction: column; }
+.method-status { font-size: 12px; }
+.cancel-drafts > .rowflex { min-height: 32px; gap: 12px; }

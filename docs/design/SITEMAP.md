@@ -131,6 +131,8 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   ├── [INLINE] PENDING line held while a draft/lease is active
 │   │             (FR-G10 refuses the close, not the draft) ..... FR-G10, G12, G13
 │   ├── [SHEET] Item configuration — variant + modifiers ........ FR-C2, C3
+│   │       DESIGN-007: twelve item states (including no-options Soda);
+│   │       quantity beside Add; 1/99 bounds; Cancel discards ..... FR-M5
 │   │   └── [INLINE] Item 86'd mid-selection; choices kept,
 │   │                Add disabled, reason shown ................. FR-C6
 │   ├── [INLINE] PENDING line — remove control in the trailing slot
@@ -138,6 +140,8 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   ├── [INLINE] FIRED line — the same slot RESERVED AND EMPTY;
 │   │             the row body opens the void sheet ............. FR-H4, B-16, I-12
 │   ├── [SHEET] Line editor — quantity, remove pending line ..... FR-D5, M5, H2
+│   │       DESIGN-007: explicit Update to n, unchanged disabled;
+│   │       draft totals in sheet, Back discards, separate Remove.
 │   │   ├── [INLINE] table form — returns to the table workspace
 │   │   └── [INLINE] quick form — returns to the QUICK workspace,
 │   │             which carries no fire control ................. C-2, FR-E5
@@ -151,18 +155,29 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   ├── [SHEET] Void whole order ............................... FR-H3, H4
 │   │   ├── [INLINE] Unfired order — no approval path .......... FR-H3
 │   │   └── [MODAL] Manager approval (order holds FIRED line) .. FR-H4
-│   └── [INLINE] Fire result — ticket printed / FAILED / UNKNOWN  FR-E3
+│   └── [INLINE] Fire result — queued / printed / FAILED / UNKNOWN FR-E3
+│           DESIGN-007: ready / queued / printed / failed / unknown /
+│           then-add / Round 12 width fixtures; fireblocked is above.
+│           One press, count = pending lines; no confirmation modal.
+│           Focus new round; inert fire until new pending lines exist.
 │
 ├── POS-04 [SCREEN] Settlement .......................... FR-G1–G14, M5
 │   │   Its own route, not a sheet over POS-03. Entering it acquires the
-│   │   CheckoutLease (FR-G13); leaving it releases or abandons the draft.
+│   │   CheckoutLease (FR-G13); re-authentication preserves this tab's draft.
+│   │   DESIGN-006 adds 13 fixture states inside the existing nodes below:
+│   │   ceiling-single; zero-pending; pending-paid; error-keyed/partial/
+│   │   settled/removed; cancel-empty/multi; cashsplit/partialcash/
+│   │   exactcashsplit; change-mixed. See SCREEN-INVENTORY POS-04.
+│   │   34 Frost settlement states; no node added or retyped. Counts unchanged.
+│   │   Round 2 adds source-preserving cancel=1 and takeover ack=1 fixture
+│   │   parameters within the existing modals, not additional named states.
 │   ├── [INLINE] Balance remaining / fully allocated ............ FR-G5
 │   ├── [INLINE] Draft tender list (client-side, unstored) ...... FR-G9
 │   ├── [INLINE] Tender amount PREFILLED with the remaining
 │   │             balance, editable in place. No split mode ..... FR-G2, G3, B-5, I-13
 │   ├── [INLINE] Cash tender pad — persistent right-column panel,
 │   │             never dismissed; choosing a method swaps it .... FR-G4, M5
-│   │   └── [INLINE] Above change ceiling — max cash shown ..... FR-M5
+│   │   └── [INLINE] Above cash limit — change or single-tender cap ..... FR-M5
 │   ├── [INLINE] Card tender pad — same panel, card rules ....... FR-G3
 │   │   └── [INLINE] Above remaining balance — rejected, max shown FR-G3
 │   ├── [INLINE] Custom named tender — same panel ............... FR-G1

@@ -185,8 +185,36 @@ affordances only.
   draft. This is the case FR-G10 exists to catch, and it is drawn on both
   sides: the locked order workspace and POS-04's *table order with PENDING
   lines* refusal.
-- *fire result* — PRINTED, FAILED, or UNKNOWN. FAILED/UNKNOWN escalates to the
-  global emergency banner (FR-E3).
+- *fire result* — QUEUED (sending, delivery unconfirmed), PRINTED, FAILED,
+  or UNKNOWN. FAILED/UNKNOWN escalates to the global emergency banner (FR-E3).
+  **DESIGN-007 / ARCH-002, owner ruled 2026-09-24:** one press sends every
+  pending line; no confirmation dialog. The control counts **lines**, not the
+  sum of their quantities. The pending group is the review before sending.
+  The new round receives focus, the pending group disappears, and a polite
+  status says “Round 3 sent to the kitchen”. Sending never claims paper and
+  never blocks Settle. The fire control stays inert in place with no pending
+  lines; adding a new pending group restores it.
+  FAILED reads “FAILED · not printed”; UNKNOWN reads “UNKNOWN · may have
+  printed” and tells the cashier to check with the kitchen before reprinting.
+  Both use the emergency banner and POS-07 recovery route; neither enables a
+  resend. Delivery text and the manager tag occupy separate heading columns,
+  including Round 12 at 23:59. These are states of the existing fire-result
+  inline node, not new screens or modals.
+- *item configuration / quantity commit* — DESIGN-007 gives each of the twelve
+  menu tiles its own `sheet-item-<id>` fixture. `sheet-item` remains Burger's
+  alias, `sheet-item86` remains its unavailable state, and Soda has no option
+  groups. These are illustrative option sets, not a production catalogue.
+  Quantity keys (88px) sit beside Add to order. Pending-line editors use the
+  same footer beside “Update to n”, disabled when unchanged. Back/Cancel
+  discard; Add/Update commits. Minus at 1 and plus at 99 are disabled, with a
+  visible bound. Remove line stays separate. Fired lines have no stepper.
+  Draft totals are labeled unsaved inside the sheet; order-panel figures stay
+  committed until Update. Table and counter variants both have changed and
+  maximum-quantity fixtures. See DESIGN-007's handoff for states and arithmetic.
+- *blocked-line recovery* — DESIGN-007 keeps the notice and totals fixed,
+  scrolls the 86’d pending Steak into view initially, and provides Show Steak
+  to scroll/focus it again after browsing older rounds. It never changes a
+  line or asks for a confirmation.
 - *zero-total* — a 100% discount leaves a zero total that is still closable
   (FR-G11).
 
@@ -302,6 +330,56 @@ client-side and tab-local until close (FR-G9).
   increments, expires within 5 minutes of the client ceasing to renew, and
   cannot exceed 15 minutes without renewed actor authentication (FR-G14).
 - *receipt print failed* — the order is closed regardless (FR-G8, B-15).
+
+**DESIGN-006 settlement fixtures (2026-09-24).** These are states of POS-04
+and its existing overlays, not new routes, panels or modals. Frost now has 34
+named settlement states (21 existing + 13 new); screen/modal counts remain
+7 POS / 13 back office / 6 modals. The six lead rulings are drawn as proposed
+for the following design review, not marked approved by this artifact.
+
+- `cardover`, `ceiling`, `ceiling-single`: amount and its message above a
+  full-size keypad, with refusal notice and caption beside the keypad. Cash
+  `ceiling-single` shows the binding 99.999.999 single-tender cap against a
+  94.500.000 balance; Add stays inert.
+- `pending`: includes the pending Steak, total/balance/prefill 382.725.
+  `pending-paid` has Cash 382.725 drafted and balance zero, but Close remains
+  inert, named **Close order & print receipt**, described by the pending notice.
+- `zero-pending`: zero-total composition, with the pending Burger notice below
+  **Nothing to collect**; no tender pad and no payment lines. Close remains
+  inert with the same pending description (FR-G10 takes precedence over G11).
+- `error-keyed` → `error-partial` → `error-settled` → `error-removed`: Card
+  10.000 keyed against 37.800; adding it leaves 27.800 and updates the existing
+  rejection notice. Adding Cash 27.800 clears the notice at zero balance.
+  Removing that cash brings back balance 27.800, without reviving the notice.
+- `cancel-empty`, existing `cancel`, `cancel-multi`: the existing modal omits
+  the draft-count sentence for zero lines, says “One drafted payment line
+  will be discarded.” for one, and “2 drafted payment lines will be
+  discarded.” for two. Round 2 also opens it with `state=<source>&cancel=1`:
+  the source order, drafts, amount and notices stay beneath it; a read-only
+  draft list and its actual count appear inside it (including three in
+  `error-settled` and six in `overflow`). Change given is listed but is not
+  counted as a drafted tender. Keep collecting returns to that same source.
+  The three named examples return to `empty`, `exact` and `exactsplit`.
+- Round 2 checks all 34 states' method choices. Only `empty` ↔ `card` has
+  a drawn alternate method preserving its full context. Other alternate
+  choices are inert and marked **Not drawn**, a fixture limitation rather
+  than a product restriction. Selecting the current method cannot reset it.
+- `pending`, `pending-paid`, `zero-pending`: the notice instructs Cancel
+  payment before sending or voiding, because **payment in progress blocks
+  both**, and opens the source-specific cancel modal. `pending-paid` also
+  states that cancellation discards the Cash 382.725 draft.
+- `cashsplit` → `partialcash` → `exactcashsplit`: Cash 100.000 keyed against
+  155.925 uses the same split caption as card; adding leaves 55.925. Adding
+  the remaining cash shows two cash drafts rather than silently merging them.
+- `change-mixed`: Card 100.000 + Cash 100.000, change 44.075. The revenue
+  sentence compares total 155.925 with **all** tendered money, 200.000.
+- `reauth`: Leave payment returns to `order.html?state=lock-draft`.
+  `takeover`: **I understand** explicitly acknowledges the external-charge
+  warning before revealing the masked manager PIN and M-1's twelve-key
+  72×72 grid (`state=takeover&ack=1`). The unacknowledged step has no active
+  PIN controls. Continue submits the PIN for this one takeover; Cancel
+  leaves the existing lease intact. Like M-1, this is a navigable drawing,
+  not implemented authentication.
 
 **Requirements.** FR-G1–G14, FR-M5, FR-E5, FR-A2.
 
