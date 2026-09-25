@@ -36,6 +36,83 @@ owner asks**. **Design questions owed to POS-07:**
 - the artifact's 3px border and 700 weight, which have no registry token (the
   build used 4px and semibold);
 - the reprint shared-control defect.
+**Pushed by the owner.** Then **[DESIGN-008](../../restaurant-pos-design/.agent/tasks/DESIGN-008-floor-and-incident-corrections.md)**
+was written: the POS-02 floor, the most urgent screen because every *← Floor*
+lands on an empty frame, plus the three POS-07 questions. POS-05 and POS-06
+were split out as DESIGN-009, because the refund sheet and manager approval
+make them a task of their own. **`designer6` (codex `gpt-6-astra`) started in
+`w2:p1Q`**, with its cwd in the design worktree and a background wait. It is
+asked to argue whether the floor's `confirm` state is needed, using ARCH-002's
+friction test, and **the lead rules on that**. It must raise, not rule, whether
+clearing an incident is audited (`FR-J3`, the owner's contract). A design review
+follows before any code.
+**The owner allowed ONCE** `designer6`'s sandbox escalation: headless Chrome through
+its Playwright runtime, screenshotting the artifact to `/private/tmp`. That is
+one command, not a standing permission. The 2026-09-24 precedent still stands:
+the lead asks the owner, and never answers an escalation itself.
+**DESIGN-008 round 1 delivered 2026-09-25.** The designer's second escalation
+(`/private/tmp/design008-check.cjs`: local `file://` only, writing PNGs and JSON
+to `/private/tmp`) was approved in the designer's pane. Lead rulings:
+- **(A) The floor has no open-table confirm**, accepted on ARCH-002's test.
+  Opening fires nothing and takes no money, and a confirmation cannot
+  enforce `FR-D1`; the server must.
+- **(B) Lead error:** the task's rule 5 had the designer draw a
+  *deactivated-but-open* table, which `FR-C8` makes impossible. The PRD is
+  consistent with itself, so Table 12's marking is being removed.
+- **(C)** The new *Clear incident* used `disabled`, against the Q7 ruling, and
+  is to become `aria-disabled`.
+
+Round 2 is running. The designer also changed copy that FE-025 already built:
+- the kitchen heading, to *Check delivery with the kitchen*;
+- `empty`, to *No unresolved print incidents*;
+- the counter UNKNOWN receipt's line.
+
+Each change is argued, and each is **a code follow-up once reviewed**. The token
+question is answered: 4px and semibold, with no new tokens. **The owner is
+asked: is clearing a kitchen incident, or dismissing a receipt warning,
+audited (`FR-J3`)?** Next: a codex design review (`gpt-6-sol`, following
+`design-reviewer3`).
+**Round 2 was lead-verified statically:** there are no `disabled` attributes,
+the Clear controls are `aria-disabled` and describe themselves by their own
+`clear-reason-*` line, and no deactivated marking remains. `designer6` is
+closed, with pane `w2:p1Q`. **`design-reviewer4` (codex `gpt-6-sol`) started in
+`w2:p1R`** on the design worktree, reading the source only, with no
+escalation. Its report goes to
+`restaurant-pos-design/.agent/reviews/DESIGN-008-review.md`.
+**Gotcha, 2026-09-25:** on its first start, codex ran a self-update
+(`npm install -g @openai/codex`) and exited. The first brief was lost, and the
+background wait woke on the exit with no report written. The reviewer was
+restarted in the same pane and re-briefed. **After every `agent prompt`, confirm
+`agent get` reads `working` before trusting the wait.**
+**DESIGN-008 review: request changes, 2 P2, both accepted.** Both are the
+shared-destination shape again:
+- Tables 7, 9 and 12 all opened Table 1's order.
+- *New quick sale* opened the populated `quick` sale.
+
+The lead ruled round 3: `order.html` gets `open-t7` (with the `lock-draft`
+composition), `open-t9`, `open-t12` and an empty `quick-new` (no fire control,
+FE-012), each built from existing compositions only. **Code consequence:** the
+floor needs the store to hold one order per table, which `useOrderStore` does
+not do today. F4b is bigger than a screen. `design-reviewer4` is closed, with
+pane `w2:p1R`. **`designer7` (codex `gpt-6-astra`) started in `w2:p1S`** on
+round 3.
+**DESIGN-008 ACCEPTED 2026-09-25 after 3 rounds.** Round 3 was checked by the
+lead in Chrome at 1280×800 over 10 states (the four new order states, `default`,
+four floor states and incidents `overflow`). Every state is 1280×800 with nothing
+clipped outside a scroll container. Headings and totals match their tiles:
+T7 382.725, T9 173.250, T12 155.925, `quick-new` 0. `quick-new` and the
+locked `open-t7` draw no Send. The arithmetic was re-derived. *Release* comes
+from the wireframe and the reviewed `order.html`, so it is not invented.
+`designer7` is closed, with pane `w2:p1S`. The design worktree is
+**uncommitted until the owner asks**.
+
+**Owed to code:**
+- F4b, the floor, **needs one order per table in the store**;
+- FE-025 follow-ups: the per-card clear and dismiss, and the three copy
+  changes (the kitchen heading, `empty`, and the counter UNKNOWN line).
+
+The clear follow-up waits on the owner's audit ruling. Also owed: the
+settlement and lock artifacts still point at the prototype floor.
 
 Previously 2026-09-24, when a fresh lead session took `w2:p1` at head `6d69f2c`
 (1349 tests / 22 files). **The *Immediate next handoff* section at the foot of
