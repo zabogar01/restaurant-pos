@@ -8,7 +8,7 @@ next, not what happens eventually.
 Owned by the Claude product lead. No other agent writes to this file.
 
 Last updated 2026-09-24. F3, DESIGN-006 and FE-020 are done (head `6d69f2c`,
-1349 tests). **F5a (FE-021) and F5b (FE-022) done 2026-09-24. Next: F4.** DESIGN-007 is done. It was one design task for POS-03's
+1349 tests). **F5a (FE-021) and F5b (FE-022) done 2026-09-24. F5c (FE-023) and F5d (FE-024) done. Next: F4.** DESIGN-007 is done. It was one design task for POS-03's
 three high items — the tile's item sheet (live bug: every tile adds a Burger),
 committing a line's quantity, and what firing shows — then the code fix, before
 F4. Full list in MEMORY.md's top block.
@@ -264,7 +264,11 @@ A task that feels like it needs two sessions is two tasks.
 | A11 | [DESIGN-007](../../restaurant-pos-design/.agent/tasks/DESIGN-007-order-flow-gaps.md): POS-03's three high gaps. Each tile gets its own item, the quantity is committed explicitly (the owner's Square reference), and sending to the kitchen takes one press ([ARCH-002](reviews/ARCH-002-fire-confirmation.md), accepted by the owner) | **Done 2026-09-24.** The review found 2 P2, both fixed in round 2 and lead-verified in headless Chrome. Committed on the design branch as `032a6e9` and `2da9d75`, not pushed | `designer5` (codex `gpt-6-astra`) |
 | F5a | [FE-021](tasks/FE-021-own-items-and-quantity.md): each tile adds its own item (**fixes the live "every tile adds a Burger" bug**), and a line's quantity saves (`FR-D5`, `FR-M5`) | **Done 2026-09-24**, accepted after 5 rounds (1645 tests / 23 files), `7268943`/`10a6ecb` | `builder23` (closed) |
 | F5b | [FE-022](tasks/FE-022-one-press-fire.md): Send to kitchen sends in one press. `delivery` gets four values plus `null`, the send is a pure `fireOrder` (T-1 to T-8), and **a table order can finally close from a live walk** | **Done 2026-09-24**, accepted after 3 rounds (1796 tests / 25 files) | `builder24` (closed) |
-| F4 | The remaining POS screens, then the back office | Not started; after F5a–F5b | unassigned |
+| F5c | [FE-023](tasks/FE-023-menu-categories.md): a category press shows that category's items (owner ruling on POS-03 Q8; the lead's categorisation) | **Done 2026-09-24** (1921 tests / 26 files) | `builder25` (closed) |
+| F5d | [FE-024](tasks/FE-024-off-actions-focusable.md): every off action is a focusable `aria-disabled` button that says why (POS-03 Q7, lead's ruling) | **Done 2026-09-24** (2085 tests / 27 files) | `builder26` (closed) |
+| F4 | The remaining POS screens, then the back office. **Split 2026-09-25:** of POS-02, -05, -06 and -07, only POS-07 has a Frost artifact; the other three have wireframes only and need a design task before any code | — | — |
+| F4a | [FE-025](tasks/FE-025-print-incidents.md): POS-07 print incidents at `/pos/incidents`, seven fixture states. `Open incidents` becomes true and client-side (the order survives). Reprint is per incident: the lead refused the artifact's shared `?state=reprint` result, and a live press says *Reprint sent*, never *printed at* | **Done 2026-09-25**, accepted on the lead's verification (2135 tests / 28 files, re-run; walked in Chrome: Burger on `fireerror` takes the total 155.925 → 283.500, *Open incidents* pushes `/pos/incidents`, and Back keeps 283.500; a receipt reprint shows only *Reprint sent*). Uncommitted | `builder27` (closed) |
+| F4-design | Frost designs for POS-02 floor, POS-05 closed orders, POS-06 closed order detail | Not written | unassigned |
 
 F1 is deliberately the smallest thing that proves the chain end to end: Vite
 build, token import, touch geometry at real sizes. If the design system does

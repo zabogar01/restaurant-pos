@@ -61,9 +61,10 @@ export function ApprovalPrompt({ approval, go }: { approval: ApprovalFixture; go
             // inside the one protected command it authorises and is not kept.
             onSubmit={() => go(approval.approve)}
             continueDisabled={approval.throttled}
+            continueDescribedBy="approval-notice"
           >
             {approval.notice && (
-              <div className="notice" role={approval.notice.failure ? 'alert' : undefined}>
+              <div className="notice" id="approval-notice" role={approval.notice.failure ? 'alert' : undefined}>
                 <div className="notice__title">{approval.notice.title}</div>
                 <div>{approval.notice.body}</div>
               </div>

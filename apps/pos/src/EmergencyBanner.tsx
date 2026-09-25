@@ -1,4 +1,5 @@
 import { Icon } from './icons.js';
+import { followClientSide } from './navigation.js';
 
 // FR-E3's emergency incident, as one component with two variants. FE-001 built
 // it for POS-01's `incident` state; F2h reuses it on POS-03 rather than drawing
@@ -16,7 +17,7 @@ import { Icon } from './icons.js';
 // told about is a real defect (F2e's ruling, which is why both PIN pads carry
 // role="alert").
 export type BannerAction =
-  /** Leaves the screen for POS-07: an anchor (ruling of 2026-09-17). */
+  /** Leaves the screen for POS-07: an anchor (ruling of 2026-09-17), followed client-side on a plain click. */
   | { label: string; href: string }
   /** Acts on the screen it is on: a button. */
   | { label: string; onPress: () => void };
@@ -43,7 +44,7 @@ export function EmergencyBanner({
         <div className="emergency-banner__detail">{detail}</div>
       </div>
       {'href' in action ? (
-        <a className="emergency-banner__action" href={action.href}>
+        <a className="emergency-banner__action" href={action.href} onClick={(event) => followClientSide(event, action.href)}>
           {action.label}
         </a>
       ) : (

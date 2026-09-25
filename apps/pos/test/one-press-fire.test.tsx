@@ -8,6 +8,7 @@ import { OrderScreen } from '../src/OrderPanel.js';
 import { ORDER_FIXTURES, ORDER_STATES, orderVariant, type Delivery, type OrderState, type OrderView } from '../src/orderFixtures.js';
 import { PosRoutes } from '../src/PosRoutes.js';
 import { useOrderStore, type OrderStore } from '../src/orderStore.js';
+import { tileFor } from './tile-for.js';
 
 // FE-022: Send to kitchen sends, in one press (ARCH-002 §3, DESIGN-007 Part C).
 // Criteria 9-13 of the task; T-1..T-8 are in fire-order.test.ts.
@@ -95,7 +96,8 @@ describe('9: the count is on the control, in lines, in every state', () => {
         .flatMap((g) => g.lines)
         .some((l) => l.status === 'pending' && l.itemId !== undefined && (MENU_FIXTURES[state].eightySixed ?? []).includes(l.itemId));
       const live = n > 0 && !loading && !fixture.lock && !blocked && fixture.groups.length > 0;
-      expect(control!.tagName, `${state} live=${live}`).toBe(live ? 'BUTTON' : 'SPAN');
+      expect(control!.tagName, state).toBe('BUTTON');
+      expect(control!.getAttribute('aria-disabled') === 'true', `${state} live=${live}`).toBe(!live);
     }
   });
 
@@ -103,7 +105,7 @@ describe('9: the count is on the control, in lines, in every state', () => {
     for (const state of ALL) {
       if (orderVariant(ORDER_FIXTURES[state]) === 'quick_sale' || pendingCount(state) > 0) continue;
       render(state);
-      expect(fireControl()!.tagName, state).toBe('SPAN');
+      expect(fireControl()!.tagName, state).toBe('BUTTON');
       expect(fireControl()!.getAttribute('aria-disabled'), state).toBe('true');
     }
   });
@@ -130,7 +132,7 @@ describe('the press', () => {
     expect(document.activeElement).toBe(head);
     expect(statusLine()!.textContent).toBe('Round 3 sent to the kitchen');
     expect(statusLine()!.getAttribute('aria-live')).toBe('polite');
-    expect(fireControl()!.tagName).toBe('SPAN');
+    expect(fireControl()!.tagName).toBe('BUTTON');
     expect(fireControl()!.textContent).toBe('Send to kitchen');
     expect(settle().tagName).toBe('BUTTON');
     // The new round's lines carry the fired tag and the emergency banner is fixture-driven, not derived.
@@ -159,7 +161,7 @@ describe('the press', () => {
   it('the status line goes when a new pending line makes the fire live again', () => {
     render('fire-ready');
     press(fireControl()!);
-    press(host.querySelector('.menu-tile[data-item="coffee"]')!);
+    press(tileFor(host, 'coffee'));
     press(buttonNamed('Add to order'));
     expect(statusLine()?.textContent ?? '').toBe('');
     expect(fireControl()!.textContent).toBe('Send 1 to kitchen');
@@ -170,10 +172,10 @@ describe('the press', () => {
     render('fire-ready');
     press(fireControl()!);
     expect(statusLine()!.textContent).toBe('Round 3 sent to the kitchen');
-    press(host.querySelector('.menu-tile[data-item="coffee"]')!);
+    press(tileFor(host, 'coffee'));
     press(buttonNamed('Add to order'));
     press(buttonNamed('Remove Coffee'));
-    expect(fireControl()!.tagName).toBe('SPAN');
+    expect(fireControl()!.tagName).toBe('BUTTON');
     expect(statusLine()!.textContent).toBe('');
   });
 
@@ -193,7 +195,7 @@ describe('the press', () => {
 
   it('B: after Add from an item sheet the new pending line is brought into view', () => {
     render('default');
-    press(host.querySelector('.menu-tile[data-item="fries"]')!);
+    press(tileFor(host, 'fries'));
     press(buttonNamed('Add to order'));
     const added = [...host.querySelectorAll<HTMLElement>('.order-line[data-line-status="pending"]')].at(-1)!;
     expect(added.textContent).toContain('Fries');
@@ -228,7 +230,7 @@ describe('the press', () => {
   it('a refused fire does nothing: fireblocked stays exactly as drawn', () => {
     render('fireblocked');
     const before = host.querySelector('.order-lines')!.innerHTML;
-    expect(fireControl()!.tagName).toBe('SPAN');
+    expect(fireControl()!.tagName).toBe('BUTTON');
     act(() => fireControl()!.click());
     expect(host.querySelector('.order-lines')!.innerHTML).toBe(before);
   });
@@ -239,7 +241,7 @@ describe('the press', () => {
     for (const state of ALL) {
       render(state);
       const control = fireControl();
-      if (!control || control.tagName !== 'BUTTON' || overlaid()) continue;
+      if (!control || control.getAttribute('aria-disabled') === 'true' || overlaid()) continue;
       expect(MENU_FIXTURES[state].loading ?? false, `${state}: a live Send over an undrawn order`).toBe(false);
       pressed++;
       const expectedLines = ORDER_FIXTURES[state].groups.flatMap((g) => g.lines).filter((l) => l.status === 'pending');
@@ -253,7 +255,7 @@ describe('the press', () => {
       const round = host.querySelector(`[data-round="${next}"]`)!.closest('.round-group')!;
       expect(round.querySelectorAll('.order-line').length, state).toBe(expectedLines.length);
       expect(host.textContent, state).not.toContain('REMOVE FREELY');
-      expect(fireControl()!.tagName, state).toBe('SPAN');
+      expect(fireControl()!.tagName, state).toBe('BUTTON');
       expect(fireControl()!.textContent, state).toBe('Send to kitchen');
     }
     expect(pressed).toBeGreaterThan(3);
@@ -325,7 +327,7 @@ describe('11: delivery wording', () => {
   it('fire-failed, fire-unknown: the fire control is inert with nothing pending, so it cannot read as send again', () => {
     for (const state of ['fire-failed', 'fire-unknown', 'fire-printed', 'fire-queued'] as const) {
       render(state);
-      expect(fireControl()!.tagName, state).toBe('SPAN');
+      expect(fireControl()!.tagName, state).toBe('BUTTON');
     }
   });
 });
@@ -401,7 +403,7 @@ describe('12: idempotence', () => {
 describe('13: history survives a fire', () => {
   it('from overflow, Add then Fire keeps the voided salad and adds no delivery word to rounds 1-2', () => {
     render('overflow');
-    press(host.querySelector('.menu-tile[data-item="burger"]')!);
+    press(tileFor(host, 'burger'));
     press(buttonNamed('Add to order'));
     expect(fireControl()!.textContent).toBe('Send 4 to kitchen');
     press(fireControl()!);
@@ -453,7 +455,7 @@ describe('10: the whole-screen walk (FR-G10)', () => {
     window.history.replaceState(null, '', '/pos/order');
     act(() => root.render(<PosRoutes />));
     // The default order carries a pending Steak; without a fire FR-G10 refuses Close.
-    press(host.querySelector('.menu-tile[data-item="burger"]')!);
+    press(tileFor(host, 'burger'));
     press(buttonNamed('Add to order'));
     expect(host.querySelector<HTMLElement>('[data-action="fire"]')!.textContent).toBe('Send 2 to kitchen');
     press(host.querySelector('[data-action="fire"]')!);
@@ -475,11 +477,11 @@ describe('10: the whole-screen walk (FR-G10)', () => {
   it('control: without the fire, the same walk keeps Close inert on the pending lines', () => {
     window.history.replaceState(null, '', '/pos/order');
     act(() => root.render(<PosRoutes />));
-    press(host.querySelector('.menu-tile[data-item="burger"]')!);
+    press(tileFor(host, 'burger'));
     press(buttonNamed('Add to order'));
     press(settle());
     press(host.querySelector('[data-action="add-tender"]')!);
-    expect(host.querySelector<HTMLElement>('[data-action="close-order"]')!.tagName).toBe('SPAN');
+    expect(host.querySelector<HTMLElement>('[data-action="close-order"]')!.tagName).toBe('BUTTON');
   });
 });
 
@@ -504,7 +506,7 @@ describe('D: fire-heading-width', () => {
     expect(h.slice(0, 11).every((x) => x!.endsWith('printed') && !x!.includes('UNKNOWN'))).toBe(true);
     expect([...host.querySelectorAll('.totals dd')].map((d) => d.textContent)).toContain('713.475');
     expect(host.querySelector('.emergency-banner')!.textContent).toContain('round 12');
-    expect(fireControl()!.tagName).toBe('SPAN');
+    expect(fireControl()!.tagName).toBe('BUTTON');
   });
 });
 
@@ -514,7 +516,7 @@ describe('E: an item sheet opened from every fire-* origin keeps the panel’s c
     (origin) => {
       render(origin);
       const before = [fireControl()!.tagName, fireControl()!.textContent, statusLine()?.textContent];
-      press(host.querySelector('.menu-tile[data-item="soda"]')!);
+      press(tileFor(host, 'soda'));
       expect(host.querySelector('.sheet')).not.toBeNull();
       expect([fireControl()!.tagName, fireControl()!.textContent, statusLine()?.textContent]).toEqual(before);
       expect(host.querySelector('.emergency-banner') !== null).toBe(ORDER_FIXTURES[origin].incident !== undefined);
@@ -533,7 +535,7 @@ describe('F: one accessor for the lock', () => {
   it('the panel and the store agree: a view opened from a lock draws Send inert and the store refuses', () => {
     window.history.replaceState(null, '', '/pos/order?state=sheet-item-steak&from=lock-draft');
     act(() => root.render(<OrderScreen key={++mount} view={{ state: 'sheet-item-steak', from: 'lock-draft' }} clock={CLOCK} />));
-    expect(fireControl()!.tagName).toBe('SPAN');
+    expect(fireControl()!.tagName).toBe('BUTTON');
     expect(fireControl()!.textContent).toBe('Send to kitchen');
   });
 });

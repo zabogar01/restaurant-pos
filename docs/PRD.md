@@ -328,8 +328,9 @@ back-office client.
   and outcome, subject and order reference where applicable, required
   business reason where applicable, timestamp, and before/after amounts.
 - **FR-J3** Audited actions are whole-order void, fired-line void, discount
-  apply/replace/remove, refund, manager takeover of a `CheckoutLease`, and
-  every manager-approval outcome. A
+  apply/replace/remove, refund, manager takeover of a `CheckoutLease`,
+  back-office reprint of a kitchen ticket (naming the actor, the order, and
+  the round reprinted), and every manager-approval outcome. A
   successful approved action creates **one combined entry** naming actor and
   approver. A failed or cancelled approval creates one entry naming the
   initiating actor with approver null. Unauthenticated PIN failures and
@@ -545,6 +546,9 @@ scheduled discount campaigns. More than one discount per order.
 
 - **Tax model.** Nett, not "++". See section 4.
 - **Currency and precision.** IDR at precision 0.
+- **Restaurant time zone.** WIB (Asia/Jakarta, UTC+7), with no daylight
+  saving. Every stored and displayed time is in WIB, shown as 24-hour
+  `HH:MM`. A business day runs 00:00–23:59 WIB.
 - **Implementation stack.** TypeScript, Node, Fastify, React, Vite, and
   PostgreSQL. Recorded here only so this document does not contradict the
   Phase 0 plan; the stack itself belongs to the architecture, not to the

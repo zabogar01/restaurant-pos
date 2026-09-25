@@ -7,7 +7,6 @@ import { ORDER_FIXTURES, type OrderState, type OrderView, type SettlementLock } 
 // agent/design-direction). Nothing is fetched: the catalog is the server's and
 // this slice has none.
 
-export type MenuItem = { id: string; name: string; price: Money };
 
 export const MENU_CATEGORIES = [
   { id: 'mains', name: 'Mains' },
@@ -18,39 +17,46 @@ export const MENU_CATEGORIES = [
 
 export type CategoryId = (typeof MENU_CATEGORIES)[number]['id'];
 
-/** The category the rail starts on, and the only one the artifact draws a grid for. */
-export const SELECTED_CATEGORY: CategoryId = 'mains';
+/** `category` is the single source of which grid an item is on: every item belongs to exactly one (FE-023). */
+export type MenuItem = { id: string; name: string; price: Money; category: CategoryId };
 
-// The artifact's one grid, in its order. It is drawn under Mains although it
-// holds sides and drinks; the artifact has no grid for any other category.
+/** The category a fresh load starts on. The selection itself lives beside the order store (`useOrderStore`), outside the URL. */
+export const DEFAULT_CATEGORY: CategoryId = 'mains';
+
+// The owner's ruling of 2026-09-24 (POS-03 question 8): a category press shows
+// that category's items. The categorisation is the lead's (FE-023): beers and
+// water are drinks, steak is a main. Order within a category is the grid's
+// order. Prices are illustrative fixture data, like every price here; Mineral
+// Water's 20.000 is invented (the owner named water, not a price), and
+// Cheesecake's 60.000 is the one `overflow` already charges.
 export const MENU_ITEMS: ReadonlyArray<MenuItem> = [
-  { id: 'burger', name: 'Burger', price: 100_000n },
-  { id: 'wings', name: 'Chicken Wings', price: 90_000n },
-  { id: 'steak', name: 'Steak', price: 240_000n },
-  { id: 'fish', name: 'Fish & Chips', price: 140_000n },
-  { id: 'salad', name: 'Caesar Salad', price: 75_000n },
-  { id: 'soup', name: 'Soup of the Day', price: 55_000n },
-  { id: 'fries', name: 'Fries', price: 40_000n },
-  { id: 'rings', name: 'Onion Rings', price: 45_000n },
-  { id: 'soda', name: 'Soda', price: 30_000n },
-  { id: 'coffee', name: 'Coffee', price: 35_000n },
-  { id: 'beer', name: 'Beer', price: 65_000n },
-  { id: 'wine', name: 'House Wine', price: 80_000n },
+  { id: 'burger', name: 'Burger', price: 100_000n, category: 'mains' },
+  { id: 'wings', name: 'Chicken Wings', price: 90_000n, category: 'mains' },
+  { id: 'steak', name: 'Steak', price: 240_000n, category: 'mains' },
+  { id: 'fish', name: 'Fish & Chips', price: 140_000n, category: 'mains' },
+  { id: 'salad', name: 'Caesar Salad', price: 75_000n, category: 'sides' },
+  { id: 'soup', name: 'Soup of the Day', price: 55_000n, category: 'sides' },
+  { id: 'fries', name: 'Fries', price: 40_000n, category: 'sides' },
+  { id: 'rings', name: 'Onion Rings', price: 45_000n, category: 'sides' },
+  { id: 'soda', name: 'Soda', price: 30_000n, category: 'drinks' },
+  { id: 'water', name: 'Mineral Water', price: 20_000n, category: 'drinks' },
+  { id: 'coffee', name: 'Coffee', price: 35_000n, category: 'drinks' },
+  { id: 'beer', name: 'Beer', price: 65_000n, category: 'drinks' },
+  { id: 'wine', name: 'House Wine', price: 80_000n, category: 'drinks' },
+  { id: 'cheesecake', name: 'Cheesecake', price: 60_000n, category: 'desserts' },
 ];
+
+/** The items a category's grid shows, in the table's order. */
+export const itemsIn = (category: CategoryId) => MENU_ITEMS.filter((i) => i.category === category);
 
 /** A tile's destination: its own item's configuration sheet (M-2), one state per item (FE-021). */
 export const itemDestination = (itemId: string, from?: OrderState) =>
   `?state=sheet-item-${itemId}${from && from !== 'default' && !from.startsWith('sheet-item') ? `&from=${from}` : ''}`;
 
 // A category press has no destination. It is an [INLINE] change of POS-03
-// (SITEMAP §1): the order stays exactly as it is and the history entry is
-// replaced. It used to name ?state=default, which moved every order to the
-// table order (fixed in F2k).
-//
-// Nothing else changes yet. The artifact has items for Mains only, so no other
-// category has a grid to show — FE-004's accepted limitation — and the rail
-// keeps SELECTED_CATEGORY rather than drawing a selection the grid
-// contradicts (ruled 2026-09-21; see MenuRegion.tsx).
+// (SITEMAP §1): the URL and history are untouched, the order stays exactly as
+// it is, and the selection moves (FE-023, superseding the 2026-09-21 ruling
+// that it did not).
 
 export type LockNotice = {
   title: string;
@@ -141,7 +147,8 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   overflow: {},
   // The artifact holds the selected category and one other, so both ring
   // colours show: white on the ink fill, ink on white.
-  pressed: { pressedCategories: ['mains', 'sides'], pressedItem: 'fries' },
+  // The pressed tile is a Main so it shows on a fresh load, which starts on Mains (FE-023).
+  pressed: { pressedCategories: ['mains', 'sides'], pressedItem: 'burger' },
   'lock-draft': { lock: 'draft' },
   'lock-lease': { lock: 'lease' },
   eightysix: { eightySixed: ['steak'] },
@@ -159,9 +166,11 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   'sheet-item-fries': {},
   'sheet-item-rings': {},
   'sheet-item-soda': {},
+  'sheet-item-water': {},
   'sheet-item-coffee': {},
   'sheet-item-beer': {},
   'sheet-item-wine': {},
+  'sheet-item-cheesecake': {},
   'sheet-item86': { eightySixed: ['steak'] },
   'sheet-line': {},
   // The approval prompt covers the whole screen; the grid behind it is the

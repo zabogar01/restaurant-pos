@@ -133,9 +133,11 @@ describe('fixture states', () => {
       'sheet-item-fries',
       'sheet-item-rings',
       'sheet-item-soda',
+      'sheet-item-water',
       'sheet-item-coffee',
       'sheet-item-beer',
       'sheet-item-wine',
+      'sheet-item-cheesecake',
       'sheet-line',
       'approval',
       'approval-error',
@@ -171,8 +173,9 @@ describe('fixture states', () => {
     for (const { id } of ORDER_STATES) expect(orderViewFrom(`?state=${id}`).state).toBe(id);
     // Repointed in F2h: this guards the unknown-state fallback, and fireerror
     // is a real state now. The two names below are the placeholder
-    // destinations F2b and F2h left for screens that are not built (POS-04,
-    // POS-07), which is exactly what an unknown ?state= is in this app.
+    // destinations F2b left for a screen that is not built (POS-04), which is
+    // exactly what an unknown ?state= is in this app. FE-025 built POS-07 at
+    // its own route, so `?state=incidents` is simply unknown here now.
     expect(orderViewFrom('?state=settle-pending').state).toBe('default');
     expect(orderViewFrom('?state=incidents').state).toBe('default');
     expect(orderViewFrom('?state=nothing-of-the-sort').state).toBe('default');
@@ -325,7 +328,7 @@ describe.each(['lock-draft', 'lock-lease'] as const)('%s: settlement lock', (sta
   });
 
   it('draws every close-bar action unavailable in place', () => {
-    expect(host.querySelectorAll('.order-actions a, .order-actions button')).toHaveLength(0);
+    expect(host.querySelectorAll('.order-actions a, .order-actions button:not([aria-disabled="true"])')).toHaveLength(0);
     expect(text('.order-actions .action--off')).toEqual(['Discount', 'Void order', 'Send to kitchen', 'Settle']);
   });
 
@@ -380,7 +383,7 @@ describe('empty and overflow', () => {
     expect(host.querySelector('.order-empty')).not.toBeNull();
     expect(host.querySelector('.order-panel__count')!.textContent).toBe('Empty');
     expect(text('.totals dd')).toEqual(['0', '0']);
-    expect(host.querySelectorAll('.order-actions a, .order-actions button')).toHaveLength(0);
+    expect(host.querySelectorAll('.order-actions a, .order-actions button:not([aria-disabled="true"])')).toHaveLength(0);
   });
 
   it('overflow: the totals and close bar sit outside the scrolling list', () => {

@@ -208,9 +208,9 @@ describe('fireblocked: the artifact’s composition', () => {
   });
 
   it('takes Send to kitchen off and leaves Discount, Void order and Settle live', () => {
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
     expect(fireControl().getAttribute('aria-disabled')).toBe('true');
-    const live = [...host.querySelectorAll('.order-actions button')].map((b) => b.textContent);
+    const live = [...host.querySelectorAll('.order-actions button:not([aria-disabled="true"])')].map((b) => b.textContent);
     expect(live).toEqual(['Discount', 'Void order', 'Settle']);
   });
 
@@ -243,7 +243,7 @@ describe('fireblocked resolves, which is the half of FR-E4 a per-state flag cann
   it('but leaves it unavailable, because voiding the Steak left nothing to send', () => {
     render({ state: 'fireblocked', gone: 'steak' });
     expect(sendableLines(ORDER_FIXTURES.fireblocked.groups.flatMap((g) => g.lines).filter((l) => l.id !== 'steak'))).toEqual([]);
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
     expect(fireControl().getAttribute('aria-disabled')).toBe('true');
   });
 
@@ -273,14 +273,16 @@ describe('fireblocked resolves, which is the half of FR-E4 a per-state flag cann
 describe('fireblocked-overflow: the block clears while the order still has work to send', () => {
   const OF = 'fireblocked-overflow' as const;
 
-  it('86s Coffee in place and leaves the other eleven tiles alone (C-3)', () => {
+  it('86s Coffee in place and leaves the other four Drinks tiles alone (C-3)', () => {
     render(OF);
+    // Coffee is a Drink (FE-023): 86'd in place under its own category.
+    act(() => [...host.querySelectorAll<HTMLElement>('.menu-category')].find((c) => c.textContent === 'Drinks')!.click());
     const coffee = host.querySelector<HTMLElement>('.menu-tile[data-item="coffee"]')!;
     expect(coffee.classList.contains('menu-tile--off')).toBe(true);
     expect(coffee.querySelector('.tag-86')!.textContent).toBe('86');
     expect(host.querySelectorAll('.menu-tile--off')).toHaveLength(1);
     // Never removed, never moved: a hand already going for Coffee finds Coffee.
-    expect([...host.querySelectorAll<HTMLElement>('.menu-grid > .menu-tile')].findIndex((t) => t.dataset.item === 'coffee')).toBe(9);
+    expect([...host.querySelectorAll<HTMLElement>('.menu-grid > .menu-tile')].findIndex((t) => t.dataset.item === 'coffee')).toBe(2);
   });
 
   it('holds three PENDING lines and tags only the one holding the 86’d item', () => {
@@ -299,7 +301,7 @@ describe('fireblocked-overflow: the block clears while the order still has work 
     expect(panelNotice()!.querySelector('.notice__title')!.textContent).toBe('Cannot send to the kitchen');
     expect(panelNotice()!.textContent).toContain('1 pending line is no longer available: Coffee.');
     expect(panelNotice()!.querySelector('b')!.textContent).toBe('Coffee');
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
   });
 
   // **The case the slice was missing.** On fireblocked the Steak is the only
@@ -384,7 +386,7 @@ describe('the 86 tag on a PENDING line, in every state where it is true', () => 
     render(state);
     expect(panelNotice()).not.toBeNull();
     for (const line of blockedIn(state)) expect(panelNotice()!.textContent).toContain(line.name);
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
     expect(fireControl().getAttribute('aria-disabled')).toBe('true');
   });
 
@@ -422,7 +424,7 @@ describe('the 86 tag on a PENDING line, in every state where it is true', () => 
     for (const state of ['lock-draft', 'lock-lease'] as const) {
       render(state);
       expect(host.querySelectorAll('.order-line__remove')).toHaveLength(0);
-      expect(host.querySelectorAll('.order-actions button')).toHaveLength(0);
+      expect(host.querySelectorAll('.order-actions button:not([aria-disabled="true"])')).toHaveLength(0);
       expect(text('.order-actions .action--off')).toEqual(['Discount', 'Void order', 'Send to kitchen', 'Settle']);
     }
   });
@@ -444,7 +446,8 @@ describe('error: a rejected command changed nothing (B-20)', () => {
   });
 
   it('leaves the grid live: adding the line again is the point of the state', () => {
-    expect(host.querySelectorAll('.menu-grid > .menu-tile')).toHaveLength(12);
+    // Mains' four tiles: the grid shows the selected category (FE-023).
+    expect(host.querySelectorAll('.menu-grid > .menu-tile')).toHaveLength(4);
     expect(host.querySelectorAll('.menu-tile--off')).toHaveLength(0);
     expect(host.querySelectorAll('.menu-category')).toHaveLength(4);
   });
@@ -547,8 +550,8 @@ describe('fireerror: the emergency banner (FR-E3)', () => {
     expect(action.tagName).toBe('A');
     expect(action.textContent).toBe('Open incidents');
     expect(action.getAttribute('href')).toBe(FIRE_INCIDENT.action.href);
-    // Placeholder, as F2b's two ?state=settle* are: POS-07 is F4's.
-    expect(FIRE_INCIDENT.action.href).toBe('?state=incidents');
+    // FE-025: POS-07 is built, at /pos/incidents.
+    expect(FIRE_INCIDENT.action.href).toBe('/pos/incidents');
   });
 
   it('is drawn in no other state, but the three fire fixtures that share its class (FE-022)', () => {
@@ -592,7 +595,7 @@ describe('fireerror: the order a failed fire leaves behind', () => {
   it('never gates or rolls back the sale on a print failure (B-15)', () => {
     // Discount, Void order and Settle stay live: the order is unaffected, and
     // the restaurant keeps serving when the printer jams.
-    expect([...host.querySelectorAll('.order-actions button')].map((b) => b.textContent)).toEqual([
+    expect([...host.querySelectorAll('.order-actions button:not([aria-disabled="true"])')].map((b) => b.textContent)).toEqual([
       'Discount',
       'Void order',
       'Settle',
@@ -605,7 +608,7 @@ describe('fireerror: the order a failed fire leaves behind', () => {
     // "send it again", and SCREEN-INVENTORY forbids a reprint-the-order
     // control outright — the reprint is POS-07's, per FR-E3.
     expect(sendableLines(ORDER_FIXTURES.fireerror.groups.flatMap((g) => g.lines))).toEqual([]);
-    expect(fireControl().tagName).toBe('SPAN');
+    expect(fireControl().tagName).toBe('BUTTON');
     expect(fireControl().getAttribute('aria-disabled')).toBe('true');
     // Inert, not absent: the condition is temporary (ruling C-1).
     expect(fireControl().textContent).toBe('Send to kitchen');
@@ -645,7 +648,7 @@ describe('the fire control is unavailable wherever the order has no PENDING line
       const undrawn = MENU_FIXTURES[view.state].loading ?? false;
 
       if (locked || undrawn || sendable.length === 0 || blocked.length > 0) {
-        expect(fireControl().tagName).toBe('SPAN');
+        expect(fireControl().tagName).toBe('BUTTON');
         expect(fireControl().getAttribute('aria-disabled')).toBe('true');
       } else {
         expect(fireControl().tagName).toBe('BUTTON');
@@ -660,7 +663,7 @@ describe('the fire control is unavailable wherever the order has no PENDING line
       render(view);
       expect(host.querySelectorAll('.order-line[data-line-status="pending"]')).toHaveLength(0);
       expect(host.querySelectorAll('.order-line[data-line-status="fired"]').length).toBeGreaterThan(0);
-      expect(fireControl().tagName).toBe('SPAN');
+      expect(fireControl().tagName).toBe('BUTTON');
     }
   });
 
@@ -824,11 +827,10 @@ describe('the controls F2h adds lead somewhere ungated', () => {
   it('fireerror’s Open incidents leaves for POS-07, which is not a gated state of this screen', () => {
     render('fireerror');
     const href = host.querySelector('.emergency-banner__action')!.getAttribute('href')!;
-    const target = new URLSearchParams(href.slice(1)).get('state');
-    expect(GATED).not.toContain(target);
-    // It is a placeholder for an unbuilt screen, so it resolves to the default
-    // state — which is itself ungated. F4 reconciles the name.
-    expect(ORDER_STATES.some((s) => s.id === target)).toBe(false);
+    // FE-025: it is a route of its own now, not a ?state= of this screen, so
+    // nothing gated can be its target.
+    expect(href).toBe('/pos/incidents');
+    expect(GATED).not.toContain(new URLSearchParams(new URL(href, 'http://x').search).get('state'));
   });
 
   // FE-022 changed this test: the notice used to carry no control at all. It now

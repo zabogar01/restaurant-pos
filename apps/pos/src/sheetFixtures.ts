@@ -144,9 +144,11 @@ const OTHER_ITEMS: ReadonlyArray<Def & { name: string; price: bigint }> = [
   { id: 'fries', name: 'Fries', price: 40_000n, groups: [g('Seasoning', false, [['Salt', 0n], ['Chilli', 0n]]), g('Extras', true, [['Cheese sauce', 10_000n]], [])] },
   { id: 'rings', name: 'Onion Rings', price: 45_000n, groups: [g('Dip', false, [['Ketchup', 0n], ['Garlic mayo', 5_000n]], [1])] },
   { id: 'soda', name: 'Soda', price: 30_000n, groups: [] },
+  { id: 'water', name: 'Mineral Water', price: 20_000n, groups: [] },
   { id: 'coffee', name: 'Coffee', price: 35_000n, groups: [g('Size', false, [['Regular', 0n], ['Large', 10_000n]], [1]), g('Extras', true, [['Extra shot', 10_000n]], [])] },
   { id: 'beer', name: 'Beer', price: 65_000n, groups: [g('Size', false, [['Regular', 0n], ['Large', 25_000n]], [1])] },
   { id: 'wine', name: 'House Wine', price: 80_000n, groups: [g('Pour', false, [['Standard', 0n], ['Small', -20_000n]], [1])] },
+  { id: 'cheesecake', name: 'Cheesecake', price: 60_000n, groups: [] },
 ];
 
 function fromDef(d: (typeof OTHER_ITEMS)[number]): Omit<ItemSheetFixture, 'unavailable'> {
@@ -169,7 +171,7 @@ function fromDef(d: (typeof OTHER_ITEMS)[number]): Omit<ItemSheetFixture, 'unava
   };
 }
 
-/** The twelve `sheet-item-<id>` states, in tile order. `sheet-item` stays Burger's alias. */
+/** The fourteen `sheet-item-<id>` states, in tile order. `sheet-item` stays Burger's alias. */
 const ITEM_SHEETS: Record<string, Omit<ItemSheetFixture, 'unavailable'>> = {
   'sheet-item-burger': { ...burger, add: { state: 'default' } },
   ...Object.fromEntries(OTHER_ITEMS.map((d) => [`sheet-item-${d.id}`, fromDef(d)])),

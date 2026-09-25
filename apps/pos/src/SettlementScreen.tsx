@@ -16,7 +16,7 @@ import {
   type TenderMethod,
 } from './tender.js';
 
-const SETTLEMENT_STATES = [
+export const SETTLEMENT_STATES = [
   'empty',
   'pressed',
   'partial',
@@ -237,6 +237,10 @@ function tenderNotice(args: {
 }
 
 const PENDING_NOTICE_ID = 'close-pending-notice';
+// What an off Add points at (FE-024): whichever of these the screen draws. The
+// caption is entry help, not a reason, so it is never one.
+const TENDER_MESSAGE_ID = 'tender-field-message';
+const TENDER_NOTICE_ID = 'tender-refusal-notice';
 
 /** Bold names joined the way English lists them: "Steak", "Steak and Fries", "Steak, Fries and Coffee". */
 function boldNames(names: ReadonlyArray<string>) {
@@ -715,6 +719,10 @@ export function ControlledSettlementScreen({
 
   const notice = tenderNotice({ method, keyed, mayAdd, balance, amount, max, ceilingBound });
   const caption = tenderCaption({ method, balance, amount, keyed, mayAdd, max, ceilingBound, total });
+  const addReasonIds = [
+    invalidDisplay && TENDER_MESSAGE_ID,
+    notice && TENDER_NOTICE_ID,
+  ].filter((id): id is string => typeof id === 'string');
 
   // Rule 1: whether the order may close, and why not, is this module's answer
   // alone — the component decides nothing about closing itself. Rule 4: the
@@ -894,7 +902,7 @@ export function ControlledSettlementScreen({
                       {formatAmount(amount)}
                     </div>
                     {invalidDisplay && (
-                      <span className="tender-field__message">
+                      <span className="tender-field__message" id={TENDER_MESSAGE_ID}>
                         {methodLabel(method)} maximum {formatAmount(max)}
                       </span>
                     )}
@@ -909,9 +917,16 @@ export function ControlledSettlementScreen({
                       Add {methodLabel(method).toLowerCase()}
                     </button>
                   ) : (
-                    <span className="tender-add tender-add--off" data-action="add-tender" aria-disabled="true">
+                    <button
+                      type="button"
+                      className="tender-add tender-add--off"
+                      data-action="add-tender"
+                      aria-disabled="true"
+                      aria-describedby={addReasonIds.length > 0 ? addReasonIds.join(' ') : undefined}
+                      onClick={() => {}}
+                    >
                       {balance === 0n ? 'Nothing left' : invalid ? 'Over the limit — cannot add' : 'Cannot add'}
-                    </span>
+                    </button>
                   )}
                 </div>
 
@@ -920,11 +935,13 @@ export function ControlledSettlementScreen({
                   <div className="tender-refusal">
                     {keypad}
                     <div className="tender-guidance">
-                      <div className="notice">
+                      <div className="notice" id={TENDER_NOTICE_ID}>
                         <div className="notice__title">{notice.title}</div>
                         <div>{notice.body}</div>
                       </div>
-                      {caption && <p className="tender-help">{caption}</p>}
+                      {caption && (
+                        <p className="tender-help">{caption}</p>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -944,22 +961,30 @@ export function ControlledSettlementScreen({
                 Sign in to close
               </button>
             ) : isLoading ? (
-              <span className="settlement-close__action settlement-close__action--off" data-action="close-order" aria-disabled="true">
+              <button
+                type="button"
+                className="settlement-close__action settlement-close__action--off"
+                data-action="close-order"
+                aria-disabled="true"
+                onClick={() => {}}
+              >
                 Closing…
-              </span>
+              </button>
             ) : refusal === undefined ? (
               <button type="button" className="settlement-close__action" data-action="close-order">
                 Close order & print receipt
               </button>
             ) : (
-              <span
+              <button
+                type="button"
                 className="settlement-close__action settlement-close__action--off"
                 data-action="close-order"
                 aria-disabled="true"
+                onClick={() => {}}
                 {...(refusal.reason === 'pending' && { 'aria-describedby': PENDING_NOTICE_ID })}
               >
                 {refusal.reason === 'pending' ? 'Close order & print receipt' : 'Close order — balance outstanding'}
-              </span>
+              </button>
             )}
           </footer>
           </section>

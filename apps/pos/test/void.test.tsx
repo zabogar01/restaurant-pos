@@ -375,10 +375,10 @@ describe.each(GATED_STATES)('%s: the reason is required (FR-H4)', (state) => {
   it('opens with no reason chosen, and Continue is not available', () => {
     render(state);
     for (const r of reasons()) expect(r.getAttribute('aria-pressed')).toBe('false');
-    expect(commit().tagName).toBe('SPAN');
+    expect(commit().tagName).toBe('BUTTON');
     expect(commit().getAttribute('aria-disabled')).toBe('true');
     expect(commit().classList.contains('action--off')).toBe(true);
-    expect(buttons(sheet()!).map((b) => b.textContent)).not.toContain('Continue');
+    expect(buttons(sheet()!).filter((b) => b.getAttribute('aria-disabled') !== 'true').map((b) => b.textContent)).not.toContain('Continue');
     expect(other()).toBeNull();
   });
 
@@ -727,7 +727,7 @@ describe('a fired row body opens the void sheet for that line, and no other (acc
     pressRow('soda');
     expect(cardName()).toBe('Soda');
     expect(reasons().filter((r) => r.getAttribute('aria-pressed') === 'true')).toEqual([]);
-    expect(commit().tagName).toBe('SPAN');
+    expect(commit().tagName).toBe('BUTTON');
   });
 });
 

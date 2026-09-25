@@ -12,6 +12,7 @@ import {
   LOCK_NOTICE,
   MENU_CATEGORIES,
   MENU_ITEMS,
+  itemsIn,
 } from '../src/menuFixtures.js';
 import { formatAmount } from '../src/money.js';
 import { OrderScreen } from '../src/OrderPanel.js';
@@ -56,6 +57,9 @@ const menu = () => host.querySelector('.order-screen__menu')!;
 const tiles = () => [...host.querySelectorAll<HTMLElement>('.menu-grid > .menu-tile')];
 const categories = () => [...host.querySelectorAll<HTMLElement>('.menu-categories > .menu-category')];
 const ids = (els: HTMLElement[]) => els.map((e) => e.dataset.item);
+// FE-023: the grid shows the selected category's items, and a fresh load selects Mains.
+const MAINS = itemsIn('mains');
+const select = (id: (typeof MENU_CATEGORIES)[number]['id']) => press(categories().find((c) => c.textContent === MENU_CATEGORIES.find((k) => k.id === id)!.name)!);
 const text = (els: Element[]) => els.map((e) => e.textContent);
 
 const LOCK_STATES = ['lock-draft', 'lock-lease'] as const;
@@ -74,11 +78,15 @@ describe('default', () => {
     expect(host.querySelectorAll('.menu-category--selected')).toHaveLength(1);
   });
 
-  it('draws every item as a tile, in the artifact’s order, each a button that opens the item sheet', () => {
-    expect(ids(tiles())).toEqual(MENU_ITEMS.map((i) => i.id));
-    for (const [i, item] of MENU_ITEMS.entries()) {
+  it('draws Mains’ items as tiles on a fresh load, in the table’s order', () => {
+    expect(ids(tiles())).toEqual(MAINS.map((i) => i.id));
+  });
+
+  it('draws every item as a tile in its own category, each a button that opens the item sheet', () => {
+    for (const item of MENU_ITEMS) {
       render('default');
-      const tile = tiles()[i]!;
+      select(item.category);
+      const tile = tiles().find((t) => t.dataset.item === item.id)!;
       expect(tile.dataset.item).toBe(item.id);
       expect(tile.tagName).toBe('BUTTON');
       expect(tile.getAttribute('type')).toBe('button');
@@ -93,7 +101,7 @@ describe('default', () => {
   it.each(['default', 'overflow'] as const)(
     '%s: draws every category as a button that keeps the order, and writes no category to the URL',
     (state) => {
-      for (const [i] of MENU_CATEGORIES.entries()) {
+      for (const [i, category] of MENU_CATEGORIES.entries()) {
         render(state);
         const names = [...host.querySelectorAll('.order-line__name')].map((n) => n.textContent);
         const row = categories()[i]!;
@@ -105,19 +113,22 @@ describe('default', () => {
         expect(window.location.search).toBe(`?state=${state}`);
         expect([...host.querySelectorAll('.order-line__name')].map((n) => n.textContent)).toEqual(names);
         expect(sheetTitle()).toBeNull();
-        // And it writes no ?category=, because nothing honours one. Ruled
-        // 2026-09-21: the rail keeps Mains while the grid can only draw Mains,
-        // rather than asserting a selection the grid contradicts.
+        // And it writes no ?category=: the selection lives beside the order
+        // store, and the rail and the grid both follow it (FE-023).
         expect(window.location.search).not.toContain('category');
-        expect(text(categories().filter((c) => c.getAttribute('aria-current') === 'true'))).toEqual(['Mains']);
+        expect(text(categories().filter((c) => c.getAttribute('aria-current') === 'true'))).toEqual([category.name]);
         expect(host.querySelectorAll('.menu-category--selected')).toHaveLength(1);
-        expect(ids(tiles())).toEqual(MENU_ITEMS.map((i) => i.id));
+        expect(ids(tiles())).toEqual(itemsIn(category.id).map((i) => i.id));
       }
     }
   );
 
   it('prices each tile from its bigint as a grouped figure', () => {
-    expect(text([...host.querySelectorAll('.menu-tile__price')])).toEqual(MENU_ITEMS.map((i) => formatAmount(i.price)));
+    for (const c of MENU_CATEGORIES) {
+      select(c.id);
+      expect(text([...host.querySelectorAll('.menu-tile__price')])).toEqual(itemsIn(c.id).map((i) => formatAmount(i.price)));
+    }
+    select('mains');
     expect(host.querySelector('[data-item="steak"] .menu-tile__price')!.textContent).toBe('240.000');
     for (const item of MENU_ITEMS) expect(typeof item.price).toBe('bigint');
   });
@@ -139,7 +150,7 @@ describe('eightysix: disabled in place (ruling C-3)', () => {
   beforeEach(() => render('eightysix'));
 
   it('keeps every tile, in exactly the default order and slot', () => {
-    expect(ids(tiles())).toEqual(MENU_ITEMS.map((i) => i.id));
+    expect(ids(tiles())).toEqual(MAINS.map((i) => i.id));
     expect(tiles().findIndex((t) => t.dataset.item === 'steak')).toBe(2);
   });
 
@@ -152,18 +163,22 @@ describe('eightysix: disabled in place (ruling C-3)', () => {
     expect(steak.getAttribute('aria-disabled')).toBe('true');
   });
 
-  it('makes Steak not a control: no link, no href, no tab stop, nothing interactive inside', () => {
+  it('makes Steak an inert button (FE-024): aria-disabled, reachable by Tab, no link, nothing interactive inside', () => {
     const steak = host.querySelector<HTMLElement>('[data-item="steak"]')!;
-    expect(steak.tagName).toBe('DIV');
-    expect(steak.closest('a, button')).toBeNull();
+    expect(steak.tagName).toBe('BUTTON');
+    expect(steak.getAttribute('aria-disabled')).toBe('true');
+    expect(steak.hasAttribute('disabled')).toBe(false);
+    expect(steak.tabIndex).not.toBe(-1);
+    expect(steak.closest('a')).toBeNull();
     expect(steak.querySelector('a, button, [tabindex], [href]')).toBeNull();
-    expect(steak.hasAttribute('tabindex')).toBe(false);
+    expect(steak.hasAttribute('href')).toBe(false);
     expect(steak.hasAttribute('role')).toBe(false);
+    expect(steak.getAttribute('aria-describedby')).toBe(steak.querySelector('.tag-86')!.id);
   });
 
   it('leaves every other tile a working button', () => {
     const others = tiles().filter((t) => t.dataset.item !== 'steak');
-    expect(others).toHaveLength(MENU_ITEMS.length - 1);
+    expect(others).toHaveLength(MAINS.length - 1);
     for (const t of others) expect(t.matches('button.menu-tile[type="button"]:not(.menu-tile--off)')).toBe(true);
     for (const id of others.map((t) => t.dataset.item)) {
       render('eightysix');
@@ -176,8 +191,12 @@ describe('eightysix: disabled in place (ruling C-3)', () => {
 describe.each(GRID_STATES)('%s: the grid never reflows', (state) => {
   it('draws every item in the default order, and an unavailable tile is never a link', () => {
     render(state);
-    expect(ids(tiles())).toEqual(MENU_ITEMS.map((i) => i.id));
-    expect(host.querySelectorAll('a.menu-tile--off, button.menu-tile--off, .menu-tile--off a, .menu-tile--off button')).toHaveLength(0);
+    for (const c of MENU_CATEGORIES) {
+      select(c.id);
+      expect(ids(tiles())).toEqual(itemsIn(c.id).map((i) => i.id));
+      expect(host.querySelectorAll('a.menu-tile--off, .menu-tile--off a, .menu-tile--off button')).toHaveLength(0);
+      for (const off of host.querySelectorAll('.menu-tile--off')) expect(off.getAttribute('aria-disabled')).toBe('true');
+    }
   });
 });
 
@@ -185,9 +204,13 @@ describe('pressed', () => {
   it('holds the selected category, one other category and one tile — the A7 ring, statically', () => {
     render('pressed');
     expect(text(categories().filter((c) => c.classList.contains('is-pressed')))).toEqual(['Mains', 'Sides']);
+    // A fixture whose point is a pressed tile shows it on load (FE-023 round 2),
+    // so the held tile is a Main. It is still drawn only under its own category.
     const held = tiles().filter((t) => t.classList.contains('is-pressed'));
-    expect(ids(held)).toEqual(['fries']);
+    expect(ids(held)).toEqual(['burger']);
     expect(held[0]!.tagName).toBe('BUTTON');
+    select('sides');
+    expect(tiles().filter((t) => t.classList.contains('is-pressed'))).toEqual([]);
   });
 
   it('is not drawn on the menu in any other state', () => {
@@ -230,7 +253,7 @@ describe('catalog', () => {
     expect([...area.children].map((c) => c.classList[1] ?? c.className)).toEqual(['menu-notice', 'menu-grid']);
     expect(area.querySelector('.notice__title')!.textContent).toBe(CATALOG_NOTICE.title);
     expect(area.querySelector('.notice')!.textContent).toContain(CATALOG_NOTICE.body);
-    expect(ids(tiles())).toEqual(MENU_ITEMS.map((i) => i.id));
+    expect(ids(tiles())).toEqual(MAINS.map((i) => i.id));
   });
 
   it('carries no action: nothing was added, and the grid is the way on', () => {
@@ -277,7 +300,7 @@ describe.each(LOCK_STATES)('%s: the route out (acceptance criterion 1)', (state)
     expect(text([...host.querySelectorAll('.round-head__tag')])).toEqual([LOCK_TAG[lock], LOCK_TAG[lock], LOCK_TAG[lock]]);
     expect(host.querySelectorAll('.order-actions a')).toHaveLength(0);
     // Every control on the 1280×800 frame is the route out.
-    expect(text([...device().querySelectorAll('a, button')])).toEqual([notice.action.label]);
+    expect(text([...device().querySelectorAll('a, button:not([aria-disabled="true"])')])).toEqual([notice.action.label]);
   });
 });
 
@@ -329,7 +352,7 @@ it('the two lock notices never share a string (C-5), nor with the panel tags', (
 // The ring is a stylesheet fact, so it is checked in the stylesheet: every
 // rule that draws the pressed ring on a tile or a category row must qualify it
 // with the control's element — a <button> since FE-009, an anchor before it.
-// An 86'd tile is a div, so it can then match neither :active nor .is-pressed
+// An 86'd tile is aria-disabled (FE-024), so it can then match neither :active nor .is-pressed
 // — nothing happened, so nothing says it did.
 
 const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../src/pos.css'), 'utf8');
@@ -374,7 +397,12 @@ describe('the ring detector can see a ring an 86’d tile could match', () => {
 describe('pos.css: the menu pressed ring', () => {
   it('rings a tile and a category row', () => {
     const ringed = selectorsDeclaring(css, '--frost-pressed-ring');
-    for (const s of ['button.menu-tile:active', 'button.menu-tile.is-pressed', 'button.menu-category:active', 'button.menu-category.is-pressed']) {
+    for (const s of [
+      'button.menu-tile:not([aria-disabled="true"]):active',
+      'button.menu-tile:not([aria-disabled="true"]).is-pressed',
+      'button.menu-category:active',
+      'button.menu-category.is-pressed',
+    ]) {
       expect(ringed).toContain(s);
     }
   });

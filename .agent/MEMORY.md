@@ -3,12 +3,43 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-24, when **a fresh lead session took `w2:p1`**, renamed it
-`lead`, and re-verified: head `6d69f2c`, tree clean, 2 commits ahead of
-`origin/agent/phase-0-foundations` (unpushed), **`npm run verify` green at 1349
-tests across 22 files**. F3, DESIGN-006 and FE-020 are closed; F4 is next and
-unassigned. **The *Immediate next handoff* section at the foot of this file is
-from 2026-09-14 and stale — read this block instead.**
+Last updated: 2026-09-25, when **a fresh lead session (Opus 5.5) took `w2:p1`**,
+re-ran `herdr agent rename w2:p1 lead` (the name had dropped again), and
+re-verified: head `2c98656`, tree clean, level with
+`origin/agent/phase-0-foundations`, `lead` the only live agent. **F5 (FE-021 to
+FE-024) is closed; F4 is next and unassigned.** `npm run verify`: **2078 / 2085
+pass, 26 / 27 files.** The 7 failures are all `apps/server/test/migrate.test.ts`
+with `ECONNREFUSED 127.0.0.1:5433`. The Docker daemon is not running, so
+`npm run db:up` has no Postgres to start. That is the environment, not the code:
+FE-024 closed green at 2085 / 27. Re-run verify once Docker is up.
+
+**Later 2026-09-25:** Docker up, and verify is **green at 2085 / 27**. At the owner's
+word, F4 split: **F4a is [FE-025](tasks/FE-025-print-incidents.md), POS-07
+print incidents**, the only remaining POS screen with a Frost artifact.
+**`builder27` (claude Sonnet) started in `w2:p1P`**, with a background wait. The
+lead's rulings are in the task. The one to check at review: **the artifact's
+Reprint is a shared-control defect**, since every Reprint goes to one
+`?state=reprint` that draws a kitchen result, even from a receipt. So a live
+press is per incident and says only *Reprint sent*. The design is owed: a
+*clear* control, which the artifact lacks while `FR-E3` needs one, and the
+reprint defect itself. **POS-02, POS-05 and POS-06 have no Frost design**, so
+they need a design task (codex `gpt-6-astra`) before any code. It is not written yet.
+**FE-025 accepted 2026-09-25**, on the lead's own verification rather than a review
+agent (one small screen, with every ruling checked in code). Verify was re-run at
+**2135 / 28**. The Chrome walk: the Burger's total survives the trip to
+`/pos/incidents` and back; a receipt reprint shows the title only; one
+`.pos-device` at 1280×800; the `overflow` state fits 736/736 with no scroll.
+The lock screen's banner still only focuses the PIN, so `FR-E3b` holds.
+`builder27` is closed and pane `w2:p1P` too. The code is **uncommitted until the
+owner asks**. **Design questions owed to POS-07:**
+- a *clear* control (`FR-E3`);
+- the artifact's 3px border and 700 weight, which have no registry token (the
+  build used 4px and semibold);
+- the reprint shared-control defect.
+
+Previously 2026-09-24, when a fresh lead session took `w2:p1` at head `6d69f2c`
+(1349 tests / 22 files). **The *Immediate next handoff* section at the foot of
+this file is from 2026-09-14 and stale — read this block instead.**
 
 **THE LIVE BUG, recorded 2026-09-24 (the previous lead found it in conversation
 and never wrote it here): every menu tile adds a Burger.** `MenuRegion.tsx:191`
@@ -102,6 +133,7 @@ use, and their lead-made panes, without asking. `designer5` and
 (Superseded: `builder23` (claude Sonnet) started on FE-021 in `w2:p1F` 2026-09-24.)
 **Ruling to builder23, 2026-09-24: `lineAmount` = max(0, base + deltas) × qty (PRD FR-C2).** FE-014's AC5 pinned 335.000 (modifiers once per line) against the PRD. That was a lead error, and the right figure is 405.000. AC5's real purpose, *recompute from the unit, never multiply the stored amount*, now needs a quantity 2→3 red case, because at quantity 1 the two answers agree. Fixture lines with qty > 1 and modifiers are to be swept and reported, not silently refigured.
 
+**Owner rulings 2026-09-24 (in conversation):** (1) `fireerror` keeps its old two-round data for now, which settles the DESIGN-007 conflict per `:578`. (2) Times display as `HH:MM`, 24-hour, in the local time of the machine running the app. The PRD §9 wording is proposed to the owner and **not yet applied**. (3) **No `Rp` symbol in the MVP**; amounts stay bare. Later the same day: **(4) the time zone is WIB (Asia/Jakarta, UTC+7).** **(5) Light only** for the MVP; dark is deferred. **(6) I-8: a back-office kitchen-ticket reprint IS audited.** **(7) POS-03 Q5:** an emptied order shows no lines and no charge rows, which is kept. **(8) Q6:** Cancel while an approval is verifying **cancels** (B-20: no partial state; a cancelled approval is audited per FR-J3). **(9) Q7, delegated to the lead:** every off action stays focusable, in the DESIGN-006 Close pattern: `button` role, `aria-disabled="true"`, `aria-describedby` naming why, and activation does nothing. The `disabled` attribute is never used on an action (FE-021's − / + / Update currently use it). **(10) Q8:** a category press shows that category's items, e.g. Beer, Water and Soda under Drinks and Steak under Mains. This overrides the 2026-09-21 ruling that nothing reads `?category=`. **(11) Q9:** no *applied by* note on a comp. **The owner approved the contract wording: PRD §9 (WIB, `HH:MM`, business day 00:00–23:59) and FR-J3 (a back-office reprint is audited) were applied in `8af57a8`.** AC-18 does not list reprints, but it does not list lease takeover either, so it was left. `docs/ARCHITECTURE_PROPOSAL.md` §19 still lists both as open; it is a proposal, so this is a note only. The owner left the menu categorisation to the lead: [FE-023](tasks/FE-023-menu-categories.md) (Mains / Sides / Drinks + Mineral Water / Desserts = Cheesecake). [FE-024](tasks/FE-024-off-actions-focusable.md) makes every off action a focusable `aria-disabled` button. **FE-023 accepted and committed 2026-09-24** (`421abac` feat, `08dceb9` docs; `builder25` closed). **FE-024 accepted 2026-09-24** (2 rounds, 2085 tests / 27 files; `builder26` and `f5d-reviewer` closed, panes `w2:p1M`/`w2:p1N`). Every off action in the POS is now a focusable `aria-disabled` button.
 **Owner decisions owed (contract):** PRD §9 time zone; ruling I-8 (is a
 back-office ticket reprint audited — needed before F4's back office); whether a
 dark palette ships; and, older, whether IDR draws `Rp` (raised 2026-09-16).
@@ -990,6 +1022,9 @@ nearly caused. **Change an agent's model between slices, never inside one.**
 | `f3-reviewer` | **codex, `gpt-6-sol`** (the owner's choice for this review) | — | closed 2026-09-23 | **Reviewed F3a–F3d**: [reviews/F3-settlement-review.md](reviews/F3-settlement-review.md). Request changes, **3 P2 + 1 P3.** **Cleared the money rules**: no ordinary-control sequence over-drafts a card, exceeds the change limit, or closes below exact. **Proved F3c's three unproven red cases** by in-memory mutation, without editing a file, and found one defect nobody had. A first attempt on `gpt-6-astra` was cancelled by the owner mid-read |
 | `f5a-reviewer` | **codex, `gpt-6-sol`** | `w2:p1G` (unnamed in herdr; the start timed out, so target it by pane) | **closed 2026-09-24**. Round 4: finding 11 fixed, and one P3 (12: Cancel from `pressed` brings back the held-row visual). The lead verifies round 5 itself; a P3 does not merit a new reviewer. The owner had switched it from gpt-6-sol to **luna** mid-review (gpt quota nearly out). **If another round is needed, it goes to a fresh claude Sonnet reviewer, per the owner.** Round 3 was request changes, 1 P2 (11: the fireerror banner vanishes while an item sheet is open, because the incident reads view.state rather than the origin). 9, 10 and 3 are closed. Round 2 was request changes (9: `from` kept a false 'nothing changed' notice after Add from error/catalog; 10: `from` accepted overlay and lock states; 3 partly open: fixture lines still priced from the catalog). All accepted | **FE-021 review: request changes, 8 findings (1 P1, 5 P2, 2 P3), all accepted by the lead.** P1: a line added live can't open its editor (panelLine searches the fixture). P2: the 86 state is lost through item sheets; a quantity edit reprices from today's catalog (no unit snapshot, B-8); a zero-delta Size is dropped from the line; the Add stepper is not beside Add; the 86'd sheet loses its stepper. P3: no preview at rest; the tile test doesn't check the amount. Report at `.agent/reviews/FE-021-review.md` |
 | `f5b-reviewer` | **claude, Sonnet** (the owner: codex quota is nearly out) | `w2:p1J` | **closed 2026-09-24; approved round 2** (finding 1 fixed; C, E and F confirmed), plus 2 P3 now in round 3: helpers return a fresh groups array with no change; three lock reads bypass originFacts. Round 1: approve after one fix, 1 P2 + 5 P3. P2: the 'Round n sent' status re-announces after add-then-remove. Nothing loosened, and no live path produces printed, failed or unknown. Report at `.agent/reviews/FE-022-review.md` |
+| `f5d-reviewer` | **claude, Sonnet** | `w2:p1N` | **closed 2026-09-24; approve after one fix**, 1 P2 + 5 P3, all accepted. P2: `sheets.test.tsx` `liveControls` hid off buttons from the modality test, which is now to be split into tabStops/pressable. The other ~60 test edits were judged faithful. Lead ruling on P3-4: the off Add describes itself only by the field message or the refusal notice, never help text. The lead verifies round 2. Report to `.agent/reviews/FE-024-review.md` |
+| `builder26` | **claude, Sonnet** | `w2:p1M` | delivered 2026-09-24 (2070 / 27, the lead re-ran it; browser: the 86'd Steak tile is a focusable button with aria-disabled and a 2px focus ring, described by its 86 tag, and Enter/Space/click do nothing). **closed 2026-09-24, FE-024 accepted after 2 rounds** (2085 / 27; the lead re-ran it and mutated `tabStops` back to the old filter, which fails the pin test). Uncommitted until the owner asks. The builder correctly used `fireblocked-overflow` for Send-off, because `overflow`'s Send is live; the lead's brief was wrong there | **FE-024** (F5d): every off action is a focusable `aria-disabled` button |
+| `builder25` | **claude, Sonnet** | `w2:p1K` | **closed 2026-09-24, FE-023 accepted** after 2 rounds (1921 / 26; the lead re-ran it and checked it in the browser: four grids exact, the category survives Drinks→Beer→Add with no URL or history change, and `pressed` now holds Burger on load). **No separate reviewer:** the change is small and mechanical, so the lead reviewed the diff and ran the browser walk instead. Lead rulings: the `pressed` tile moves to Burger; a URL-opened sheet's missing opener falls back, accepted | **FE-023** (F5c): category press shows that category's items |
 | `builder24` | **claude, Sonnet** | `w2:p1H` | **closed 2026-09-24, FE-022 accepted after 3 rounds** (1796 / 25, the lead re-ran it; the lead's probe shows menu and order lock agree in all 50 states, so MenuRegion's source switch is neutral). Uncommitted until the owner asks. Round 2 delivered (1792 / 25, the lead re-ran it). **Lead browser check of round 2 at 1280×800:** after the fire, Fries is in view (384–405, status top 450); after Add on overflow, Soda is in view; the Round 12 heading is one line (label right edge 1112 < tag left edge 1132) at the same 32px as round 1; fireblocked-overflow scrolls on mount; focus after Add/Cancel returns to the tile, as at HEAD. Round 2 covered: the status clears on the event; the new round and a newly added line scroll into view; fireblocked scrolls on first draw; a `fire-heading-width` fixture; test hygiene; one shared lock accessor | **FE-022** (F5b): one-press fire, `delivery` enum, `fireOrder`. Reports via herdr; the lead holds a background wait |
 | `builder23` | **claude, Sonnet** | `w2:p1F` | **closed 2026-09-24, FE-021 accepted** after 5 rounds (1645 / 23; the lead re-ran it, re-proved the pressed mutation red, and ran a browser check) | **FE-021 delivered** 2026-09-24: 1577 / 23 green (the lead re-ran it); the routing red case was re-proved by the lead (13 fail). **FE-021** (F5a): per-item sheets + `− n +` quantity commit. Reports via herdr; lead holds a background wait. Commits nothing |
 | `design-reviewer3` | **codex, `gpt-6-sol`** | — | closed 2026-09-24 | **Request changes, 2 P2, both accepted** (a 100% comp dropped on Add from `zero`; a voided line erased on Add from `overflow`, one shared rebuild). All other criteria pass, figures re-derived. Report at `restaurant-pos-design/.agent/reviews/DESIGN-007-review.md`. cwd design worktree |

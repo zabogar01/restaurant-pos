@@ -159,7 +159,7 @@ describe('POS-03 to POS-04 routing', () => {
       'Another client is settling this order'
     );
     expect(host.querySelector('.order-panel')!.getAttribute('data-lock')).toBe('lease');
-    expect(host.querySelector('[data-action="settle"]')!.tagName).toBe('SPAN');
+    expect(host.querySelector('[data-action="settle"]')!.tagName).toBe('BUTTON');
 
     // AC-2: Forward from the locked state above returns to a live, unlocked
     // `default` — checked before the takeover click below, which pushes a new
@@ -182,18 +182,20 @@ describe('POS-03 to POS-04 routing', () => {
 
 describe('tender entry', () => {
   it.each([
-    ['empty', 0, '155.925', 'SPAN'],
-    ['pressed', 0, '155.925', 'SPAN'],
-    ['partial', 1, '55.925', 'SPAN'],
-    ['exact', 1, '0', 'BUTTON'],
-    ['overflow', 6, '0', 'BUTTON'],
-  ] as const)('%s draws its reviewed draft and exact-close state', (state, draftCount, balance, closeTag) => {
+    ['empty', 0, '155.925', true],
+    ['pressed', 0, '155.925', true],
+    ['partial', 1, '55.925', true],
+    ['exact', 1, '0', false],
+    ['overflow', 6, '0', false],
+  ] as const)('%s draws its reviewed draft and exact-close state', (state, draftCount, balance, closeOff) => {
     window.history.replaceState(null, '', `/pos/settlement?state=${state}`);
     act(() => root.render(<PosRoutes />));
 
     expect(host.querySelectorAll('.draft-tender')).toHaveLength(draftCount);
     expect(host.querySelector('.settlement-balance__amount')!.textContent).toBe(balance);
-    expect(host.querySelector('[data-action="close-order"]')!.tagName).toBe(closeTag);
+    const close = host.querySelector('[data-action="close-order"]')!;
+    expect(close.tagName).toBe('BUTTON');
+    expect(close.getAttribute('aria-disabled') === 'true').toBe(closeOff);
   });
 
   it('pressed holds the Cash chip, 5 key, and Add cash control only in that fixture', () => {
@@ -260,7 +262,7 @@ describe('tender entry', () => {
 
     let close = host.querySelector<HTMLElement>('[data-action="close-order"]')!;
     expect(host.querySelector('.settlement-balance__amount')!.textContent).toBe('1');
-    expect(close.tagName).toBe('SPAN');
+    expect(close.tagName).toBe('BUTTON');
     expect(close.getAttribute('aria-disabled')).toBe('true');
 
     press(host.querySelector('[data-digit="1"]')!);
@@ -289,7 +291,7 @@ describe('tender entry', () => {
 
     expect(host.querySelector('.tender-amount--invalid')!.textContent).toBe('155.926');
     expect(host.querySelector('.tender-field__message')!.textContent).toBe('Card maximum 155.925');
-    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('SPAN');
+    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('BUTTON');
     expect(host.querySelectorAll('.draft-tender')).toHaveLength(0);
   });
 
@@ -329,13 +331,15 @@ describe('tender entry', () => {
       order: shownOrder({ state: 'default', gone: 'steak' }),
       addLine: () => {},
       removeLine: () => {},
+      category: 'mains',
+      selectCategory: () => {},
       setQuantity: () => {},
       fire: () => {},
     };
     act(() => root.render(<SettlementScreen store={store} addRule={() => false} />));
 
     const add = host.querySelector<HTMLElement>('[data-action="add-tender"]')!;
-    expect(add.tagName).toBe('SPAN');
+    expect(add.tagName).toBe('BUTTON');
     expect(add.getAttribute('aria-disabled')).toBe('true');
     expect(host.querySelectorAll('.draft-tender')).toHaveLength(0);
   });
@@ -406,7 +410,7 @@ describe('F3b: cash and card diverge (POS-04)', () => {
     method('card');
     key('155926');
     expect(host.querySelector('.tender-field__message')!.textContent).toBe('Card maximum 155.925');
-    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('SPAN');
+    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('BUTTON');
     expect(host.querySelectorAll('.draft-tender')).toHaveLength(0);
   });
 
@@ -429,7 +433,7 @@ describe('F3b: cash and card diverge (POS-04)', () => {
     key('5');
     expect(amount()).toBe('10.055.925');
     expect(host.querySelector('.tender-field__message')!.textContent).toBe('Cash maximum 10.055.924');
-    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('SPAN');
+    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('BUTTON');
     expect(host.querySelector('.notice__title')!.textContent).toBe('Too much cash to give change for');
   });
 
@@ -440,7 +444,7 @@ describe('F3b: cash and card diverge (POS-04)', () => {
     expect(amount()).toBe('99.999.999');
     expect(host.querySelector('.tender-amount--invalid')).not.toBeNull();
     expect(host.querySelector('.tender-field__message')!.textContent).toBe('Cash maximum 10.055.924');
-    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('SPAN');
+    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('BUTTON');
   });
 
   it('AC-5-single-tender-cap: the maximum is capped at 99,999,999 once the change limit would exceed it', () => {
@@ -449,6 +453,8 @@ describe('F3b: cash and card diverge (POS-04)', () => {
       order: { ...shownOrder({ state: 'default', gone: 'steak' }), totals: { subtotal: 95_000_000n, total: 95_000_000n } },
       addLine: () => {},
       removeLine: () => {},
+      category: 'mains',
+      selectCategory: () => {},
       setQuantity: () => {},
       fire: () => {},
     };
@@ -488,7 +494,7 @@ describe('F3b: cash and card diverge (POS-04)', () => {
     method('cash');
     key('9999999');
 
-    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('SPAN');
+    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('BUTTON');
     expect(host.querySelector('[data-action="add-tender"]')!.textContent).toBe('Nothing left');
     expect(host.querySelector('.tender-amount--invalid')).toBeNull();
     expect(host.querySelector('.tender-field__message')).toBeNull();
@@ -505,7 +511,7 @@ describe('F3b: cash and card diverge (POS-04)', () => {
     method('cash');
     key('9999999');
 
-    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('SPAN');
+    expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('BUTTON');
     expect(host.querySelectorAll('.draft-tender')).toHaveLength(1);
     expect(balance()).toBe('0');
     expect(host.querySelector('.settlement-change')).toBeNull();
@@ -588,7 +594,7 @@ describe('F3c: close outcomes (POS-04)', () => {
 
     expect(balance()).toBe('0');
     const button = close();
-    expect(button.tagName).toBe('SPAN');
+    expect(button.tagName).toBe('BUTTON');
     expect(button.getAttribute('aria-disabled')).toBe('true');
     expect(button.textContent).toBe('Close order & print receipt');
     expect(button.getAttribute('aria-describedby')).toBe('close-pending-notice');
@@ -628,7 +634,7 @@ describe('F3c: close outcomes (POS-04)', () => {
 
     expect(host.querySelectorAll('.draft-tender')).toHaveLength(1);
     expect(balance()).toBe('282.725');
-    expect(close().tagName).toBe('SPAN');
+    expect(close().tagName).toBe('BUTTON');
   });
 
   it('AC-5: removing the pending line from POS-03 un-blocks the close', () => {
@@ -668,7 +674,7 @@ describe('F3c: close outcomes (POS-04)', () => {
     expect(notices).toHaveLength(2);
     expect(notices[0]!.textContent).toContain('Nothing to collect');
     expect(notices[1]!.textContent).toContain('Steak');
-    expect(close().tagName).toBe('SPAN');
+    expect(close().tagName).toBe('BUTTON');
     expect(close().textContent).toBe('Close order & print receipt');
   });
 
@@ -700,7 +706,7 @@ describe('F3c: close outcomes (POS-04)', () => {
     expect(host.querySelector('.draft-tender__amount')!.textContent).toBe('155.925');
     expect(amount()).toBe('37.800');
     expect(host.querySelector('[data-action="add-tender"]')!.tagName).toBe('BUTTON');
-    expect(close().tagName).toBe('SPAN');
+    expect(close().tagName).toBe('BUTTON');
     expect(host.querySelector('.notice__title')!.textContent).toBe('Close was rejected');
 
     // A partial correction: Card 10.000, 27.800 still owed. The notice must
@@ -712,7 +718,7 @@ describe('F3c: close outcomes (POS-04)', () => {
     expect(balance()).toBe('27.800');
     expect(host.querySelector('.notice__title')!.textContent).toBe('Close was rejected');
     expect(host.querySelector('.notice')!.textContent).toContain('27.800');
-    expect(close().tagName).toBe('SPAN');
+    expect(close().tagName).toBe('BUTTON');
 
     // The remaining 27.800: the notice goes and Close goes live.
     add();
@@ -749,7 +755,7 @@ describe('F3c: close outcomes (POS-04)', () => {
     expect(host.querySelectorAll('.skel-bar')).toHaveLength(2);
     expect(host.querySelectorAll('.draft-tender')).toHaveLength(1);
     expect(balance()).toBe('0');
-    expect(close().tagName).toBe('SPAN');
+    expect(close().tagName).toBe('BUTTON');
     expect(close().textContent).toBe('Closing…');
   });
 
@@ -759,12 +765,14 @@ describe('F3c: close outcomes (POS-04)', () => {
       order: shownOrder({ state: 'default', gone: 'steak' }),
       addLine: () => {},
       removeLine: () => {},
+      category: 'mains',
+      selectCategory: () => {},
       setQuantity: () => {},
       fire: () => {},
     };
     act(() => root.render(<SettlementScreen store={store} closeRule={() => ({ reason: 'balance' })} />));
 
-    expect(close().tagName).toBe('SPAN');
+    expect(close().tagName).toBe('BUTTON');
     expect(close().textContent).toBe('Close order — balance outstanding');
   });
 
@@ -782,6 +790,8 @@ describe('F3c: close outcomes (POS-04)', () => {
       },
       addLine: () => {},
       removeLine: () => {},
+      category: 'mains',
+      selectCategory: () => {},
       setQuantity: () => {},
       fire: () => {},
     };
@@ -831,8 +841,8 @@ describe('F3d: the payment session', () => {
     expect(window.location.pathname).toBe('/pos/order');
     expect(dataLock()).toBe('draft');
     expect(lockTitle()).toBe('Finish this payment first');
-    expect(host.querySelectorAll('.order-actions a, .order-actions button')).toHaveLength(0);
-    expect(host.querySelector('[data-action="settle"]')!.tagName).toBe('SPAN');
+    expect(host.querySelectorAll('.order-actions a, .order-actions button:not([aria-disabled="true"])')).toHaveLength(0);
+    expect(host.querySelector('[data-action="settle"]')!.tagName).toBe('BUTTON');
 
     press(anchorNamed('Back to payment'));
 
@@ -1039,6 +1049,8 @@ describe('F3d: the payment session', () => {
       order: shownOrder({ state: 'default', gone: 'steak' }),
       addLine: () => {},
       removeLine: () => {},
+      category: 'mains',
+      selectCategory: () => {},
       setQuantity: () => {},
       fire: () => {},
     };
