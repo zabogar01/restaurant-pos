@@ -3,12 +3,43 @@
 Central coordination state for this repository. Owned by the Claude product
 lead. No other agent writes to this file.
 
-Last updated: 2026-09-24, when **a fresh lead session took `w2:p1`**, renamed it
-`lead`, and re-verified: head `6d69f2c`, tree clean, 2 commits ahead of
-`origin/agent/phase-0-foundations` (unpushed), **`npm run verify` green at 1349
-tests across 22 files**. F3, DESIGN-006 and FE-020 are closed; F4 is next and
-unassigned. **The *Immediate next handoff* section at the foot of this file is
-from 2026-09-14 and stale — read this block instead.**
+Last updated: 2026-09-25, when **a fresh lead session (Opus 5.5) took `w2:p1`**,
+re-ran `herdr agent rename w2:p1 lead` (the name had dropped again), and
+re-verified: head `2c98656`, tree clean, level with
+`origin/agent/phase-0-foundations`, `lead` the only live agent. **F5 (FE-021 to
+FE-024) is closed; F4 is next and unassigned.** `npm run verify`: **2078 / 2085
+pass, 26 / 27 files.** The 7 failures are all `apps/server/test/migrate.test.ts`
+with `ECONNREFUSED 127.0.0.1:5433`. The Docker daemon is not running, so
+`npm run db:up` has no Postgres to start. That is the environment, not the code:
+FE-024 closed green at 2085 / 27. Re-run verify once Docker is up.
+
+**Later 2026-09-25:** Docker up, and verify is **green at 2085 / 27**. At the owner's
+word, F4 split: **F4a is [FE-025](tasks/FE-025-print-incidents.md), POS-07
+print incidents**, the only remaining POS screen with a Frost artifact.
+**`builder27` (claude Sonnet) started in `w2:p1P`**, with a background wait. The
+lead's rulings are in the task. The one to check at review: **the artifact's
+Reprint is a shared-control defect**, since every Reprint goes to one
+`?state=reprint` that draws a kitchen result, even from a receipt. So a live
+press is per incident and says only *Reprint sent*. The design is owed: a
+*clear* control, which the artifact lacks while `FR-E3` needs one, and the
+reprint defect itself. **POS-02, POS-05 and POS-06 have no Frost design**, so
+they need a design task (codex `gpt-6-astra`) before any code. It is not written yet.
+**FE-025 accepted 2026-09-25**, on the lead's own verification rather than a review
+agent (one small screen, with every ruling checked in code). Verify was re-run at
+**2135 / 28**. The Chrome walk: the Burger's total survives the trip to
+`/pos/incidents` and back; a receipt reprint shows the title only; one
+`.pos-device` at 1280×800; the `overflow` state fits 736/736 with no scroll.
+The lock screen's banner still only focuses the PIN, so `FR-E3b` holds.
+`builder27` is closed and pane `w2:p1P` too. The code is **uncommitted until the
+owner asks**. **Design questions owed to POS-07:**
+- a *clear* control (`FR-E3`);
+- the artifact's 3px border and 700 weight, which have no registry token (the
+  build used 4px and semibold);
+- the reprint shared-control defect.
+
+Previously 2026-09-24, when a fresh lead session took `w2:p1` at head `6d69f2c`
+(1349 tests / 22 files). **The *Immediate next handoff* section at the foot of
+this file is from 2026-09-14 and stale — read this block instead.**
 
 **THE LIVE BUG, recorded 2026-09-24 (the previous lead found it in conversation
 and never wrote it here): every menu tile adds a Burger.** `MenuRegion.tsx:191`
