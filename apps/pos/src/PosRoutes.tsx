@@ -79,6 +79,18 @@ export function PosRoutes() {
     return () => window.removeEventListener('popstate', readLocation);
   }, [readLocation]);
 
+  // FE-027 rule 6: a closed order is never editable or re-closable. Browser Back
+  // (or Forward) onto its order or settlement route replaces that entry with the
+  // floor — navigation only, so no live Close, Add, Send or line control is ever
+  // drawn for it.
+  const closedActive = (onOrder || onSettlement) && book.orders().some((o) => o.id === book.activeId && o.status === 'closed');
+  useEffect(() => {
+    if (!closedActive) return;
+    window.history.replaceState(null, '', '/pos/floor');
+    readLocation();
+  }, [closedActive, readLocation]);
+  if (closedActive) return <FloorScreen state={floorStateFrom('')} book={book} sessions={sessions} />;
+
   if (onSettlement) return <ControlledSettlementScreen store={store} session={session} />;
   if (onOrder) return <ControlledOrderScreen view={view} store={store} locked={locked} showFloorLink onLocationChange={readLocation} />;
   if (onFloor) return <FloorScreen state={floorStateFrom(window.location.search)} book={book} sessions={sessions} />;

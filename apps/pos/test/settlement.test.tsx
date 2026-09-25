@@ -295,15 +295,13 @@ describe('tender entry', () => {
     expect(host.querySelectorAll('.draft-tender')).toHaveLength(0);
   });
 
-  it('Close at exact settlement intentionally produces no visible result in F3a', () => {
+  it('Close at exact settlement closes the order and lands on the floor', () => {
     window.history.replaceState(null, '', '/pos/settlement?state=exact');
     act(() => root.render(<PosRoutes />));
-    const before = host.innerHTML;
 
     press(host.querySelector('[data-action="close-order"]')!);
 
-    expect(host.innerHTML).toBe(before);
-    expect(window.location.pathname).toBe('/pos/settlement');
+    expect(window.location.pathname).toBe('/pos/floor');
   });
 
   it('renders overflow as a scrolling draft region beside pinned total and balance regions', () => {
@@ -738,12 +736,11 @@ describe('F3c: close outcomes (POS-04)', () => {
   it('AC-9: loading cannot be reached by pressing Close', () => {
     window.history.replaceState(null, '', '/pos/settlement?state=exact');
     act(() => root.render(<PosRoutes />));
-    const before = host.innerHTML;
 
     press(close());
 
-    expect(host.innerHTML).toBe(before);
-    expect(window.location.pathname).toBe('/pos/settlement');
+    expect(window.location.pathname).toBe('/pos/floor');
+    expect(window.location.search).not.toContain('state=loading');
     expect(host.querySelector('.menu-loading__label')).toBeNull();
   });
 

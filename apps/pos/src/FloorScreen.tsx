@@ -67,10 +67,15 @@ type Tile = {
  * is free: nothing to reopen.
  */
 function tileFor(table: FloorTable, book: OrderBook, sessions: Pick<PaymentSessions, 'draftsOf'>): Tile {
-  const id = `table-${table.n}`;
-  const held = book.orderFor(id);
-  const fixtureState = table.open?.state;
-  const freeTile: Tile = { n: table.n, open: false, status: FLOOR_COPY.free, note: FLOOR_COPY.freeAction, total: undefined, state: undefined };
+  // FE-027: FR-D1's at-most-one is of *open* orders. A table whose only order in
+  // the book is closed is free, whatever its fixture says; a new press starts a new
+  // order under a new id, which is then not the fixture's order.
+  const openId = book.openOrderIdOf(table.n);
+  if (!openId && book.hasOrderFor(table.n)) return freeTileOf(table);
+  const id = openId ?? `table-${table.n}`;
+  const held = openId ? book.orderFor(openId) : undefined;
+  const fixtureState = !openId || openId === `table-${table.n}` ? table.open?.state : undefined;
+  const freeTile = freeTileOf(table);
   if (held ? lineCount(held) === 0 : !fixtureState) return freeTile;
 
   const order = held ?? fixtureOrder(fixtureState!);
@@ -91,6 +96,15 @@ function tileFor(table: FloorTable, book: OrderBook, sessions: Pick<PaymentSessi
     state: fixtureState,
   };
 }
+
+const freeTileOf = (table: FloorTable): Tile => ({
+  n: table.n,
+  open: false,
+  status: FLOOR_COPY.free,
+  note: FLOOR_COPY.freeAction,
+  total: undefined,
+  state: undefined,
+});
 
 /** A fixture's order as the book would hold it, without seeding the book. */
 function fixtureOrder(state: OrderState): ShownOrder {

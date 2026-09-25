@@ -1,6 +1,7 @@
 import type { Money } from '@pos/money';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { orderTotals, type DiscountSnapshot } from './discount.js';
+import { closeOrder, type ClosedOrder } from './close.js';
 import { fireOrder } from './fire.js';
 import { DEFAULT_CATEGORY, MENU_ITEMS, originFacts, type CategoryId } from './menuFixtures.js';
 import {
@@ -47,6 +48,8 @@ type StoreState = {
   groups: ReadonlyArray<RoundGroup>;
   applied?: DiscountSnapshot;
   appliedNote?: string;
+  /** FE-027: set at close, and never unset. A closed order is kept in the book, not deleted, and accepts no change. */
+  closed?: Pick<ClosedOrder, 'closedAt' | 'tenders' | 'change'>;
 };
 
 export type NewLine = {
@@ -86,6 +89,15 @@ export type OrderStore = {
    * a second call in the same tick finds nothing pending.
    */
   fire: (firedAt: string) => void;
+  /**
+   * Mutation 5 (FE-027): the close. The drafts become the order's tenders and the
+   * order is marked closed, through `closeOrder` — which owns every refusal, so a
+   * press the screen should not have offered changes nothing. Returns whether it
+   * closed. Applied through the functional updater, so a second call in the same
+   * tick finds the order closed.
+   * Optional so a hand-built store (a test's) need not supply one.
+   */
+  close?: (closedAt: string, drafts: ReadonlyArray<{ id: string; label: string; amount: Money }>) => boolean;
 };
 
 function priceOf(itemId: string): Money {
@@ -143,6 +155,21 @@ function seed(view: OrderView, locked: boolean): StoreState {
   };
 }
 
+/** The table number an order id names (`table-9`, `table-9-2`); undefined for a quick sale. */
+function tableOf(orderId: string): string | undefined {
+  return /^table-(\d+)(?:-\d+)?$/.exec(orderId)?.[1];
+}
+
+const isClosed = (o: StoreState) => o.closed !== undefined;
+
+/** FR-D1's at-most-one applies to open orders: the table's open order, if any, and otherwise the id a new one takes (`table-9`, then `table-9-2`…). */
+function tableSlot(orders: Readonly<Record<string, StoreState>>, n: number): { id: string; exists: boolean } {
+  const ids = Object.keys(orders).filter((id) => tableOf(id) === String(n));
+  const open = ids.find((id) => !isClosed(orders[id]!));
+  if (open) return { id: open, exists: true };
+  return { id: ids.length === 0 ? `table-${n}` : `table-${n}-${ids.length + 1}`, exists: false };
+}
+
 // A no-line order states no charges; a line discounted to zero (`zero`, the
 // 100% comp) still states its service and tax rows — the reviewed distinction
 // is lines, never money, so it is checked on line count, not on the subtotal
@@ -195,6 +222,12 @@ export type OrderBook = {
   orderFor: (orderId: string) => ShownOrder | undefined;
   /** Makes a fixture's order active, seeding it from that fixture the first time and never after. */
   openFixture: (state: OrderState) => void;
+  /** Every order the book holds, open or closed (FE-027: POS-05 will list the closed ones). */
+  orders: () => ReadonlyArray<{ id: string; status: 'open' | 'closed'; order: ShownOrder } & Partial<Pick<ClosedOrder, 'closedAt' | 'tenders' | 'change'>>>;
+  /** The id of Table `n`'s open order, if it has one. A table whose only order is closed has none: it is free. */
+  openOrderIdOf: (n: number) => string | undefined;
+  /** Whether the book holds any order, open or closed, for Table `n`. Absent, the floor shows the fixture. */
+  hasOrderFor: (n: number) => boolean;
   /** Makes Table `n`'s order active, creating an empty one the first time. Returns its id. */
   openTable: (n: number) => string;
   /** Creates a fresh quick sale from `quick-new` under a new id and makes it active. Returns the id. */
@@ -239,6 +272,8 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
   // current facts rather than the ones it was created under.
   const context = useRef({ view, locked });
   context.current = { view, locked };
+  const bookRef = useRef(book);
+  bookRef.current = book;
 
   // The order the screen shows is always in the book: reaching an order route
   // with nothing active yet (Forward from the floor, say) seeds it now, once.
@@ -252,7 +287,8 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
   const update = useCallback((change: (prev: StoreState) => StoreState) => {
     setBook((prev) => {
       const current = prev.orders[prev.activeId];
-      if (!current) return prev;
+      // A closed order is never editable (FE-027 rule 6).
+      if (!current || isClosed(current)) return prev;
       const next = change(current);
       return next === current ? prev : { ...prev, orders: { ...prev.orders, [prev.activeId]: next } };
     });
@@ -317,6 +353,33 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
     });
   }, [update]);
 
+  const close = useCallback((closedAt: string, drafts: ReadonlyArray<{ id: string; label: string; amount: Money }>) => {
+    // The place's own facts, as the fire reads them. Only another client's lease
+    // refuses a close: this tab's own payment session is how a close is reached.
+    const { menu, lock } = originFacts(context.current.view);
+    const attempt = (order: StoreState) =>
+      closeOrder(
+        {
+          ...(order.type && { type: order.type }),
+          groups: order.groups,
+          total: totalsFor(order.groups.flatMap((g) => g.lines), order.applied).total,
+          locked: lock === 'lease',
+          unavailable: menu.eightySixed ?? [],
+        },
+        drafts,
+        closedAt
+      );
+    const now = bookRef.current.orders[bookRef.current.activeId];
+    if (!now || isClosed(now) || attempt(now).refused) return false;
+    update((prev) => {
+      const result = attempt(prev);
+      if (result.refused) return prev;
+      const { closedAt: at, tenders, change, groups } = result.closed;
+      return { ...prev, groups, closed: { closedAt: at, tenders, change } };
+    });
+    return true;
+  }, [update]);
+
   const openFixture = useCallback((state: OrderState) => {
     const activeId = orderIdOf(ORDER_FIXTURES[state]);
     setBook((prev) => ({
@@ -326,8 +389,11 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
   }, []);
 
   const openTable = useCallback((n: number) => {
-    const activeId = `table-${n}`;
-    setBook((prev) => ({ activeId, orders: prev.orders[activeId] ? prev.orders : { ...prev.orders, [activeId]: emptyTable(n) } }));
+    const { id: activeId } = tableSlot(bookRef.current.orders, n);
+    setBook((prev) => {
+      const slot = tableSlot(prev.orders, n);
+      return { activeId: slot.id, orders: slot.exists ? prev.orders : { ...prev.orders, [slot.id]: emptyTable(n) } };
+    });
     return activeId;
   }, []);
 
@@ -340,8 +406,21 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
 
   const orderFor = (orderId: string) => (book.orders[orderId] ? toShownOrder(book.orders[orderId]!) : undefined);
 
+  const orders = () =>
+    Object.entries(book.orders).map(([id, o]) => ({
+      id,
+      status: isClosed(o) ? ('closed' as const) : ('open' as const),
+      order: toShownOrder(o),
+      ...o.closed,
+    }));
+  const openOrderIdOf = (n: number) => {
+    const slot = tableSlot(book.orders, n);
+    return slot.exists ? slot.id : undefined;
+  };
+  const hasOrderFor = (n: number) => Object.keys(book.orders).some((id) => tableOf(id) === String(n));
+
   return {
-    store: { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire },
-    book: { activeId: book.activeId, orderFor, openFixture, openTable, newQuickSale },
+    store: { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire, close },
+    book: { activeId: book.activeId, orderFor, orders, openOrderIdOf, hasOrderFor, openFixture, openTable, newQuickSale },
   };
 }
