@@ -1,5 +1,5 @@
 import type { Money } from '@pos/money';
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 // F3d: the payment session PosRoutes lifts above POS-03 and POS-04, on F3a's
 // precedent for the order store — the defect F3c recorded was that the
@@ -39,7 +39,23 @@ export type PaymentSession = {
   cancel: () => void;
 };
 
+type Held = { drafts: ReadonlyArray<DraftTender>; rejected: boolean };
+const NONE: Held = { drafts: [], rejected: false };
+const STANDALONE = '';
+
+export type PaymentSessions = {
+  /** The session of one order: what the screens see for the active order. Its shape is `usePaymentSession`'s. */
+  forOrder: (orderId: string) => PaymentSession;
+  /** FR-G12 (FE-026): whether a payment is open on this order. A session belongs to one order, like the book's orders. */
+  isActive: (orderId: string) => boolean;
+  /** An open session's drafts, for the floor's tiles; `undefined` when none is open. */
+  draftsOf: (orderId: string) => ReadonlyArray<DraftTender> | undefined;
+};
+
 /**
+ * FE-026: sessions keyed per order id, as the order book is. `PosRoutes` holds
+ * these once above both screens and hands each the active order's own session.
+ *
  * `activate` is called from a render body, not an effect (PosRoutes.tsx and
  * SettlementScreen.tsx's standalone fallback both do this) — React's
  * documented "adjust state while rendering" pattern. That is what keeps the
@@ -47,33 +63,42 @@ export type PaymentSession = {
  * without a flash of an empty balance while an effect catches up a tick
  * later.
  */
-export function usePaymentSession(): PaymentSession {
-  const [active, setActive] = useState(false);
-  const [drafts, setDrafts] = useState<ReadonlyArray<DraftTender>>([]);
-  const [rejected, setRejected] = useState(false);
+export function usePaymentSessions(): PaymentSessions {
+  const [held, setHeld] = useState<Readonly<Record<string, Held>>>({});
   const nextId = useRef(0);
+  const bound = useRef(new Map<string, Pick<PaymentSession, 'addDraft' | 'removeDraft' | 'activate' | 'clearRejection' | 'cancel'>>());
 
-  const activate = useCallback((seed: ReadonlyArray<DraftTender>, seedRejected = false) => {
-    setActive(true);
-    setDrafts(seed);
-    setRejected(seedRejected);
-  }, []);
+  const actionsFor = (id: string) => {
+    let actions = bound.current.get(id);
+    if (!actions) {
+      const change = (fn: (h: Held) => Held) => setHeld((prev) => (prev[id] ? { ...prev, [id]: fn(prev[id]!) } : prev));
+      actions = {
+        activate: (seed, rejected = false) => setHeld((prev) => ({ ...prev, [id]: { drafts: seed, rejected } })),
+        addDraft: (label, amount) => change((h) => ({ ...h, drafts: [...h.drafts, { id: `draft-${++nextId.current}`, label, amount }] })),
+        removeDraft: (draftId) => change((h) => ({ ...h, drafts: h.drafts.filter((d) => d.id !== draftId) })),
+        clearRejection: () => change((h) => ({ ...h, rejected: false })),
+        cancel: () =>
+          setHeld((prev) => {
+            const { [id]: _gone, ...rest } = prev;
+            return rest;
+          }),
+      };
+      bound.current.set(id, actions);
+    }
+    return actions;
+  };
 
-  const addDraft = useCallback((label: string, amount: Money) => {
-    setDrafts((prev) => [...prev, { id: `draft-${++nextId.current}`, label, amount }]);
-  }, []);
+  return {
+    forOrder: (id) => {
+      const h = held[id];
+      return { active: h !== undefined, drafts: (h ?? NONE).drafts, rejected: (h ?? NONE).rejected, ...actionsFor(id) };
+    },
+    isActive: (id) => held[id] !== undefined,
+    draftsOf: (id) => held[id]?.drafts,
+  };
+}
 
-  const removeDraft = useCallback((id: string) => {
-    setDrafts((prev) => prev.filter((draft) => draft.id !== id));
-  }, []);
-
-  const clearRejection = useCallback(() => setRejected(false), []);
-
-  const cancel = useCallback(() => {
-    setActive(false);
-    setDrafts([]);
-    setRejected(false);
-  }, []);
-
-  return { active, drafts, rejected, addDraft, removeDraft, activate, clearRejection, cancel };
+/** One session, for a screen mounted on its own (SettlementScreen's standalone fallback). */
+export function usePaymentSession(): PaymentSession {
+  return usePaymentSessions().forOrder(STANDALONE);
 }

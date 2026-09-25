@@ -12,8 +12,13 @@ export function navigateClient(destination: string) {
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
+/** A plain primary click: the one the app follows itself. A modified click is the browser's (a new tab). */
+export function isPlainClick(event: MouseEvent<HTMLAnchorElement>): boolean {
+  return !(event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey);
+}
+
 export function followClientSide(event: MouseEvent<HTMLAnchorElement>, destination: string) {
-  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  if (!isPlainClick(event)) return;
   event.preventDefault();
   navigateClient(destination);
 }

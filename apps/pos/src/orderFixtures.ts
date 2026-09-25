@@ -143,6 +143,11 @@ export const FIRE_INCIDENT_UNKNOWN: EmergencyIncident = {
  */
 export type OrderVariant = 'table' | 'quick_sale';
 
+/** The order a fixture draws, defaulted. The one place `?? 'table-1'` lives (FE-026). */
+export function orderIdOf(fixture: Pick<OrderFixture, 'orderId'>): string {
+  return fixture.orderId ?? 'table-1';
+}
+
 /** An `OrderFixture`'s variant, defaulted. The one place `?? 'table'` lives. */
 export function orderVariant(fixture: Pick<OrderFixture, 'type'>): OrderVariant {
   return fixture.type ?? 'table';
@@ -191,6 +196,12 @@ export function pendingGroupHeading(type: OrderVariant): string {
 }
 
 export type OrderFixture = {
+  /**
+   * FE-026: which order in the book this fixture draws. Optional, defaulting to
+   * `table-1` — the fifty-odd fixtures already committed are all Table 1's order —
+   * and read through `orderIdOf`, the one place that default lives.
+   */
+  orderId?: string;
   title: string;
   /** FR-D2. Optional; read through `orderVariant`, never compared directly. */
   type?: OrderVariant;
@@ -280,7 +291,19 @@ export type OrderState =
   | 'quick'
   | 'quick-line'
   | 'settle-error'
-  | 'settle-ceiling';
+  | 'settle-ceiling'
+  | 'open-t7'
+  | 'open-t9'
+  | 'open-t12'
+  | 'quick-new';
+
+/**
+ * FE-026: the four states the floor opens an order at (DESIGN-008 round 3). They
+ * are reachable by URL like any state in `ORDER_STATES`, but are listed apart:
+ * they are entry snapshots of one table's own order, not review states of
+ * Table 1's, so they stay out of the fixture nav and out of every walk over it.
+ */
+export const FLOOR_ORDER_STATES: ReadonlyArray<OrderState> = ['open-t7', 'open-t9', 'open-t12', 'quick-new'];
 
 export const ORDER_STATES: ReadonlyArray<{ id: OrderState; label: string }> = [
   { id: 'default', label: 'Two rounds fired, one line pending' },
@@ -829,8 +852,9 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
   // same order for review — the panel behind a sheet is the order the sheet
   // was opened over (the same rule as sheet-line and every other F2c/F2i/F2j
   // sheet).
-  quick: { title: 'Order · counter', type: 'quick_sale', groups: quickOrder, totals: quickTotals, totalsWithout: quickTotalsWithout },
+  quick: { orderId: 'quick-1', title: 'Order · counter', type: 'quick_sale', groups: quickOrder, totals: quickTotals, totalsWithout: quickTotalsWithout },
   'quick-line': {
+    orderId: 'quick-1',
     title: 'Order · counter',
     type: 'quick_sale',
     groups: quickOrder,
@@ -859,7 +883,83 @@ export const ORDER_FIXTURES: Record<OrderState, OrderFixture> = {
     applied: STAFF_MEAL,
     appliedNote: STAFF_MEAL_NOTE,
   },
+
+  // FE-026 (DESIGN-008 round 3): the four states the floor opens an order at.
+  // Copy, lines and figures are the artifact's; every total is the design's own
+  // arithmetic, held by orderTotals rather than typed.
+  //
+  // open-t7 is the lock-draft composition under its own lock: Table 7's tile says
+  // payment is in progress, so the lock is this order's own fact (`lock` here),
+  // not a session's. 405.000 − 10% = 364.500, + 5% service 18.225 = 382.725.
+  'open-t7': {
+    orderId: 'table-7',
+    title: 'Order · T7',
+    groups: tableOrder,
+    totals: tableTotals,
+    applied: STAFF_MEAL,
+    lock: 'draft',
+  },
+
+  // Table 9: three Coffees and two Sodas in one fired round whose ticket FAILED
+  // (20:04) — the incident POS-07's overflow state lists. 3 × 35.000 + 2 × 30.000 =
+  // 165.000; + 5% service 8.250 = 173.250; tax 165.000 / 11 = 15.000. No pending
+  // line, so nothing to send.
+  'open-t9': {
+    orderId: 'table-9',
+    title: 'Order · T9',
+    groups: [
+      {
+        kind: 'fired',
+        round: 1,
+        firedAt: '20:04',
+        delivery: 'failed',
+        lines: [
+          { id: 't9-coffee', quantity: 3, name: 'Coffee', itemId: 'coffee', amount: 105_000n, status: 'fired' },
+          { id: 't9-soda', quantity: 2, name: 'Soda', itemId: 'soda', amount: 60_000n, status: 'fired' },
+        ],
+      },
+    ],
+    totals: serviceAndTax(165_000n, 8_250n, 173_250n, 15_000n),
+    incident: {
+      title: 'Kitchen ticket did not print — Table 9, round 1',
+      detail: 'The order is unaffected. The kitchen has not seen this work.',
+      action: { label: 'Open incidents', href: '/pos/incidents?state=overflow' },
+    },
+  },
+
+  // Table 12: an ordinary open table. 55.000 + 30.000 + 2 × 40.000 = 165.000; − 10%
+  // staff meal 16.500 = 148.500; + 5% service 7.425 = 155.925; tax 148.500 / 11 =
+  // 13.500. Without the pending Fries: 85.000 − 8.500 + 3.825 = 80.325, tax 6.955.
+  'open-t12': {
+    orderId: 'table-12',
+    title: 'Order · T12',
+    groups: [
+      {
+        kind: 'fired',
+        round: 1,
+        firedAt: '19:42',
+        delivery: 'printed',
+        lines: [{ id: 't12-soup', quantity: 1, name: 'Soup of the Day', itemId: 'soup', amount: 55_000n, status: 'fired' }],
+      },
+      {
+        kind: 'fired',
+        round: 2,
+        firedAt: '19:58',
+        delivery: 'printed',
+        lines: [{ id: 't12-soda', quantity: 1, name: 'Soda', itemId: 'soda', amount: 30_000n, status: 'fired' }],
+      },
+      { kind: 'pending', lines: [{ id: 't12-fries', quantity: 2, name: 'Fries', itemId: 'fries', amount: 80_000n, status: 'pending' }] },
+    ],
+    totals: orderTotals(165_000n, STAFF_MEAL),
+    applied: STAFF_MEAL,
+    totalsWithout: { 't12-fries': orderTotals(85_000n, STAFF_MEAL) },
+  },
+
+  // A fresh counter sale: the `quick` composition with no lines, no charge rows.
+  // Its id is a placeholder for a direct visit; the floor gives every new sale its own.
+  'quick-new': { orderId: 'quick-new', title: 'Order · counter', type: 'quick_sale', groups: [], totals: { subtotal: 0n, total: 0n } },
 };
+
 
 /**
  * FE-021: the states an item sheet may be opened from — an allow-list, by this
@@ -888,6 +988,9 @@ export const ITEM_SHEET_ORIGINS: Partial<Record<OrderState, 'keeps' | 'clears-on
   zero: 'keeps',
   'other-discount': 'keeps',
   quick: 'keeps',
+  'open-t9': 'keeps',
+  'open-t12': 'keeps',
+  'quick-new': 'keeps',
   eightysix: 'keeps',
   fireblocked: 'keeps',
   'fireblocked-overflow': 'keeps',
@@ -938,10 +1041,12 @@ export function viewSearch({ state, gone, from }: OrderView): string {
 /** ?state= picks the fixture; ?gone= is a PENDING line the remove control took away. */
 export function orderViewFrom(search: string): OrderView {
   const params = new URLSearchParams(search);
-  const state = ORDER_STATES.find((s) => s.id === params.get('state'))?.id ?? 'default';
+  const asked = params.get('state');
+  const state =
+    ORDER_STATES.find((s) => s.id === asked)?.id ?? FLOOR_ORDER_STATES.find((id) => id === asked) ?? 'default';
   const gone = params.get('gone');
   // `from` means something only on an item sheet, and only a place a tile can be pressed.
-  const asked = params.get('from') as OrderState | null;
-  const from = state.startsWith('sheet-item-') && asked && asked in ITEM_SHEET_ORIGINS ? asked : undefined;
+  const origin = params.get('from') as OrderState | null;
+  const from = state.startsWith('sheet-item-') && origin && origin in ITEM_SHEET_ORIGINS ? origin : undefined;
   return { state, ...(gone && { gone }), ...(from && { from }) };
 }

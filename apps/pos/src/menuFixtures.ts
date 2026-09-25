@@ -218,6 +218,11 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   // and grid are the artifact's default ones behind both states.
   quick: {},
   'quick-line': {},
+  // FE-026: the floor's entry snapshots. Table 7's grid is replaced by the lock notice, as lock-draft's is.
+  'open-t7': { lock: 'draft' },
+  'open-t9': {},
+  'open-t12': {},
+  'quick-new': {},
   // F3c's settlement `error` seed only (orderFixtures.ts) — POS-04 draws no
   // menu region, so this fixture is never read; it exists only to satisfy
   // the exhaustive record.

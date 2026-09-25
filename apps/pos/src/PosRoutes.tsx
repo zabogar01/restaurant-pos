@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { App } from './App.js';
+import { FloorScreen } from './FloorScreen.js';
+import { floorStateFrom } from './floorFixtures.js';
 import { ControlledOrderScreen } from './OrderPanel.js';
 import { incidentStateFrom } from './incidentFixtures.js';
 import { IncidentsScreen } from './IncidentsScreen.js';
 import { orderViewFrom, type OrderView } from './orderFixtures.js';
-import { useOrderStore } from './orderStore.js';
-import { usePaymentSession } from './paymentSession.js';
+import { useOrderBook } from './orderStore.js';
+import { usePaymentSessions } from './paymentSession.js';
 import { beginsSession, ControlledSettlementScreen, initialDrafts, settlementStateFrom } from './SettlementScreen.js';
 
 /**
@@ -37,6 +39,7 @@ export function PosRoutes() {
   const onSettlement = /\/settlement\/?$/.test(path);
   const onFloor = /\/floor\/?$/.test(path);
   const onIncidents = /\/incidents\/?$/.test(path);
+  const onClosedOrders = /\/closed-orders\/?$/.test(path);
   const [seedView] = useState(() =>
     onOrder
       ? orderViewFrom(window.location.search)
@@ -45,8 +48,13 @@ export function PosRoutes() {
         : { state: 'default' as const }
   );
   const view = onOrder ? orderViewFrom(window.location.search) : seedView;
-  const session = usePaymentSession();
-  const store = useOrderStore(view, session.active);
+  // FE-026: a payment session belongs to one order, like the book's orders. The
+  // lock is asked of the active order's own session; the screens are handed that
+  // one, so another order's drafts are never on Table 9's settlement.
+  const sessions = usePaymentSessions();
+  const { store, book } = useOrderBook(view, (activeId) => sessions.isActive(activeId), onOrder || onSettlement);
+  const session = sessions.forOrder(book.activeId);
+  const locked = session.active;
 
   // F3d, rule 1: the session begins on Settle and on any direct
   // `/pos/settlement` visit, and never re-seeds while already active — its
@@ -58,7 +66,10 @@ export function PosRoutes() {
   // payment, so they never open one (rules 3, 9, 10).
   const settlementFixtureState = settlementStateFrom(window.location.search);
   if (onSettlement && !session.active && beginsSession(settlementFixtureState)) {
-    session.activate(initialDrafts(settlementFixtureState, store.order.totals.total), settlementFixtureState === 'error');
+    session.activate(
+      initialDrafts(settlementFixtureState, store.order.totals.total),
+      settlementFixtureState === 'error'
+    );
   }
 
   const readLocation = useCallback(() => setLocation(`${window.location.pathname}${window.location.search}`), []);
@@ -69,19 +80,18 @@ export function PosRoutes() {
   }, [readLocation]);
 
   if (onSettlement) return <ControlledSettlementScreen store={store} session={session} />;
-  if (onOrder) return <ControlledOrderScreen view={view} store={store} locked={session.active} onLocationChange={readLocation} />;
-  if (onFloor) return <FloorPlaceholder />;
+  if (onOrder) return <ControlledOrderScreen view={view} store={store} locked={locked} showFloorLink onLocationChange={readLocation} />;
+  if (onFloor) return <FloorScreen state={floorStateFrom(window.location.search)} book={book} sessions={sessions} />;
+  if (onClosedOrders) return <ClosedOrdersPlaceholder />;
   if (onIncidents) return <IncidentsScreen state={incidentStateFrom(window.location.search)} />;
   return <App />;
 }
 
 /**
- * FR-G14's *Back to floor* (rule 9): POS-02 does not exist yet and is F4's.
- * A placeholder route on `?state=incidents`'s precedent (F2h) — named and
- * reached, honest that nothing is built behind it. **The floor's placeholder
- * wording belongs to a designer (F3 review finding 4, P3): this renders the
- * bare device frame and no copy at all.**
+ * POS-05 is DESIGN-009's: a placeholder route on `?state=incidents`'s precedent
+ * (F2h) — named and reached, honest that nothing is built behind it. Like the
+ * floor's placeholder before it, it renders the bare device frame and no copy.
  */
-function FloorPlaceholder() {
+function ClosedOrdersPlaceholder() {
   return <div className="pos-device" />;
 }

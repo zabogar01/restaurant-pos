@@ -8,6 +8,7 @@ import { FIRE_ACTION, blockingLines, fireRefusal, holdsUnavailable, sendableLine
 import { Icon } from './icons.js';
 import { MENU_FIXTURES, menuFixtureFor, originFacts } from './menuFixtures.js';
 import { MenuRegion } from './MenuRegion.js';
+import { followClientSide } from './navigation.js';
 import { formatAmount } from './money.js';
 import { useOrderStore, type OrderStore } from './orderStore.js';
 import {
@@ -108,11 +109,17 @@ export function ControlledOrderScreen({
   view,
   store,
   locked = false,
+  showFloorLink = false,
   onLocationChange,
   clock = browserClock,
 }: {
   view: OrderView;
   store: OrderStore;
+  /**
+   * FE-026: draw the order bar's `← Floor`. Only the routed app has a floor to go back to,
+   * so `PosRoutes` asks for it; the standalone `OrderScreen` keeps its bar bare.
+   */
+  showFloorLink?: boolean;
   /** The time a fire is stamped with, injected (ARCH-002 §2.2). Tests pass a fixed one. */
   clock?: Clock;
   /** F3d, FR-G12: a payment session is active in this tab — POS-03's own-tab lock, derived, never read from `?state=`. */
@@ -270,7 +277,15 @@ export function ControlledOrderScreen({
           the incident is still there behind it.
         */}
         {incident && <EmergencyBanner {...incident} inert={inert} />}
-        <div className="order-screen__bar" aria-hidden="true" {...inert} />
+        {showFloorLink ? (
+          <div className="order-screen__bar order-screen__bar--floor" {...inert}>
+            <a className="settlement-back" href="/pos/floor" onClick={(event) => followClientSide(event, '/pos/floor')}>
+              ← Floor
+            </a>
+          </div>
+        ) : (
+          <div className="order-screen__bar" aria-hidden="true" {...inert} />
+        )}
         <div className="order-screen__body" {...inert}>
           <MenuRegion view={view} category={store.category} selectCategory={store.selectCategory} navigate={navigate} locked={locked} />
           <OrderPanel
