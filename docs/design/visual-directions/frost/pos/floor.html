@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" data-direction="frost"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>POS-02 Floor</title>
+<link rel="stylesheet" href="../../structure.css"><link rel="stylesheet" href="../../visual.css">
+<link rel="stylesheet" href="../../../tokens/frost.css">
+<script>window.WF={"id": "POS-02", "client": "pos", "name": "Floor \u2014 tables and quick sale", "reqs": "FR-D1, D2, C8, I1, E3, E6", "states": [["default", "Mixed occupancy"], ["clear", "All tables free"], ["empty", "No tables configured"], ["loading", "Loading"], ["error", "Error"], ["overflow", "24 tables \u2014 scroll"], ["dayclosed", "Business day closed"], ["incident", "Kitchen emergency"], ["receipt-warning", "Receipt warning"]]};</script>
+<script defer src="../../mockup.js"></script><style>
+:root{color-scheme:light}
+.floor-app{width:var(--frost-pos-width);height:var(--frost-pos-height);display:flex;flex-direction:column;font-family:var(--frost-font);font-size:var(--frost-text-15);line-height:var(--frost-leading-body);font-variant-numeric:var(--frost-numeric-variant);background:var(--frost-surface);color:var(--frost-text)}
+.floor-head{height:var(--frost-pos-header-height);flex:none;display:flex;align-items:center;gap:var(--frost-space-5);padding:0 var(--frost-space-5);border-bottom:var(--frost-divider-stroke)}
+.floor-head h1{margin:0;font-size:var(--frost-text-20);font-weight:var(--frost-weight-medium);letter-spacing:var(--frost-tracking-title)}
+.floor-actor{margin-left:auto;display:flex;align-items:center;gap:var(--frost-space-3);font-size:var(--frost-text-13);color:var(--frost-muted)}
+.floor-idle{padding:var(--frost-idle-chip-padding);border:var(--frost-divider-stroke);background:var(--frost-elevated);font-size:var(--frost-text-12)}
+.floor-action{display:inline-flex;align-items:center;justify-content:center;min-height:var(--frost-action-compact-height);padding:var(--frost-button-padding);border:var(--frost-control-stroke);border-radius:var(--frost-radius-button);color:var(--frost-primary);background:var(--frost-elevated);text-decoration:none;font-weight:var(--frost-weight-medium)}
+.floor-action--primary{min-height:var(--frost-action-height);background:var(--frost-primary);color:var(--frost-primary-text)}
+.floor-action:hover{background:var(--frost-group)}
+.floor-action--primary:hover{background:var(--frost-primary-hover)}
+.floor-app a:focus-visible,.floor-grid:focus-visible{outline:var(--frost-focus-outline);outline-offset:var(--frost-focus-offset);box-shadow:var(--frost-focus-ring)}
+.floor-app a:active{box-shadow:var(--frost-pressed-ring)}
+.floor-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--frost-space-5);padding:var(--frost-space-5);flex:none}
+.floor-toolbar h2{margin:0;font-size:var(--frost-text-18);font-weight:var(--frost-weight-medium)}
+.floor-sub{color:var(--frost-muted);font-size:var(--frost-text-13)}
+.floor-tools{display:flex;align-items:center;gap:var(--frost-space-3)}
+.floor-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--frost-space-3);padding:var(--frost-space-2) var(--frost-space-5) var(--frost-space-5);align-content:start;overflow-y:auto;min-height:0;scrollbar-color:var(--frost-scrollbar)}
+.floor-table{height:calc(var(--frost-tile-height) + var(--frost-action-compact-height));padding:var(--frost-space-4);display:flex;flex-direction:column;justify-content:space-between;border:var(--frost-control-stroke);border-radius:var(--frost-radius-surface);background:var(--frost-elevated);color:var(--frost-text);text-decoration:none}
+.floor-table--open{background:var(--frost-group)}
+.floor-table:hover{background:var(--frost-selected);color:var(--frost-selected-text)}
+.floor-table:hover .floor-sub{color:inherit}
+.floor-table strong{font-size:var(--frost-text-20);font-weight:var(--frost-weight-medium)}
+.floor-table-bottom{display:flex;justify-content:space-between;align-items:end;gap:var(--frost-space-2)}
+.floor-table-amount{font-weight:var(--frost-weight-semibold)}
+.floor-message{margin:var(--frost-space-5);padding:var(--frost-space-6);background:var(--frost-elevated);border:var(--frost-divider-stroke)}
+.floor-message h2{font-size:var(--frost-text-20);font-weight:var(--frost-weight-medium);margin:0 0 var(--frost-space-2)}
+.floor-message p{margin:0 0 var(--frost-space-4)}
+.floor-day{padding:var(--frost-emergency-padding);background:var(--frost-warning-surface);color:var(--frost-warning);flex:none}
+.floor-day strong{font-weight:var(--frost-weight-semibold)}
+.floor-emg{min-height:var(--frost-emergency-min-height);background:var(--frost-emergency);color:var(--frost-emergency-text);padding:var(--frost-emergency-padding);display:flex;align-items:center;gap:var(--frost-space-4);flex:none}
+.floor-emg .emg__mark{width:var(--frost-emergency-marker-size);height:var(--frost-emergency-marker-size);background:var(--frost-emergency-text);color:var(--frost-emergency);border-radius:var(--frost-radius-surface)}
+.floor-emg strong{font-size:var(--frost-text-18);font-weight:var(--frost-weight-semibold)}
+.floor-emg .floor-sub{color:var(--frost-emergency-secondary)}
+.floor-emg .floor-action{margin-left:auto;width:var(--frost-incident-reprint-width);color:var(--frost-emergency);border-color:var(--frost-emergency-text)}
+.floor-warning{display:flex;align-items:center;gap:var(--frost-space-2);align-self:flex-start;margin:var(--frost-space-3) var(--frost-space-5) 0;padding:var(--frost-warning-chip-padding);color:var(--frost-warning);background:var(--frost-warning-surface);border:var(--frost-control-stroke);border-color:var(--frost-warning);border-radius:var(--frost-radius-surface);font-size:var(--frost-text-13);flex:none}
+.floor-warning a{display:inline-flex;align-items:center;min-height:var(--frost-action-compact-height);padding:0 var(--frost-space-3);color:inherit;text-underline-offset:var(--frost-link-underline-offset)}
+.floor-warning .warnchip__mark{width:var(--frost-warning-marker-size);height:var(--frost-warning-marker-size);background:var(--frost-warning)}
+</style></head><body><header class="wfbar"></header><main class="wfmain"><div class="devicewrap"><div class="device device--pos"><div class="floor-app">
+<div class="floor-emg" data-when="incident"><div class="emg__mark"></div><div><strong>Kitchen ticket did not print — Table 1, round 2</strong><div class="floor-sub">The order is unaffected. The kitchen has not seen this work.</div></div><a class="floor-action" href="incidents.html">Open incidents</a></div>
+<header class="floor-head"><h1>Floor</h1><span class="floor-sub" data-unless="dayclosed">Business day open · 25 Sep</span><span class="floor-sub" data-when="dayclosed">Business day closed · 25 Sep</span><div class="floor-actor"><span>Ana R. · Cashier</span><span class="floor-idle">90s</span><a class="floor-action" href="lock.html">Release</a></div></header>
+<div class="floor-day" data-when="dayclosed"><strong>Business day closed at 23:14</strong><div>New orders belong to the next business day. Orders from the closed day can no longer be voided or refunded.</div></div>
+<div class="floor-warning" data-when="receipt-warning"><span class="warnchip__mark"></span>Receipt printer: 1 unprinted receipt<a href="incidents.html">View receipts</a></div>
+<div class="floor-toolbar"><div><h2>Tables</h2><div class="floor-sub" data-when="default incident receipt-warning">4 open · 8 free</div><div class="floor-sub" data-when="clear dayclosed">11 free</div><div class="floor-sub" data-when="overflow">4 open · 20 free</div><div class="floor-sub" data-when="loading">Reading table availability…</div></div><div class="floor-tools"><a class="floor-action" href="../../../prototype/pos/closed-orders.html" title="Wireframe placeholder — Frost follows in DESIGN-009">Closed orders</a><a class="floor-action floor-action--primary" href="order.html?state=quick-new">New quick sale</a></div></div>
+<section class="floor-message" data-when="loading" aria-live="polite"><h2>Loading floor…</h2><p>Reading tables and open orders.</p></section>
+<section class="floor-message" data-when="error"><h2>Floor unavailable</h2><p>Could not read table state. Quick sale is still available.</p><a class="floor-action" href="floor.html">Retry</a></section>
+<section class="floor-message" data-when="empty"><h2>No tables configured</h2><p>A manager creates tables in the back office. Quick sale works without them.</p></section>
+<div class="floor-grid" data-when="default incident receipt-warning" tabindex="0" role="region" aria-label="Tables — scroll for more">
+<a class="floor-table floor-table--open" href="order.html?state=default" aria-label="Table 1, open existing order"><div><strong>Table 1</strong><div class="floor-sub">2 rounds fired · 1 line pending</div></div><div class="floor-table-bottom"><span class="floor-sub">Open</span><span class="floor-table-amount">155.925</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 2, free, open new order"><div><strong>Table 2</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 3, free, open new order"><div><strong>Table 3</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 4, free, open new order"><div><strong>Table 4</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 5, free, open new order"><div><strong>Table 5</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 6, free, open new order"><div><strong>Table 6</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table floor-table--open" href="order.html?state=open-t7" aria-label="Table 7, open existing order"><div><strong>Table 7</strong><div class="floor-sub">Payment in progress</div></div><div class="floor-table-bottom"><span class="floor-sub">155.925 outstanding</span><span class="floor-table-amount">382.725</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 8, free, open new order"><div><strong>Table 8</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table floor-table--open" href="order.html?state=open-t9" aria-label="Table 9, open existing order"><div><strong>Table 9</strong><div class="floor-sub">1 round fired · 5 items</div></div><div class="floor-table-bottom"><span class="floor-sub">Open</span><span class="floor-table-amount">173.250</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 10, free, open new order"><div><strong>Table 10</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 11, free, open new order"><div><strong>Table 11</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table floor-table--open" href="order.html?state=open-t12" aria-label="Table 12, open existing order"><div><strong>Table 12</strong><div class="floor-sub">2 rounds fired · 1 line pending</div></div><div class="floor-table-bottom"><span class="floor-sub">Open</span><span class="floor-table-amount">155.925</span></div></a>
+</div>
+<div class="floor-grid" data-when="clear dayclosed" tabindex="0" role="region" aria-label="Tables — scroll for more">
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 1, free, open new order"><div><strong>Table 1</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 2, free, open new order"><div><strong>Table 2</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 3, free, open new order"><div><strong>Table 3</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 4, free, open new order"><div><strong>Table 4</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 5, free, open new order"><div><strong>Table 5</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 6, free, open new order"><div><strong>Table 6</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 7, free, open new order"><div><strong>Table 7</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 8, free, open new order"><div><strong>Table 8</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 9, free, open new order"><div><strong>Table 9</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 10, free, open new order"><div><strong>Table 10</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 11, free, open new order"><div><strong>Table 11</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+</div>
+<div class="floor-grid" data-when="overflow" tabindex="0" role="region" aria-label="Tables — scroll for more">
+<a class="floor-table floor-table--open" href="order.html?state=default" aria-label="Table 1, open existing order"><div><strong>Table 1</strong><div class="floor-sub">2 rounds fired · 1 line pending</div></div><div class="floor-table-bottom"><span class="floor-sub">Open</span><span class="floor-table-amount">155.925</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 2, free, open new order"><div><strong>Table 2</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 3, free, open new order"><div><strong>Table 3</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 4, free, open new order"><div><strong>Table 4</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 5, free, open new order"><div><strong>Table 5</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 6, free, open new order"><div><strong>Table 6</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table floor-table--open" href="order.html?state=open-t7" aria-label="Table 7, open existing order"><div><strong>Table 7</strong><div class="floor-sub">Payment in progress</div></div><div class="floor-table-bottom"><span class="floor-sub">155.925 outstanding</span><span class="floor-table-amount">382.725</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 8, free, open new order"><div><strong>Table 8</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table floor-table--open" href="order.html?state=open-t9" aria-label="Table 9, open existing order"><div><strong>Table 9</strong><div class="floor-sub">1 round fired · 5 items</div></div><div class="floor-table-bottom"><span class="floor-sub">Open</span><span class="floor-table-amount">173.250</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 10, free, open new order"><div><strong>Table 10</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 11, free, open new order"><div><strong>Table 11</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table floor-table--open" href="order.html?state=open-t12" aria-label="Table 12, open existing order"><div><strong>Table 12</strong><div class="floor-sub">2 rounds fired · 1 line pending</div></div><div class="floor-table-bottom"><span class="floor-sub">Open</span><span class="floor-table-amount">155.925</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 13, free, open new order"><div><strong>Table 13</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 14, free, open new order"><div><strong>Table 14</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 15, free, open new order"><div><strong>Table 15</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 16, free, open new order"><div><strong>Table 16</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 17, free, open new order"><div><strong>Table 17</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 18, free, open new order"><div><strong>Table 18</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 19, free, open new order"><div><strong>Table 19</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 20, free, open new order"><div><strong>Table 20</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 21, free, open new order"><div><strong>Table 21</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 22, free, open new order"><div><strong>Table 22</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 23, free, open new order"><div><strong>Table 23</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+<a class="floor-table" href="order.html?state=empty" aria-label="Table 24, free, open new order"><div><strong>Table 24</strong><div class="floor-sub">Free</div></div><div class="floor-table-bottom"><span class="floor-sub">Open table order</span></div></a>
+</div>
+</div></div></div></main></body></html>

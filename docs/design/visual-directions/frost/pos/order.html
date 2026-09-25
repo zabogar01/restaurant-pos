@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="../../structure.css">
 <script>window.WF={id:'POS-03',client:'pos',name:'Order workspace',reqs:'FR-D3–D6, C1–C7, E1–E5, F1–F8, H2–H4, G10, G12',states:[
 ['default','Table order — 2 rounds fired'],['empty','Table order — no lines'],['quick','Quick sale'],
+['open-t7','Table 7 — your payment'],['open-t9','Table 9 — 5 items fired'],['open-t12','Table 12 — 2 rounds and pending'],['quick-new','New quick sale — empty'],
 ['linecontrols','Line controls — pending vs fired'],
 ['quick-line','Quick sale — line editor'],
 ['overflow','Overflow — long order'],['zero','Zero total (100% comp)'],
@@ -23,7 +24,23 @@
 <link rel="stylesheet" href="../../visual.css">
 <link rel="stylesheet" href="../../frost-states.css">
 <link rel="stylesheet" href="../../frost-order-flow.css">
-<script defer src="../../frost-order-flow.js"></script>
+<script>
+// DESIGN-008: these four entry snapshots use the compositions below, not
+// DESIGN-007's Table 1 / populated-counter interaction model.
+if (!['open-t7','open-t9','open-t12','quick-new'].includes(new URLSearchParams(location.search).get('state'))) {
+  document.write('<script defer src="../../frost-order-flow.js"><\/script>');
+} else {
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.totals .t--grand > span:first-child').forEach(e => e.textContent = 'Total');
+    if (new URLSearchParams(location.search).get('gone') === 't12-fries') {
+      const send = document.querySelector('.actions a[href$="fireerror"]');
+      send.removeAttribute('href');
+      send.classList.add('btn--off');
+      send.setAttribute('aria-disabled', 'true');
+    }
+  });
+}
+</script>
 </head><body>
 <header class="wfbar"></header>
 <main class="wfmain">
@@ -38,12 +55,22 @@
     <a class="btn btn--sm" href="incidents.html" style="margin-left:auto;width:200px">Open incidents</a>
   </div>
 
+  <div class="emg" data-when="open-t9">
+    <div class="emg__mark"></div>
+    <div><div class="emg__t">Kitchen ticket did not print &mdash; Table 9, round 1</div>
+      <div class="emg__s">The order is unaffected. The kitchen has not seen this work.</div></div>
+    <a class="btn btn--sm" href="incidents.html?state=overflow" style="margin-left:auto;width:200px">Open incidents</a>
+  </div>
+
   <div class="pos__bar">
-    <a href="../../../prototype/pos/floor.html" style="font-size:15px">&larr; Floor</a>
-    <h1 data-unless="quick quick-line">Table 1</h1>
-    <h1 data-when="quick quick-line">Quick sale</h1>
-    <span class="tag" data-unless="quick quick-line">DINE IN</span>
-    <span class="tag" data-when="quick quick-line">COUNTER</span>
+    <a href="floor.html" style="font-size:15px">&larr; Floor</a>
+    <h1 data-unless="quick quick-line quick-new open-t7 open-t9 open-t12">Table 1</h1>
+    <h1 data-when="open-t7">Table 7</h1>
+    <h1 data-when="open-t9">Table 9</h1>
+    <h1 data-when="open-t12">Table 12</h1>
+    <h1 data-when="quick quick-line quick-new">Quick sale</h1>
+    <span class="tag" data-unless="quick quick-line quick-new">DINE IN</span>
+    <span class="tag" data-when="quick quick-line quick-new">COUNTER</span>
     <div class="pos__actor">
       <span>Ana R. &middot; Cashier</span>
       <span class="idle">90s</span>
@@ -55,7 +82,7 @@
 
     
     
-    <div class="catrail" data-unless="lock-draft lock-lease">
+    <div class="catrail" data-unless="lock-draft open-t7 lock-lease">
       <div class="cat cat--on" data-unless="pressed">Mains</div>
       <div class="cat cat--on is-pressed" data-when="pressed">Mains</div>
       <div class="cat" data-unless="pressed">Sides</div>
@@ -76,12 +103,13 @@
         <div>The order is exactly as it was. Nothing was half-applied. <a href="order.html">Try again</a></div>
       </div>
 
-      <div class="notice notice--soft" data-when="lock-draft">
+      <div class="notice notice--soft" data-when="lock-draft open-t7">
         <div class="notice__t">Finish this payment first</div>
         <div>You are collecting payment for this order on this tab. Adding items,
         changing the discount, firing, and voiding &mdash; including removing a line
         you have not sent yet &mdash; are unavailable until you finish or cancel it.
         You can still read the order.</div>
+        <div data-when="open-t7">Draft tenders: 226.800 &middot; Outstanding: 155.925</div>
         <a class="btn btn--sm" href="settlement.html?state=pending" style="width:220px;margin-top:10px">Back to payment</a>
       </div>
 
@@ -99,7 +127,7 @@
         <div class="skel skel--w80"></div><div class="skel skel--w60"></div><div class="skel skel--w40"></div>
       </div>
 
-      <div class="menugrid" data-unless="loading lock-draft lock-lease">
+      <div class="menugrid" data-unless="loading lock-draft open-t7 lock-lease">
         <a class="tile" href="order.html?state=sheet-item-burger" style="text-decoration:none;color:inherit">
           <div>Burger</div><div class="tile__p">100.000</div></a>
         <a class="tile" href="order.html?state=sheet-item-wings" style="text-decoration:none;color:inherit">Chicken Wings<div class="tile__p">90.000</div></a>
@@ -123,26 +151,32 @@
     
     <div class="orderpanel">
       <div class="orderpanel__head">
-        <b data-unless="quick quick-line">Order &middot; T1</b>
-        <b data-when="quick quick-line">Order &middot; counter</b>
+        <b data-unless="quick quick-line quick-new open-t7 open-t9 open-t12">Order &middot; T1</b>
+        <b data-when="open-t7">Order &middot; T7</b>
+        <b data-when="open-t9">Order &middot; T9</b>
+        <b data-when="open-t12">Order &middot; T12</b>
+        <b data-when="quick quick-line quick-new">Order &middot; counter</b>
         <span class="muted" data-when="default pressed zero fireerror error sheet-discount sheet-freeform sheet-remove sheet-voidline sheet-voidorder-fired approval approval-error approval-throttled approval-denied">2 items</span>
-        <span class="muted" data-when="linecontrols eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder lock-draft lock-lease">3 items</span>
+        <span class="muted" data-when="linecontrols eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder lock-draft open-t7 lock-lease">3 items</span>
         <span class="muted" data-when="overflow" data-line="of-coffee of-cheese of-wine">9 items</span>
         <span class="muted" data-when="overflow" data-gone="of-coffee of-cheese of-wine">8 items</span>
         <span class="muted" data-when="quick quick-line" data-line="q-burger q-soda">2 items &middot; not yet sent</span>
         <span class="muted" data-when="quick quick-line" data-gone="q-burger q-soda">1 item &middot; not yet sent</span>
-        <span class="muted" data-when="empty">Empty</span>
+        <span class="muted" data-when="open-t9">5 items</span>
+        <span class="muted" data-when="open-t12" data-line="t12-fries">3 lines</span>
+        <span class="muted" data-when="open-t12" data-gone="t12-fries">2 lines</span>
+        <span class="muted" data-when="empty quick-new">Empty</span>
       </div>
 
       <div class="lines">
 
-        <div class="empty" data-when="empty" style="margin:20px;padding:32px">
+        <div class="empty" data-when="empty quick-new" style="margin:20px;padding:32px">
           <div style="font-weight:700;margin-bottom:6px">No items yet</div>
           <div>Tap an item on the left to start.</div>
         </div>
 
         
-        <div data-unless="empty quick quick-line loading overflow lock-draft lock-lease">
+        <div data-unless="empty quick quick-line quick-new open-t9 open-t12 loading overflow lock-draft open-t7 lock-lease">
           <div class="roundhead">Round 1 &middot; fired 19:42 &middot; printed
             <span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
           <div class="line" data-unless="sheet-voidline">
@@ -175,9 +209,9 @@
         </div>
 
         
-        <div data-when="lock-draft lock-lease">
+        <div data-when="lock-draft open-t7 lock-lease">
           <div class="roundhead">Round 1 &middot; fired 19:42 &middot; printed
-            <span class="tag" style="margin-left:auto" data-when="lock-draft">FINISH PAYMENT FIRST</span>
+            <span class="tag" style="margin-left:auto" data-when="lock-draft open-t7">FINISH PAYMENT FIRST</span>
             <span class="tag" style="margin-left:auto" data-when="lock-lease">ANOTHER CLIENT</span></div>
           <div class="line">
             <div class="line__q">1</div>
@@ -187,7 +221,7 @@
             <div class="line__x line__x--empty"></div>
           </div>
           <div class="roundhead">Round 2 &middot; fired 19:58 &middot; printed
-            <span class="tag" style="margin-left:auto" data-when="lock-draft">FINISH PAYMENT FIRST</span>
+            <span class="tag" style="margin-left:auto" data-when="lock-draft open-t7">FINISH PAYMENT FIRST</span>
             <span class="tag" style="margin-left:auto" data-when="lock-lease">ANOTHER CLIENT</span></div>
           <div class="line">
             <div class="line__q">1</div>
@@ -197,7 +231,7 @@
           </div>
           
           <div class="roundhead">Pending &middot; not sent to the kitchen
-            <span class="tag" style="margin-left:auto" data-when="lock-draft">FINISH PAYMENT FIRST</span>
+            <span class="tag" style="margin-left:auto" data-when="lock-draft open-t7">FINISH PAYMENT FIRST</span>
             <span class="tag" style="margin-left:auto" data-when="lock-lease">ANOTHER CLIENT</span></div>
           <div class="line">
             <div class="line__q">1</div>
@@ -209,6 +243,23 @@
         </div>
 
         
+        <!-- Floor destinations: existing round/line compositions, distinct snapshots. -->
+        <div data-when="open-t9">
+          <div class="roundhead">Round 1 &middot; fired 20:04 &middot; FAILED<span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
+          <div class="line"><a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">3</div><div class="line__b"><div class="line__n">Coffee</div></div><div class="line__a">105.000</div></a><div class="line__x line__x--empty"></div></div>
+          <div class="line"><a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">2</div><div class="line__b"><div class="line__n">Soda</div></div><div class="line__a">60.000</div></a><div class="line__x line__x--empty"></div></div>
+        </div>
+        <div data-when="open-t12">
+          <div class="roundhead">Round 1 &middot; fired 19:42 &middot; printed<span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
+          <div class="line"><a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">1</div><div class="line__b"><div class="line__n">Soup of the Day</div></div><div class="line__a">55.000</div></a><div class="line__x line__x--empty"></div></div>
+          <div class="roundhead">Round 2 &middot; fired 19:58 &middot; printed<span class="tag" style="margin-left:auto">MANAGER TO VOID</span></div>
+          <div class="line"><a class="line__t" href="order.html?state=sheet-voidline"><div class="line__q">1</div><div class="line__b"><div class="line__n">Soda</div></div><div class="line__a">30.000</div></a><div class="line__x line__x--empty"></div></div>
+          <div data-line="t12-fries">
+            <div class="roundhead">Pending &middot; not sent to the kitchen<span class="tag" style="margin-left:auto">REMOVE FREELY</span></div>
+            <div class="line"><a class="line__t" href="order.html?state=sheet-line"><div class="line__q">2</div><div class="line__b"><div class="line__n">Fries</div></div><div class="line__a">80.000</div></a><a class="line__x" href="order.html?state=open-t12&amp;gone=t12-fries" title="Remove Fries">&times;</a></div>
+          </div>
+        </div>
+
         <div data-when="quick quick-line">
           <div class="roundhead">Not sent to the kitchen yet
             <span class="tag" style="margin-left:auto">REMOVE FREELY</span></div>
@@ -296,7 +347,7 @@
       </div>
 
       
-      <div class="totals" data-unless="empty loading zero linecontrols lock-draft lock-lease eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder overflow quick quick-line">
+      <div class="totals" data-unless="quick-new open-t9 open-t12 empty loading zero linecontrols lock-draft open-t7 lock-lease eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder overflow quick quick-line">
         <div class="t"><span>Subtotal</span><span class="mono">165.000</span></div>
         <div class="t"><span>Staff meal 10% <a href="order.html?state=sheet-remove" style="font-size:12px">change</a></span><span class="mono">&minus;16.500</span></div>
         <div class="t"><span>Service charge 5%</span><span class="mono">7.425</span></div>
@@ -304,7 +355,15 @@
         <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">13.500</span></div>
       </div>
       
-      <div class="totals" data-when="linecontrols lock-draft lock-lease eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder">
+      <div class="totals" data-when="open-t12" data-line="t12-fries">
+        <div class="t"><span>Subtotal</span><span class="mono">165.000</span></div>
+        <div class="t"><span>Staff meal 10% <a href="order.html?state=sheet-remove" style="font-size:12px">change</a></span><span class="mono">&minus;16.500</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">7.425</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">155.925</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">13.500</span></div>
+      </div>
+
+      <div class="totals" data-when="linecontrols lock-draft open-t7 lock-lease eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder">
         <div class="t"><span>Subtotal</span><span class="mono">405.000</span></div>
         <div class="t"><span>Staff meal 10%</span><span class="mono">&minus;40.500</span></div>
         <div class="t"><span>Service charge 5%</span><span class="mono">18.225</span></div>
@@ -312,7 +371,7 @@
         <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">33.136</span></div>
       </div>
       
-      <div class="totals" data-when="quick quick-line" data-line="q-burger q-soda">
+      <div class="totals" data-when="quick quick-line open-t9" data-line="q-burger q-soda">
         <div class="t"><span>Subtotal</span><span class="mono">165.000</span></div>
         <div class="t"><span>Service charge 5%</span><span class="mono">8.250</span></div>
         <div class="t t--grand"><span>Total</span><span class="mono">173.250</span></div>
@@ -339,7 +398,7 @@
         <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">0</span></div>
       </div>
       
-      <div class="totals" data-when="empty">
+      <div class="totals" data-when="empty quick-new">
         <div class="t"><span>Subtotal</span><span class="mono">0</span></div>
         <div class="t t--grand"><span>Total</span><span class="mono">0</span></div>
       </div>
@@ -367,10 +426,17 @@
         <div class="t t--grand"><span>Total</span><span class="mono">1.160.250</span></div>
         <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">100.455</span></div>
       </div>
+      <div class="totals" data-when="open-t12" data-gone="t12-fries">
+        <div class="t"><span>Subtotal</span><span class="mono">85.000</span></div>
+        <div class="t"><span>Staff meal 10%</span><span class="mono">&minus;8.500</span></div>
+        <div class="t"><span>Service charge 5%</span><span class="mono">3.825</span></div>
+        <div class="t t--grand"><span>Total</span><span class="mono">80.325</span></div>
+        <div class="t t--incl"><span>Includes tax 10%</span><span class="mono">6.955</span></div>
+      </div>
       <div class="totals" data-when="loading"><div class="skel skel--w60"></div><div class="skel skel--w40"></div></div>
 
       
-      <div class="actions" data-unless="lock-draft lock-lease">
+      <div class="actions" data-unless="lock-draft open-t7 lock-lease quick-new">
         <a class="btn" href="order.html?state=sheet-discount" data-unless="empty">Discount</a>
         <span class="btn btn--off" data-when="empty">Discount</span>
         <a class="btn" href="order.html?state=sheet-voidorder" data-unless="empty pressed">Void order</a>
@@ -379,9 +445,10 @@
 
         
         <a class="btn" href="order.html?state=fireerror"
-           data-unless="empty quick quick-line fireblocked">Send to kitchen</a>
+           data-unless="empty quick quick-line fireblocked open-t9">Send to kitchen</a>
         <span class="btn btn--off" data-when="empty">Send to kitchen</span>
         <span class="btn btn--off" data-when="fireblocked">Send to kitchen</span>
+        <button type="button" class="btn btn--off" aria-disabled="true" data-when="open-t9" title="No pending lines">Send to kitchen</button>
 
         <a class="btn btn--primary" href="settlement.html?state=partial" data-unless="empty quick quick-line pressed">Settle</a>
         <a class="btn btn--primary is-pressed" href="settlement.html?state=partial" data-when="pressed">Settle</a>
@@ -389,7 +456,12 @@
         <a class="btn btn--primary btn--wide" href="settlement.html?state=partial" data-when="quick quick-line">
           Settle &mdash; sends the order to the kitchen</a>
       </div>
-      <div class="actions" data-when="lock-draft lock-lease">
+      <div class="actions" data-when="quick-new" aria-label="Add an item before using order actions">
+        <button type="button" class="btn btn--off" aria-disabled="true" title="Add an item first">Discount</button>
+        <button type="button" class="btn btn--off" aria-disabled="true" title="Add an item first">Void order</button>
+        <button type="button" class="btn btn--primary btn--wide btn--off" aria-disabled="true" title="Add an item first">Settle &mdash; sends the order to the kitchen</button>
+      </div>
+      <div class="actions" data-when="lock-draft open-t7 lock-lease">
         <span class="btn btn--off">Discount</span><span class="btn btn--off">Void order</span>
         <span class="btn btn--off">Send to kitchen</span><span class="btn btn--off">Settle</span>
       </div>
@@ -504,7 +576,7 @@
       </div>
       <div class="sheet__foot">
         <a class="btn" href="order.html?state=eightysix">Keep order</a>
-        <a class="btn btn--primary" href="../../../prototype/pos/floor.html">Void order</a>
+        <a class="btn btn--primary" href="floor.html">Void order</a>
       </div>
     </div>
   </div>

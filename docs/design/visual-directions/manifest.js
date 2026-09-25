@@ -15,6 +15,10 @@ window.MOCKUPS = [
         "quick",
         "Quick sale"
       ],
+      ["open-t7", "Table 7 — your payment"],
+      ["open-t9", "Table 9 — 5 items fired"],
+      ["open-t12", "Table 12 — 2 rounds and pending"],
+      ["quick-new", "New quick sale — empty"],
       [
         "linecontrols",
         "Line controls — pending vs fired"
@@ -274,6 +278,26 @@ window.MOCKUPS = [
       [
         "error",
         "Error"
+      ],
+      [
+        "reprint-cancel",
+        "Cancellation reprint sent"
+      ],
+      [
+        "reprint-receipt",
+        "Receipt reprint sent"
+      ],
+      [
+        "reprint-table9",
+        "Table 9 reprint sent"
+      ],
+      [
+        "reprint-counter",
+        "Counter receipt reprint sent"
+      ],
+      [
+        "reprint-printed",
+        "Server-confirmed print result"
       ]
     ],
     "width": 1280,
@@ -338,5 +362,71 @@ window.MOCKUPS = [
     ],
     "width": 1440,
     "height": 900
+  },
+  {
+    "path": "pos/floor.html",
+    "title": "Floor — tables and quick sale",
+    "states": [
+      [
+        "default",
+        "Mixed occupancy"
+      ],
+      [
+        "clear",
+        "All tables free"
+      ],
+      [
+        "empty",
+        "No tables configured"
+      ],
+      [
+        "loading",
+        "Loading"
+      ],
+      [
+        "error",
+        "Error"
+      ],
+      [
+        "overflow",
+        "24 tables — scroll"
+      ],
+      [
+        "dayclosed",
+        "Business day closed"
+      ],
+      [
+        "incident",
+        "Kitchen emergency"
+      ],
+      [
+        "receipt-warning",
+        "Receipt warning"
+      ]
+    ],
+    "width": 1280,
+    "height": 800
   }
 ];
+
+// The legacy gallery hard-codes six labels and assumes both directions exist.
+// Keep its existing indices intact; the added floor is Frost-only.
+if (typeof document !== 'undefined') {
+  const requested = new URLSearchParams(location.search);
+  if (requested.get('screen') === 'pos/floor.html') {
+    requested.set('direction', 'frost');
+    history.replaceState(null, '', '?' + requested);
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const nav = document.querySelector('.screens');
+    if (!nav) return;
+    const floor = nav.children[MOCKUPS.findIndex(x => x.path === 'pos/floor.html')];
+    const frost = document.querySelector('[data-direction="frost"]');
+    const paper = document.querySelector('[data-direction="paper"]');
+    floor.textContent = 'POS floor';
+    floor.addEventListener('click', () => frost.click(), true);
+    paper.addEventListener('click', () => {
+      if (floor.hasAttribute('aria-current')) nav.children[0].click();
+    }, true);
+  });
+}
