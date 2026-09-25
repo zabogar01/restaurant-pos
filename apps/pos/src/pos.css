@@ -1442,6 +1442,162 @@ button.action:not([aria-disabled="true"]):focus-visible:active {
   font-weight: var(--frost-weight-semibold);
 }
 
+/* ==== POS-07 print incidents (FE-025) ====
+ * The reviewed artifact's body is overflow:hidden; at 1280x800 the overflow
+ * state would clip incidents (ruling 9), so the list scrolls. The two urgency
+ * classes are never identical (FR-E6): a heavy ink border and a larger, bolder
+ * title against a hairline on the group tint. The artifact's 3px border and 700
+ * weight have no registry token; the nearest are --frost-space-1 and
+ * --frost-weight-semibold. Flagged in the handoff. */
+
+.incidents {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--frost-space-5);
+  padding: var(--frost-space-5);
+}
+
+.incidents__back {
+  display: inline-flex;
+  align-items: center;
+}
+
+.incidents__group {
+  flex: none;
+}
+
+.incidents__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-3);
+  margin-bottom: var(--frost-space-3);
+}
+
+.incidents__heading-title {
+  font-size: var(--frost-text-18);
+}
+
+.incidents__heading--receipt {
+  margin-top: var(--frost-space-2);
+  margin-bottom: var(--frost-space-2);
+}
+
+.incidents__heading-note {
+  color: var(--frost-muted);
+}
+
+.incidents__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--frost-icon-size);
+  height: var(--frost-icon-size);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-emergency);
+  color: var(--frost-emergency-text);
+}
+
+.incidents__dot {
+  width: var(--frost-warning-marker-size);
+  height: var(--frost-warning-marker-size);
+  border-radius: var(--frost-radius-indicator);
+  background: var(--frost-warning);
+}
+
+.incident + .incident {
+  margin-top: var(--frost-space-3);
+}
+
+.incident--emergency {
+  padding: var(--frost-space-4);
+  border: var(--frost-space-1) solid var(--frost-text);
+  background: var(--frost-elevated);
+}
+
+.incident--receipt {
+  padding: var(--frost-space-3);
+  border: var(--frost-divider-stroke);
+  background: var(--frost-group);
+}
+
+.incident--receipt + .incident--receipt {
+  margin-top: var(--frost-space-2);
+}
+
+.incident__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--frost-space-4);
+}
+
+.incident__title {
+  font-size: var(--frost-text-17);
+  font-weight: var(--frost-weight-semibold);
+}
+
+.incident--receipt .incident__title {
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-regular);
+}
+
+.incident__meta {
+  color: var(--frost-muted);
+}
+
+.incident__note {
+  margin-top: var(--frost-space-2);
+  max-width: var(--frost-modal-width);
+}
+
+.incident__reprint {
+  flex: none;
+  width: var(--frost-incident-reprint-width);
+  height: var(--frost-action-height);
+  border: 1px solid var(--frost-primary);
+  border-radius: var(--frost-radius-button);
+  background: var(--frost-primary);
+  color: var(--frost-primary-text);
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-medium);
+  cursor: pointer;
+}
+
+.incident__reprint--receipt {
+  width: var(--frost-receipt-reprint-width);
+  height: var(--frost-action-compact-height);
+}
+
+.incident__result {
+  margin: var(--frost-space-3) 0 0;
+}
+
+.incidents__retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--frost-primary);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: var(--frost-link-underline-offset);
+  cursor: pointer;
+}
+
+.incidents__empty {
+  padding: var(--frost-space-12) var(--frost-space-5);
+  text-align: center;
+  color: var(--frost-muted);
+}
+
+.incidents__empty-title {
+  margin-bottom: var(--frost-space-2);
+  font-weight: var(--frost-weight-semibold);
+  color: var(--frost-text);
+}
+
 /* ---- Development-only fixture links, outside the device frame ---- */
 
 .fixture-states {

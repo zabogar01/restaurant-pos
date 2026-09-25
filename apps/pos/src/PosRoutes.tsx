@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { App } from './App.js';
 import { ControlledOrderScreen } from './OrderPanel.js';
+import { incidentStateFrom } from './incidentFixtures.js';
+import { IncidentsScreen } from './IncidentsScreen.js';
 import { orderViewFrom, type OrderView } from './orderFixtures.js';
 import { useOrderStore } from './orderStore.js';
 import { usePaymentSession } from './paymentSession.js';
@@ -34,6 +36,7 @@ export function PosRoutes() {
   const onOrder = /\/order\/?$/.test(path);
   const onSettlement = /\/settlement\/?$/.test(path);
   const onFloor = /\/floor\/?$/.test(path);
+  const onIncidents = /\/incidents\/?$/.test(path);
   const [seedView] = useState(() =>
     onOrder
       ? orderViewFrom(window.location.search)
@@ -68,6 +71,7 @@ export function PosRoutes() {
   if (onSettlement) return <ControlledSettlementScreen store={store} session={session} />;
   if (onOrder) return <ControlledOrderScreen view={view} store={store} locked={session.active} onLocationChange={readLocation} />;
   if (onFloor) return <FloorPlaceholder />;
+  if (onIncidents) return <IncidentsScreen state={incidentStateFrom(window.location.search)} />;
   return <App />;
 }
 

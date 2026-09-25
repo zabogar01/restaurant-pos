@@ -173,8 +173,9 @@ describe('fixture states', () => {
     for (const { id } of ORDER_STATES) expect(orderViewFrom(`?state=${id}`).state).toBe(id);
     // Repointed in F2h: this guards the unknown-state fallback, and fireerror
     // is a real state now. The two names below are the placeholder
-    // destinations F2b and F2h left for screens that are not built (POS-04,
-    // POS-07), which is exactly what an unknown ?state= is in this app.
+    // destinations F2b left for a screen that is not built (POS-04), which is
+    // exactly what an unknown ?state= is in this app. FE-025 built POS-07 at
+    // its own route, so `?state=incidents` is simply unknown here now.
     expect(orderViewFrom('?state=settle-pending').state).toBe('default');
     expect(orderViewFrom('?state=incidents').state).toBe('default');
     expect(orderViewFrom('?state=nothing-of-the-sort').state).toBe('default');

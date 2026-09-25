@@ -550,8 +550,8 @@ describe('fireerror: the emergency banner (FR-E3)', () => {
     expect(action.tagName).toBe('A');
     expect(action.textContent).toBe('Open incidents');
     expect(action.getAttribute('href')).toBe(FIRE_INCIDENT.action.href);
-    // Placeholder, as F2b's two ?state=settle* are: POS-07 is F4's.
-    expect(FIRE_INCIDENT.action.href).toBe('?state=incidents');
+    // FE-025: POS-07 is built, at /pos/incidents.
+    expect(FIRE_INCIDENT.action.href).toBe('/pos/incidents');
   });
 
   it('is drawn in no other state, but the three fire fixtures that share its class (FE-022)', () => {
@@ -827,11 +827,10 @@ describe('the controls F2h adds lead somewhere ungated', () => {
   it('fireerror’s Open incidents leaves for POS-07, which is not a gated state of this screen', () => {
     render('fireerror');
     const href = host.querySelector('.emergency-banner__action')!.getAttribute('href')!;
-    const target = new URLSearchParams(href.slice(1)).get('state');
-    expect(GATED).not.toContain(target);
-    // It is a placeholder for an unbuilt screen, so it resolves to the default
-    // state — which is itself ungated. F4 reconciles the name.
-    expect(ORDER_STATES.some((s) => s.id === target)).toBe(false);
+    // FE-025: it is a route of its own now, not a ?state= of this screen, so
+    // nothing gated can be its target.
+    expect(href).toBe('/pos/incidents');
+    expect(GATED).not.toContain(new URLSearchParams(new URL(href, 'http://x').search).get('state'));
   });
 
   // FE-022 changed this test: the notice used to carry no control at all. It now

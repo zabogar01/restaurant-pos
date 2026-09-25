@@ -97,11 +97,9 @@ export type SettlementLock = 'draft' | 'lease';
  * before sign-in, and POS-03 is behind the PIN, so here it names the table and
  * the round.
  *
- * **Open incidents is a placeholder destination.** It goes to POS-07, *Print
- * incidents* (SITEMAP; the artifact's incidents.html), which is F4's and is not
- * built. `?state=incidents` is named after the artifact's screen and today
- * resolves to the default state, exactly as F2b's two `?state=settle*` lock
- * routes do. **F4 reconciles it.**
+ * **Open incidents goes to POS-07**, *Print incidents* (`/pos/incidents`, FE-025).
+ * The EmergencyBanner intercepts a plain click and navigates client-side, so
+ * the order store outlives the trip and browser Back returns to it.
  *
  * It genuinely leaves POS-03, so it is an anchor, and it is the only anchor
  * this screen carries outside a lock notice.
@@ -111,7 +109,7 @@ export type EmergencyIncident = { title: string; detail: string; action: { label
 export const FIRE_INCIDENT: EmergencyIncident = {
   title: 'Kitchen ticket did not print — Table 1, round 2',
   detail: 'The order is unaffected. The kitchen has not seen this work.',
-  action: { label: 'Open incidents', href: '?state=incidents' },
+  action: { label: 'Open incidents', href: '/pos/incidents' },
 };
 
 /**
@@ -122,13 +120,13 @@ export const FIRE_INCIDENT: EmergencyIncident = {
 export const FIRE_INCIDENT_FAILED: EmergencyIncident = {
   title: 'Kitchen ticket FAILED — Table 1, round 3',
   detail: 'Ticket did not print. Open incidents to reprint; the order is unaffected.',
-  action: { label: 'Open incidents', href: '?state=incidents' },
+  action: { label: 'Open incidents', href: '/pos/incidents' },
 };
 
 export const FIRE_INCIDENT_UNKNOWN: EmergencyIncident = {
   title: 'Kitchen ticket UNKNOWN — Table 1, round 3',
   detail: 'Ticket may have printed. Check with the kitchen before reprinting.',
-  action: { label: 'Open incidents', href: '?state=incidents' },
+  action: { label: 'Open incidents', href: '/pos/incidents' },
 };
 
 /**
