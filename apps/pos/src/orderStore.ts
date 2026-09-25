@@ -5,7 +5,9 @@ import { fireOrder } from './fire.js';
 import { DEFAULT_CATEGORY, MENU_ITEMS, originFacts, type CategoryId } from './menuFixtures.js';
 import {
   ORDER_FIXTURES,
+  orderIdOf,
   type Modifier,
+  type OrderState,
   type OrderLine,
   type OrderVariant,
   type OrderView,
@@ -26,6 +28,15 @@ import type { ShownOrder } from './voidFixtures.js';
 // already writes — is watched after the first render, so pressing the row's ×
 // after the screen is up behaves exactly as seeding with `?gone=` already in
 // the URL does.
+//
+// FE-026: the store is now a **book** — orders keyed by an id, and the one that
+// is active. `useOrderStore` is still the active order's store and its return
+// shape has not changed, so a book holding one order is the old store (FE-014's
+// safety property). An order is seeded from its fixture the first time it
+// becomes active, and its mutations persist while another is. The active id is
+// set only by the initial URL at mount (its fixture's `orderId`) or by a floor
+// press (`useOrderBook`'s openers) — never by `?state=`, which keeps selecting
+// fixture states *within* the active order and never reseeds.
 //
 // Totals are never stored: `toShownOrder` runs `orderTotals` over the live
 // lines every time, exactly as `discount.ts` prescribes.
@@ -168,6 +179,32 @@ function toShownOrder(data: StoreState): ShownOrder {
   };
 }
 
+/** F3d's lock, as a fact or — since a payment session belongs to one order (FE-026) — a question asked of the active order's id. */
+export type Locked = boolean | ((activeId: string) => boolean);
+
+/** What the book holds: every order that has been opened, and the one the order screen shows. */
+type Book = { orders: Readonly<Record<string, StoreState>>; activeId: string };
+
+/**
+ * The floor's view of the book (FE-026). `useOrderStore` returns only `store`.
+ */
+export type OrderBook = {
+  /** The order the order screen is showing. Set by the initial URL at mount or by an opener below — never by `?state=`. */
+  activeId: string;
+  /** An order the book holds, drawn as the panel draws it; `undefined` if it was never opened. Totals come from `orderTotals`. */
+  orderFor: (orderId: string) => ShownOrder | undefined;
+  /** Makes a fixture's order active, seeding it from that fixture the first time and never after. */
+  openFixture: (state: OrderState) => void;
+  /** Makes Table `n`'s order active, creating an empty one the first time. Returns its id. */
+  openTable: (n: number) => string;
+  /** Creates a fresh quick sale from `quick-new` under a new id and makes it active. Returns the id. */
+  newQuickSale: () => string;
+};
+
+function emptyTable(n: number): StoreState {
+  return { title: `Order · T${n}`, groups: [] };
+}
+
 /**
  * `locked` (F3d): the own-tab payment-session lock POS-03 derives from
  * PosRoutes, on top of whatever `originFacts(view).lock` already
@@ -175,17 +212,51 @@ function toShownOrder(data: StoreState): ShownOrder {
  * seed's `?gone=` drop and the post-mount effect's — so a `?gone=` mutation
  * walked in through the URL is refused the same way under either lock
  * (rule 4).
+ *
+ * `showing` (FE-026): whether the screen is drawing the active order. Off on the
+ * floor, where nothing has been opened yet and seeding Table 1 at mount would
+ * make its tile read the book rather than the floor's own fixture.
  */
-export function useOrderStore(view: OrderView, locked = false): OrderStore {
-  const [data, setData] = useState<StoreState>(() => seed(view, locked));
+export function useOrderStore(view: OrderView, locked: Locked = false): OrderStore {
+  return useOrderBook(view, locked).store;
+}
+
+export function useOrderBook(view: OrderView, lock: Locked = false, showing = true): { store: OrderStore; book: OrderBook } {
+  const lockedOn = (id: string) => (typeof lock === 'function' ? lock(id) : lock);
+  const [book, setBook] = useState<Book>(() => {
+    const activeId = orderIdOf(ORDER_FIXTURES[view.state]);
+    return { orders: showing ? { [activeId]: seed(view, lockedOn(activeId)) } : {}, activeId };
+  });
+  // FE-026 rule 5: a payment lock belongs to the order the session began on, so
+  // it is asked of the active order, never taken as one flag for the whole book.
+  const locked = lockedOn(book.activeId);
   const [category, selectCategory] = useState<CategoryId>(DEFAULT_CATEGORY);
   const appliedGone = useRef(view.gone);
   const nextId = useRef(0);
+  const nextQuick = useRef(1);
   // What the fire reads at the moment of the press: the view it is on and the
   // session lock. A ref, so `fire` keeps one identity and still asks the
   // current facts rather than the ones it was created under.
   const context = useRef({ view, locked });
   context.current = { view, locked };
+
+  // The order the screen shows is always in the book: reaching an order route
+  // with nothing active yet (Forward from the floor, say) seeds it now, once.
+  const held = book.orders[book.activeId];
+  if (showing && !held) {
+    setBook((prev) => (prev.orders[prev.activeId] ? prev : { ...prev, orders: { ...prev.orders, [prev.activeId]: seed(view, locked) } }));
+  }
+  const data = held ?? seed(view, locked);
+
+  /** Applies a change to the active order. The same order back means nothing changed. */
+  const update = useCallback((change: (prev: StoreState) => StoreState) => {
+    setBook((prev) => {
+      const current = prev.orders[prev.activeId];
+      if (!current) return prev;
+      const next = change(current);
+      return next === current ? prev : { ...prev, orders: { ...prev.orders, [prev.activeId]: next } };
+    });
+  }, []);
 
   useEffect(() => {
     // Lead correction (F3d): `view.gone` going falsy (Cancel always clears it
@@ -204,8 +275,8 @@ export function useOrderStore(view: OrderView, locked = false): OrderStore {
     // as if it had dropped the line — the bug this correction fixes.
     appliedGone.current = view.gone;
     if (originFacts(view).lock || locked) return;
-    setData((prev) => ({ ...prev, groups: dropLine(prev.groups, view.gone!) }));
-  }, [view.gone, view.state, locked]);
+    update((prev) => ({ ...prev, groups: dropLine(prev.groups, view.gone!) }));
+  }, [view.gone, view.state, locked, update]);
 
   const addLine = useCallback((line: NewLine) => {
     const unitPrice = resolveUnit(priceOf(line.itemId), line.modifiers);
@@ -219,23 +290,23 @@ export function useOrderStore(view: OrderView, locked = false): OrderStore {
       amount: unitPrice * BigInt(line.quantity),
       status: 'pending',
     };
-    setData((prev) => ({ ...prev, groups: appendPending(prev.groups, newLine) }));
-  }, []);
+    update((prev) => ({ ...prev, groups: appendPending(prev.groups, newLine) }));
+  }, [update]);
 
   const removeLine = useCallback((lineId: string) => {
-    setData((prev) => ({ ...prev, groups: dropLine(prev.groups, lineId) }));
-  }, []);
+    update((prev) => ({ ...prev, groups: dropLine(prev.groups, lineId) }));
+  }, [update]);
 
   const setQuantity = useCallback((lineId: string, quantity: number) => {
-    setData((prev) => ({ ...prev, groups: rewriteQuantity(prev.groups, lineId, quantity) }));
-  }, []);
+    update((prev) => ({ ...prev, groups: rewriteQuantity(prev.groups, lineId, quantity) }));
+  }, [update]);
 
   const fire = useCallback((firedAt: string) => {
     const { view, locked } = context.current;
     // The place's own facts, through originFacts: an item sheet draws the state
     // it was opened from, and reading `X[view.state]` would un-86 a held line.
     const { menu, lock } = originFacts(view);
-    setData((prev) => {
+    update((prev) => {
       const result = fireOrder(prev.groups, {
         type: prev.type ?? 'table',
         unavailable: menu.eightySixed ?? [],
@@ -244,7 +315,33 @@ export function useOrderStore(view: OrderView, locked = false): OrderStore {
       });
       return result.refused ? prev : { ...prev, groups: result.groups };
     });
+  }, [update]);
+
+  const openFixture = useCallback((state: OrderState) => {
+    const activeId = orderIdOf(ORDER_FIXTURES[state]);
+    setBook((prev) => ({
+      activeId,
+      orders: prev.orders[activeId] ? prev.orders : { ...prev.orders, [activeId]: seed({ state }, false) },
+    }));
   }, []);
 
-  return { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire };
+  const openTable = useCallback((n: number) => {
+    const activeId = `table-${n}`;
+    setBook((prev) => ({ activeId, orders: prev.orders[activeId] ? prev.orders : { ...prev.orders, [activeId]: emptyTable(n) } }));
+    return activeId;
+  }, []);
+
+  const newQuickSale = useCallback(() => {
+    // `quick-1` is the fixture `quick`'s order, so the first sale the floor makes is `quick-2`.
+    const activeId = `quick-${++nextQuick.current}`;
+    setBook((prev) => ({ activeId, orders: { ...prev.orders, [activeId]: seed({ state: 'quick-new' }, false) } }));
+    return activeId;
+  }, []);
+
+  const orderFor = (orderId: string) => (book.orders[orderId] ? toShownOrder(book.orders[orderId]!) : undefined);
+
+  return {
+    store: { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire },
+    book: { activeId: book.activeId, orderFor, openFixture, openTable, newQuickSale },
+  };
 }

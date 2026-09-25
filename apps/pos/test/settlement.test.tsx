@@ -1008,7 +1008,7 @@ describe('F3d: the payment session', () => {
     // FE-019 finding 4 (P3): the invented sentence is gone — the placeholder
     // route renders the bare device frame and no copy at all.
     expect(window.location.pathname).toBe('/pos/floor');
-    expect(host.textContent).toBe('');
+    expect(host.querySelector('.floor')).not.toBeNull();
   });
 
   it('AC-11: takeover, reached for real, draws MANAGER REQUIRED with no Cancel payment and an inert confirm', () => {

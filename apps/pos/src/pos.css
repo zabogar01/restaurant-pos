@@ -2116,3 +2116,220 @@ button.settlement-close__action:not([aria-disabled="true"]):focus-visible:active
 .takeover-modal .pin-dots {
   margin: var(--frost-space-3) 0;
 }
+
+/* ==== POS-02 the floor (FE-026) ====
+ * frost/pos/floor.html. Every value is the artifact's own registry token. The
+ * artifact's hover fill is scoped to @media (hover: hover), as the order screen's
+ * is (test/hover-scoped.test.ts). Release is not drawn: it belongs to POS-01. */
+
+.order-screen__bar--floor {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--frost-space-5);
+}
+
+.floor-head {
+  flex: none;
+  height: var(--frost-pos-header-height);
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-5);
+  padding: 0 var(--frost-space-5);
+  border-bottom: var(--frost-divider-stroke);
+}
+
+.floor-head h1 {
+  margin: 0;
+  font-size: var(--frost-text-20);
+  font-weight: var(--frost-weight-medium);
+  letter-spacing: var(--frost-tracking-title);
+}
+
+.floor-actor {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-3);
+  font-size: var(--frost-text-13);
+  color: var(--frost-muted);
+}
+
+.floor-idle {
+  padding: var(--frost-idle-chip-padding);
+  border: var(--frost-divider-stroke);
+  background: var(--frost-elevated);
+  font-size: var(--frost-text-12);
+}
+
+.floor-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--frost-action-compact-height);
+  padding: var(--frost-button-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-button);
+  color: var(--frost-primary);
+  background: var(--frost-elevated);
+  text-decoration: none;
+  font-weight: var(--frost-weight-medium);
+}
+
+.floor-action--primary {
+  min-height: var(--frost-action-height);
+  background: var(--frost-primary);
+  color: var(--frost-primary-text);
+}
+
+.floor a:active {
+  box-shadow: var(--frost-pressed-ring);
+}
+
+.floor-toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--frost-space-5);
+  padding: var(--frost-space-5);
+}
+
+.floor-toolbar h2 {
+  margin: 0;
+  font-size: var(--frost-text-18);
+  font-weight: var(--frost-weight-medium);
+}
+
+.floor-sub {
+  color: var(--frost-muted);
+  font-size: var(--frost-text-13);
+}
+
+.floor-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-3);
+}
+
+.floor-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--frost-space-3);
+  padding: var(--frost-space-2) var(--frost-space-5) var(--frost-space-5);
+  align-content: start;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-color: var(--frost-scrollbar);
+}
+
+.floor-table {
+  height: calc(var(--frost-tile-height) + var(--frost-action-compact-height));
+  padding: var(--frost-space-4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  text-decoration: none;
+}
+
+.floor-table--open {
+  background: var(--frost-group);
+}
+
+.floor-table strong {
+  font-size: var(--frost-text-20);
+  font-weight: var(--frost-weight-medium);
+}
+
+.floor-table-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: var(--frost-space-2);
+}
+
+.floor-table-amount {
+  font-weight: var(--frost-weight-semibold);
+}
+
+@media (hover: hover) {
+  .floor-action:hover {
+    background: var(--frost-group);
+  }
+
+  .floor-action--primary:hover {
+    background: var(--frost-primary-hover);
+  }
+
+  .floor-table:hover {
+    background: var(--frost-selected);
+    color: var(--frost-selected-text);
+  }
+
+  .floor-table:hover .floor-sub {
+    color: inherit;
+  }
+}
+
+.floor-message {
+  margin: var(--frost-space-5);
+  padding: var(--frost-space-6);
+  background: var(--frost-elevated);
+  border: var(--frost-divider-stroke);
+}
+
+.floor-message h2 {
+  font-size: var(--frost-text-20);
+  font-weight: var(--frost-weight-medium);
+  margin: 0 0 var(--frost-space-2);
+}
+
+.floor-message p {
+  margin: 0 0 var(--frost-space-4);
+}
+
+.floor-day {
+  flex: none;
+  padding: var(--frost-emergency-padding);
+  background: var(--frost-warning-surface);
+  color: var(--frost-warning);
+}
+
+.floor-day strong {
+  font-weight: var(--frost-weight-semibold);
+}
+
+.floor-warning {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-2);
+  align-self: flex-start;
+  margin: var(--frost-space-3) var(--frost-space-5) 0;
+  padding: var(--frost-warning-chip-padding);
+  color: var(--frost-warning);
+  background: var(--frost-warning-surface);
+  border: var(--frost-control-stroke);
+  border-color: var(--frost-warning);
+  border-radius: var(--frost-radius-surface);
+  font-size: var(--frost-text-13);
+}
+
+.floor-warning a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--frost-action-compact-height);
+  padding: 0 var(--frost-space-3);
+  color: inherit;
+  text-underline-offset: var(--frost-link-underline-offset);
+}
+
+.floor-warning__mark {
+  width: var(--frost-warning-marker-size);
+  height: var(--frost-warning-marker-size);
+  background: var(--frost-warning);
+}
