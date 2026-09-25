@@ -28,7 +28,21 @@ export function groupIncidents(incidents: ReadonlyArray<Incident>) {
   };
 }
 
-function IncidentCard({ incident, result, onReprint }: { incident: Incident; result: string | null; onReprint: () => void }) {
+function IncidentCard({
+  incident,
+  result,
+  checked,
+  onReprint,
+  onCheck,
+  onClear,
+}: {
+  incident: Incident;
+  result: string | null;
+  checked: boolean;
+  onReprint: () => void;
+  onCheck: () => void;
+  onClear: () => void;
+}) {
   const emergency = isEmergency(incident);
   const titleId = `${incident.id}-title`;
   const metaId = `${incident.id}-meta`;
@@ -56,19 +70,53 @@ function IncidentCard({ incident, result, onReprint }: { incident: Incident; res
           )}
         </div>
         {/* Per incident, never shared (FE-021's lesson): the button names what it reprints by describing it. */}
-        <button
-          type="button"
-          className={emergency ? 'incident__reprint' : 'incident__reprint incident__reprint--receipt'}
-          aria-describedby={incident.meta ? `${titleId} ${metaId}` : titleId}
-          onClick={onReprint}
-        >
-          {incident.button}
-        </button>
+        {(() => {
+          const reprint = (
+            <button
+              type="button"
+              className={emergency ? 'incident__reprint' : 'incident__reprint incident__reprint--receipt'}
+              aria-describedby={incident.meta ? `${titleId} ${metaId}` : titleId}
+              onClick={onReprint}
+            >
+              {incident.button}
+            </button>
+          );
+          // A receipt is the lower urgency class (FR-E6): Dismiss is always live and needs no check.
+          return emergency ? (
+            reprint
+          ) : (
+            <div className="receipt-actions">
+              {reprint}
+              <button type="button" className="incident-dismiss" aria-describedby={titleId} onClick={onClear}>
+                Dismiss
+              </button>
+            </div>
+          );
+        })()}
       </div>
+      {incident.unknownNote && <div className="incident__meta">{incident.unknownNote}</div>}
       {result && (
         <div className="notice notice--soft incident__result" role="status">
           <div className="notice__title">{result}</div>
           {emergency && <div>{REPRINT_FOLLOW_UP}</div>}
+        </div>
+      )}
+      {emergency && (
+        <div className="incident-recovery">
+          <label id={`clear-reason-${incident.id}`}>
+            <input type="checkbox" checked={checked} onChange={onCheck} />I checked: the kitchen has this{' '}
+            {incident.kind === 'cancellation' ? 'cancellation' : 'ticket'}.
+          </label>
+          {/* Off is aria-disabled, never `disabled` (FE-024): it stays focusable and its press does nothing. */}
+          <button
+            type="button"
+            className="incident-clear"
+            aria-disabled={!checked}
+            aria-describedby={`clear-reason-${incident.id}`}
+            onClick={() => checked && onClear()}
+          >
+            Clear incident
+          </button>
         </div>
       )}
     </div>
@@ -85,7 +133,13 @@ export function IncidentsScreen({
   // Screen-local, keyed by incident: a single shared flag is the defect this
   // project keeps paying for. No URL change, no history entry.
   const [reprinted, setReprinted] = useState<ReadonlySet<string>>(() => new Set());
-  const { emergency, receipt } = groupIncidents(incidents);
+  // Also screen-local and keyed by incident. Clearing is not audited (owner ruling, FE-028): no URL, no history.
+  const [checked, setChecked] = useState<ReadonlySet<string>>(() => new Set());
+  const [cleared, setCleared] = useState<ReadonlySet<string>>(() => new Set());
+  const [status, setStatus] = useState('');
+  const visible = incidents.filter((incident) => !cleared.has(incident.id));
+  const { emergency, receipt } = groupIncidents(visible);
+  const allGone = state === 'empty' || (incidents.length > 0 && visible.length === 0);
 
   const resultFor = (incident: Incident) => incident.serverResult ?? (reprinted.has(incident.id) ? LIVE_REPRINT_TITLE : null);
   const draw = (incident: Incident) => (
@@ -93,7 +147,26 @@ export function IncidentsScreen({
       key={incident.id}
       incident={incident}
       result={resultFor(incident)}
+      checked={checked.has(incident.id)}
       onReprint={() => setReprinted((prev) => new Set(prev).add(incident.id))}
+      onCheck={() =>
+        setChecked((prev) => {
+          const next = new Set(prev);
+          if (!next.delete(incident.id)) next.add(incident.id);
+          return next;
+        })
+      }
+      onClear={() => {
+        setCleared((prev) => new Set(prev).add(incident.id));
+        const last = visible.length === 1;
+        setStatus(
+          last
+            ? 'Nothing outstanding — no unresolved print incidents.'
+            : isEmergency(incident)
+              ? 'Kitchen incident cleared.'
+              : 'Receipt warning dismissed.',
+        );
+      }}
     />
   );
 
@@ -142,10 +215,10 @@ export function IncidentsScreen({
             </div>
           )}
 
-          {state === 'empty' && (
+          {allGone && (
             <div className="incidents__empty">
               <div className="incidents__empty-title">Nothing outstanding</div>
-              <div>Every ticket and receipt has printed.</div>
+              <div>No unresolved print incidents.</div>
             </div>
           )}
 
@@ -156,7 +229,7 @@ export function IncidentsScreen({
                   <Icon name="alert" />
                 </span>
                 <b className="incidents__heading-title">Needs attention now</b>
-                <span className="incidents__heading-note">The kitchen has not seen this work</span>
+                <span className="incidents__heading-note">Check delivery with the kitchen</span>
               </div>
               {emergency.map(draw)}
             </section>
@@ -172,6 +245,9 @@ export function IncidentsScreen({
               {receipt.map(draw)}
             </section>
           )}
+          <div className="incident-status" role="status" aria-live="polite">
+            {status}
+          </div>
         </main>
       </div>
       <nav className="fixture-states" aria-label="Fixture states">

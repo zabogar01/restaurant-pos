@@ -1598,6 +1598,71 @@ button.action:not([aria-disabled="true"]):focus-visible:active {
   color: var(--frost-text);
 }
 
+/* ---- FE-028 recovery: clear a kitchen incident, dismiss a receipt ---- */
+
+.incident-recovery {
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-4);
+  margin-top: var(--frost-space-3);
+}
+
+.incident-recovery label {
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-3);
+  min-height: var(--frost-action-compact-height);
+  cursor: pointer;
+}
+
+.incident-recovery input {
+  accent-color: var(--frost-emergency);
+  width: var(--frost-icon-size);
+  height: var(--frost-icon-size);
+}
+
+.incident-clear {
+  margin-left: auto;
+  min-width: var(--frost-incident-reprint-width);
+  height: var(--frost-action-compact-height);
+  border: 1px solid var(--frost-primary);
+  border-radius: var(--frost-radius-button);
+  background: var(--frost-primary);
+  color: var(--frost-primary-text);
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-medium);
+  cursor: pointer;
+}
+
+.incident-clear[aria-disabled='true'] {
+  background: var(--frost-emergency);
+  color: var(--frost-emergency-secondary);
+  border-color: var(--frost-emergency-secondary);
+  cursor: default;
+}
+
+.receipt-actions {
+  display: flex;
+  gap: var(--frost-space-2);
+  flex: none;
+}
+
+.incident-dismiss {
+  min-width: var(--frost-action-height);
+  height: var(--frost-action-compact-height);
+  border: 1px solid var(--frost-primary);
+  border-radius: var(--frost-radius-button);
+  background: none;
+  color: var(--frost-primary);
+  font-size: var(--frost-text-15);
+  cursor: pointer;
+}
+
+.incident-status {
+  color: var(--frost-muted);
+  font-size: var(--frost-text-13);
+}
+
 /* ---- Development-only fixture links, outside the device frame ---- */
 
 .fixture-states {
