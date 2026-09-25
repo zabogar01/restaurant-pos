@@ -113,6 +113,66 @@ from the wireframe and the reviewed `order.html`, so it is not invented.
 
 The clear follow-up waits on the owner's audit ruling. Also owed: the
 settlement and lock artifacts still point at the prototype floor.
+**Committed 2026-09-25:** design `016a669` and `5cbe8ca`, code-side docs
+`d0d9517`.
+
+**OWNER RULED 2026-09-25: clearing a kitchen incident is NOT audited** (receipt
+dismissal likewise). `FR-J3` does not list it, so the contract needs no
+change. The FE-025 clear/dismiss follow-up is unblocked.
+
+**F4b is written as [FE-026](tasks/FE-026-floor-and-order-book.md):** the floor
+plus an **order book**. The lead's rulings:
+- `orderId` goes on fixtures, defaulting to `table-1`.
+- **The active id lives in the store, never in the URL** (the `&from=`
+  lesson). It is set only at mount or by a floor press.
+- `useOrderStore`'s shape is unchanged, and all 2135 tests pass unmodified
+  (FE-014's safety property).
+- A free tile creates a titled empty order, and tiles read from the book.
+- The payment session records its `orderId`, so the lock is per order.
+- `← Floor` is added to the order bar, which had no way back.
+- **Release is deferred** (actor session, `FR-A`).
+- `/pos/closed-orders` is a placeholder.
+- An open quick sale has no place on the floor, which is a design question.
+
+**Found while writing it: the live *Close order & print receipt*
+(`SettlementScreen.tsx:974`) has no handler.** Closing does nothing, so a
+closed order freeing its table is **F4c**.
+
+**`builder28` (claude Sonnet) started in `w2:p1T`** and was confirmed `working`,
+with a background wait.
+**FE-026 round 1: 2190/2191, blocked on `settlement.test.tsx:1011`,** which pins
+`FloorPlaceholder`'s empty text. The change is approved: the lead's task
+replaced the placeholder without naming the test. There were 9 findings, and
+the lead ruled on them:
+- **Table 1's tile, 155.925 against 382.725.** The artifact omits the pending
+  Steak (the F3c divergence). Occupied tiles now derive from their fixture's
+  order even before it is opened.
+- **Lead errors, two:** criterion 4's *100.000* should be 141.750 (the default
+  Burger is 135.000, plus service), and the panel title convention is
+  `Order · T<n>`, not *Table n*.
+- **A money defect the slice introduced:** Settle on Table 9 while Table 1 is
+  mid-payment showed Table 1's drafts. Payment sessions are now keyed per
+  `orderId`, in scope.
+- New origins go into `ITEM_SHEET_ORIGINS`.
+- **Design questions recorded:** the tile counts units while the panel counts
+  lines (T9 reads *5 items* on the tile and *2 items* on the panel); the
+  derived *1 line pending* copy; no place on the floor for an open quick sale;
+  and Release and the order-bar `h1`.
+
+Round 2 is running.
+**FE-026 ACCEPTED 2026-09-25 after 2 rounds.** The lead re-ran verify: **2203 / 30,
+green**. The only existing-test change is the approved `settlement.test.tsx:1011`
+line. The Chrome walk, in one document throughout:
+- Table 2 → `Order · T2` → Burger → 141.750 → `← Floor`: the tile reads
+  *1 line pending · Open 141.750*.
+- Table 9 is 173.250, and Table 1's tile is derived at 382.725.
+- A Card draft of 155.925 on Table 12 makes its tile read *Payment in progress,
+  0 outstanding*, while Table 9's settlement has no drafts and 173.250.
+
+**P3 follow-up, not filed:** reopening a book-only order (Table 2) lands on
+`?state=default`. The order is right, but the URL names Table 1's fixture (the
+*URL lies* shape). `builder28` is closed, with pane `w2:p1T`. **Uncommitted until
+the owner asks.** Next: F4c (Close closes) and F4d (the FE-025 follow-ups).
 
 Previously 2026-09-24, when a fresh lead session took `w2:p1` at head `6d69f2c`
 (1349 tests / 22 files). **The *Immediate next handoff* section at the foot of
