@@ -211,6 +211,44 @@ reads **Free**. Back twice stays on the floor, and reopening gives a new empty
   refusal: the Close button looks live and nothing happens, with no copy.
 
 `builder29` is closed, with pane `w2:p1V`. Uncommitted until the owner asks.
+**Committed 2026-09-25: `66a4136` (feat) and `b83bc2c` (docs).** **F4d is written as
+[FE-028](tasks/FE-028-incident-recovery.md).** It covers:
+- a per-card checked Clear for kitchen incidents (`aria-disabled` until
+  checked, not audited, per the owner);
+- a live Dismiss for receipts;
+- the three copy changes;
+- `reprint` becoming dispatch-only, with the new `reprint-printed` as the
+  one server-answer state;
+- four new `reprint-*` states.
+
+**The lesson was applied:** the four tests pinning the old copy
+(`incidents.test.tsx:106`, `:125`, `:155`, `:198`) are named in the task in
+advance. The POS-03 banner's *kitchen has not seen this work* is kept, since
+it is FAILED-only and DESIGN-008 left it. **`builder30` (claude Sonnet) started
+in `w2:p1W`** and was confirmed `working`.
+**FE-028 blocked before editing:** four more `incidents.test.tsx` tests pin each
+card's *control set* (button counts), plus the seven-state list. **Approved, on the
+condition that** each count is replaced by an exact per-card control-set assertion
+(kitchen: Reprint, checkbox, Clear; receipt: Reprint, Dismiss), so coverage does not
+shrink. **The lesson, refined: grep for both the copy AND the structural assertions
+(counts, exact lists) on anything the task adds to.**
+**FE-028 ACCEPTED 2026-09-25.** The lead re-ran verify: **2253 / 32, green**. The
+control-set condition was met (`incidents.test.tsx:83`). The Chrome walk on
+`overflow`:
+- all three Clears start `aria-disabled`, and an off click does nothing;
+- a reprint does not clear;
+- checking T9 turns on only T9's Clear, which is described by its own label,
+  and pressing it removes only T9;
+- Dismiss removes one receipt;
+- clearing everything reaches `empty`, with the URL unchanged and zero
+  `disabled` attributes.
+
+The status-line copy (*Kitchen incident cleared.* and the rest) was checked
+verbatim against the artifact. **P3 for the designer:** when everything is
+cleared, *Nothing outstanding* appears twice (the empty composition and the
+status line). `builder30` is closed, with pane `w2:p1W`. **F4a–F4d are done;
+what remains of F4 is DESIGN-009 (POS-05/06, and where Close lands), then the
+back office.**
 
 Previously 2026-09-24, when a fresh lead session took `w2:p1` at head `6d69f2c`
 (1349 tests / 22 files). **The *Immediate next handoff* section at the foot of
