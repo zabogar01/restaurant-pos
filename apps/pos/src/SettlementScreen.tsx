@@ -683,6 +683,18 @@ export function ControlledSettlementScreen({
 
   const leavePayment = () => window.history.back();
 
+  // FE-027: Close. The store answers whether it closed (`closeOrder` owns every
+  // refusal), so a refused press leaves the drafts and this screen exactly as they
+  // were (B-20), and a double press closes once. The session ends with the close —
+  // its drafts are now the order's tenders (FR-G9) — and the floor replaces this
+  // entry, so Back cannot return to a settlement that is over. Nothing here
+  // mentions a receipt: there is no printer, and a receipt never gates a close (B-15).
+  const closeNow = () => {
+    if (!store.close?.(new Date().toISOString(), drafts)) return;
+    window.history.replaceState(null, '', '/pos/floor');
+    session.cancel();
+  };
+
   /**
    * Rule 9/10's two dead ends: neither carries a live session to end
    * (`beginsSession` never opened one for either), so there is nothing for a
@@ -971,7 +983,7 @@ export function ControlledSettlementScreen({
                 Closing…
               </button>
             ) : refusal === undefined ? (
-              <button type="button" className="settlement-close__action" data-action="close-order">
+              <button type="button" className="settlement-close__action" data-action="close-order" onClick={closeNow}>
                 Close order & print receipt
               </button>
             ) : (

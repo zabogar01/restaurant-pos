@@ -173,6 +173,82 @@ line. The Chrome walk, in one document throughout:
 `?state=default`. The order is right, but the URL names Table 1's fixture (the
 *URL lies* shape). `builder28` is closed, with pane `w2:p1T`. **Uncommitted until
 the owner asks.** Next: F4c (Close closes) and F4d (the FE-025 follow-ups).
+**Committed 2026-09-25: `8f29a9a` (feat) and `d9b7762` (docs).** **F4c is written as
+[FE-027](tasks/FE-027-close-closes.md).** The lead's rulings:
+- a pure `closeOrder` in `close.ts` that reuses `closeRefusal`;
+- the drafts become tenders at close (`FR-G9`), with change from `tender.ts`
+  and no tenders on a zero total;
+- a quick sale's pending lines become one `queued` round at close (`FR-E5`),
+  reusing `fireOrder`;
+- **the book keeps closed orders** (for POS-05), and the floor treats their
+  tables as free;
+- the close is idempotent;
+- nothing is drawn about the receipt.
+
+**A design conflict was found and ruled on for now:** the artifact's Close links
+to POS-06 (`closed-order.html`), while the inventory says the floor is
+*returned to after close*. **The lead ruled the floor, with `replaceState`,
+until DESIGN-009 settles POS-06**, and **DESIGN-009 must settle it**. A closed
+active order makes the order and settlement routes replace themselves with
+the floor.
+
+**`builder29` (claude Sonnet) started in `w2:p1V`** and was confirmed `working`.
+**FE-027 blocked at 2222/2224:** `settlement.test.tsx:298` (F3a's *Close produces no
+visible result*) and `:738` (AC-9) both pin *Close does nothing*. **Approved.**
+This is the lead's third miss of the same kind in a day (FE-026 `:1011`, then
+these two). **Lesson: when a task reverses a placeholder, grep the tests for
+what pins the placeholder and name them in the task.** AC-9 keeps its subject:
+no `state=loading` is ever reached by a press.
+**FE-027 ACCEPTED 2026-09-25.** The lead re-ran verify: **2224 / 32, green**. Only the
+two approved `settlement.test.tsx` edits changed; `order-book.test.tsx` only
+gained tests. The Chrome walk, in one document: Table 9 → Settle → Card 173.250
+→ Close (double press) → `/pos/floor`, with history length unchanged, and T9
+reads **Free**. Back twice stays on the floor, and reopening gives a new empty
+`Order · T9`. **P3s, not filed:**
+- `closeOrder` fires a quick sale by calling `fireOrder` with
+  `type: 'table'`, misstating the type;
+- a quick sale holding an 86'd pending line gets a **silent** `unavailable`
+  refusal: the Close button looks live and nothing happens, with no copy.
+
+`builder29` is closed, with pane `w2:p1V`. Uncommitted until the owner asks.
+**Committed 2026-09-25: `66a4136` (feat) and `b83bc2c` (docs).** **F4d is written as
+[FE-028](tasks/FE-028-incident-recovery.md).** It covers:
+- a per-card checked Clear for kitchen incidents (`aria-disabled` until
+  checked, not audited, per the owner);
+- a live Dismiss for receipts;
+- the three copy changes;
+- `reprint` becoming dispatch-only, with the new `reprint-printed` as the
+  one server-answer state;
+- four new `reprint-*` states.
+
+**The lesson was applied:** the four tests pinning the old copy
+(`incidents.test.tsx:106`, `:125`, `:155`, `:198`) are named in the task in
+advance. The POS-03 banner's *kitchen has not seen this work* is kept, since
+it is FAILED-only and DESIGN-008 left it. **`builder30` (claude Sonnet) started
+in `w2:p1W`** and was confirmed `working`.
+**FE-028 blocked before editing:** four more `incidents.test.tsx` tests pin each
+card's *control set* (button counts), plus the seven-state list. **Approved, on the
+condition that** each count is replaced by an exact per-card control-set assertion
+(kitchen: Reprint, checkbox, Clear; receipt: Reprint, Dismiss), so coverage does not
+shrink. **The lesson, refined: grep for both the copy AND the structural assertions
+(counts, exact lists) on anything the task adds to.**
+**FE-028 ACCEPTED 2026-09-25.** The lead re-ran verify: **2253 / 32, green**. The
+control-set condition was met (`incidents.test.tsx:83`). The Chrome walk on
+`overflow`:
+- all three Clears start `aria-disabled`, and an off click does nothing;
+- a reprint does not clear;
+- checking T9 turns on only T9's Clear, which is described by its own label,
+  and pressing it removes only T9;
+- Dismiss removes one receipt;
+- clearing everything reaches `empty`, with the URL unchanged and zero
+  `disabled` attributes.
+
+The status-line copy (*Kitchen incident cleared.* and the rest) was checked
+verbatim against the artifact. **P3 for the designer:** when everything is
+cleared, *Nothing outstanding* appears twice (the empty composition and the
+status line). `builder30` is closed, with pane `w2:p1W`. **F4a–F4d are done;
+what remains of F4 is DESIGN-009 (POS-05/06, and where Close lands), then the
+back office.**
 
 Previously 2026-09-24, when a fresh lead session took `w2:p1` at head `6d69f2c`
 (1349 tests / 22 files). **The *Immediate next handoff* section at the foot of

@@ -109,3 +109,49 @@ describe('the book', () => {
     expect(out.book.orderFor(a)!.groups).toHaveLength(1);
   });
 });
+
+// FE-027: the book keeps closed orders, and a table whose only order is closed is free.
+describe('the book after a close', () => {
+  const tenders = [{ id: 'd1', label: 'Card', amount: 173_250n }];
+
+  it('marks the order closed, keeps it, and gives the table a new order under a new id', () => {
+    const { out } = mountBook({ state: 'open-t9' });
+    act(() => out.store.close!('2026-09-25T19:42:00.000Z', tenders));
+    const [closed] = out.book.orders().filter((o) => o.status === 'closed');
+    expect(closed).toMatchObject({ id: 'table-9', closedAt: '2026-09-25T19:42:00.000Z', change: 0n });
+    expect(closed!.tenders).toEqual([{ label: 'Card', amount: 173_250n }]);
+    expect(out.book.openOrderIdOf(9)).toBeUndefined();
+    act(() => void out.book.openTable(9));
+    expect(out.book.activeId).not.toBe('table-9');
+    expect(out.book.openOrderIdOf(9)).toBe(out.book.activeId);
+    expect(out.book.orders().filter((o) => o.id.startsWith('table-9'))).toHaveLength(2);
+    expect(out.store.order.groups).toHaveLength(0);
+  });
+
+  it('a closed order accepts no mutation and no second close', () => {
+    const { out } = mountBook({ state: 'open-t9' });
+    act(() => out.store.close!('t1', tenders));
+    act(() => out.book.openFixture('open-t9'));
+    act(() => out.store.removeLine('t9-coffee'));
+    act(() => out.store.close!('t2', tenders));
+    expect(out.book.orders().filter((o) => o.status === 'closed')).toHaveLength(1);
+    expect(out.book.orders().find((o) => o.id === 'table-9')).toMatchObject({ closedAt: 't1' });
+    expect(out.book.orderFor('table-9')!.groups.flatMap((g) => g.lines).map((l) => l.id)).toContain('t9-coffee');
+  });
+
+  it('a refused close leaves the order open and unchanged', () => {
+    const { out } = mountBook({ state: 'open-t9' });
+    act(() => out.store.close!('t1', []));
+    expect(out.book.orders().find((o) => o.id === 'table-9')!.status).toBe('open');
+  });
+
+  it('a quick sale’s pending lines become one queued round at close', () => {
+    const { out } = mountBook({ state: 'quick-new' });
+    act(() => out.store.addLine({ itemId: 'burger', name: 'Burger', quantity: 1 }));
+    const total = out.store.order.totals.total;
+    act(() => out.store.close!('t1', [{ id: 'd', label: 'Card', amount: total }]));
+    const groups = out.book.orderFor(out.book.activeId)!.groups;
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({ kind: 'fired', delivery: 'queued', firedAt: 't1' });
+  });
+});
