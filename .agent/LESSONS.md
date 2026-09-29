@@ -34,6 +34,7 @@ duplicates, drop a rule once a test or hook enforces it. The stories are in the
 - Inject defects into a tree before handing it to a reviewer, or say so first, because the FE-010 reviewer watched `OrderPanel.tsx` mutate mid-run (L2037-2046).
 - Leave a dispatched task file uncommitted on the lead's branch and edit only the worktree copy afterwards, because committing it in both places makes two PRs add the same file with different content (FE-029 pilot, journal/2026-09-29-kit-004.md).
 - Parse a worker's verdict loosely and test the parser on each CLI's real output, because the Codex reviewer wrote `## Verdict: clean` where the dispatcher expected `**Verdict:**` (FE-029 pilot).
+- Close a task's panes as soon as its review is in and no round is expected, not at merge, because the owner found FE-029's builder and reviewer panes still open after the clean review (owner feedback, KIT-005).
 
 ## Builder
 

@@ -5,6 +5,7 @@ require "json"
 require "shellwords"
 require "fileutils"
 require "open3"
+require "securerandom"
 
 module Dispatch
   EXIT_REFUSED = 2
@@ -30,19 +31,21 @@ module Dispatch
   end
 
   # ---------------------------------------------------------------- options
-  Options = Struct.new(:id, :role, :profile, :resume, :message, :dry_run)
+  Options = Struct.new(:id, :role, :profile, :resume, :message, :dry_run, :mode, :keep_pane)
 
   def self.parse(argv)
     o = Options.new
     args = argv.dup
     o.id = args.shift
-    refuse "usage: dispatch.sh <TASK-ID> [--role <r>] [--profile <p>] [--resume [--message <text>]] [--dry-run]" if o.id.nil? || o.id.start_with?("-")
+    refuse "usage: dispatch.sh <TASK-ID> [--role <r>] [--profile <p>] [--mode interactive|oneshot] [--resume [--message <text>]] [--keep-pane] [--dry-run]" if o.id.nil? || o.id.start_with?("-")
     until args.empty?
       a = args.shift
       case a
       when "--role" then o.role = args.shift or refuse("--role needs a value")
       when "--profile" then o.profile = args.shift or refuse("--profile needs a value")
       when "--message" then o.message = args.shift or refuse("--message needs a value")
+      when "--mode" then o.mode = args.shift or refuse("--mode needs a value")
+      when "--keep-pane" then o.keep_pane = true
       when "--resume" then o.resume = true
       when "--dry-run" then o.dry_run = true
       else refuse "unknown argument #{a}"
@@ -55,7 +58,7 @@ module Dispatch
   class Plan
     attr_reader :o, :cfg, :root, :main, :task_path, :task_rel, :fm, :category, :touches,
                 :role, :profile_name, :profile, :cli, :worktree, :branch, :run_dir,
-                :notes, :pane_name
+                :notes, :pane_name, :mode, :agent_name
 
     def initialize(o)
       @o = o
@@ -72,9 +75,22 @@ module Dispatch
       load_task
       resolve_role
       resolve_profile
+      resolve_mode
       @branch = "agent/#{o.id.downcase}"
       @run_dir = File.join(@main, ".agent/runs", o.id, @role)
       @pane_name = @role == "reviewer" ? "#{o.id}-review" : o.id
+      @agent_name = @pane_name.downcase               # Herdr agent names are lowercase
+    end
+
+    # First match wins: --mode, the task's mode:, roles.<role>.mode (KIT-005).
+    def resolve_mode
+      m = (@o.mode || @fm["mode"] || @cfg.dig("roles", @role, "mode") || "oneshot").to_s
+      Dispatch.refuse "mode '#{m}' is neither interactive nor oneshot" unless %w[interactive oneshot].include?(m)
+      if m == "interactive" && !@cfg.dig("launch", @cli, "interactive")
+        why = @cfg.dig("launch", @cli, "interactive_refused") || "agents.yaml has no launch.#{@cli}.interactive"
+        Dispatch.refuse "interactive #{@cli} is not supported: #{why}. Use --mode oneshot."
+      end
+      @mode = m
     end
 
     def load_task
@@ -106,14 +122,13 @@ module Dispatch
     def resolve_role
       route = @cfg["routing"][@category]
       @role = @o.role || route["build"] || route["spec"]
-      one_shot = Array(@cfg.dig("dispatch", "one_shot_roles"))
-      return if one_shot.include?(@role)
+      return if Array(@cfg.dig("dispatch", "roles")).include?(@role)
       why = case @role
             when "lead" then "the lead builds '#{@category}' tasks itself"
-            when "architect", "designer" then "the #{@role} runs interactively (roles.#{@role}.mode); open its pane by hand"
-            else "roles.#{@role} is not in dispatch.one_shot_roles"
+            when "architect", "designer" then "the #{@role} works with the owner in a pane opened by hand"
+            else "roles.#{@role} is not in dispatch.roles"
             end
-      Dispatch.refuse "category '#{@category}' routes to #{@role}: not dispatched one-shot, because #{why}"
+      Dispatch.refuse "category '#{@category}' routes to #{@role}: not dispatched, because #{why}"
     end
 
     def global_preset
@@ -153,6 +168,10 @@ module Dispatch
       end
       @cli = @profile["cli"]
       Dispatch.refuse "no launch.#{@cli} in agents.yaml" unless @cfg.dig("launch", @cli)
+      if ENV["DISPATCH_TEST_MODEL"].to_s != ""
+        @notes << "TEST ONLY: model #{@profile['model']} replaced by #{ENV['DISPATCH_TEST_MODEL']} (DISPATCH_TEST_MODEL)"
+        @profile = @profile.merge("model" => ENV["DISPATCH_TEST_MODEL"])
+      end
     end
 
     def recorded_builder_cli
@@ -166,6 +185,7 @@ module Dispatch
       o2 = @o.dup
       o2.profile = name
       o2.resume = false
+      o2.mode = @mode
       Plan.new(o2)
     end
 
@@ -227,20 +247,7 @@ module Dispatch
       stdin = nil
       case @cli
       when "claude"
-        argv = split(l["oneshot"])
-        argv += split(l["effort"]) if @profile["effort"]
-        settings = {}
-        settings = deep_merge(settings, l["caveman_off"]) if caveman_off?
-        argv += ["--settings", JSON.generate(settings)] unless settings.empty?
-        argv += ["--permission-mode", l["permission_mode"]] if l["permission_mode"]
-        allowed = Array(l["allowed_tools"])
-        argv += ["--allowedTools", allowed.join(",")] unless allowed.empty?
-        denied = Array(l["disallowed_tools"])
-        gated_off.each do |m|
-          tools = l.dig("mcp_off", m) or Dispatch.refuse "no launch.claude.mcp_off.#{m}; refusing to launch #{@role} with #{m} reachable"
-          denied += Array(tools)
-        end
-        argv += ["--disallowedTools", denied.join(",")] unless denied.empty?
+        argv = split(l["oneshot"]) + claude_flags(l)
         argv += split(l["resume"], "session" => session) if session
         stdin = prompt                                  # stdin, so no flag can swallow it
       when "codex"
@@ -270,6 +277,56 @@ module Dispatch
         Dispatch.refuse "no launch shape for CLI #{@cli}"
       end
       [argv, env, stdin]
+    end
+
+    # Everything a Claude worker gets in either mode after the model and role
+    # prompt: effort, one merged --settings, permissions, one --allowedTools
+    # and one --disallowedTools (Context7 included).
+    def claude_flags(l)
+      argv = []
+      argv += split(l["effort"]) if @profile["effort"]
+      settings = {}
+      settings = deep_merge(settings, l["caveman_off"]) if caveman_off?
+      argv += ["--settings", JSON.generate(settings)] unless settings.empty?
+      argv += ["--permission-mode", l["permission_mode"]] if l["permission_mode"]
+      allowed = Array(l["allowed_tools"])
+      argv += ["--allowedTools", allowed.join(",")] unless allowed.empty?
+      denied = Array(l["disallowed_tools"])
+      gated_off.each do |m|
+        tools = l.dig("mcp_off", m) or Dispatch.refuse "no launch.claude.mcp_off.#{m}; refusing to launch #{@role} with #{m} reachable"
+        denied += Array(tools)
+      end
+      argv += ["--disallowedTools", denied.join(",")] unless denied.empty?
+      argv
+    end
+
+    # Interactive (KIT-005). Returns [cli_args, env, brief]: the arguments that
+    # follow `herdr agent start … --`, the pane environment, and the text sent
+    # with `herdr agent prompt`. new_session is the id to assign (Claude) when
+    # this is not a resume.
+    def launch_interactive(session, new_session)
+      l = @cfg["launch"][@cli]
+      env = { "AGENT_ROLE" => @role, "TASK_ID" => @o.id }
+      brief = task_prompt(!session.nil?)
+      args = split(l["interactive"]).drop(1)          # herdr runs the CLI itself
+      case @cli
+      when "claude"
+        args += claude_flags(l)
+        args += session ? split(l["resume"], "session" => session) : split(l["session_new"], "session" => new_session)
+      when "opencode"
+        gated_off.each do |m|
+          next if Array(l["mcp_none"]).include?(m)
+          f = l.dig("mcp_off", m) or Dispatch.refuse "no launch.opencode.mcp_off.#{m} and #{m} not listed in mcp_none"
+          args += split(f)
+        end
+        args += split(l["resume"], "session" => session) if session
+        env["OPENCODE_CONFIG_CONTENT"] = JSON.generate("permission" => l["permission"]) if l["permission"]
+        brief = File.read(role_prompt_file_for_text) + "\n\n" + brief unless session
+        @notes << "effort #{@profile['effort']} not applied: the OpenCode TUI has no --variant" if @profile["effort"]
+      else
+        Dispatch.refuse "no interactive launch shape for CLI #{@cli}"
+      end
+      [args, env, brief]
     end
 
     # Codex and OpenCode take the role prompt as text. Before the worktree
@@ -366,10 +423,11 @@ module Dispatch
   end
 
   # ------------------------------------------------------------- dry run
-  def self.print_plan(p, checks, argv, env, stdin, session)
+  def self.print_plan(p, checks, argv, env, stdin, session, prompt_label = nil)
     puts "dispatch #{p.o.id}#{p.o.dry_run ? ' (dry run: nothing is created)' : ''}"
     puts "  task      #{p.task_rel}  category=#{p.category} touches=#{p.touches.inspect}"
     puts "  role      #{p.role}"
+    puts "  mode      #{p.mode}#{p.mode == 'interactive' ? " (Herdr agent #{p.agent_name}; no turn cap; the pane closes on DONE or a written review verdict)" : ' (the pane closes on DONE or a written review verdict)'}"
     puts "  profile   #{p.profile_name}: #{p.cli} #{p.profile['model']}#{p.profile['effort'] ? " effort=#{p.profile['effort']}" : ''}"
     puts "  caveman   #{p.cli == 'claude' ? (p.caveman_off? ? 'off' : 'on (chat only)') : 'n/a (no always-on caveman on this CLI)'}"
     puts "  mcps      #{p.mcp_notes.join('; ')}"
@@ -386,7 +444,7 @@ module Dispatch
     env.each { |k, v| puts "  #{k}=#{v.length > 120 ? v[0, 117] + '...' : v}" }
     puts "command"
     puts "  " + argv.map { |a| a.include?("\n") ? "<prompt: #{a.lines.size} lines, below>" : Shellwords.escape(a) }.join(" ")
-    puts "prompt#{stdin ? ' (on stdin)' : ' (last argument)'}"
+    puts "prompt #{prompt_label || (stdin && !stdin.empty? ? '(on stdin)' : '(last argument)')}"
     text = stdin && !stdin.empty? ? stdin : argv.last
     puts text.to_s.lines.map { |l| "  | #{l}" }.join
   end
@@ -592,7 +650,170 @@ module Dispatch
     end
     vcode, vtext = verdict(p)
     puts "dispatch: #{vtext}"
+    close_pane_if_done(p, pane, vcode)
     vcode
+  end
+
+  # KIT-005: a round that ends DONE, or a review with a written verdict (the
+  # reviewer is never resumed; findings go to the builder), needs no pane:
+  # its log and session stay in the run directory. Anything else keeps the pane
+  # open for the lead and the owner to read. --keep-pane overrides.
+  def self.close_pane_if_done(p, pane, vcode)
+    return unless vcode.zero?
+    if p.o.keep_pane
+      puts "dispatch: pane #{p.pane_name} kept (--keep-pane)"
+      return
+    end
+    system("herdr", "pane", "close", pane, out: File::NULL, err: File::NULL)
+    puts "dispatch: pane #{p.pane_name} closed; log and session are in #{p.run_dir}"
+  end
+
+  # ------------------------------------------------------- interactive run
+  def self.agent_info(name)
+    out, st = Open3.capture2e("herdr", "agent", "get", name)
+    return nil unless st.success?
+    JSON.parse(out).dig("result", "agent")
+  rescue JSON::ParserError
+    nil
+  end
+
+  def self.pane_text(pane)
+    out, = Open3.capture2e("herdr", "pane", "read", pane)
+    out
+  end
+
+  def self.notify(title, body)
+    system("herdr", "notification", "show", title, "--body", body, "--sound", "request", out: File::NULL, err: File::NULL)
+  end
+
+  def self.start_interactive(p, session)
+    l = p.cfg.dig("launch", "herdr")
+    meta = File.join(p.run_dir, "meta.json")
+    pane = File.exist?(meta) ? JSON.parse(File.read(meta))["pane"] : nil
+    pane = nil if pane && !system("herdr", "pane", "get", pane, out: File::NULL, err: File::NULL)
+    live = agent_info(p.agent_name)
+    new_session = p.cli == "claude" && session.nil? ? SecureRandom.uuid : nil
+    args, env, brief = p.launch_interactive(session, new_session)
+    File.write(File.join(p.run_dir, "prompt.txt"), brief)
+
+    if session && live && pane
+      puts "dispatch: #{p.agent_name} is still in pane #{pane}; prompting it"
+    else
+      unless pane
+        split = p.split(l["open_pane"], "worktree" => p.worktree).drop(1)
+        runner_env(env).each { |k, v| split += ["--env", "#{k}=#{v}"] }
+        out = herdr(*split)
+        pane = JSON.parse(out).dig("result", "pane", "pane_id") or refuse "no pane id in: #{out}"
+        herdr(*p.split(l["name_pane"], "pane" => pane, "task_id" => p.pane_name).drop(1))
+      end
+      start = p.split(l["start_agent"], "agent" => p.agent_name, "cli" => p.cli, "pane" => pane).drop(1)
+      # A new pane's shell takes a moment to come up; until then Herdr answers
+      # "not an available shell". Retry that for up to 15 s, nothing else.
+      out = st = nil
+      15.times do
+        out, st = Open3.capture2e("herdr", *start, "--", *args)
+        break if st.success? || out !~ /not an available shell/
+        sleep 1
+      end
+      unless st.success?
+        msg = (JSON.parse(out).dig("error", "message") rescue out.strip)
+        hint = msg =~ /blocked/ ? " The CLI is waiting on a dialog (trust, login or update): only the owner answers it." : ""
+        refuse "herdr agent start failed: #{msg}. Pane #{p.pane_name} (#{pane}) is left open.#{hint}"
+      end
+    end
+    [pane, new_session || session, brief]
+  end
+
+  # Wait for the agent to start working, then until it is idle or gone. Blocked
+  # (an approval prompt) is reported once per episode and never answered.
+  def self.wait_interactive(p, pane)
+    name = p.agent_name
+    stall_min = (ENV["STALL_ALERT_MIN"] || p.cfg.dig("limits", "stall_alert_min")).to_f
+    poll = (ENV["DISPATCH_POLL_SEC"] || 10).to_f
+    # `herdr agent wait` can return the state from before the prompt, so the
+    # first thing awaited is `working`.
+    Open3.capture2e("herdr", "agent", "wait", name, "--until", "working", "--timeout", "120000")
+    sig = lambda { [pane_text(pane).hash, git("status", "--porcelain", dir: p.worktree).first.hash, git("rev-parse", "HEAD", dir: p.worktree).first] }
+    last_sig = sig.call
+    last_change = now
+    stalled = blocked = false
+    loop do
+      info = agent_info(name)
+      return :gone unless info
+      status = info["agent_status"]
+      return :idle if %w[idle done].include?(status)
+      if status == "blocked"
+        unless blocked
+          # Keep what the pane showed, so the record says which prompt it was
+          # and the Handoff review can tell who answered it.
+          n = Dir.glob(File.join(p.run_dir, "blocked-*.txt")).size + 1
+          shot = File.join(p.run_dir, "blocked-#{n}.txt")
+          File.write(shot, pane_text(pane))
+          puts "BLOCKED ON APPROVAL: #{p.o.id} #{p.role} is waiting on a permission prompt in pane #{p.pane_name} (pane text: #{shot}). Only the owner answers it."
+          $stdout.flush
+          notify("#{p.o.id} needs approval", "#{p.role} is waiting on a permission prompt in pane #{p.pane_name}.")
+          blocked = true
+        end
+      else
+        blocked = false
+      end
+      sleep poll
+      s2 = sig.call
+      if s2 != last_sig
+        last_sig = s2
+        last_change = now
+        stalled = false
+      elsif !stalled && status == "working" && now - last_change >= stall_min * 60
+        mins = ((now - last_change) / 60).round(1)
+        puts "STALL: #{p.o.id} #{p.role}: no pane output and no file change for #{mins} min of awake time. Not stopped; look at pane #{p.pane_name}."
+        $stdout.flush
+        notify("#{p.o.id} stalled", "No output or file change for #{mins} min. The agent was not stopped.")
+        stalled = true
+      end
+    end
+  end
+
+  def self.run_interactive(p, session, fallback_used: false)
+    prepare_worktree(p) unless session || p.role == "reviewer" || File.exist?(p.worktree)
+    FileUtils.mkdir_p(p.run_dir)
+    %w[exit pid].each { |f| FileUtils.rm_f(File.join(p.run_dir, f)) }
+    File.write(File.join(p.run_dir, "pid"), Process.pid.to_s)   # the dispatcher waits for the whole round
+    rounds_f = File.join(p.run_dir, "rounds")
+    File.write(rounds_f, (File.exist?(rounds_f) ? File.read(rounds_f).to_i : 0) + 1)
+    pane, sid, brief = start_interactive(p, session)
+    File.write(File.join(p.run_dir, "meta.json"), JSON.pretty_generate(
+      "task" => p.o.id, "role" => p.role, "mode" => "interactive", "cli" => p.cli, "model" => p.profile["model"],
+      "profile" => p.profile_name, "pane" => pane, "agent" => p.agent_name, "worktree" => p.worktree, "branch" => p.branch))
+    out, st = Open3.capture2e("herdr", *p.split(p.cfg.dig("launch", "herdr", "prompt_agent"), "agent" => p.agent_name).drop(1), brief)
+    refuse "herdr agent prompt failed: #{out.strip}" unless st.success?
+    puts "dispatch: #{p.o.id} #{p.role} running interactively as #{p.agent_name} in pane #{p.pane_name} (#{pane}); waiting until it is idle"
+    $stdout.flush
+    state = wait_interactive(p, pane)
+    info = agent_info(p.agent_name)
+    sid = (info && info.dig("agent_session", "value")) || sid
+    File.write(File.join(p.run_dir, "session"), sid) if sid
+    code =
+      if state == :gone
+        puts "dispatch: #{p.agent_name} left before a verdict (the CLI exited or the pane closed)"
+        1
+      else
+        vcode, vtext = verdict(p)
+        if vcode == EXIT_NO_VERDICT && pane_text(pane) =~ RATE_LIMIT && !fallback_used && (fb = p.fallback_plan)
+          puts "dispatch: rate limit or quota in the pane; closing it and re-running once on #{fb.profile_name} (#{fb.cli} #{fb.profile['model']})"
+          File.open(File.join(p.run_dir, "fallback.log"), "a") { |f| f.puts "#{Time.now} #{p.profile_name} -> #{fb.profile_name}" }
+          system("herdr", "pane", "close", pane, out: File::NULL, err: File::NULL)
+          FileUtils.rm_f(File.join(p.run_dir, "meta.json"))
+          File.write(File.join(p.run_dir, "exit"), "1")
+          return run_interactive(fb, nil, fallback_used: true)
+        end
+        vtext = "idle without a verdict: read pane #{p.pane_name}, then --resume --message" if vcode == EXIT_NO_VERDICT
+        puts "dispatch: #{vtext}"
+        vcode
+      end
+    File.write(File.join(p.run_dir, "exit"), code.to_s)
+    puts "dispatch: #{p.o.id} #{p.role} round over (exit #{code}); session #{sid || 'unknown'}"
+    close_pane_if_done(p, pane, code)
+    code
   end
 
   def self.main(argv)
@@ -600,18 +821,27 @@ module Dispatch
     p = Plan.new(o)
     session = o.resume ? (File.read(File.join(p.run_dir, "session")).strip rescue nil) : nil
     checks = preflight(p)
-    argv2, env, stdin = p.launch(o.resume ? (session || "<none recorded>") : nil)
+    label = nil
+    if p.mode == "interactive"
+      args, env, stdin = p.launch_interactive(o.resume ? (session || "<none recorded>") : nil, "<new uuid>")
+      herdr_cfg = p.cfg.dig("launch", "herdr")
+      argv2 = ["herdr"] + p.split(herdr_cfg["start_agent"], "agent" => p.agent_name, "cli" => p.cli, "pane" => "<pane>").drop(1) + ["--"] + args
+      env = runner_env(env).merge("PATH" => "<the dispatcher's PATH>")
+      label = "(sent with: herdr agent prompt #{p.agent_name} <text>)"
+    else
+      argv2, env, stdin = p.launch(o.resume ? (session || "<none recorded>") : nil)
+    end
     failed = checks.reject { |c| c[1] }
     if o.dry_run
-      print_plan(p, checks, argv2, env, stdin, session)
+      print_plan(p, checks, argv2, env, stdin, session, label)
       return failed.empty? ? 0 : EXIT_REFUSED
     end
     unless failed.empty?
       failed.each { |label, _, detail| warn "dispatch: refused: #{label}: #{detail}" }
       return EXIT_REFUSED
     end
-    print_plan(p, checks, argv2, env, stdin, session) if ENV["DISPATCH_VERBOSE"] == "1"
-    run_live(p, session)
+    print_plan(p, checks, argv2, env, stdin, session, label) if ENV["DISPATCH_VERBOSE"] == "1"
+    p.mode == "interactive" ? run_interactive(p, session) : run_live(p, session)
   rescue Refused => e
     warn "dispatch: refused: #{e.message}"
     EXIT_REFUSED

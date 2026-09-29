@@ -1,6 +1,6 @@
 # KIT-004 — The dispatcher, supervised
 
-**Status:** Stages 1 and 2 complete 2026-09-29 (Stage 1 merged as PR #18); awaiting the owner's acceptance of the pilot
+**Status:** Accepted by the owner 2026-09-29 (Stage 1 PR #18; the pilot FE-029 PR #20 and its fixes PR #19)
 **Owner:** `lead` (the kit is the lead's to own; this task is not dispatched)
 **Depends on:** KIT-003 (accepted 2026-09-29, PR #14) and KIT-002a (merged as PR #16)
 **Source:** [AGENT-KIT.md](../AGENT-KIT.md) § The dispatch loop, § Review tiers, § Block protocol, § Phase 4, § Reference (`dispatch.sh` sketch, task frontmatter). Owner rulings of 2026-09-29 in [DECISIONS.md](../DECISIONS.md): candidate A is the pilot, no skills gate, Context7 for the librarian only, caveman off by `caveman_off_when`.
