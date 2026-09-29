@@ -16,8 +16,7 @@ start. KIT-005 runs first (owner).
 ## Agent kit
 
 1. **KIT-005** — interactive dispatch mode and automatic pane close — depends on KIT-004
-   (accepted) — **complete 2026-09-29** on `agent/kit-interactive`, awaiting the owner's
-   merge. Then Phase 5 of `AGENT-KIT.md` (automatic review, designer alongside, profiles) is
+   (accepted) — **merged 2026-09-29** as PR #21; acceptance not stated. Then Phase 5 of `AGENT-KIT.md` (automatic review, designer alongside, profiles) is
    done task by task, not as its own project.
 
 ## Frontend: what is left of F4
