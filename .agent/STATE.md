@@ -9,10 +9,10 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-29, after KIT-002a (Context7 and skills report). First built in KIT-001 by a sorting
-subagent from the two archives and `git log`, then reviewed by the lead against its sources. Where two passages in the archive
-disagreed, the newer date won. Nothing below is newer than 2026-09-25 except the integration
-branch change and the kit rollout, because no product work has run since FE-028.
+2026-09-29, at the close of the lead session that ran KIT-002a (narrative in
+[journal/2026-09-29.md](journal/2026-09-29.md)). First built in KIT-001 from the two archives
+and `git log`. Nothing below is newer than 2026-09-25 except the integration branch and the
+kit rollout, because no product work has run since FE-028.
 
 ## Phase and gates
 
@@ -30,48 +30,56 @@ branch change and the kit rollout, because no product work has run since FE-028.
   documents; (3) the PRD's stack, currency and tax-model questions closed; (4) an execution
   mode chosen, which is subagent-driven; (5) a `.gitignore`. The open gate does not approve
   anything still listed as open in PRD section 9; an implementer that needs one stops and raises it.
-- **Kit rollout** (owner, 2026-09-29): KIT-001 and KIT-002 accepted by the owner. KIT-003
-  (hooks, GitHub protection) and the `/lead` skill were merged by the owner as PR #14
-  (`dccd3d0` on `development`); KIT-003 accepted 2026-09-29. KIT-002a
-  (Context7 for the librarian only, `skills-report.sh`) is complete and awaiting review.
-  KIT-004 (dispatcher) is next. **No product task starts during the rollout**
-  ([KIT-001](tasks/KIT-001-memory-split.md)).
+- **Kit rollout** (owner, 2026-09-29): KIT-001, KIT-002 and KIT-003 are accepted (KIT-003 and
+  the `/lead` skill as PR #14). KIT-002a (Context7 for the librarian only, `ask.sh` reading
+  agents.yaml, `skills-report.sh`) was merged by the owner as PR #16; acceptance not stated.
+  **KIT-004, the dispatcher, is next and not written.** It applies no skills gate (owner).
+  **No product task starts until KIT-004 has closed** ([KIT-001](tasks/KIT-001-memory-split.md)).
 - **Last verify by the lead:** `npm run verify` green at **2253 tests / 32 files** on
-  2026-09-29 (KIT-002a, in `../restaurant-pos-kit`; no source changed since FE-028). The seven tests in
+  2026-09-29 (KIT-002a; no source changed since FE-028). The seven tests in
   `apps/server/test/migrate.test.ts` need Docker and Postgres (`npm run db:up`); without it
   they fail with `ECONNREFUSED 127.0.0.1:5433`, which is the environment, not the code (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29; this replaces
-  `agent/phase-0-foundations`). Local `development`, `origin/development` and the head of
-  PR #13 are all `881a36d`. **`main`** (created 2026-09-29 at `881a36d`, pushed by the owner)
-  and `development` are protected on GitHub: PR required, 0 approvals, enforced for admins.
-- **Guard hooks are installed** in the shared `.git/hooks` with an `agents.yaml` snapshot
-  (`.agent/bin/install-hooks.sh`; `--check` for staleness). No local commit on `main` or
-  `development` passes them, so pull and merge only.
-- The owner's checkout (`restaurant-pos/`) is on `development` at `dccd3d0`. `agent/agent-kit`
-  (KIT-001 to KIT-003) is merged. Kit work continues in the worktree `../restaurant-pos-kit`,
-  now on `agent/kit-context7-skills` (KIT-002a, cut from `dccd3d0`, committed, not pushed).
-- Work goes on `agent/<topic>` cut from `development`. Only the owner merges. The lead
-  commits only when asked.
-- `agent/phase-0-foundations` (`735301d`) is now behind `development` and stale. The design
+- **`development` is the integration branch** (owner, 2026-09-29). It is at `3adb054` (PR #16)
+  on GitHub and in the owner's checkout (`restaurant-pos/`, fast-forwarded by the lead at
+  wrap-up). **`main`** and `development` are protected on GitHub: PR required, 0 approvals,
+  enforced for admins.
+- **Guard hooks are installed** in the shared `.git/hooks` with an `agents.yaml` snapshot.
+  They were reinstalled from `3adb054` at wrap-up and `--check` reads current. Rerun
+  `.agent/bin/install-hooks.sh` after any merge that changes `.githooks/` or `agents.yaml`.
+  No local commit on `main` or `development` passes them, so pull and merge only.
+- Kit work happens in the worktree `../restaurant-pos-kit`, now on `agent/lead-wrapup-0929`
+  (this rewrite and the day's journal, from `3adb054`). Two merged kit branches remain locally.
+- Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits when asked.
+- `agent/phase-0-foundations` (`735301d`) is behind `development` and stale. The design
   branch `agent/design-direction` (worktree `../restaurant-pos-design`, head `5cbe8ca`, clean)
-  is fully merged into `development`. Any new design work needs a fresh branch.
+  is fully merged. Any new design work needs a fresh branch.
 
 ## Running tasks and agents
 
-- **Active task:** none running. KIT-002a is complete; its branch awaits the owner's push and
-  merge. KIT-004 is next (no skills gate; `grill-me` stays, owner 2026-09-29).
-- **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr
-  (2026-09-29). The name drops when a session changes; `/lead` renames it. In `herdr agent
-  list`, `agent` is the CLI kind and `name` is the name.
+- **Active task:** none. Next is writing KIT-004.
+- **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr. The
+  name drops when a session changes; `/lead` renames it. In `herdr agent list`, `agent` is the
+  CLI kind and `name` is the name.
 - **Every builder, designer, reviewer and architect from the log is closed** (last: `builder30`
   on FE-028, `designer7`, `design-reviewer4`, all closed 2026-09-25). The full roster is in
   L1198-1264 if a past agent's model or verdict matters.
-- Leftover pane `w2:pE` (tab `t7`) is an agentless shell (`w2:pS` was gone on 2026-09-29). A detached
-  worktree at `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`) is tooling residue. The lead
-  made none of them and has not closed them.
+- Leftover pane `w2:pE` (tab `t7`) is an agentless shell. A detached worktree at
+  `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`) is tooling residue. The lead made
+  neither and has not closed them.
+
+## Kit facts the next session needs
+
+- **Context7** reaches Codex two ways (config server and the ChatGPT "Context7" app) and
+  Claude two ways (plugin and claude.ai connector). Per-run switches are in agents.yaml
+  (`gated_mcps`, `launch.<cli>.mcp_on/mcp_off`); only `ask.sh` applies them today. KIT-004
+  must apply `mcp_off` to every non-librarian launch. Evidence: journal/2026-09-29-kit-002a.md.
+- **Claude `--settings` takes one object:** KIT-004 must merge `caveman_off` and any other
+  settings into a single value.
+- **Skills:** `skills:` is a hint (owner). `skills-report.sh` shows what each CLI loads;
+  `--gate` exists but is not applied. The lead's `dispatch` skill is KIT-004's to write.
 
 ## Live bugs and known defects
 
@@ -102,26 +110,22 @@ branch change and the kit rollout, because no product work has run since FE-028.
 
 Nothing here is decided. Detail is where each line points.
 
+- **KIT-002a acceptance.** Merged as PR #16; say whether it is accepted.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
   the money code rounds half away from zero so a refund is the exact negation of its sale.
   Proposed sentence at L2699-2701. Contract text, so yours.
 - **PRD section 9, three questions still open:** receipt content and fiscal requirements
   (blocks Phase 4), post-close corrections (blocks Phase 5), permitted tax and service-charge
   rate range (before Phase 2). Detail in `docs/PRD.md` section 9.
-- **POS-03's ten design questions** (L264-288): all ten now have rulings and nine are built.
-  Q1 tile sheet, Q2 quantity, Q3 what firing shows and Q10 the fire notice are done via
-  DESIGN-007, FE-021 and FE-022. Q4 UNKNOWN wording is in FE-022. Q5 emptied order, Q6 Cancel
-  while approving and Q9 no comp note are ruled by you in conversation only (see the
-  `conversation only` lines in DECISIONS.md, for you to confirm). Q7 focusable off actions
-  (FE-024) and Q8 category press (FE-023) are done. Q6 is queued as QUEUE.md item 8a.
+- **POS-03's ten design questions** (L264-288): all ten have rulings and nine are built. Q5
+  emptied order, Q6 Cancel while approving and Q9 no comp note are ruled by you in
+  conversation only (see the `conversation only` lines in DECISIONS.md). Q6 is QUEUE.md 8a.
 - **Confirm or reject the eight open `conversation only` lines** in DECISIONS.md: the
   2026-09-14 subagent-driven Phase 0; 2026-09-18 closing implementers; 2026-09-24 DESIGN-006
-  before F4, `fireerror`, POS-03 Q5, Q6 and Q9, and closing unused agents. (The 2026-09-22
-  reviewer and 2026-09-24 architect lines are superseded.) The Herdr report and close-idle
-  rules are now written into WORKFLOW.md at the owner's instruction.
-- **Review the kit rollout results** as each KIT task closes; only you merge.
+  before F4, `fireerror`, POS-03 Q5, Q6 and Q9, and closing unused agents.
 - **Context7 still reachable** by an interactive Codex designer and any launch without
-  `mcp_off`, because `~/.codex/config.toml` stays as it is (your ruling, 2026-09-29).
+  `mcp_off`, because `~/.codex/config.toml` stays as it is (your ruling). That file also holds
+  the Context7 and Stitch API keys in plain text; consider environment variables.
 
 ## Live conflicts
 
@@ -136,6 +140,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-The ordered list is [QUEUE.md](QUEUE.md). In one line: finish KIT-001 to KIT-004, then
-DESIGN-009 (POS-05 and POS-06 design, plus where Close lands), then its code slice, then the
-back office, with backend tasks 3 to 12 resuming when the owner has reviewed the frontend.
+The ordered list is [QUEUE.md](QUEUE.md). In one line: write and run KIT-004 (its pilot is the
+modal move into `.pos-device`), then DESIGN-009 (POS-05 and POS-06, plus where Close lands),
+its code slice, then the back office; backend tasks 3 to 12 resume after the owner's
+frontend review.
