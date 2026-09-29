@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-29, at the close of the lead session that ran KIT-004, the FE-029 pilot and KIT-005
-(narrative in [journal/2026-09-29.md](journal/2026-09-29.md), second entry). First built in
-KIT-001 from the two archives and `git log`. The only product change since FE-028 is FE-029.
+2026-09-29, after the owner accepted KIT-005 (narrative in
+[journal/2026-09-29.md](journal/2026-09-29.md), third entry). First built in KIT-001 from the
+two archives and `git log`. The only product change since FE-028 is FE-029.
 
 ## Phase and gates
 
@@ -31,8 +31,8 @@ KIT-001 from the two archives and `git log`. The only product change since FE-02
   anything still listed as open in PRD section 9; an implementer that needs one stops and raises it.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-004 accepted; the pilot FE-029 was
   accepted, so product tasks may start again. **KIT-005** (interactive dispatch, pane
-  auto-close) was merged as PR #21 (`5a1122f`); acceptance not stated. The owner confirmed
-  they approved the permission prompts in the KITTEST-011 and KITTEST-014 panes.
+  auto-close) was merged as PR #21 (`5a1122f`) and **accepted** by the owner the same day.
+  The owner approved the permission prompts in the KITTEST-011 and KITTEST-014 panes.
 - **Last verify by the lead:** `npm run verify` green at **2256 tests / 32 files** on
   2026-09-29 (KIT-005 branch, now merged; it holds FE-029). The seven tests in
   `apps/server/test/migrate.test.ts` need Docker and Postgres (`npm run db:up`); without it
@@ -46,8 +46,9 @@ KIT-001 from the two archives and `git log`. The only product change since FE-02
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
   reinstalled from `5a1122f` and current. Rerun after any merge that changes `.githooks/` or agents.yaml.
 - Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0929-kit005`
-  (this wrap-up: STATE, QUEUE, the KIT-005 answers, the journal; from `5a1122f`, not pushed).
-  **Until the owner merges it, `development`'s STATE.md is one step behind this file.**
+  (the KIT-005 wrap-up and acceptance: STATE, QUEUE, DECISIONS, the task file, the journal;
+  cut from `5a1122f`; its first two commits are on origin, later edits may not be).
+  **Until the owner merges it, `development`'s STATE.md is behind this file.**
   Dispatched tasks get worktrees under `../restaurant-pos-wt/<ID>` (none exist now) and run
   state in `.agent/runs/<ID>/` (gitignored). Merged kit branches remain locally.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits when asked.
@@ -57,8 +58,8 @@ KIT-001 from the two archives and `git log`. The only product change since FE-02
 
 ## Running tasks and agents
 
-- **Active task:** none. Next is **DESIGN-009** (QUEUE.md item 5), not yet written; the lead
-  offered to write it and the owner chose a fresh session first. No worker is running.
+- **Active task:** none. Next is **DESIGN-009** (QUEUE.md item 5), not yet written; the owner
+  agreed on 2026-09-29 that the lead writes it next. No worker is running.
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr. The
   name drops when a session changes; `/lead` renames it. In `herdr agent list`, `agent` is the
   CLI kind and `name` is the name.
@@ -78,6 +79,9 @@ KIT-001 from the two archives and `git log`. The only product change since FE-02
   the run directory). Claude workers: `acceptEdits`, a Bash allowlist, `git push` denied (owner).
 - **YAML 1.1 reads `caveman: off` as `false`.** Anything reading `caveman:` must treat both as off.
 - OpenCode interactive and permissions, and Codex writable roots, are proven by dry run only.
+- **Owner's `~/.claude/settings.json` changed 2026-09-29** (`/doctor`; journal, third entry):
+  default mode `auto`, which workers override with their own `--permission-mode`; 29 unused
+  skills off, none of them named in agents.yaml or a role prompt.
 - Designers and architects are not dispatched: open their pane by hand with the model from
   agents.yaml passed explicitly (DESIGN-009's designer is Codex `gpt-6-astra`, effort high).
 
@@ -108,8 +112,8 @@ KIT-001 from the two archives and `git log`. The only product change since FE-02
 
 Nothing here is decided. Detail is where each line points.
 
-- **Kit:** say whether KIT-005 is accepted, and whether builders stay interactive by default
-  (`roles.builder.mode` in agents.yaml) or go back to one-shot with opt-in per task.
+- **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
+  or go back to one-shot with opt-in per task. They are interactive until you say otherwise.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
   the money code rounds half away from zero so a refund is the exact negation of its sale.
   Proposed sentence at L2699-2701. Contract text, so yours.

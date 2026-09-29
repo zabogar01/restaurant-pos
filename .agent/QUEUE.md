@@ -11,13 +11,12 @@ review and test count, is in the
 Phase 0 backend from L281). Each task's own file in `tasks/` holds its handoff.
 
 The kit rollout closed on 2026-09-29 (owner accepted the KIT-004 pilot); product tasks may
-start. KIT-005 runs first (owner).
+start. KIT-005 ran first (owner) and was accepted on 2026-09-29.
 
 ## Agent kit
 
-1. **KIT-005** — interactive dispatch mode and automatic pane close — depends on KIT-004
-   (accepted) — **merged 2026-09-29** as PR #21; acceptance not stated. Then Phase 5 of `AGENT-KIT.md` (automatic review, designer alongside, profiles) is
-   done task by task, not as its own project.
+1. **Kit Phase 5** (automatic review, designer alongside, profiles) from `AGENT-KIT.md` — done
+   task by task as product work needs it, not as its own project — no task written.
 
 ## Frontend: what is left of F4
 
