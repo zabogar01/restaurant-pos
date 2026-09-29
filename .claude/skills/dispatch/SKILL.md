@@ -23,9 +23,12 @@ fix the script or agents.yaml.
    look before merge.
 3. **Tests expected to change.** Ask the explorer
    (`.agent/bin/ask.sh explorer "<which tests assert X>"`) and list them.
-4. **Commit the task file** on your own `agent/<topic>` branch if you can;
-   otherwise the script commits it as the first commit of the task branch.
-   Either way the worker's copy is the committed one.
+4. **Leave the task file uncommitted** in your checkout. The script commits
+   it as the first commit of the task branch, so it lives only there. Do not
+   also commit it on your own branch: the two PRs would each add the file
+   with different content (the Handoff) and conflict (FE-029 pilot). From
+   then on, edit only the worktree's copy (rulings, `status:`), committed
+   there without `AGENT_ROLE`; the script reads that copy once it exists.
 5. **Dry run** and read all of it: role, profile, model, caveman, MCPs,
    preflight, command, prompt.
    ```bash
@@ -76,8 +79,9 @@ In the worktree:
 
 - **Trivial** (≤ `review.trivial_max_lines` changed lines, no `touches`
   flag, verify green): you review; fix directly, re-run verify.
-- **Otherwise:** `.agent/bin/dispatch.sh <ID> --role reviewer` (set the
-  task's `status: review` first). It picks the other family from the
+- **Otherwise:** `.agent/bin/dispatch.sh <ID> --role reviewer` (set
+  `status: review` in the worktree's copy first). The reviewer does not
+  commit; you commit its report on the task branch with `status: complete`. It picks the other family from the
   builder's recorded CLI and the review strength. Findings go back to the
   builder with `--resume`.
 

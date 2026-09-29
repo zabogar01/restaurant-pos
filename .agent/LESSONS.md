@@ -32,6 +32,8 @@ duplicates, drop a rule once a test or hook enforces it. The stories are in the
 - Send a sandbox escalation to the owner and never answer it yourself, because widening an agent's sandbox is the owner's decision (designer3, 2026-09-24, L616-619; L49-52).
 - Use an independent review on any slice that encodes a rule, because FE-010 and F2h reviews each caught a defect the lead's own criterion carried, which no implementer could see (L1990-2007, L1753). The owner may waive it, as for F3.
 - Inject defects into a tree before handing it to a reviewer, or say so first, because the FE-010 reviewer watched `OrderPanel.tsx` mutate mid-run (L2037-2046).
+- Leave a dispatched task file uncommitted on the lead's branch and edit only the worktree copy afterwards, because committing it in both places makes two PRs add the same file with different content (FE-029 pilot, journal/2026-09-29-kit-004.md).
+- Parse a worker's verdict loosely and test the parser on each CLI's real output, because the Codex reviewer wrote `## Verdict: clean` where the dispatcher expected `**Verdict:**` (FE-029 pilot).
 
 ## Builder
 
@@ -46,6 +48,7 @@ duplicates, drop a rule once a test or hook enforces it. The stories are in the
 - Tell the lead you have no browser and do not spend turns looking for one, because `builder17` burned two turns on it (L1212-1218).
 - Write the handoff in its slot before reporting done, name every existing test you changed and why, and never loosen a test, because coverage that shrinks looks identical to coverage that held (FE-013, FE-028, L229-234).
 - Do not reach into committed work outside the slice; report it, because `builder10` found the wrong-line void and did not touch F2a (L2076-2094).
+- Run one simple command per shell call in an unattended run, because FE-029's builder lost five calls to compound commands the allowlist refused (FE-029 pilot).
 
 ## Reviewer
 

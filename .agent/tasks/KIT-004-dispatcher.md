@@ -1,6 +1,6 @@
 # KIT-004 — The dispatcher, supervised
 
-**Status:** Stage 1 complete 2026-09-29, awaiting the owner's merge; Stage 2 (pilot) not started
+**Status:** Stages 1 and 2 complete 2026-09-29 (Stage 1 merged as PR #18); awaiting the owner's acceptance of the pilot
 **Owner:** `lead` (the kit is the lead's to own; this task is not dispatched)
 **Depends on:** KIT-003 (accepted 2026-09-29, PR #14) and KIT-002a (merged as PR #16)
 **Source:** [AGENT-KIT.md](../AGENT-KIT.md) § The dispatch loop, § Review tiers, § Block protocol, § Phase 4, § Reference (`dispatch.sh` sketch, task frontmatter). Owner rulings of 2026-09-29 in [DECISIONS.md](../DECISIONS.md): candidate A is the pilot, no skills gate, Context7 for the librarian only, caveman off by `caveman_off_when`.
@@ -257,3 +257,53 @@ Each is proven in the journal with the command and its real output.
    dry run, and dispatches it while you watch the pane.
 
 Stage 1 DONE; KIT-004 stays open until the pilot is accepted.
+
+**Stage 2, the pilot, written by the lead, 2026-09-29.**
+
+The owner merged Stage 1 as PR #18, accepted KIT-002a, and confirmed the
+Claude worker permissions (DECISIONS.md). The lead reinstalled the hooks from
+`a42652b`, wrote FE-029, showed the owner its dry run, and dispatched it on
+the owner's "go" while the owner watched pane `FE-029`.
+
+**What ran.**
+- **Builder**, Claude Sonnet 5.5: 18 turns, 55 s, $0.34, exit 0, `DONE`.
+  Commit `0ea7687` moved the three modals inside `.pos-device` and added three
+  tests. The lead verified: `npm run verify` 2256/2256 in 32 files; the three
+  tests red on the original placement (`expected null not to be null`) and
+  green on the fix; only owned paths changed and no existing test; and a
+  Chrome walk at 1920×929 put each modal's centre at (640, 400), the frame's
+  centre, with the scrim covering exactly the 1280×800 frame and "Keep
+  collecting" working by a real click.
+- **Reviewer**, Codex `gpt-6-luna` (light, the other family): seven commands,
+  no Context7 call, verify green inside the Codex sandbox, verdict clean with
+  no findings, report not committed as its role requires. This was the first
+  real Codex launch through the dispatcher.
+- `agent/fe-029` holds the task file, the fix, the review and `status:
+  complete` (`d08f772`), for the owner to merge.
+
+**What went wrong, and what changed** (branch `agent/kit-pilot`):
+1. The allowlist refused five of the builder's commands, all compound
+   (`cd …;`, heredocs, `sed … && git commit …`); the builder recovered each
+   time. The builder and reviewer role prompts now say to run one simple
+   command per call.
+2. The dispatcher exited 4 on a clean review, because the Codex reviewer wrote
+   `## Verdict: clean` and the parser wanted `**Verdict:**`. The parser now
+   accepts the heading, bold and numbered forms.
+3. The `/dispatch` skill told the lead to commit the task file on its own
+   branch, which would have made two PRs add the same file with different
+   content. The lead caught it before dispatch; the skill now says to leave
+   it uncommitted and edit only the worktree copy afterwards.
+4. The task's `status:` had to be edited in two copies. The dispatcher now
+   reads the worktree's copy once it exists, and finds the task there when the
+   lead's checkout has none.
+5. Codex printed "Reading additional input from stdin..." and went on; the
+   empty stdin file works as `/dev/null` did.
+
+Three lessons were added to LESSONS.md.
+
+**For the owner.** Merge `agent/fe-029` (the pilot's product change) and
+`agent/kit-pilot` (these fixes, your two rulings, the records); they touch no
+common file. Then say whether the pilot is accepted, which closes KIT-004 and
+lifts the rule that no product task starts during the rollout.
+
+Stage 2 DONE.

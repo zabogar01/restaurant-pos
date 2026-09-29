@@ -69,3 +69,5 @@ until the owner confirms it or a document records it.
 - 2026-09-29 · KIT-003 (guardrails) is accepted; it was merged as PR #14 · owner, lead session 2026-09-29; .agent/tasks/KIT-003-guardrails.md (Status)
 - 2026-09-29 · The architect keeps `grill-me` in agents.yaml and its role prompt; skill names are not changed to suit a gate · owner, lead session 2026-09-29; .agent/tasks/KIT-002a-context7-skills.md (Handoff, owner's answers)
 - 2026-09-29 · `skills:` in agents.yaml stays a hint: KIT-004 does not gate skills per run; `skills-report.sh --gate` is kept as a capability only · owner, lead session 2026-09-29; .agent/agents.yaml (base_skills comment)
+- 2026-09-29 · KIT-002a (Context7 for the librarian only, `ask.sh` reading agents.yaml, `skills-report.sh`) is accepted; it was merged as PR #16 · owner, lead session 2026-09-29; .agent/tasks/KIT-002a-context7-skills.md
+- 2026-09-29 · Dispatched Claude workers run with `--permission-mode acceptEdits`, a Bash allowlist and `git push` denied, as the lead recommended · owner, lead session 2026-09-29; .agent/agents.yaml (`launch.claude.permission_mode`, `allowed_tools`), .agent/tasks/KIT-004-dispatcher.md (Handoff)
