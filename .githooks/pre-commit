@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Enforces the human gates at commit time (.agent/WORKFLOW.md, agents.yaml).
+#
+# Every commit:
+#   - never directly on a protected branch (agents.yaml protected_branches);
+#   - never touches a contract file unless the owner sets ALLOW_CONTRACT=1;
+#   - never edits or deletes an ADR whose committed status is Accepted.
+# A dispatched agent (AGENT_ROLE set by dispatch.sh) also:
+#   - commits only on an agent/* branch;
+#   - stages only its owned paths: the task's `owns:` frontmatter when TASK_ID
+#     is set, otherwise roles.<role>.owns, plus its own task file;
+#   - never changes its task file's frontmatter (only the Handoff is its own).
+#
+# Installed by .agent/bin/install-hooks.sh into the shared .git/hooks together
+# with a snapshot of agents.yaml, so neither the checked-out branch nor a commit
+# can change the rules this hook enforces. Edit .githooks/ and agents.yaml,
+# then re-run the installer.
+set -euo pipefail
+
+fail() { printf 'pre-commit: %s\n' "$*" >&2; exit 1; }
+
+ROOT=$(git rev-parse --show-toplevel)
+# The installed snapshot, not the working tree's agents.yaml: a commit cannot
+# widen its own permissions.
+CONFIG="$(cd "$(dirname "$0")" && pwd)/agents.yaml"
+[ -f "$CONFIG" ] || fail "no agents.yaml snapshot beside this hook. Run .agent/bin/install-hooks.sh."
+command -v ruby >/dev/null || fail "ruby is required to read agents.yaml; refusing to commit unguarded."
+
+# --no-renames lists both sides of a rename, so moving a guarded file away is caught.
+STAGED=$(git diff --cached --name-only --no-renames)
+BRANCH=$(git symbolic-ref --quiet --short HEAD || echo "")
+
+yaml_list() {  # yaml_list <dotted.key> -> one item per line
+  ruby -ryaml -e 'v = ARGV[1].split(".").reduce(YAML.load_file(ARGV[0])) { |h, k| h.is_a?(Hash) ? h[k] : nil }; puts Array(v)' "$CONFIG" "$1"
+}
+
+# 1. Protected branches: changes arrive only through a pull request.
+while IFS= read -r protected; do
+  [ -n "$protected" ] && [ "$BRANCH" = "$protected" ] &&
+    fail "no commits directly on '$BRANCH'. Commit on an agent/* branch and open a pull request."
+done < <(yaml_list protected_branches)
+
+# 2. Contract files change only by the owner's decision.
+if [ "${ALLOW_CONTRACT:-}" != 1 ]; then
+  while IFS= read -r contract; do
+    [ -n "$contract" ] && printf '%s\n' "$STAGED" | grep -qxF "$contract" &&
+      fail "$contract is a contract file: only the owner changes it (ALLOW_CONTRACT=1). Propose exact wording instead."
+  done < <(yaml_list contract_paths)
+fi
+
+# 3. Accepted ADRs are superseded by a new ADR, never edited.
+while IFS= read -r f; do
+  case "$f" in docs/decisions/*) ;; *) continue ;; esac
+  if git cat-file -e "HEAD:$f" 2>/dev/null &&
+     git show "HEAD:$f" | grep -qE 'Status[:*]*[[:space:]]*Accepted'; then
+    fail "$f is an accepted ADR: write a new ADR that supersedes it instead of editing it."
+  fi
+done <<< "$STAGED"
+
+# 4. Dispatched agents: branch pattern and owned paths.
+if [ -n "${AGENT_ROLE:-}" ]; then
+  case "$BRANCH" in agent/*) ;; *) fail "agents commit only on agent/* branches (AGENT_ROLE=$AGENT_ROLE, branch '${BRANCH:-detached}')." ;; esac
+
+  OUTSIDE=$(printf '%s\n' "$STAGED" | ruby -ryaml -e '
+    cfg  = YAML.load_file(ARGV[0])
+    role = ARGV[1]; task_id = ARGV[2]; root = ARGV[3]
+    spec = cfg.dig("roles", role) or abort "unknown AGENT_ROLE #{role}"
+    owns = Array(spec["owns"])
+    allowed_task_file = nil
+    frontmatter = lambda do |text|
+      text.to_s.start_with?("---") ? (YAML.safe_load(text.split(/^---\s*$/, 3)[1]) || {}) : {}
+    end
+    unless task_id.empty?
+      task = Dir.glob(File.join(root, ".agent/tasks/#{task_id}*.md")).first
+      if task
+        allowed_task_file = task.delete_prefix(root + "/")
+        # The spec as the lead committed it, never the working copy.
+        committed = `git show "HEAD:#{allowed_task_file}" 2>/dev/null`
+        staged    = `git show ":#{allowed_task_file}" 2>/dev/null`
+        if frontmatter.call(staged) != frontmatter.call(committed)
+          abort "the frontmatter of #{allowed_task_file} belongs to the lead: a worker writes only its Handoff"
+        end
+        front = frontmatter.call(committed)
+        owns = Array(front["owns"]) unless Array(front["owns"]).empty?
+      end
+    end
+    match = lambda do |pat, path|
+      return path.start_with?(pat.delete_suffix("/**") + "/") if pat.end_with?("/**")
+      File.fnmatch(pat, path, File::FNM_PATHNAME | File::FNM_DOTMATCH | File::FNM_EXTGLOB)
+    end
+    STDIN.read.split("\n").reject(&:empty?).each do |path|
+      next if path == allowed_task_file
+      puts path unless owns.any? { |pat| match.call(pat, path) }
+    end
+  ' "$CONFIG" "$AGENT_ROLE" "${TASK_ID:-}" "$ROOT") || fail "could not check owned paths for AGENT_ROLE=$AGENT_ROLE."
+
+  [ -z "$OUTSIDE" ] || fail "AGENT_ROLE=$AGENT_ROLE may not write these paths (not in its owns:):
+$OUTSIDE
+Write BLOCKED in your Handoff and ask the lead."
+fi
+
+exit 0
