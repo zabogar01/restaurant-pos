@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-29, memory split, KIT-001. Built by a sorting subagent from the two archives and
-`git log`, then reviewed by the lead against its sources. Where two passages in the archive
+2026-09-29, after KIT-002 (config, roles, skills). First built in KIT-001 by a sorting
+subagent from the two archives and `git log`, then reviewed by the lead against its sources. Where two passages in the archive
 disagreed, the newer date won. Nothing below is newer than 2026-09-25 except the integration
 branch change and the kit rollout, because no product work has run since FE-028.
 
@@ -30,8 +30,8 @@ branch change and the kit rollout, because no product work has run since FE-028.
   documents; (3) the PRD's stack, currency and tax-model questions closed; (4) an execution
   mode chosen, which is subagent-driven; (5) a `.gitignore`. The open gate does not approve
   anything still listed as open in PRD section 9; an implementer that needs one stops and raises it.
-- **Kit rollout** (owner, 2026-09-29): KIT-001 memory split is complete and awaiting the
-  owner's review (this file is its output). KIT-002 config and roles, KIT-003 guardrails, KIT-004 dispatcher follow. **No
+- **Kit rollout** (owner, 2026-09-29): KIT-001 memory split was reviewed by the owner.
+  KIT-002 (agents.yaml, role prompts, subagents, `ask.sh`) is complete and awaiting review. KIT-002 config and roles, KIT-003 guardrails, KIT-004 dispatcher follow. **No
   product task starts during the rollout** ([KIT-001](tasks/KIT-001-memory-split.md)).
 - **Last verify by the lead:** `npm run verify` green at **2253 tests / 32 files** on
   2026-09-29 (KIT-001, no source changed since FE-028). The seven tests in
@@ -41,8 +41,9 @@ branch change and the kit rollout, because no product work has run since FE-028.
 ## Integration branch
 
 - **`development` is the integration branch** (owner, 2026-09-29; this replaces
-  `agent/phase-0-foundations`). This repository has no `main`. Local `development`,
-  `origin/development` and the head of PR #13 are all `881a36d`.
+  `agent/phase-0-foundations`). Local `development`, `origin/development` and the head of
+  PR #13 are all `881a36d`. **`main`** was created locally at `881a36d` on 2026-09-29 (owner);
+  it is pushed and protected, with `development`, in KIT-003.
 - Work goes on `agent/<topic>` cut from `development`. This session is on `agent/agent-kit`.
   Only the owner merges. Commit only when asked.
 - `agent/phase-0-foundations` (`735301d`) is now behind `development` and stale. The design
@@ -51,7 +52,7 @@ branch change and the kit rollout, because no product work has run since FE-028.
 
 ## Running tasks and agents
 
-- **Active task:** none. KIT-001 awaits the owner's review; KIT-002 starts after it.
+- **Active task:** none. KIT-002 awaits the owner's review; KIT-003 starts after it.
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), verified with
   `herdr agent list` on 2026-09-29. Herdr currently names it `claude`, not `lead`; the name
   drops when a session changes, so re-run `herdr agent rename w2:p1 lead` before addressing
@@ -69,8 +70,10 @@ branch change and the kit rollout, because no product work has run since FE-028.
   Burger's sheet, so tapping Fish and Chips added a Burger at 135.000. FE-021 (`7268943`)
   gave each of the twelve items its own sheet; accepted 2026-09-24 after 5 rounds and
   walked in Chrome. Kept here until the owner has seen it fixed in a browser.
-- **Unverified, possibly fixed:** after Add to order on POS-03, the URL read `?state=eightysix`
-  (L353, seen 2026-09-23). FE-021 rebuilt the origin handling; nobody re-checked this URL.
+- **Probably intended, not a bug:** after Add on POS-03 the URL read `?state=eightysix`
+  (L353, 2026-09-23). Since FE-021, Add from the `eightysix` state returns there by design
+  (`keeps` policy, `orderFixtures.ts:990-995`) and a test asserts it
+  (`own-items.test.tsx:381-393`). Close it once the owner has seen it in a browser.
 - **P3, not filed** (L172-175, L206-213, L248-249): a reopened book-only order lands on
   `?state=default` and the URL names Table 1's fixture; `closeOrder` fires a quick sale with
   `type: 'table'`; a quick sale holding an 86'd pending line refuses Close silently with no
@@ -101,20 +104,19 @@ Nothing here is decided. Detail is where each line points.
   DESIGN-007, FE-021 and FE-022. Q4 UNKNOWN wording is in FE-022. Q5 emptied order, Q6 Cancel
   while approving and Q9 no comp note are ruled by you in conversation only (see the
   `conversation only` lines in DECISIONS.md, for you to confirm). Q7 focusable off actions
-  (FE-024) and Q8 category press (FE-023) are done. **Still not carried by any task: Q6.**
-  No design or code task covers "Cancel while an approval is verifying cancels" (B-20).
-- **Confirm: agents report by `herdr agent prompt lead` and the lead runs a background wait.**
-  The log says this followed the owner noticing silent codex agents (L334). Was it your ruling?
-- **Confirm the ten `conversation only` lines** in DECISIONS.md, or reject any of them.
+  (FE-024) and Q8 category press (FE-023) are done. Q6 is queued as QUEUE.md item 8a.
+- **Confirm or reject the eight open `conversation only` lines** in DECISIONS.md: the
+  2026-09-14 subagent-driven Phase 0; 2026-09-18 closing implementers; 2026-09-24 DESIGN-006
+  before F4, `fireerror`, POS-03 Q5, Q6 and Q9, and closing unused agents. (The 2026-09-22
+  reviewer and 2026-09-24 architect lines are superseded.) The Herdr report and close-idle
+  rules are now written into WORKFLOW.md at the owner's instruction.
+- **Pick a pilot** for KIT-004's first real dispatch (candidates in the KIT-002 Handoff).
+- **Skills layout** (KIT-002 Handoff): keep `~/.agents/skills` as the master or put it under
+  git, and which `impeccable` version Claude should load.
 - **Review the kit rollout results** as each KIT task closes; only you merge `agent/agent-kit`.
 
 ## Live conflicts
 
-- **Neither of the two named in CLAUDE.md is live.** Deployment shape was resolved in the
-  documents on 2026-09-10: `docs/ARCHITECTURE.md` section 3 is loopback-only and the proposal
-  is superseded (L2878-2891). The Phase 0 plan's stack and currency are now closed in the PRD
-  (`4c59cdc`, L2893-2918). CLAUDE.md still says both are live; that is stale and belongs to
-  KIT-002 or the owner.
 - **Close lands on the floor, the artifact says POS-06.** The lead ruled the floor with
   `replaceState` (FE-027, L188-193) until DESIGN-009 settles POS-06. DESIGN-009 must settle it.
 - **`docs/DESIGN.md` and DESIGN-003/005 still call the dark palette open.** DECISIONS.md
@@ -123,8 +125,6 @@ Nothing here is decided. Detail is where each line points.
   `:578` reading (L349); FE-022 built it. The design file itself is unchanged.
 - **The settlement and lock artifacts still link to the prototype floor** (L114-115).
   Owed to the next design task.
-- **AGENTS.md and WORKFLOW.md still name a Codex architect.** The current policy is an Opus 5.5
-  or `gpt-6-astra` architect (DECISIONS.md). Owed to KIT-002.
 
 ## Next up
 
