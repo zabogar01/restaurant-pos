@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-29, after KIT-005 (interactive dispatch, pane auto-close; evidence in
-[journal/2026-09-29-kit-005.md](journal/2026-09-29-kit-005.md)). First built in KIT-001 from
-the two archives and `git log`. The only product change since FE-028 is FE-029 (PR #20).
+2026-09-29, at the close of the lead session that ran KIT-004, the FE-029 pilot and KIT-005
+(narrative in [journal/2026-09-29.md](journal/2026-09-29.md), second entry). First built in
+KIT-001 from the two archives and `git log`. The only product change since FE-028 is FE-029.
 
 ## Phase and gates
 
@@ -45,7 +45,9 @@ the two archives and `git log`. The only product change since FE-028 is FE-029 (
   PR required, 0 approvals, enforced for admins.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
   reinstalled from `5a1122f` and current. Rerun after any merge that changes `.githooks/` or agents.yaml.
-- Lead work happens in the worktree `../restaurant-pos-kit`, now on `agent/lead-0929-kit005`.
+- Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0929-kit005`
+  (this wrap-up: STATE, QUEUE, the KIT-005 answers, the journal; from `5a1122f`, not pushed).
+  **Until the owner merges it, `development`'s STATE.md is one step behind this file.**
   Dispatched tasks get worktrees under `../restaurant-pos-wt/<ID>` (none exist now) and run
   state in `.agent/runs/<ID>/` (gitignored). Merged kit branches remain locally.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits when asked.
@@ -55,7 +57,8 @@ the two archives and `git log`. The only product change since FE-028 is FE-029 (
 
 ## Running tasks and agents
 
-- **Active task:** none. Next is DESIGN-009 (QUEUE.md item 5). No worker is running.
+- **Active task:** none. Next is **DESIGN-009** (QUEUE.md item 5), not yet written; the lead
+  offered to write it and the owner chose a fresh session first. No worker is running.
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr. The
   name drops when a session changes; `/lead` renames it. In `herdr agent list`, `agent` is the
   CLI kind and `name` is the name.
@@ -75,6 +78,8 @@ the two archives and `git log`. The only product change since FE-028 is FE-029 (
   the run directory). Claude workers: `acceptEdits`, a Bash allowlist, `git push` denied (owner).
 - **YAML 1.1 reads `caveman: off` as `false`.** Anything reading `caveman:` must treat both as off.
 - OpenCode interactive and permissions, and Codex writable roots, are proven by dry run only.
+- Designers and architects are not dispatched: open their pane by hand with the model from
+  agents.yaml passed explicitly (DESIGN-009's designer is Codex `gpt-6-astra`, effort high).
 
 ## Live bugs and known defects
 
@@ -134,7 +139,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-The ordered list is [QUEUE.md](QUEUE.md). In one line: write and run KIT-004 (its pilot is the
-modal move into `.pos-device`), then DESIGN-009 (POS-05 and POS-06, plus where Close lands),
-its code slice, then the back office; backend tasks 3 to 12 resume after the owner's
-frontend review.
+The ordered list is [QUEUE.md](QUEUE.md). In one line: write DESIGN-009 (POS-05 and POS-06 in
+Frost, the refund sheet and its approval, and where Close lands), run it with a designer and a
+design review, then its code slice F4e through the dispatcher, then the back office; backend
+tasks 3 to 12 resume after the owner's frontend review.
