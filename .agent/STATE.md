@@ -58,10 +58,9 @@ branch change and the kit rollout, because no product work has run since FE-028.
 ## Running tasks and agents
 
 - **Active task:** none. KIT-003 awaits the owner's review; KIT-004 starts after it.
-- **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), verified with
-  `herdr agent list` on 2026-09-29. Herdr currently names it `claude`, not `lead`; the name
-  drops when a session changes, so re-run `herdr agent rename w2:p1 lead` before addressing
-  it by name.
+- **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr
+  (2026-09-29). The name drops when a session changes; `/lead` renames it. In `herdr agent
+  list`, `agent` is the CLI kind and `name` is the name.
 - **Every builder, designer, reviewer and architect from the log is closed** (last: `builder30`
   on FE-028, `designer7`, `design-reviewer4`, all closed 2026-09-25). The full roster is in
   L1198-1264 if a past agent's model or verdict matters.

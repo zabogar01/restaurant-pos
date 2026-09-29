@@ -35,6 +35,8 @@ These apply to every role unless its role prompt says otherwise.
 - **Report to the lead through Herdr** when you finish or block:
   `herdr agent prompt lead "<your name>: <task> done — <one line>"` or
   `herdr agent prompt lead "<your name>: BLOCKED — <question>"`.
+- Claude sessions in this repository start in caveman **lite**
+  (`.caveman.json`); sessions launched with caveman off are unaffected.
 - **Caveman style is for chat and status pings only.** Every file another
   agent or the owner reads is full prose: task files, Handoffs, reviews,
   specs, ADRs, STATE and DECISIONS. Architect, designer and reviewer write

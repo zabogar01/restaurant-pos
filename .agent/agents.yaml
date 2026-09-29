@@ -67,6 +67,7 @@ roles:
       - .githooks/**
       - AGENTS.md
       - CLAUDE.md
+      - .caveman.json
   architect:
     default: { cli: claude, model: claude-opus-5-5 }
     mode: interactive

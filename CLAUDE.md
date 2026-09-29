@@ -16,6 +16,11 @@ The role prompt is [.agent/roles/lead.md](.agent/roles/lead.md).
 
 ## Start every session here
 
+Type **`/lead`** in a fresh session. It names the Herdr pane `lead`, reads
+the two files below, runs the kit's health checks, and reports a five-line
+status (`.claude/skills/lead/SKILL.md`). Before a `/clear`, tell the lead to
+wrap up, so that STATE.md carries everything the next session needs.
+
 1. [.agent/STATE.md](.agent/STATE.md) — phase, gates, running tasks, live
    bugs, questions waiting for the owner, live conflicts.
 2. [.agent/QUEUE.md](.agent/QUEUE.md) — the ordered queue of upcoming tasks.
