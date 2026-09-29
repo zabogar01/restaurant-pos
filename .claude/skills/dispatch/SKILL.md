@@ -50,12 +50,25 @@ It creates `../restaurant-pos-wt/<ID>` on `agent/<id>`, runs `npm ci`, opens
 a Herdr pane named `<ID>` and waits. Do not poll it. The worker also pings
 you with `herdr agent prompt lead`.
 
+**Modes.** The builder runs **interactive** by default: the real CLI in the
+pane as Herdr agent `<id>` (lowercase), which the owner can watch and type
+into. Reviewers and the docs-writer run **oneshot** (`claude -p`, `codex
+exec`). `--mode` or the task's `mode:` overrides. Interactive has no turn
+cap; the stall alert is the only runaway guard. Codex interactive is refused
+(its folder trust is the owner's call).
+
+**Permission prompts.** `BLOCKED ON APPROVAL` means an interactive agent is
+waiting on an approval in its pane; the pane text is saved as
+`blocked-<n>.txt` in the run directory. Never answer it: the owner does, or
+the round is resumed with a narrower instruction. A startup dialog (trust,
+login, update) is the owner's too.
+
 ## 3. Outcomes (the script's exit code)
 
 | Exit | Meaning | Do |
 |---|---|---|
-| 0 `DONE` | Handoff ends DONE | Verify (step 4) |
-| 3 `BLOCKED` | Handoff ends BLOCKED | Rule from the documents, write the ruling into the task file above the Handoff in the worker's worktree and commit it there (no `AGENT_ROLE`), then `--resume --message "<one line>"`. A ruling you cannot make from the documents goes to the owner; park the task |
+| 0 `DONE` | Handoff ends DONE; the pane has closed itself | Verify (step 4) |
+| 3 `BLOCKED` | Handoff ends BLOCKED | Rule from the documents, write the ruling into the task file above the Handoff in the worker's worktree and commit it there (no `AGENT_ROLE`), then `--resume --message "<one line>"`. Interactive: the same live agent is prompted in its pane; if it has gone, the CLI restarts on the recorded session. A ruling you cannot make from the documents goes to the owner; park the task |
 | 4 | Exited without a verdict | Read the Handoff and the log; re-prompt once with `--resume`, then escalate |
 | 2 | Refused | Read the reason; nothing ran |
 | other | CLI failed | Read `.agent/runs/<ID>/<role>/log.jsonl`. A rate limit already fell back once to the `fallback` profile. Otherwise treat it as BLOCKED |
@@ -89,15 +102,17 @@ In the worktree:
 
 Rewrite STATE.md, update QUEUE.md, append any owner ruling to DECISIONS.md.
 Tell the owner the branch is ready to merge, in plain prose: what was done,
-verify output, open decisions. After the merge: `git worktree remove
-../restaurant-pos-wt/<ID>`, close the task's pane, and delete
-`.agent/runs/<ID>/`.
+verify output, open decisions. Close any pane of the task that is still open
+(one kept by BLOCKED or `--keep-pane`) as soon as no further round is
+expected, not at merge. After the merge: `git worktree remove
+../restaurant-pos-wt/<ID>` and delete `.agent/runs/<ID>/`.
 
 ## Knobs
 
 - `.agent/bin/preset.sh <profile>` switches every builder dispatch to a
   profile (`economy`, `heavy`); `preset.sh default` switches back.
 - `--profile <name>` for one run; `--role <role>` to override routing.
+- `--keep-pane` keeps the pane after DONE.
 - Test-only environment: `DISPATCH_ALLOW_STALE_HOOKS=1`,
   `DISPATCH_SKIP_SETUP=1`, `DISPATCH_POLL_SEC`, `STALL_ALERT_MIN`,
-  `DISPATCH_PASS_ENV`. Never use them on a real task.
+  `DISPATCH_PASS_ENV`, `DISPATCH_TEST_MODEL`. Never use them on a real task.

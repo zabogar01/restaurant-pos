@@ -35,6 +35,11 @@ gated_mcps: [context7]
 launch:
   claude:
     oneshot: claude -p --model {model} --append-system-prompt-file {role_prompt_file} --output-format stream-json --verbose --max-turns {max_turns}
+    # Interactive (KIT-005): started by `herdr agent start --kind claude`, so the
+    # first word is dropped; the brief follows with `herdr agent prompt`. Same
+    # settings, permissions and tools as one-shot. No --max-turns exists here.
+    interactive: claude --model {model} --append-system-prompt-file {role_prompt_file}
+    session_new: --session-id {session}   # the dispatcher picks the id, so it is known before the first turn
     resume: --resume {session}    # appended to the full oneshot line, so model, settings and tools carry over
     effort: --effort {effort}
     caveman_off:                  # a --settings fragment, per process; never CAVEMAN_DEFAULT_MODE=off (deletes the lead's shared flag)
@@ -68,6 +73,7 @@ launch:
     # flag. A worktree's git directory lives in the main checkout, outside the
     # workspace, so dispatch.sh adds it to writable_roots or commits fail.
     oneshot: codex exec -m {model} -c 'sandbox_mode="workspace-write"' --json
+    interactive_refused: ~/.codex/config.toml trusts only the main checkout, so an interactive Codex in a new worktree would stop on its trust prompt, and trusting a worktree per run is the owner's decision (KIT-005)
     resume: codex exec resume     # followed by the same flags, then {session}, then the prompt
     effort: -c model_reasoning_effort={effort}
     writable_roots: -c 'sandbox_workspace_write.writable_roots=["{git_common_dir}"]'
@@ -83,6 +89,7 @@ launch:
     session_id_from: thread_id    # field of the thread.started event
   opencode:
     oneshot: opencode run --model {model} --format json   # prompt text = role prompt, blank line, task prompt
+    interactive: opencode --model {model}   # the TUI; the role prompt leads the brief; its --help lists no --variant, so effort is one-shot only
     resume: --session {session}   # appended to the full oneshot line
     effort: --variant {effort}
     skills_gate: env from `skills-report.sh --gate {role} opencode`   # not applied (owner, 2026-09-29)
@@ -100,11 +107,13 @@ launch:
     open_pane: herdr pane split --current --direction right --cwd {worktree} --no-focus   # prints JSON; the new id is result.pane.pane_id
     name_pane: herdr pane rename {pane} {task_id}
     run_in_pane: herdr pane run {pane} {command}   # types the command into the pane's shell
+    start_agent: herdr agent start {agent} --kind {cli} --pane {pane} --timeout 120000   # then `--` and the CLI's arguments; names must be lowercase
+    prompt_agent: herdr agent prompt {agent}       # then the text
 
 dispatch:
   worktree_root: ../restaurant-pos-wt   # relative to the main checkout; one worktree per task
   setup: npm ci                          # in the new worktree, before the worker starts
-  one_shot_roles: [builder, reviewer, docs-writer]
+  roles: [builder, reviewer, docs-writer]  # dispatched roles; each runs in roles.<role>.mode unless --mode or the task's mode: says otherwise
 
 roles:
   lead:
@@ -147,7 +156,7 @@ roles:
       economy: { cli: opencode, model: openai/gpt-6-luna, account: openai-b }
       heavy:   { cli: opencode, model: openai/gpt-6-sol,  account: openai-b }
     fallback: economy             # used automatically on a quota/rate-limit exit
-    mode: oneshot
+    mode: interactive             # KIT-005: the real CLI in its pane while the owner watches builders; oneshot for unattended runs
     caveman: chat
     owns:
       - apps/**

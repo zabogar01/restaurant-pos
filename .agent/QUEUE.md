@@ -10,28 +10,15 @@ review and test count, is in the
 [roadmap archive](journal/2026-09-29-roadmap-archive.md) (frontend queue from L239,
 Phase 0 backend from L281). Each task's own file in `tasks/` holds its handoff.
 
-Rule while the kit rolls out: **no product task starts until KIT-004 has closed** (owner,
-2026-09-29). Product tasks below are queued, not started.
+The kit rollout closed on 2026-09-29 (owner accepted the KIT-004 pilot); product tasks may
+start. KIT-005 runs first (owner).
 
-## Agent kit rollout (running now)
+## Agent kit
 
-1. **KIT-001** — split central memory into STATE, QUEUE, DECISIONS and LESSONS, keep the old
-   files unchanged in the journal, and repoint orientation — depends on Kit Phase 0 (done,
-   journal/2026-09-29-kit-phase0.md) — **accepted 2026-09-29**.
-2. **KIT-002** — `agents.yaml`, role prompts and skills, including how caveman style stays out
-   of architect, designer and reviewer output — depends on KIT-001 — **accepted 2026-09-29**.
-3. **KIT-003** — hooks and branch rules that enforce the human gates (only the owner merges,
-   contract files untouched, `agent/*` branches only) — depends on KIT-002 — **accepted
-   2026-09-29** (PR #14).
-3a. **KIT-002a** — Context7 for the librarian only (per-run switches, `ask.sh` reads its model
-   from agents.yaml) and `skills-report.sh` with a per-run skills gate for each CLI — depends
-   on KIT-002 — **merged as PR #16** (2026-09-29), acceptance not stated; both rulings given
-   (`grill-me` stays; no skills gate).
-4. **KIT-004** — the dispatcher, supervised on one task at a time — depends on KIT-003 and
-   KIT-002a — Stage 1 merged (PR #18); **Stage 2 pilot done 2026-09-29**: FE-029 built,
-   verified, reviewed clean; awaiting the owner's merge of `agent/fe-029` and `agent/kit-pilot`
-   and acceptance. See `AGENT-KIT.md` for the phases after it (Phase 5: automatic review,
-   designer alongside, builder profiles).
+1. **KIT-005** — interactive dispatch mode and automatic pane close — depends on KIT-004
+   (accepted) — **complete 2026-09-29** on `agent/kit-interactive`, awaiting the owner's
+   merge. Then Phase 5 of `AGENT-KIT.md` (automatic review, designer alongside, profiles) is
+   done task by task, not as its own project.
 
 ## Frontend: what is left of F4
 

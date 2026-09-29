@@ -105,7 +105,10 @@ cross-family review, and the owner's look before merge.
    prompt, all read from agents.yaml. Caveman is off for the run when the
    role says so or the task matches `caveman_off_when` (an `arch` or `logic`
    category, or a `money`/`audit`/`identity`/`boundaries` touch). Context7
-   is off for every role but the librarian. No skills gate is applied.
+   is off for every role but the librarian. No skills gate is applied. The
+   builder runs interactive (the real CLI in its pane, which the owner can
+   watch and answer); reviewers run one-shot. Only the owner answers a
+   permission prompt. The pane closes itself on DONE or a written review verdict.
 4. **Wait.** Exit with `DONE` → verify. `BLOCKED` → the lead rules from the
    documents or escalates, then resumes the same session. Idle with no
    Handoff → re-prompt once, then escalate.

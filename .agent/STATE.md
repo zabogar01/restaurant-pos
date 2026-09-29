@@ -9,10 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-29, after the KIT-004 pilot (FE-029 dispatched, verified, reviewed clean; evidence
-in [journal/2026-09-29-kit-004.md](journal/2026-09-29-kit-004.md)). First built in KIT-001 from the two archives
-and `git log`. Nothing below is newer than 2026-09-25 except the integration branch and the
-kit rollout, because no product work has run since FE-028.
+2026-09-29, after KIT-005 (interactive dispatch, pane auto-close; evidence in
+[journal/2026-09-29-kit-005.md](journal/2026-09-29-kit-005.md)). First built in KIT-001 from
+the two archives and `git log`. The only product change since FE-028 is FE-029 (PR #20).
 
 ## Phase and gates
 
@@ -30,30 +29,25 @@ kit rollout, because no product work has run since FE-028.
   documents; (3) the PRD's stack, currency and tax-model questions closed; (4) an execution
   mode chosen, which is subagent-driven; (5) a `.gitignore`. The open gate does not approve
   anything still listed as open in PRD section 9; an implementer that needs one stops and raises it.
-- **Kit rollout** (owner, 2026-09-29): KIT-001, KIT-002, KIT-002a and KIT-003 are accepted.
-  KIT-004 Stage 1 (the dispatcher) was merged as PR #18. **Stage 2, the pilot, ran:** FE-029
-  built by Claude Sonnet, reviewed clean by Codex `gpt-6-luna`. KIT-004 awaits the owner's
-  acceptance of the pilot; the pilot's kit fixes are on `agent/kit-pilot`.
-  **No product task starts until KIT-004 has closed** ([KIT-001](tasks/KIT-001-memory-split.md)).
-- **Last verify by the lead:** `npm run verify` green at **2253 tests / 32 files** on
-  2026-09-29 on `agent/fe-029` (FE-029's three new tests; the only source change since FE-028). The seven tests in
+- **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-004 accepted; the pilot FE-029 was
+  accepted, so product tasks may start again. **KIT-005** (interactive dispatch, pane
+  auto-close) is complete on `agent/kit-interactive`, awaiting merge; it runs before DESIGN-009.
+- **Last verify by the lead:** `npm run verify` green at **2256 tests / 32 files** on
+  2026-09-29 (KIT-005 branch, which holds FE-029). The seven tests in
   `apps/server/test/migrate.test.ts` need Docker and Postgres (`npm run db:up`); without it
   they fail with `ECONNREFUSED 127.0.0.1:5433`, which is the environment, not the code (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29). It is at `a9548fd` (PR #17)
-  on GitHub and in the owner's checkout (`restaurant-pos/`, fast-forwarded by the lead).
-  Now at `a42652b` (PR #18). **`main`** and `development` are protected on GitHub: PR required, 0 approvals,
-  enforced for admins.
-- **Guard hooks are installed** in the shared `.git/hooks` with an `agents.yaml` snapshot.
-  Reinstalled from `a42652b` and current. `agent/kit-pilot` changes neither agents.yaml
-  nor the hooks, so its merge needs no reinstall.
-  No local commit on `main` or `development` passes them, so pull and merge only.
-- Kit work happens in the worktree `../restaurant-pos-kit`, now on `agent/kit-pilot`
-  (from `a42652b`: the owner's two rulings, the pilot fixes, these records). FE-029's worktree is
-  `../restaurant-pos-wt/FE-029` on `agent/fe-029` (`d08f772`, complete). Merged kit branches remain locally. Dispatched tasks get worktrees under
-  `../restaurant-pos-wt/<ID>` and run state in `.agent/runs/<ID>/` (gitignored).
+- **`development` is the integration branch** (owner, 2026-09-29), at `cc08590` (PR #20) on
+  GitHub and in the owner's checkout. **`main`** and `development` are protected on GitHub:
+  PR required, 0 approvals, enforced for admins.
+- **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
+  current for `cc08590`. **`agent/kit-interactive` changes agents.yaml:** after its merge run
+  `.agent/bin/install-hooks.sh` from `development`, or the dispatcher refuses to run.
+- Kit work happens in the worktree `../restaurant-pos-kit`, now on `agent/kit-interactive`.
+  Dispatched tasks get worktrees under `../restaurant-pos-wt/<ID>` (none exist now) and run
+  state in `.agent/runs/<ID>/` (gitignored). Merged kit branches remain locally.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits when asked.
 - `agent/phase-0-foundations` (`735301d`) is behind `development` and stale. The design
   branch `agent/design-direction` (worktree `../restaurant-pos-design`, head `5cbe8ca`, clean)
@@ -61,15 +55,12 @@ kit rollout, because no product work has run since FE-028.
 
 ## Running tasks and agents
 
-- **Active task:** KIT-004, pilot done, waiting on the owner. Branches to merge: `agent/fe-029`
-  and `agent/kit-pilot` (no common file). After the merge: remove FE-029's worktree, close panes
-  `FE-029` and `FE-029-review` (both idle, the lead's), delete `.agent/runs/FE-029/`.
+- **Active task:** KIT-005, complete, awaiting the owner's merge. No worker is running.
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr. The
   name drops when a session changes; `/lead` renames it. In `herdr agent list`, `agent` is the
   CLI kind and `name` is the name.
-- **Every builder, designer, reviewer and architect from the log is closed** (last: `builder30`
-  on FE-028, `designer7`, `design-reviewer4`, all closed 2026-09-25). The full roster is in
-  L1198-1264 if a past agent's model or verdict matters.
+- All past builders, designers, reviewers and architects are closed (roster: L1198-1264).
+  FE-029's panes and worktree were removed after its merge.
 - Leftover pane `w2:pE` (tab `t7`) is an agentless shell. A detached worktree at
   `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`) is tooling residue. The lead made
   neither and has not closed them.
@@ -77,12 +68,13 @@ kit rollout, because no product work has run since FE-028.
 ## Kit facts the next session needs
 
 - **Dispatch** with `.agent/bin/dispatch.sh <ID> --dry-run`, then without it in the background
-  (the `/dispatch` skill). It applies `caveman_off_when`, Context7 off for every role but the
-  librarian (both routes per CLI), one merged Claude `--settings`, and no skills gate.
-- **Claude workers** run `--permission-mode acceptEdits` with a Bash allowlist and `git push`
-  denied (lead choice, proven with one Haiku call; owner may overrule).
+  (the `/dispatch` skill). Builders run **interactive** (real CLI in the pane, Herdr agent
+  `<id>`), reviewers one-shot; `--mode` overrides. Panes close themselves on DONE or a written
+  review; the lead closes any kept pane once no round is expected.
+- **Only the owner answers a permission prompt** (`BLOCKED ON APPROVAL`, pane text saved in
+  the run directory). Claude workers: `acceptEdits`, a Bash allowlist, `git push` denied (owner).
 - **YAML 1.1 reads `caveman: off` as `false`.** Anything reading `caveman:` must treat both as off.
-- The OpenCode permission block and Codex writable roots are proven by dry run only.
+- OpenCode interactive and permissions, and Codex writable roots, are proven by dry run only.
 
 ## Live bugs and known defects
 
@@ -98,8 +90,7 @@ kit rollout, because no product work has run since FE-028.
   `?state=default` and the URL names Table 1's fixture; `closeOrder` fires a quick sale with
   `type: 'table'`; a quick sale holding an 86'd pending line refuses Close silently with no
   copy; *Nothing outstanding* appears twice when every incident is cleared (a designer's).
-- **Housekeeping:** the three settlement modals outside `.pos-device` are fixed by FE-029 once
-  merged. Prettier is neither configured nor banned, and a stray run once rewrote 541 lines (L1936-1946); the *Release* table action is
+- **Housekeeping:** Prettier is neither configured nor banned, and a stray run once rewrote 541 lines (L1936-1946); the *Release* table action is
   deferred because it needs the actor session (`FR-A`).
 - **Must not become a guarantee:** `OrderLine.itemId` is optional, so a line with no identity
   can never block a fire (L1787). Fine for fixtures; wrong once the backend supplies real items.
@@ -112,8 +103,8 @@ kit rollout, because no product work has run since FE-028.
 
 Nothing here is decided. Detail is where each line points.
 
-- **Kit:** merge `agent/fe-029` and `agent/kit-pilot`; accept the pilot, which closes KIT-004
-  and lets product work start (KIT-004 Handoff, Stage 2).
+- **Kit:** merge `agent/kit-interactive`; say whether you approved the permission prompts in
+  the KITTEST-011 and KITTEST-014 panes; keep builders interactive by default or not.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
   the money code rounds half away from zero so a refund is the exact negation of its sale.
   Proposed sentence at L2699-2701. Contract text, so yours.
