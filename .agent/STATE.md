@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-29, after KIT-004 Stage 1 (dispatcher built, awaiting merge; evidence in
-[journal/2026-09-29-kit-004.md](journal/2026-09-29-kit-004.md)). First built in KIT-001 from the two archives
+2026-09-29, after the KIT-004 pilot (FE-029 dispatched, verified, reviewed clean; evidence
+in [journal/2026-09-29-kit-004.md](journal/2026-09-29-kit-004.md)). First built in KIT-001 from the two archives
 and `git log`. Nothing below is newer than 2026-09-25 except the integration branch and the
 kit rollout, because no product work has run since FE-028.
 
@@ -30,30 +30,29 @@ kit rollout, because no product work has run since FE-028.
   documents; (3) the PRD's stack, currency and tax-model questions closed; (4) an execution
   mode chosen, which is subagent-driven; (5) a `.gitignore`. The open gate does not approve
   anything still listed as open in PRD section 9; an implementer that needs one stops and raises it.
-- **Kit rollout** (owner, 2026-09-29): KIT-001, KIT-002 and KIT-003 are accepted (KIT-003 and
-  the `/lead` skill as PR #14). KIT-002a (Context7 for the librarian only, `ask.sh` reading
-  agents.yaml, `skills-report.sh`) was merged by the owner as PR #16; acceptance not stated.
-  **KIT-004 Stage 1 is complete** on `agent/kit-dispatcher` (committed, not pushed):
-  `dispatch.sh`, the `/dispatch` skill, `preset.sh`, proven by dry runs and stub CLIs.
-  Stage 2, the supervised pilot FE-029 (modals into `.pos-device`), waits for that merge.
+- **Kit rollout** (owner, 2026-09-29): KIT-001, KIT-002, KIT-002a and KIT-003 are accepted.
+  KIT-004 Stage 1 (the dispatcher) was merged as PR #18. **Stage 2, the pilot, ran:** FE-029
+  built by Claude Sonnet, reviewed clean by Codex `gpt-6-luna`. KIT-004 awaits the owner's
+  acceptance of the pilot; the pilot's kit fixes are on `agent/kit-pilot`.
   **No product task starts until KIT-004 has closed** ([KIT-001](tasks/KIT-001-memory-split.md)).
 - **Last verify by the lead:** `npm run verify` green at **2253 tests / 32 files** on
-  2026-09-29 (KIT-004 Stage 1, in `../restaurant-pos-kit`; no source changed since FE-028). The seven tests in
+  2026-09-29 on `agent/fe-029` (FE-029's three new tests; the only source change since FE-028). The seven tests in
   `apps/server/test/migrate.test.ts` need Docker and Postgres (`npm run db:up`); without it
   they fail with `ECONNREFUSED 127.0.0.1:5433`, which is the environment, not the code (L6-14).
 
 ## Integration branch
 
 - **`development` is the integration branch** (owner, 2026-09-29). It is at `a9548fd` (PR #17)
-  on GitHub and in the owner's checkout (`restaurant-pos/`, fast-forwarded by the lead). **`main`** and `development` are protected on GitHub: PR required, 0 approvals,
+  on GitHub and in the owner's checkout (`restaurant-pos/`, fast-forwarded by the lead).
+  Now at `a42652b` (PR #18). **`main`** and `development` are protected on GitHub: PR required, 0 approvals,
   enforced for admins.
 - **Guard hooks are installed** in the shared `.git/hooks` with an `agents.yaml` snapshot.
-  They match `a9548fd`. **`agent/kit-dispatcher` changes both agents.yaml and the
-  pre-commit hook:** after the owner merges it, run `.agent/bin/install-hooks.sh` from
-  `development`, or `--check` reads stale and `dispatch.sh` refuses to run.
+  Reinstalled from `a42652b` and current. `agent/kit-pilot` changes neither agents.yaml
+  nor the hooks, so its merge needs no reinstall.
   No local commit on `main` or `development` passes them, so pull and merge only.
-- Kit work happens in the worktree `../restaurant-pos-kit`, now on `agent/kit-dispatcher`
-  (from `a9548fd`). Merged kit branches remain locally. Dispatched tasks get worktrees under
+- Kit work happens in the worktree `../restaurant-pos-kit`, now on `agent/kit-pilot`
+  (from `a42652b`: the owner's two rulings, the pilot fixes, these records). FE-029's worktree is
+  `../restaurant-pos-wt/FE-029` on `agent/fe-029` (`d08f772`, complete). Merged kit branches remain locally. Dispatched tasks get worktrees under
   `../restaurant-pos-wt/<ID>` and run state in `.agent/runs/<ID>/` (gitignored).
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits when asked.
 - `agent/phase-0-foundations` (`735301d`) is behind `development` and stale. The design
@@ -62,7 +61,9 @@ kit rollout, because no product work has run since FE-028.
 
 ## Running tasks and agents
 
-- **Active task:** KIT-004, Stage 1 complete, waiting on the owner's merge. No worker is running.
+- **Active task:** KIT-004, pilot done, waiting on the owner. Branches to merge: `agent/fe-029`
+  and `agent/kit-pilot` (no common file). After the merge: remove FE-029's worktree, close panes
+  `FE-029` and `FE-029-review` (both idle, the lead's), delete `.agent/runs/FE-029/`.
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr. The
   name drops when a session changes; `/lead` renames it. In `herdr agent list`, `agent` is the
   CLI kind and `name` is the name.
@@ -97,9 +98,8 @@ kit rollout, because no product work has run since FE-028.
   `?state=default` and the URL names Table 1's fixture; `closeOrder` fires a quick sale with
   `type: 'table'`; a quick sale holding an 86'd pending line refuses Close silently with no
   copy; *Nothing outstanding* appears twice when every incident is cleared (a designer's).
-- **Housekeeping:** the `cancel`, `reauth` and `leaselost` modals still render outside
-  `.pos-device` and fit only because they are short (L671); Prettier is neither configured nor
-  banned, and a stray run once rewrote 541 lines (L1936-1946); the *Release* table action is
+- **Housekeeping:** the three settlement modals outside `.pos-device` are fixed by FE-029 once
+  merged. Prettier is neither configured nor banned, and a stray run once rewrote 541 lines (L1936-1946); the *Release* table action is
   deferred because it needs the actor session (`FR-A`).
 - **Must not become a guarantee:** `OrderLine.itemId` is optional, so a line with no identity
   can never block a fire (L1787). Fine for fixtures; wrong once the backend supplies real items.
@@ -112,8 +112,8 @@ kit rollout, because no product work has run since FE-028.
 
 Nothing here is decided. Detail is where each line points.
 
-- **Kit:** say whether KIT-002a (PR #16) is accepted; merge `agent/kit-dispatcher`; confirm or
-  overrule the Claude worker permissions (KIT-004 Handoff, "For the owner").
+- **Kit:** merge `agent/fe-029` and `agent/kit-pilot`; accept the pilot, which closes KIT-004
+  and lets product work start (KIT-004 Handoff, Stage 2).
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
   the money code rounds half away from zero so a refund is the exact negation of its sale.
   Proposed sentence at L2699-2701. Contract text, so yours.

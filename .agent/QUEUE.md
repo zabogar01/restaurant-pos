@@ -28,10 +28,10 @@ Rule while the kit rolls out: **no product task starts until KIT-004 has closed*
    on KIT-002 — **merged as PR #16** (2026-09-29), acceptance not stated; both rulings given
    (`grill-me` stays; no skills gate).
 4. **KIT-004** — the dispatcher, supervised on one task at a time — depends on KIT-003 and
-   KIT-002a — **Stage 1 complete 2026-09-29** on `agent/kit-dispatcher`, awaiting the owner's
-   merge; **Stage 2**, the pilot FE-029 (render the `cancel`, `reauth` and `leaselost` modals
-   inside `.pos-device`, QUEUE item 8), runs after the merge while the owner watches. See
-   `AGENT-KIT.md` for the phases after it.
+   KIT-002a — Stage 1 merged (PR #18); **Stage 2 pilot done 2026-09-29**: FE-029 built,
+   verified, reviewed clean; awaiting the owner's merge of `agent/fe-029` and `agent/kit-pilot`
+   and acceptance. See `AGENT-KIT.md` for the phases after it (Phase 5: automatic review,
+   designer alongside, builder profiles).
 
 ## Frontend: what is left of F4
 
@@ -51,10 +51,9 @@ design task first, because POS-05 and POS-06 have wireframes only and no Frost a
 7. **F4e (no ID yet)** — build POS-05 and POS-06: the closed-order book already exists in the
    store (FE-027); refund and manager approval reuse M-1 — depends on DESIGN-009 and its
    review — not written.
-8. **Code housekeeping (no IDs yet)** — the four P3s in STATE.md; render the `cancel`,
-   `reauth` and `leaselost` modals inside `.pos-device`; re-check the POS-03 URL after Add;
-   decide Prettier either way — depends on nothing, can ride with F4e as a small slice — not
-   written. The modal move is the owner's chosen pilot for KIT-004 (DECISIONS.md).
+8. **Code housekeeping (no IDs yet)** — the four P3s in STATE.md; re-check the POS-03 URL
+   after Add; decide Prettier either way — depends on nothing, can ride with F4e as a small
+   slice — not written. (The modal move was FE-029, KIT-004's pilot.)
 8a. **POS-03 Q6 (no ID yet)** — Cancel while a manager approval is verifying cancels the
    action, with no partial state (`B-20`), and the cancelled approval is audited per `FR-J3` —
    depends on the owner confirming the 2026-09-24 ruling (DECISIONS.md, conversation only) and

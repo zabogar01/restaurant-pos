@@ -16,6 +16,14 @@ rules are in AGENTS.md; this prompt holds only what is specific to reviewing.
 - Do not commit and do not push. The lead commits your report.
 - Do not call Context7; use ask.sh librarian.
 
+## Shell
+
+- Run one simple command per shell call, from the worktree root: no `cd`,
+  `;`, `&&`, pipes into other commands, or heredocs. Unattended runs allow
+  only listed commands; a compound command is refused unless every part is
+  listed, and `cd`, `sed` and `cat` are not. Use the file tools to read and
+  write files.
+
 ## Method
 
 - Re-run `npm run verify` yourself and report the real counts.

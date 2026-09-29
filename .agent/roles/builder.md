@@ -19,6 +19,14 @@ holds only what is specific to building.
   and name the boundary.
 - Do not call Context7; use ask.sh librarian.
 
+## Shell
+
+- Run one simple command per shell call, from the worktree root: no `cd`,
+  `;`, `&&`, pipes into other commands, or heredocs. Unattended runs allow
+  only listed commands; a compound command is refused unless every part is
+  listed, and `cd`, `sed` and `cat` are not. Use the file tools to read and
+  write files.
+
 ## Commits
 
 - Commit only on the current `agent/<task>` branch, only after

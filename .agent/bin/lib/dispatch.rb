@@ -59,6 +59,7 @@ module Dispatch
 
     def initialize(o)
       @o = o
+      @worktree = nil
       @root, ok = Dispatch.git("rev-parse", "--show-toplevel")
       Dispatch.refuse "not inside a git checkout" unless ok
       common, = Dispatch.git("rev-parse", "--path-format=absolute", "--git-common-dir")
@@ -66,23 +67,35 @@ module Dispatch
       @main = File.dirname(common)                     # the main checkout
       @cfg = YAML.load_file(File.join(@root, ".agent/agents.yaml"))
       @notes = []
+      wt_root = File.expand_path(@cfg.dig("dispatch", "worktree_root") || "../restaurant-pos-wt", @main)
+      @worktree = File.join(wt_root, o.id)
       load_task
       resolve_role
       resolve_profile
-      wt_root = File.expand_path(@cfg.dig("dispatch", "worktree_root") || "../restaurant-pos-wt", @main)
-      @worktree = File.join(wt_root, o.id)
       @branch = "agent/#{o.id.downcase}"
       @run_dir = File.join(@main, ".agent/runs", o.id, @role)
       @pane_name = @role == "reviewer" ? "#{o.id}-review" : o.id
     end
 
     def load_task
-      matches = Dir.glob(File.join(@root, ".agent/tasks", "#{@o.id}-*.md")) +
-                Dir.glob(File.join(@root, ".agent/tasks", "#{@o.id}.md"))
+      find = lambda do |dir|
+        Dir.glob(File.join(dir, ".agent/tasks", "#{@o.id}-*.md")) + Dir.glob(File.join(dir, ".agent/tasks", "#{@o.id}.md"))
+      end
+      matches = find.call(@root)
+      if matches.empty? && File.directory?(@worktree)      # after dispatch the task may exist only on its branch
+        matches = find.call(@worktree).map { |m| m.sub(@worktree, @root) }
+      end
       Dispatch.refuse "no task file .agent/tasks/#{@o.id}-*.md in #{@root}" if matches.empty?
       Dispatch.refuse "more than one task file for #{@o.id}: #{matches.map { |m| File.basename(m) }.join(', ')}" if matches.size > 1
       @task_path = matches.first
       @task_rel = @task_path.sub(@root + "/", "")
+      # Once the task has a worktree, its copy there is the one the worker and
+      # the reviewer read, so status and routing come from it (FE-029 pilot).
+      wt_copy = File.join(@worktree, @task_rel)
+      if File.exist?(wt_copy)
+        @notes << "task read from the worktree copy, #{wt_copy}"
+        @task_path = wt_copy
+      end
       @fm = Dispatch.frontmatter(File.read(@task_path))
       Dispatch.refuse "#{@task_rel} has no frontmatter; dispatch reads category, touches, depends_on and owns from it" if @fm.empty?
       @category = @fm["category"]
@@ -536,7 +549,9 @@ module Dispatch
     if p.role == "reviewer"
       f = File.join(p.worktree, ".agent/reviews", "#{p.o.id}-review.md")
       return [EXIT_NO_VERDICT, "no review file at #{f}"] unless File.exist?(f)
-      v = File.read(f)[/\*\*Verdict:?\*\*:?\s*`?(\w+)/i, 1]
+      # `## Verdict: clean`, `**Verdict:** clean` and `1. **Verdict:** `clean``
+      # all occur (FE-029's Codex reviewer wrote the heading form).
+      v = File.read(f)[/^[\s\d.#*]*Verdict[*:\s]*`?(\w+)/i, 1]
       return [EXIT_NO_VERDICT, "review written, no Verdict line"] unless v
       return [v.casecmp("blocked").zero? ? EXIT_BLOCKED : 0, "review verdict: #{v}"]
     end
