@@ -58,8 +58,8 @@ two archives and `git log`. The only product change since FE-028 is FE-029.
 
 ## Running tasks and agents
 
-- **Active task:** none. Next is **DESIGN-009** (QUEUE.md item 5), not yet written; the owner
-  agreed on 2026-09-29 that the lead writes it next. No worker is running.
+- **Active task:** **DESIGN-009** written (QUEUE.md item 5), awaiting the owner's read before a
+  designer is opened. No worker is running.
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr. The
   name drops when a session changes; `/lead` renames it. In `herdr agent list`, `agent` is the
   CLI kind and `name` is the name.
