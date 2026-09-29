@@ -99,11 +99,13 @@ cross-family review, and the owner's look before merge.
    expected to change, found by asking the explorer.
 2. **Preflight.** Dependencies closed; no other builder running; no running
    task owns the same files; `bin/check-state.sh` passes.
-3. **Dispatch.** A worktree on `agent/<task>` cut from `development`, a
-   named pane, the CLI launched one-shot with the role prompt. Caveman is off
-   for the run when the role says so or the task matches `caveman_off_when`
-   (an `arch` or `logic` category, or a `money`/`audit`/`identity`/`boundaries`
-   touch).
+3. **Dispatch** with `.agent/bin/dispatch.sh <ID>` (the lead's `/dispatch`
+   skill; `--dry-run` first). A worktree on `agent/<task>` cut from
+   `development`, a named pane, the CLI launched one-shot with the role
+   prompt, all read from agents.yaml. Caveman is off for the run when the
+   role says so or the task matches `caveman_off_when` (an `arch` or `logic`
+   category, or a `money`/`audit`/`identity`/`boundaries` touch). Context7
+   is off for every role but the librarian. No skills gate is applied.
 4. **Wait.** Exit with `DONE` → verify. `BLOCKED` → the lead rules from the
    documents or escalates, then resumes the same session. Idle with no
    Handoff → re-prompt once, then escalate.

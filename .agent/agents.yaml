@@ -27,43 +27,84 @@ base_skills: [herdr]              # every role, every CLI
 # mcp_off flag, such as an interactive designer, can still reach it.
 gated_mcps: [context7]
 
-# How each CLI is launched one-shot. {model}, {role_prompt_file}, {prompt},
-# {session} and {effort} are filled by dispatch.sh. Verified against --help, 2026-09-29.
+# How each CLI is launched one-shot by .agent/bin/dispatch.sh. {model},
+# {role_prompt_file} and {max_turns} are filled per run; the prompt is always the
+# last argument. Verified against --help, 2026-09-29. Claude settings are merged
+# into ONE --settings object and Claude tool rules into one --allowedTools and one
+# --disallowedTools, because a repeated flag does not combine with the first.
 launch:
   claude:
-    oneshot: claude -p --model {model} --append-system-prompt-file {role_prompt_file} --output-format json --max-turns {max_turns}
-    # permission mode for unattended builders (they need Bash for verify and git) is chosen in KIT-004
-    resume: claude -p --resume {session} --output-format json
+    oneshot: claude -p --model {model} --append-system-prompt-file {role_prompt_file} --output-format stream-json --verbose --max-turns {max_turns}
+    resume: --resume {session}    # appended to the full oneshot line, so model, settings and tools carry over
     effort: --effort {effort}
-    caveman_off: --settings '{"enabledPlugins":{"caveman@caveman":false}}'   # per process; never CAVEMAN_DEFAULT_MODE=off (deletes the lead's shared flag)
+    caveman_off:                  # a --settings fragment, per process; never CAVEMAN_DEFAULT_MODE=off (deletes the lead's shared flag)
+      enabledPlugins: { "caveman@caveman": false }
     read_only: --permission-mode plan
-    skills_gate: --settings from `skills-report.sh --gate {role} claude`   # skillOverrides + enabledPlugins; merge with caveman_off into ONE --settings object; plugin skills go only with their whole plugin
-    mcp_off:                      # per run, by gated MCP; the plugin stays installed for the fallback librarian
-      context7: --disallowedTools mcp__plugin_context7_context7 mcp__claude_ai_Context7   # the plugin and the claude.ai connector
-    session_id_from: .session_id                                            # json result field
+    skills_gate: --settings from `skills-report.sh --gate {role} claude`   # not applied (owner, 2026-09-29); skillOverrides + enabledPlugins; plugin skills go only with their whole plugin
+    # Unattended workers (KIT-004, lead choice): edits in the worktree are
+    # accepted; Bash only for these commands; in -p mode anything else is
+    # denied rather than prompted, so the worker ends BLOCKED instead of hanging.
+    permission_mode: acceptEdits
+    allowed_tools:
+      - Bash(npm run verify:*)
+      - Bash(npm run typecheck:*)
+      - Bash(npm test:*)
+      - Bash(npx vitest:*)
+      - Bash(npx tsc:*)
+      - Bash(git add:*)
+      - Bash(git commit:*)
+      - Bash(git status:*)
+      - Bash(git diff:*)
+      - Bash(git log:*)
+      - Bash(git show:*)
+      - Bash(.agent/bin/ask.sh:*)
+      - Bash(herdr agent prompt lead:*)
+    disallowed_tools: ["Bash(git push:*)"]
+    mcp_off:                      # tools to disallow, by gated MCP; the plugin stays installed for the fallback librarian
+      context7: [mcp__plugin_context7_context7, mcp__claude_ai_Context7]   # the plugin and the claude.ai connector
+    session_id_from: session_id   # field of the stream-json init and result events
   codex:
-    oneshot: codex exec -m {model} --sandbox workspace-write --json   # prompt text = role prompt, blank line, task prompt (no system-prompt flag)
-    resume: codex exec resume {session}
+    # --sandbox is set with -c because `codex exec resume` has no --sandbox
+    # flag. A worktree's git directory lives in the main checkout, outside the
+    # workspace, so dispatch.sh adds it to writable_roots or commits fail.
+    oneshot: codex exec -m {model} -c 'sandbox_mode="workspace-write"' --json
+    resume: codex exec resume     # followed by the same flags, then {session}, then the prompt
     effort: -c model_reasoning_effort={effort}
+    writable_roots: -c 'sandbox_workspace_write.writable_roots=["{git_common_dir}"]'
     read_only: --sandbox read-only
     mcp_on:                       # per run, by gated MCP; ask.sh applies mcp_on and mcp_off
       context7: -c mcp_servers.context7.enabled=true
     mcp_off:                      # both routes: the config server and the ChatGPT apps connector "Context7"
       context7: -c mcp_servers.context7.enabled=false -c apps.asdk_app_69ef18c674308191a2f952431f91ea61.enabled=false
     web_search: --search          # top-level codex flag; placement checked by ask.sh
-    skills_gate: -c from `skills-report.sh --gate {role} codex`    # skills.config=[{path,enabled=false}] per unassigned skill
+    skills_gate: -c from `skills-report.sh --gate {role} codex`    # not applied (owner, 2026-09-29)
     stdin: /dev/null              # otherwise codex waits on "Reading additional input from stdin"
     role_prompt: prepend
+    session_id_from: thread_id    # field of the thread.started event
   opencode:
     oneshot: opencode run --model {model} --format json   # prompt text = role prompt, blank line, task prompt
-    resume: opencode run --session {session}
+    resume: --session {session}   # appended to the full oneshot line
     effort: --variant {effort}
-    skills_gate: env from `skills-report.sh --gate {role} opencode`   # OPENCODE_CONFIG_CONTENT permission.skill allowlist
+    skills_gate: env from `skills-report.sh --gate {role} opencode`   # not applied (owner, 2026-09-29)
     read_only: none               # `--agent plan` hung >5 min in `opencode run` (2026-09-29); no read-only role runs here
     role_prompt: prepend
+    mcp_none: [context7]          # `opencode mcp list`: no MCP servers configured (2026-09-29), so nothing to switch off
+    # Unattended permissions, passed as OPENCODE_CONFIG_CONTENT. Dry-run only
+    # in KIT-004; first proven when a builder profile runs for real (Phase 5).
+    permission:
+      edit: allow
+      webfetch: deny
+      bash: { "*": deny, "npm run *": allow, "npm test*": allow, "npx vitest*": allow, "npx tsc*": allow, "git add *": allow, "git commit *": allow, "git status*": allow, "git diff*": allow, "git log*": allow, "git show*": allow, ".agent/bin/ask.sh *": allow, "herdr agent prompt lead *": allow, "git push*": deny }
+    session_id_from: sessionID
   herdr:
-    open_pane: herdr pane split --current --direction right --cwd {worktree} --no-focus   # no --name flag
+    open_pane: herdr pane split --current --direction right --cwd {worktree} --no-focus   # prints JSON; the new id is result.pane.pane_id
     name_pane: herdr pane rename {pane} {task_id}
+    run_in_pane: herdr pane run {pane} {command}   # types the command into the pane's shell
+
+dispatch:
+  worktree_root: ../restaurant-pos-wt   # relative to the main checkout; one worktree per task
+  setup: npm ci                          # in the new worktree, before the worker starts
+  one_shot_roles: [builder, reviewer, docs-writer]
 
 roles:
   lead:

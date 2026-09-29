@@ -27,10 +27,11 @@ Rule while the kit rolls out: **no product task starts until KIT-004 has closed*
    from agents.yaml) and `skills-report.sh` with a per-run skills gate for each CLI — depends
    on KIT-002 — **merged as PR #16** (2026-09-29), acceptance not stated; both rulings given
    (`grill-me` stays; no skills gate).
-4. **KIT-004** — the dispatcher, supervised on one task at a time; must apply
-   `caveman_off_when`, the per-CLI launch shapes, `mcp_off` for every non-librarian launch and
-   no skills gate (owner, 2026-09-29), all from agents.yaml, merging Claude settings into one
-   `--settings` — depends on KIT-003 and KIT-002a — not written. See `AGENT-KIT.md` for the phases after it.
+4. **KIT-004** — the dispatcher, supervised on one task at a time — depends on KIT-003 and
+   KIT-002a — **Stage 1 complete 2026-09-29** on `agent/kit-dispatcher`, awaiting the owner's
+   merge; **Stage 2**, the pilot FE-029 (render the `cancel`, `reauth` and `leaselost` modals
+   inside `.pos-device`, QUEUE item 8), runs after the merge while the owner watches. See
+   `AGENT-KIT.md` for the phases after it.
 
 ## Frontend: what is left of F4
 
