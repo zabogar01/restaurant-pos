@@ -24,3 +24,7 @@ test-results/
 # visual review found is recorded in docs/design/visual-directions/REVIEW.md;
 # the captures themselves are reproducible and are not kept.
 .impeccable/
+
+# Agent kit: per-run dispatcher state and the local builder preset (KIT-004)
+.agent/runs/
+.agent/profile

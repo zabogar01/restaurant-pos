@@ -1,0 +1,99 @@
+---
+name: dispatch
+description: Hand a written restaurant-pos task file to a one-shot builder, reviewer or docs-writer through .agent/bin/dispatch.sh, then verify, review and record it. Use when the lead is about to start, resume or review a task in .agent/tasks/, or when a dispatched run finishes, blocks, stalls or fails.
+---
+
+# Dispatch a task
+
+The lead's side of the dispatch loop in `.agent/WORKFLOW.md`. The script does
+the mechanics from `.agent/agents.yaml`; this skill is the judgement around
+it. Never build a launch by hand: if the script cannot express a launch,
+fix the script or agents.yaml.
+
+## 1. Before dispatch
+
+1. **Frontmatter.** The task file needs `id`, `category` (`quick`,
+   `feature`, `ui`, `logic`, `arch`, `docs`), `touches`, `depends_on`,
+   `owns`, `status: not-started` and `cycles: 0`; `profile:` only to force
+   one. Format and sections: WORKFLOW.md "Task file format".
+2. **Route.** `logic` and `arch` go to the architect and `docs` to you: the
+   script refuses them, correctly. `ui` without a reviewed design gets a
+   design task first. A `touches` flag of `money`, `audit`, `identity` or
+   `boundaries` needs an architect consult before dispatch and the owner's
+   look before merge.
+3. **Tests expected to change.** Ask the explorer
+   (`.agent/bin/ask.sh explorer "<which tests assert X>"`) and list them.
+4. **Commit the task file** on your own `agent/<topic>` branch if you can;
+   otherwise the script commits it as the first commit of the task branch.
+   Either way the worker's copy is the committed one.
+5. **Dry run** and read all of it: role, profile, model, caveman, MCPs,
+   preflight, command, prompt.
+   ```bash
+   .agent/bin/dispatch.sh <ID> --dry-run
+   ```
+   Any `FAIL` line is a refusal. Fix the cause; never work around a
+   preflight check.
+
+## 2. Dispatch
+
+Run it in the background so you are woken on exit, and say "dispatched" to the
+owner with the pane name:
+
+```bash
+.agent/bin/dispatch.sh <ID>          # run_in_background: true
+```
+
+It creates `../restaurant-pos-wt/<ID>` on `agent/<id>`, runs `npm ci`, opens
+a Herdr pane named `<ID>` and waits. Do not poll it. The worker also pings
+you with `herdr agent prompt lead`.
+
+## 3. Outcomes (the script's exit code)
+
+| Exit | Meaning | Do |
+|---|---|---|
+| 0 `DONE` | Handoff ends DONE | Verify (step 4) |
+| 3 `BLOCKED` | Handoff ends BLOCKED | Rule from the documents, write the ruling into the task file above the Handoff in the worker's worktree and commit it there (no `AGENT_ROLE`), then `--resume --message "<one line>"`. A ruling you cannot make from the documents goes to the owner; park the task |
+| 4 | Exited without a verdict | Read the Handoff and the log; re-prompt once with `--resume`, then escalate |
+| 2 | Refused | Read the reason; nothing ran |
+| other | CLI failed | Read `.agent/runs/<ID>/<role>/log.jsonl`. A rate limit already fell back once to the `fallback` profile. Otherwise treat it as BLOCKED |
+| `STALL:` line | No output and no file change for `stall_alert_min` awake minutes | Read the pane. The run was not killed; decide |
+
+The resume limit is `max_fix_cycles` rounds after the first. The script
+refuses beyond it: escalate to the owner.
+
+## 4. Verify (never skip)
+
+In the worktree:
+
+1. `git log --oneline development..HEAD` and the **whole** Handoff.
+2. `npm run verify` yourself; read the counts.
+3. `git diff --name-only development...HEAD`: flag any changed test file not
+   under **Tests expected to change**, and any path outside `owns:`.
+4. Check each acceptance criterion against evidence, not the Handoff's word.
+5. UI task: walk every flow in a real browser.
+
+## 5. Review
+
+- **Trivial** (≤ `review.trivial_max_lines` changed lines, no `touches`
+  flag, verify green): you review; fix directly, re-run verify.
+- **Otherwise:** `.agent/bin/dispatch.sh <ID> --role reviewer` (set the
+  task's `status: review` first). It picks the other family from the
+  builder's recorded CLI and the review strength. Findings go back to the
+  builder with `--resume`.
+
+## 6. Record and hand over
+
+Rewrite STATE.md, update QUEUE.md, append any owner ruling to DECISIONS.md.
+Tell the owner the branch is ready to merge, in plain prose: what was done,
+verify output, open decisions. After the merge: `git worktree remove
+../restaurant-pos-wt/<ID>`, close the task's pane, and delete
+`.agent/runs/<ID>/`.
+
+## Knobs
+
+- `.agent/bin/preset.sh <profile>` switches every builder dispatch to a
+  profile (`economy`, `heavy`); `preset.sh default` switches back.
+- `--profile <name>` for one run; `--role <role>` to override routing.
+- Test-only environment: `DISPATCH_ALLOW_STALE_HOOKS=1`,
+  `DISPATCH_SKIP_SETUP=1`, `DISPATCH_POLL_SEC`, `STALL_ALERT_MIN`,
+  `DISPATCH_PASS_ENV`. Never use them on a real task.

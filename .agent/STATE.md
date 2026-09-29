@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-29, at the close of the lead session that ran KIT-002a (narrative in
-[journal/2026-09-29.md](journal/2026-09-29.md)). First built in KIT-001 from the two archives
+2026-09-29, after KIT-004 Stage 1 (dispatcher built, awaiting merge; evidence in
+[journal/2026-09-29-kit-004.md](journal/2026-09-29-kit-004.md)). First built in KIT-001 from the two archives
 and `git log`. Nothing below is newer than 2026-09-25 except the integration branch and the
 kit rollout, because no product work has run since FE-028.
 
@@ -33,25 +33,28 @@ kit rollout, because no product work has run since FE-028.
 - **Kit rollout** (owner, 2026-09-29): KIT-001, KIT-002 and KIT-003 are accepted (KIT-003 and
   the `/lead` skill as PR #14). KIT-002a (Context7 for the librarian only, `ask.sh` reading
   agents.yaml, `skills-report.sh`) was merged by the owner as PR #16; acceptance not stated.
-  **KIT-004, the dispatcher, is next and not written.** It applies no skills gate (owner).
+  **KIT-004 Stage 1 is complete** on `agent/kit-dispatcher` (committed, not pushed):
+  `dispatch.sh`, the `/dispatch` skill, `preset.sh`, proven by dry runs and stub CLIs.
+  Stage 2, the supervised pilot FE-029 (modals into `.pos-device`), waits for that merge.
   **No product task starts until KIT-004 has closed** ([KIT-001](tasks/KIT-001-memory-split.md)).
 - **Last verify by the lead:** `npm run verify` green at **2253 tests / 32 files** on
-  2026-09-29 (KIT-002a; no source changed since FE-028). The seven tests in
+  2026-09-29 (KIT-004 Stage 1, in `../restaurant-pos-kit`; no source changed since FE-028). The seven tests in
   `apps/server/test/migrate.test.ts` need Docker and Postgres (`npm run db:up`); without it
   they fail with `ECONNREFUSED 127.0.0.1:5433`, which is the environment, not the code (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29). It is at `3adb054` (PR #16)
-  on GitHub and in the owner's checkout (`restaurant-pos/`, fast-forwarded by the lead at
-  wrap-up). **`main`** and `development` are protected on GitHub: PR required, 0 approvals,
+- **`development` is the integration branch** (owner, 2026-09-29). It is at `a9548fd` (PR #17)
+  on GitHub and in the owner's checkout (`restaurant-pos/`, fast-forwarded by the lead). **`main`** and `development` are protected on GitHub: PR required, 0 approvals,
   enforced for admins.
 - **Guard hooks are installed** in the shared `.git/hooks` with an `agents.yaml` snapshot.
-  They were reinstalled from `3adb054` at wrap-up and `--check` reads current. Rerun
-  `.agent/bin/install-hooks.sh` after any merge that changes `.githooks/` or `agents.yaml`.
+  They match `a9548fd`. **`agent/kit-dispatcher` changes both agents.yaml and the
+  pre-commit hook:** after the owner merges it, run `.agent/bin/install-hooks.sh` from
+  `development`, or `--check` reads stale and `dispatch.sh` refuses to run.
   No local commit on `main` or `development` passes them, so pull and merge only.
-- Kit work happens in the worktree `../restaurant-pos-kit`, now on `agent/lead-wrapup-0929`
-  (this rewrite and the day's journal, from `3adb054`). Two merged kit branches remain locally.
+- Kit work happens in the worktree `../restaurant-pos-kit`, now on `agent/kit-dispatcher`
+  (from `a9548fd`). Merged kit branches remain locally. Dispatched tasks get worktrees under
+  `../restaurant-pos-wt/<ID>` and run state in `.agent/runs/<ID>/` (gitignored).
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits when asked.
 - `agent/phase-0-foundations` (`735301d`) is behind `development` and stale. The design
   branch `agent/design-direction` (worktree `../restaurant-pos-design`, head `5cbe8ca`, clean)
@@ -59,7 +62,7 @@ kit rollout, because no product work has run since FE-028.
 
 ## Running tasks and agents
 
-- **Active task:** none. Next is writing KIT-004.
+- **Active task:** KIT-004, Stage 1 complete, waiting on the owner's merge. No worker is running.
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr. The
   name drops when a session changes; `/lead` renames it. In `herdr agent list`, `agent` is the
   CLI kind and `name` is the name.
@@ -72,14 +75,13 @@ kit rollout, because no product work has run since FE-028.
 
 ## Kit facts the next session needs
 
-- **Context7** reaches Codex two ways (config server and the ChatGPT "Context7" app) and
-  Claude two ways (plugin and claude.ai connector). Per-run switches are in agents.yaml
-  (`gated_mcps`, `launch.<cli>.mcp_on/mcp_off`); only `ask.sh` applies them today. KIT-004
-  must apply `mcp_off` to every non-librarian launch. Evidence: journal/2026-09-29-kit-002a.md.
-- **Claude `--settings` takes one object:** KIT-004 must merge `caveman_off` and any other
-  settings into a single value.
-- **Skills:** `skills:` is a hint (owner). `skills-report.sh` shows what each CLI loads;
-  `--gate` exists but is not applied. The lead's `dispatch` skill is KIT-004's to write.
+- **Dispatch** with `.agent/bin/dispatch.sh <ID> --dry-run`, then without it in the background
+  (the `/dispatch` skill). It applies `caveman_off_when`, Context7 off for every role but the
+  librarian (both routes per CLI), one merged Claude `--settings`, and no skills gate.
+- **Claude workers** run `--permission-mode acceptEdits` with a Bash allowlist and `git push`
+  denied (lead choice, proven with one Haiku call; owner may overrule).
+- **YAML 1.1 reads `caveman: off` as `false`.** Anything reading `caveman:` must treat both as off.
+- The OpenCode permission block and Codex writable roots are proven by dry run only.
 
 ## Live bugs and known defects
 
@@ -110,7 +112,8 @@ kit rollout, because no product work has run since FE-028.
 
 Nothing here is decided. Detail is where each line points.
 
-- **KIT-002a acceptance.** Merged as PR #16; say whether it is accepted.
+- **Kit:** say whether KIT-002a (PR #16) is accepted; merge `agent/kit-dispatcher`; confirm or
+  overrule the Claude worker permissions (KIT-004 Handoff, "For the owner").
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
   the money code rounds half away from zero so a refund is the exact negation of its sale.
   Proposed sentence at L2699-2701. Contract text, so yours.
