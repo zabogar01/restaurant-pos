@@ -1001,14 +1001,14 @@ export function ControlledSettlementScreen({
           </footer>
           </section>
         </main>
-        {/* Inside the device, not beside it: the modal centres on the 800px frame, as the artifact's does, so its footer cannot fall below it. */}
+        {/* All four modals sit inside the device, not beside it: each centres on the 800px frame, as the artifact's do, so a footer cannot fall below it. They are siblings of the header and main, so `inert` never reaches them. */}
         {state === 'settle-takeover' && <TakeoverModal onCancel={() => navigateAway('/pos/order?state=lock-lease')} />}
+        {state === 'reauth' && <ReauthModal onLeave={leavePayment} />}
+        {state === 'leaselost' && <LeaseLostModal onBackToFloor={() => navigateAway('/pos/floor')} />}
+        {cancelOpen && (
+          <CancelPaymentModal drafts={drafts} change={change} onKeep={() => setCancelOpen(false)} onCancel={cancelPayment} />
+        )}
       </div>
-      {state === 'reauth' && <ReauthModal onLeave={leavePayment} />}
-      {state === 'leaselost' && <LeaseLostModal onBackToFloor={() => navigateAway('/pos/floor')} />}
-      {cancelOpen && (
-        <CancelPaymentModal drafts={drafts} change={change} onKeep={() => setCancelOpen(false)} onCancel={cancelPayment} />
-      )}
       {import.meta.env.DEV && <SettlementFixtureStates current={state} />}
     </>
   );

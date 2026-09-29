@@ -1308,3 +1308,42 @@ describe('FE-020: DESIGN-006 corrections to POS-04', () => {
     expect(hits).toEqual([]);
   });
 });
+
+describe('FE-029: every POS-04 modal sits inside the device frame', () => {
+  const visit = (search: string) => {
+    window.history.replaceState(null, '', `/pos/settlement${search}`);
+    act(() => root.render(<PosRoutes />));
+  };
+
+  // JSDOM has no layout, so this pins the structure that decides where the
+  // modal and its scrim are positioned: inside .pos-device, and not inside
+  // the header/main that `inert` is set on.
+  const expectInsideDeviceAndLive = () => {
+    const modal = host.querySelector('.modal')!;
+    const scrim = host.querySelector('.modal-scrim')!;
+    expect(modal.closest('.pos-device')).not.toBeNull();
+    expect(scrim.closest('.pos-device')).not.toBeNull();
+    expect(modal.closest('[inert]')).toBeNull();
+    expect(scrim.closest('[inert]')).toBeNull();
+  };
+
+  it('reauth', () => {
+    visit('?state=reauth');
+    expectInsideDeviceAndLive();
+  });
+
+  it('leaselost', () => {
+    visit('?state=leaselost');
+    expectInsideDeviceAndLive();
+  });
+
+  it('the cancel-payment confirmation, opened from the pending notice', () => {
+    window.history.replaceState(null, '', '/pos/order');
+    act(() => root.render(<PosRoutes />));
+    press(host.querySelector('[data-action="settle"]')!);
+    press(host.querySelector('[data-action="cancel-payment-from-notice"]')!);
+
+    expect(host.querySelector('#cancel-payment-title')).not.toBeNull();
+    expectInsideDeviceAndLive();
+  });
+});

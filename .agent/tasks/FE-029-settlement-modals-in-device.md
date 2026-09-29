@@ -98,3 +98,19 @@ device (checked by the explorer and the lead). You **add** tests to
 - The other housekeeping items in the same backlog (P3s, Prettier).
 
 ## Handoff
+
+**What I did.** In `apps/pos/src/SettlementScreen.tsx` I moved `ReauthModal`, `LeaseLostModal` and `CancelPaymentModal` inside `<div className="pos-device">`, directly after `TakeoverModal` and as siblings of the header and `main`, so `inert` never reaches them. `SettlementFixtureStates` stays after the device, in dev only. I rewrote the comment above the modals to cover all four. Nothing else changed: no copy, props, state, class names or CSS, and the modal components are untouched. In `apps/pos/test/settlement.test.tsx` I added one `describe`, "FE-029: every POS-04 modal sits inside the device frame", with three tests: `reauth`, `leaselost` and the cancel-payment confirmation opened from the pending notice. Each asserts that the `.modal` and the `.modal-scrim` have a non-null `closest('.pos-device')` and a null `closest('[inert]')`.
+
+**Red proof.** I wrote the tests before the source change and ran them against the original placement. All three failed, one per modal, at the `closest('.pos-device')` assertion: `AssertionError: expected null not to be null` (for example in "FE-029: every POS-04 modal sits inside the device frame > reauth"). Then I moved the modals, and they went green. This is the real defect path, not a synthetic mutation: the original placement is the defect. I did not separately re-break the code after the fix. The `[inert]` assertions passed on both placements, since the modals were never inside the inert header or main. They guard the move against a future wrong placement, but I did not prove them red.
+
+**Existing tests changed.** None. I only appended to `settlement.test.tsx`.
+
+**Found, not fixed.** Nothing. No test for the dev fixture nav (criterion 4, optional).
+
+**Verify.** `npm run verify`: typecheck clean (server, money, pos), vitest 32 test files passed (32), 2256 tests passed (2256). No formatter was run.
+
+**Browser.** No browser was available, so the layout in a real browser is not walked. The lead walks the three states.
+
+**Commit.** See the branch `agent/fe-029`, one commit on top of 4261433.
+
+DONE
