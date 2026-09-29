@@ -5,7 +5,7 @@ category: quick
 touches: []
 depends_on: []
 owns: [apps/pos/src/SettlementScreen.tsx, apps/pos/test/settlement.test.tsx]
-status: not-started
+status: review
 cycles: 0
 ---
 # FE-029 — Settlement modals inside the device frame
