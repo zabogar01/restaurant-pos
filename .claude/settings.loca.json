@@ -1,0 +1,23 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(git status:*)",
+            "Bash(git log:*)",
+            "Bash(git diff:*)",
+            "Bash(git branch:*)",
+            "Bash(git worktree list:*)",
+            "Bash(git rev-parse:*)",
+            "Bash(ls:*)",
+            "Bash(cat:*)",
+            "Bash(herdr agent list:*)",
+            "Bash(herdr agent get:*)",
+            "Bash(herdr agent read:*)",
+            "Bash(herdr pane list:*)",
+            "Bash(.agent/bin/check-state.sh:*)",
+            "Bash(.agent/bin/install-hooks.sh --check:*)",
+            "Bash(.agent/bin/ask.sh:*)",
+            "Bash(.agent/bin/skills-report.sh:*)",
+            "Bash(npm run verify:*)"
+        ]
+    }
+}
