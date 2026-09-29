@@ -1,6 +1,6 @@
 # KIT-003 — Guardrails: commit and push hooks, branch protection
 
-**Status:** Complete — awaiting the owner's review
+**Status:** Accepted by the owner 2026-09-29 (merged as PR #14, `dccd3d0`)
 **Owner:** `lead`
 **Depends on:** KIT-002 (accepted by the owner 2026-09-29, `a1d67d0`)
 **Source:** [AGENT-KIT.md](../AGENT-KIT.md) § Guardrails and human gates, § Phase 3. Owner rulings of 2026-09-29 (DECISIONS.md).

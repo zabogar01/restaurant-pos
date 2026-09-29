@@ -16,8 +16,8 @@ limits:
 
 families: { claude: anthropic, codex: openai, opencode: openai }
 base_skills: [herdr]              # every role, every CLI
-# roles.<role>.skills is only a hint until a launch applies launch.<cli>.skills_gate:
-# every CLI loads every installed skill by default. .agent/bin/skills-report.sh
+# roles.<role>.skills is a hint, not a gate (owner, 2026-09-29): every CLI loads
+# every installed skill, and no launch applies launch.<cli>.skills_gate. .agent/bin/skills-report.sh
 # compares the two; `--gate <role> <cli>` prints the per-run arguments that
 # limit a run to the role's skills (each CLI checked 2026-09-29, tasks/KIT-002a).
 # MCP servers a role may use only when roles.<role>.mcps lists them. Every

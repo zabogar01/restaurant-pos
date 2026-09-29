@@ -32,7 +32,7 @@ branch change and the kit rollout, because no product work has run since FE-028.
   anything still listed as open in PRD section 9; an implementer that needs one stops and raises it.
 - **Kit rollout** (owner, 2026-09-29): KIT-001 and KIT-002 accepted by the owner. KIT-003
   (hooks, GitHub protection) and the `/lead` skill were merged by the owner as PR #14
-  (`dccd3d0` on `development`); the owner has not yet said KIT-003 is accepted. KIT-002a
+  (`dccd3d0` on `development`); KIT-003 accepted 2026-09-29. KIT-002a
   (Context7 for the librarian only, `skills-report.sh`) is complete and awaiting review.
   KIT-004 (dispatcher) is next. **No product task starts during the rollout**
   ([KIT-001](tasks/KIT-001-memory-split.md)).
@@ -61,8 +61,8 @@ branch change and the kit rollout, because no product work has run since FE-028.
 
 ## Running tasks and agents
 
-- **Active task:** none running. KIT-002a is complete and awaits the owner's review; KIT-004
-  starts after the owner rules on its two questions (see below).
+- **Active task:** none running. KIT-002a is complete; its branch awaits the owner's push and
+  merge. KIT-004 is next (no skills gate; `grill-me` stays, owner 2026-09-29).
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr
   (2026-09-29). The name drops when a session changes; `/lead` renames it. In `herdr agent
   list`, `agent` is the CLI kind and `name` is the name.
@@ -120,10 +120,6 @@ Nothing here is decided. Detail is where each line points.
   reviewer and 2026-09-24 architect lines are superseded.) The Herdr report and close-idle
   rules are now written into WORKFLOW.md at the owner's instruction.
 - **Review the kit rollout results** as each KIT task closes; only you merge.
-- **Confirm KIT-003 accepted.** You merged PR #14; a merge is not recorded as acceptance.
-- **KIT-002a, two rulings** ([task](tasks/KIT-002a-context7-skills.md), "For the owner"):
-  rename the architect's `grill-me` to `grilling` (a model cannot invoke `grill-me`); and
-  whether KIT-004 gates skills per run, which with today's lists leaves most roles `herdr` only.
 - **Context7 still reachable** by an interactive Codex designer and any launch without
   `mcp_off`, because `~/.codex/config.toml` stays as it is (your ruling, 2026-09-29).
 

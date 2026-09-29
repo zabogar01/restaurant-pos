@@ -188,3 +188,12 @@ gated today. The owner decides whether KIT-004 applies the gate (see 2 below).
    `skills:` as a hint and do not gate.
 
 DONE
+
+**Owner's answers, 2026-09-29.**
+1. `grill-me` stays as the architect's skill in agents.yaml and
+   `roles/architect.md`. No skill is renamed or reassigned to suit a gate.
+   Without a gate the architect still sees `grilling`, and the owner can invoke
+   `/grill-me` in an architect session.
+2. No skills gate. `skills:` stays a hint, KIT-004 does not apply
+   `skills_gate`, and `skills-report.sh --gate` remains a capability only. The
+   comment in agents.yaml says so.
