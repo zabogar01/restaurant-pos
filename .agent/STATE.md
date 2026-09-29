@@ -9,7 +9,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-29, after KIT-003 (guardrails). First built in KIT-001 by a sorting
+2026-09-29, after KIT-002a (Context7 and skills report). First built in KIT-001 by a sorting
 subagent from the two archives and `git log`, then reviewed by the lead against its sources. Where two passages in the archive
 disagreed, the newer date won. Nothing below is newer than 2026-09-25 except the integration
 branch change and the kit rollout, because no product work has run since FE-028.
@@ -31,10 +31,13 @@ branch change and the kit rollout, because no product work has run since FE-028.
   mode chosen, which is subagent-driven; (5) a `.gitignore`. The open gate does not approve
   anything still listed as open in PRD section 9; an implementer that needs one stops and raises it.
 - **Kit rollout** (owner, 2026-09-29): KIT-001 and KIT-002 accepted by the owner. KIT-003
-  (commit/push hooks, GitHub protection) is complete and awaiting review; KIT-004 is next. KIT-002 config and roles, KIT-003 guardrails, KIT-004 dispatcher follow. **No
-  product task starts during the rollout** ([KIT-001](tasks/KIT-001-memory-split.md)).
+  (hooks, GitHub protection) and the `/lead` skill were merged by the owner as PR #14
+  (`dccd3d0` on `development`); the owner has not yet said KIT-003 is accepted. KIT-002a
+  (Context7 for the librarian only, `skills-report.sh`) is complete and awaiting review.
+  KIT-004 (dispatcher) is next. **No product task starts during the rollout**
+  ([KIT-001](tasks/KIT-001-memory-split.md)).
 - **Last verify by the lead:** `npm run verify` green at **2253 tests / 32 files** on
-  2026-09-29 (KIT-001, no source changed since FE-028). The seven tests in
+  2026-09-29 (KIT-002a, in `../restaurant-pos-kit`; no source changed since FE-028). The seven tests in
   `apps/server/test/migrate.test.ts` need Docker and Postgres (`npm run db:up`); without it
   they fail with `ECONNREFUSED 127.0.0.1:5433`, which is the environment, not the code (L6-14).
 
@@ -47,24 +50,26 @@ branch change and the kit rollout, because no product work has run since FE-028.
 - **Guard hooks are installed** in the shared `.git/hooks` with an `agents.yaml` snapshot
   (`.agent/bin/install-hooks.sh`; `--check` for staleness). No local commit on `main` or
   `development` passes them, so pull and merge only.
-- The owner's checkout (`restaurant-pos/`) was switched to `development` during KIT-003. Kit
-  work continues in the worktree `../restaurant-pos-kit` on `agent/agent-kit`.
-- Work goes on `agent/<topic>` cut from `development`. This session is on `agent/agent-kit`.
-  Only the owner merges. Commit only when asked.
+- The owner's checkout (`restaurant-pos/`) is on `development` at `dccd3d0`. `agent/agent-kit`
+  (KIT-001 to KIT-003) is merged. Kit work continues in the worktree `../restaurant-pos-kit`,
+  now on `agent/kit-context7-skills` (KIT-002a, cut from `dccd3d0`, committed, not pushed).
+- Work goes on `agent/<topic>` cut from `development`. Only the owner merges. The lead
+  commits only when asked.
 - `agent/phase-0-foundations` (`735301d`) is now behind `development` and stale. The design
   branch `agent/design-direction` (worktree `../restaurant-pos-design`, head `5cbe8ca`, clean)
   is fully merged into `development`. Any new design work needs a fresh branch.
 
 ## Running tasks and agents
 
-- **Active task:** none. KIT-003 awaits the owner's review; KIT-004 starts after it.
+- **Active task:** none running. KIT-002a is complete and awaits the owner's review; KIT-004
+  starts after the owner rules on its two questions (see below).
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr
   (2026-09-29). The name drops when a session changes; `/lead` renames it. In `herdr agent
   list`, `agent` is the CLI kind and `name` is the name.
 - **Every builder, designer, reviewer and architect from the log is closed** (last: `builder30`
   on FE-028, `designer7`, `design-reviewer4`, all closed 2026-09-25). The full roster is in
   L1198-1264 if a past agent's model or verdict matters.
-- Leftover panes `w2:pE` (tab `t7`) and `w2:pS` (tab `t8`) are agentless shells. A detached
+- Leftover pane `w2:pE` (tab `t7`) is an agentless shell (`w2:pS` was gone on 2026-09-29). A detached
   worktree at `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`) is tooling residue. The lead
   made none of them and has not closed them.
 
@@ -114,7 +119,13 @@ Nothing here is decided. Detail is where each line points.
   before F4, `fireerror`, POS-03 Q5, Q6 and Q9, and closing unused agents. (The 2026-09-22
   reviewer and 2026-09-24 architect lines are superseded.) The Herdr report and close-idle
   rules are now written into WORKFLOW.md at the owner's instruction.
-- **Review the kit rollout results** as each KIT task closes; only you merge `agent/agent-kit`.
+- **Review the kit rollout results** as each KIT task closes; only you merge.
+- **Confirm KIT-003 accepted.** You merged PR #14; a merge is not recorded as acceptance.
+- **KIT-002a, two rulings** ([task](tasks/KIT-002a-context7-skills.md), "For the owner"):
+  rename the architect's `grill-me` to `grilling` (a model cannot invoke `grill-me`); and
+  whether KIT-004 gates skills per run, which with today's lists leaves most roles `herdr` only.
+- **Context7 still reachable** by an interactive Codex designer and any launch without
+  `mcp_off`, because `~/.codex/config.toml` stays as it is (your ruling, 2026-09-29).
 
 ## Live conflicts
 

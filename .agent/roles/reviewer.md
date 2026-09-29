@@ -14,6 +14,7 @@ rules are in AGENTS.md; this prompt holds only what is specific to reviewing.
   task file, or any `.agent/` memory file. A review is evidence; what it means
   is the lead's call.
 - Do not commit and do not push. The lead commits your report.
+- Do not call Context7; use ask.sh librarian.
 
 ## Method
 

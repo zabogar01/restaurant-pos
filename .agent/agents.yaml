@@ -16,6 +16,16 @@ limits:
 
 families: { claude: anthropic, codex: openai, opencode: openai }
 base_skills: [herdr]              # every role, every CLI
+# roles.<role>.skills is only a hint until a launch applies launch.<cli>.skills_gate:
+# every CLI loads every installed skill by default. .agent/bin/skills-report.sh
+# compares the two; `--gate <role> <cli>` prints the per-run arguments that
+# limit a run to the role's skills (each CLI checked 2026-09-29, tasks/KIT-002a).
+# MCP servers a role may use only when roles.<role>.mcps lists them. Every
+# launch turns each one on or off per run (launch.<cli>.mcp_on / mcp_off,
+# proven 2026-09-29 in tasks/KIT-002a); no global config is edited. ~/.codex/config.toml enables context7 for every
+# Codex run and stays that way (owner, 2026-09-29), so a launch without the
+# mcp_off flag, such as an interactive designer, can still reach it.
+gated_mcps: [context7]
 
 # How each CLI is launched one-shot. {model}, {role_prompt_file}, {prompt},
 # {session} and {effort} are filled by dispatch.sh. Verified against --help, 2026-09-29.
@@ -27,19 +37,28 @@ launch:
     effort: --effort {effort}
     caveman_off: --settings '{"enabledPlugins":{"caveman@caveman":false}}'   # per process; never CAVEMAN_DEFAULT_MODE=off (deletes the lead's shared flag)
     read_only: --permission-mode plan
+    skills_gate: --settings from `skills-report.sh --gate {role} claude`   # skillOverrides + enabledPlugins; merge with caveman_off into ONE --settings object; plugin skills go only with their whole plugin
+    mcp_off:                      # per run, by gated MCP; the plugin stays installed for the fallback librarian
+      context7: --disallowedTools mcp__plugin_context7_context7 mcp__claude_ai_Context7   # the plugin and the claude.ai connector
     session_id_from: .session_id                                            # json result field
   codex:
     oneshot: codex exec -m {model} --sandbox workspace-write --json   # prompt text = role prompt, blank line, task prompt (no system-prompt flag)
     resume: codex exec resume {session}
     effort: -c model_reasoning_effort={effort}
     read_only: --sandbox read-only
+    mcp_on:                       # per run, by gated MCP; ask.sh applies mcp_on and mcp_off
+      context7: -c mcp_servers.context7.enabled=true
+    mcp_off:                      # both routes: the config server and the ChatGPT apps connector "Context7"
+      context7: -c mcp_servers.context7.enabled=false -c apps.asdk_app_69ef18c674308191a2f952431f91ea61.enabled=false
     web_search: --search          # top-level codex flag; placement checked by ask.sh
+    skills_gate: -c from `skills-report.sh --gate {role} codex`    # skills.config=[{path,enabled=false}] per unassigned skill
     stdin: /dev/null              # otherwise codex waits on "Reading additional input from stdin"
     role_prompt: prepend
   opencode:
     oneshot: opencode run --model {model} --format json   # prompt text = role prompt, blank line, task prompt
     resume: opencode run --session {session}
     effort: --variant {effort}
+    skills_gate: env from `skills-report.sh --gate {role} opencode`   # OPENCODE_CONFIG_CONTENT permission.skill allowlist
     read_only: none               # `--agent plan` hung >5 min in `opencode run` (2026-09-29); no read-only role runs here
     role_prompt: prepend
   herdr:
@@ -118,7 +137,8 @@ roles:
   librarian:
     runner: oneshot               # fallback: subagent (.claude/agents/librarian.md)
     oneshot:  { cli: codex, model: gpt-6-luna, sandbox: read-only, web: true }
-    subagent: { model: sonnet }
+    subagent: { model: sonnet }   # its tools list in .claude/agents/librarian.md grants the Context7 plugin
+    mcps: [context7]              # the only role with MCPs, whichever CLI runs it
     owns: []
 
 routing:

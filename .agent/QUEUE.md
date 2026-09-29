@@ -21,11 +21,16 @@ Rule while the kit rolls out: **no product task starts until KIT-004 has closed*
 2. **KIT-002** — `agents.yaml`, role prompts and skills, including how caveman style stays out
    of architect, designer and reviewer output — depends on KIT-001 — **accepted 2026-09-29**.
 3. **KIT-003** — hooks and branch rules that enforce the human gates (only the owner merges,
-   contract files untouched, `agent/*` branches only) — depends on KIT-002 — **complete
-   2026-09-29**, awaiting the owner's review.
+   contract files untouched, `agent/*` branches only) — depends on KIT-002 — **merged by the
+   owner as PR #14**; acceptance not yet stated.
+3a. **KIT-002a** — Context7 for the librarian only (per-run switches, `ask.sh` reads its model
+   from agents.yaml) and `skills-report.sh` with a per-run skills gate for each CLI — depends
+   on KIT-002 — **complete 2026-09-29**, awaiting the owner's review and two rulings
+   (`grill-me` → `grilling`; whether KIT-004 applies the skills gate).
 4. **KIT-004** — the dispatcher, supervised on one task at a time; must apply
-   `caveman_off_when` and the per-CLI launch shapes in agents.yaml — depends on KIT-003 — not
-   written. See `AGENT-KIT.md` for the phases after it.
+   `caveman_off_when`, the per-CLI launch shapes, `mcp_off` for every non-librarian launch and
+   (if the owner rules so) `skills_gate`, all from agents.yaml, merging Claude settings into one
+   `--settings` — depends on KIT-003 and KIT-002a — not written. See `AGENT-KIT.md` for the phases after it.
 
 ## Frontend: what is left of F4
 

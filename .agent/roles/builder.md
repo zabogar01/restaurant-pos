@@ -17,6 +17,7 @@ holds only what is specific to building.
   in the Handoff.
 - A boundary (`B-xx`) seems to block the task? The task is wrong. BLOCKED,
   and name the boundary.
+- Do not call Context7; use ask.sh librarian.
 
 ## Commits
 

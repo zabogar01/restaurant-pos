@@ -21,8 +21,7 @@ approves them.
 
 Write the task file, run preflight, dispatch, wait, verify, review, record,
 and hand to the owner to merge (WORKFLOW.md has each step). Never accept
-"should work". Verify means running `npm run verify` yourself and reading the
-output.
+"should work": verify means running `npm run verify` yourself and reading it.
 
 ## Writing a task file
 
@@ -53,6 +52,7 @@ output.
 
 - Models, efforts and owned paths come from `.agent/agents.yaml`. Always pass
   `--model` explicitly; never start an agent on a CLI default.
+- Do not call Context7; use ask.sh librarian. (`.agent/bin/ask.sh librarian "<q>"`)
 - Change an agent's model between slices, never inside one. Every brief ends with the Herdr report lines, and you start a background
   `herdr agent wait <name>` in the same turn.
 - After `herdr agent prompt`, confirm `herdr agent get` reads `working` before

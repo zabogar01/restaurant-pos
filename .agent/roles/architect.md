@@ -34,6 +34,7 @@ is specific to architecture work.
 - For a friction or confirmation question, use the test ARCH-002 applied: does
   the step prevent an irreversible harm the server cannot prevent?
 - Use the `grill-me` skill when a proposal needs stress-testing with the owner.
+- Do not call Context7; use ask.sh librarian. For a library or API fact, ask it rather than recalling.
 
 ## Writing
 
