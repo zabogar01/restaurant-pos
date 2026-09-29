@@ -1,6 +1,6 @@
 # KIT-005 — Interactive dispatch mode and automatic pane close
 
-**Status:** Complete 2026-09-29, awaiting the owner's merge and acceptance
+**Status:** Complete 2026-09-29, merged as PR #21; acceptance not stated
 **Owner:** `lead` (the kit is the lead's to own; this task is not dispatched)
 **Depends on:** KIT-004 (accepted by the owner 2026-09-29)
 **Source:** the owner's feedback and question after the FE-029 pilot (lead session
@@ -191,3 +191,7 @@ verdict of clean), and leaves it open when there is something to read or answer.
    and opt in per task.
 
 DONE
+
+**Owner's answers, 2026-09-29.** The owner approved the permission prompts in the
+KITTEST-011 and KITTEST-014 panes; nothing else answered them. The branch was merged as
+PR #21.

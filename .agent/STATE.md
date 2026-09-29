@@ -31,21 +31,21 @@ the two archives and `git log`. The only product change since FE-028 is FE-029 (
   anything still listed as open in PRD section 9; an implementer that needs one stops and raises it.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-004 accepted; the pilot FE-029 was
   accepted, so product tasks may start again. **KIT-005** (interactive dispatch, pane
-  auto-close) is complete on `agent/kit-interactive`, awaiting merge; it runs before DESIGN-009.
+  auto-close) was merged as PR #21 (`5a1122f`); acceptance not stated. The owner confirmed
+  they approved the permission prompts in the KITTEST-011 and KITTEST-014 panes.
 - **Last verify by the lead:** `npm run verify` green at **2256 tests / 32 files** on
-  2026-09-29 (KIT-005 branch, which holds FE-029). The seven tests in
+  2026-09-29 (KIT-005 branch, now merged; it holds FE-029). The seven tests in
   `apps/server/test/migrate.test.ts` need Docker and Postgres (`npm run db:up`); without it
   they fail with `ECONNREFUSED 127.0.0.1:5433`, which is the environment, not the code (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `cc08590` (PR #20) on
+- **`development` is the integration branch** (owner, 2026-09-29), at `5a1122f` (PR #21) on
   GitHub and in the owner's checkout. **`main`** and `development` are protected on GitHub:
   PR required, 0 approvals, enforced for admins.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
-  current for `cc08590`. **`agent/kit-interactive` changes agents.yaml:** after its merge run
-  `.agent/bin/install-hooks.sh` from `development`, or the dispatcher refuses to run.
-- Kit work happens in the worktree `../restaurant-pos-kit`, now on `agent/kit-interactive`.
+  reinstalled from `5a1122f` and current. Rerun after any merge that changes `.githooks/` or agents.yaml.
+- Lead work happens in the worktree `../restaurant-pos-kit`, now on `agent/lead-0929-kit005`.
   Dispatched tasks get worktrees under `../restaurant-pos-wt/<ID>` (none exist now) and run
   state in `.agent/runs/<ID>/` (gitignored). Merged kit branches remain locally.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits when asked.
@@ -55,7 +55,7 @@ the two archives and `git log`. The only product change since FE-028 is FE-029 (
 
 ## Running tasks and agents
 
-- **Active task:** KIT-005, complete, awaiting the owner's merge. No worker is running.
+- **Active task:** none. Next is DESIGN-009 (QUEUE.md item 5). No worker is running.
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), named `lead` in Herdr. The
   name drops when a session changes; `/lead` renames it. In `herdr agent list`, `agent` is the
   CLI kind and `name` is the name.
@@ -103,8 +103,8 @@ the two archives and `git log`. The only product change since FE-028 is FE-029 (
 
 Nothing here is decided. Detail is where each line points.
 
-- **Kit:** merge `agent/kit-interactive`; say whether you approved the permission prompts in
-  the KITTEST-011 and KITTEST-014 panes; keep builders interactive by default or not.
+- **Kit:** say whether KIT-005 is accepted, and whether builders stay interactive by default
+  (`roles.builder.mode` in agents.yaml) or go back to one-shot with opt-in per task.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
   the money code rounds half away from zero so a refund is the exact negation of its sale.
   Proposed sentence at L2699-2701. Contract text, so yours.
