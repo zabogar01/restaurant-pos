@@ -25,7 +25,7 @@ Rule while the kit rolls out: **no product task starts until KIT-004 has closed*
    2026-09-29** (PR #14).
 3a. **KIT-002a** — Context7 for the librarian only (per-run switches, `ask.sh` reads its model
    from agents.yaml) and `skills-report.sh` with a per-run skills gate for each CLI — depends
-   on KIT-002 — **complete 2026-09-29**, awaiting the owner's review of the branch; both rulings given
+   on KIT-002 — **merged as PR #16** (2026-09-29), acceptance not stated; both rulings given
    (`grill-me` stays; no skills gate).
 4. **KIT-004** — the dispatcher, supervised on one task at a time; must apply
    `caveman_off_when`, the per-CLI launch shapes, `mcp_off` for every non-librarian launch and
