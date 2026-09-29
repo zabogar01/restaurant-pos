@@ -11,29 +11,27 @@ review and test count, is in the
 Phase 0 backend from L281). Each task's own file in `tasks/` holds its handoff.
 
 The kit rollout closed on 2026-09-29 (owner accepted the KIT-004 pilot); product tasks may
-start. KIT-005 runs first (owner).
+start. KIT-005 ran first (owner) and was accepted on 2026-09-29.
 
 ## Agent kit
 
-1. **KIT-005** — interactive dispatch mode and automatic pane close — depends on KIT-004
-   (accepted) — **merged 2026-09-29** as PR #21; acceptance not stated. Then Phase 5 of `AGENT-KIT.md` (automatic review, designer alongside, profiles) is
-   done task by task, not as its own project.
+1. **Kit Phase 5** (automatic review, designer alongside, profiles) from `AGENT-KIT.md` — done
+   task by task as product work needs it, not as its own project — no task written.
 
 ## Frontend: what is left of F4
 
 The floor, incidents, close and recovery slices (F4a to F4d) are done. What is left needs a
 design task first, because POS-05 and POS-06 have wireframes only and no Frost artifact.
 
-5. **DESIGN-009** — design POS-05 closed orders and POS-06 closed order detail in Frost, with
-   the refund sheet (M-5) and its manager approval, and settle where Close lands (the floor,
-   which the lead ruled provisionally, or POS-06, which the artifact draws) — depends on
-   DESIGN-008 (done) — **not written**; a codex `gpt-6-astra` designer, then a design review.
-   Fold in the design questions FE-026 and FE-028 raised: a place on the floor for an open
-   quick sale; the tile counting units while the panel counts lines; the derived *1 line
-   pending* copy; *Release* and the order-bar `h1`; *Nothing outstanding* drawn twice (L158-160, L249).
-6. **DESIGN follow-up (no ID yet)** — point the settlement and lock artifacts at the Frost
-   floor instead of the prototype floor, and note in `docs/DESIGN.md` and DESIGN-003/005 that
-   light only is ruled for the MVP — depends on DESIGN-009 or rides with it — not written.
+5. **DESIGN-009** — POS-05 and POS-06 in Frost with the refund sheet (M-5) and its approval,
+   where Close lands, and the five design questions FE-026 and FE-028 raised — depends on
+   DESIGN-008 (done) — **written 2026-09-29**
+   ([task](tasks/DESIGN-009-closed-orders-and-refund.md)), awaiting the owner's read; a Codex
+   `gpt-6-astra` designer on `agent/design-009`, cut once the lead branch holding the task
+   file is merged, then a design review.
+6. **DESIGN follow-up** — folded into DESIGN-009 (Frost links off the prototype, the
+   light-only line in `docs/DESIGN.md`). Still the lead's: a light-only note in the
+   DESIGN-003 and DESIGN-005 task files — not done.
 7. **F4e (no ID yet)** — build POS-05 and POS-06: the closed-order book already exists in the
    store (FE-027); refund and manager approval reuse M-1 — depends on DESIGN-009 and its
    review — not written.

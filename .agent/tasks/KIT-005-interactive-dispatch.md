@@ -1,6 +1,6 @@
 # KIT-005 — Interactive dispatch mode and automatic pane close
 
-**Status:** Complete 2026-09-29, merged as PR #21; acceptance not stated
+**Status:** Accepted by the owner 2026-09-29; merged as PR #21
 **Owner:** `lead` (the kit is the lead's to own; this task is not dispatched)
 **Depends on:** KIT-004 (accepted by the owner 2026-09-29)
 **Source:** the owner's feedback and question after the FE-029 pilot (lead session
@@ -194,4 +194,5 @@ DONE
 
 **Owner's answers, 2026-09-29.** The owner approved the permission prompts in the
 KITTEST-011 and KITTEST-014 panes; nothing else answered them. The branch was merged as
-PR #21.
+PR #21. The owner then accepted KIT-005 ("set KIT-005 as done", lead session 2026-09-29).
+Whether builders stay interactive by default is still open.

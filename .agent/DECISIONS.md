@@ -73,3 +73,4 @@ until the owner confirms it or a document records it.
 - 2026-09-29 · Dispatched Claude workers run with `--permission-mode acceptEdits`, a Bash allowlist and `git push` denied, as the lead recommended · owner, lead session 2026-09-29; .agent/agents.yaml (`launch.claude.permission_mode`, `allowed_tools`), .agent/tasks/KIT-004-dispatcher.md (Handoff)
 - 2026-09-29 · The KIT-004 pilot (FE-029) is accepted, which closes KIT-004 and ends the rule that no product task starts during the kit rollout · owner, lead session 2026-09-29; .agent/tasks/KIT-004-dispatcher.md (Status)
 - 2026-09-29 · KIT-005 (interactive dispatch mode and automatic pane close) runs before DESIGN-009 · owner, lead session 2026-09-29; .agent/tasks/KIT-005-interactive-dispatch.md
+- 2026-09-29 · KIT-005 (interactive dispatch mode and automatic pane close) is accepted; it was merged as PR #21 · owner, lead session 2026-09-29; .agent/tasks/KIT-005-interactive-dispatch.md (Status, owner's answers)
