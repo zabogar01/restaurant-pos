@@ -9,15 +9,21 @@ one implementation plan.
 
 ## Orient before acting
 
-1. [.agent/MEMORY.md](.agent/MEMORY.md) — current phase, approved versus
-   proposed work, live conflicts, next handoff.
-2. [.agent/ROADMAP.md](.agent/ROADMAP.md) — immediate queue and the
-   implementation gate.
-3. [.agent/WORKFLOW.md](.agent/WORKFLOW.md) — roles, gates, handoff format.
+**Workers** (implementer, reviewer, designer, architect on a dispatched
+task) read **their task file only**, plus the documents it cites. Do not read
+`.agent/STATE.md`, `.agent/QUEUE.md` or `.agent/journal/`. If something you
+need is not in the task file, the task file is incomplete: say so in your
+Handoff (`BLOCKED: <question>`) rather than going looking.
+
+**The product lead** orients from [.agent/STATE.md](.agent/STATE.md), then
+[.agent/QUEUE.md](.agent/QUEUE.md), and reads
+[.agent/WORKFLOW.md](.agent/WORKFLOW.md) for roles, gates and the handoff
+format.
 
 State inferred from reading documents is unreliable here, because several
-decisions were reached in conversation and never written back. MEMORY.md
-records which is which.
+decisions were reached in conversation and never written back. Owner rulings
+are recorded one per line in [.agent/DECISIONS.md](.agent/DECISIONS.md); a
+ruling that is not there is not decided.
 
 ## Read further only when it applies
 
@@ -51,7 +57,8 @@ Codex owns architecture while architecture work is open. That means:
 
 One agent owns a file. Need a change elsewhere? Ask its owner.
 
-- Product lead: `.agent/MEMORY.md`, `.agent/ROADMAP.md`, `.agent/tasks/*`, and
+- Product lead: `.agent/STATE.md`, `.agent/QUEUE.md`, `.agent/DECISIONS.md`,
+  `.agent/LESSONS.md`, `.agent/journal/*`, `.agent/tasks/*`, and
   the four product documents.
 - Architect: architecture documents and ADRs.
 - Designer: `docs/design/*`.
@@ -70,7 +77,8 @@ but do not have. "Done" is not a handoff.
 **Architecture.** A proposal becomes binding when the human approves it, not
 when it is well argued. Approval converts it into `docs/ARCHITECTURE.md` plus
 accepted ADRs in `docs/decisions/`. Until then, an implementation that depends
-on it is blocked by the gate in [ROADMAP.md](.agent/ROADMAP.md).
+on it is blocked by the implementation gate, whose status the lead tracks in
+[STATE.md](.agent/STATE.md).
 
 Changing an accepted architectural decision means a new ADR that supersedes
 the old one. Never edit an accepted ADR in place — the record of what was
@@ -92,12 +100,13 @@ breaking one, the task is wrong — stop and raise it.
 - Never report a check as passing without running it and reading the output.
   Name anything you skipped.
 - Do not write application code until every condition in the implementation
-  gate is true. They are listed in [ROADMAP.md](.agent/ROADMAP.md) and none
-  may be waived by an agent.
+  gate is true. The lead tracks them in [STATE.md](.agent/STATE.md) and
+  dispatches implementation only while the gate is open; none may be waived
+  by an agent.
 
 ## Live conflicts
 
-Recorded in MEMORY.md, unresolved:
+Recorded in STATE.md, unresolved:
 
 - **Deployment shape.** PRODUCT.md limits the MVP to the owner's local
   development machine. `ARCHITECTURE_PROPOSAL.md` §4 still describes shared

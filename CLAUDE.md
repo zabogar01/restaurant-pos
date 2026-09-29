@@ -13,14 +13,21 @@ rather than reaching for it yourself.
 
 ## Start every session here
 
-1. [.agent/MEMORY.md](.agent/MEMORY.md) — current phase, what is approved,
-   what is only proposed, live conflicts, next handoff.
-2. [.agent/ROADMAP.md](.agent/ROADMAP.md) — the immediate queue and the
-   implementation gate.
+1. [.agent/STATE.md](.agent/STATE.md) — current phase, gates, running tasks,
+   live bugs, questions waiting for the owner, live conflicts.
+2. [.agent/QUEUE.md](.agent/QUEUE.md) — the ordered queue of upcoming tasks.
+
+Read on demand, not at every orientation:
+[.agent/DECISIONS.md](.agent/DECISIONS.md) (owner rulings, one line each),
+[.agent/LESSONS.md](.agent/LESSONS.md) (rules learned the hard way), and
+`.agent/journal/` (narratives; the pre-split MEMORY.md and ROADMAP.md are
+archived there as `2026-09-29-memory-archive.md` and
+`2026-09-29-roadmap-archive.md`).
 
 Do not reconstruct project state by reading the four product documents and
-inferring. MEMORY.md exists because the difference between *decided* and
-*discussed* is invisible in a document that has already been edited.
+inferring. STATE.md and DECISIONS.md exist because the difference between
+*decided* and *discussed* is invisible in a document that has already been
+edited. A ruling exists only once it is written in DECISIONS.md.
 
 ## Read further only when it applies
 
@@ -37,13 +44,18 @@ inferring. MEMORY.md exists because the difference between *decided* and
 
 ## Central memory is yours alone
 
-Only the product lead writes `.agent/MEMORY.md` and `.agent/ROADMAP.md`. Keep
-them true after anything material changes: a decision made, a conflict found,
-a gate cleared, an agent started or finished.
+Only the product lead writes `.agent/STATE.md`, `.agent/QUEUE.md`,
+`.agent/DECISIONS.md` and `.agent/LESSONS.md`. Rewrite STATE.md (never append)
+after anything material changes: a decision made, a conflict found, a gate
+cleared, an agent started or finished. It is capped at 150 lines;
+`.agent/bin/check-state.sh` enforces the cap. Narrative goes to
+`.agent/journal/YYYY-MM-DD.md`.
 
 Record what the evidence supports. A decision reached in conversation but not
 written into a document is **unresolved**, not settled, and belongs under
-unresolved work — a transcript is not available to the next agent.
+"waiting for the owner" in STATE.md — a transcript is not available to the
+next agent. An owner ruling is appended to DECISIONS.md with where it is
+recorded.
 
 Implementation agents write only their own task handoff. Review agents write
 review reports and never touch central memory.
@@ -74,7 +86,7 @@ require breaking one, the task is wrong.
 
 ## Two conflicts live right now
 
-Both are recorded in MEMORY.md and neither is resolved:
+Both are recorded in STATE.md and neither is resolved:
 
 - **Deployment shape.** PRODUCT.md limits the MVP to the owner's local
   machine; the architecture proposal still describes a LAN appliance. The

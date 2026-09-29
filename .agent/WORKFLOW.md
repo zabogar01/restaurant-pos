@@ -2,7 +2,9 @@
 
 How agents in this repository divide work, hand it over, and get changes
 approved. Stable process, not current state — current state lives in
-[MEMORY.md](MEMORY.md).
+[STATE.md](STATE.md), the upcoming queue in [QUEUE.md](QUEUE.md), owner
+rulings in [DECISIONS.md](DECISIONS.md), and learned rules in
+[LESSONS.md](LESSONS.md). Narratives go to `journal/`.
 
 ---
 
@@ -10,7 +12,7 @@ approved. Stable process, not current state — current state lives in
 
 | Role | Typically | Owns | Writes |
 |---|---|---|---|
-| **Product lead** | Claude, pane `w2:p1` | Coordination, product contract, central memory | `.agent/MEMORY.md`, `.agent/ROADMAP.md`, `.agent/tasks/*`, the four product documents |
+| **Product lead** | Claude, pane `w2:p1` | Coordination, product contract, central memory | `.agent/STATE.md`, `.agent/QUEUE.md`, `.agent/DECISIONS.md`, `.agent/LESSONS.md`, `.agent/journal/*`, `.agent/tasks/*`, the four product documents |
 | **Architect** | Codex, pane `w2:p2` | Architecture proposal, technical trade-offs, ADRs | `docs/ARCHITECTURE_PROPOSAL.md`, later `docs/ARCHITECTURE.md` and `docs/decisions/*` |
 | **Designer** | Claude, pane `w2:p3` | UX structure, wireframes, later the design system | `docs/design/*` |
 | **Implementer** | Any agent, per task | One task from a plan | Source, tests, and the **Handoff** section of its own task file |
@@ -21,15 +23,16 @@ requests it from the owner rather than editing it.
 
 ### Two rules that exist because they are easy to violate quietly
 
-**Only the product lead writes `.agent/MEMORY.md` and `.agent/ROADMAP.md`.**
-These are the files every agent reads to orient. If several agents write them,
+**Only the product lead writes `.agent/STATE.md`, `.agent/QUEUE.md`,
+`.agent/DECISIONS.md` and `.agent/LESSONS.md`.** These are the files the lead
+orients from; workers read only their task file. If several agents write them,
 they stop being a shared account of the project and become a merge conflict.
 An implementer with something worth remembering puts it in its task handoff
 and tells the lead.
 
 **Reviewers do not update central memory.** A review is evidence, not a
 decision. The reviewer writes findings; the lead decides what they mean and
-whether anything durable changed. A reviewer who edits MEMORY.md has promoted
+whether anything durable changed. A reviewer who edits STATE.md has promoted
 their own opinion to project fact without anyone agreeing to it.
 
 ---
@@ -41,7 +44,7 @@ It stores nothing that survives the session. A pane's scrollback is not a
 record; it is a terminal buffer.
 
 Anything that must outlive the session goes in a file: durable project state
-in `MEMORY.md`, task-scoped state in the task's handoff section, technical
+in `STATE.md` (rulings in `DECISIONS.md`), task-scoped state in the task's handoff section, technical
 reasoning in the architecture or design documents.
 
 The practical test: **if this pane closed right now, would the next agent know
@@ -66,7 +69,7 @@ system. Wireframes here are greyscale by intent, and an agent that adds colour
 to them has misunderstood the task.
 
 **Implementation gate.** The hard one. Conditions are listed in
-[ROADMAP.md](ROADMAP.md) and none may be waived by an agent. It exists because
+[STATE.md](STATE.md) and none may be waived by an agent. It exists because
 the architecture is still formally proposed while a plan already depends on
 it.
 
