@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Agents never push; the owner pushes and merges (.agent/WORKFLOW.md).
+# dispatch.sh sets AGENT_ROLE for every worker it launches.
+if [ -n "${AGENT_ROLE:-}" ]; then
+  printf 'pre-push: agents never push (AGENT_ROLE=%s). Commit on your agent/* branch; the owner pushes.\n' "$AGENT_ROLE" >&2
+  exit 1
+fi
+exit 0

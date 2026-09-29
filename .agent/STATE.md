@@ -9,7 +9,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-29, after KIT-002 (config, roles, skills). First built in KIT-001 by a sorting
+2026-09-29, after KIT-003 (guardrails). First built in KIT-001 by a sorting
 subagent from the two archives and `git log`, then reviewed by the lead against its sources. Where two passages in the archive
 disagreed, the newer date won. Nothing below is newer than 2026-09-25 except the integration
 branch change and the kit rollout, because no product work has run since FE-028.
@@ -30,8 +30,8 @@ branch change and the kit rollout, because no product work has run since FE-028.
   documents; (3) the PRD's stack, currency and tax-model questions closed; (4) an execution
   mode chosen, which is subagent-driven; (5) a `.gitignore`. The open gate does not approve
   anything still listed as open in PRD section 9; an implementer that needs one stops and raises it.
-- **Kit rollout** (owner, 2026-09-29): KIT-001 memory split was reviewed by the owner.
-  KIT-002 (agents.yaml, role prompts, subagents, `ask.sh`) is complete and awaiting review. KIT-002 config and roles, KIT-003 guardrails, KIT-004 dispatcher follow. **No
+- **Kit rollout** (owner, 2026-09-29): KIT-001 and KIT-002 accepted by the owner. KIT-003
+  (commit/push hooks, GitHub protection) is complete and awaiting review; KIT-004 is next. KIT-002 config and roles, KIT-003 guardrails, KIT-004 dispatcher follow. **No
   product task starts during the rollout** ([KIT-001](tasks/KIT-001-memory-split.md)).
 - **Last verify by the lead:** `npm run verify` green at **2253 tests / 32 files** on
   2026-09-29 (KIT-001, no source changed since FE-028). The seven tests in
@@ -42,8 +42,13 @@ branch change and the kit rollout, because no product work has run since FE-028.
 
 - **`development` is the integration branch** (owner, 2026-09-29; this replaces
   `agent/phase-0-foundations`). Local `development`, `origin/development` and the head of
-  PR #13 are all `881a36d`. **`main`** was created locally at `881a36d` on 2026-09-29 (owner);
-  it is pushed and protected, with `development`, in KIT-003.
+  PR #13 are all `881a36d`. **`main`** (created 2026-09-29 at `881a36d`, pushed by the owner)
+  and `development` are protected on GitHub: PR required, 0 approvals, enforced for admins.
+- **Guard hooks are installed** in the shared `.git/hooks` with an `agents.yaml` snapshot
+  (`.agent/bin/install-hooks.sh`; `--check` for staleness). No local commit on `main` or
+  `development` passes them, so pull and merge only.
+- The owner's checkout (`restaurant-pos/`) was switched to `development` during KIT-003. Kit
+  work continues in the worktree `../restaurant-pos-kit` on `agent/agent-kit`.
 - Work goes on `agent/<topic>` cut from `development`. This session is on `agent/agent-kit`.
   Only the owner merges. Commit only when asked.
 - `agent/phase-0-foundations` (`735301d`) is now behind `development` and stale. The design
@@ -52,7 +57,7 @@ branch change and the kit rollout, because no product work has run since FE-028.
 
 ## Running tasks and agents
 
-- **Active task:** none. KIT-002 awaits the owner's review; KIT-003 starts after it.
+- **Active task:** none. KIT-003 awaits the owner's review; KIT-004 starts after it.
 - **Live agents:** the lead only, pane `w2:p1` (Claude, Opus 5.5), verified with
   `herdr agent list` on 2026-09-29. Herdr currently names it `claude`, not `lead`; the name
   drops when a session changes, so re-run `herdr agent rename w2:p1 lead` before addressing
@@ -110,9 +115,6 @@ Nothing here is decided. Detail is where each line points.
   before F4, `fireerror`, POS-03 Q5, Q6 and Q9, and closing unused agents. (The 2026-09-22
   reviewer and 2026-09-24 architect lines are superseded.) The Herdr report and close-idle
   rules are now written into WORKFLOW.md at the owner's instruction.
-- **Pick a pilot** for KIT-004's first real dispatch (candidates in the KIT-002 Handoff).
-- **Skills layout** (KIT-002 Handoff): keep `~/.agents/skills` as the master or put it under
-  git, and which `impeccable` version Claude should load.
 - **Review the kit rollout results** as each KIT task closes; only you merge `agent/agent-kit`.
 
 ## Live conflicts

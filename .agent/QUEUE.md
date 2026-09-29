@@ -17,12 +17,12 @@ Rule while the kit rolls out: **no product task starts until KIT-004 has closed*
 
 1. **KIT-001** — split central memory into STATE, QUEUE, DECISIONS and LESSONS, keep the old
    files unchanged in the journal, and repoint orientation — depends on Kit Phase 0 (done,
-   journal/2026-09-29-kit-phase0.md) — **complete 2026-09-29**, awaiting the owner's review.
+   journal/2026-09-29-kit-phase0.md) — **accepted 2026-09-29**.
 2. **KIT-002** — `agents.yaml`, role prompts and skills, including how caveman style stays out
-   of architect, designer and reviewer output — depends on KIT-001 — **complete 2026-09-29**,
-   awaiting the owner's review.
+   of architect, designer and reviewer output — depends on KIT-001 — **accepted 2026-09-29**.
 3. **KIT-003** — hooks and branch rules that enforce the human gates (only the owner merges,
-   contract files untouched, `agent/*` branches only) — depends on KIT-002 — not written.
+   contract files untouched, `agent/*` branches only) — depends on KIT-002 — **complete
+   2026-09-29**, awaiting the owner's review.
 4. **KIT-004** — the dispatcher, supervised on one task at a time; must apply
    `caveman_off_when` and the per-CLI launch shapes in agents.yaml — depends on KIT-003 — not
    written. See `AGENT-KIT.md` for the phases after it.
@@ -48,7 +48,7 @@ design task first, because POS-05 and POS-06 have wireframes only and no Frost a
 8. **Code housekeeping (no IDs yet)** — the four P3s in STATE.md; render the `cancel`,
    `reauth` and `leaselost` modals inside `.pos-device`; re-check the POS-03 URL after Add;
    decide Prettier either way — depends on nothing, can ride with F4e as a small slice — not
-   written. Two of these are pilot candidates for KIT-004's first real dispatch (STATE.md).
+   written. The modal move is the owner's chosen pilot for KIT-004 (DECISIONS.md).
 8a. **POS-03 Q6 (no ID yet)** — Cancel while a manager approval is verifying cancels the
    action, with no partial state (`B-20`), and the cancelled approval is audited per `FR-J3` —
    depends on the owner confirming the 2026-09-24 ruling (DECISIONS.md, conversation only) and

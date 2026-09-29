@@ -187,6 +187,21 @@ way it was done is exactly what gets lost first.
 - Commit messages are Conventional Commits in ordinary prose and explain
   *why*; the diff already shows what.
 
+**Enforced by code, not only by this document.** The hooks in `.githooks/`
+are installed with `.agent/bin/install-hooks.sh` into the shared `.git/hooks`,
+together with a snapshot of `agents.yaml`, so no branch or commit can change
+them. They reject, for every commit: a commit directly on `main` or
+`development`, a change to a contract file (unless the owner sets
+`ALLOW_CONTRACT=1`), and an edit to an accepted ADR. For a dispatched agent
+(`AGENT_ROLE` set) they also reject a branch other than `agent/*`, a path
+outside its `owns:`, an edit to its task file's frontmatter, and any push. On
+GitHub, `main` and `development` accept changes only through a pull request
+(0 approvals, since the owner cannot approve their own PR; enforced for
+admins; no force-push or deletion). After editing `.githooks/` or
+`agents.yaml`, the lead re-runs `install-hooks.sh`; `--check` reports a stale
+install. `git commit --no-verify` skips any hook, so GitHub protection is the
+backstop.
+
 Three things always require the owner, never an agent:
 
 1. **Changing the product contract**: PRODUCT.md, PRD.md, ROADMAP.md or

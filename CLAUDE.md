@@ -72,6 +72,11 @@ branch, only after verify is green, and never push. The lead itself commits
 on its own `agent/<topic>` branch when the owner asks, and never pushes
 unless the owner says so. Only the owner merges.
 
+The guard hooks run from the shared `.git/hooks` with a snapshot of
+`agents.yaml`. After you change `.githooks/` or `agents.yaml`, run
+`.agent/bin/install-hooks.sh`; `--check` tells you whether the install is
+current.
+
 Never claim work passes without having run it and read the output. "Should
 work" is not a result. If a check was skipped, say which and why.
 
