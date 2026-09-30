@@ -5,8 +5,8 @@ category: ui
 touches: [money, audit, boundaries]
 depends_on: [DESIGN-008]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 1
+status: active
+cycles: 2
 ---
 # DESIGN-009 — POS-05 closed orders and POS-06 closed order detail in Frost
 
@@ -289,6 +289,56 @@ Commit on `agent/design-009` only when done, and never push. Append your Handoff
 
 Then run `herdr agent prompt lead "<your name>: DESIGN-009 done — <one line>"`, or
 `herdr agent prompt lead "<your name>: BLOCKED — <question>"`.
+
+## Round 2 — the review's nine findings (lead and owner rulings, 2026-09-30)
+
+Review: [DESIGN-009-review.md](../reviews/DESIGN-009-review.md), nine findings. Every one is
+accepted. Keep the round-1 Handoff below as it is and add a `### Round 2` section after it that
+answers each item here by number. Draw nothing beyond these items; the rule that no other state
+of an existing artifact changes appearance still holds, so name every state you touch.
+
+**Owner rulings (money and audit; draw them, do not reopen them):**
+
+- **O1 — allocation targets (F4).** Refund allocations may use only the order's original tender
+  types, as drawn. No row can be added.
+- **O2 — no per-row cap (F4).** A row may exceed that tender's effective contribution; only the
+  sum must equal the order total. The manager sees the split in M-1 (item 1).
+- **O3 — zero rows (F4).** A row edited to 0 is dropped before the refund command and never
+  recorded. Show that on the sheet (for example the row reads *not refunded*), not only in the
+  REFUNDED view.
+- **O4 — approved, then refused (F5).** One audit entry naming actor and approver, outcome
+  REFUSED with the refusal code, no money fields. Say in the Handoff which states carry it
+  (`refund-error` for a definite rejection, `day-refusal`).
+
+**Lead rulings (design):**
+
+1. **F1.** The M-1 subject on POS-06 lists the allocation lines (for example *Card 0 · Cash
+   155.925*) and marks *Allocation edited* when it differs from the default. Add a fixture state
+   for the edited case. The rest of M-1 is unchanged.
+2. **F2 and Part C.** Close lands on the floor (the lead's ruling, as you recommended). Add a
+   floor state `after-close` where Table 1 is free and the counts are adjusted, and a
+   `receipt-warning` variant with Table 1 free; point settlement's normal Close and zero-total
+   Close at `after-close`, and the failed-print Close at the free-table variant. `clear` is not a
+   substitute. Existing floor states keep their appearance.
+3. **F3.** Under the closed-day banner, POS-05 lists the open day's closed orders first as the
+   normal, refundable list, and below them a separate group *Closed day · <date> · reprint only*.
+   Draw the state with at least one new-day order. Propose in the Handoff when the banner clears;
+   do not rule it.
+4. **F6.** Gate the `refund-error` notice's *Review refund* on the same eligibility as the Refund
+   control. Note in the Handoff that `refund-error` pictures a definite rejection only; after no
+   response the client re-reads the order before offering a retry.
+5. **F7.** *Apply filter* filters the list immediately; remove the separate Search step. Keep the
+   no-match state reachable through the filters.
+6. **F8.** Stop borrowing `--frost-pin-key-height`, `--frost-category-width` and
+   `--frost-receipt-reprint-width` for POS-05. List the list-column widths and the allocation
+   field width in the Handoff as missing tokens with the values you need; do not add tokens. Use
+   the nearest honest existing layout (for example a flexible column) meanwhile, and say which.
+7. **F9.** Omit the discount row when an order carries no discount (the `quick` state), and
+   restore a screen-reader announcement when the last incident clears while keeping the visible
+   message single.
+
+Re-run your headless check for every state you touched and report it as in round 1. Commit on
+`agent/design-009` when done.
 
 ## Handoff
 
