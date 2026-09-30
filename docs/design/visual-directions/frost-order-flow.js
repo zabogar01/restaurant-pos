@@ -96,7 +96,7 @@
       return h+row(l,i);
     }).join('');
     const count=$('.orderpanel__head .muted:not([hidden])',panel);
-    if(count) count.textContent=model.filter(l=>!l.voided).length+' lines'+(quick?' · not yet sent':'');
+    if(count) count.textContent=model.filter(l=>!l.voided).length+(model.filter(l=>!l.voided).length===1?' line':' lines')+(quick?' · not yet sent':'');
     totalsNode().innerHTML=totals(model);
     $$('[data-edit]',lines).forEach(a=>a.onclick=e=>{e.preventDefault();openEdit(Number(a.dataset.edit),a);});
     $$('[data-remove]',lines).forEach(a=>a.onclick=e=>{e.preventDefault();model.splice(Number(a.dataset.remove),1);renderOrder();});

@@ -16,7 +16,7 @@ window.MOCKUPS = [
         "Quick sale"
       ],
       ["open-t7", "Table 7 — your payment"],
-      ["open-t9", "Table 9 — 5 items fired"],
+      ["open-t9", "Table 9 — 2 lines fired"],
       ["open-t12", "Table 12 — 2 rounds and pending"],
       ["quick-new", "New quick sale — empty"],
       [
@@ -402,18 +402,190 @@ window.MOCKUPS = [
       [
         "receipt-warning",
         "Receipt warning"
+      ],
+      [
+        "after-close",
+        "After Close \u00b7 Table 1 free"
+      ],
+      [
+        "after-close-receipt",
+        "After Close \u00b7 receipt warning"
       ]
     ],
     "width": 1280,
     "height": 800
-  }
+  },
+{
+  "path": "pos/closed-orders.html",
+  "title": "Closed Orders",
+  "states": [
+    [
+      "default",
+      "Closed orders"
+    ],
+    [
+      "empty",
+      "No closed orders"
+    ],
+    [
+      "loading",
+      "Loading"
+    ],
+    [
+      "error",
+      "Load failed"
+    ],
+    [
+      "overflow",
+      "Full trading day"
+    ],
+    [
+      "nomatch",
+      "No matching orders"
+    ],
+    [
+      "dayclosed",
+      "Day closed \u00b7 open day first"
+    ],
+    [
+      "dayclosed-start",
+      "Day closed \u00b7 no new-day order yet"
+    ],
+    [
+      "filter-table",
+      "Touch \u00b7 table picker"
+    ],
+    [
+      "filter-time",
+      "Touch \u00b7 time range"
+    ],
+    [
+      "filter-amount",
+      "Touch \u00b7 exact amount"
+    ]
+  ],
+  "width": 1280,
+  "height": 800
+},
+{
+  "path": "pos/closed-order.html",
+  "title": "Closed Order",
+  "states": [
+    [
+      "default",
+      "Card + cash"
+    ],
+    [
+      "cash",
+      "Cash with change"
+    ],
+    [
+      "custom",
+      "Custom-named tenders"
+    ],
+    [
+      "quick",
+      "Quick sale"
+    ],
+    [
+      "zero",
+      "Zero total \u00b7 no refund control"
+    ],
+    [
+      "refunded",
+      "REFUNDED"
+    ],
+    [
+      "dayclosed",
+      "Business day closed"
+    ],
+    [
+      "sheet-refund",
+      "Default refund allocation"
+    ],
+    [
+      "sheet-ac25",
+      "Cash contribution \u00b7 AC-25"
+    ],
+    [
+      "sheet-custom",
+      "Custom tender allocation"
+    ],
+    [
+      "sheet-edited",
+      "Edited \u00b7 exact sum"
+    ],
+    [
+      "sheet-invalid",
+      "Edited \u00b7 sum mismatch"
+    ],
+    [
+      "sheet-zero",
+      "Edited \u00b7 row set to 0"
+    ],
+    [
+      "sheet-edit",
+      "Touch \u00b7 edit amount"
+    ],
+    [
+      "sheet-other",
+      "Touch \u00b7 other reason"
+    ],
+    [
+      "approval",
+      "Manager PIN \u00b7 default allocation"
+    ],
+    [
+      "approval-edited",
+      "Manager PIN \u00b7 allocation edited"
+    ],
+    [
+      "refund-error",
+      "Refund command failed"
+    ],
+    [
+      "day-refusal",
+      "Day closed during attempt"
+    ],
+    [
+      "reprint",
+      "Receipt FAILED"
+    ],
+    [
+      "reprint-unknown",
+      "Receipt UNKNOWN"
+    ],
+    [
+      "reprint-sent",
+      "Reprint sent"
+    ],
+    [
+      "reprint-printed",
+      "Server result \u00b7 PRINTED"
+    ],
+    [
+      "loading",
+      "Loading"
+    ],
+    [
+      "error",
+      "Load failed"
+    ],
+    [
+      "overflow",
+      "Long order \u00b7 pinned figures"
+    ]
+  ],
+  "width": 1280,
+  "height": 800
+}
 ];
 
 // The legacy gallery hard-codes six labels and assumes both directions exist.
 // Keep its existing indices intact; the added floor is Frost-only.
 if (typeof document !== 'undefined') {
   const requested = new URLSearchParams(location.search);
-  if (requested.get('screen') === 'pos/floor.html') {
+  if (['pos/floor.html','pos/closed-orders.html','pos/closed-order.html'].includes(requested.get('screen'))) {
     requested.set('direction', 'frost');
     history.replaceState(null, '', '?' + requested);
   }
@@ -424,6 +596,12 @@ if (typeof document !== 'undefined') {
     const frost = document.querySelector('[data-direction="frost"]');
     const paper = document.querySelector('[data-direction="paper"]');
     floor.textContent = 'POS floor';
+    ['pos/closed-orders.html','pos/closed-order.html'].forEach(path => {
+      const item = nav.children[MOCKUPS.findIndex(x => x.path === path)];
+      item.textContent = path.includes('closed-orders') ? 'Closed orders' : 'Closed detail';
+      item.addEventListener('click', () => frost.click(), true);
+      paper.addEventListener('click', () => { if (item.hasAttribute('aria-current')) nav.children[0].click(); }, true);
+    });
     floor.addEventListener('click', () => frost.click(), true);
     paper.addEventListener('click', () => {
       if (floor.hasAttribute('aria-current')) nav.children[0].click();
