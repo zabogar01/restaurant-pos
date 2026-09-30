@@ -28,10 +28,9 @@ FE-028 is FE-029.
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted;
   KIT-005 (interactive dispatch, pane auto-close) merged as PR #21 (`5a1122f`). Product tasks run.
-- **Last verify by the lead:** `npm run verify` green at **2256 tests / 32 files** on
-  2026-09-29 (KIT-005 branch, now merged; it holds FE-029). The seven tests in
-  `apps/server/test/migrate.test.ts` need Docker and Postgres (`npm run db:up`); without it
-  they fail with `ECONNREFUSED 127.0.0.1:5433`, which is the environment, not the code (L6-14).
+- **Last verify by the lead:** `npm run verify` green at **2256 tests / 32 files** on 2026-09-30
+  (`agent/design-009`). `apps/server/test/migrate.test.ts` needs `npm run db:up`; without it its
+  seven tests fail with `ECONNREFUSED 127.0.0.1:5433`, the environment, not the code (L6-14).
 
 ## Integration branch
 
@@ -45,9 +44,8 @@ FE-028 is FE-029.
   `.agent/runs/<ID>/` (gitignored). Merged lead and kit branches remain locally.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
-- `agent/phase-0-foundations` (`735301d`) is behind `development` and stale. The design
-  branch `agent/design-direction` (worktree `../restaurant-pos-design`, head `5cbe8ca`, clean)
-  is fully merged.
+- Stale or merged branches: `agent/phase-0-foundations` (`735301d`, behind); `agent/design-direction`
+  (worktree `../restaurant-pos-design`, `5cbe8ca`, clean, merged).
 
 ## Running tasks and agents
 
@@ -56,11 +54,11 @@ FE-028 is FE-029.
   worktree's index lock; LESSONS.md) and ran out of usage. On the owner's word the lead
   committed its files unchanged as `06f3a25` on `agent/design-009`, closed its pane, added the
   criterion 6 correction there (`74943f7`), and ran `npm run verify` there: green, 2256 / 32.
-- **Reviewer** dispatched 2026-09-30: `.agent/bin/dispatch.sh DESIGN-009 --role reviewer`,
-  one-shot Claude Opus 5.5 (other family, via a hand-written
-  `.agent/runs/DESIGN-009/builder/meta.json` naming `codex`), pane `DESIGN-009-review`, report to
-  `.agent/reviews/DESIGN-009-review.md`. Then the lead verifies, walks the flows in a browser,
-  and rules Part C with the owner.
+- **Review done** (Claude Opus 5.5, `90669f1`): findings, 9 (2 high). Every finding accepted.
+  The owner ruled F4 and F5 (four DECISIONS lines, 2026-09-30); the lead ruled the rest and Part C
+  (Close lands on the floor, on a new `after-close` state). All written as "Round 2" in the task
+  file on `agent/design-009` (`4eb4fd2`, `status: active`, `cycles: 2`). **Next:** round 2 by a
+  designer, then a re-review; Codex was out of usage until 14:46 on 2026-09-30.
 - **Main checkout has one uncommitted edit:** DESIGN-008's Status line (accepted), identical
   to `1b50e7e` on `agent/lead-0930`; run `git checkout -- .agent/tasks/DESIGN-008-*` before pulling.
 - **Live agents:** the lead (`w2:p1`, named `lead`) and the reviewer while it runs.
@@ -87,10 +85,8 @@ FE-028 is FE-029.
 
 ## Live bugs and known defects
 
-- **Menu tile adds a Burger: FIXED** by FE-021 (`7268943`, L257-262). Kept until the owner has
-  seen it fixed in a browser.
-- **Probably intended:** Add from POS-03's `eightysix` state returns there by design (L353;
-  `orderFixtures.ts:990-995`, asserted at `own-items.test.tsx:381-393`). Close once the owner has seen it.
+- **Owner to see in a browser, then close:** the Burger-tile fix (FE-021 `7268943`, L257-262), and
+  Add from POS-03 `eightysix` returning there by design (L353; `own-items.test.tsx:381-393`).
 - **P3, not filed** (L172-175, L206-213, L248-249): a reopened book-only order lands on
   `?state=default` and the URL names Table 1's fixture; `closeOrder` fires a quick sale with
   `type: 'table'`; a quick sale holding an 86'd pending line refuses Close silently with no
@@ -108,6 +104,9 @@ FE-028 is FE-029.
 
 Nothing here is decided. Detail is where each line points.
 
+- **Contract wording for the refund rulings** (lead to draft, owner to approve): FR-H5 does not
+  say allocations are limited to original tenders, uncapped per row, and zero rows dropped; FR-J3
+  and AC-18 do not list the REFUSED entry for an approved-then-refused refund.
 - **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
   or go back to one-shot with opt-in per task. They are interactive until you say otherwise.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
