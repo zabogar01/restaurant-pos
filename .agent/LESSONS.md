@@ -35,6 +35,8 @@ duplicates, drop a rule once a test or hook enforces it. The stories are in the
 - Leave a dispatched task file uncommitted on the lead's branch and edit only the worktree copy afterwards, because committing it in both places makes two PRs add the same file with different content (FE-029 pilot, journal/2026-09-29-kit-004.md).
 - Parse a worker's verdict loosely and test the parser on each CLI's real output, because the Codex reviewer wrote `## Verdict: clean` where the dispatcher expected `**Verdict:**` (FE-029 pilot).
 - Close a task's panes as soon as its review is in and no round is expected, not at merge, because the owner found FE-029's builder and reviewer panes still open after the clean review (owner feedback, KIT-005).
+- When opening a Codex designer by hand in a worktree, pass `-c sandbox_workspace_write.writable_roots=["<main checkout>/.git"]` as the dispatcher does, because a worktree's index lock lives under the main checkout's `.git` and DESIGN-009's designer could not commit without it (2026-09-30).
+- After a hand-opened task, write `.agent/runs/<ID>/builder/meta.json` with the author's `cli` before dispatching its review, because without it the dispatcher assumes the builder role's default CLI and picks a reviewer from the author's own family (DESIGN-009, 2026-09-30).
 
 ## Builder
 

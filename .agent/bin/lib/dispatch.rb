@@ -31,13 +31,13 @@ module Dispatch
   end
 
   # ---------------------------------------------------------------- options
-  Options = Struct.new(:id, :role, :profile, :resume, :message, :dry_run, :mode, :keep_pane)
+  Options = Struct.new(:id, :role, :profile, :resume, :message, :dry_run, :mode, :keep_pane, :model)
 
   def self.parse(argv)
     o = Options.new
     args = argv.dup
     o.id = args.shift
-    refuse "usage: dispatch.sh <TASK-ID> [--role <r>] [--profile <p>] [--mode interactive|oneshot] [--resume [--message <text>]] [--keep-pane] [--dry-run]" if o.id.nil? || o.id.start_with?("-")
+    refuse "usage: dispatch.sh <TASK-ID> [--role <r>] [--profile <p>] [--model <m>] [--mode interactive|oneshot] [--resume [--message <text>]] [--keep-pane] [--dry-run]" if o.id.nil? || o.id.start_with?("-")
     until args.empty?
       a = args.shift
       case a
@@ -45,6 +45,7 @@ module Dispatch
       when "--profile" then o.profile = args.shift or refuse("--profile needs a value")
       when "--message" then o.message = args.shift or refuse("--message needs a value")
       when "--mode" then o.mode = args.shift or refuse("--mode needs a value")
+      when "--model" then o.model = args.shift or refuse("--model needs a value")
       when "--keep-pane" then o.keep_pane = true
       when "--resume" then o.resume = true
       when "--dry-run" then o.dry_run = true
@@ -172,6 +173,12 @@ module Dispatch
         @notes << "TEST ONLY: model #{@profile['model']} replaced by #{ENV['DISPATCH_TEST_MODEL']} (DISPATCH_TEST_MODEL)"
         @profile = @profile.merge("model" => ENV["DISPATCH_TEST_MODEL"])
       end
+      # A one-off model for this run only, on the CLI the profile resolved (so a
+      # reviewer stays in the other family). agents.yaml is unchanged.
+      if @o.model
+        @notes << "model #{@profile['model']} replaced by #{@o.model} for this run (--model)"
+        @profile = @profile.merge("model" => @o.model)
+      end
     end
 
     def recorded_builder_cli
@@ -184,6 +191,7 @@ module Dispatch
       return nil unless name && @role != "reviewer" && name != @profile_name
       o2 = @o.dup
       o2.profile = name
+      o2.model = nil
       o2.resume = false
       o2.mode = @mode
       Plan.new(o2)

@@ -25,10 +25,9 @@ design task first, because POS-05 and POS-06 have wireframes only and no Frost a
 
 5. **DESIGN-009** — POS-05 and POS-06 in Frost with the refund sheet (M-5) and its approval,
    where Close lands, and the five design questions FE-026 and FE-028 raised — depends on
-   DESIGN-008 (done) — **written 2026-09-29**
-   ([task](tasks/DESIGN-009-closed-orders-and-refund.md)), awaiting the owner's read; a Codex
-   `gpt-6-astra` designer on `agent/design-009`, cut once the lead branch holding the task
-   file is merged, then a design review.
+   DESIGN-008 (done) — **running since 2026-09-30**
+   ([task](tasks/DESIGN-009-closed-orders-and-refund.md)): a Codex `gpt-6-astra` designer
+   (`design009`) on `agent/design-009`, then a design review.
 6. **DESIGN follow-up** — folded into DESIGN-009 (Frost links off the prototype, the
    light-only line in `docs/DESIGN.md`). Still the lead's: a light-only note in the
    DESIGN-003 and DESIGN-005 task files — not done.
@@ -48,6 +47,8 @@ design task first, because POS-05 and POS-06 have wireframes only and no Frost a
 9. **Back-office design** — 13 screens (BO-01 to BO-13). Only the menu and a report detail
    have Frost artifacts (2026-09-14); the other screens render through a variable remap and were
    never reviewed. Needs an audit and a design task first — depends on DESIGN-009 — not written.
+   The two Frost back-office artifacts still link to the wireframe 51 times (`menu.html` 40,
+   `report-detail.html` 11); that design task re-points them.
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
 

@@ -112,6 +112,9 @@ expected, not at merge. After the merge: `git worktree remove
 - `.agent/bin/preset.sh <profile>` switches every builder dispatch to a
   profile (`economy`, `heavy`); `preset.sh default` switches back.
 - `--profile <name>` for one run; `--role <role>` to override routing.
+- `--model <model>` replaces the resolved profile's model for one run only, on the same CLI,
+  so a reviewer stays in the other family (for example `--role reviewer --model gpt-6.1-sol`).
+  agents.yaml is unchanged; a fallback profile drops it.
 - `--keep-pane` keeps the pane after DONE.
 - Test-only environment: `DISPATCH_ALLOW_STALE_HOOKS=1`,
   `DISPATCH_SKIP_SETUP=1`, `DISPATCH_POLL_SEC`, `STALL_ALERT_MIN`,

@@ -9,12 +9,10 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-30, when a new lead session re-checked it: the checks are green, only the lead is
-live, and `agent/lead-0929-kit005` is still unpushed, so DESIGN-009 waits on step 1 below.
-Before that, 2026-09-29, at the wrap-up of the session that ran `/doctor`, recorded KIT-005's
-acceptance and wrote DESIGN-009 (narrative in [journal/2026-09-29.md](journal/2026-09-29.md),
-third entry). First built in KIT-001 from the two archives and `git log`. The only product
-change since FE-028 is FE-029.
+2026-09-30, after PR #24 merged and the lead opened the DESIGN-009 designer. The 2026-09-29
+session that recorded KIT-005's acceptance and wrote DESIGN-009 is narrated in
+[journal/2026-09-29.md](journal/2026-09-29.md), third entry. The only product change since
+FE-028 is FE-029.
 
 ## Phase and gates
 
@@ -30,41 +28,43 @@ change since FE-028 is FE-029.
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted;
   KIT-005 (interactive dispatch, pane auto-close) merged as PR #21 (`5a1122f`). Product tasks run.
-- **Last verify by the lead:** `npm run verify` green at **2256 tests / 32 files** on
-  2026-09-29 (KIT-005 branch, now merged; it holds FE-029). The seven tests in
-  `apps/server/test/migrate.test.ts` need Docker and Postgres (`npm run db:up`); without it
-  they fail with `ECONNREFUSED 127.0.0.1:5433`, which is the environment, not the code (L6-14).
+- **Last verify by the lead:** `npm run verify` green at **2256 tests / 32 files** on 2026-09-30
+  (`agent/design-009`). `apps/server/test/migrate.test.ts` needs `npm run db:up`; without it its
+  seven tests fail with `ECONNREFUSED 127.0.0.1:5433`, the environment, not the code (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `5a1122f` (PR #21) on
+- **`development` is the integration branch** (owner, 2026-09-29), at `8b10f0b` (PR #24) on
   GitHub and in the owner's checkout. **`main`** and `development` are protected on GitHub:
   PR required, 0 approvals, enforced for admins.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
-  reinstalled from `5a1122f` and current. Rerun after any merge that changes `.githooks/` or agents.yaml.
-- Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0929-kit005`, cut
-  from `5a1122f`. It holds the KIT-005 wrap-up and acceptance, the DESIGN-009 task file and
-  this wrap-up. `fb9f541` and `e88f9e8` are on origin; `5ede492`, `1ca97a6` and the wrap-up
-  commit and the 2026-09-30 re-check are **local only** (the lead does not push unless told). **Until the owner pushes and
-  merges it, `development` has neither this STATE.md nor the DESIGN-009 task file.**
-  Dispatched tasks get worktrees under `../restaurant-pos-wt/<ID>` (none exist now) and run
-  state in `.agent/runs/<ID>/` (gitignored). Merged kit branches remain locally.
-- Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits when asked.
-- `agent/phase-0-foundations` (`735301d`) is behind `development` and stale. The design
-  branch `agent/design-direction` (worktree `../restaurant-pos-design`, head `5cbe8ca`, clean)
-  is fully merged. Any new design work needs a fresh branch.
+  current for `8b10f0b`. Rerun after any merge that changes `.githooks/` or agents.yaml.
+- Lead work happens in the worktree `../restaurant-pos-kit`, now on `agent/lead-0930` (cut from
+  `8b10f0b`). Dispatched tasks get worktrees under `../restaurant-pos-wt/<ID>` and run state in
+  `.agent/runs/<ID>/` (gitignored). Merged lead and kit branches remain locally.
+- Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
+  when asked and pushes only when the owner says so.
+- Stale or merged branches: `agent/phase-0-foundations` (`735301d`, behind); `agent/design-direction`
+  (worktree `../restaurant-pos-design`, `5cbe8ca`, clean, merged).
 
 ## Running tasks and agents
 
-- **Active task:** **DESIGN-009**, written and committed (`1ca97a6`,
-  `.agent/tasks/DESIGN-009-closed-orders-and-refund.md`); the owner asked to start it in the
-  next session. No worker is running. To start it: (1) the owner pushes and merges
-  `agent/lead-0929-kit005`; (2) the lead cuts `agent/design-009` from `development` into
-  `../restaurant-pos-wt/DESIGN-009`; (3) the lead opens a Codex `gpt-6-astra` designer (effort
-  high, model passed explicitly) in its own pane there, briefs it with the task file, and
-  starts `herdr agent wait` in the same turn. A design review follows before F4e.
-- **Live agents:** the lead only, pane `w2:p1`, named `lead` in Herdr (`/lead` renames it after
-  a session change). Every past worker is closed (roster: L1198-1264).
+- **Active task: DESIGN-009, in review.** The Codex `gpt-6-astra` designer (`design009`) delivered
+  it with a full Handoff ending DONE, then could not commit (the Codex sandbox cannot write the
+  worktree's index lock; LESSONS.md) and ran out of usage. On the owner's word the lead
+  committed its files unchanged as `06f3a25` on `agent/design-009`, closed its pane, added the
+  criterion 6 correction there (`74943f7`), and ran `npm run verify` there: green, 2256 / 32.
+- **Review done** (Claude Opus 5.5, `90669f1`): findings, 9 (2 high). Every finding accepted.
+  The owner ruled F4 and F5 (four DECISIONS lines, 2026-09-30); the lead ruled the rest and Part C
+  (Close lands on the floor, on a new `after-close` state). All written as "Round 2" in the task
+  file on `agent/design-009` (`4eb4fd2`). **Round 2 done** (`03dcf82`) by a Claude Opus 5.5
+  designer (owner, once only; Codex out of usage); pane closed; lead verify green 2256 / 32;
+  `status: review` (`efabaa9`). **Next:** Codex re-review once its usage resets (dry run picks
+  codex gpt-6-astra, preflight clean). Its 5 questions are ruled in the task file.
+- **Main checkout has one uncommitted edit:** DESIGN-008's Status line (accepted), identical
+  to `1b50e7e` on `agent/lead-0930`; run `git checkout -- .agent/tasks/DESIGN-008-*` before pulling.
+- **Live agents:** the lead only (`w2:p1`, named `lead`).
+
 - Leftovers the lead did not make and has not closed: agentless pane `w2:pE` (tab `t7`), and a
   detached worktree `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`).
 
@@ -87,10 +87,8 @@ change since FE-028 is FE-029.
 
 ## Live bugs and known defects
 
-- **Menu tile adds a Burger: FIXED** by FE-021 (`7268943`, L257-262). Kept until the owner has
-  seen it fixed in a browser.
-- **Probably intended:** Add from POS-03's `eightysix` state returns there by design (L353;
-  `orderFixtures.ts:990-995`, asserted at `own-items.test.tsx:381-393`). Close once the owner has seen it.
+- **Owner to see in a browser, then close:** the Burger-tile fix (FE-021 `7268943`, L257-262), and
+  Add from POS-03 `eightysix` returning there by design (L353; `own-items.test.tsx:381-393`).
 - **P3, not filed** (L172-175, L206-213, L248-249): a reopened book-only order lands on
   `?state=default` and the URL names Table 1's fixture; `closeOrder` fires a quick sale with
   `type: 'table'`; a quick sale holding an 86'd pending line refuses Close silently with no
@@ -108,6 +106,8 @@ change since FE-028 is FE-029.
 
 Nothing here is decided. Detail is where each line points.
 
+- **Merge `agent/lead-0930`** (unpushed): the approved PRD change `6ea5a5d` (FR-H5, FR-J3, AC-18,
+  AC-34, committed with ALLOW_CONTRACT=1 on the owner's word), DESIGN-008's status fix, memory.
 - **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
   or go back to one-shot with opt-in per task. They are interactive until you say otherwise.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
@@ -144,7 +144,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-The ordered list is [QUEUE.md](QUEUE.md). In one line: start DESIGN-009 with a designer (the
-three steps under "Running tasks"), review it, rule Part C and the questions it raises, then
+The ordered list is [QUEUE.md](QUEUE.md). In one line: let the DESIGN-009 designer finish (the
+entry under "Running tasks"), review it, rule Part C and the questions it raises, then
 F4e through the dispatcher, then the back office; backend tasks 3 to 12 resume after the
 owner's frontend review.
