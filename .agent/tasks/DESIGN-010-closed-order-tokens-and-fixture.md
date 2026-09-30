@@ -5,8 +5,8 @@ category: ui
 touches: [money]
 depends_on: [DESIGN-009]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 0
+status: complete
+cycles: 1
 ---
 # DESIGN-010 — Two closed-order tokens and the refund fixtures' allocations
 
