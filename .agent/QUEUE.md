@@ -23,17 +23,20 @@ start. KIT-005 ran first (owner) and was accepted on 2026-09-29.
 The floor, incidents, close and recovery slices (F4a to F4d) are done. What is left needs a
 design task first, because POS-05 and POS-06 have wireframes only and no Frost artifact.
 
-5. **DESIGN-009** — POS-05 and POS-06 in Frost with the refund sheet (M-5) and its approval,
-   where Close lands, and the five design questions FE-026 and FE-028 raised — depends on
-   DESIGN-008 (done) — **running since 2026-09-30**
-   ([task](tasks/DESIGN-009-closed-orders-and-refund.md)): a Codex `gpt-6-astra` designer
-   (`design009`) on `agent/design-009`, then a design review.
+5. **DESIGN-010 (not written)** — the small designer follow-up to DESIGN-009 (complete
+   2026-09-30, `b0d4c5e`): register `--frost-closed-list-columns` and
+   `--frost-allocation-field-width` with the values in DESIGN-009's round 2 Handoff and replace
+   the flexible stand-ins; fix the re-review's F1, where `refund-error` keeps the split-sale
+   allocation for every `order=` so a cash-only or quick-sale order shows a tender it never took
+   (owner ruling O1); add a cash-only failure example. Can run beside F4e.
 6. **DESIGN follow-up** — folded into DESIGN-009 (Frost links off the prototype, the
    light-only line in `docs/DESIGN.md`). Still the lead's: a light-only note in the
    DESIGN-003 and DESIGN-005 task files — not done.
 7. **F4e (no ID yet)** — build POS-05 and POS-06: the closed-order book already exists in the
    store (FE-027); refund and manager approval reuse M-1 — depends on DESIGN-009 and its
-   review — not written.
+   review (both done) — not written. Build rulings in DESIGN-009's task file: Close lands on
+   `after-close`, the floor `dayclosed` header names the open day, the banner clears per the
+   owner's 2026-09-30 ruling, refund rules per FR-H5 and FR-J3 as amended (`6ea5a5d`).
 8. **Code housekeeping (no IDs yet)** — the four P3s in STATE.md; re-check the POS-03 URL
    after Add; decide Prettier either way — depends on nothing, can ride with F4e as a small
    slice — not written. (The modal move was FE-029, KIT-004's pilot.)
