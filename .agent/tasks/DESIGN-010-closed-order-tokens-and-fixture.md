@@ -131,6 +131,11 @@ None. Adding two custom properties to `frost.css` must not change any test resul
    `1.559.250` in the overflow state is not clipped. Each allocation field is 180px wide in
    `sheet-refund`, `sheet-custom` (six rows) and `sheet-edit`. The Handoff gives the
    measured widths and how they were measured. Red if the list scrolls sideways or a figure is clipped.
+   *(Corrected by the lead on 2026-09-30 at design010's request. POS-05's overflow has no
+   `1.559.250` row; that figure is POS-06's long order. Measure the unchanged POS-06 figure,
+   and check the 180px Total column with a temporary, browser-only POS-05 row carrying
+   `1.559.250`, which is not committed. In `sheet-edit` the keypad output replaces the rows and
+   keeps its `flex:1` width; measure the allocation field at 180px after *Cancel edit* instead.)*
 4. For each of the six states in Part B opened with each of `order=default`, `cash`,
    `custom` and `quick`, the sheet and the M-1 *Money back* line list only that order's
    tender names. The Handoff has a table: state × order → rows shown and their sum. Red if
@@ -163,3 +168,201 @@ Then run `herdr agent prompt lead "<your name>: DESIGN-010 done — <one line>"`
 `herdr agent prompt lead "<your name>: BLOCKED — <question>"`.
 
 ## Handoff
+
+DESIGN-010 registers the approved closed-order layout tokens and corrects the
+illustrative refund drafts without changing application source or the contract.
+The changes are in `docs/design/tokens/frost.tokens.json`, its generated
+`frost.css`, the Frost POS artifacts' `closed.css`, `closed.js` and
+`closed-order.html`, `visual-directions/manifest.js`, and the DESIGN-009
+supplement in `docs/DESIGN.md`.
+
+### Tokens and provenance
+
+`--frost-closed-list-columns` is exactly
+`88px 172px minmax(0,1fr) 180px`. Both `.co-listhead` and `.co-row` use it.
+`--frost-allocation-field-width` is exactly `180px`; `.co-allocation .co-field`
+uses it, with the remaining row width assigned to the tender label. The
+half-row grid stand-in is removed. The amount-filter and allocation-editor
+outputs retain their existing `flex:1` rule.
+
+Both entries use the **source-object shape**, with no `designed` block. The
+values were authored in DESIGN-009 round 1, reviewed as missing tokens in
+round 2 and approved for registration by the lead. They are not newly designed
+values in this task. Their source objects cite the consuming artifact after
+this change: `closed.css` line 12, `.co-listhead,.co-row`,
+`grid-template-columns`; and line 17, `.co-allocation .co-field`, `width`.
+`authoredValue` records the actual `var(--frost-...)` declaration at that
+location, rather than claiming a literal still exists there. The registered
+values are the DESIGN-009 values reproduced in Part A of this task. CSS was
+regenerated from every registry entry in insertion order, retaining its
+existing generated-file header. Every JSON value matches its CSS declaration.
+
+### Refund examples and retained rows
+
+The six examples now begin with the selected order's default allocations,
+including cash less change and repeated original tender rows. No tender is
+invented, combined or reordered. For multi-tender orders, `sheet-edited`,
+`refund-error` and `day-refusal` move 20.000 from the first row to the last.
+`sheet-invalid` subtracts 20.000 from the first row and displays
+*Allocate 20.000 more. Allocations must equal <the order total> exactly.*
+Continue remains disabled.
+
+For multiple tenders, `sheet-zero` and `approval-edited` move the first row's
+entire contribution to the last row, leaving the first at 0. The sheet and
+M-1 identify that row as *not refunded*. For a single tender, the valid
+`sheet-edited`, `approval-edited`, `refund-error` and `day-refusal` drafts
+retain the full default contribution, with no ALLOCATION EDITED tag in M-1.
+There is no other tender to move money to. A single-tender `sheet-zero` keeps
+the selected subject, shows its only row at 0 and disables Continue. Its copy
+names the full shortfall: 155.925 for cash, 173.250 for quick sale, or
+1.559.250 for the long order. No state silently substitutes another order.
+
+The table includes the four required orders and the additional long-order
+coverage. All amounts are whole rupiah. For `day-refusal`, these are the
+retained attempted allocations, not visible refund controls: the business day
+is closed, so neither the sheet nor M-1 can reopen. That eligibility is
+unchanged. Invalid drafts likewise cannot reach M-1 until corrected.
+
+| State | Selected order | Allocation rows, in order | Sum |
+|---|---|---|---|
+| `sheet-edited` | `default` | Card 80.000 · Cash 75.925 | 155.925 |
+| `sheet-edited` | `cash` | Cash 155.925 | 155.925 |
+| `sheet-edited` | `custom` | Card 20.000 · Card 30.000 · Meal voucher 20.000 · Card 10.000 · Staff account 20.000 · Cash 55.925 | 155.925 |
+| `sheet-edited` | `quick` | Card 173.250 | 173.250 |
+| `sheet-edited` | `long` | Card 1.559.250 | 1.559.250 |
+| `sheet-invalid` | `default` | Card 80.000 · Cash 55.925 | 135.925 |
+| `sheet-invalid` | `cash` | Cash 135.925 | 135.925 |
+| `sheet-invalid` | `custom` | Card 20.000 · Card 30.000 · Meal voucher 20.000 · Card 10.000 · Staff account 20.000 · Cash 35.925 | 135.925 |
+| `sheet-invalid` | `quick` | Card 153.250 | 153.250 |
+| `sheet-invalid` | `long` | Card 1.539.250 | 1.539.250 |
+| `refund-error` | `default` | Card 80.000 · Cash 75.925 | 155.925 |
+| `refund-error` | `cash` | Cash 155.925 | 155.925 |
+| `refund-error` | `custom` | Card 20.000 · Card 30.000 · Meal voucher 20.000 · Card 10.000 · Staff account 20.000 · Cash 55.925 | 155.925 |
+| `refund-error` | `quick` | Card 173.250 | 173.250 |
+| `refund-error` | `long` | Card 1.559.250 | 1.559.250 |
+| `day-refusal` | `default` | Card 80.000 · Cash 75.925 | 155.925 |
+| `day-refusal` | `cash` | Cash 155.925 | 155.925 |
+| `day-refusal` | `custom` | Card 20.000 · Card 30.000 · Meal voucher 20.000 · Card 10.000 · Staff account 20.000 · Cash 55.925 | 155.925 |
+| `day-refusal` | `quick` | Card 173.250 | 173.250 |
+| `day-refusal` | `long` | Card 1.559.250 | 1.559.250 |
+| `sheet-zero` | `default` | Card 0 (not refunded) · Cash 155.925 | 155.925 |
+| `sheet-zero` | `cash` | Cash 0 (not refunded) | 0 |
+| `sheet-zero` | `custom` | Card 0 (not refunded) · Card 30.000 · Meal voucher 20.000 · Card 10.000 · Staff account 20.000 · Cash 75.925 | 155.925 |
+| `sheet-zero` | `quick` | Card 0 (not refunded) | 0 |
+| `sheet-zero` | `long` | Card 0 (not refunded) | 0 |
+| `approval-edited` | `default` | Card 0 (not refunded) · Cash 155.925 | 155.925 |
+| `approval-edited` | `cash` | Cash 155.925 | 155.925 |
+| `approval-edited` | `custom` | Card 0 (not refunded) · Card 30.000 · Meal voucher 20.000 · Card 10.000 · Staff account 20.000 · Cash 75.925 | 155.925 |
+| `approval-edited` | `quick` | Card 173.250 | 173.250 |
+| `approval-edited` | `long` | Card 1.559.250 | 1.559.250 |
+
+The new declared and gallery-registered state `refund-error-cash` selects
+Table 7 by default. It is equivalent to
+`closed-order.html?state=refund-error&order=cash`. Both paths were exercised
+through *Review refund* and *Continue to manager PIN*: the sheet has only
+Cash 155.925, and M-1 reads exactly *Money back: Cash 155.925*, without
+ALLOCATION EDITED. The original Cash 200.000 and change 44.075 remain in the
+closed order's payment history. `refund-error` continues to describe a
+**definite rejection**. No-response recovery still requires rereading the
+order before a retry; this task adds no command or persistence behavior.
+
+### Measurements and browser evidence
+
+I ran headless Google Chrome through Playwright with a 1280×800 viewport.
+The `.co-app` bounding box was 1280×800. The initial sandbox launch failed
+with SIGABRT; the task-authorized escalated browser runs succeeded. Scripts,
+JSON output and screenshots are outside the repository in
+`/private/tmp/design010/`; none is committed. The completed check is
+`check.cjs`, and its evidence is `report.json`.
+
+Measurements use `getBoundingClientRect()`, computed grid columns, DOM Range
+text bounds, and `scrollWidth`/`clientWidth` in Chrome, not arithmetic from CSS.
+
+| Surface and state | Browser result |
+|---|---|
+| POS-05, every one of its 11 states | The header and every rendered row measured 88 / 172 / 752 / 180px. The list's scroll width equalled its client width: no sideways scrolling. |
+| POS-05 `overflow`, temporary text stress case | `1.559.250` measured 80.078125px inside the 180px Total column, with both text edges inside the cell. The text replacement existed only in the browser; the fixture is unchanged. |
+| POS-06 `overflow` | The existing `1.559.250` grand total measured 106.765625px, with text bounds inside its cell. |
+| `sheet-refund` | Both allocation fields measured 180px. |
+| `sheet-ac25` | Its one allocation field measured 180px. |
+| `sheet-custom` | All six allocation fields measured 180px. |
+| `sheet-edited`, `sheet-invalid`, `sheet-zero` | Both default-order allocation fields measured 180px in each state. |
+| `sheet-edit` | The keypad output retained `flex:1` and measured 522px. After Cancel edit, both allocation fields measured 180px. |
+| POS-05 `filter-amount` | The output retained `flex:1` and measured 730.328125px. |
+
+I inspected the before/after list and six-row sheet screenshots, and the
+cash-only M-1 screenshot. The tender labels and figures are legible; the
+six-row sheet retains its scrolling body and fixed footer. The temporary
+large list total is visibly inside its column.
+
+### Validation and limits
+
+- The completed browser crawl visited **160 declared states across seven POS
+  artifacts** with **zero JavaScript errors**. All **350 distinct collected
+  links** resolve to existing files, and the collected POS state links name
+  declared states. POS-05 and POS-06 manifest state lists match their HTML
+  declarations. The gallery loads `refund-error-cash` in its Frost iframe.
+- All 30 state/order combinations in the table preserve the original tender
+  rows and satisfy their expected sums. Reachable sheets and M-1 subjects
+  were checked by their actual controls. The test also used a temporary,
+  read-only browser accessor to inspect retained drafts, including
+  `day-refusal`; it did not enable forbidden controls or modify repository
+  scripts. Both cash recovery entry points were separately checked with the
+  unmodified fixture script.
+- Zero-total and already-refunded `refund-error` examples have no Review
+  refund control. Closed-day details and every `day-refusal` combination have
+  no Refund control, including after Return to order.
+- Every Frost token referenced by `closed.css` exists in the registry. The
+  stylesheet has no raw color, pixel length or numeric font weight. Both
+  stand-ins are absent, and JSON/CSS registry values agree.
+- `rg -n "prototype/" docs/design/visual-directions/frost/pos` returned no
+  matches. `git diff --check` passed.
+- **`npm run verify` could not run in this worktree.** It exited 127 during
+  typecheck with `sh: tsc: command not found`. Unit tests did not run. I did
+  not run `npm ci`, install dependencies or change build files. The lead was
+  notified to run verify at review, as this task explicitly permits when the
+  worktree cannot run it. No application verification pass is claimed.
+- These are illustrative fixture checks. No real refund command, manager
+  authentication, printer operation, persistence or audit entry was tested.
+
+### Appearance changes and scope
+
+The following names enumerate the affected states and interactions:
+
+1. POS-05 `default`, `empty`, `loading`, `error`, `overflow`, `nomatch`,
+   `dayclosed`, `dayclosed-start`, `filter-table`, `filter-time` and
+   `filter-amount`: the shared header and rendered rows use the registered
+   fixed columns. Filter controls and outputs keep their styling.
+2. POS-06 `sheet-refund`, `sheet-ac25`, `sheet-custom`, `sheet-edited`,
+   `sheet-invalid` and `sheet-zero`: allocation amount buttons become 180px
+   wide. The same rule applies whenever an existing interaction opens these
+   allocation rows, including Cancel edit from `sheet-edit`, Cancel reason
+   from `sheet-other`, cancellation of `approval` or `approval-edited`, and
+   Review refund from `refund-error`. The keypad and reason-editor initial
+   views retain their appearance.
+3. POS-06 `sheet-edited`, `sheet-invalid`, `sheet-zero`, `approval-edited`,
+   `refund-error` and `day-refusal`, when parameterized with a non-split order:
+   the selected order keeps its own rows and totals as documented above.
+   Only the first four render changed allocation content immediately;
+   `refund-error` reveals it on Review refund. `day-refusal` retains the
+   correct hidden attempted draft while its refusal composition is unchanged.
+   The original split-sale allocation figures and M-1 subject stay the same.
+4. `refund-error-cash` is the one added POS-06 state and gallery option. It
+   uses the existing failure composition for Table 7.
+
+No other artifact was edited. Application source, tests, product documents,
+accepted ADRs, floor, settlement, order, incidents and back-office artifacts
+are untouched. The task frontmatter is untouched. The lead's separate
+acceptance-criterion correction is retained alongside this Handoff.
+
+### Questions raised and resolved
+
+I raised two contradictions in acceptance criterion 3 and proposed measuring
+the existing POS-06 large total plus a temporary POS-05 text stress case, and
+measuring allocation fields after Cancel edit while retaining the keypad
+output's `flex:1` width. The lead accepted both proposals and inserted the
+correction into this task on 2026-09-30. I followed that correction. There
+are no new design or contract questions. The remaining review action is the
+lead's `npm run verify` in an environment with dependencies.
+
+DONE

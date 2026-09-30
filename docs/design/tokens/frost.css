@@ -178,4 +178,6 @@
   --frost-amount-keyed-padding-left: 13px;
   --frost-pressed-ring: inset 0 0 0 2px currentColor;
   --frost-invalid-border: 2px solid #83611c;
+  --frost-closed-list-columns: 88px 172px minmax(0,1fr) 180px;
+  --frost-allocation-field-width: 180px;
 }

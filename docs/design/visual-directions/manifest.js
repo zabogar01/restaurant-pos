@@ -544,6 +544,10 @@ window.MOCKUPS = [
       "Refund command failed"
     ],
     [
+      "refund-error-cash",
+      "Cash-only refund failed · AC-25"
+    ],
+    [
       "day-refusal",
       "Day closed during attempt"
     ],

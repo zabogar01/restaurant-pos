@@ -2,7 +2,8 @@
 (() => {
   const list = window.WF.id === 'POS-05';
   const params = new URLSearchParams(location.search);
-  const initial = WF.states.some(s => s[0] === params.get('state')) ? params.get('state') : 'default';
+  const requested = WF.states.some(s => s[0] === params.get('state')) ? params.get('state') : 'default';
+  const initial = requested === 'refund-error-cash' ? 'refund-error' : requested;
   const app = document.querySelector('.co-app');
   const fmt = n => BigInt(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');
   const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -86,7 +87,7 @@
   function total(r){return r.zero?0:r.quick?173250:155925;}
   function key(value,k,max=9){return k==='Clear'?'':k==='←'?value.slice(0,-1):(value==='0'?'':value).concat(k).slice(0,max);}
   let state=initial;
-  const selected=params.get('order')||({ 'sheet-ac25':'cash','sheet-custom':'custom','sheet-zero':'default','approval-edited':'default',zero:'zero',cash:'cash',custom:'custom',quick:'quick',refunded:'refunded',overflow:'long' }[initial]||'default');
+  const selected=params.get('order')||(requested==='refund-error-cash'?'cash':null)||({ 'sheet-ac25':'cash','sheet-custom':'custom','sheet-zero':'default','approval-edited':'default',zero:'zero',cash:'cash',custom:'custom',quick:'quick',refunded:'refunded',overflow:'long' }[initial]||'default');
   const long=selected==='long';
   const order=rows.find(r=>r.state===selected)||rows[0];
   const dayclosed=initial==='dayclosed';
@@ -96,8 +97,20 @@
   const subtotal=long?1650000:165000,discount=order.zero?165000:order.quick?0:long?165000:16500,service=order.zero?0:order.quick?8250:long?74250:7425;
   const defaults=()=>(long?[['Card',1559250]]:order.tenders).map(([name,n],i)=>({name,amount:BigInt(n-(name==='Cash'&&i===order.tenders.length-1?(order.change||0):0))}));
   let allocations=defaults();
-  if(['sheet-edited','sheet-invalid','refund-error','day-refusal'].includes(initial))allocations=[{name:'Card',amount:80000n},{name:'Cash',amount:initial==='sheet-invalid'?55925n:75925n}];
-  if(['sheet-zero','approval-edited'].includes(initial))allocations=[{name:'Card',amount:0n},{name:'Cash',amount:155925n}];
+  // Keep every original row, including repeated tender names, in its original order.
+  // Single-tender exact-sum examples retain the default: there is nowhere to move money.
+  if(!order.zero&&!refunded&&!closedDay){
+    if(['sheet-edited','refund-error','day-refusal'].includes(initial)&&allocations.length>1){
+      const moved=allocations[0].amount<20000n?allocations[0].amount:20000n;
+      allocations[0].amount-=moved;allocations.at(-1).amount+=moved;
+    }
+    if(initial==='sheet-invalid')allocations[0].amount-=20000n;
+    if(['sheet-zero','approval-edited'].includes(initial)&&(allocations.length>1||initial==='sheet-zero')){
+      const moved=allocations[0].amount;allocations[0].amount=0n;
+      if(allocations.length>1)allocations.at(-1).amount+=moved;
+      // A sole zero row intentionally leaves the full total unallocated and blocks Continue.
+    }
+  }
   const edited=()=>{const base=defaults();return allocations.length!==base.length||allocations.some((x,i)=>x.amount!==base[i].amount);};
   let reason=['approval','approval-edited','refund-error','day-refusal','sheet-edited','sheet-invalid','sheet-edit','sheet-zero'].includes(initial)?presets[0]:'';
   let overlay=initial.startsWith('sheet-')?'sheet':['approval','approval-edited'].includes(initial)?'approval':null;
