@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-30, after DESIGN-009's re-review (the session narrative is in
-[journal/2026-09-30.md](journal/2026-09-30.md)). The only product change since FE-028 is
-FE-029; DESIGN-009 added design artifacts and the PRD refund wording, no code.
+2026-09-30, at the wrap-up of the lead session that ran DESIGN-009 from start to complete
+(narrative in [journal/2026-09-30.md](journal/2026-09-30.md)). The only product code change
+since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wording, no code.
 
 ## Phase and gates
 
@@ -28,19 +28,19 @@ FE-029; DESIGN-009 added design artifacts and the PRD refund wording, no code.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted;
   KIT-005 (interactive dispatch, pane auto-close) merged as PR #21 (`5a1122f`). Product tasks run.
 - **Last verify by the lead:** `npm run verify` green at **2256 tests / 32 files** on 2026-09-30
-  (`agent/design-009`). `apps/server/test/migrate.test.ts` needs `npm run db:up`; without it its
-  seven tests fail with `ECONNREFUSED 127.0.0.1:5433`, the environment, not the code (L6-14).
+  (DESIGN-009 branch; no code changed since). `apps/server/test/migrate.test.ts` needs
+  `npm run db:up`; without it its seven tests fail with `ECONNREFUSED 127.0.0.1:5433` (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `b1d3878` (PR #25) on
+- **`development` is the integration branch** (owner, 2026-09-29), at `b0f7de4` (PR #28) on
   GitHub and in the owner's checkout. **`main`** and `development` are protected on GitHub:
   PR required, 0 approvals, enforced for admins.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
-  current for `b1d3878`. Rerun after any merge that changes `.githooks/` or agents.yaml.
-- Lead work happens in the worktree `../restaurant-pos-kit`, now on `agent/lead-0930b` (cut from
-  `b1d3878`). Dispatched tasks get worktrees under `../restaurant-pos-wt/<ID>` and run state in
-  `.agent/runs/<ID>/` (gitignored). Merged lead and kit branches remain locally.
+  current for `b0f7de4`. Rerun after any merge that changes `.githooks/` or agents.yaml.
+- Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0930-wrapup` (cut
+  from `b0f7de4`; holds only this wrap-up). No task worktree exists under
+  `../restaurant-pos-wt/`, and `.agent/runs/` is empty. Merged lead and kit branches remain locally.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale or merged branches: `agent/phase-0-foundations` (`735301d`, behind); `agent/design-direction`
@@ -48,16 +48,13 @@ FE-029; DESIGN-009 added design artifacts and the PRD refund wording, no code.
 
 ## Running tasks and agents
 
-- **No active task.** DESIGN-009 is **complete** (2026-09-30): round 1 Codex, round 2 Claude (owner,
-  once), re-review Codex `gpt-6.1-sol` via the new one-off `--model` (findings, 1 medium, in the
-  walkable fixture only; it goes to DESIGN-010). The owner merged its branch as PR #26 before the
-  re-review; the re-review and `status: complete` are `b0d4c5e` on `agent/design-009`, unpushed.
-  The lead did not walk the flows in a browser itself: the designer measured 159 states in
-  headless Chrome, and the re-reviewer's Chrome crashed (SIGABRT), so it crawled them in JSDOM.
-- **Worktree `../restaurant-pos-wt/DESIGN-009`** and `.agent/runs/DESIGN-009/` stay until
-  `b0d4c5e` is merged; then remove both.
-- **Live agents:** the lead only (`w2:p1`, named `lead`).
-
+- **No active task.** DESIGN-009 is **complete and merged** (PRs #26 and #27): round 1 by a Codex
+  designer, round 2 by a Claude Opus 5.5 designer (owner, once), re-review by Codex
+  `gpt-6.1-sol` (one medium fixture finding, queued as DESIGN-010). Its worktree and run folder
+  are removed. Browser evidence is the designer's own: 159 states measured at 1280×800 in
+  headless Chrome. The re-reviewer's Chrome crashed (it crawled in JSDOM), and the lead has not
+  walked the flows in a browser.
+- **Live agents:** the lead only (`w2:p1`, named `lead`; `/lead` renames it after a session change).
 - Leftovers the lead did not make and has not closed: agentless pane `w2:pE` (tab `t7`), and a
   detached worktree `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`).
 
@@ -70,13 +67,17 @@ FE-029; DESIGN-009 added design artifacts and the PRD refund wording, no code.
 - **Only the owner answers a permission prompt** (`BLOCKED ON APPROVAL`, pane text saved in
   the run directory). Claude workers: `acceptEdits`, a Bash allowlist, `git push` denied (owner).
 - **YAML 1.1 reads `caveman: off` as `false`.** Anything reading `caveman:` must treat both as off.
-- OpenCode interactive and permissions, and Codex writable roots, are proven by dry run only.
+- OpenCode interactive and permissions are proven by dry run only. **`--model <m>`** (added
+  2026-09-30) swaps the model for one run on the same CLI; the reviewer keeps the other family.
+  `gpt-6.1-sol` is a valid Codex model (checked 2026-09-30).
 - **Owner's `~/.claude/settings.json` changed 2026-09-29** (`/doctor`; journal, third entry):
   default mode `auto`, which workers override with their own `--permission-mode`; 29 unused
   skills off, none of them named in agents.yaml or a role prompt.
 - Designers and architects are not dispatched: open their pane by hand with the model from
-  agents.yaml passed explicitly. Codex trusts only the main checkout, so a Codex pane in a
-  worktree may raise a folder-trust prompt; only the owner answers it.
+  agents.yaml passed explicitly. A hand-opened Codex designer in a worktree needs
+  `-c sandbox_workspace_write.writable_roots=["<main>/.git"]` to commit, and before its review
+  the lead writes `.agent/runs/<ID>/builder/meta.json` with its `cli` (LESSONS.md, Lead). Only
+  the owner answers a folder-trust or permission prompt.
 
 ## Live bugs and known defects
 
@@ -99,8 +100,8 @@ FE-029; DESIGN-009 added design artifacts and the PRD refund wording, no code.
 
 Nothing here is decided. Detail is where each line points.
 
-- **Merge `agent/lead-0930b` and `agent/design-009` (`b0d4c5e`)**, both unpushed: this session's
-  records, and DESIGN-009's re-review with `status: complete`.
+- **Walk DESIGN-009 in a browser before F4e?** The lead offered to walk the new POS-05/POS-06
+  flows in Chrome itself (no one re-measured after round 2); not yet answered.
 - **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
   or go back to one-shot with opt-in per task. They are interactive until you say otherwise.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
@@ -124,16 +125,12 @@ Nothing here is decided. Detail is where each line points.
 
 ## Live conflicts
 
-- **Close lands on the floor, the artifact says POS-06.** The lead ruled the floor with
-  `replaceState` (FE-027, L188-193). DESIGN-009 Part C asks the designer to recommend; the
-  lead rules at its review.
-- **`docs/DESIGN.md` and DESIGN-003/005 still call the dark palette open.** DECISIONS.md
-  records light only for the MVP. DESIGN-009 adds the `docs/DESIGN.md` line; the note in the
-  DESIGN-003/005 task files is the lead's and not done.
+- **`docs/DESIGN.md` is now light-only** (DESIGN-009), but the DESIGN-003 and DESIGN-005 task
+  files still call the dark palette open; the note there is the lead's and not done (QUEUE 6).
 - **DESIGN-007 contradicts itself on `fireerror`** (`:365`/`:407` versus `:578`). You ruled the
   `:578` reading (L349); FE-022 built it. The design file itself is unchanged.
-- **The settlement and lock artifacts still link to the prototype** (L114-115). DESIGN-009
-  Part C re-points them; its criterion 6 checks that no Frost artifact links to `prototype/`.
+- **The two Frost back-office artifacts link to the wireframe 51 times**; owed to the
+  back-office design task (QUEUE 9). The POS artifacts are clean since DESIGN-009.
 
 ## Next up
 
