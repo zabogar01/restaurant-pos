@@ -57,12 +57,13 @@ FE-028 is FE-029.
 - **Review done** (Claude Opus 5.5, `90669f1`): findings, 9 (2 high). Every finding accepted.
   The owner ruled F4 and F5 (four DECISIONS lines, 2026-09-30); the lead ruled the rest and Part C
   (Close lands on the floor, on a new `after-close` state). All written as "Round 2" in the task
-  file on `agent/design-009` (`4eb4fd2`, `status: active`, `cycles: 2`). **Round 2 running** since
-  12:55 by a Claude Opus 5.5 designer (owner, once only; Codex out of usage), Herdr `design009`,
-  pane `w2:p2E`. Its re-review goes to Codex (`runs/DESIGN-009/builder/meta.json` says `claude`).
+  file on `agent/design-009` (`4eb4fd2`). **Round 2 done** (`03dcf82`) by a Claude Opus 5.5
+  designer (owner, once only; Codex out of usage); pane closed; lead verify green 2256 / 32;
+  `status: review` (`efabaa9`). **Next:** Codex re-review once its usage resets (dry run picks
+  codex gpt-6-astra, preflight clean). Its Handoff raises 5 questions, see the owner list.
 - **Main checkout has one uncommitted edit:** DESIGN-008's Status line (accepted), identical
   to `1b50e7e` on `agent/lead-0930`; run `git checkout -- .agent/tasks/DESIGN-008-*` before pulling.
-- **Live agents:** the lead (`w2:p1`, named `lead`) and the reviewer while it runs.
+- **Live agents:** the lead only (`w2:p1`, named `lead`).
 
 - Leftovers the lead did not make and has not closed: agentless pane `w2:pE` (tab `t7`), and a
   detached worktree `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`).
