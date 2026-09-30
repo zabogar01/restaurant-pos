@@ -48,7 +48,7 @@
       <div>Check the printer directly. <a href="incidents.html">Retry</a></div>
     </div>
 
-    <div class="empty" data-when="empty" style="padding:60px">
+    <div class="empty" data-when="empty" role="status" style="padding:60px">
       <div style="font-weight:700;margin-bottom:6px">Nothing outstanding</div>
       <div>No unresolved print incidents.</div>
     </div>
@@ -149,7 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const any=[...document.querySelectorAll('[data-incident]')].some(c=>!c.hidden && !c.closest('[data-group]').hidden);
     document.querySelector('.incident-status').textContent=any ? (button.dataset.clear.startsWith('receipt')?'Receipt warning dismissed.':'Kitchen incident cleared.') : '';
-    document.querySelector('.empty').hidden=any;
+    // The empty composition is the one visible message and a live region: it is
+    // revealed empty and then filled, so a screen reader announces the last clear.
+    const empty=document.querySelector('.empty');
+    if(any){empty.hidden=true;return;}
+    const message=[...empty.childNodes];
+    empty.replaceChildren();empty.hidden=false;
+    setTimeout(()=>empty.replaceChildren(...message),100);
   }));
 });
 </script></body></html>

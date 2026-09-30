@@ -1080,7 +1080,12 @@ or accepted implementation guidance. Their source is
 - **Closed-order list.** White rows have a 72px minimum height, divider
   rules, right-aligned tabular totals and a visible REFUNDED tag where
   applicable. The list scrolls beneath fixed filters and column headings.
-  Table, closing-time and exact-amount filters open touch sheets.
+  Table, closing-time and exact-amount filters open touch sheets, and
+  *Apply filter* filters the list at once; there is no separate search
+  step. The four columns share the row in flexible proportions of
+  1 : 1 : 3 : 1 until the column-width tokens raised in the round-2
+  Handoff are ruled. Under the closed-day banner the open day's orders
+  list first and the closed day follows as its own group, reprint only.
 - **Closed-order detail.** Charged items and original payments scroll on
   the left. The white 460px figures panel keeps the stored subtotal,
   discount, service charge, total and actions visible on the right. The
@@ -1099,6 +1104,12 @@ or accepted implementation guidance. Their source is
   the exact shortfall or excess and blocks Continue. A required reason
   precedes the existing Manager PIN modal over the detail; cancelling that
   modal restores the allocation sheet with its amounts and reason kept.
+  Allocations use the order's original tenders only, and only their sum is
+  checked. A row set to 0 reads *not refunded* and is left out of the
+  refund. The allocation field fills the right half of its row; it has no
+  width token yet. The modal's subject lists the allocation after the
+  reason, and carries an ALLOCATION EDITED tag when it differs from the
+  default.
 
 Behavior, fixture arithmetic and recommendations awaiting review are recorded
 in the [DESIGN-009 Handoff](../.agent/tasks/DESIGN-009-closed-orders-and-refund.md#handoff).

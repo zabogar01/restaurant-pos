@@ -402,6 +402,14 @@ window.MOCKUPS = [
       [
         "receipt-warning",
         "Receipt warning"
+      ],
+      [
+        "after-close",
+        "After Close \u00b7 Table 1 free"
+      ],
+      [
+        "after-close-receipt",
+        "After Close \u00b7 receipt warning"
       ]
     ],
     "width": 1280,
@@ -437,7 +445,11 @@ window.MOCKUPS = [
     ],
     [
       "dayclosed",
-      "Closed day \u00b7 reprint only"
+      "Day closed \u00b7 open day first"
+    ],
+    [
+      "dayclosed-start",
+      "Day closed \u00b7 no new-day order yet"
     ],
     [
       "filter-table",
@@ -508,6 +520,10 @@ window.MOCKUPS = [
       "Edited \u00b7 sum mismatch"
     ],
     [
+      "sheet-zero",
+      "Edited \u00b7 row set to 0"
+    ],
+    [
       "sheet-edit",
       "Touch \u00b7 edit amount"
     ],
@@ -517,7 +533,11 @@ window.MOCKUPS = [
     ],
     [
       "approval",
-      "Manager PIN over detail"
+      "Manager PIN \u00b7 default allocation"
+    ],
+    [
+      "approval-edited",
+      "Manager PIN \u00b7 allocation edited"
     ],
     [
       "refund-error",

@@ -667,3 +667,291 @@ A4/C recommendations are still pending.
   invented to resolve them.
 
 DONE
+
+### Round 2
+
+Round 2 was drawn by a Claude designer (Opus 5.5) taking over from the round-1 Codex
+designer. It answers the nine review findings as ruled in *Round 2 — the review's nine
+findings* above, item by item. The round-1 Handoff above is kept as written; where it and
+this section disagree, this section is current. Nothing beyond these items was drawn,
+with one named exception under item 6 (F8).
+
+#### Owner rulings
+
+**O1 — allocation targets.** Drawn as ruled, with no change: the sheet has exactly one
+row per original tender (`closed.js`, `defaults()`), and there is no control to add a
+row or a tender type. A builder should note the consequence. A card-only order, such as
+the quick sale, can only be refunded to Card. If the card cannot be reversed, the POS
+has no cash route, and that is the owner's ruling, not a gap to fill.
+
+**O2 — no per-row cap.** Drawn as ruled. A row accepts any whole-rupiah amount, and
+only the sum is checked against the order total. The manager sees the resulting split in
+M-1 (item 1). The new `approval-edited` fixture shows the case the review worried about:
+Cash 155.925 against a sale that took only 55.925 in cash.
+
+**O3 — zero rows.** A row edited to 0 now reads **Card · not refunded** on the sheet,
+and the sheet adds the line *A row at 0 is not refunded and is left out of the refund.*
+The new state `sheet-zero` pictures it (Card 0, Cash 155.925, sum exact, reason chosen,
+Continue enabled). M-1 names the row the same way (*Card not refunded*). The REFUNDED
+view already lists only non-zero rows under *Money returned · full order*. Builder rule:
+drop every 0 row before sending the refund command; the command never carries a zero
+RefundTender.
+
+**O4 — approved, then refused.** Not drawn: the audit record is server-side. Two states
+picture an approval that succeeded followed by a refund the server refused. Each writes
+one audit entry naming the actor and the approver, with outcome REFUSED, the refusal
+code and no money fields:
+- `refund-error`: a definite rejection of the refund command after a valid manager PIN.
+- `day-refusal`: the business day closed during the attempt (ruling I-4). Its refusal
+  code is the business-day-closed code.
+
+The two existing outcomes are unchanged. A cancelled approval writes an entry with a
+null approver (FR-J3, AC-18). A successful refund writes one combined entry naming the
+actor, the approver, the reason and the order (FR-J2, FR-J3, AC-11). After no response
+(item 4) the client writes nothing; the server's record is whatever it actually did.
+
+#### Lead rulings
+
+**1. F1 — the allocation in M-1.** The M-1 subject on POS-06 now has a second line under
+*Refund <order>, <total> — reason: <reason>*:
+
+- `Money back: <tender> <amount> · <tender> <amount> …`, in sheet order. A 0 row reads
+  `<tender> not refunded`.
+- An `ALLOCATION EDITED` tag follows when any row differs from its default (the tender's
+  effective contribution) or the row count differs. The comparison is row by row, so
+  three separate Card tenders are compared separately.
+
+`approval` (relabelled *Manager PIN · default allocation*) now pictures the default
+allocation: *Money back: Card 100.000 · Cash 55.925*, with no tag. In round 1 it
+pictured the edited 80.000 / 75.925 split with no way to tell. The new
+`approval-edited` (*Manager PIN · allocation edited*) pictures *Money back: Card not
+refunded · Cash 155.925* with the tag. `sheet-zero` leads into it. The rest of M-1 is
+unchanged: heading, dots, keypad, *Approves this refund only.*, Cancel and its note. The
+error, throttled and denied states still link to `order.html` and apply unchanged. The
+six-tender allocation (`closed-order.html?state=approval&order=custom`) wraps to two
+lines, and the modal stays inside the device (below).
+
+**2. F2 and Part C — Close lands on the floor.** Two new floor states:
+
+- `after-close` (*After Close · Table 1 free*): the `default` floor with Table 1 free,
+  its tile reading *Free · Open table order* and opening a new order. The count is
+  *3 open · 9 free*, and the open quick sale strip is kept. Everything else is identical
+  to `default`.
+- `after-close-receipt` (*After Close · receipt warning*): the same, plus the existing
+  *Receipt printer: 1 unprinted receipt · View receipts* chip. This matches the receipt
+  incident *Table 1, closed 20:14*.
+
+In settlement, both *Close order & print receipt* links (the normal close, in its ten
+states, and `zero`) now point to `floor.html?state=after-close`. *Back to floor* in
+`leaselost` still points to the plain floor, because nothing closed there. No existing
+floor state changed appearance. The check confirms that Table 1 is still open in
+`default` and `receipt-warning`. The builder keeps the history replacement, so Back
+cannot return to a closed settlement.
+
+**A question for the lead, not decided:** settlement has no failed-print Close link to
+point at `after-close-receipt`. The receipt prints after the tap on Close, and the
+server's close result is what reports the failure (FR-G8). There is one Close control,
+and it cannot know in advance. Drawing a separate control would invent one, so I did
+not. `after-close-receipt` is registered and reachable from the gallery. **Proposed
+answer:** the builder always lands on the floor. The floor shows the receipt-warning
+chip when the close result or the floor read reports an unprinted receipt, so
+`after-close` and `after-close-receipt` are the two outcomes of one link. If the lead
+wants a clickable fixture path, the alternative is a new settlement state (for example
+`closed-printfail`). That is a settlement change, outside these items.
+
+**3. F3 — the closed-day list.** POS-05 `dayclosed` (relabelled *Day closed · open day
+first*) is redrawn:
+
+- **Banner.** It keeps the amber warning: *25 Sep · Business day closed at 23:14*, then
+  *The open day's orders are listed first. Orders from 25 Sep follow, read-only:
+  reprinting still works, refunds are unavailable.* The header tag now reads DAY OPEN.
+- **Group 1, *Business day open · 26 Sep*.** One new-day order, *23:40 · Quick sale ·
+  Card 173.250 · 173.250*: the review's scenario. It opens the normal, refundable
+  detail (`closed-order.html?state=quick&order=quick&time=23:40&list=dayclosed`). On
+  that detail, *list=dayclosed* makes the note read *Business day 26 Sep* and makes
+  Back return to the closed-day list. Refund and Reprint are both offered.
+- **Group 2, *Closed day · 25 Sep · reprint only*.** The six closed-day orders. Each
+  opens the standing read-only `dayclosed` detail, as in round 1.
+
+New state `dayclosed-start` (*Day closed · no new-day order yet*): the moment just after
+the close. Group 1 reads *No orders closed yet in this business day.* and Group 2 lists
+the six orders.
+
+Filters apply to both groups. A group with no match reads *No matching orders in this
+business day.* or *No matching orders from the closed day.* When a filter matches
+nothing in either group, the list shows the single *No matching orders* composition.
+
+**Proposal for when the banner clears (not ruled):** the POS-02 banner and the POS-05
+closed-day group clear together, when the first POS session that displayed them ends
+(Release, or the idle lock). If the day closes while the POS is locked, the next session
+shows them, and they clear when that session ends. After that, POS-05 lists the open
+business day only, as the inventory scopes it. Older-day lookup stays the open
+retention question. Why: ruling I-4 exists so a cashier learns of the close before
+promising a refund. The cashier who was on shift when the day closed is the one who may
+have promised it, and a session boundary is a point the server already knows. No timer
+or dismiss control has to be invented.
+
+Also for the lead: the floor's existing `dayclosed` header reads *Business day closed ·
+25 Sep*, while POS-05 now names the open day, 26 Sep. I left the floor state unchanged
+because it is not in these items. If it should match, the floor header would read
+*Business day open · 26 Sep* above the same banner.
+
+**4. F6 — Review refund after a failure.** The `refund-error` notice now renders *Review
+refund* only where the Refund control would itself exist: not zero, not REFUNDED and
+not on a closed day (`refundable()` in `closed.js`, shared with the figures panel). When
+the order is not eligible, the notice reads *Refund failed · the order is unchanged* /
+*Nothing was refunded.* with no control. The check confirms that
+`?state=refund-error&order=zero` and `&order=refunded` have no Refund element in the
+DOM. The reachable `refund-error` state looks as it did in round 1.
+
+**Builder note:** `refund-error` pictures a **definite rejection** only. When the refund
+command gets no response (a timeout or a lost connection), the client must not show
+*the order is unchanged*. It re-reads the order first:
+- if the order is REFUNDED, it shows the REFUNDED detail, because the refund happened;
+- if it is still CLOSED, it shows `refund-error` with *Review refund*, which needs a
+  fresh manager PIN.
+
+The client never re-sends the command on its own.
+
+**5. F7 — one filter model.** *Apply filter* now filters the list immediately, and the
+*Search* button is gone. The toolbar holds the three filter buttons and *Reset*, which
+clears all three. `nomatch` is still reachable through the filters, for example with
+Table 12, or with an amount of 500.000. The check sets Table 7, then Table 12, then
+Reset, and an exact 155.925, and confirms that each list updates without a search step.
+
+**6. F8 — borrowed tokens.** `closed.css` no longer references
+`--frost-pin-key-height`, `--frost-category-width` or `--frost-receipt-reprint-width`.
+Meanwhile:
+- **List columns**, in the header and every row, use the flexible proportions
+  `minmax(0,1fr) minmax(0,1fr) minmax(0,3fr) minmax(0,1fr)`. At 1280 wide they measure
+  198.66, 198.67, 596.00 and 198.67px.
+- **The allocation field** fills the right half of its row: `.co-allocation` is now a
+  two-column `repeat(2,minmax(0,1fr))` grid, and the field measures 383 × 56px.
+- **The amount-filter and allocation-editor outputs** fill their row (`flex:1`).
+
+These are the named exception to "draw nothing beyond these items". The same selector
+now centres its value vertically; in round 1 the figure sat at the top of the 56px
+field. That is visible in `sheet-edit` and `filter-amount`.
+
+**Missing tokens, raised and not added.** They are the values round 1 used:
+- `--frost-closed-list-columns: 88px 172px minmax(0,1fr) 180px`: *Closed at*, *Order*,
+  *Payment taken* and *Total*. It follows the `--frost-menu-columns` and
+  `--frost-approval-columns` pattern. 88px fits `HH:MM`, 172px fits *Quick sale* or
+  *Table 12*, and 180px fits `1.559.250` at 18px.
+- `--frost-allocation-field-width: 180px`: the refund allocation amount field.
+
+With the flexible stand-in, the time column wastes about 110px and the payment column
+is about 150px narrower than it would be. Nothing is clipped.
+
+**7. F9.**
+- **F9.1.** POS-06 omits the discount row when the order has no discount. `quick` now
+  shows Subtotal 165.000, Service charge 5% 8.250 and Total 173.250, matching
+  `order.html`'s quick-sale totals. `default` still shows *Staff meal 10% −16.500*, and
+  `zero` still shows *Comp 100% −165.000*.
+- **F9.2.** In `incidents.html`, the empty composition (*Nothing outstanding / No
+  unresolved print incidents.*) is still the only visible message, and it now carries
+  `role="status"`. On the last clear, the script reveals it empty and fills it 100ms
+  later, so a screen reader announces the change. The status line stays empty, and
+  intermediate clears still use it. The check observes the empty reveal, then the fill,
+  and finds *Nothing outstanding* exactly once in the page text. The appearance of every
+  incidents state is unchanged.
+
+#### States touched
+
+- **POS-05 `closed-orders.html`.**
+  - Every state: the toolbar loses *Search* (F7), and the columns use the flexible
+    proportions (F8).
+  - `dayclosed` is redrawn and relabelled (F3), and `dayclosed-start` is new.
+  - `filter-amount`: the output is full-width and vertically centred.
+- **POS-06 `closed-order.html`.**
+  - `approval` is changed and relabelled, and `approval-edited` is new (F1).
+  - `sheet-zero` is new (O3).
+  - `quick` loses the discount row (F9.1).
+  - Every sheet state with allocation rows (`sheet-refund`, `sheet-ac25`,
+    `sheet-custom`, `sheet-edited`, `sheet-invalid`, `sheet-zero`): the field fills the
+    right half of its row. `sheet-edit`: the output is full-width and centred (F8).
+  - `refund-error` is gated, with no visible change in the reachable fixture (F6).
+  - New context parameter `list=dayclosed` (F3).
+- **POS-02 `floor.html`.** `after-close` and `after-close-receipt` are new. No existing
+  state changed.
+- **POS-04 `settlement.html`.** The two Close links change destination only.
+- **POS-07 `incidents.html`.** `role="status"` and the last-clear script. No visible
+  change.
+- **`manifest.js`.** Five new states (floor 2, POS-05 1, POS-06 2) and two relabels (POS-05 `dayclosed`,
+  POS-06 `approval`).
+- **`docs/DESIGN.md`.** The DESIGN-009 supplement records immediate filtering, the
+  flexible columns pending tokens, the closed-day grouping, the O1–O3 allocation rules
+  and the M-1 money-back line.
+
+No token file, `frost.css`, `order.html`, `lock.html` or `mockup.js` changed.
+
+#### Verification
+
+Headless Chrome through Playwright at a 1280×800 viewport, as the owner approved. The
+script and screenshots are in `/private/tmp/design009-r2/` (`check.cjs`, `widths.cjs`,
+`measurements.json`, 16 PNGs); none is committed.
+
+- **The crawl** visited all 159 declared states of the seven POS artifacts: POS-05 11,
+  POS-06 26, floor 11, order 58, settlement 34, lock 7, incidents 12. Every document
+  measured exactly 1280×800. There were no JavaScript errors, and every file link
+  collected from every state resolved to an existing file and a declared state.
+- **The link grep:** `grep -r "prototype/" docs/design/visual-directions/frost/pos`
+  returns nothing (exit 1).
+- **The token audit on `closed.css`:** 84 distinct `--frost-*` references, all defined
+  in `frost.css`. None of the three borrowed tokens appears. There are no raw colours,
+  no `px` values and no numeric font weights.
+- **Eleven round-2 interaction checks passed.** They cover F7; F3 (groups, links, the
+  new-day detail, `dayclosed-start` and filters across both groups); F1 default and
+  edited; the full edit-to-zero walk (cancel keeps it, the PIN approves, the REFUNDED
+  view lists Cash only, no second refund); the six-tender modal fit; F6; F9.1; F9.2;
+  F2; and F8.
+- **`npm run verify`:** typecheck passed, and vitest reported 32 files and 2256 tests
+  passed. This task changes no code, and verify is unaffected.
+- **Not run:** the Impeccable static detector and finish reviewer. Round 2 is a set of
+  ruled corrections, and I judged it from the screenshots instead.
+
+| Screen / state | Main scroll client / content | Sheet body client / content | Modal y / height |
+|---|---:|---:|---:|
+| closed-orders / `default` | 521 / 521 | — | — |
+| closed-orders / `overflow` | 521 / 2592 | — | — |
+| closed-orders / `nomatch` | 521 / 521 | — | — |
+| closed-orders / `dayclosed` | 467 / 571 | — | — |
+| closed-orders / `dayclosed-start` | 467 / 550 | — | — |
+| closed-orders / `filter-table`, `filter-time`, `filter-amount` | 521 / 521 | 565 / 565 | — |
+| closed-order / `default`, `quick`, `refund-error`, `day-refusal` | 736 / 736 | — | — |
+| closed-order / `sheet-refund`, `sheet-edited`, `sheet-invalid`, `sheet-zero`, `sheet-edit` | 736 / 736 | 565 / 565 | — |
+| closed-order / `sheet-custom` | 736 / 736 | 565 / 829 | — |
+| closed-order / `approval` | 736 / 736 | — | 98.78 / 602.44 |
+| closed-order / `approval-edited` | 736 / 736 | — | 98.66 / 602.69 |
+| closed-order / `approval&order=custom` (six tenders) | — | — | 87.91 / 624.19 |
+| closed-order / `overflow` | 736 / 1630 | — | — |
+| floor / `default`, `receipt-warning`, `after-close`, `after-close-receipt` | 484 / 484 | — | — |
+| incidents / `default`, `empty` | 736 / 736 | — | — |
+
+Every POS-05 row is at least 72px high, and every allocation field is 56px high. The two
+closed-day lists scroll inside their region beneath the fixed banner, toolbar and column
+heads. The six-tender M-1 ends at y = 712, inside the 800px device.
+
+#### Questions raised, each with a proposed answer
+
+1. **The failed-print Close link (item 2).** No settlement control exists to point at
+   `after-close-receipt`. Proposed: treat `after-close` and `after-close-receipt` as the
+   two outcomes of the one Close link, with the chip driven by the close result. The
+   alternative is a new settlement fixture state, which the lead would have to assign.
+2. **When the closed-day banner clears (item 3).** Proposed: when the first POS session
+   that displayed it ends, taking the POS-05 closed-day group with it.
+3. **The floor `dayclosed` header copy (item 3).** Proposed: leave it until the lead
+   decides whether it should name the open day (*Business day open · 26 Sep*).
+4. **Missing tokens (item 6).** Proposed: register `--frost-closed-list-columns: 88px
+   172px minmax(0,1fr) 180px` and `--frost-allocation-field-width: 180px`, then replace
+   the flexible stand-ins.
+5. **O4 wording (for the owner's record).** Proposed as ruled: `refund-error` and
+   `day-refusal` each carry one REFUSED entry naming actor and approver, with the
+   refusal code and no money fields. A no-response attempt records only what the server
+   actually did.
+
+The questions still open from round 1 are unchanged: older-day lookup and retention,
+receipt content and numbering, post-close corrections, and the M-1 verifying-state
+cancel.
+
+DONE
