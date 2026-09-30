@@ -51,13 +51,20 @@ FE-028 is FE-029.
 
 ## Running tasks and agents
 
-- **Active task: DESIGN-009**, started 2026-09-30. A Codex `gpt-6-astra` designer (effort high)
-  runs in pane `w2:p2C`, Herdr agent `design009`, in worktree `../restaurant-pos-wt/DESIGN-009`
-  on `agent/design-009` (cut from `8b10f0b`). It was briefed with AGENTS.md, its role prompt and
-  the task file, and reports to `lead` through Herdr. The lead waits on it with
-  `herdr agent wait design009`. A design review (other model family) follows before F4e.
-- **Live agents:** the lead (`w2:p1`, named `lead`; `/lead` renames it after a session change)
-  and `design009`. Every earlier worker is closed (roster: L1198-1264).
+- **Active task: DESIGN-009, in review.** The Codex `gpt-6-astra` designer (`design009`) delivered
+  it with a full Handoff ending DONE, then could not commit (the Codex sandbox cannot write the
+  worktree's index lock; LESSONS.md) and ran out of usage. On the owner's word the lead
+  committed its files unchanged as `06f3a25` on `agent/design-009`, closed its pane, added the
+  criterion 6 correction there (`74943f7`), and ran `npm run verify` there: green, 2256 / 32.
+- **Reviewer** dispatched 2026-09-30: `.agent/bin/dispatch.sh DESIGN-009 --role reviewer`,
+  one-shot Claude Opus 5.5 (other family, via a hand-written
+  `.agent/runs/DESIGN-009/builder/meta.json` naming `codex`), pane `DESIGN-009-review`, report to
+  `.agent/reviews/DESIGN-009-review.md`. Then the lead verifies, walks the flows in a browser,
+  and rules Part C with the owner.
+- **Main checkout has one uncommitted edit:** DESIGN-008's Status line (accepted), identical
+  to `1b50e7e` on `agent/lead-0930`; run `git checkout -- .agent/tasks/DESIGN-008-*` before pulling.
+- **Live agents:** the lead (`w2:p1`, named `lead`) and the reviewer while it runs.
+
 - Leftovers the lead did not make and has not closed: agentless pane `w2:pE` (tab `t7`), and a
   detached worktree `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`).
 
