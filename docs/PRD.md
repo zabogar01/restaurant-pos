@@ -271,11 +271,15 @@ All of section B lives in the back-office client. None of it ships to the POS.
   gates or rolls back the void. `FAILED` or `UNKNOWN` cancellation delivery
   creates an emergency print incident.
 - **FR-H5** A full refund reverses a closed order and records one or more
-  `RefundTender` allocations selected by the manager. The default allocation
-  reproduces each original `Tender`'s **effective contribution**, defined as
-  amount tendered minus change given. Allocations must sum exactly to the
-  order total. Partial refunds are out of scope. Requires a manager PIN and a
-  reason, and is audited.
+  `RefundTender` allocations selected by the manager. Allocations may use only
+  the tender types the order was paid with; no other type can be added. The
+  default allocation reproduces each original `Tender`'s **effective
+  contribution**, defined as amount tendered minus change given. The manager
+  may move amounts between those tender types, and one allocation may exceed
+  its tender's effective contribution; allocations must sum exactly to the
+  order total. An allocation of zero is dropped before the refund is recorded
+  and is never stored. Partial refunds are out of scope. Requires a manager
+  PIN and a reason, and is audited.
 - **FR-H5b** A zero-total order is **not refundable**. It took no money, so
   there is nothing to return, and a zero-value allocation would be a fake
   money record. The refund action is absent rather than disabled on such an
@@ -333,7 +337,10 @@ back-office client.
   the round reprinted), and every manager-approval outcome. A
   successful approved action creates **one combined entry** naming actor and
   approver. A failed or cancelled approval creates one entry naming the
-  initiating actor with approver null. Unauthenticated PIN failures and
+  initiating actor with approver null. A refund that is approved and then
+  refused by the server (for example because its business day closed in the
+  meantime) creates one entry naming actor and approver, with outcome
+  `REFUSED` and the refusal code, and no before/after amounts. Unauthenticated PIN failures and
   throttle cooldowns are security telemetry, not audit entries, because they
   have no identified actor.
 - **FR-J4** No PIN value appears in the audit log or in security telemetry,
@@ -440,6 +447,9 @@ Receipt shows subtotal 16.50, discount −1.65, service charge 0.74, total
 - Void attempted on an already-fired line — routed to the approval path
   automatically.
 - Refund attempted on an already-refunded order — rejected.
+- Refund allocation to a tender type the order was not paid with — rejected (FR-H5).
+- Refund approved, then refused because the business day closed — one
+  `REFUSED` audit entry naming actor and approver; the order is unchanged (FR-H7, FR-J3).
 - Item 86'd while a `PENDING` line holds it — firing blocked (FR-E4).
 - Item 86'd while a `FIRED` line holds it — no effect.
 - Preset edited or deactivated while an open order carries it — order
@@ -498,7 +508,7 @@ the browser is the wrong place to prove it.
 | AC-15 | End-of-day close is refused while an order is open, and succeeds once that order is closed or voided | FR-I2 |
 | AC-16 | Report gross, reversal, and net figures — sales, tax, service charge, discounts, tender movement, order and void counts — match manual calculation *(integration tests)* | FR-I5 |
 | AC-17 | Editing a menu price or a preset value after an order was taken changes neither that order's total nor the closed day's report; a deactivated preset stays readable on orders carrying it *(integration tests)* | FR-D4, F4, F5 |
-| AC-18 | The audit log contains one combined entry per successful approved action naming actor and approver; one entry per failed or cancelled approval naming actor with approver null; and entries for whole-order void, fired-line void, discount apply/replace/remove, and refund. Unauthenticated PIN failures and throttle cooldowns appear only in security telemetry. Neither store contains a PIN value in any form *(integration, permission, and log-scan tests)* | FR-J3, J4 |
+| AC-18 | The audit log contains one combined entry per successful approved action naming actor and approver; one entry per failed or cancelled approval naming actor with approver null; one entry per approved refund that the server refuses, naming actor and approver, with outcome `REFUSED`, the refusal code and no amounts; and entries for whole-order void, fired-line void, discount apply/replace/remove, and refund. Unauthenticated PIN failures and throttle cooldowns appear only in security telemetry. Neither store contains a PIN value in any form *(integration, permission, and log-scan tests)* | FR-J3, J4 |
 | AC-19 | Five failed PIN verifications in a class cause a five-minute cooldown for that class only, surviving restart; a successful cashier login does not reset the manager-approval counter; clearing `ClientInstance` does not reset either | FR-A5, A7 |
 | AC-20 | A tender draft survives 90-second actor-session expiry in the same tab and requires re-authentication at close | FR-G9 |
 | AC-21 | While a tender draft is active, its tab disables add-line, discount change, fire, void, and competing settlement | FR-G12 |
@@ -514,6 +524,7 @@ the browser is the wrong place to prove it.
 | AC-31 | A POS command built on a stale catalog version is rejected with `CATALOG_CHANGED` and no line is added at the stale price | FR-C7 |
 | AC-32 | Deactivating a user in the back office invalidates that user's POS session on its next authenticated request. Deactivating a table holding an open order is rejected | FR-B3, C8 |
 | AC-33 | A failed kitchen ticket raises the emergency incident in **both** clients; a failed receipt appears at lower urgency in both | FR-E3, E6 |
+| AC-34 | A refund allocation to a tender type the order was not paid with is rejected; an allocation above its tender's effective contribution is accepted when the allocations sum to the order total; an allocation of zero is not stored | FR-H5 |
 
 ## 8. Out of scope for MVP
 
