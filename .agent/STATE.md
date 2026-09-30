@@ -60,7 +60,7 @@ FE-028 is FE-029.
   file on `agent/design-009` (`4eb4fd2`). **Round 2 done** (`03dcf82`) by a Claude Opus 5.5
   designer (owner, once only; Codex out of usage); pane closed; lead verify green 2256 / 32;
   `status: review` (`efabaa9`). **Next:** Codex re-review once its usage resets (dry run picks
-  codex gpt-6-astra, preflight clean). Its Handoff raises 5 questions, see the owner list.
+  codex gpt-6-astra, preflight clean). Its 5 questions are ruled in the task file.
 - **Main checkout has one uncommitted edit:** DESIGN-008's Status line (accepted), identical
   to `1b50e7e` on `agent/lead-0930`; run `git checkout -- .agent/tasks/DESIGN-008-*` before pulling.
 - **Live agents:** the lead only (`w2:p1`, named `lead`).
@@ -106,8 +106,8 @@ FE-028 is FE-029.
 
 Nothing here is decided. Detail is where each line points.
 
-- **Merge `agent/lead-0930`**: it holds the approved PRD change for the refund rulings (FR-H5, FR-J3,
-  AC-18, AC-34), DESIGN-008's status fix, and this session's memory.
+- **Merge `agent/lead-0930`** (unpushed): the approved PRD change `6ea5a5d` (FR-H5, FR-J3, AC-18,
+  AC-34, committed with ALLOW_CONTRACT=1 on the owner's word), DESIGN-008's status fix, memory.
 - **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
   or go back to one-shot with opt-in per task. They are interactive until you say otherwise.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
