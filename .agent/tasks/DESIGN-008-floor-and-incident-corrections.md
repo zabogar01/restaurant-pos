@@ -1,6 +1,6 @@
 # DESIGN-008 — POS-02 floor in Frost, and three POS-07 corrections
 
-**Status:** Written 2026-09-25 by `lead`. Unassigned.
+**Status:** Accepted 2026-09-25 after three rounds and a design review (roadmap archive L271); written 2026-09-25 by `lead`.
 **Owner:** a codex designer on `gpt-6-astra` (the owner's choice).
 **Depends on:** [DESIGN-007](DESIGN-007-order-flow-gaps.md) (its order states
 are what the floor opens into).
