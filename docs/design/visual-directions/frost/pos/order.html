@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../../structure.css">
 <script>window.WF={id:'POS-03',client:'pos',name:'Order workspace',reqs:'FR-D3–D6, C1–C7, E1–E5, F1–F8, H2–H4, G10, G12',states:[
 ['default','Table order — 2 rounds fired'],['empty','Table order — no lines'],['quick','Quick sale'],
-['open-t7','Table 7 — your payment'],['open-t9','Table 9 — 5 items fired'],['open-t12','Table 12 — 2 rounds and pending'],['quick-new','New quick sale — empty'],
+['open-t7','Table 7 — your payment'],['open-t9','Table 9 — 2 lines fired'],['open-t12','Table 12 — 2 rounds and pending'],['quick-new','New quick sale — empty'],
 ['linecontrols','Line controls — pending vs fired'],
 ['quick-line','Quick sale — line editor'],
 ['overflow','Overflow — long order'],['zero','Zero total (100% comp)'],
@@ -156,13 +156,13 @@ if (!['open-t7','open-t9','open-t12','quick-new'].includes(new URLSearchParams(l
         <b data-when="open-t9">Order &middot; T9</b>
         <b data-when="open-t12">Order &middot; T12</b>
         <b data-when="quick quick-line quick-new">Order &middot; counter</b>
-        <span class="muted" data-when="default pressed zero fireerror error sheet-discount sheet-freeform sheet-remove sheet-voidline sheet-voidorder-fired approval approval-error approval-throttled approval-denied">2 items</span>
-        <span class="muted" data-when="linecontrols eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder lock-draft open-t7 lock-lease">3 items</span>
-        <span class="muted" data-when="overflow" data-line="of-coffee of-cheese of-wine">9 items</span>
-        <span class="muted" data-when="overflow" data-gone="of-coffee of-cheese of-wine">8 items</span>
-        <span class="muted" data-when="quick quick-line" data-line="q-burger q-soda">2 items &middot; not yet sent</span>
-        <span class="muted" data-when="quick quick-line" data-gone="q-burger q-soda">1 item &middot; not yet sent</span>
-        <span class="muted" data-when="open-t9">5 items</span>
+        <span class="muted" data-when="default pressed zero fireerror error sheet-discount sheet-freeform sheet-remove sheet-voidline sheet-voidorder-fired approval approval-error approval-throttled approval-denied">2 lines</span>
+        <span class="muted" data-when="linecontrols eightysix fireblocked catalog sheet-item sheet-item86 sheet-line sheet-voidorder lock-draft open-t7 lock-lease">3 lines</span>
+        <span class="muted" data-when="overflow" data-line="of-coffee of-cheese of-wine">9 lines</span>
+        <span class="muted" data-when="overflow" data-gone="of-coffee of-cheese of-wine">8 lines</span>
+        <span class="muted" data-when="quick quick-line" data-line="q-burger q-soda">2 lines &middot; not yet sent</span>
+        <span class="muted" data-when="quick quick-line" data-gone="q-burger q-soda">1 line &middot; not yet sent</span>
+        <span class="muted" data-when="open-t9">2 lines</span>
         <span class="muted" data-when="open-t12" data-line="t12-fries">3 lines</span>
         <span class="muted" data-when="open-t12" data-gone="t12-fries">2 lines</span>
         <span class="muted" data-when="empty quick-new">Empty</span>

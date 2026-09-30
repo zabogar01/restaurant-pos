@@ -101,7 +101,7 @@
         <span class="warnchip__mark"></span>
         <b>Receipts</b><span class="muted">Customer-service issue, not an emergency</span>
       </div>
-      <div data-incident="receipt-1" style="border:1px solid var(--line);background:var(--bg2);padding:12px">
+      <div id="receipt-1" data-incident="receipt-1" style="border:1px solid var(--line);background:var(--bg2);padding:12px">
         <div class="rowflex spread">
           <div><div>Receipt did not print &mdash; Table 1, closed 20:14 &middot; status FAILED</div></div>
           <div class="receipt-actions"><a class="btn btn--sm" href="incidents.html?state=default&amp;result=receipt-1" data-reprint="receipt-1" style="width:180px">Reprint receipt</a><button class="btn btn--sm incident-dismiss" data-clear="receipt-1" type="button">Dismiss</button></div>
@@ -148,7 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if(![...group.querySelectorAll('[data-incident]')].some(c=>!c.hidden)) group.hidden=true;
     });
     const any=[...document.querySelectorAll('[data-incident]')].some(c=>!c.hidden && !c.closest('[data-group]').hidden);
-    document.querySelector('.incident-status').textContent=any ? (button.dataset.clear.startsWith('receipt')?'Receipt warning dismissed.':'Kitchen incident cleared.') : 'Nothing outstanding — no unresolved print incidents.';
+    document.querySelector('.incident-status').textContent=any ? (button.dataset.clear.startsWith('receipt')?'Receipt warning dismissed.':'Kitchen incident cleared.') : '';
+    document.querySelector('.empty').hidden=any;
   }));
 });
 </script></body></html>

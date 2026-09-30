@@ -1069,6 +1069,40 @@ different action.
   the header, and scrolls its body. Modals carry `role="dialog"`,
   `aria-modal`, and are labelled by their heading.
 
+### Closed orders and refund allocation — DESIGN-009 supplement
+
+The POS-05 and POS-06 Frost artifacts extend the existing fixed 1280×800
+surface. These are design fixtures awaiting review, not production screens
+or accepted implementation guidance. Their source is
+`design/visual-directions/frost/pos/closed-orders.html`, `closed-order.html`,
+`closed.css` and `closed.js`; they introduce no tokens.
+
+- **Closed-order list.** White rows have a 72px minimum height, divider
+  rules, right-aligned tabular totals and a visible REFUNDED tag where
+  applicable. The list scrolls beneath fixed filters and column headings.
+  Table, closing-time and exact-amount filters open touch sheets.
+- **Closed-order detail.** Charged items and original payments scroll on
+  the left. The white 460px figures panel keeps the stored subtotal,
+  discount, service charge, total and actions visible on the right. The
+  total uses the existing grouping-blue band; receipt warnings retain the
+  pale amber treatment.
+- **Refund sheet.** The 820px left sheet begins below the 64px header and
+  leaves the figures panel visible. Its body scrolls, including the
+  six-tender custom-name fixture and required reasons, while its heading
+  and footer stay fixed. The existing compact controls have a 48px minimum; footer cancellation
+  stretches to match the adjacent 72px primary action. Numeric keys are
+  72px.
+- **Allocation editing.** Each original tender has its own editable amount,
+  initially its effective contribution after change. Editing opens a touch
+  keypad inside the sheet; it changes how the full total is returned.
+  There is no line selection or partial-refund amount. A mismatch states
+  the exact shortfall or excess and blocks Continue. A required reason
+  precedes the existing Manager PIN modal over the detail; cancelling that
+  modal restores the allocation sheet with its amounts and reason kept.
+
+Behavior, fixture arithmetic and recommendations awaiting review are recorded
+in the [DESIGN-009 Handoff](../.agent/tasks/DESIGN-009-closed-orders-and-refund.md#handoff).
+
 ### Data table
 - `data-table-header`: 11px 500 muted, uppercase at 0.06em, `12px 12px`
   (`--frost-table-head-padding`), grouping-blue fill, 1px control-border rule
@@ -1196,9 +1230,8 @@ and is closed there. All three are now *designed and unreviewed*, a fourth
 claim beside absent, inherited and unreviewed, and are marked as such
 wherever they appear.
 
-1. **Dark palette.** Light only was delivered, deliberately. Whether a dark
-   palette ships is an open product decision (ROADMAP Track A, item A5). No
-   dark value exists and none is proposed here.
+1. **Dark palette.** The MVP ships light only; the dark palette is deferred.
+   No dark value exists and none is proposed here.
 2. **Form controls beyond the numeric field — mostly absent, one inherited.**
    Select, checkbox, and any toggle are absent. A 40px text field *is*
    rendered in the Frost category modal (`frost/back-office/menu.html:142`,
@@ -1220,10 +1253,13 @@ wherever they appear.
 4. **Icons beyond the four.** Arrow, back, close and alert are the entire set.
    The lock screen's *Sign in to view* and the rest of the product have no
    icon vocabulary.
-5. **Screens outside the six — absent.** Floor plan, closed orders, closed
-   order detail, and the eleven remaining back-office screens exist only as
-   greyscale wireframes loading `wireframe.css`; no Frost file styles them.
-   Their geometry is the wireframe's; their colour is not specified. The
+5. **Screens outside the original six — mixed coverage.** Floor plan now
+   has a Frost artifact at `frost/pos/floor.html`. DESIGN-009 adds
+   `frost/pos/closed-orders.html` and `frost/pos/closed-order.html`, including
+   touch filters and refund allocation; these additions await design review
+   and do not establish production implementation or acceptance. The eleven
+   remaining back-office screens still exist only as greyscale wireframes
+   loading `wireframe.css`; their Frost appearance is absent. The
    sheets and modals *inside* the six screens — item configuration, line
    editor in both forms including the quick-sale form
    (`frost/pos/order.html`, state `quick-line`), discount picker and

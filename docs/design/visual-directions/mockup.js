@@ -57,7 +57,7 @@
   }).join('');
   bar.innerHTML =
     '<div class="wfbar__row">' +
-      '<a href="../index.html">&larr; All screens</a>' +
+      (WF.client === 'pos' ? '<a href="floor.html">&larr; POS floor</a>' : '<a href="../index.html">&larr; All screens</a>') +
       '<span class="wfbar__id">' + (WF.id || '') + '</span>' +
       '<span class="wfbar__name">' + (WF.name || '') + '</span>' +
       '<span class="wfbar__meta">' + target + '</span>' +

@@ -289,3 +289,328 @@ Then run `herdr agent prompt lead "<your name>: DESIGN-009 done — <one line>"`
 
 ## Handoff
 
+DESIGN-009 adds the Frost POS-05 and POS-06 artifacts in
+`docs/design/visual-directions/frost/pos/closed-orders.html` and
+`closed-order.html`. Their local `closed.css` and `closed.js` compose the
+registry tokens and walkable illustrative fixtures. These files are design
+artifacts, not application code: no refund, printer dispatch, authentication,
+server persistence, or audit entry actually executes. Both screens and all
+34 new fixture states are registered in `manifest.js`.
+
+### What was drawn and how it works
+
+POS-05 has the seven required states and three touch filter sheets. The table
+picker includes Any, Quick sale, and the configured-table fixture choices.
+The closing-time filter has From and To fields, a 24-hour numeric keypad,
+delete and clear keys, and rejects invalid HH:MM or a reversed range. The
+amount filter matches the exact order total in whole rupiah. Apply keeps the
+chosen filter; Search applies the three filters together; Reset clears them.
+No physical keyboard is necessary. Empty means no orders have closed this
+business day; no match means orders exist but none match the filters.
+
+Each row reaches its corresponding detail, retaining its displayed closing
+time and tender fixture. The six primary examples are Table 1 with card and
+cash, Table 7 with cash and change, Table 4 with custom-named tenders, the
+refunded Table 3, a zero-total Table 6 comp, and Quick sale. No receipt number,
+fiscal field, receipt layout, correction control, or void control is drawn.
+The detail reads stored charged figures and original payments. It does not
+recalculate history from current settings or present itself as a receipt.
+
+The allocation sheet defaults to every original tender's effective
+contribution. The original six-tender settlement fixture retains its three
+separate Card contributions, Meal voucher, Staff account, and Cash. Tapping
+an allocation opens a numeric editor inside the same left sheet. Keep amount
+returns to the allocation summary; Cancel edit leaves that allocation as it
+was. The total stays visible in the right panel. An allocation mismatch names
+the exact shortfall or excess and disables Continue. No line selection or
+partial-refund amount exists.
+
+A fresh sheet requires a deliberate reason selection. The three refund
+presets are illustrative copy inherited from the wireframe, not a PRD-defined
+list: Wrong dish served, Customer complaint, and Charged in error. Other —
+type a reason opens an on-screen alphabet keyboard with Space, Delete and
+Clear. A blank or whitespace-only reason cannot proceed. The full order,
+amount and chosen reason are repeated by the Manager PIN modal over POS-06.
+The modal authorises this one refund; it creates no manager mode or session.
+The fixture requires six entered digits before its approval key is enabled;
+these are presentation interactions, not a real credential check.
+
+The unchanged M-1 failure surfaces are directly referenced here:
+[wrong PIN](../../docs/design/visual-directions/frost/pos/order.html?state=approval-error),
+[approval cooldown](../../docs/design/visual-directions/frost/pos/order.html?state=approval-throttled),
+and [cashier PIN refused](../../docs/design/visual-directions/frost/pos/order.html?state=approval-denied).
+Their error copy, attempt limits, installation-wide throttle and denied-PIN
+behavior apply unchanged over POS-06 with the refund subject substituted.
+They were not redrawn or modified. There is no verifying-state cancel in this
+design; the unresolved owner ruling is not assumed.
+
+Cancel in M-1 returns to the allocation sheet with every allocation and the
+reason preserved, and clears the entered PIN. It writes nothing to the order
+(B-20). The server must append the FR-J3 / AC-18 cancelled-approval audit
+entry naming the initiating actor and a null approver; that audit record is
+not drawn. A successful refund has one combined FR-J2 / FR-J3 / AC-11 audit
+entry naming actor, approver, reason and order, and returns to a detail marked
+REFUNDED with the returned allocations visible. A second refund is absent.
+A failed command changes nothing on the order and retains the allocation and
+reason for Review refund; a fresh attempt needs a fresh manager PIN. The
+`day-refusal` snapshot describes the distinct server refusal when the day
+closed during the attempt, then Return to order reaches the standing
+read-only state. It never offers a retry that would breach B-9.
+
+Reprint is an outlined, ungated action. A client request displays only
+“Reprint sent”, without a time or a success claim. The `reprint-printed`
+fixture alone depicts a server-confirmed PRINTED result at 20:26. FAILED and
+UNKNOWN results use the pale amber receipt class and link to the receipt
+section of the existing Frost incidents artifact. UNKNOWN asks the cashier
+to check the printer before reprinting. Every reprint retains the stored
+figures, including zero, refunded and closed-day orders.
+
+### Rule-to-state mapping
+
+| Rule | Artifact and evidence |
+|---|---|
+| A1 | POS-05 `filter-table`, `filter-time`, `filter-amount` show the three touch filters. `nomatch` shows their empty result. Receipt-number search is absent. |
+| A2 | POS-05 `default` includes the distinct REFUNDED marker and zero-total comp. Their rows open POS-06 `refunded` and `zero`. |
+| A3 | POS-05 `default` labels the open business day; `overflow` has 36 rows in a scroll region below the fixed filters. |
+| A4 | POS-05 `dayclosed` retains the just-closed day's six orders and explicitly says read-only. Every row opens a day-closed detail, including zero and refunded fixtures. |
+| A5 | POS-05 `default` and POS-06 `quick` use “Quick sale”, matching the floor and workspace title. |
+| B1 | POS-06 `sheet-refund`, `sheet-edit` and `approval` name the whole-order amount. No partial amount or selectable line exists. |
+| B2 | POS-06 `zero` contains no Refund element, hidden or otherwise. It has only Reprint receipt. |
+| B3 | POS-06 `sheet-refund` defaults card/cash, `sheet-ac25` defaults effective cash, `sheet-custom` shows configured names, `sheet-edited` sums exactly, `sheet-invalid` blocks, and `sheet-edit` draws touch entry. |
+| B4 | POS-06 `sheet-refund`, `sheet-other`, and `approval` show required reason and manager PIN; the audit consequences are specified above. |
+| B5 | POS-06 `refunded` names the terminal status and removes the action. Completing the walkable approval reaches the same terminal composition. |
+| B6 | Every POS-06 state has no void control. POS-03 retains only its existing void paths and has no refund action. |
+| B7 | POS-06 `reprint-sent`, `reprint`, `reprint-unknown`, and `reprint-printed` keep the same stored figures as `default`; the interactive reprint also preserves zero/refunded/day-closed state. |
+| B8 | POS-06 `default` is labelled What was charged and displays items, payments and totals, without receipt or fiscal content. |
+| B9 | POS-06 `approval` is an in-place dialog over the visible order. Cancel returns to the preserved sheet, and the PIN is not carried forward. |
+| B10 | POS-06 `default` repeats settlement's subtotal 165.000, Staff meal 10% −16.500, service charge 5% 7.425, and total 155.925. `zero` uses the full 165.000 comp and no tenders. |
+
+### Fixture arithmetic
+
+The AC-25 case scales the same effective-contribution rule into the existing
+IDR settlement `change` fixture: cash tendered 200.000 minus change 44.075
+is effective contribution 155.925, exactly the order total. The default cash
+refund is therefore 155.925, never the 200.000 note. The split fixture from
+settlement `exactsplit` is Card 100.000 plus Cash 55.925 = 155.925. The edited
+allocation is Card 80.000 plus Cash 75.925 = 155.925. The mismatch fixture is
+80.000 + 55.925 = 135.925, short by 20.000.
+
+The custom example reuses settlement `overflow`: Card 40.000 + Card 30.000 +
+Meal voucher 20.000 + Card 10.000 + Staff account 20.000 + Cash 35.925 =
+155.925. The zero fixture has no tenders and total 0. Quick sale matches the
+workspace's undiscounted 165.000 plus service charge 8.250 = 173.250. The
+long-order fixture has ten Burger/Soda pairs, subtotal 1.650.000, discount
+165.000, service charge 74.250, total and Card contribution 1.559.250.
+
+### Recommendations for A4, C and D
+
+**A4: retain the just-closed day's orders when entering from the closed-day
+floor.** FR-H7 forbids refunding them, not reading them, and FR-G7 still
+requires reprinting. I-4 already gives the floor a closed-day banner and
+requires an attempt-time refusal. An empty new-day list at that moment would
+hide the order the cashier was just discussing. The `dayclosed` entry shows
+the just-closed day with a clear read-only banner; ordinary open-day entry
+continues to show the open business day. This is the narrow closed-day
+exception proposed for the inventory's current scope. It does not introduce
+a date search or settle historical lookup/retention for older business days.
+
+**C: Close should replace settlement with the floor.** The cashier's normal
+next task is another table or quick sale, so returning to the floor removes
+an unnecessary exit from POS-06. A failed receipt print does not undo Close
+(FR-G8); the existing floor `receipt-warning` chip makes the failure visible
+and opens incidents. POS-06 remains a deliberate lookup from POS-05 for
+reprint or refund. Both settlement Close links and Back to floor now point to
+`floor.html`, and lock's successful entry points to the same Frost floor.
+The builder should preserve the existing history replacement so Back cannot
+return to a closed settlement. The normal Close fixture depicts the ordinary
+floor; a failed-print server result uses the already-drawn `receipt-warning`
+floor state. This remains a recommendation for the lead/owner at review,
+not a contract or application change.
+
+1. An open quick sale needs a visible return path. `floor.html` now has an
+   Open quick sale strip with “Quick sale · 2 lines · 173.250 · Resume” linking
+   to the populated `order.html?state=quick`. It appears in `default`,
+   `incident`, `receipt-warning` and `overflow`, where this illustrative open
+   order exists. Clear, dayclosed, empty, loading and error do not invent an
+   open quick sale. The strip can contain one resume control per returned
+   open quick sale; the fixture shows one and imposes no new order limit.
+2. Use **lines**, meaning active order lines, excluding voided lines, on both
+   surfaces. Table 9 reads “1 round fired · 2 lines”; its workspace reads
+   “2 lines”. The dynamic order count now says “1 line” or “N lines”, and the
+   remaining static snapshots and manifest label use the same convention.
+   Quantities remain visible on each line. Print incidents retain their own
+   existing ticket-description copy; this task does not reinterpret tickets.
+3. Keep “1 line pending”. It counts unfired active lines, not units, and is
+   consistent with the chosen convention. The floor's existing Table 1 and
+   Table 12 copy is unchanged.
+4. Keep all four header elements: an h1 naming the order or screen, a context
+   tag, the identified actor with idle countdown, and Release. The existing
+   POS-03 header already has them; POS-05 and POS-06 use the same composition.
+   The tags carry the relevant context: day open/closed on the list and
+   CLOSED/REFUNDED on detail. POS-03 keeps DINE IN/COUNTER as its existing
+   context tags. Back leads to Floor from POS-03/POS-05 and Closed orders from
+   POS-06. Release is the session behavior already designed, not a new F4e
+   authentication implementation; its code dependency on FR-A remains.
+5. Keep the incidents empty composition as the sole “Nothing outstanding”
+   message. When the last incident is cleared, the fixture reveals that
+   composition and empties the status line. Intermediate clears still use
+   the status line. Reprint receipt links gained a stable `receipt-1` anchor.
+
+`docs/DESIGN.md` now states that the MVP ships light only and the dark palette
+is deferred. It also records a short DESIGN-009 component supplement and
+updates the obsolete absent-screen entry to acknowledge the existing floor
+and the new closed-order artifacts, explicitly pending review. No token or
+registry value changed.
+
+### Changes to existing artifacts
+
+`floor.html` changes its Closed orders destination, carries closed-day
+context through that destination, adds the resume strip in the four named
+states, and changes Table 9's count in default/incident/receipt-warning and
+overflow. Those four floor states have less grid height to make the quick
+sale reachable; tile targets are unchanged. `order.html` changes count copy
+only, with `frost-order-flow.js` keeping dynamically edited counts in sync.
+The existing header, M-1 states and other appearance remain unchanged.
+`settlement.html` and `lock.html` change destinations only. `incidents.html`
+changes the final-clear empty outcome and adds the receipt anchor; other
+incident compositions are untouched. `manifest.js` registers the new screens,
+forces them to Frost in the gallery, and corrects the Table 9 state caption.
+The hidden POS gallery-chrome link in `mockup.js` now says POS floor and
+points to `floor.html`, replacing its pre-existing missing `frost/index.html`
+destination. Back-office gallery chrome is unchanged.
+
+### Verification and review
+
+The owner approved headless Chrome through Playwright at 1280×800 and required
+all scripts and screenshots outside the repository. Evidence is in
+`/private/tmp/design009/`; no screenshot or checking script is committed.
+The first pass visited all 154 declared states across the seven POS artifacts
+and measured a 1280×800 document in every state, with no JavaScript errors.
+It found the pre-existing hidden gallery-chrome dead link, which was fixed.
+The new CSS references registry tokens only; no new raw colour, dimension or
+font weight was introduced. The Impeccable static detector returned `[]` for
+the two HTML artifacts and their CSS/JS.
+
+The lead confirmed a correction to acceptance criterion 6 during this task:
+`grep -r "prototype/" docs/design/visual-directions/frost/pos` must return
+nothing, and all seven POS artifacts must resolve to Frost states. The two
+back-office artifacts are explicitly untouched; their wireframe links belong
+to a later back-office design task. The criterion itself was corrected on the
+lead's branch and was not edited here.
+
+`npm run verify` could not run its checks because dependencies are absent in
+this worktree. The exact failure after the typecheck script started was
+`sh: tsc: command not found`. The lead ruled that verify is `none` for the
+designer role, instructed no `npm ci`, and authorised a design-only commit
+once design acceptance checks pass. `docs/design/tokens/frost.css` and all
+other token files are unchanged. The lead will run verify on this branch at
+review. No passing application-test claim is made here.
+
+### Final browser measurements
+
+The confirmation pass again measured all 154 declared states at exactly
+1280×800 (`documentElement.scrollWidth × scrollHeight`), with zero JavaScript
+errors and zero missing-file or unknown-state destinations across the links
+collected from every state, including hidden fixture chrome. The seven
+artifact counts were: POS-05 10, POS-06 24, floor 9, order 58, settlement 34,
+lock 7, and incidents 12. The link grep scoped to `frost/pos` returns nothing.
+The token audit found 87 registry references, zero undefined references and
+zero raw CSS colours, dimensions or font weights in `closed.css`.
+
+The table records every new state. The rectangle columns use
+`getBoundingClientRect()`; scroll figures are `clientHeight / scrollHeight`.
+Every state below has a 1280×800 document and application rectangle
+`(x=0, y=0, width=1280, height=800)`.
+
+| Screen / state | Main scroll height / content | Sheet body height / content |
+|---|---:|---:|
+| closed-orders / `default` | 521 / 521 | — |
+| closed-orders / `empty` | 521 / 521 | — |
+| closed-orders / `loading` | 521 / 521 | — |
+| closed-orders / `error` | 521 / 521 | — |
+| closed-orders / `overflow` | 521 / 2592 | — |
+| closed-orders / `nomatch` | 521 / 521 | — |
+| closed-orders / `dayclosed` | 467 / 467 | — |
+| closed-orders / `filter-table` | 521 / 521 | 565 / 565 |
+| closed-orders / `filter-time` | 521 / 521 | 565 / 565 |
+| closed-orders / `filter-amount` | 521 / 521 | 565 / 565 |
+| closed-order / `default` | 736 / 736 | — |
+| closed-order / `cash` | 736 / 736 | — |
+| closed-order / `custom` | 736 / 736 | — |
+| closed-order / `quick` | 736 / 736 | — |
+| closed-order / `zero` | 736 / 736 | — |
+| closed-order / `refunded` | 736 / 736 | — |
+| closed-order / `dayclosed` | 736 / 736 | — |
+| closed-order / `sheet-refund` | 736 / 736 | 565 / 565 |
+| closed-order / `sheet-ac25` | 736 / 736 | 565 / 565 |
+| closed-order / `sheet-custom` | 736 / 736 | 565 / 829 |
+| closed-order / `sheet-edited` | 736 / 736 | 565 / 565 |
+| closed-order / `sheet-invalid` | 736 / 736 | 565 / 565 |
+| closed-order / `sheet-edit` | 736 / 736 | 565 / 565 |
+| closed-order / `sheet-other` | 736 / 736 | 565 / 565 |
+| closed-order / `approval` | 736 / 736 | — |
+| closed-order / `refund-error` | 736 / 736 | — |
+| closed-order / `day-refusal` | 736 / 736 | — |
+| closed-order / `reprint` | 736 / 736 | — |
+| closed-order / `reprint-unknown` | 736 / 736 | — |
+| closed-order / `reprint-sent` | 736 / 736 | — |
+| closed-order / `reprint-printed` | 736 / 736 | — |
+| closed-order / `loading` | — | — |
+| closed-order / `error` | — | — |
+| closed-order / `overflow` | 736 / 1630 | — |
+
+POS-05's normal list rectangle is `(0, 278.625, 1280, 521.375)`; the
+closed-day banner makes it `(0, 333.28125, 1280, 466.71875)`. Every list row
+measures at least 72px high. The 36-row overflow list has 2592px of content;
+scrolling it leaves the toolbar fixed. POS-06's charged-content rectangle is
+`(0, 64, 820, 736)` and its figures panel is `(820, 64, 460, 736)` in every
+loaded state. The long order has 1630px of content. Scrolling it to the bottom
+leaves the figures panel's rectangle unchanged.
+
+Every sheet rectangle is `(0, 64, 820, 736)`. Its body is
+`(1, 129, 818, 565)` and footer is `(1, 694, 818, 105)` with footer
+`clientHeight / scrollHeight = 104 / 104`. The custom tender sheet has 829px
+of content inside its 565px scroll body; the reason and validation remain
+reachable and the footer stays visible. The M-1 modal rectangle is
+`(360, 109.65625, 560, 580.6875)` with `clientHeight / scrollHeight = 579 / 579`.
+Its footer is `(361, 608.34375, 558, 81)`, inside the device. The existing five
+POS artifacts also measured 1280×800 in every declared state; the new floor
+resume strip preserves table targets and uses the existing grid scroll area.
+
+Twelve grouped browser interaction checks passed: touch table lookup and the
+matching quick-sale detail; exact-amount lookup; HH:MM validation and range
+lookup; all six closed-day rows retaining reprint-only eligibility; the AC-25
+default; mismatch correction, preserved cancellation and successful terminal
+refund; Other reason touch entry; retained failure recovery; stored figures
+and eligibility across four reprint contexts; both overflow regions with
+pinned controls; floor context/resume navigation; and one final incidents
+empty composition. A zero-total detail had zero Refund controls in the DOM.
+These are design-fixture checks, not backend or authentication tests.
+
+The independent Impeccable finish reviewer examined all 12 supplied captures,
+source and measurements. It found no material layout or core-refund behavior
+issue, and requested two corrections: complete the singular/manifest line
+terminology, and finish the required behavioral Handoff. Both corrections
+were scored resolved in the reviewer’s verdict pass, with disposition
+`ship` for that correction scope. The static detector returned no findings. The separate lead-led design review and the
+A4/C recommendations are still pending.
+
+### Questions raised and proposed answers
+
+- A4 and C above remain explicit recommendations for review: retain the
+  just-closed day's reprint-only list, and return Close to the floor.
+- The global Frost link check conflicted with the back-office exclusion.
+  Proposed POS-only scope was confirmed by the lead, as recorded above.
+- Missing verification dependencies prevented the application check. The
+  lead resolved this with the designer-role exception above, not installation.
+- The refund presets are fixture copy, not contractual options. Proposed
+  answer: retain these three plus Other for the first implementation unless
+  the owner supplies restaurant-specific wording.
+- Older-day lookup and retention, receipt layout/numbering/fiscal content,
+  post-close correction, and verifying-state M-1 cancellation remain the
+  pre-existing open questions. Proposed scope for F4e is the two entry contexts
+  drawn here, stored figures only, no receipt/fiscal/correction UI, and no
+  verifying-state cancel until ruled. No approval, audit or gating policy was
+  invented to resolve them.
+
+DONE
