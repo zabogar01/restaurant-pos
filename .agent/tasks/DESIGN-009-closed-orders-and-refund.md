@@ -256,8 +256,11 @@ touched, stop and raise it.
    hidden Refund button exists.
 5. No receipt number and no void control appears on POS-05 or POS-06. Red if either does.
 6. Every link in the five existing Frost POS artifacts and the two new ones resolves to an
-   existing Frost artifact state. `grep -r "prototype/" docs/design/visual-directions/frost`
-   returns nothing. Red on any wireframe link or dead state.
+   existing Frost artifact state. `grep -r "prototype/" docs/design/visual-directions/frost/pos`
+   returns nothing. Red on any wireframe link or dead state. (Corrected by the lead on
+   2026-09-30 at design009's request: the grep first covered all of `frost/`, but the two
+   back-office artifacts hold 51 wireframe links and the back office is out of scope here.
+   Leave them untouched; they are owed to the back-office design task.)
 7. Part C has one recommendation with its argument, and the Close links match it.
 8. Part A's question A4 and all five Part D questions have an answer in the Handoff, and
    each artifact change they caused is named.

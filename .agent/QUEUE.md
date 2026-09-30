@@ -47,6 +47,8 @@ design task first, because POS-05 and POS-06 have wireframes only and no Frost a
 9. **Back-office design** — 13 screens (BO-01 to BO-13). Only the menu and a report detail
    have Frost artifacts (2026-09-14); the other screens render through a variable remap and were
    never reviewed. Needs an audit and a design task first — depends on DESIGN-009 — not written.
+   The two Frost back-office artifacts still link to the wireframe 51 times (`menu.html` 40,
+   `report-detail.html` 11); that design task re-points them.
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
 
