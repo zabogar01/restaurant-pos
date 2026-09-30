@@ -9,7 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-29, at the wrap-up of the lead session that ran `/doctor`, recorded KIT-005's
+2026-09-30, when a new lead session re-checked it: the checks are green, only the lead is
+live, and `agent/lead-0929-kit005` is still unpushed, so DESIGN-009 waits on step 1 below.
+Before that, 2026-09-29, at the wrap-up of the session that ran `/doctor`, recorded KIT-005's
 acceptance and wrote DESIGN-009 (narrative in [journal/2026-09-29.md](journal/2026-09-29.md),
 third entry). First built in KIT-001 from the two archives and `git log`. The only product
 change since FE-028 is FE-029.
@@ -43,7 +45,7 @@ change since FE-028 is FE-029.
 - Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0929-kit005`, cut
   from `5a1122f`. It holds the KIT-005 wrap-up and acceptance, the DESIGN-009 task file and
   this wrap-up. `fb9f541` and `e88f9e8` are on origin; `5ede492`, `1ca97a6` and the wrap-up
-  commit are **local only** (the lead does not push unless told). **Until the owner pushes and
+  commit and the 2026-09-30 re-check are **local only** (the lead does not push unless told). **Until the owner pushes and
   merges it, `development` has neither this STATE.md nor the DESIGN-009 task file.**
   Dispatched tasks get worktrees under `../restaurant-pos-wt/<ID>` (none exist now) and run
   state in `.agent/runs/<ID>/` (gitignored). Merged kit branches remain locally.
