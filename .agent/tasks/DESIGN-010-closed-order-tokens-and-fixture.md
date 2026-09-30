@@ -167,6 +167,26 @@ and how, and every question raised with a proposed answer.
 Then run `herdr agent prompt lead "<your name>: DESIGN-010 done — <one line>"`, or
 `herdr agent prompt lead "<your name>: BLOCKED — <question>"`.
 
+## Round 2 — the review's two findings (lead rulings, 2026-09-30)
+
+Review: [DESIGN-010-review.md](../reviews/DESIGN-010-review.md), two low findings, both
+accepted as the reviewer proposed. Change nothing else. Leave the review file alone; the lead
+commits it.
+
+1. **F1 — `docs/DESIGN.md`.** Change the source-shaped count from 168 to 170 at `:3` and
+   `:489`. After the sentence ending "and the authored value" (`:490`), add the reviewer's
+   sentence recording that the two DESIGN-010 tokens cite their consuming declaration, and
+   that their values were first authored in DESIGN-009 round 1 (`06f3a25`, `closed.css:12`
+   and `:17`) and registered by the lead's ruling on round 2's question 4. Say the same
+   origin in the DESIGN-009 supplement (`:1078–1079`).
+2. **F2 — `refund-error-cash` keeps its subject.** In `closed.js:90`, the named state takes
+   precedence over `order=`, so `?state=refund-error-cash&order=default` still shows Table 7,
+   cash only.
+
+Append a `### Round 2` section to your Handoff answering both by number, with how you checked
+F2 (a browser run on the permitted terms, or say you could not). Commit on
+`agent/design-010`.
+
 ## Handoff
 
 DESIGN-010 registers the approved closed-order layout tokens and corrects the
