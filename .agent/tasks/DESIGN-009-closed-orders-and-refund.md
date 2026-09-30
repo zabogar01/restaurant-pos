@@ -5,8 +5,8 @@ category: ui
 touches: [money, audit, boundaries]
 depends_on: [DESIGN-008]
 owns: [docs/design/**, docs/DESIGN.md]
-status: not-started
-cycles: 0
+status: review
+cycles: 1
 ---
 # DESIGN-009 — POS-05 closed orders and POS-06 closed order detail in Frost
 
