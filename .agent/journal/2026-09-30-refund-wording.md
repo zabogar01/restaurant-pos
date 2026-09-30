@@ -1,6 +1,6 @@
 # 2026-09-30 — Proposed contract wording for the four refund rulings
 
-**Status:** draft by the lead, awaiting the owner. Nothing here is in `docs/PRD.md` until the
+**Status:** approved by the owner 2026-09-30 as drafted (refund-only) and applied to `docs/PRD.md` on `agent/lead-0930`. Before that it was a draft; nothing here was in `docs/PRD.md` until the
 owner approves it. The rulings themselves are in DECISIONS.md (2026-09-30, four lines) and in
 DESIGN-009's Round 2 (O1 to O4); this file only proposes how the contract should say them.
 

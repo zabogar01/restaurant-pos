@@ -104,9 +104,8 @@ FE-028 is FE-029.
 
 Nothing here is decided. Detail is where each line points.
 
-- **Contract wording for the refund rulings,** drafted in `journal/2026-09-30-refund-wording.md`: FR-H5 does not
-  say allocations are limited to original tenders, uncapped per row, and zero rows dropped; FR-J3
-  and AC-18 do not list the REFUSED entry for an approved-then-refused refund.
+- **Merge `agent/lead-0930`**: it holds the approved PRD change for the refund rulings (FR-H5, FR-J3,
+  AC-18, AC-34), DESIGN-008's status fix, and this session's memory.
 - **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
   or go back to one-shot with opt-in per task. They are interactive until you say otherwise.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
