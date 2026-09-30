@@ -340,6 +340,22 @@ of an existing artifact changes appearance still holds, so name every state you 
 Re-run your headless check for every state you touched and report it as in round 1. Commit on
 `agent/design-009` when done.
 
+## Rulings on round 2's five questions (2026-09-30)
+
+1. **Failed-print Close (lead).** Accepted as proposed: `after-close` and `after-close-receipt`
+   are the two outcomes of the one Close link. The floor shows the receipt-warning chip when the
+   close result or the floor read reports an unprinted receipt. No new settlement state.
+2. **When the closed-day banner clears (owner).** Accepted as proposed: the POS-02 banner and
+   the POS-05 closed-day group clear together when the first POS session that displayed them
+   ends (Release or the idle lock). If the day closes while the POS is locked, the next session
+   shows them and they clear when that session ends. After that, POS-05 lists the open day only.
+3. **Floor `dayclosed` header copy (lead).** It should name the open day
+   (*Business day open · 26 Sep*) above the same banner. Not redrawn here; F4e builds it that way.
+4. **Missing tokens (lead).** `--frost-closed-list-columns` and `--frost-allocation-field-width`
+   are to be registered with the values proposed, then the stand-ins replaced, in a small
+   designer follow-up after this task. Not in this task.
+5. **O4 (owner's record).** Matches the ruling and the PRD text (FR-J3, AC-18). Nothing to do.
+
 ## Handoff
 
 DESIGN-009 adds the Frost POS-05 and POS-06 artifacts in
