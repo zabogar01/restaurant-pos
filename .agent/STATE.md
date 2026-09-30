@@ -104,7 +104,7 @@ FE-028 is FE-029.
 
 Nothing here is decided. Detail is where each line points.
 
-- **Contract wording for the refund rulings** (lead to draft, owner to approve): FR-H5 does not
+- **Contract wording for the refund rulings,** drafted in `journal/2026-09-30-refund-wording.md`: FR-H5 does not
   say allocations are limited to original tenders, uncapped per row, and zero rows dropped; FR-J3
   and AC-18 do not list the REFUSED entry for an approved-then-refused refund.
 - **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
