@@ -28,8 +28,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    `closed-order.html` that override the allocation (`sheet-edited`, `sheet-invalid`,
    `refund-error`, `day-refusal`, `sheet-zero`, `approval-edited`) keep the selected order's
    own tenders (the re-review found it on `refund-error`; the same line overrides the other
-   five); add a cash-only failure example — depends on DESIGN-009 (done) — **written
-   2026-09-30, not started**. Designer per agents.yaml, hand-opened.
+   five); add a cash-only failure example — **complete 2026-09-30** (`9c5ed19`), waiting on
+   the owner's merge.
 6. **F4e, sliced by authority** (lead's proposal, approved by the owner 2026-09-30). POS-05 has 11
    states, POS-06 26, the floor two new ones plus the Part D changes. Each slice's file is
    written from what the previous one built.

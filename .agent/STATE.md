@@ -49,15 +49,14 @@ since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wor
 
 ## Running tasks and agents
 
-- **No active task.** **Written, not started:** DESIGN-010 (tokens and refund fixtures) and
-  FE-030 (F4e-1, POS-05 list), which needs DESIGN-010 merged first. QUEUE.md item 6 has the
-  F4e slicing. They go out when the owner says go.
-- DESIGN-009 is **complete and merged** (PRs #26 and #27): round 1 by a Codex
-  designer, round 2 by a Claude Opus 5.5 designer (owner, once), re-review by Codex
-  `gpt-6.1-sol` (one medium fixture finding, queued as DESIGN-010). Its worktree and run folder
-  are removed. Browser evidence is the designer's own: 159 states measured at 1280×800 in
-  headless Chrome. The re-reviewer's Chrome crashed (it crawled in JSDOM), and the lead has not
-  walked the flows in a browser.
+- **No active task.** **DESIGN-010 is complete** (`9c5ed19` on `agent/design-010`, unpushed; worktree
+  `../restaurant-pos-wt/DESIGN-010`, run dir `.agent/runs/DESIGN-010/`). Codex `gpt-6-astra` designer
+  (hand-opened, pane closed), Claude Opus 5.5 reviewer: 2 low findings, fixed in round 2
+  (`5e8a38b`). Lead verify green at `5e8a38b`: 2256 tests / 32 files. Browser evidence is the
+  designer's (160 states, 350 links, 1280×800); the reviewer traced, could not execute.
+  After merge: remove the worktree and the run dir.
+- **Next:** FE-030 (written, uncommitted on the lead branch), dispatch after DESIGN-010 merges.
+- DESIGN-009 complete and merged (PRs #26, #27); the lead has not walked it in a browser.
 - **Live agents:** the lead only (`w2:p1`, named `lead`; `/lead` renames it after a session change).
 - Leftovers the lead did not make and has not closed: agentless pane `w2:pE` (tab `t7`), and a
   detached worktree `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`).
@@ -104,6 +103,7 @@ since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wor
 
 Nothing here is decided. Detail is where each line points.
 
+- **Push and merge `agent/design-010`** (`9c5ed19`, complete). Then FE-030 can go.
 - **Merge `agent/lead-0930c`** (committed at the owner's word, unpushed): STATE, QUEUE, DECISIONS,
   journal, DESIGN-003/005 notes. The task files go in with their own tasks' PRs (LESSONS, Lead).
 - **Walk DESIGN-009 in a browser before F4e?** The lead offered to walk the new POS-05/POS-06
