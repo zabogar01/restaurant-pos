@@ -386,3 +386,44 @@ are no new design or contract questions. The remaining review action is the
 lead's `npm run verify` in an environment with dependencies.
 
 DONE
+
+### Round 2
+
+1. **F1 — token count and provenance wording.** `docs/DESIGN.md` now says
+   170 source-shaped tokens in both its frontmatter description and its
+   Tokens paragraph. The paragraph records the two DESIGN-010 exceptions:
+   their source locations are their consuming declarations, whose authored
+   values are the tokens themselves. Their values originated in DESIGN-009
+   round 1 (`06f3a25`, `closed.css:12` and `:17`) and were approved by the
+   lead's ruling on round 2's question 4. The DESIGN-009 supplement records
+   the same origin. I counted the registry directly: 174 entries, consisting
+   of 170 source-shaped entries and four designed entries. Both corrected
+   counts and both origin statements were checked. No registry or CSS value
+   changed.
+2. **F2 — the named cash-only failure keeps Table 7.** The `selected`
+   expression in `closed.js` now gives `refund-error-cash` precedence over
+   `order=`. I ran headless Chrome through Playwright at 1280×800, using the
+   task's permitted browser terms. I opened the named state with no order
+   parameter and with each of `default`, `cash`, `custom`, `quick`, `long`,
+   `zero` and `refunded`. All eight cases showed Table 7. In each case,
+   *Review refund* showed exactly one Cash 155.925 allocation, and *Continue
+   to manager PIN* showed exactly *Money back: Cash 155.925*, with no Card
+   row or ALLOCATION EDITED tag. Three additional checks confirmed that the
+   general `refund-error` state still respects `order=default`, `quick` and
+   `cash`, including the existing edited split-sale allocation. All 11
+   browser cases passed with no JavaScript errors. The script, JSON results
+   and screenshot are in `/private/tmp/design010-round2/`, outside the
+   repository and not committed.
+
+I ran `npm run verify`: typecheck passed, and Vitest reported **32 test files
+passed and 2,256 tests passed**, exit code 0. Dependencies are available in
+this worktree now; I did not install them or run `npm ci`. `git diff --check`
+passed. I did not repeat layout measurements or the full state/link crawl,
+because this round changes only provenance text and named-state precedence.
+
+This round changes only `docs/DESIGN.md`, the selection expression in
+`closed.js`, and this appended Handoff. The review file remains untracked,
+unstaged and unedited; its SHA-256 digest matched before and after the work.
+The task frontmatter and rulings are unchanged. No questions remain.
+
+DONE

@@ -87,7 +87,7 @@
   function total(r){return r.zero?0:r.quick?173250:155925;}
   function key(value,k,max=9){return k==='Clear'?'':k==='←'?value.slice(0,-1):(value==='0'?'':value).concat(k).slice(0,max);}
   let state=initial;
-  const selected=params.get('order')||(requested==='refund-error-cash'?'cash':null)||({ 'sheet-ac25':'cash','sheet-custom':'custom','sheet-zero':'default','approval-edited':'default',zero:'zero',cash:'cash',custom:'custom',quick:'quick',refunded:'refunded',overflow:'long' }[initial]||'default');
+  const selected=requested==='refund-error-cash'?'cash':params.get('order')||({ 'sheet-ac25':'cash','sheet-custom':'custom','sheet-zero':'default','approval-edited':'default',zero:'zero',cash:'cash',custom:'custom',quick:'quick',refunded:'refunded',overflow:'long' }[initial]||'default');
   const long=selected==='long';
   const order=rows.find(r=>r.state===selected)||rows[0];
   const dayclosed=initial==='dayclosed';

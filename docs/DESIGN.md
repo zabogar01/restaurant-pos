@@ -1,6 +1,6 @@
 ---
 name: Restaurant POS — Frost
-description: The Frost light direction, chosen 2026-09-14, stated as values an implementation can consume. 168 tokens trace to a reviewed Frost artifact; four (pressed ring, invalid, invalid border, round-tag size) were designed under DESIGN-005, are marked designed in the registry and here, and await review.
+description: The Frost light direction, chosen 2026-09-14, stated as values an implementation can consume. 170 tokens trace to a reviewed Frost artifact; four (pressed ring, invalid, invalid border, round-tag size) were designed under DESIGN-005, are marked designed in the registry and here, and await review.
 colors:
   surface: "#fafafa"
   elevated: "#ffffff"
@@ -486,8 +486,13 @@ listed last so it cannot be mistaken for one.
 **Tokens.** `docs/design/tokens/frost.tokens.json` is the registry;
 `docs/design/tokens/frost.css` is generated from it. Every `--frost-*` name in
 this document exists in both under that name. **Two provenance shapes, never
-mixed.** 168 tokens were read from a reviewed artifact and carry `source`
-with a path, line, selector, property and the authored value. Four were
+mixed.** 170 tokens were read from a reviewed artifact and carry `source`
+with a path, line, selector, property and the authored value. Two of them,
+`--frost-closed-list-columns` and `--frost-allocation-field-width`, were
+registered by DESIGN-010 after the fact. Their source cites the declaration
+that consumes them, so the authored value there is the token itself; the
+values were first authored in DESIGN-009 round 1 (`06f3a25`, `closed.css:12`
+and `:17`) and approved by the lead's ruling on round 2's question 4. Four were
 designed under DESIGN-005 — `--frost-pressed-ring`, `--frost-invalid`,
 `--frost-invalid-border`, `--frost-round-tag-size` — and carry `source: null`
 and a `designed` block naming the task, the date, the author, the review
@@ -1076,7 +1081,10 @@ surface. These are design fixtures awaiting review, not production screens
 or accepted implementation guidance. Their source is
 `design/visual-directions/frost/pos/closed-orders.html`, `closed-order.html`,
 `closed.css` and `closed.js`. DESIGN-010 registers the two layout values
-first authored in DESIGN-009 and replaces the temporary flexible stand-ins.
+first authored in DESIGN-009 round 1 (`06f3a25`, `closed.css:12` and `:17`)
+and approved by the lead's ruling on round 2's question 4. Their source cites
+the declaration that consumes them, where the authored value is the token
+itself. The registered tokens replace the temporary flexible stand-ins.
 
 - **Closed-order list.** White rows have a 72px minimum height, divider
   rules, right-aligned tabular totals and a visible REFUNDED tag where
