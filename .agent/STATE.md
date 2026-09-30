@@ -9,7 +9,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-30, at the wrap-up of the lead session that ran DESIGN-009 from start to complete
+2026-09-30, second lead session of the day: wrote DESIGN-010 and FE-030 and sliced F4e
 (narrative in [journal/2026-09-30.md](journal/2026-09-30.md)). The only product code change
 since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wording, no code.
 
@@ -33,14 +33,15 @@ since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wor
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `b0f7de4` (PR #28) on
-  GitHub and in the owner's checkout. **`main`** and `development` are protected on GitHub:
+- **`development` is the integration branch** (owner, 2026-09-29), at `f5c9622` (PR #29) on
+  GitHub. The owner's checkout still reads `b0f7de4` until pulled. **`main`** and `development` are protected on GitHub:
   PR required, 0 approvals, enforced for admins.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
-  current for `b0f7de4`. Rerun after any merge that changes `.githooks/` or agents.yaml.
-- Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0930-wrapup` (cut
-  from `b0f7de4`; holds only this wrap-up). No task worktree exists under
-  `../restaurant-pos-wt/`, and `.agent/runs/` is empty. Merged lead and kit branches remain locally.
+  current (checked 2026-09-30 at `b0f7de4`; PR #29 touched neither). Rerun after any merge that changes `.githooks/` or agents.yaml.
+- Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0930c` (cut from
+  `f5c9622`, no upstream, all uncommitted; the DESIGN-010 and FE-030 files stay uncommitted
+  until dispatched). No task worktree exists under `../restaurant-pos-wt/`, and
+  `.agent/runs/` is empty. Merged lead and kit branches remain locally.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale or merged branches: `agent/phase-0-foundations` (`735301d`, behind); `agent/design-direction`
@@ -48,7 +49,10 @@ since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wor
 
 ## Running tasks and agents
 
-- **No active task.** DESIGN-009 is **complete and merged** (PRs #26 and #27): round 1 by a Codex
+- **No active task.** **Written, not started:** DESIGN-010 (tokens and refund fixtures) and
+  FE-030 (F4e-1, POS-05 list), which needs DESIGN-010 merged first. QUEUE.md item 6 has the
+  F4e slicing. They go out when the owner says go.
+- DESIGN-009 is **complete and merged** (PRs #26 and #27): round 1 by a Codex
   designer, round 2 by a Claude Opus 5.5 designer (owner, once), re-review by Codex
   `gpt-6.1-sol` (one medium fixture finding, queued as DESIGN-010). Its worktree and run folder
   are removed. Browser evidence is the designer's own: 159 states measured at 1280×800 in
@@ -100,6 +104,8 @@ since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wor
 
 Nothing here is decided. Detail is where each line points.
 
+- **Merge `agent/lead-0930c`** (committed at the owner's word, unpushed): STATE, QUEUE, DECISIONS,
+  journal, DESIGN-003/005 notes. The task files go in with their own tasks' PRs (LESSONS, Lead).
 - **Walk DESIGN-009 in a browser before F4e?** The lead offered to walk the new POS-05/POS-06
   flows in Chrome itself (no one re-measured after round 2); not yet answered.
 - **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
@@ -125,8 +131,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Live conflicts
 
-- **`docs/DESIGN.md` is now light-only** (DESIGN-009), but the DESIGN-003 and DESIGN-005 task
-  files still call the dark palette open; the note there is the lead's and not done (QUEUE 6).
 - **DESIGN-007 contradicts itself on `fireerror`** (`:365`/`:407` versus `:578`). You ruled the
   `:578` reading (L349); FE-022 built it. The design file itself is unchanged.
 - **The two Frost back-office artifacts link to the wireframe 51 times**; owed to the
@@ -134,6 +138,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-The ordered list is [QUEUE.md](QUEUE.md). In one line: write F4e (build POS-05 and POS-06 from
-DESIGN-009) and DESIGN-010 (tokens and the fixture fix), then the back office; backend tasks 3 to
-12 resume after the owner's frontend review.
+The ordered list is [QUEUE.md](QUEUE.md). In one line: DESIGN-010 (designer), then FE-030 once
+it is merged, then FE-031 to FE-033 written one at a time; then the back office. Backend tasks
+3 to 12 resume after the owner's frontend review.

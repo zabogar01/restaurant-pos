@@ -92,7 +92,9 @@ was the tag at `--frost-text-13`; take it or beat it.
   already in the palette used in a new place over a new value; prefer one new
   value over three. Every addition gets a sentence saying what it buys.
 - **Light only.** A dark palette is still an open owner decision and not part
-  of this.
+  of this. *(Lead's note, 2026-09-30: no longer open. The owner ruled on
+  2026-09-24 that the MVP ships light only and the dark palette is deferred
+  (DECISIONS.md), and DESIGN-009 wrote that into `docs/DESIGN.md`.)*
 - **No motion.** The brief excluded it and nothing has changed. A pressed state
   expressed only as a transition is a pressed state that does not exist on a
   slow device.
