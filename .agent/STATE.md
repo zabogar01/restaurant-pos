@@ -9,10 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-30, after PR #24 merged and the lead opened the DESIGN-009 designer. The 2026-09-29
-session that recorded KIT-005's acceptance and wrote DESIGN-009 is narrated in
-[journal/2026-09-29.md](journal/2026-09-29.md), third entry. The only product change since
-FE-028 is FE-029.
+2026-09-30, after DESIGN-009's re-review (the session narrative is in
+[journal/2026-09-30.md](journal/2026-09-30.md)). The only product change since FE-028 is
+FE-029; DESIGN-009 added design artifacts and the PRD refund wording, no code.
 
 ## Phase and gates
 
@@ -34,13 +33,13 @@ FE-028 is FE-029.
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `8b10f0b` (PR #24) on
+- **`development` is the integration branch** (owner, 2026-09-29), at `b1d3878` (PR #25) on
   GitHub and in the owner's checkout. **`main`** and `development` are protected on GitHub:
   PR required, 0 approvals, enforced for admins.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
-  current for `8b10f0b`. Rerun after any merge that changes `.githooks/` or agents.yaml.
-- Lead work happens in the worktree `../restaurant-pos-kit`, now on `agent/lead-0930` (cut from
-  `8b10f0b`). Dispatched tasks get worktrees under `../restaurant-pos-wt/<ID>` and run state in
+  current for `b1d3878`. Rerun after any merge that changes `.githooks/` or agents.yaml.
+- Lead work happens in the worktree `../restaurant-pos-kit`, now on `agent/lead-0930b` (cut from
+  `b1d3878`). Dispatched tasks get worktrees under `../restaurant-pos-wt/<ID>` and run state in
   `.agent/runs/<ID>/` (gitignored). Merged lead and kit branches remain locally.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
@@ -49,20 +48,14 @@ FE-028 is FE-029.
 
 ## Running tasks and agents
 
-- **Active task: DESIGN-009, in review.** The Codex `gpt-6-astra` designer (`design009`) delivered
-  it with a full Handoff ending DONE, then could not commit (the Codex sandbox cannot write the
-  worktree's index lock; LESSONS.md) and ran out of usage. On the owner's word the lead
-  committed its files unchanged as `06f3a25` on `agent/design-009`, closed its pane, added the
-  criterion 6 correction there (`74943f7`), and ran `npm run verify` there: green, 2256 / 32.
-- **Review done** (Claude Opus 5.5, `90669f1`): findings, 9 (2 high). Every finding accepted.
-  The owner ruled F4 and F5 (four DECISIONS lines, 2026-09-30); the lead ruled the rest and Part C
-  (Close lands on the floor, on a new `after-close` state). All written as "Round 2" in the task
-  file on `agent/design-009` (`4eb4fd2`). **Round 2 done** (`03dcf82`) by a Claude Opus 5.5
-  designer (owner, once only; Codex out of usage); pane closed; lead verify green 2256 / 32;
-  `status: review` (`efabaa9`). **Next:** Codex re-review once its usage resets (dry run picks
-  codex gpt-6-astra, preflight clean). Its 5 questions are ruled in the task file.
-- **Main checkout has one uncommitted edit:** DESIGN-008's Status line (accepted), identical
-  to `1b50e7e` on `agent/lead-0930`; run `git checkout -- .agent/tasks/DESIGN-008-*` before pulling.
+- **No active task.** DESIGN-009 is **complete** (2026-09-30): round 1 Codex, round 2 Claude (owner,
+  once), re-review Codex `gpt-6.1-sol` via the new one-off `--model` (findings, 1 medium, in the
+  walkable fixture only; it goes to DESIGN-010). The owner merged its branch as PR #26 before the
+  re-review; the re-review and `status: complete` are `b0d4c5e` on `agent/design-009`, unpushed.
+  The lead did not walk the flows in a browser itself: the designer measured 159 states in
+  headless Chrome, and the re-reviewer's Chrome crashed (SIGABRT), so it crawled them in JSDOM.
+- **Worktree `../restaurant-pos-wt/DESIGN-009`** and `.agent/runs/DESIGN-009/` stay until
+  `b0d4c5e` is merged; then remove both.
 - **Live agents:** the lead only (`w2:p1`, named `lead`).
 
 - Leftovers the lead did not make and has not closed: agentless pane `w2:pE` (tab `t7`), and a
@@ -106,8 +99,8 @@ FE-028 is FE-029.
 
 Nothing here is decided. Detail is where each line points.
 
-- **Merge `agent/lead-0930`** (unpushed): the approved PRD change `6ea5a5d` (FR-H5, FR-J3, AC-18,
-  AC-34, committed with ALLOW_CONTRACT=1 on the owner's word), DESIGN-008's status fix, memory.
+- **Merge `agent/lead-0930b` and `agent/design-009` (`b0d4c5e`)**, both unpushed: this session's
+  records, and DESIGN-009's re-review with `status: complete`.
 - **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
   or go back to one-shot with opt-in per task. They are interactive until you say otherwise.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
@@ -144,7 +137,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-The ordered list is [QUEUE.md](QUEUE.md). In one line: let the DESIGN-009 designer finish (the
-entry under "Running tasks"), review it, rule Part C and the questions it raises, then
-F4e through the dispatcher, then the back office; backend tasks 3 to 12 resume after the
-owner's frontend review.
+The ordered list is [QUEUE.md](QUEUE.md). In one line: write F4e (build POS-05 and POS-06 from
+DESIGN-009) and DESIGN-010 (tokens and the fixture fix), then the back office; backend tasks 3 to
+12 resume after the owner's frontend review.
