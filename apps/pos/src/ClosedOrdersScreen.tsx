@@ -260,7 +260,8 @@ function DayGroups({ state, filters, filtering, onClear }: { state: ClosedState;
   );
 }
 
-function Pad({ onKey }: { onKey: (key: string) => void }) {
+/** The digit keypad of these screens' sheets (FE-030's filters, FE-032's allocation editor). */
+export function Pad({ onKey }: { onKey: (key: string) => void }) {
   return (
     <div className="keypad keypad--approval">
       {PAD_KEYS.map((k) => (

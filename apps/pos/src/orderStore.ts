@@ -2,6 +2,7 @@ import type { Money } from '@pos/money';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { orderTotals, type DiscountSnapshot } from './discount.js';
 import { closeOrder, type ClosedOrder } from './close.js';
+import { refundOrder, type RefundRecord, type RefundRequest, type RefundResult } from './refund.js';
 import { fireOrder } from './fire.js';
 import { DEFAULT_CATEGORY, MENU_ITEMS, originFacts, type CategoryId } from './menuFixtures.js';
 import {
@@ -50,6 +51,8 @@ type StoreState = {
   appliedNote?: string;
   /** FE-027: set at close, and never unset. A closed order is kept in the book, not deleted, and accepts no change. */
   closed?: Pick<ClosedOrder, 'closedAt' | 'tenders' | 'change'>;
+  /** FE-032: set once by `refundInBook`, never unset. The refund is its own record: nothing above changes with it. */
+  refunded?: RefundRecord;
 };
 
 export type NewLine = {
@@ -162,6 +165,14 @@ export function tableOf(orderId: string): string | undefined {
 
 const isClosed = (o: StoreState) => o.closed !== undefined;
 
+/** What the book reports. `refunded` is derived from the record's presence and stored nowhere else. */
+export type OrderStatus = 'open' | 'closed' | 'refunded';
+
+/** Whether an order has reached CLOSED, REFUNDED included: its table is free and it accepts no edit. One predicate, so no reader compares against `'closed'` alone. */
+export const reachedClosed = (status: OrderStatus): boolean => status !== 'open';
+
+const statusOf = (o: StoreState): OrderStatus => (o.refunded ? 'refunded' : isClosed(o) ? 'closed' : 'open');
+
 /** FR-D1's at-most-one applies to open orders: the table's open order, if any, and otherwise the id a new one takes (`table-9`, then `table-9-2`…). */
 function tableSlot(orders: Readonly<Record<string, StoreState>>, n: number): { id: string; exists: boolean } {
   const ids = Object.keys(orders).filter((id) => tableOf(id) === String(n));
@@ -210,7 +221,35 @@ function toShownOrder(data: StoreState): ShownOrder {
 export type Locked = boolean | ((activeId: string) => boolean);
 
 /** What the book holds: every order that has been opened, and the one the order screen shows. */
-type Book = { orders: Readonly<Record<string, StoreState>>; activeId: string };
+export type Book = { orders: Readonly<Record<string, StoreState>>; activeId: string };
+
+/**
+ * FE-032: the refund, by order id and through no other path (`update` still
+ * refuses every change to a closed order). Validates the whole request and then
+ * writes one field, `refunded`, on that one order; a refusal returns the same
+ * book object, so identity says nothing changed (B-20).
+ */
+export function refundInBook(book: Book, orderId: string, request: RefundRequest, refundedAt: string): { book: Book; result: RefundResult } {
+  const held = book.orders[orderId];
+  if (!held) return { book, result: { refused: 'unknown-order' } };
+  const result = refundOrder(
+    {
+      closed: isClosed(held),
+      refunded: held.refunded !== undefined,
+      total: totalsFor(held.groups.flatMap((g) => g.lines), held.applied).total,
+      tenders: held.closed?.tenders ?? [],
+    },
+    request,
+    refundedAt
+  );
+  if (result.refused) return { book, result };
+  return { book: { ...book, orders: { ...book.orders, [orderId]: { ...held, refunded: result.record } } }, result };
+}
+
+/** One order as `OrderBook.orders` reports it. */
+export type BookOrder = { id: string; status: OrderStatus; order: ShownOrder; refunded?: RefundRecord } & Partial<
+  Pick<ClosedOrder, 'closedAt' | 'tenders' | 'change'>
+>;
 
 /**
  * The floor's view of the book (FE-026). `useOrderStore` returns only `store`.
@@ -222,8 +261,19 @@ export type OrderBook = {
   orderFor: (orderId: string) => ShownOrder | undefined;
   /** Makes a fixture's order active, seeding it from that fixture the first time and never after. */
   openFixture: (state: OrderState) => void;
-  /** Every order the book holds, open or closed (FE-027: POS-05 will list the closed ones). */
-  orders: () => ReadonlyArray<{ id: string; status: 'open' | 'closed'; order: ShownOrder } & Partial<Pick<ClosedOrder, 'closedAt' | 'tenders' | 'change'>>>;
+  /** Every order the book holds, open, closed or refunded (FE-027: POS-05 lists the closed ones). */
+  orders: () => ReadonlyArray<BookOrder>;
+  /**
+   * FE-032: the full refund of a closed order, by id (FR-H5). A STAND-IN for the
+   * server's full-refund command (ARCHITECTURE section 13): it runs in memory and
+   * is lost on reload, and it verifies no PIN and names no approver. It leaves out
+   * the actor, the idempotency key and expected version (ADR-003), the business-day
+   * lock, the audit entry (ADR-007) and persisted refund rows; see `refund.ts`.
+   * Returns the record or the refusal, and a refusal changes nothing. Applied
+   * through the functional updater, so a second call in the same tick finds the
+   * order refunded and answers `already-refunded`.
+   */
+  refund: (orderId: string, request: RefundRequest, refundedAt: string) => RefundResult;
   /** The id of Table `n`'s open order, if it has one. A table whose only order is closed has none: it is free. */
   openOrderIdOf: (n: number) => string | undefined;
   /** Whether the book holds any order, open or closed, for Table `n`. Absent, the floor shows the fixture. */
@@ -380,6 +430,16 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
     return true;
   }, [update]);
 
+  const refund = useCallback((orderId: string, request: RefundRequest, refundedAt: string): RefundResult => {
+    // The ref is advanced here as well as by the render, so a second call in the
+    // same tick reads the first one's order as refunded. The updater is the write:
+    // it runs against the previous state, as `close`'s does.
+    const attempt = refundInBook(bookRef.current, orderId, request, refundedAt);
+    bookRef.current = attempt.book;
+    setBook((prev) => refundInBook(prev, orderId, request, refundedAt).book);
+    return attempt.result;
+  }, []);
+
   const openFixture = useCallback((state: OrderState) => {
     const activeId = orderIdOf(ORDER_FIXTURES[state]);
     setBook((prev) => ({
@@ -409,9 +469,10 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
   const orders = () =>
     Object.entries(book.orders).map(([id, o]) => ({
       id,
-      status: isClosed(o) ? ('closed' as const) : ('open' as const),
+      status: statusOf(o),
       order: toShownOrder(o),
       ...o.closed,
+      ...(o.refunded && { refunded: o.refunded }),
     }));
   const openOrderIdOf = (n: number) => {
     const slot = tableSlot(book.orders, n);
@@ -421,6 +482,6 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
 
   return {
     store: { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire, close },
-    book: { activeId: book.activeId, orderFor, orders, openOrderIdOf, hasOrderFor, openFixture, openTable, newQuickSale },
+    book: { activeId: book.activeId, orderFor, orders, refund, openOrderIdOf, hasOrderFor, openFixture, openTable, newQuickSale },
   };
 }

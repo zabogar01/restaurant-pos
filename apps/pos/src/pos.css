@@ -1665,7 +1665,8 @@ button.action:not([aria-disabled="true"]):focus-visible:active {
 
 /* ---- Development-only fixture links, outside the device frame ---- */
 
-.fixture-states {
+.fixture-states,
+.refund-states {
   width: var(--frost-pos-width);
   display: flex;
   flex-wrap: wrap;
@@ -1675,12 +1676,14 @@ button.action:not([aria-disabled="true"]):focus-visible:active {
   font-size: var(--frost-text-13);
 }
 
-.fixture-states a {
+.fixture-states a,
+.refund-states a {
   color: var(--frost-primary);
   text-underline-offset: var(--frost-link-underline-offset);
 }
 
-.fixture-states a[aria-current='page'] {
+.fixture-states a[aria-current='page'],
+.refund-states a[aria-current='page'] {
   font-weight: var(--frost-weight-semibold);
 }
 
@@ -2748,4 +2751,139 @@ button.settlement-close__action:not([aria-disabled="true"]):focus-visible:active
   .closed-button[aria-pressed='true']:hover {
     background: var(--frost-selected);
   }
+
+  .closed-button--destructive:hover {
+    background: var(--frost-destructive-soft);
+  }
+}
+
+/* ==== POS-06 refund (FE-032) ====
+ * The artifact's .co-allocation, .co-editor, .co-keyboard and the modal's split
+ * line (frost/pos/closed.css), on registry tokens only. The sheet frame, the
+ * scrim and M-1's modal are the order screen's own rules above; the allocation
+ * field is --frost-allocation-field-width. The sheet's body scrolls inside the
+ * sheet (.sheet__body), so a six-tender allocation leaves the sheet's head and
+ * its Cancel and Continue in place and *What was charged* beside it. */
+
+.closed-button--destructive {
+  color: var(--frost-destructive);
+}
+
+.closed h3 {
+  margin: var(--frost-space-4) 0 var(--frost-space-2);
+  font-size: var(--frost-text-15);
+  font-weight: var(--frost-weight-medium);
+}
+
+.refund-banner {
+  margin: 0 0 var(--frost-space-4);
+  padding: var(--frost-space-3) var(--frost-space-4);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-group);
+}
+
+.refund-banner strong {
+  font-weight: var(--frost-weight-semibold);
+}
+
+.refund-banner p {
+  margin-top: var(--frost-space-1);
+}
+
+.refund-allocation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--frost-space-3);
+  padding: var(--frost-space-2) 0;
+  border-bottom: var(--frost-divider-stroke);
+}
+
+.refund-field {
+  width: var(--frost-allocation-field-width);
+  color: inherit;
+  font: inherit;
+  font-size: var(--frost-text-20);
+  cursor: pointer;
+}
+
+.refund-field:focus-visible {
+  outline: var(--frost-focus-outline);
+  outline-offset: var(--frost-focus-offset);
+  box-shadow: var(--frost-focus-ring);
+}
+
+.closed .refund-inline {
+  display: inline;
+}
+
+.refund-editor {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--frost-space-5);
+}
+
+.refund-reason {
+  width: 100%;
+  margin-top: var(--frost-space-3);
+  justify-content: flex-start;
+  color: inherit;
+  font: inherit;
+  font-size: var(--frost-text-20);
+}
+
+.refund-keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--frost-space-2);
+  margin-top: var(--frost-space-4);
+}
+
+.refund-keyboard > div {
+  display: flex;
+  justify-content: center;
+  gap: var(--frost-space-2);
+}
+
+.closed-letter {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--frost-action-compact-height);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-key-surface);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.closed-letter:active {
+  box-shadow: var(--frost-pressed-ring);
+}
+
+.closed-letter:focus-visible,
+.refund-reason:focus-visible {
+  outline: var(--frost-focus-outline);
+  outline-offset: var(--frost-focus-offset);
+  box-shadow: var(--frost-focus-ring);
+}
+
+.closed .modal__split {
+  margin-top: var(--frost-space-2);
+}
+
+.closed .modal__approves {
+  margin-top: var(--frost-space-4);
+  color: var(--frost-muted);
+  font-size: var(--frost-text-13);
+  text-align: center;
+}
+
+.closed .sheet__body p {
+  margin: var(--frost-space-2) 0;
+}
+
+.closed .refund-banner p {
+  margin: var(--frost-space-1) 0 0;
 }

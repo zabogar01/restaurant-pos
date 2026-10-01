@@ -446,27 +446,11 @@ these in, and end with DONE.
 
 ## Handoff
 
-**Status: built, not committed, BLOCKED on one question.** `npm run verify` is not green, so by the rule I did not commit. Everything is in the working tree on `agent/fe-032`; nothing is staged.
+**Status: done and committed on `agent/fe-032`.** `npm run verify` is green: typecheck clean, 36 test files, 2515 tests, all passing.
 
-### The block
+### What was done after the block
 
-The task says the Refund control is drawn on `default`, `cash`, `custom`, `quick`, `overflow` and the new-day order, and that only two existing tests may change. Those two cannot both hold. Fourteen existing tests in `apps/pos/test/closed-order.test.tsx` assert that the buttons on these pictures are exactly `['Reprint receipt']`, through the shared `DEFAULT.buttons` constant (`:99`) and two direct assertions. A Refund control must be a `<button>` (it acts), so `draw().buttons` gains `Refund this order` on every refundable order, and these fail:
-
-- criterion 1: `default`, `cash`, `custom`, `quick`, `overflow`, `reprint`, `reprint-unknown`, `reprint-sent`, `reprint-printed` (`:182–185`, all through `DEFAULT`);
-- `an unknown state reads as default…` (`:188`, one of the two tests I was told to change; I kept only the unknown and empty cases, and it still compares to `DEFAULT`);
-- `Table 1 closed through the real route…` (`:372`, `expect(shown.buttons).toEqual(['Reprint receipt'])`);
-- `the error picture's Retry shows default…` (`:436`, `toEqual(DEFAULT)`);
-- `pressing Reprint receipt shows Reprint sent…` (`:622`, `expect(after.buttons, state).toEqual(['Reprint receipt'])` for default, zero, refunded and dayclosed);
-- `an unknown fixture order under a fixture state is Table 1's own order…` (`:881`, `toEqual(DEFAULT)`).
-
-I left every one of them untouched, as the block protocol says. **Proposed resolution** (the exact edits, all in `closed-order.test.tsx`, none loosening a check; each keeps asserting the whole button list):
-
-1. `:99` `buttons: ['Reprint receipt']` becomes `buttons: ['Reprint receipt', 'Refund this order']`.
-2. In `EXPECTED`, add `buttons: ['Reprint receipt']` to `zero`, `refunded` and `dayclosed` (the three states with no Refund control, where the list is today's).
-3. `:372` becomes `expect(shown.buttons).toEqual(['Reprint receipt', 'Refund this order']);`.
-4. `:622` becomes `expect(after.buttons, state).toEqual(state === 'default' ? ['Reprint receipt', 'Refund this order'] : ['Reprint receipt']);`.
-
-With those four edits I expect the fourteen to pass; I have not applied them. The question is whether the lead rules those edits in.
+The lead ruled the four edits in (section *Lead ruling on the block*). I applied exactly those, all in `apps/pos/test/closed-order.test.tsx`, and nothing else in any existing test: `DEFAULT.buttons` is now `['Reprint receipt', 'Refund this order']`; `zero`, `refunded` and `dayclosed` in `EXPECTED` each state `buttons: ['Reprint receipt']`; the Table 1 real-route assertion expects both buttons; and the reprint assertion expects both buttons for `default` and `['Reprint receipt']` otherwise. Each is still an exact comparison of the whole button list, in order. No fifteenth existing assertion failed. The block that led to this (fourteen assertions that pinned the Refund control's absence through the button list) is resolved by those edits.
 
 ### What I built
 
@@ -495,7 +479,7 @@ All under `apps/pos/`. New files: `src/refund.ts`, `src/refundDraft.ts`, `src/Re
 
 ### Existing tests changed
 
-Only the two named, in `closed-order.test.tsx`: the first now keeps the unknown and empty cases (renamed `an unknown state reads as default, and so does none at all`); the second became `criterion 10: the Refund control only where the order is refundable, and no void`: for every `DETAIL_STATES` id it asserts the control exactly where the order is refundable (absent on `zero`, `refunded`, `dayclosed`, `loading`, `error`), live, a `<button>`, never `disabled` or `aria-disabled`, destructive, beneath *Reprint receipt*, and the three notes where it is absent; no void control anywhere; no dialog opens by itself. The first of the two still fails for the reason in the block (it compares to `DEFAULT`).
+Only the two named, in `closed-order.test.tsx`: the first now keeps the unknown and empty cases (renamed `an unknown state reads as default, and so does none at all`); the second became `criterion 10: the Refund control only where the order is refundable, and no void`: for every `DETAIL_STATES` id it asserts the control exactly where the order is refundable (absent on `zero`, `refunded`, `dayclosed`, `loading`, `error`), live, a `<button>`, never `disabled` or `aria-disabled`, destructive, beneath *Reprint receipt*, and the three notes where it is absent; no void control anywhere; no dialog opens by itself. Beyond those two, the lead ruled in four further edits to existing assertions (the `DEFAULT.buttons` constant, the `zero`, `refunded` and `dayclosed` overrides, the Table 1 real-route assertion and the reprint assertion), because they pinned the Refund control's absence through the button list; they are the ones described under *What was done after the block*.
 
 ### Red cases run (mutate, read the failure, revert)
 
@@ -520,7 +504,7 @@ All reverted; `git diff` of those lines is the final code.
 
 ### Verify
 
-`npm run verify` (typecheck clean): **36 test files, 2515 tests: 2501 passed, 14 failed** (the baseline on `development` at `1fc0f6c` was 34 files and 2411 tests; I added two files and 104 tests, and the two named tests were renamed or reshaped, not removed). All 14 failures are the `buttons` assertions in the block above; every test I added passes, and no other existing test fails. `test/refund-operation.test.ts` has 24 tests and `test/refund-screen.test.tsx` has 65.
+`npm run verify` (typecheck clean): **36 test files, 2515 tests, 2515 passed, 0 failed** (the baseline on `development` at `1fc0f6c` was 34 files and 2411 tests; I added two files and 104 tests, and the two named tests were renamed or reshaped, not removed). `test/refund-operation.test.ts` has 24 tests and `test/refund-screen.test.tsx` has 65.
 
 ### What the server owes (rule 14) and must replace when the refund becomes a command
 
@@ -533,6 +517,6 @@ All reverted; `git diff` of those lines is the final code.
 
 ### What the next agent needs and does not have
 
-The lead's ruling on the four test edits above (then the fourteen should go green and the work can be committed on `agent/fe-032` with `git add` of the paths listed under *What I built*). A browser walk of the thirteen states at 1280×800.
+A browser walk of the thirteen states at 1280×800 (I had no browser), and the review.
 
-BLOCKED: may I apply the four edits to `closed-order.test.tsx` listed under "The block" (DEFAULT.buttons gains `Refund this order`; zero, refunded and dayclosed keep `['Reprint receipt']`; lines :372 and :622 updated to match), since a Refund control on refundable orders cannot coexist with fourteen assertions that those orders' buttons are exactly `['Reprint receipt']`?
+DONE

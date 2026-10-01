@@ -3,6 +3,8 @@ import { Icon } from './icons.js';
 
 export const PIN_LENGTH = 6; // FR-A1: six digits, numeric.
 
+const PIN_DOTS_ID = 'pin-dots';
+
 const DIGIT_ROWS = [
   ['1', '2', '3'],
   ['4', '5', '6'],
@@ -18,6 +20,12 @@ type PinPadProps = {
   continueDisabled?: boolean;
   /** The id of the notice that says why Continue is inert, when one is drawn (FE-024). */
   continueDescribedBy?: string;
+  /**
+   * Continue stays off until all six digits are entered (FE-032's refund approval,
+   * as the artifact draws it). Input completeness only: nothing is verified here.
+   * Off by default, so POS-01 and POS-03's approval behave as before.
+   */
+  requireFull?: boolean;
   /** Rendered between the entry display and the keypad, where POS-01 and M-1 put their notices. */
   children?: ReactNode;
   /**
@@ -46,6 +54,7 @@ export function PinPad({
   verifying = false,
   continueDisabled = false,
   continueDescribedBy,
+  requireFull = false,
   children,
   geometry = 'lock',
   seed = 0,
@@ -78,8 +87,11 @@ export function PinPad({
     setKeyedAny(true);
   }
 
+  const incomplete = requireFull && count < PIN_LENGTH;
+  const off = continueDisabled || incomplete;
+
   function submit() {
-    if (continueDisabled) return;
+    if (off) return;
     const pin = digits.current;
     digits.current = '';
     setCount(0);
@@ -95,7 +107,7 @@ export function PinPad({
 
   return (
     <>
-      <div className="pin-dots" role="status" aria-label={`${filled} of ${PIN_LENGTH} digits entered`}>
+      <div className="pin-dots" id={PIN_DOTS_ID} role="status" aria-label={`${filled} of ${PIN_LENGTH} digits entered`}>
         {Array.from({ length: PIN_LENGTH }, (_, i) => (
           <span key={i} className={i < filled ? 'pin-dot pin-dot--filled' : 'pin-dot'} />
         ))}
@@ -118,10 +130,11 @@ export function PinPad({
           </button>
           <button
             type="button"
-            className={continueDisabled ? 'key key--continue-disabled' : 'key key--continue'}
+            className={off ? 'key key--continue-disabled' : 'key key--continue'}
             aria-label="Continue"
-            aria-disabled={continueDisabled || undefined}
-            aria-describedby={continueDisabled ? continueDescribedBy : undefined}
+            aria-disabled={off || undefined}
+            // An off key says why nearby: the notice that withdrew it, or the count of digits still to enter.
+            aria-describedby={continueDisabled ? continueDescribedBy : incomplete ? PIN_DOTS_ID : undefined}
             onClick={submit}
           >
             <Icon name="arrow" />

@@ -1,17 +1,20 @@
 import type { Money } from '@pos/money';
 import type { Tender } from './close.js';
-import { CASH_TENDER, FIXTURE_ORDERS, bookOrderName, wibTime, type FixtureOrder } from './closedOrders.js';
+import { FIXTURE_ORDERS, bookOrderName, wibTime, type FixtureOrder } from './closedOrders.js';
 import type { Adjustment, Modifier } from './orderFixtures.js';
-import type { OrderBook } from './orderStore.js';
+import { reachedClosed, type OrderBook } from './orderStore.js';
+import { contributions } from './refund.js';
+import { REFUND_COPY, REFUND_STATES, type Draft, type RefundState } from './refundDraft.js';
 
-// POS-06, the closed order a POS-05 row leads to (FE-031), read-only. The URL
+// POS-06, the closed order a POS-05 row leads to (FE-031, FE-032). The URL
 // selects the picture as the artifact does (frost/pos/closed-order.html, driven
 // by closed.js:87–180): `?state=&order=&time=&list=` for a fixture row, and
 // `?order=<book id>` alone for an order the cashier closed in this session. A
 // book order is drawn from the book and nothing else: its lines, tenders,
 // change and stored totals (FR-G7, B-10), never recomputed and never a
-// fixture's. This slice builds fourteen of the artifact's twenty-seven states;
-// the refund's thirteen are FE-032's.
+// fixture's; and once refunded, its refund from the book's record alone. The
+// artifact's twenty-seven states are built: the fourteen of FE-031 and the
+// thirteen of the refund (refundDraft.ts).
 
 export type DetailState =
   | 'default'
@@ -77,8 +80,19 @@ export const DETAIL_COPY = {
 export const note = (time: string, day: string) => `Closed ${time} · Business day ${day} Sep`;
 export const chargedHead = (n: number) => `${n} ${n === 1 ? 'line' : 'lines'} · charged items`;
 
+/** A state of the screen: the fourteen of FE-031 and the thirteen of the refund. */
+export type ScreenState = DetailState | RefundState;
+
 /** One notice above the lines. `warn` is the amber class (a receipt's failure, a closed day), never the kitchen emergency. */
-export type DetailNotice = { key: string; title: string; body?: string; warn: boolean; link?: { label: string; href: string } };
+export type DetailNotice = {
+  key: string;
+  title: string;
+  body?: string;
+  warn: boolean;
+  link?: { label: string; href: string };
+  /** A control that acts on the screen (a button, never a link). */
+  action?: { id: 'review-refund' | 'return-to-order'; label: string };
+};
 
 export type ReprintResult = 'reprint' | 'reprint-unknown' | 'reprint-sent' | 'reprint-printed';
 
@@ -101,22 +115,63 @@ const RESULTS: Record<ReprintResult, Omit<DetailNotice, 'key'>> = {
   'reprint-printed': { title: 'Receipt PRINTED · 20:26', body: 'Server-confirmed result. The original charged figures were used.', warn: false },
 };
 
-export const reprintResultOf = (state: DetailState): ReprintResult | undefined =>
+export const reprintResultOf = (state: ScreenState): ReprintResult | undefined =>
   state === 'reprint' || state === 'reprint-unknown' || state === 'reprint-sent' || state === 'reprint-printed' ? state : undefined;
 
-/** The notices, in the artifact's order (closed.js:125–132): the closed day, REFUNDED, then a reprint's result. */
-export function noticesFor(detail: Pick<ClosedDetail, 'closedDay' | 'refunded'>, result: ReprintResult | undefined): ReadonlyArray<DetailNotice> {
+/**
+ * What a refund attempt left on the screen. `failed` kept a draft for *Review
+ * refund*; `failed-final` kept none (the order is refunded, zero-total or not
+ * closed, and nothing can be reviewed); `day-refused` is ruling I-4.
+ */
+export type RefundOutcome = 'failed' | 'failed-final' | 'day-refused';
+
+/** Whether the order may be refunded at all: not zero-total, not REFUNDED, not on a closed day (FR-H5b, FR-H6, FR-H7). */
+export const refundable = (detail: Pick<ClosedDetail, 'zero' | 'refund' | 'closedDay'>): boolean => !detail.zero && !detail.refund && !detail.closedDay;
+
+/**
+ * The notices, in the artifact's order (closed.js:125–132): the closed day,
+ * REFUNDED, a refund's failure or refusal, then a reprint's result. REFUNDED is
+ * built from the refund's own facts: a refund made here names no approver (O6).
+ */
+export function noticesFor(
+  detail: Pick<ClosedDetail, 'closedDay' | 'refund' | 'zero'>,
+  result: ReprintResult | undefined,
+  outcome?: RefundOutcome
+): ReadonlyArray<DetailNotice> {
+  const review = outcome === 'failed' && refundable(detail);
   return [
     ...(detail.closedDay
       ? [{ key: 'dayclosed', title: 'This order’s business day is closed', body: 'Reprinting still works. Refunds are unavailable.', warn: true }]
       : []),
-    ...(detail.refunded
+    ...(detail.refund
       ? [
           {
             key: 'refunded',
-            title: 'REFUNDED · 20:31 · approved by M. Iqbal',
-            body: 'The whole order was refunded. Reason: Wrong dish served.',
+            title: `REFUNDED · ${detail.refund.time}${detail.refund.approvedBy ? ` · approved by ${detail.refund.approvedBy}` : ''}`,
+            body: `The whole order was refunded. Reason: ${detail.refund.reason}.`,
             warn: false,
+          },
+        ]
+      : []),
+    ...(outcome === 'failed' || outcome === 'failed-final'
+      ? [
+          {
+            key: 'refund-error',
+            title: REFUND_COPY.failed,
+            body: review ? REFUND_COPY.failedKept : REFUND_COPY.nothing,
+            warn: true,
+            ...(review && { action: { id: 'review-refund' as const, label: REFUND_COPY.review } }),
+          },
+        ]
+      : []),
+    ...(outcome === 'day-refused'
+      ? [
+          {
+            key: 'day-refusal',
+            title: REFUND_COPY.dayRefused,
+            body: REFUND_COPY.dayRefusedBody,
+            warn: true,
+            action: { id: 'return-to-order' as const, label: REFUND_COPY.returnToOrder },
           },
         ]
       : []),
@@ -129,11 +184,15 @@ export function noticesFor(detail: Pick<ClosedDetail, 'closedDay' | 'refunded'>,
 // ---------------------------------------------------------------------------
 
 export type DetailRequest =
-  | { source: 'fixture'; state: DetailState; fixture: string; time: string | undefined; newDay: boolean }
+  | { source: 'fixture'; state: ScreenState; fixture: string; time: string | undefined; newDay: boolean }
   | { source: 'book'; id: string };
 
-/** What a state with no `order` shows (closed.js:90). The rest, including a state this slice does not build, read as `default`. */
-const STATE_ORDER: Partial<Record<DetailState, string>> = {
+/** What a state with no `order` shows (closed.js:90). The rest read as `default`. */
+const STATE_ORDER: Partial<Record<ScreenState, string>> = {
+  'sheet-ac25': 'cash',
+  'sheet-custom': 'custom',
+  'sheet-zero': 'default',
+  'approval-edited': 'default',
   cash: 'cash',
   custom: 'custom',
   quick: 'quick',
@@ -141,6 +200,8 @@ const STATE_ORDER: Partial<Record<DetailState, string>> = {
   refunded: 'refunded',
   overflow: 'long',
 };
+
+const STATES: ReadonlyArray<{ id: ScreenState }> = [...DETAIL_STATES, ...REFUND_STATES];
 
 const CLOCK = /^\d{2}:\d{2}$/;
 
@@ -153,12 +214,13 @@ export function detailRequestFrom(search: string): DetailRequest {
   const id = params.get('order');
   if (id !== null && !params.has('state')) return { source: 'book', id };
   const requested = params.get('state');
-  const state = DETAIL_STATES.find((s) => s.id === requested)?.id ?? 'default';
+  const state = STATES.find((s) => s.id === requested)?.id ?? 'default';
   const time = params.get('time');
   return {
     source: 'fixture',
     state,
-    fixture: params.get('order') || STATE_ORDER[state] || 'default',
+    // The cash-only failure keeps Table 7 whatever `order=` says (closed.js:90, DESIGN-010).
+    fixture: state === 'refund-error-cash' ? 'cash' : params.get('order') || STATE_ORDER[state] || 'default',
     time: time !== null && CLOCK.test(time) ? time : undefined,
     newDay: params.get('list') === 'dayclosed',
   };
@@ -180,9 +242,21 @@ export type ClosedDetail = {
   figures: { subtotal: Money; discount?: Adjustment; service?: Adjustment; total: Money };
   /** A zero-total order: nothing was paid and nothing can be refunded (FR-G11). */
   zero: boolean;
-  refunded: boolean;
+  /** Present exactly when the order is REFUNDED. One owner: nothing else says so. */
+  refund?: RefundFacts;
   closedDay: boolean;
 };
+
+/**
+ * What the screen says of a refund. A book order's come from the book's record
+ * and nobody's approval is named (O6); only the fixture picture of REFUNDED
+ * carries an approver, as the artifact's own copy.
+ */
+export type RefundFacts = { time: string; reason: string; approvedBy?: string; returned: ReadonlyArray<Tender> };
+
+const FIXTURE_REFUND_TIME = '20:31';
+const FIXTURE_REFUND_REASON = 'Wrong dish served';
+const FIXTURE_APPROVER = 'M. Iqbal';
 
 const OPEN_DAY = '25';
 const NEW_DAY = '26';
@@ -216,34 +290,62 @@ function fixtureFigures(order: FixtureOrder, long: boolean): ClosedDetail['figur
   };
 }
 
-/** A fixture address: the artifact's order, under the artifact's picture. */
-export function fixtureDetail(request: Extract<DetailRequest, { source: 'fixture' }>): ClosedDetail {
+/** What a fixture address was refunded with when the cashier confirmed it in this screen. Screen state, never the book (rule 13). */
+export type FixtureRefund = Draft;
+
+/** The tenders that got money back, each with its allocation, a row at 0 left out. */
+const returnedOf = (tenders: ReadonlyArray<Tender>, amounts: ReadonlyArray<Money>): ReadonlyArray<Tender> =>
+  tenders.flatMap((t, i) => (amounts[i]! > 0n ? [{ label: t.label, amount: amounts[i]! }] : []));
+
+/**
+ * A fixture address: the artifact's order, under the artifact's picture.
+ * `closedDay` is the screen's fact (the picture, or a day-refusal's outcome);
+ * `confirmed` is a refund the cashier approved here, shown with the chosen
+ * reason and allocation and no approver.
+ */
+export function fixtureDetail(
+  request: Extract<DetailRequest, { source: 'fixture' }>,
+  { closedDay, confirmed }: { closedDay: boolean; confirmed?: FixtureRefund }
+): ClosedDetail {
   const long = request.fixture === 'long';
   const order = FIXTURE_ORDERS.find((o) => o.state === request.fixture) ?? FIXTURE_ORDERS[0]!;
   const figures = fixtureFigures(order, long);
+  const tenders = long ? [{ label: 'Card', amount: figures.total }] : order.tenders;
+  const refund: RefundFacts | undefined = confirmed
+    ? { time: FIXTURE_REFUND_TIME, reason: confirmed.reason, returned: returnedOf(tenders, confirmed.amounts) }
+    : order.refunded === true || request.state === 'refunded'
+      ? {
+          time: FIXTURE_REFUND_TIME,
+          reason: FIXTURE_REFUND_REASON,
+          approvedBy: FIXTURE_APPROVER,
+          returned: returnedOf(tenders, contributions(tenders, figures.total)),
+        }
+      : undefined;
   return {
     name: order.name,
     time: request.time ?? order.time,
     day: request.newDay ? NEW_DAY : OPEN_DAY,
     lines: fixtureLines(long ? 10 : 1),
-    tenders: long ? [{ label: 'Card', amount: figures.total }] : order.tenders,
+    tenders,
     change: order.change ?? 0n,
     total: figures.total,
     figures,
     zero: order.zero === true,
-    refunded: order.refunded === true || request.state === 'refunded',
-    closedDay: request.state === 'dayclosed',
+    ...(refund && { refund }),
+    closedDay,
   };
 }
 
 /**
- * An order the book holds as closed, drawn from the book alone. A voided line
- * was not charged and is not listed or counted. An id the book does not hold —
- * or holds still open — is `undefined`: no fixture stands in for it.
+ * An order the book holds as closed or refunded, drawn from the book alone. A
+ * voided line was not charged and is not listed or counted. An id the book does
+ * not hold — or holds still open — is `undefined`: no fixture stands in for it.
+ * A refunded order's refund is its record's: the time, the reason and the money
+ * returned as allocated, never recomputed from the tenders.
  */
 export function bookDetail(book: OrderBook, id: string): ClosedDetail | undefined {
   const held = book.orders().find((o) => o.id === id);
-  if (!held || held.status !== 'closed' || held.closedAt === undefined) return undefined;
+  if (!held || !reachedClosed(held.status) || held.closedAt === undefined) return undefined;
   const { totals } = held.order;
   return {
     name: bookOrderName(held.id, held.order),
@@ -269,16 +371,13 @@ export function bookDetail(book: OrderBook, id: string): ClosedDetail | undefine
       total: totals.total,
     },
     zero: totals.total === 0n,
-    refunded: false,
+    ...(held.refunded && {
+      refund: {
+        time: wibTime(held.refunded.refundedAt),
+        reason: held.refunded.reason,
+        returned: held.refunded.allocations.map(({ label, amount }) => ({ label, amount })),
+      },
+    }),
     closedDay: false,
   };
-}
-
-/**
- * *Money returned · full order* (closed.js:98): each tender less its change, the
- * change coming off the last cash tender, and a row at 0 left out.
- */
-export function moneyReturned(tenders: ReadonlyArray<Tender>, change: Money): ReadonlyArray<Tender> {
-  const cashAt = tenders.map((t) => t.label).lastIndexOf(CASH_TENDER);
-  return tenders.map((t, i) => (i === cashAt ? { ...t, amount: t.amount - change } : t)).filter((t) => t.amount > 0n);
 }
