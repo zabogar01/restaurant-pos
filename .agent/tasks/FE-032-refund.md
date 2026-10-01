@@ -5,8 +5,8 @@ category: ui
 touches: [money, audit, boundaries]
 depends_on: [FE-031]
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: review
-cycles: 1
+status: active
+cycles: 2
 ---
 # FE-032 — POS-06 refund
 
@@ -489,6 +489,41 @@ keyboard and the amount keypad were driven by scripted clicks, one per step.
 Accepted as built: the fixture confirm keeps the artifact's `20:31` (a fixture picture has no
 clock), and `OrderBook.refund` is required, not optional, since no existing hand-built book
 needed a change.
+
+## Review round 1: one finding, accepted (2026-10-01)
+
+The review is `.agent/reviews/FE-032-review.md` (Codex `gpt-6-astra`, verdict *findings*, one
+medium). The lead accepts it. Fix it in this round and change nothing else.
+
+**F1 — an unavailable order hides the refund refusal.** The refund outcome is drawn only
+inside `Body`, which needs a closed-order detail (`ClosedOrderScreen.tsx:165`, the unavailable
+branch at `:176`, the guard in `bookDetail`). When the book answers `not-closed` and now holds
+the order open, or answers `unknown-order` and no longer holds it, `bookDetail` returns
+`undefined`: the approval closes and the screen shows only *Could not load this order*. The
+cashier is never told that the refund was refused and nothing was refunded. Rule 12 requires
+*Refund failed · the order is unchanged* / *Nothing was refunded.*, with no control, **over
+whatever the book holds**, for `zero-total`, `not-closed` and `unknown-order`; criterion 13
+requires the screen to draw the book's refusal. The lead's walk did not reach this, because a
+correctly built sheet cannot.
+
+What to do:
+
+1. Draw the refund outcome whether or not an order detail exists, including over the
+   unavailable composition. For these refusals there is no *Review refund* and no Refund
+   control, and *Retry* keeps doing what it does. Say in the Handoff where the notice sits in
+   the unavailable picture and why.
+2. The test at `refund-screen.test.tsx:901` is titled for three refusals and exercises one
+   (`zero-total`, with the order still closed). Make it true: one case per refusal, each with
+   the book in the state that refusal implies. `not-closed`: the stub's `refund` leaves the
+   entry open and answers `not-closed`. `unknown-order`: it removes the entry and answers
+   `unknown-order`. `zero-total`: as now. Each asserts the failure notice, no control, and
+   that nothing is drawn as refunded. This is your own test from this task, so changing it is
+   within the task.
+3. State the red case: with the fix reverted, the two new cases fail.
+
+No existing test from before this task changes. Run `npm run verify`, commit when green,
+append a *Round 3* section to the Handoff (what changed, the red case, the verify output), and
+end with DONE.
 
 ## Handoff
 
