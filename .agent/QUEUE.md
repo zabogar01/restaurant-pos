@@ -26,15 +26,14 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
 5. *(Done: DESIGN-010, the two closed-order tokens and the refund fixture states, `9c5ed19`,
    merged 2026-10-01 as PR #31. Its task file holds the Handoff and review.)*
 6. **F4e, sliced by authority** (lead's proposal, approved by the owner 2026-09-30). POS-05 has 11
-   states, POS-06 26, the floor two new ones plus the Part D changes. Each slice's file is
+   states, POS-06 27, the floor two new ones plus the Part D changes. Each slice's file is
    written from what the previous one built.
-   - **FE-030 (F4e-1)** — POS-05 list, three touch filters, closed-day grouping, read-only;
-     `/pos/closed-order` placeholder with fixed row hrefs — depends on DESIGN-010 (its column
-     token; `no-invented-values.test.ts` rejects an unregistered `var(--frost-*)`) —
-     **complete 2026-10-01** (`e7c698f`, Codex review clean), waiting on the owner's merge.
-   - **FE-031 (F4e-2)** — POS-06 detail, read-only: what was charged, totals, the
-     zero/refunded/closed-day/quick/custom/overflow states, reprint and its four results; no
-     Refund control yet — depends on FE-030 — not written.
+   - *(Done: FE-030, F4e-1, the POS-05 list, merged 2026-10-01 as PR #33.)*
+   - **FE-031 (F4e-2)** — POS-06 detail, read-only: what was charged, totals, 14 of the 27
+     states (the zero/refunded/closed-day/quick/custom/overflow pictures, reprint and its four
+     results); no Refund control yet; one cash-contribution helper shared with POS-05's row —
+     depends on FE-030 — **complete 2026-10-01** (`0c05557`, Codex review clean), waiting on
+     the owner's merge.
    - **FE-032 (F4e-3)** — refund: M-5 allocation sheet (O1–O3), reason, M-1 with the money-back
      line, Cancel back to the sheet, REFUNDED in the book, `refund-error`, `day-refusal`, the
      no-response re-read — touches money, audit, boundaries; independent cross-family review —
