@@ -1922,6 +1922,28 @@
         ],
         "why": "A field holding a refused value thickens its border to 2px in --frost-invalid on a white fill, with left padding pulled to --frost-amount-keyed-padding-left (13px) so the figure does not shift, mirroring --frost-amount-keyed-border. The fill stays white so the field is never the pale amber receipt-warning chip. Applies to a rejected value and to an empty required field on submit; not to a field whose value is fine while the action failed, which stays as it was beside a notice. The one-line message under the field uses --frost-invalid at --frost-text-14 (POS) or --frost-text-13 (back-office modal), --frost-weight-medium, --frost-space-1 above."
       }
+    },
+    "--frost-closed-list-columns": {
+      "value": "88px 172px minmax(0,1fr) 180px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/closed.css",
+        "line": 12,
+        "selector": ".co-listhead,.co-row",
+        "property": "grid-template-columns",
+        "authoredValue": "var(--frost-closed-list-columns)"
+      }
+    },
+    "--frost-allocation-field-width": {
+      "value": "180px",
+      "group": "Geometry",
+      "source": {
+        "path": "docs/design/visual-directions/frost/pos/closed.css",
+        "line": 17,
+        "selector": ".co-allocation .co-field",
+        "property": "width",
+        "authoredValue": "var(--frost-allocation-field-width)"
+      }
     }
   }
 }

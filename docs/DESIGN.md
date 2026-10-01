@@ -1,6 +1,6 @@
 ---
 name: Restaurant POS — Frost
-description: The Frost light direction, chosen 2026-09-14, stated as values an implementation can consume. 168 tokens trace to a reviewed Frost artifact; four (pressed ring, invalid, invalid border, round-tag size) were designed under DESIGN-005, are marked designed in the registry and here, and await review.
+description: The Frost light direction, chosen 2026-09-14, stated as values an implementation can consume. 170 tokens trace to a reviewed Frost artifact; four (pressed ring, invalid, invalid border, round-tag size) were designed under DESIGN-005, are marked designed in the registry and here, and await review.
 colors:
   surface: "#fafafa"
   elevated: "#ffffff"
@@ -486,8 +486,13 @@ listed last so it cannot be mistaken for one.
 **Tokens.** `docs/design/tokens/frost.tokens.json` is the registry;
 `docs/design/tokens/frost.css` is generated from it. Every `--frost-*` name in
 this document exists in both under that name. **Two provenance shapes, never
-mixed.** 168 tokens were read from a reviewed artifact and carry `source`
-with a path, line, selector, property and the authored value. Four were
+mixed.** 170 tokens were read from a reviewed artifact and carry `source`
+with a path, line, selector, property and the authored value. Two of them,
+`--frost-closed-list-columns` and `--frost-allocation-field-width`, were
+registered by DESIGN-010 after the fact. Their source cites the declaration
+that consumes them, so the authored value there is the token itself; the
+values were first authored in DESIGN-009 round 1 (`06f3a25`, `closed.css:12`
+and `:17`) and approved by the lead's ruling on round 2's question 4. Four were
 designed under DESIGN-005 — `--frost-pressed-ring`, `--frost-invalid`,
 `--frost-invalid-border`, `--frost-round-tag-size` — and carry `source: null`
 and a `designed` block naming the task, the date, the author, the review
@@ -1075,16 +1080,20 @@ The POS-05 and POS-06 Frost artifacts extend the existing fixed 1280×800
 surface. These are design fixtures awaiting review, not production screens
 or accepted implementation guidance. Their source is
 `design/visual-directions/frost/pos/closed-orders.html`, `closed-order.html`,
-`closed.css` and `closed.js`; they introduce no tokens.
+`closed.css` and `closed.js`. DESIGN-010 registers the two layout values
+first authored in DESIGN-009 round 1 (`06f3a25`, `closed.css:12` and `:17`)
+and approved by the lead's ruling on round 2's question 4. Their source cites
+the declaration that consumes them, where the authored value is the token
+itself. The registered tokens replace the temporary flexible stand-ins.
 
 - **Closed-order list.** White rows have a 72px minimum height, divider
   rules, right-aligned tabular totals and a visible REFUNDED tag where
   applicable. The list scrolls beneath fixed filters and column headings.
   Table, closing-time and exact-amount filters open touch sheets, and
   *Apply filter* filters the list at once; there is no separate search
-  step. The four columns share the row in flexible proportions of
-  1 : 1 : 3 : 1 until the column-width tokens raised in the round-2
-  Handoff are ruled. Under the closed-day banner the open day's orders
+  step. The four columns use `--frost-closed-list-columns`: 88px for
+  *Closed at*, 172px for *Order*, the remaining width for *Payment taken*,
+  and 180px for *Total*. Under the closed-day banner the open day's orders
   list first and the closed day follows as its own group, reprint only.
 - **Closed-order detail.** Charged items and original payments scroll on
   the left. The white 460px figures panel keeps the stored subtotal,
@@ -1106,10 +1115,22 @@ or accepted implementation guidance. Their source is
   modal restores the allocation sheet with its amounts and reason kept.
   Allocations use the order's original tenders only, and only their sum is
   checked. A row set to 0 reads *not refunded* and is left out of the
-  refund. The allocation field fills the right half of its row; it has no
-  width token yet. The modal's subject lists the allocation after the
+  refund. Each allocation amount field uses
+  `--frost-allocation-field-width` (180px); the amount-filter and allocation-editor
+  outputs continue to fill their available row. The modal's subject lists the
+  allocation after the
   reason, and carries an ALLOCATION EDITED tag when it differs from the
   default.
+
+DESIGN-010 derives the edited examples from the selected order's original
+tender rows in their original order, starting from their effective contributions.
+Single-tender
+exact-sum examples retain the default allocation. In `sheet-zero`, a sole
+tender is 0, the full total is shown as unallocated, and Continue is disabled;
+with multiple tenders the first row is 0 and its amount moves to the last row.
+`sheet-invalid` is short by 20.000 for every eligible order. The gallery
+example `refund-error-cash` shows Table 7 retaining Cash 155.925 after a
+definite rejection; it is also reachable with `refund-error&order=cash`.
 
 Behavior, fixture arithmetic and recommendations awaiting review are recorded
 in the [DESIGN-009 Handoff](../.agent/tasks/DESIGN-009-closed-orders-and-refund.md#handoff).
