@@ -5,7 +5,7 @@ category: ui
 touches: []
 depends_on: [FE-030]
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # FE-031 — POS-06 closed order detail, read-only
@@ -260,6 +260,38 @@ REFUNDED). Last line: DONE, or BLOCKED: <question>.
 
 Then run `herdr agent prompt lead "<your name>: FE-031 done — <tests> tests, <one line>"`,
 or `herdr agent prompt lead "<your name>: BLOCKED — <question>"`.
+
+## Lead verify (2026-10-01)
+
+The lead ran `npm run verify` in this worktree at `e652b45` (34 files, 2411 tests, green; the
+baseline at `ff28d23` is 33 files and 2340 tests) and walked POS-06 in Chrome against the dev
+server, at the device's 1280×800. No defect was found, and nothing goes back to the builder.
+
+- **The diff** stays inside `owns:`, and the only existing test changed is the placeholder test
+  the task names.
+- **All fourteen states** draw the artifact's header, note, notices, lines, payment rows, totals
+  and actions. `quick` has no discount row; `zero` reads *Comp 100%* −165.000 and a total of 0.
+  No state draws a Refund or void control.
+- **Each of POS-05's six rows** opens its own order with the time, tenders and total the row
+  showed, and `← Closed orders` returns to the plain list. From the closed-day list, the new-day
+  quick sale reads *Business day 26 Sep* with no closed-day notice, a closed-day row carries the
+  notice and *Refund unavailable*, and both return to the closed-day list.
+- **Reprint.** The two failures are amber and link to `/pos/incidents`. Pressing *Reprint
+  receipt* in `dayclosed` adds *Reprint sent* beside the closed-day notice and does not grow the
+  history.
+- **Criterion 12, measured.** In `overflow` the left column scrolls (content 1630px in a 736px
+  region) while the summary, the *Total* row and *Reprint receipt* keep the same position at
+  scroll offsets 0, 600 and the end.
+- **A live close, mixed tenders.** Table 9 closed through the real route with Card 100.000 and
+  then Cash 100.000 on a total of 173.250 (change 26.750). POS-05's row reads *Change 26.750 ·
+  contribution 73.250*; the detail reads *Change given −26.750* and *Cash contribution 73.250*,
+  with the book's lines (3 Coffee, 2 Soda), its WIB closing time and its stored totals (no
+  discount row). Pressing *Reprint receipt* there shows *Reprint sent*.
+- **An unknown book id** (`?order=table-1` on a fresh load) draws *Could not load this order* with
+  no line, and *Retry* leaves it there.
+
+Not walked: a book order closed with a voided line. That case rests on the builder's test and
+its red case.
 
 ## Handoff
 
