@@ -899,13 +899,37 @@ describe('criterion 13: the screen draws the book’s answer', () => {
   });
 
   it('zero-total, not-closed and unknown-order refusals: the same notice, no control, over whatever the book holds', () => {
-    const refund = vi.fn(() => ({ refused: 'zero-total' as RefundRefusal }));
-    act(() => root.render(<ClosedOrderScreen search="?order=table-5" book={stubBook([entry('table-5', CARD_CASH, 5_000n)], refund)} />));
-    approveWith('123456');
-    expect(page().notices).toEqual([`${FAILED}Nothing was refunded.`]);
-    expect(screen().querySelector('[data-action="review-refund"]')).toBeNull();
-    // The book still holds a refundable order, and the cashier may start again; nothing was drawn as refunded.
-    expect(page().tag).toBe('CLOSED');
+    const UNAVAILABLE = 'Could not load this orderNo order details are available. Try again.Retry';
+    const cases: ReadonlyArray<[RefundRefusal, (held: BookOrder[]) => void]> = [
+      ['zero-total', () => {}],
+      // The book now holds the order open: it is not a closed order.
+      ['not-closed', (held) => void (held[0] = { ...held[0]!, status: 'open', closedAt: undefined })],
+      // The book no longer holds it at all.
+      ['unknown-order', (held) => void held.splice(0, 1)],
+    ];
+    for (const [refused, change] of cases) {
+      const held = [entry('table-5', CARD_CASH, 5_000n)];
+      const refund = vi.fn(() => {
+        change(held);
+        return { refused };
+      });
+      act(() => root.render(<ClosedOrderScreen key={refused} search="?order=table-5" book={stubBook(held, refund)} />));
+      approveWith('123456');
+      expect(modal(), refused).toBeNull();
+      const notices = [...screen().querySelectorAll('.closed-notice')].map(text);
+      expect(notices.filter((n) => n.startsWith(FAILED)), refused).toEqual([`${FAILED}Nothing was refunded.`]);
+      expect(notices.join(), refused).not.toMatch(/REFUNDED/);
+      // Never a Review refund. Where nothing is held, no Refund control either; the stub's zero-total order is still held closed, so its own Refund control stands.
+      expect(screen().querySelector('[data-action="review-refund"]'), refused).toBeNull();
+      expect(screen().querySelector('.closed-head .closed-tag')?.textContent ?? 'none', refused).not.toBe('REFUNDED');
+      if (refused === 'zero-total') expect(page().tag).toBe('CLOSED');
+      else {
+        expect(screen().querySelector('[data-action="refund"]'), refused).toBeNull();
+        // The unavailable picture, with its Retry, still stands beneath the notice.
+        expect(text(screen().querySelector('.closed-empty')!), refused).toBe(UNAVAILABLE);
+        expect(action('retry-load')).not.toBeNull();
+      }
+    }
   });
 
   it('day-closed: the day-refusal picture, then the standing closed-day picture, never a retry', () => {

@@ -600,4 +600,14 @@ All reverted; `git diff` of those lines is the final code.
 
 A browser walk of the thirteen states at 1280×800 (I had no browser), and the review.
 
+### Round 3 (review finding F1)
+
+**What changed.** `ClosedOrderScreen.tsx`: the unavailable branch now draws the refund failure notice (*Refund failed · the order is unchanged* / *Nothing was refunded.*, the amber `Notice`, no action) whenever the last outcome is a failure, whether or not an order detail exists. It sits between the header and the *Could not load this order* box, in the same position the notice has above the lines on a drawn order, so the cashier reads the refusal first and the unavailable picture, with its *Retry*, stays exactly as it was. It carries no control: there is no *Review refund* (the book's `not-closed` and `unknown-order` answers keep no draft, so the outcome has none) and no Refund control (there is no order to refund). Only a `failed` outcome shows it; `day-refused` over an order the book no longer holds is not drawn, since its only content is a *Return to order* control for a picture that does not exist. Nothing else changed in `src`.
+
+**Test.** The test at `refund-screen.test.tsx:901` now runs one case per refusal, each with the stub book in the state the refusal implies: `zero-total` (order still held closed), `not-closed` (the stub's `refund` leaves the entry open and answers `not-closed`) and `unknown-order` (it removes the entry and answers `unknown-order`). Each asserts exactly one failure notice reading *Nothing was refunded.*, no *Review refund*, no REFUNDED tag or notice, and, for the two unavailable cases, no Refund control and the unavailable box with *Retry* still beneath. In the `zero-total` case the stub still holds a refundable order, so its own standing *Refund this order* control is legitimately present; the test says so and asserts only that no *Review refund* appears and the tag stays CLOSED, as the original did.
+
+**Red case.** With the new branch disabled (`false && …`), the test fails on `not-closed`: the screen shows no failure notice (`expected [] to deeply equal ['Refund failed · the order is unchangedNothing was refunded.']`). The loop stops at the first failing case, so `unknown-order` was not separately run red; it takes the same unavailable branch as `not-closed`. Reverted.
+
+**Verify.** `npm run verify`: typecheck clean, 36 test files, 2515 tests, all passing (no test added, one reshaped). No existing test from before this task changed.
+
 DONE

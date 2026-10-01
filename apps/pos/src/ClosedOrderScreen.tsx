@@ -173,7 +173,16 @@ export function ClosedOrderScreen({ search, book }: { search: string; book: Orde
             onAction={onAction}
           />
         ) : (
-          <Unavailable loading={shown === 'loading'} onRetry={retry} />
+          <>
+            {/* The book no longer holds this order as closed (refused as not-closed or unknown-order): the cashier is still told nothing was refunded, above the unavailable picture and with no control. */}
+            {outcome?.kind === 'failed' && (
+              <Notice
+                notice={{ key: 'refund-error', title: REFUND_COPY.failed, body: REFUND_COPY.nothing, warn: true }}
+                onAction={onAction}
+              />
+            )}
+            <Unavailable loading={shown === 'loading'} onRetry={retry} />
+          </>
         )}
         {detail && flow?.kind === 'sheet' && (
           <RefundSheet
