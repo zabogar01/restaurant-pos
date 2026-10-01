@@ -5,8 +5,8 @@ category: ui
 touches: []
 depends_on: [DESIGN-010]
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: not-started
-cycles: 0
+status: active
+cycles: 1
 ---
 # FE-030 — POS-05 closed orders, read-only
 
@@ -223,6 +223,41 @@ or BLOCKED: <question>.
 
 Then run `herdr agent prompt lead "<your name>: FE-030 done — <tests> tests, <one line>"`,
 or `herdr agent prompt lead "<your name>: BLOCKED — <question>"`.
+
+## Lead verify, round 1 (2026-10-01)
+
+The lead ran `npm run verify` in this worktree at `6cf7f39` (33 files, 2339 tests, green) and
+walked POS-05 in Chrome against the dev server, at the device's 1280×800. What held: all eleven
+states draw the artifact's rows and copy; the three filters apply at once and combine; the time
+filter refuses 21:00–18:00 and 25:00 and its bounds are inclusive; Escape and *Cancel* change
+nothing; a live close of Table 9 is listed first with its WIB time and links `?order=table-9`;
+the closed-day floor link and `← Floor` keep their context. **Criterion 12 is measured:** with a
+16px space-taking scrollbar forced on `.closed-scroll` in `overflow`, the heads' and the rows'
+*Total* both end at x=1244, the four column starts are identical (20, 124, 312, 1064), and the
+toolbar and the heads do not move at scroll offsets 0, 900 and the end.
+
+Two things to fix in this round. Change nothing else.
+
+1. **The column heads paint over an open filter sheet.** `.closed-listhead` has `z-index: 1`;
+   the sheet (`.sheet`, `position: absolute`, `z-index: auto`) and its scrim are siblings of the
+   scroller, so the sticky band is drawn on top of them. In `filter-table` it covers *Table 1*
+   and *Table 2*; in `filter-time` and `filter-amount` it covers the keypad's 1 2 3 row. The keys
+   still receive the press, because the scroller is `inert`, so no test sees it. Make the heads
+   stay under the sheet and the scrim while still covering the rows that scroll beneath them
+   (dropping the `z-index` is enough for a positioned element over unpositioned rows; isolating
+   the scroller's stacking is the other way), and say which you chose. Pin it with a test of the
+   structure, as you did for sticky, and state its red case. The lead walks the three sheets again.
+2. **The Handoff's baseline is wrong.** `development` at `1f4fac8` runs 32 files and **2256**
+   tests (the lead ran it on 2026-10-01), not 2266; this branch adds 83, not 73. Correct the
+   two sentences that state it.
+
+Accepted as built, no change wanted: decision 2 (book rows above the fixtures; it is a
+fixture-and-live mix that ends with the backend), decision 3 (the time field validates what it
+shows) and decision 4 (a sheet opens on what is applied). The lead reports decisions 2 and 3 to
+the owner.
+
+Append a *Round 2* section to your Handoff: what you changed, the red case, the verify output.
+Last line DONE or BLOCKED: <question>, as before.
 
 ## Handoff
 
