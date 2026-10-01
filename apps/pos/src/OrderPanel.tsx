@@ -716,7 +716,7 @@ function LineContent({ line, tagged }: { line: OrderLine; tagged: boolean }) {
   );
 }
 
-function modifierText({ name, delta }: Modifier): string {
+export function modifierText({ name, delta }: Modifier): string {
   if (delta === undefined) return name;
   return delta < 0n ? `${name} (${formatAmount(delta)})` : `${name} (+${formatAmount(delta)})`;
 }

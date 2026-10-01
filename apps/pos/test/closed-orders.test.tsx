@@ -888,11 +888,12 @@ describe('criterion 11: client-side, and the dialog behaves', () => {
 });
 
 describe('the route a row leads to', () => {
-  it('/pos/closed-order is the bare device frame and no copy, and keeps the order in its query', () => {
+  it('/pos/closed-order with a book id the fresh book does not hold is the error composition, and keeps the order in its query', () => {
     load('/pos/closed-order?order=table-1');
-    expect(host.textContent).toBe('');
-    expect(host.querySelector('.pos-device')).not.toBeNull();
-    expect(host.querySelector('.closed')).toBeNull();
+    const screen = host.querySelector('.closed-order')!;
+    expect(text(screen.querySelector('.closed-empty')!)).toBe('Could not load this orderNo order details are available. Try again.Retry');
+    expect(screen.querySelector('.closed-line')).toBeNull();
+    expect(path()).toBe('/pos/closed-order?order=table-1');
   });
 
   it('/pos/closed-orders is the list, not the placeholder, with or without a trailing slash', () => {

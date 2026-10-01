@@ -5,6 +5,7 @@ import { FLOOR_FIXTURES } from './floorFixtures.js';
 import { formatAmount } from './money.js';
 import { orderVariant } from './orderFixtures.js';
 import { tableOf, type OrderBook } from './orderStore.js';
+import type { ShownOrder } from './voidFixtures.js';
 
 // POS-05, the closed orders list (FE-030), read-only. The fixture state selects
 // the picture (frost/pos/closed-orders.html, driven by closed.js); the orders the
@@ -116,7 +117,23 @@ const tendersText = (tenders: ReadonlyArray<Tender>) => joined(tenders.map((t) =
 const WIB = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 export const wibTime = (iso: string): string => WIB.format(new Date(iso));
 
-type FixtureOrder = {
+/** The tender settlement labels cash (`methodLabel` in SettlementScreen.tsx); change is only ever given against it. */
+export const CASH_TENDER = 'Cash';
+
+/**
+ * What cash contributed to an order's total (DESIGN-009 B3, AC-25): the cash
+ * tendered less the change given, never the order total by assumption. With a
+ * card and then cash over the balance, the two differ.
+ */
+export const cashContribution = (tenders: ReadonlyArray<Tender>, change: Money): Money =>
+  tenders.filter((t) => t.label === CASH_TENDER).reduce((sum, t) => sum + t.amount, 0n) - change;
+
+/** The row's second line for a sale that gave change. */
+const changeNote = (tenders: ReadonlyArray<Tender>, change: Money) =>
+  `Change ${formatAmount(change)} · contribution ${formatAmount(cashContribution(tenders, change))}`;
+
+/** The six orders of the artifact (closed.js:13–20), read by the list and by POS-06 alike. */
+export type FixtureOrder = {
   state: string;
   name: string;
   time: string;
@@ -132,7 +149,7 @@ const tender = (label: string, amount: Money): Tender => ({ label, amount });
 // closed.js:13–20. A total is what the artifact's `total()` returns for the row.
 const TOTAL = 155_925n;
 const QUICK_TOTAL = 173_250n;
-const FIXTURE_ORDERS: ReadonlyArray<FixtureOrder> = [
+export const FIXTURE_ORDERS: ReadonlyArray<FixtureOrder> = [
   { state: 'default', name: 'Table 1', time: '20:14', tenders: [tender('Card', 100_000n), tender('Cash', 55_925n)], total: TOTAL },
   { state: 'cash', name: 'Table 7', time: '20:11', tenders: [tender('Cash', 200_000n)], change: 44_075n, total: TOTAL },
   {
@@ -186,7 +203,7 @@ function fixtureRow(order: FixtureOrder & { history?: true }, context: 'list' | 
     time: order.time,
     name: order.name,
     payment,
-    ...(order.change !== undefined && { changeNote: `Change ${formatAmount(order.change)} · contribution ${formatAmount(order.total)}` }),
+    ...(order.change !== undefined && { changeNote: changeNote(order.tenders, order.change) }),
     total: order.total,
     refunded: order.refunded === true,
     href: fixtureHref(order, context),
@@ -196,6 +213,12 @@ function fixtureRow(order: FixtureOrder & { history?: true }, context: 'list' | 
 /** The 100% comp: a percent discount that takes the whole subtotal. */
 const isComp = (applied: DiscountSnapshot | undefined) =>
   applied?.value.kind === 'percent' && rateFromPercent(applied.value.percent) === RATE_SCALE;
+
+/** How POS-05 and POS-06 name a book order: `Table n` or `Quick sale` (A5), never `COUNTER`. */
+export function bookOrderName(id: string, order: ShownOrder): string {
+  const table = tableOf(id);
+  return orderVariant(order) === 'quick_sale' ? QUICK_SALE : table ? `Table ${table}` : order.title;
+}
 
 /**
  * Every order the book holds as closed, newest first. What a row says is read
@@ -216,13 +239,12 @@ function bookRows(book: OrderBook): ReadonlyArray<ClosedRow> {
       const tenders = o.tenders ?? [];
       const change = o.change ?? 0n;
       const total = o.order.totals.total;
-      const table = tableOf(o.id);
       return {
         key: `book-${o.id}`,
         time: wibTime(o.closedAt),
-        name: orderVariant(o.order) === 'quick_sale' ? QUICK_SALE : table ? `Table ${table}` : o.order.title,
+        name: bookOrderName(o.id, o.order),
         payment: tenders.length > 0 ? tendersText(tenders) : isComp(o.order.applied) ? CLOSED_COPY.compNoPayment : CLOSED_COPY.noPayment,
-        ...(change > 0n && { changeNote: `Change ${formatAmount(change)} · contribution ${formatAmount(total)}` }),
+        ...(change > 0n && { changeNote: changeNote(tenders, change) }),
         total,
         refunded: false,
         href: `${DETAIL}?${new URLSearchParams({ order: o.id })}`,
