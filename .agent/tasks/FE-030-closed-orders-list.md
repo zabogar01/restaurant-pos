@@ -225,3 +225,54 @@ Then run `herdr agent prompt lead "<your name>: FE-030 done — <tests> tests, <
 or `herdr agent prompt lead "<your name>: BLOCKED — <question>"`.
 
 ## Handoff
+
+**What I built.** POS-05 replaces `ClosedOrdersPlaceholder` on `/pos/closed-orders`, in the artifact's composition, with all eleven states.
+
+- `apps/pos/src/closedOrders.ts`: the pure side. The states and copy (the artifact's, verbatim), the six fixture orders as `Money` bigints, the `?state=` reader, the row model, the WIB conversion, the three filters' matching, the keypad entry and the time-range validation.
+- `apps/pos/src/ClosedOrdersScreen.tsx`: the screen, the rows, the closed-day groups and the three filter sheets. The sheets reuse `SheetFrame` from `Sheets.tsx` (focus onto the dialog, scrim, `aria-modal`, Escape) and the approval keypad's `.keypad--approval` / `.key`.
+- `apps/pos/src/PosRoutes.tsx`: renders the screen, `key`ed on the query string so a new `?state=` reseeds it. A new route `/pos/closed-order` renders the bare device frame and no copy (the placeholder FE-031 replaces).
+- `apps/pos/src/FloorScreen.tsx`: the *Closed orders* link goes to `?state=dayclosed` in the floor's `dayclosed` state only (item 5), and nowhere else changed.
+- `apps/pos/src/orderStore.ts`: `tableOf` is now exported (one word, `export`). It was the only owner of the `table-n` id format, and the row reads the table number through it instead of copying the regex.
+- `apps/pos/src/pos.css`: a `closed-*` block mapped from `closed.css`, registry tokens only, the columns on `--frost-closed-list-columns`, hover scoped to `@media (hover: hover)`. No new token.
+- `apps/pos/test/closed-orders.test.tsx`: 73 new tests, one block per acceptance criterion.
+- `apps/pos/test/floor.test.tsx`: one test changed (below).
+
+Single commit on `agent/fe-030`. The hash is whatever `git log -1` shows on that branch; I cannot print it into this file before the commit is made.
+
+**Decisions, and the evidence for each.**
+
+1. *Column heads inside the scroller, sticky* (criterion 12). The artifact puts the heads outside the scroller, so a classic scrollbar narrows the rows and not the heads. I put `.closed-listhead` as the scroller's first child with `position: sticky; top: 0`. One scrollbar then narrows heads and rows alike, in any browser. I preferred this to `scrollbar-gutter: stable` on both because that property is missing on older tablet Safari. The toolbar stays outside the scroller, so it does not move. I could not measure it: there is no browser here, so the test pins the structure (heads first in the scroller, sticky, both on `--frost-closed-list-columns` and one padding). The lead's browser walk at 1280×800 with a classic scrollbar is still needed.
+2. *Book rows list above all fixtures, newest first by the instant of `closedAt`.* The fixtures carry only a time of day on the open business day (25 Sep) and no instant. The book's orders were closed by this cashier after them, and the machine's clock is not 25 Sep. Sorting by clock face would hide a morning close at the bottom under the 20:14 fixtures, which reads as "not newest first". Criterion 4 (21:30 above 20:14) holds either way. This is a judgement; if you want a pure time-of-day merge, it is one comparator in `listedRows`.
+3. *The time field is validated as it is shown.* The artifact's `valid()` requires four typed digits, but its `clock()` pads from the left, so a cashier who types 8, 0, 0 sees `From 08:00` and the artifact refuses it. I validate the padded `HH:MM` the field shows (`rangeIsValid`). 25:00, 12:60 and From later than To are all still refused, with the artifact's copy. Entry is still the artifact's calculator style (digits shift in from the right, a leading zero is dropped, a fifth digit is ignored).
+4. *The time sheet opens on what is applied.* The artifact keeps its `from` and `to` across a Cancel, so a cancelled edit leaks into the next opening, and a stale refusal message survives. Here a sheet opens on the applied range, or 18:00 to 21:00 if none, with no refusal showing, so Cancel really changes nothing. The same holds for the table and amount drafts.
+5. *`Reset` and `Retry` return to the picture the screen began in* (`default`, or the closed-day state), as `closed.js:81` does, not to a filter picture. Applying a filter from `nomatch` or a `filter-*` picture leaves it for `default`, as `closed.js:79` does.
+6. *A book row's payment, change and comp text come from the book.* Tenders are the book's, `Change n · contribution total` appears when `change > 0n`, and a zero-total order reads *Comp 100% · no payment taken* when its snapshot is a percent discount whose `rateFromPercent` equals `RATE_SCALE`, else *No payment taken*. Amount comparison is `BigInt(typed digits) === row.total`. There is no `Number()` on money.
+7. *`inert`* is applied to the header, banner, toolbar and list while a sheet is open (React 18: the bare attribute through a spread, as `DiscountSheets.tsx` does).
+8. A DEV-only `fixture-states` nav lists the eleven states, as the floor and the incidents screen do. It is `import.meta.env.DEV` only. Tests that count anchors exclude it.
+
+**The one existing test I changed.** `floor.test.tsx`, *Closed orders goes to a placeholder: the bare device frame and no copy*. It pinned the placeholder. It now presses *Closed orders*, expects `/pos/closed-orders`, the `h1` *Closed orders*, `data-closed-state="default"` and six rows. `floor.test.tsx` criterion 7 (presses *Closed orders*, goes back) and the three source scans pass unmodified.
+
+**Red cases I ran** (mutate, read the failure, revert; the full suite was re-run green after the last revert):
+
+- WIB conversion through `getHours()`: *2026-09-25T13:14Z is 20:14, in any process time zone* fails with `expected '13:14' to be '20:14'` (it loops `process.env.TZ`; this machine's zone is already WIB, so only the loop catches it).
+- Book rows appended after the fixtures: five tests fail (the live Table 1, the quick sale, the ordering test, the live zero-total order and the WIB row).
+- Time bounds made exclusive: *the bounds are inclusive* fails (`expected [] to deeply equal ['Table 4']`). The 19:50 to 20:05 test alone would not catch this, because no fixture sits on a bound.
+- Closed-day rows given the open-day link context: both criterion 9 link tests fail.
+- The closed-day floor link and the `← Floor` return reverted to the plain routes: both criterion 10 tests fail.
+- `position: sticky` swapped for `relative`: the criterion 12 structure test fails.
+- The range validation bypassed: the three criterion 7 refusal tests fail.
+
+**Found and not fixed.**
+
+- The artifact's `valid()` quirk in decision 3 is the artifact's, not the contract's. If the owner wants the artifact's behaviour exactly, that is a DESIGN question; I chose the usable reading.
+- The closed-day group is a fixture state only: the banner never clears and there is no timer or dismiss (the 2026-09-30 ruling, FR-A not built). `dayclosed` and `dayclosed-start` list only their fixtures, never the book.
+- `closedAt` is read with `Date.parse` and `Intl`; a malformed `closedAt` would throw. The close always stamps `toISOString()`, so I added no guard. A test that hand-builds a book with `closedAt: 't1'` (as `order-book.test.tsx` does) must not render the list.
+- Criterion 2's example closes Table 1 through the real route. Table 1 holds a pending Steak (FR-G10 refuses its close), so the test removes pending lines through the panel's own × first, then settles by card. Tables 9 and 12 close the same way.
+- Prettier was not run, and nothing touched a file by formatter.
+- No browser was available, said once: the touch layout (criterion 12) is checked by structure only.
+
+**Output of `npm run verify`:** typecheck clean (server, money, pos). `vitest run`: **33 test files passed (33), 2339 tests passed (2339)**. Baseline before this task was 32 files and 2266 tests, so +1 file and +73 tests; the changed floor test is in both counts.
+
+**What the next slice (FE-031, POS-06) needs.** The route `/pos/closed-order` exists and is a bare frame. Its query is fixed: a fixture row is `?state=<state>&order=<state>&time=<HH%3AMM>`, with `list=dayclosed` for the new-day quick sale and `state=dayclosed` for the closed-day rows (the artifact's own encoding, `URLSearchParams`); a book row is `?order=<book id>`, for example `?order=table-1`. POS-06 must read a book id from the book (`book.orders()` / `orderFor`), which the row already proves is reachable from `PosRoutes`. It must not assume `PosRoutes` has seeded the book on a cold load: a direct visit to `/pos/closed-order?order=table-1` has an empty book.
+
+DONE

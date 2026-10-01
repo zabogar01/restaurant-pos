@@ -2398,3 +2398,265 @@ button.settlement-close__action:not([aria-disabled="true"]):focus-visible:active
   height: var(--frost-warning-marker-size);
   background: var(--frost-warning);
 }
+
+/* ==== POS-05 closed orders (FE-030) ====
+ * frost/pos/closed.css, mapped to registry tokens only; the four columns are
+ * --frost-closed-list-columns. The hover fill is scoped to @media (hover: hover)
+ * (test/hover-scoped.test.ts). The column heads sit inside the scroller, sticky,
+ * not above it as the artifact has them: a classic scrollbar takes width from
+ * the scroller, and heads outside it would then end where the rows' Total does
+ * not. Inside, one scrollbar narrows both alike, whichever kind the device draws. */
+
+.closed {
+  color: var(--frost-text);
+  font-variant-numeric: var(--frost-numeric-variant);
+}
+
+.closed h1,
+.closed h2,
+.closed p {
+  margin: 0;
+}
+
+.closed h1 {
+  font-size: var(--frost-text-20);
+  font-weight: var(--frost-weight-medium);
+  letter-spacing: var(--frost-tracking-title);
+}
+
+.closed h2 {
+  font-size: var(--frost-text-18);
+  font-weight: var(--frost-weight-medium);
+}
+
+.closed-head {
+  flex: none;
+  height: var(--frost-pos-header-height);
+  display: flex;
+  align-items: center;
+  gap: var(--frost-space-5);
+  padding: 0 var(--frost-space-5);
+  background: var(--frost-elevated);
+  border-bottom: var(--frost-divider-stroke);
+}
+
+.closed-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--frost-action-compact-height);
+  color: inherit;
+  text-decoration: none;
+}
+
+.closed-tag {
+  display: inline-block;
+  padding: var(--frost-tag-padding);
+  background: var(--frost-group);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  font-size: var(--frost-text-10);
+  font-weight: var(--frost-weight-medium);
+  letter-spacing: var(--frost-tracking-tag);
+  line-height: var(--frost-leading-tag);
+}
+
+.closed-muted {
+  display: block;
+  color: var(--frost-muted);
+  font-size: var(--frost-text-13);
+}
+
+.closed-note {
+  flex: none;
+  padding: var(--frost-space-4) var(--frost-space-5);
+  font-size: var(--frost-text-13);
+  color: var(--frost-muted);
+}
+
+.closed-notice {
+  flex: none;
+  margin: var(--frost-space-4) var(--frost-space-5);
+  padding: var(--frost-space-3) var(--frost-space-4);
+  border: var(--frost-control-stroke);
+  border-color: var(--frost-warning);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-warning-surface);
+  color: var(--frost-warning);
+}
+
+.closed-notice strong {
+  font-weight: var(--frost-weight-semibold);
+}
+
+.closed-notice p {
+  margin-top: var(--frost-space-1);
+}
+
+.closed-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--frost-space-2);
+  min-height: var(--frost-action-compact-height);
+  padding: var(--frost-button-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-button);
+  background: var(--frost-elevated);
+  color: var(--frost-text);
+  font: inherit;
+  font-weight: var(--frost-weight-medium);
+  cursor: pointer;
+}
+
+.closed-button[aria-pressed='true'] {
+  background: var(--frost-selected);
+  color: var(--frost-selected-text);
+}
+
+.closed-button:active,
+.closed-row:active {
+  box-shadow: var(--frost-pressed-ring);
+}
+
+.closed-button:focus-visible,
+.closed-row:focus-visible,
+.closed-scroll:focus-visible {
+  outline: var(--frost-focus-outline);
+  outline-offset: var(--frost-focus-offset);
+  box-shadow: var(--frost-focus-ring);
+}
+
+.closed-toolbar {
+  flex: none;
+  display: flex;
+  align-items: end;
+  gap: var(--frost-space-3);
+  padding: var(--frost-space-5);
+  border-bottom: var(--frost-divider-stroke);
+}
+
+.closed-filter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--frost-space-2);
+}
+
+.closed-filter .closed-button {
+  justify-content: space-between;
+  min-height: var(--frost-field-height);
+}
+
+.closed-label {
+  font-size: var(--frost-text-12);
+  color: var(--frost-muted);
+}
+
+.closed-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-color: var(--frost-scrollbar);
+}
+
+.closed-listhead,
+.closed-row {
+  display: grid;
+  grid-template-columns: var(--frost-closed-list-columns);
+  gap: var(--frost-space-4);
+  align-items: center;
+  padding: var(--frost-space-3) var(--frost-space-5);
+}
+
+.closed-listhead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--frost-group);
+  font-size: var(--frost-text-12);
+}
+
+.closed-row {
+  min-height: var(--frost-action-height);
+  border-bottom: var(--frost-divider-stroke);
+  background: var(--frost-elevated);
+  color: inherit;
+  text-decoration: none;
+}
+
+.closed-money {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.closed-row .closed-money {
+  font-size: var(--frost-text-18);
+}
+
+.closed-group {
+  padding: var(--frost-space-2) var(--frost-space-5);
+  background: var(--frost-group);
+  color: var(--frost-muted);
+  font-size: var(--frost-text-12);
+}
+
+.closed-empty {
+  margin: var(--frost-space-5);
+  padding: var(--frost-space-10);
+  border: var(--frost-control-stroke);
+  border-style: dashed;
+  color: var(--frost-muted);
+}
+
+.closed-empty p {
+  margin: var(--frost-space-2) 0 var(--frost-space-4);
+}
+
+.closed-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--frost-space-2);
+  margin: var(--frost-space-3) 0;
+}
+
+.closed-options .closed-button {
+  justify-content: flex-start;
+}
+
+.closed-totalrow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--frost-space-4);
+  padding: var(--frost-space-2) 0;
+}
+
+.closed-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: var(--frost-field-height);
+  padding: var(--frost-field-padding);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-elevated);
+  font-size: var(--frost-text-20);
+}
+
+.closed-invalid {
+  margin: var(--frost-space-2) 0;
+  color: var(--frost-invalid);
+  font-size: var(--frost-text-14);
+  font-weight: var(--frost-weight-medium);
+}
+
+@media (hover: hover) {
+  .closed-button:hover,
+  .closed-row:hover {
+    background: var(--frost-group);
+  }
+
+  .closed-button[aria-pressed='true']:hover {
+    background: var(--frost-selected);
+  }
+}

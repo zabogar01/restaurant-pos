@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { App } from './App.js';
+import { ClosedOrdersScreen } from './ClosedOrdersScreen.js';
+import { closedStateFrom } from './closedOrders.js';
 import { FloorScreen } from './FloorScreen.js';
 import { floorStateFrom } from './floorFixtures.js';
 import { ControlledOrderScreen } from './OrderPanel.js';
@@ -40,6 +42,7 @@ export function PosRoutes() {
   const onFloor = /\/floor\/?$/.test(path);
   const onIncidents = /\/incidents\/?$/.test(path);
   const onClosedOrders = /\/closed-orders\/?$/.test(path);
+  const onClosedOrder = /\/closed-order\/?$/.test(path);
   const [seedView] = useState(() =>
     onOrder
       ? orderViewFrom(window.location.search)
@@ -94,16 +97,19 @@ export function PosRoutes() {
   if (onSettlement) return <ControlledSettlementScreen store={store} session={session} />;
   if (onOrder) return <ControlledOrderScreen view={view} store={store} locked={locked} showFloorLink onLocationChange={readLocation} />;
   if (onFloor) return <FloorScreen state={floorStateFrom(window.location.search)} book={book} sessions={sessions} />;
-  if (onClosedOrders) return <ClosedOrdersPlaceholder />;
+  // The state is the URL's, and a new `?state=` is a new picture: the screen reseeds from the key.
+  if (onClosedOrders) return <ClosedOrdersScreen key={window.location.search} state={closedStateFrom(window.location.search)} book={book} />;
+  if (onClosedOrder) return <ClosedOrderPlaceholder />;
   if (onIncidents) return <IncidentsScreen state={incidentStateFrom(window.location.search)} />;
   return <App />;
 }
 
 /**
- * POS-05 is DESIGN-009's: a placeholder route on `?state=incidents`'s precedent
- * (F2h) — named and reached, honest that nothing is built behind it. Like the
- * floor's placeholder before it, it renders the bare device frame and no copy.
+ * POS-06, the closed order a row leads to, is FE-031's: a placeholder route on
+ * the precedent POS-05's own set (and `?state=incidents`'s before it) — named
+ * and reached, honest that nothing is built behind it. It renders the bare
+ * device frame and no copy.
  */
-function ClosedOrdersPlaceholder() {
+function ClosedOrderPlaceholder() {
   return <div className="pos-device" />;
 }
