@@ -5,7 +5,7 @@ category: ui
 touches: [money, audit, boundaries]
 depends_on: [FE-031]
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: review
+status: complete
 cycles: 2
 ---
 # FE-032 — POS-06 refund
