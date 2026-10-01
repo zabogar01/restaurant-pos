@@ -34,13 +34,13 @@ No product code has changed since FE-029; DESIGN-010 changed tokens and design a
 ## Integration branch
 
 - **`development` is the integration branch** (owner, 2026-09-29), at `f5c9622` (PR #29) on
-  GitHub. **The owner's main checkout still has local `development` at `b0f7de4`**: pull before
-  the next dispatch. `main` and `development` are protected: PR required, 0 approvals, admins too.
+  GitHub; the owner's local `development` matches it. **Pull again after merging** the two
+  branches below, before the next dispatch. `main` and `development` are protected: PR required, 0 approvals, admins too.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
   current (checked 2026-09-30). Rerun after any merge that changes `.githooks/` or agents.yaml.
 - Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0930c` (cut from
-  `f5c9622`, pushed at wrap-up). **`.agent/tasks/FE-030-closed-orders-list.md` is untracked there
-  on purpose**: it goes in with FE-030's own PR (LESSONS, Lead). Do not commit or delete it.
+  `f5c9622`, pushed at wrap-up). It carries FE-030's task file (owner, 2026-10-01): merge it
+  **before** dispatching FE-030, so the dispatcher finds the file on `development` and adds no copy.
 - Task worktree `../restaurant-pos-wt/DESIGN-010` (`agent/design-010`, with `node_modules`) and
   run dir `.agent/runs/DESIGN-010/` stay until that branch is merged; then remove both.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
@@ -55,8 +55,8 @@ No product code has changed since FE-029; DESIGN-010 changed tokens and design a
   `--frost-allocation-field-width`), all six refund fixture states keep the selected order's own
   tenders, new `refund-error-cash`. Codex `gpt-6-astra` designer, Claude Opus 5.5 reviewer, two low
   findings fixed in round 2. The lead walked DESIGN-009/010 in Chrome: no defect (journal 09-30).
-- **Next: dispatch FE-030** (F4e-1, POS-05 list, read-only) from `../restaurant-pos-kit` once
-  DESIGN-010 is merged and local `development` is pulled. It depends on the column token:
+- **Next: dispatch FE-030** (F4e-1, POS-05 list, read-only) once DESIGN-010 and `agent/lead-0930c`
+  are merged and local `development` is pulled. It depends on the column token:
   `no-invented-values.test.ts` rejects an unregistered `var(--frost-*)`. Its review should be
   cross-family (builder Claude Sonnet → Codex reviewer). Then write FE-031 from what FE-030 built.
 - **Live agents:** the lead only (`w2:p1`, named `lead`; `/lead` renames it after a session change).
