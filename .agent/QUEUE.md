@@ -20,23 +20,36 @@ start. KIT-005 ran first (owner) and was accepted on 2026-09-29.
 
 ## Frontend: what is left of F4
 
-The floor, incidents, close and recovery slices (F4a to F4d) are done. What is left needs a
-design task first, because POS-05 and POS-06 have wireframes only and no Frost artifact.
+The floor, incidents, close and recovery slices (F4a to F4d) are done. POS-05 and POS-06 now
+have Frost artifacts (DESIGN-009, complete and merged); what is left builds them.
 
-5. **DESIGN-010 (not written)** — the small designer follow-up to DESIGN-009 (complete
-   2026-09-30, `b0d4c5e`): register `--frost-closed-list-columns` and
-   `--frost-allocation-field-width` with the values in DESIGN-009's round 2 Handoff and replace
-   the flexible stand-ins; fix the re-review's F1, where `refund-error` keeps the split-sale
-   allocation for every `order=` so a cash-only or quick-sale order shows a tender it never took
-   (owner ruling O1); add a cash-only failure example. Can run beside F4e.
-6. **DESIGN follow-up** — folded into DESIGN-009 (Frost links off the prototype, the
-   light-only line in `docs/DESIGN.md`). Still the lead's: a light-only note in the
-   DESIGN-003 and DESIGN-005 task files — not done.
-7. **F4e (no ID yet)** — build POS-05 and POS-06: the closed-order book already exists in the
-   store (FE-027); refund and manager approval reuse M-1 — depends on DESIGN-009 and its
-   review (both done) — not written. Build rulings in DESIGN-009's task file: Close lands on
-   `after-close`, the floor `dayclosed` header names the open day, the banner clears per the
-   owner's 2026-09-30 ruling, refund rules per FR-H5 and FR-J3 as amended (`6ea5a5d`).
+5. **DESIGN-010** — register `--frost-closed-list-columns` and `--frost-allocation-field-width`
+   and replace DESIGN-009's flexible stand-ins; make all six refund states of
+   `closed-order.html` that override the allocation (`sheet-edited`, `sheet-invalid`,
+   `refund-error`, `day-refusal`, `sheet-zero`, `approval-edited`) keep the selected order's
+   own tenders (the re-review found it on `refund-error`; the same line overrides the other
+   five); add a cash-only failure example — **complete 2026-09-30** (`9c5ed19`), waiting on
+   the owner's merge.
+6. **F4e, sliced by authority** (lead's proposal, approved by the owner 2026-09-30). POS-05 has 11
+   states, POS-06 26, the floor two new ones plus the Part D changes. Each slice's file is
+   written from what the previous one built.
+   - **FE-030 (F4e-1)** — POS-05 list, three touch filters, closed-day grouping, read-only;
+     `/pos/closed-order` placeholder with fixed row hrefs — depends on DESIGN-010 (its column
+     token; `no-invented-values.test.ts` rejects an unregistered `var(--frost-*)`) —
+     **written 2026-09-30, not started**.
+   - **FE-031 (F4e-2)** — POS-06 detail, read-only: what was charged, totals, the
+     zero/refunded/closed-day/quick/custom/overflow states, reprint and its four results; no
+     Refund control yet — depends on FE-030 — not written.
+   - **FE-032 (F4e-3)** — refund: M-5 allocation sheet (O1–O3), reason, M-1 with the money-back
+     line, Cancel back to the sheet, REFUNDED in the book, `refund-error`, `day-refusal`, the
+     no-response re-read — touches money, audit, boundaries; independent cross-family review —
+     depends on FE-031 and DESIGN-010 — not written.
+   - **FE-033 (F4e-4)** — floor: `after-close` and `after-close-receipt` driven by the close
+     result, the `dayclosed` header naming the open day, the open quick-sale strip, *lines*
+     on floor and order panel (DESIGN-009 Part C and D) — independent of FE-031/032 — not written.
+   - **Deferred to FR-A:** Release in the POS-02/05/06 headers, and clearing the closed-day
+     banner at session end (owner's 2026-09-30 ruling) — the client has no session or idle lock.
+7. *(Done 2026-09-30: the light-only note in the DESIGN-003 and DESIGN-005 task files.)*
 8. **Code housekeeping (no IDs yet)** — the four P3s in STATE.md; re-check the POS-03 URL
    after Add; decide Prettier either way — depends on nothing, can ride with F4e as a small
    slice — not written. (The modal move was FE-029, KIT-004's pilot.)

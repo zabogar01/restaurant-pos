@@ -9,38 +9,40 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-09-30, at the wrap-up of the lead session that ran DESIGN-009 from start to complete
-(narrative in [journal/2026-09-30.md](journal/2026-09-30.md)). The only product code change
-since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wording, no code.
+2026-10-01, at the wrap-up of the lead session that wrote DESIGN-010 and FE-030, sliced F4e, ran
+DESIGN-010 to complete and walked DESIGN-009/010 in Chrome (narrative in
+[journal/2026-09-30.md](journal/2026-09-30.md), wrap-up in [journal/2026-10-01.md](journal/2026-10-01.md)).
+No product code has changed since FE-029; DESIGN-010 changed tokens and design artifacts only.
 
 ## Phase and gates
 
 - **Phase 0**, started 2026-09-14. Backend tasks 1 and 2 of 12 are done (scaffold and
   PostgreSQL, money module). Tasks 3 to 12 (schema and grants, PIN, audit, throttling,
   sessions, HTTPS server, auth routes, approval, acceptance tests) are **paused** until the
-  owner has reviewed the frontend. The server today has a pool, a migration runner and one
-  migration. It has no schema, no API and no auth.
-- **Frontend built so far** (against fixtures plus a client order store): POS-01 lock,
-  POS-02 floor, POS-03 order workspace, POS-04 settlement, POS-07 print incidents. Not built:
-  POS-05 closed orders, POS-06 closed order detail, and all 13 back-office screens.
+  owner has reviewed the frontend. The server has a pool, a migration runner and one
+  migration; no schema, no API and no auth.
+- **Frontend built so far** (fixtures plus a client order store): POS-01 lock, POS-02 floor,
+  POS-03 order workspace, POS-04 settlement, POS-07 print incidents. Not built: POS-05, POS-06
+  (F4e, FE-030 to FE-033, owner-approved slicing 2026-09-30) and all 13 back-office screens.
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
-- **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted;
-  KIT-005 (interactive dispatch, pane auto-close) merged as PR #21 (`5a1122f`). Product tasks run.
+- **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted.
 - **Last verify by the lead:** `npm run verify` green at **2256 tests / 32 files** on 2026-09-30
-  (DESIGN-009 branch; no code changed since). `apps/server/test/migrate.test.ts` needs
+  in the DESIGN-010 worktree at `5e8a38b`. `apps/server/test/migrate.test.ts` needs
   `npm run db:up`; without it its seven tests fail with `ECONNREFUSED 127.0.0.1:5433` (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `b0f7de4` (PR #28) on
-  GitHub and in the owner's checkout. **`main`** and `development` are protected on GitHub:
-  PR required, 0 approvals, enforced for admins.
+- **`development` is the integration branch** (owner, 2026-09-29), at `f5c9622` (PR #29) on
+  GitHub; the owner's local `development` matches it. **Pull again after merging** the two
+  branches below, before the next dispatch. `main` and `development` are protected: PR required, 0 approvals, admins too.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
-  current for `b0f7de4`. Rerun after any merge that changes `.githooks/` or agents.yaml.
-- Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0930-wrapup` (cut
-  from `b0f7de4`; holds only this wrap-up). No task worktree exists under
-  `../restaurant-pos-wt/`, and `.agent/runs/` is empty. Merged lead and kit branches remain locally.
+  current (checked 2026-09-30). Rerun after any merge that changes `.githooks/` or agents.yaml.
+- Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0930c` (cut from
+  `f5c9622`, pushed at wrap-up). It carries FE-030's task file (owner, 2026-10-01): merge it
+  **before** dispatching FE-030, so the dispatcher finds the file on `development` and adds no copy.
+- Task worktree `../restaurant-pos-wt/DESIGN-010` (`agent/design-010`, with `node_modules`) and
+  run dir `.agent/runs/DESIGN-010/` stay until that branch is merged; then remove both.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale or merged branches: `agent/phase-0-foundations` (`735301d`, behind); `agent/design-direction`
@@ -48,13 +50,17 @@ since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wor
 
 ## Running tasks and agents
 
-- **No active task.** DESIGN-009 is **complete and merged** (PRs #26 and #27): round 1 by a Codex
-  designer, round 2 by a Claude Opus 5.5 designer (owner, once), re-review by Codex
-  `gpt-6.1-sol` (one medium fixture finding, queued as DESIGN-010). Its worktree and run folder
-  are removed. Browser evidence is the designer's own: 159 states measured at 1280×800 in
-  headless Chrome. The re-reviewer's Chrome crashed (it crawled in JSDOM), and the lead has not
-  walked the flows in a browser.
+- **No active task.** **DESIGN-010 is complete** (`9c5ed19` on `agent/design-010`, pushed, awaiting
+  the owner's merge): two tokens registered (`--frost-closed-list-columns`,
+  `--frost-allocation-field-width`), all six refund fixture states keep the selected order's own
+  tenders, new `refund-error-cash`. Codex `gpt-6-astra` designer, Claude Opus 5.5 reviewer, two low
+  findings fixed in round 2. The lead walked DESIGN-009/010 in Chrome: no defect (journal 09-30).
+- **Next: dispatch FE-030** (F4e-1, POS-05 list, read-only) once DESIGN-010 and `agent/lead-0930c`
+  are merged and local `development` is pulled. It depends on the column token:
+  `no-invented-values.test.ts` rejects an unregistered `var(--frost-*)`. Its review should be
+  cross-family (builder Claude Sonnet → Codex reviewer). Then write FE-031 from what FE-030 built.
 - **Live agents:** the lead only (`w2:p1`, named `lead`; `/lead` renames it after a session change).
+  All panes the lead opened this session are closed.
 - Leftovers the lead did not make and has not closed: agentless pane `w2:pE` (tab `t7`), and a
   detached worktree `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`).
 
@@ -67,17 +73,24 @@ since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wor
 - **Only the owner answers a permission prompt** (`BLOCKED ON APPROVAL`, pane text saved in
   the run directory). Claude workers: `acceptEdits`, a Bash allowlist, `git push` denied (owner).
 - **YAML 1.1 reads `caveman: off` as `false`.** Anything reading `caveman:` must treat both as off.
-- OpenCode interactive and permissions are proven by dry run only. **`--model <m>`** (added
-  2026-09-30) swaps the model for one run on the same CLI; the reviewer keeps the other family.
-  `gpt-6.1-sol` is a valid Codex model (checked 2026-09-30).
-- **Owner's `~/.claude/settings.json` changed 2026-09-29** (`/doctor`; journal, third entry):
-  default mode `auto`, which workers override with their own `--permission-mode`; 29 unused
-  skills off, none of them named in agents.yaml or a role prompt.
+- OpenCode interactive is proven by dry run only. **`--model <m>`** swaps the model for one run
+  on the same CLI; the reviewer keeps the other family (`gpt-6.1-sol` is a valid Codex model).
+- Owner's `~/.claude/settings.json` defaults to `auto` (2026-09-29); workers override it.
 - Designers and architects are not dispatched: open their pane by hand with the model from
   agents.yaml passed explicitly. A hand-opened Codex designer in a worktree needs
   `-c sandbox_workspace_write.writable_roots=["<main>/.git"]` to commit, and before its review
   the lead writes `.agent/runs/<ID>/builder/meta.json` with its `cli` (LESSONS.md, Lead). Only
-  the owner answers a folder-trust or permission prompt.
+  the owner answers a folder-trust or permission prompt. DESIGN-010 is the worked example
+  (journal 2026-09-30): worktree from `origin/development`, task file committed first,
+  `export AGENT_ROLE=designer TASK_ID=<ID>` in the pane, then `herdr agent start <name> --kind
+  codex -- -m gpt-6-astra -c model_reasoning_effort=high` plus the sandbox and Context7-off `-c`s.
+- **The dispatcher reads the task file from the checkout it runs in** (`git rev-parse
+  --show-toplevel`) and cuts the worktree from the **local** `development`. Run it from
+  `../restaurant-pos-kit`, where an undispatched task file lives untracked, and make sure local
+  `development` is current first.
+- **Lead verify in a designer worktree:** run `npm ci` there first (designers have none). To
+  walk Frost artifacts, serve `docs/design` (not `visual-directions`, or the token CSS 404s) on
+  127.0.0.1 and open `visual-directions/frost/pos/<file>.html`.
 
 ## Live bugs and known defects
 
@@ -87,8 +100,7 @@ since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wor
   `?state=default` and the URL names Table 1's fixture; `closeOrder` fires a quick sale with
   `type: 'table'`; a quick sale holding an 86'd pending line refuses Close silently with no
   copy; *Nothing outstanding* appears twice when every incident is cleared (a designer's).
-- **Housekeeping:** Prettier is neither configured nor banned, and a stray run once rewrote 541 lines (L1936-1946); the *Release* table action is
-  deferred because it needs the actor session (`FR-A`).
+- **Housekeeping:** Prettier is neither configured nor banned (L1936-1946); Release waits on `FR-A`.
 - **Must not become a guarantee:** `OrderLine.itemId` is optional, so a line with no identity
   can never block a fire (L1787). Fine for fixtures; wrong once the backend supplies real items.
 - **Backend traps for tasks 3 to 12:** parallel server test files race one database (leaning
@@ -100,8 +112,8 @@ since FE-028 is FE-029; DESIGN-009 added design artifacts and the PRD refund wor
 
 Nothing here is decided. Detail is where each line points.
 
-- **Walk DESIGN-009 in a browser before F4e?** The lead offered to walk the new POS-05/POS-06
-  flows in Chrome itself (no one re-measured after round 2); not yet answered.
+- **Merge `agent/design-010`** (`9c5ed19`, pushed) **and `agent/lead-0930c`** (pushed at wrap-up).
+  Then `git pull` in the main checkout so local `development` has both; FE-030 can go after.
 - **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
   or go back to one-shot with opt-in per task. They are interactive until you say otherwise.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
@@ -116,17 +128,13 @@ Nothing here is decided. Detail is where each line points.
 - **Confirm or reject the eight open `conversation only` lines** in DECISIONS.md: the
   2026-09-14 subagent-driven Phase 0; 2026-09-18 closing implementers; 2026-09-24 DESIGN-006
   before F4, `fireerror`, POS-03 Q5, Q6 and Q9, and closing unused agents.
-- **Optional machine cleanup from `/doctor`:** disable the synced `design`, `engineering` and
-  `product-management` plugins in `/plugin` (about 1k tokens of skill listing), and the unused
-  claude.ai connectors in `/mcp`. Nothing in the project depends on either.
+- **Optional:** disable unused synced plugins (`/plugin`) and claude.ai connectors (`/mcp`).
 - **Context7 still reachable** by an interactive Codex designer and any launch without
   `mcp_off`, because `~/.codex/config.toml` stays as it is (your ruling). That file also holds
   the Context7 and Stitch API keys in plain text; consider environment variables.
 
 ## Live conflicts
 
-- **`docs/DESIGN.md` is now light-only** (DESIGN-009), but the DESIGN-003 and DESIGN-005 task
-  files still call the dark palette open; the note there is the lead's and not done (QUEUE 6).
 - **DESIGN-007 contradicts itself on `fireerror`** (`:365`/`:407` versus `:578`). You ruled the
   `:578` reading (L349); FE-022 built it. The design file itself is unchanged.
 - **The two Frost back-office artifacts link to the wireframe 51 times**; owed to the
@@ -134,6 +142,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-The ordered list is [QUEUE.md](QUEUE.md). In one line: write F4e (build POS-05 and POS-06 from
-DESIGN-009) and DESIGN-010 (tokens and the fixture fix), then the back office; backend tasks 3 to
-12 resume after the owner's frontend review.
+The ordered list is [QUEUE.md](QUEUE.md). In one line: FE-030 once DESIGN-010 is merged, then
+FE-031 to FE-033 written one at a time; then the back office. Backend tasks 3 to 12 resume after
+the owner's frontend review.

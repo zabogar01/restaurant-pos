@@ -89,6 +89,9 @@ Device targets, unchanged: **POS 1280×800 landscape**, **back office 1440 wide*
   lead's. Write your handoff in this file.
 - **Light only.** A dark palette was deliberately not delivered and is an open
   product decision. Do not invent one. State it as open in `docs/DESIGN.md`.
+  *(Lead's note, 2026-09-30: no longer open. The owner ruled on 2026-09-24 that
+  the MVP ships light only and the dark palette is deferred (DECISIONS.md), and
+  DESIGN-009 wrote that into `docs/DESIGN.md`.)*
 - **Helvetica Neue is the permitted fallback.** Saans was not provided. Make no
   claim to use a font the repository does not have, and download nothing.
 - **No application code.** This produces the design system, not an
