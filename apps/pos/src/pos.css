@@ -2571,7 +2571,6 @@ button.settlement-close__action:not([aria-disabled="true"]):focus-visible:active
 .closed-listhead {
   position: sticky;
   top: 0;
-  z-index: 1;
   background: var(--frost-group);
   font-size: var(--frost-text-12);
 }

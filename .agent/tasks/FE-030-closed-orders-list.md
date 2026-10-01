@@ -306,8 +306,18 @@ Single commit on `agent/fe-030`. The hash is whatever `git log -1` shows on that
 - Prettier was not run, and nothing touched a file by formatter.
 - No browser was available, said once: the touch layout (criterion 12) is checked by structure only.
 
-**Output of `npm run verify`:** typecheck clean (server, money, pos). `vitest run`: **33 test files passed (33), 2339 tests passed (2339)**. Baseline before this task was 32 files and 2266 tests, so +1 file and +73 tests; the changed floor test is in both counts.
+**Output of `npm run verify`:** typecheck clean (server, money, pos). `vitest run`: **33 test files passed (33), 2339 tests passed (2339)**. Baseline before this task (`development` at `1f4fac8`) was 32 files and 2256 tests, so +1 file and +83 tests: 73 in `closed-orders.test.tsx`, and 10 from the three source scans (`no-invented-values` runs five checks per source file, and this task adds two). The changed floor test is in both counts. (Round 1 of the lead's verify corrected my earlier, wrong 2266 and +73.)
 
 **What the next slice (FE-031, POS-06) needs.** The route `/pos/closed-order` exists and is a bare frame. Its query is fixed: a fixture row is `?state=<state>&order=<state>&time=<HH%3AMM>`, with `list=dayclosed` for the new-day quick sale and `state=dayclosed` for the closed-day rows (the artifact's own encoding, `URLSearchParams`); a book row is `?order=<book id>`, for example `?order=table-1`. POS-06 must read a book id from the book (`book.orders()` / `orderFor`), which the row already proves is reachable from `PosRoutes`. It must not assume `PosRoutes` has seeded the book on a cold load: a direct visit to `/pos/closed-order?order=table-1` has an empty book.
+
+### Round 2 (lead verify round 1, commit 29bef5d)
+
+**1. Heads over the sheet.** I dropped `z-index: 1` from `.closed-listhead` in `apps/pos/src/pos.css`, the first of the two fixes the lead offered. A sticky element is positioned, and a positioned element with `z-index: auto` still paints above the unpositioned rows that scroll beneath it, so the heads keep covering them. The sheet and its scrim are `position: absolute; z-index: auto` and come later in the device frame than the scroller, so they now paint over the heads. I did not isolate the scroller's stacking, because removing one declaration is enough and adds no new rule. I have not seen it in a browser (none here); the lead walks the three sheets again.
+
+The new test, *the sticky heads sit under an open sheet and its scrim*, in `closed-orders.test.tsx`, pins the structure. `.closed-listhead`, `.closed-scroll` and `.sheet` carry no `z-index`, and in `filter-table` the `.sheet` and `.sheet-scrim` follow `.closed-scroll` among the device frame's children. Red case: I put `z-index: 1` back on `.closed-listhead`, and that test failed (`expected '…z-index: 1…' not to match /z-index/`); I reverted it. This is a structural pin: jsdom does not paint, so it cannot see the overlap itself.
+
+**2. The baseline.** Corrected in the Handoff's verify paragraph above: `development` at `1f4fac8` is 32 files and 2256 tests, and this branch adds 83 (73 in the new file, 10 from the source scans that now cover two more files).
+
+**Output of `npm run verify` after the fix:** typecheck clean. `vitest run`: **33 test files passed (33), 2340 tests passed (2340)**, which is the 2339 above plus the one new test. Nothing else changed.
 
 DONE

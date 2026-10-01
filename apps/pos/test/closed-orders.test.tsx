@@ -927,6 +927,19 @@ describe('criterion 12: touch at 1280×800 (structure; the lead walks the render
     expect(scroller.getAttribute('role')).toBe('region');
   });
 
+  it('the sticky heads sit under an open sheet and its scrim: no z-index, so the later positioned sheet paints over them', () => {
+    // A positioned element with a z-index paints above a later `position: absolute; z-index: auto` sibling.
+    expect(rule('.closed-listhead')).not.toMatch(/z-index/);
+    expect(rule('.closed-scroll')).not.toMatch(/z-index/);
+    expect(rule('.sheet')).not.toMatch(/z-index/);
+    load('/pos/closed-orders?state=filter-table');
+    const device = host.querySelector('.closed')!;
+    const order = [...device.children];
+    // The sheet and scrim follow the scroller in the same stacking context.
+    expect(order.indexOf(host.querySelector('.sheet')!)).toBeGreaterThan(order.indexOf(host.querySelector('.closed-scroll')!));
+    expect(order.indexOf(host.querySelector('.sheet-scrim')!)).toBeGreaterThan(order.indexOf(host.querySelector('.closed-scroll')!));
+  });
+
   it('heads and rows share the one column token and one padding', () => {
     const grid = rule('.closed-listhead');
     expect(grid).toMatch(/grid-template-columns:\s*var\(--frost-closed-list-columns\)/);
