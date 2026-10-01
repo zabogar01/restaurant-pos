@@ -2649,6 +2649,96 @@ button.settlement-close__action:not([aria-disabled="true"]):focus-visible:active
   font-weight: var(--frost-weight-medium);
 }
 
+/* ==== POS-06 closed order (FE-031) ====
+ * The artifact's .co-body, .co-line and .co-summary, on the same tokens. The left
+ * column is a .closed-scroll and the summary beside it is not, so a long order
+ * scrolls its lines while the figures and the actions stay put. Nothing in the
+ * scrolling column has a z-index. */
+
+.closed-notice--plain {
+  border: var(--frost-control-stroke);
+  background: var(--frost-group);
+  color: inherit;
+}
+
+.closed-notice .closed-button {
+  color: inherit;
+}
+
+.closed-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.closed-content {
+  min-width: 0;
+}
+
+.closed-line {
+  display: flex;
+  gap: var(--frost-space-4);
+  align-items: center;
+  min-height: var(--frost-line-min-height);
+  padding: var(--frost-line-padding);
+  border-bottom: var(--frost-divider-stroke);
+  background: var(--frost-elevated);
+}
+
+.closed-line > div {
+  flex: 1;
+}
+
+.closed-line > span:last-child {
+  margin-left: auto;
+}
+
+.closed-quantity {
+  width: var(--frost-line-quantity-width);
+}
+
+.closed-summary {
+  width: var(--frost-order-panel-width);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-left: var(--frost-divider-stroke);
+  background: var(--frost-elevated);
+}
+
+.closed-figures {
+  flex: 1;
+  padding: var(--frost-space-5);
+}
+
+.closed-figures h2 {
+  margin-bottom: var(--frost-space-5);
+}
+
+.closed-figures dl,
+.closed-figures dd {
+  margin: 0;
+}
+
+.closed-grand {
+  margin-top: var(--frost-space-3);
+  padding: var(--frost-space-3);
+  background: var(--frost-group);
+  font-size: var(--frost-text-24);
+  font-weight: var(--frost-weight-medium);
+}
+
+.closed-actions {
+  display: grid;
+  gap: var(--frost-actions-gap);
+  padding: var(--frost-actions-padding);
+  border-top: var(--frost-divider-stroke);
+}
+
+.closed-button--large {
+  min-height: var(--frost-action-height);
+}
+
 @media (hover: hover) {
   .closed-button:hover,
   .closed-row:hover {

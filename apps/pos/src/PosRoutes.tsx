@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { App } from './App.js';
+import { ClosedOrderScreen } from './ClosedOrderScreen.js';
 import { ClosedOrdersScreen } from './ClosedOrdersScreen.js';
 import { closedStateFrom } from './closedOrders.js';
 import { FloorScreen } from './FloorScreen.js';
@@ -99,17 +100,7 @@ export function PosRoutes() {
   if (onFloor) return <FloorScreen state={floorStateFrom(window.location.search)} book={book} sessions={sessions} />;
   // The state is the URL's, and a new `?state=` is a new picture: the screen reseeds from the key.
   if (onClosedOrders) return <ClosedOrdersScreen key={window.location.search} state={closedStateFrom(window.location.search)} book={book} />;
-  if (onClosedOrder) return <ClosedOrderPlaceholder />;
+  if (onClosedOrder) return <ClosedOrderScreen key={window.location.search} search={window.location.search} book={book} />;
   if (onIncidents) return <IncidentsScreen state={incidentStateFrom(window.location.search)} />;
   return <App />;
-}
-
-/**
- * POS-06, the closed order a row leads to, is FE-031's: a placeholder route on
- * the precedent POS-05's own set (and `?state=incidents`'s before it) — named
- * and reached, honest that nothing is built behind it. It renders the bare
- * device frame and no copy.
- */
-function ClosedOrderPlaceholder() {
-  return <div className="pos-device" />;
 }
