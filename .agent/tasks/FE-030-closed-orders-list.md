@@ -5,7 +5,7 @@ category: ui
 touches: []
 depends_on: [DESIGN-010]
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: review
+status: complete
 cycles: 1
 ---
 # FE-030 — POS-05 closed orders, read-only
