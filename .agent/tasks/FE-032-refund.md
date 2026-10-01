@@ -5,7 +5,7 @@ category: ui
 touches: [money, audit, boundaries]
 depends_on: [FE-031]
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: active
+status: review
 cycles: 1
 ---
 # FE-032 — POS-06 refund
@@ -443,6 +443,52 @@ assertion fails after these, stop again and name it.
 Then run `npm run verify`, commit when it is green, replace the Handoff's *Status* and *The
 block* with what was done (keep the rest), say in *Existing tests changed* that the lead ruled
 these in, and end with DONE.
+
+## Lead verify (2026-10-01)
+
+The lead ran `npm run verify` in this worktree at `f36e9d6` (36 files, 2515 tests, green; the
+baseline at `1fc0f6c` is 34 files and 2411 tests), read `refund.ts`, the order-book change,
+the approval dialog and the screen, and walked the refund in Chrome against the dev server at
+the device's 1280×800. No defect was found, and nothing goes back to the builder.
+
+- **The diff** stays inside `owns:`. One existing test file changed, `closed-order.test.tsx`:
+  the two tests the task names and the four edits ruled in above. Every button-list assertion
+  is still an exact comparison.
+- **All thirteen states** draw the artifact's order, rows, sum line, alert, reason and M-1
+  text. `sheet-invalid` reads *Allocate 20.000 more* with *Continue* off; `sheet-zero` reads
+  *Card · not refunded*; `refund-error-cash` is Table 7 even with `order=default`;
+  `refund-error` on the zero-total order reads *Nothing was refunded.* with no control;
+  `day-refusal` leads only to the closed-day picture with no Refund control.
+- **Criterion 16, measured.** The sheet is 820px wide and leaves *What was charged* (460px)
+  visible. In `sheet-custom` the six rows scroll inside the sheet (877px of content in 565px)
+  and *Continue* stays inside the device. The approval modal with six tenders spans y=52 to 748
+  inside the 800px device, and its money-back line wraps without overflowing.
+- **A live refund with an edited allocation.** Table 9 was closed through the real route with
+  Card 100.000 then Cash 100.000 on 173.250. The sheet defaulted to Card 100.000 and Cash
+  73.250, with *Cash: 100.000 − 26.750 = 73.250.* Setting Card to 0 gave *Allocate 100.000 more*
+  and an off *Continue* that did nothing when pressed. *Cancel* closed the sheet, returned focus
+  to *Refund this order*, and a reopened sheet was the default with no reason. With Card 0, Cash
+  173.250 and a typed reason, M-1 read *Money back: Card not refunded · Cash 173.250* with
+  *ALLOCATION EDITED*. Below six digits the confirm key was off and pressing it changed nothing.
+  *Cancel* returned to the sheet with the allocation and reason kept and the order still CLOSED;
+  the reopened M-1 showed no digits. Six digits and confirm left the order REFUNDED:
+  `REFUNDED · 21:44` (the WIB time of the refund) with the reason and no approver; *Money
+  returned* listed Cash 173.250 only, the record and not the default; the original payment and
+  the total were unchanged; the Refund control was gone.
+- **After it.** *Reprint receipt* added *Reprint sent* beside the REFUNDED notice. POS-05's
+  row carried the *REFUNDED* tag and reopening the detail showed the same record. Pushing the
+  refunded order's order route was replaced by the floor, so no live control was drawn.
+- **A fixture address writes nothing.** Confirming `approval-edited` showed `REFUNDED · 20:31`
+  with the reason, no approver and *Money returned* Cash 155.925; the list afterwards still held
+  six rows and Table 1's row was unchanged.
+
+Not walked: the refusals of the operation on a book order, which a correctly built sheet
+cannot reach; they rest on the builder's tests with a book whose `refund` refuses. The reason
+keyboard and the amount keypad were driven by scripted clicks, one per step.
+
+Accepted as built: the fixture confirm keeps the artifact's `20:31` (a fixture picture has no
+clock), and `OrderBook.refund` is required, not optional, since no existing hand-built book
+needed a change.
 
 ## Handoff
 
