@@ -144,6 +144,8 @@ export function FloorScreen({
 
   const subline = fixture.message === 'loading' ? FLOOR_COPY.loadingCount : fixture.message ? undefined : summaryOf(openCount, tiles.length - openCount);
   const quickDestination = '/pos/order?state=quick-new';
+  // F3: the closed-day floor hands POS-05 its context (floor.html:123), so the list keeps the banner and its two groups.
+  const closedOrdersDestination = fixture.dayClosed ? '/pos/closed-orders?state=dayclosed' : '/pos/closed-orders';
 
   return (
     <>
@@ -178,7 +180,7 @@ export function FloorScreen({
             {subline && <div className="floor-sub">{subline}</div>}
           </div>
           <div className="floor-tools">
-            <a className="floor-action" href="/pos/closed-orders" onClick={(e) => followClientSide(e, '/pos/closed-orders')}>
+            <a className="floor-action" href={closedOrdersDestination} onClick={(e) => followClientSide(e, closedOrdersDestination)}>
               {FLOOR_COPY.closedOrders}
             </a>
             <a

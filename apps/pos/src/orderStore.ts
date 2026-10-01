@@ -156,7 +156,7 @@ function seed(view: OrderView, locked: boolean): StoreState {
 }
 
 /** The table number an order id names (`table-9`, `table-9-2`); undefined for a quick sale. */
-function tableOf(orderId: string): string | undefined {
+export function tableOf(orderId: string): string | undefined {
   return /^table-(\d+)(?:-\d+)?$/.exec(orderId)?.[1];
 }
 

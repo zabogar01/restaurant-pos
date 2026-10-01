@@ -435,12 +435,13 @@ describe('criterion 6: new quick sale', () => {
     }
   });
 
-  it('Closed orders goes to a placeholder: the bare device frame and no copy', () => {
+  it('Closed orders goes to POS-05’s default list (FE-030)', () => {
     load('/pos/floor');
     press([...host.querySelectorAll('a')].find((a) => text(a) === 'Closed orders')!);
-    expect(window.location.pathname).toBe('/pos/closed-orders');
-    expect(host.textContent).toBe('');
-    expect(host.querySelector('.pos-device')).not.toBeNull();
+    expect(pathAndSearch()).toBe('/pos/closed-orders');
+    expect(text(host.querySelector('h1')!)).toBe('Closed orders');
+    expect(host.querySelector('.closed')!.getAttribute('data-closed-state')).toBe('default');
+    expect(host.querySelectorAll('.closed-row')).toHaveLength(6);
   });
 });
 
