@@ -5,7 +5,7 @@ category: ui
 touches: [money, audit, boundaries]
 depends_on: [FE-031]
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: active
+status: review
 cycles: 2
 ---
 # FE-032 — POS-06 refund
@@ -524,6 +524,27 @@ What to do:
 No existing test from before this task changes. Run `npm run verify`, commit when green,
 append a *Round 3* section to the Handoff (what changed, the red case, the verify output), and
 end with DONE.
+
+## Lead verify of the fix (2026-10-01)
+
+The lead ran `npm run verify` in this worktree at `c42f39f` (36 files, 2515 tests, green) and
+read the round's diff: eleven lines in `ClosedOrderScreen.tsx` and one reshaped test in
+`refund-screen.test.tsx`, nothing else. The unavailable branch now draws the failure notice
+(*Refund failed · the order is unchanged* / *Nothing was refunded.*, amber, no action) above
+the *Could not load this order* box whenever the last outcome is a failure. That answers F1.
+
+For the second review to weigh, not hidden:
+
+- **The three refusals are one test with a loop, not three tests.** A loop stops at its first
+  failure, and the builder says so: with the fix disabled the test went red on `not-closed`,
+  and `unknown-order` was not separately seen red. Both take the same unavailable branch.
+- **The lead did not see this notice in a browser.** A correctly built sheet cannot reach
+  these refusals on a book order, so there is no route to the picture without a stub book.
+  The evidence is the test and the diff.
+- A `day-refused` outcome over an order the book no longer holds draws nothing. No book order
+  can set `day-closed`, so this is unreachable today.
+
+This was the task's second and last fix cycle (`max_fix_cycles: 2`).
 
 ## Handoff
 
