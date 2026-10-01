@@ -23,20 +23,15 @@ start. KIT-005 ran first (owner) and was accepted on 2026-09-29.
 The floor, incidents, close and recovery slices (F4a to F4d) are done. POS-05 and POS-06 now
 have Frost artifacts (DESIGN-009, complete and merged); what is left builds them.
 
-5. **DESIGN-010** — register `--frost-closed-list-columns` and `--frost-allocation-field-width`
-   and replace DESIGN-009's flexible stand-ins; make all six refund states of
-   `closed-order.html` that override the allocation (`sheet-edited`, `sheet-invalid`,
-   `refund-error`, `day-refusal`, `sheet-zero`, `approval-edited`) keep the selected order's
-   own tenders (the re-review found it on `refund-error`; the same line overrides the other
-   five); add a cash-only failure example — **complete 2026-09-30** (`9c5ed19`), waiting on
-   the owner's merge.
+5. *(Done: DESIGN-010, the two closed-order tokens and the refund fixture states, `9c5ed19`,
+   merged 2026-10-01 as PR #31. Its task file holds the Handoff and review.)*
 6. **F4e, sliced by authority** (lead's proposal, approved by the owner 2026-09-30). POS-05 has 11
    states, POS-06 26, the floor two new ones plus the Part D changes. Each slice's file is
    written from what the previous one built.
    - **FE-030 (F4e-1)** — POS-05 list, three touch filters, closed-day grouping, read-only;
      `/pos/closed-order` placeholder with fixed row hrefs — depends on DESIGN-010 (its column
      token; `no-invented-values.test.ts` rejects an unregistered `var(--frost-*)`) —
-     **written 2026-09-30, not started**.
+     **complete 2026-10-01** (`e7c698f`, Codex review clean), waiting on the owner's merge.
    - **FE-031 (F4e-2)** — POS-06 detail, read-only: what was charged, totals, the
      zero/refunded/closed-day/quick/custom/overflow states, reprint and its four results; no
      Refund control yet — depends on FE-030 — not written.

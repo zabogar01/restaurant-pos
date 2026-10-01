@@ -9,10 +9,10 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-01, at the wrap-up of the lead session that wrote DESIGN-010 and FE-030, sliced F4e, ran
-DESIGN-010 to complete and walked DESIGN-009/010 in Chrome (narrative in
-[journal/2026-09-30.md](journal/2026-09-30.md), wrap-up in [journal/2026-10-01.md](journal/2026-10-01.md)).
-No product code has changed since FE-029; DESIGN-010 changed tokens and design artifacts only.
+2026-10-01, when FE-030 finished (built, lead-verified, reviewed clean) after the owner merged
+DESIGN-010 (PR #31) and `agent/lead-0930c` (PR #30). Earlier narrative:
+[journal/2026-09-30.md](journal/2026-09-30.md) and [journal/2026-10-01.md](journal/2026-10-01.md).
+No product code has changed on `development` since FE-029; FE-030 waits on its own branch.
 
 ## Phase and gates
 
@@ -27,40 +27,40 @@ No product code has changed since FE-029; DESIGN-010 changed tokens and design a
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted.
-- **Last verify by the lead:** `npm run verify` green at **2256 tests / 32 files** on 2026-09-30
-  in the DESIGN-010 worktree at `5e8a38b`. `apps/server/test/migrate.test.ts` needs
+- **Last verify by the lead:** `npm run verify` green at **2340 tests / 33 files** on 2026-10-01
+  in the FE-030 worktree at `d7621a5` (`development`: 2256 / 32). `apps/server/test/migrate.test.ts` needs
   `npm run db:up`; without it its seven tests fail with `ECONNREFUSED 127.0.0.1:5433` (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `f5c9622` (PR #29) on
-  GitHub; the owner's local `development` matches it. **Pull again after merging** the two
-  branches below, before the next dispatch. `main` and `development` are protected: PR required, 0 approvals, admins too.
+- **`development` is the integration branch** (owner, 2026-09-29), at `1f4fac8` (PR #31) on
+  GitHub; the owner's local `development` matches it (checked 2026-10-01). `main` and
+  `development` are protected: PR required, 0 approvals, admins too.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
-  current (checked 2026-09-30). Rerun after any merge that changes `.githooks/` or agents.yaml.
-- Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-0930c` (cut from
-  `f5c9622`, pushed at wrap-up). It carries FE-030's task file (owner, 2026-10-01): merge it
-  **before** dispatching FE-030, so the dispatcher finds the file on `development` and adds no copy.
-- Task worktree `../restaurant-pos-wt/DESIGN-010` (`agent/design-010`, with `node_modules`) and
-  run dir `.agent/runs/DESIGN-010/` stay until that branch is merged; then remove both.
+  current (checked 2026-10-01). Rerun after any merge that changes `.githooks/` or agents.yaml.
+- Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1001` (cut from
+  `1f4fac8`), committed and pushed on 2026-10-01 (owner). It carries this file and QUEUE.md: the
+  main checkout's copies on `development` are one step behind until the owner merges it.
+- Task worktree `../restaurant-pos-wt/FE-030` (`agent/fe-030`, cut from `1f4fac8`) and run dir
+  `.agent/runs/FE-030/` in the **main checkout** stay until that branch is merged; then remove
+  both. DESIGN-010's worktree and run dir were removed on 2026-10-01 after its merge.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale or merged branches: `agent/phase-0-foundations` (`735301d`, behind); `agent/design-direction`
-  (worktree `../restaurant-pos-design`, `5cbe8ca`, clean, merged).
+  (worktree `../restaurant-pos-design`, `5cbe8ca`, clean, merged); `agent/design-010` and
+  `agent/lead-0930c` (both merged, local and remote branches still exist).
 
 ## Running tasks and agents
 
-- **No active task.** **DESIGN-010 is complete** (`9c5ed19` on `agent/design-010`, pushed, awaiting
-  the owner's merge): two tokens registered (`--frost-closed-list-columns`,
-  `--frost-allocation-field-width`), all six refund fixture states keep the selected order's own
-  tenders, new `refund-error-cash`. Codex `gpt-6-astra` designer, Claude Opus 5.5 reviewer, two low
-  findings fixed in round 2. The lead walked DESIGN-009/010 in Chrome: no defect (journal 09-30).
-- **Next: dispatch FE-030** (F4e-1, POS-05 list, read-only) once DESIGN-010 and `agent/lead-0930c`
-  are merged and local `development` is pulled. It depends on the column token:
-  `no-invented-values.test.ts` rejects an unregistered `var(--frost-*)`. Its review should be
-  cross-family (builder Claude Sonnet → Codex reviewer). Then write FE-031 from what FE-030 built.
-- **Live agents:** the lead only (`w2:p1`, named `lead`; `/lead` renames it after a session change).
-  All panes the lead opened this session are closed.
+- **No active task. FE-030 is complete** (F4e-1, POS-05 list, read-only): `e7c698f` on
+  `agent/fe-030`, five commits, pushed 2026-10-01 (owner's word), awaiting the owner's merge.
+  Claude Sonnet 5.5 builder, one fix cycle; Codex `gpt-6-astra` review clean, no findings
+  (`.agent/reviews/FE-030-review.md`; it could not render the screen in its sandbox).
+- **Lead evidence:** diff inside `owns:`; eleven states, filters and a live close walked in Chrome;
+  criterion 12 measured; round 1's defect (heads over the filter sheet) fixed and re-walked.
+- **Next: write FE-031** (F4e-2, POS-06 detail, read-only) from FE-030's Handoff (its last section).
+- **Live agents:** the lead only (`w2:p1`, named `lead`; `/lead` renames it after a session
+  change). Both FE-030 panes closed themselves.
 - Leftovers the lead did not make and has not closed: agentless pane `w2:pE` (tab `t7`), and a
   detached worktree `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`).
 
@@ -112,8 +112,11 @@ No product code has changed since FE-029; DESIGN-010 changed tokens and design a
 
 Nothing here is decided. Detail is where each line points.
 
-- **Merge `agent/design-010`** (`9c5ed19`, pushed) **and `agent/lead-0930c`** (pushed at wrap-up).
-  Then `git pull` in the main checkout so local `development` has both; FE-030 can go after.
+- **Merge `agent/fe-030`** (`e7c698f`) **and `agent/lead-1001`** (this file and QUEUE.md), both
+  pushed. Then `git pull` in the main checkout; the lead removes FE-030's worktree and run dir.
+- **FE-030, two builder readings the lead accepted, unruled:** session closes list above all
+  fixture rows by real instant (11:18 above 20:14); the time filter accepts a three-digit entry
+  shown as `08:00`, which the artifact's `valid()` refuses.
 - **Kit:** whether builders stay interactive by default (`roles.builder.mode` in agents.yaml)
   or go back to one-shot with opt-in per task. They are interactive until you say otherwise.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
@@ -142,6 +145,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-The ordered list is [QUEUE.md](QUEUE.md). In one line: FE-030 once DESIGN-010 is merged, then
+The ordered list is [QUEUE.md](QUEUE.md). In one line: FE-030 waits on the owner's merge; then
 FE-031 to FE-033 written one at a time; then the back office. Backend tasks 3 to 12 resume after
 the owner's frontend review.
