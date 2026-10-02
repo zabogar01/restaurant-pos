@@ -5,7 +5,7 @@ category: quick
 touches: []
 depends_on: []
 owns: [apps/pos/src/fire.ts, apps/pos/src/close.ts, apps/pos/test/fire-order.test.ts, apps/pos/test/close-order.test.ts, apps/pos/test/floor-quick-sale.test.tsx]
-status: not-started
+status: review
 cycles: 0
 ---
 # FE-034 — Close fires without misstating the type; one quiet test
