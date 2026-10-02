@@ -2,6 +2,8 @@ import type { Money } from '@pos/money';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { orderTotals, type DiscountSnapshot } from './discount.js';
 import { closeOrder, type ClosedOrder } from './close.js';
+import { changeDiscount as applyDiscountChange, type DiscountChange, type DiscountRefusal, type DiscountThrough } from './discountChange.js';
+import { PRESETS } from './discountFixtures.js';
 import { refundOrder, type RefundRecord, type RefundRequest, type RefundResult } from './refund.js';
 import { fireOrder } from './fire.js';
 import { DEFAULT_CATEGORY, MENU_ITEMS, originFacts, type CategoryId } from './menuFixtures.js';
@@ -101,7 +103,22 @@ export type OrderStore = {
    * Optional so a hand-built store (a test's) need not supply one.
    */
   close?: (closedAt: string, drafts: ReadonlyArray<{ id: string; label: string; amount: Money }>) => boolean;
+  /**
+   * FE-035: the discount change on the active order — a STAND-IN for the server's
+   * discount command (see `discountChange.ts`, which lists what it leaves out).
+   * `through` is how the request arrived and decides the manager gate inside the
+   * operation. A refusal changes nothing. Applied through the functional updater,
+   * so a second call in the same tick sees the first.
+   * Optional so a hand-built store (a test's) need not supply one.
+   */
+  changeDiscount?: (change: DiscountChange, through: DiscountThrough) => DiscountOutcome;
 };
+
+/** The store the hook builds, which always supplies `changeDiscount`: the order screen asks for this one. */
+export type LiveOrderStore = OrderStore & Required<Pick<OrderStore, 'changeDiscount'>>;
+
+/** What the store answers a discount change with: the refusal, or nothing. */
+export type DiscountOutcome = { refused: DiscountRefusal } | { refused?: undefined };
 
 function priceOf(itemId: string): Money {
   const item = MENU_ITEMS.find((i) => i.id === itemId);
@@ -302,11 +319,11 @@ function emptyTable(n: number): StoreState {
  * floor, where nothing has been opened yet and seeding Table 1 at mount would
  * make its tile read the book rather than the floor's own fixture.
  */
-export function useOrderStore(view: OrderView, locked: Locked = false): OrderStore {
+export function useOrderStore(view: OrderView, locked: Locked = false): LiveOrderStore {
   return useOrderBook(view, locked).store;
 }
 
-export function useOrderBook(view: OrderView, lock: Locked = false, showing = true): { store: OrderStore; book: OrderBook } {
+export function useOrderBook(view: OrderView, lock: Locked = false, showing = true): { store: LiveOrderStore; book: OrderBook } {
   const lockedOn = (id: string) => (typeof lock === 'function' ? lock(id) : lock);
   const [book, setBook] = useState<Book>(() => {
     const activeId = orderIdOf(ORDER_FIXTURES[view.state]);
@@ -432,6 +449,29 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
     return true;
   }, [update]);
 
+  const changeDiscount = useCallback((change: DiscountChange, through: DiscountThrough): DiscountOutcome => {
+    // The facts are read now, at the press, as the fire reads them: both locks
+    // refuse a discount, this tab's own payment session included.
+    const { view, locked } = context.current;
+    const lockedNow = locked || originFacts(view).lock !== undefined;
+    const attempt = (order: StoreState) =>
+      applyDiscountChange(order, change, through, { closed: isClosed(order), locked: lockedNow, presets: PRESETS });
+    const { orders, activeId } = bookRef.current;
+    const now = orders[activeId];
+    // With no order open there is nothing to change, which is a closed order's answer too.
+    if (!now) return { refused: 'closed' };
+    const result = attempt(now);
+    if (result.refused) return { refused: result.refused };
+    // The ref is advanced here as well as by the render, so a second call in the
+    // same tick reads the first one's order. The updater is the write.
+    bookRef.current = { orders: { ...orders, [activeId]: result.order }, activeId };
+    update((prev) => {
+      const next = attempt(prev);
+      return next.refused ? prev : next.order;
+    });
+    return {};
+  }, [update]);
+
   const refund = useCallback((orderId: string, request: RefundRequest, refundedAt: string): RefundResult => {
     // The ref is advanced here as well as by the render, so a second call in the
     // same tick reads the first one's order as refunded. The updater is the write:
@@ -487,7 +527,7 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
   const hasOrderFor = (n: number) => Object.keys(book.orders).some((id) => tableOf(id) === String(n));
 
   return {
-    store: { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire, close },
+    store: { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire, close, changeDiscount },
     book: { activeId: book.activeId, orderFor, orders, refund, openOrderIdOf, hasOrderFor, openFixture, openOrder, openTable, newQuickSale },
   };
 }

@@ -350,3 +350,73 @@ answer.
 
 ## Handoff
 
+### What I built
+
+A discount chosen on POS-03 now changes the order on screen, through one pure operation that stands in for the server's discount command.
+
+- `apps/pos/src/discountChange.ts` (new). `changeDiscount(order, change, through, facts)` is generic over any order carrying `applied?` and `appliedNote?`. It takes a `DiscountChange` request (`preset` by id, `free-form` by value, or `remove`), never a snapshot, and it builds the snapshot itself with `snapshotOf`, setting `source` and the free-form name. It checks `closed`, `locked`, `nothing-to-remove`, `unknown-preset` (unknown or not active), `invalid-value` and `needs-manager`, in that order, and answers `{ refused, order }` with the very order it was given, or `{ order }` with the new one. `nothing-to-remove` is checked before `needsManager` is called, because that function throws on that input. The gate is decided inside, on the order about to be written: a gated transition is refused unless `through` is `'manager-prompt'`. A fixed amount above the subtotal is not refused; `discountAmount` caps it. Every applied change drops `appliedNote`; a removal drops both fields. The module imports no React and no `*Fixtures` module, and holds no `Date`, timer or `console`. Its header lists what it leaves out (PIN verification, actor, approver, expected order version, catalog version, lease, audit entry, a persisted `OrderDiscount`) and says it is deleted when the server command exists. It also exports `snapshotFor`, which the sheet uses only to draw the manager-prompt request text.
+- `apps/pos/src/discount.ts`: `FREE_FORM_NAME` moved here from `discountFixtures.ts` (no re-export; the only importers were the sheet and the fixtures file). No behavior change to `needsManager`, `discountAmount`, `orderTotals` or `parseFreeForm`.
+- `apps/pos/src/orderStore.ts`: `store.changeDiscount(change, through)`, optional on `OrderStore` as `close` is, and a new `LiveOrderStore` type (`OrderStore` with `changeDiscount` required) that `useOrderBook`, `useOrderStore` and `ControlledOrderScreen` use. That makes the compiler check that `OrderScreen` and `PosRoutes` always supply it, while the five hand-built stores in `settlement.test.tsx` still type-check unchanged. It follows `refund`'s pattern: the facts are read at the call from `context.current` (`locked || originFacts(view).lock !== undefined`, so both the payment session and a place `draft` or `lease` refuse), the operation is evaluated against the latest book through `bookRef`, the ref is advanced, and the same operation runs again inside `update`'s functional updater, which also refuses a closed order. The presets handed to the operation are the fixtures' `PRESETS`.
+- `apps/pos/src/DiscountSheets.tsx`: `DiscountSheet` takes `fixture`, `order` (a `ShownOrder`), `changeDiscount` and `go`. The discount, its note and the subtotal come from `order`. Ungated presses call `changeDiscount(..., 'direct')`. A gated press opens `ApprovalDialog` directly with `requireFull`; its `onSubmit={() => settle(changeDiscount(prompt.next, 'manager-prompt'), prompt.next)}` declares no parameter and is the only place the `'manager-prompt'` literal is written. The digits are never read. `onCancel` just closes the prompt and returns focus to the control that raised it. A refusal closes the prompt if open, keeps the sheet, routes nowhere and writes no copy. A success calls `go(fixture.landsOn(change))`.
+- `apps/pos/src/discountFixtures.ts`: `DiscountSheetFixture` no longer carries `applied`, `appliedNote` or `subtotal` (one owner of that state), and `landsOn` now takes a `DiscountChange` instead of a snapshot (so the Comp landing reads the request's `presetId`, not a snapshot). `panelDiscount(view, order)` keeps its signature and uses the order only to pick the first sheet. The four `?state=sheet-*` fixtures keep the artifact's landings. `TABLE_SUBTOTAL` is gone (unused). The `OTHER_15` and `STAFF_MEAL` constants and their notes remain, since `orderFixtures.ts` seeds from them.
+- `apps/pos/src/OrderPanel.tsx`: the discount sheet is handed `store.order` and `store.changeDiscount`. `const order = shownOrder(view)` stays, only for the void sheet, whose argument I did not touch (the comment now says so).
+- `apps/pos/src/closedOrders.ts` (R13): for a no-tender book order whose discount is a 100% percent, the row reads `${totalsLabel(applied)} · no payment taken`. The Comp preset still reads *Comp 100% · no payment taken*; a free-form 100% reads *Other discount 100% · no payment taken*. Marked provisional copy in a comment. `CLOSED_COPY.compNoPayment` remains for the fixture rows.
+
+### Decisions, and on what evidence
+
+- **No active order answers `closed`.** `changeDiscount` in the store returns `{ refused: 'closed' }` if the book holds no active order. R3 has no "no order" refusal and I invented none; nothing in the screen can reach it.
+- **The sheet asks `needsManager` through `{ source: next.kind }`**, since `DiscountChange['kind']` is exactly `DiscountSource` for the two non-remove cases. This keeps the existing source-reading test that forbids `source === 'preset'` in the sheet passing.
+- **Landing tests were not edited.** `discount.test.tsx:170-262` and the later landing tests pass unmodified, as the task expected. The assertions that each landing is now true of the order are in the new file instead (see below), not added into those tests.
+- **R12 refusal on a gated press whose preset is unknown**: the sheet skips the prompt (it has nothing to describe) and asks the store directly, which refuses `unknown-preset`. This path is unreachable from the picker, which lists only active presets.
+
+### Tests
+
+New: `apps/pos/test/discount-change.test.ts` (45 tests: AC 1 to 6) and `apps/pos/test/discount-apply.test.tsx` (44 tests: AC 7 to 23, store through a probe of `useOrderBook`, sheets through `OrderScreen`/`PosRoutes`, settlement and closed orders through the real route).
+
+Existing tests changed, all in `apps/pos/test/discount.test.tsx`, none loosened:
+- The `renderSheet` helper (now `renderSheet(fixture, order, refuses?)`, returning `{ went, asked }`, with `orderOf(state)` and `withoutDiscount(order)` helpers) and all seven callers. Each caller states the order it stands over; every assertion keeps its meaning (gates, request text, FR-F5, B-8 including a reference to nothing, B-21).
+- *a preset is applied at once* now also asserts the store was asked `{ kind: 'preset', presetId: 'staff-meal' }` with `'direct'`. The assertion that the order itself changed is in `discount-apply.test.tsx` (AC 13), because `renderSheet` stubs the store. This is the one place I read the task's "gains an assertion that the order changed" as satisfied by a sibling test and not that test; say if you want it moved.
+- `:312` read `fixture.applied`; it now reads `orderOf(state).applied`, the same fact the sheet reads.
+- The source-reading tests at `:343` and `:441` gained `discountChange.ts` in their file lists, and `:159` gained one line holding the new module to the same "no `source ===` literal" rule. Nothing they forbid was weakened.
+
+Red cases, each run as a mutation, the failure read, and reverted (the tree was clean of mutations before `verify`):
+1. Gated row applying under `'direct'` (`&& false` on the gate): nine tests in `discount-change.test.ts` and *a gated change asked for directly is refused* went red.
+2. `nothing-to-remove` check removed (so `needsManager` runs first): three tests red, with the real `there is no discount to remove` throw, including *twice in one tick*.
+3. Inactive preset applying (`?.active` dropped): *a preset that is not active is refused* red.
+4. `appliedNote` surviving a change: the note tests in both files red (the old *Applied by Ana R. at 19:44…* line still under the new discount).
+5. A fixed amount capped at 400.000 as a proxy for refusing one above the subtotal: *a fixed amount above the subtotal applies* red with `invalid-value`.
+6. `Date.now()` added to the module: the purity test in `discount-change.test.ts` and the timer/date test in `discount.test.tsx` red.
+7. The `bookRef` advance removed: *twice in one tick* red (`[{}, {}]`). The session-lock term removed from the facts: *an active payment session refuses* red.
+8. `OrderPanel` reverted to hand the fixture's `shownOrder(view)` to the sheet: nine tests red, including Table 2 opening *Change discount* (AC 11), the subtotal, the replace and the free-form application.
+9. R13 reverted to `compNoPayment`: *a free-form 100% reads its own words* red (`Comp 100%`).
+10. A `(pin)` parameter on `onSubmit`: both source-reading tests (AC 18) red.
+11. `onCancel` applying the change: the Cancel and Escape tests in both files red (the totals read *Other discount 15%* after a cancelled prompt).
+
+I did not run a separate mutation for the place-lock cases (`lock-draft`, `lock-lease`), the closed-order refusal, or `unknown-preset` in the store; their tests exist and pass but I did not prove each red on its own.
+
+### What I found and did not fix
+
+- **AC 11 cannot be read literally.** It says the picker "shows no *Staff meal*", but the picker always offers the *Staff meal — 10%* preset. I asserted what the red case means: the sheet is titled *Discount*, shows no *Currently applied* card, and the panel beside it has no discount row. Wording for the lead to confirm.
+- **`addLine`, `removeLine`, `setQuantity` still check no lock** (out of scope, as stated). The void sheets are still inert on a live order (out of scope).
+- **An emptied order keeps its discount** invisibly (out of scope). `totalsFor` returns bare totals for an order with no lines, so the discount row and the service row vanish while `applied` stays.
+- **R13 search** (`applied`, `totalsFor`, `isComp` in `apps/pos/src` and `apps/pos/test`): `isComp` has exactly one reader, `bookRows` in `closedOrders.ts` (it did not feed anything else, and no test names it). `totalsFor` is read in `orderStore.ts` only (the store's totals, the refund's total, the close's total, the line-editor preview). `.applied` is also read by `FloorScreen.tsx:161` (the floor's tile totals from a fixture) and `voidFixtures.ts:127`. I changed none of those. `closed-orders.test.tsx:98` and `:316` pass unmodified.
+- **Shell rule slip.** Once I edited `DiscountSheets.tsx`'s import block with a python heredoc instead of the file tools; the result was the same as an `Edit` would have made. No formatter was run, and no file outside my owned paths was touched.
+
+### What the server owes (R14)
+
+- Four audit entries: an ungated change (actor, no approver, before and after values, naming the preset); a gated change (one combined entry, actor and approver); a cancelled approval (actor, approver null); a failed approval (actor, approver null, counted against the approval throttle).
+- The expected order version; the catalog version and the server's own presets (the client uses the fixtures' `PRESETS`); the actor from the session and the approver from the PIN inside the command; the lease refusal; server time; authoritative totals and the `SettingsVersion` rates in place of the two constants in `discount.ts`; a persisted `OrderDiscount`; the in-flight state and the picture of a rejected change, which no design draws yet.
+- A discount change carries **no idempotency key** (ADR-003 lists seven commands and this is not one).
+- Six points the contract leaves undecided: an approved change the server then refuses; the order of the server's checks; which exits from the prompt count as cancelled; an approval attempt during the cooldown; choosing the discount already applied; what a free-form discount is called.
+- The stand-in goes when the command exists: delete `discountChange.ts`, `store.changeDiscount`, `LiveOrderStore`, and the confirm-key stand-in in the manager prompt (O2). This task closes none of AC-8, AC-9, AC-18 or AC-21.
+
+### `npm run verify`
+
+Run from the worktree root after the last edit: typecheck clean for `apps/server`, `packages/money` and `apps/pos`; `vitest run`: **39 test files, 2638 tests, all passed** (baseline at `493ba49` was 37 files and 2544 tests). The output holds no `Not implemented` line. The storage-dependent server migration tests were not exercised separately beyond what `npm run verify` runs.
+
+### For the next agent
+
+The one thing you do not have is a browser: I could not look at the screens, so the focus return to *Discount* (AC 13) and the inert sheet behind the prompt are proved in jsdom only. Commit: see the branch log on `agent/fe-035`.
+
+DONE
+

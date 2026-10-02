@@ -1,6 +1,6 @@
 import { RATE_SCALE, rateFromPercent, type Money } from '@pos/money';
 import type { Tender } from './close.js';
-import type { DiscountSnapshot } from './discount.js';
+import { totalsLabel, type DiscountSnapshot } from './discount.js';
 import { FLOOR_FIXTURES } from './floorFixtures.js';
 import { formatAmount } from './money.js';
 import { orderVariant } from './orderFixtures.js';
@@ -210,9 +210,16 @@ function fixtureRow(order: FixtureOrder & { history?: true }, context: 'list' | 
   };
 }
 
-/** The 100% comp: a percent discount that takes the whole subtotal. */
-const isComp = (applied: DiscountSnapshot | undefined) =>
+/** A percent discount that takes the whole subtotal: the order is fully discounted, whatever it is called. */
+const isComp = (applied: DiscountSnapshot | undefined): applied is DiscountSnapshot =>
   applied?.value.kind === 'percent' && rateFromPercent(applied.value.percent) === RATE_SCALE;
+
+/**
+ * PROVISIONAL COPY (FE-035, lead ruling). The row names the discount the order
+ * carries, so a free-form 100% no longer reads as the Comp preset. The Comp
+ * preset still reads "Comp 100% · no payment taken". Nothing reads `presetId`.
+ */
+const fullyDiscounted = (applied: DiscountSnapshot) => `${totalsLabel(applied)} · no payment taken`;
 
 /** How POS-05 and POS-06 name a book order: `Table n` or `Quick sale` (A5), never `COUNTER`. */
 export function bookOrderName(id: string, order: ShownOrder): string {
@@ -239,11 +246,12 @@ function bookRows(book: OrderBook): ReadonlyArray<ClosedRow> {
       const tenders = o.tenders ?? [];
       const change = o.change ?? 0n;
       const total = o.order.totals.total;
+      const applied = o.order.applied;
       return {
         key: `book-${o.id}`,
         time: wibTime(o.closedAt),
         name: bookOrderName(o.id, o.order),
-        payment: tenders.length > 0 ? tendersText(tenders) : isComp(o.order.applied) ? CLOSED_COPY.compNoPayment : CLOSED_COPY.noPayment,
+        payment: tenders.length > 0 ? tendersText(tenders) : isComp(applied) ? fullyDiscounted(applied) : CLOSED_COPY.noPayment,
         ...(change > 0n && { changeNote: changeNote(tenders, change) }),
         total,
         refunded: o.status === 'refunded',

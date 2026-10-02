@@ -10,7 +10,7 @@ import { MENU_FIXTURES, menuFixtureFor, originFacts } from './menuFixtures.js';
 import { MenuRegion } from './MenuRegion.js';
 import { followClientSide } from './navigation.js';
 import { formatAmount } from './money.js';
-import { useOrderStore, type OrderStore } from './orderStore.js';
+import { useOrderStore, type LiveOrderStore } from './orderStore.js';
 import {
   FIRED_TAG,
   LOCK_TAG,
@@ -115,7 +115,7 @@ export function ControlledOrderScreen({
   clock = browserClock,
 }: {
   view: OrderView;
-  store: OrderStore;
+  store: LiveOrderStore;
   /**
    * FE-026: draw the order bar's `← Floor`. Only the routed app has a floor to go back to,
    * so `PosRoutes` asks for it; the standalone `OrderScreen` keeps its bar bare.
@@ -166,8 +166,9 @@ export function ControlledOrderScreen({
     closeOpened();
   }
 
-  // The sheets and the void sheet still read the fixture-only derivation
-  // (FE-014's correction to this task): none of them are wired to the store.
+  // The void sheet still reads the fixture-only derivation (FE-014's
+  // correction to this task): it is not wired to the store. The discount sheets
+  // are (FE-035): they read and write store.order.
   const order = shownOrder(view);
 
   // After a fire the pressed control is inert in place, so focus would fall to
@@ -221,7 +222,7 @@ export function ControlledOrderScreen({
   const sheet =
     fixtureSheet?.kind === 'item' && view.state.startsWith('sheet-item-') ? { ...fixtureSheet, cancel: cancelTo, add: addTo } : fixtureSheet;
   const approval = APPROVAL_FIXTURES[view.state];
-  const discount = DISCOUNT_FIXTURES[view.state] ?? (discountOpened ? panelDiscount(view, order) : undefined);
+  const discount = DISCOUNT_FIXTURES[view.state] ?? (discountOpened ? panelDiscount(view, store.order) : undefined);
   const voiding = VOID_FIXTURES[view.state] ?? (voidOpened && panelVoid(voidOpened, view));
 
   /**
@@ -321,7 +322,15 @@ export function ControlledOrderScreen({
           />
         )}
         {approval && <ApprovalPrompt key={view.state} approval={approval} go={go} />}
-        {discount && <DiscountSheet key={discountOpened ? 'opened' : view.state} fixture={discount} go={go} />}
+        {discount && (
+          <DiscountSheet
+            key={discountOpened ? 'opened' : view.state}
+            fixture={discount}
+            order={store.order}
+            changeDiscount={store.changeDiscount}
+            go={go}
+          />
+        )}
         {voiding && <VoidSheet key={voidKey} fixture={voiding} order={order} go={go} />}
       </div>
       {import.meta.env.DEV && <OrderFixtureStates current={view.state} />}

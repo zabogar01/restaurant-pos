@@ -1,5 +1,5 @@
-import type { Money } from '@pos/money';
-import { snapshotOf, type DiscountSnapshot, type FreeFormEntry, type Preset } from './discount.js';
+import { FREE_FORM_NAME, snapshotOf, type DiscountSnapshot, type FreeFormEntry, type Preset } from './discount.js';
+import type { DiscountChange } from './discountChange.js';
 import type { OrderState, OrderView } from './orderFixtures.js';
 import type { ShownOrder } from './voidFixtures.js';
 
@@ -14,13 +14,10 @@ import type { ShownOrder } from './voidFixtures.js';
 
 export type DiscountStep = 'picker' | 'free-form' | 'change';
 
+// A fixture says which sheet is showing and where the sheet goes. It does not
+// say what the order carries: the discount, its note and the subtotal are read
+// from the order on screen (FE-035), so there is one owner of that state.
 export type DiscountSheetFixture = {
-  /** What the order carries now (FR-F4). Undefined for an order with no discount. */
-  applied?: DiscountSnapshot;
-  /** The change sheet's line under the applied discount: who applied it, when, and on what authority. */
-  appliedNote?: string;
-  /** The subtotal of the order the sheet acts on, which a discount is taken from. */
-  subtotal: Money;
   /** The presets as the back office holds them; the picker shows the active ones (FR-F5). */
   presets: ReadonlyArray<Preset>;
   /** The sheets the cashier has come through, last one showing. Back returns along it. */
@@ -30,8 +27,8 @@ export type DiscountSheetFixture = {
   /** The control that opened the sheet, which takes focus back when it closes. */
   opener: string;
   cancel: OrderView;
-  /** Where the order lands once a change is made, approved or not. */
-  landsOn: (change: DiscountSnapshot | 'remove') => OrderView;
+  /** Where the screen lands once the order has been changed, by a press or through the manager prompt. */
+  landsOn: (change: DiscountChange) => OrderView;
 };
 
 // The artifact's four presets, in its order. All active.
@@ -50,18 +47,12 @@ export const STAFF_MEAL: DiscountSnapshot = preset('staff-meal');
 /** The comp that zero draws: "Comp 100%". */
 export const COMP: DiscountSnapshot = preset('comp');
 
-/** The free-form sheet's title, which is also the name a free-form discount carries. */
-export const FREE_FORM_NAME = 'Other discount';
-
 /**
  * The one state this slice adds (FE-007): the same order carrying a free-form
  * discount instead of a preset, so that the change sheet has to gate all three
  * of its controls. 15% is the value the artifact's free-form sheet holds.
  */
 export const OTHER_15: DiscountSnapshot = { source: 'free-form', name: FREE_FORM_NAME, value: { kind: 'percent', percent: '15' } };
-
-/** The table order's subtotal (orderFixtures.ts), which every discount sheet here acts on. */
-export const TABLE_SUBTOTAL: Money = 405_000n;
 
 // The change sheet's line under the applied discount: who applied it, when,
 // and on what authority. **Each belongs to one application event and is never
@@ -85,18 +76,16 @@ export const OTHER_15_NOTE = 'Applied by Ana R. at 19:44. Free-form, approved by
 // Removing a discount it routes to ?state=empty — the order with no lines —
 // which this does not copy: see the FE-007 handoff. No state draws the order
 // once its discount has gone, so a removal lands on default like every other
-// change the fixtures cannot draw.
-const landsOn = (change: DiscountSnapshot | 'remove'): OrderView =>
-  change !== 'remove' && change.presetId === 'comp' ? { state: 'zero' } : { state: 'default' };
+// change the fixtures cannot draw. FE-035: the order is written before the
+// screen lands, so the landing is now true of the order it shows.
+const landsOn = (change: DiscountChange): OrderView =>
+  change.kind === 'preset' && change.presetId === 'comp' ? { state: 'zero' } : { state: 'default' };
 
 /** The close bar's Discount, which opens the discount family over the order on screen. */
 export const DISCOUNT_ACTION = 'discount';
 const DISCOUNT_OPENER = `.order-actions [data-action="${DISCOUNT_ACTION}"]`;
 
 const onTableOrder = {
-  applied: STAFF_MEAL,
-  appliedNote: STAFF_MEAL_NOTE,
-  subtotal: TABLE_SUBTOTAL,
   presets: PRESETS,
   // The artifact also opens the change sheet from a "change" link on the
   // totals' discount row, which the panel (F2a) does not draw; see the FE-007
@@ -118,20 +107,15 @@ export const DISCOUNT_FIXTURES: Partial<Record<OrderState, DiscountSheetFixture>
 
   'sheet-remove': { ...onTableOrder, trail: ['change'] },
 
-  // PROVISIONAL COPY in appliedNote: the artifact draws only a preset applied.
-  // The approver's name is the one the artifact's voided line carries.
-  'sheet-remove-freeform': {
-    ...onTableOrder,
-    applied: OTHER_15,
-    appliedNote: OTHER_15_NOTE,
-    trail: ['change'],
-  },
+  // The order it sits over carries OTHER_15 (orderFixtures.ts).
+  'sheet-remove-freeform': { ...onTableOrder, trail: ['change'] },
 };
 
 /**
  * The discount sheet the close bar's Discount opens: over the order on screen,
- * carrying the discount *that order* holds — never a fixture's (FR-F8 reads
- * `applied`, and a fixture's `applied` is another order's fact).
+ * which the sheet reads for the discount *that order* holds — never a
+ * fixture's (FR-F8 reads `applied`, and a fixture's `applied` is another
+ * order's fact).
  *
  * Which sheet opens follows from FR-F1 and B-22, one discount per order: an
  * order carrying nothing needs the picker, and an order already carrying one
@@ -147,14 +131,9 @@ export const DISCOUNT_FIXTURES: Partial<Record<OrderState, DiscountSheetFixture>
  * the artifact's own routing for review.
  */
 export function panelDiscount(view: OrderView, order: ShownOrder): DiscountSheetFixture {
-  const applied = order.applied;
   return {
-    // The note is the order's own, never computed from the snapshot: an order
-    // whose application nobody recorded gets none, and the sheet draws the gap.
-    ...(applied && { applied, ...(order.appliedNote && { appliedNote: order.appliedNote }) }),
-    subtotal: order.totals.subtotal,
     presets: PRESETS,
-    trail: [applied ? 'change' : 'picker'],
+    trail: [order.applied ? 'change' : 'picker'],
     opener: DISCOUNT_OPENER,
     cancel: view,
     landsOn: () => view,

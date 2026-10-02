@@ -29,6 +29,9 @@ export type DiscountSnapshot = {
 /** A manager-defined preset as the back office holds it. Deactivated presets leave the picker (FR-F5). */
 export type Preset = { id: string; name: string; value: DiscountValue; active: boolean };
 
+/** The free-form sheet's title, which is also the name a free-form discount carries. */
+export const FREE_FORM_NAME = 'Other discount';
+
 export function snapshotOf(preset: Preset): DiscountSnapshot {
   return { source: 'preset', name: preset.name, value: preset.value, presetId: preset.id };
 }
