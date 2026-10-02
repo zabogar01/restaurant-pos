@@ -30,14 +30,12 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    written from what the previous one built.
    - *(Done: FE-030, F4e-1, the POS-05 list, merged 2026-10-01 as PR #33.)*
    - *(Done: FE-031, F4e-2, the POS-06 detail and reprint, merged 2026-10-01 as PR #35.)*
-   - **FE-032 (F4e-3)** — refund: M-5 allocation sheet (O1–O3), reason, M-1 with the money-back
-     line, Cancel back to the sheet, REFUNDED in the book, `refund-error`, `day-refusal`, the
-     no-response re-read — touches money, audit, boundaries; independent cross-family review —
-     depends on FE-031 and DESIGN-010 — **complete 2026-10-01** (`39d6874`, second Codex review clean), after the architect
-     consult ARCH-003 and the owner's two rulings; pushed 2026-10-02, waits on the owner's look and merge.
-   - **FE-033 (F4e-4)** — floor: `after-close` and `after-close-receipt` driven by the close
-     result, the `dayclosed` header naming the open day, the open quick-sale strip, *lines*
-     on floor and order panel (DESIGN-009 Part C and D) — independent of FE-031/032 — not written.
+   - *(Done: FE-032, F4e-3, the refund on POS-06, merged 2026-10-02 as PR #37.)*
+   - **FE-033 (F4e-4)** — floor: the `after-close` and `after-close-receipt` states, the
+     `dayclosed` header naming the open day, the open quick-sale strip, *lines* on floor and
+     order panel (DESIGN-009 Part C and D) — `ui`, no `touches` flag; depends on nothing open —
+     **dispatched 2026-10-02** (owner's word; Sonnet builder, `agent/fe-033`); then the lead's
+     verify and browser walk, and a cross-family review.
    - **Deferred to FR-A:** Release in the POS-02/05/06 headers, and clearing the closed-day
      banner at session end (owner's 2026-09-30 ruling) — the client has no session or idle lock.
 7. *(Done 2026-09-30: the light-only note in the DESIGN-003 and DESIGN-005 task files.)*
