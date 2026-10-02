@@ -5,7 +5,7 @@ category: ui
 touches: [money, audit, identity]
 depends_on: []
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # FE-035 — The discount applies
@@ -347,6 +347,63 @@ failure, revert), what you found and did not fix, what the server owes (R14), an
 `npm run verify` output. If a rule here contradicts the code, a boundary or another rule,
 build what the question does not affect and end `BLOCKED: <question>` with a proposed
 answer.
+
+## Lead verify (2026-10-02)
+
+The lead ran `npm run verify` in this worktree at `e184638`: typecheck clean, 39 files and
+2638 tests, green (the baseline on `development` at `493ba49` is 37 files and 2544 tests), and
+no `Not implemented` line. The lead then walked the discount in Chrome against the dev server
+at 1280×800. No defect was found, and nothing goes back to the builder before the review.
+
+- **The diff** stays inside `owns:`. `close.ts`, `fire.ts`, `tender.ts`, `refund.ts`,
+  `VoidSheets.tsx`, `voidFixtures.ts` and `packages/**` have no diff. The only existing test
+  file changed is `discount.test.tsx`, in the places the task named. `git diff --check` flags
+  one blank line at the end of this file.
+- **The operation** (`discountChange.ts`) was read whole: the six refusals in the order of R3,
+  the gate decided on the order being written, the snapshot built inside, and one write of
+  both fields. The store composes the lock as `fire` does and writes through `update`.
+- **The owner's finding (criterion 11).** Table 2, opened from the floor with one Burger:
+  Discount opened the **picker**, with no *Currently applied* card. Before this task it opened
+  *Change discount* over Table 1's Staff meal.
+- **A preset.** *Regular customer — 5%* closed the sheet with no prompt; the totals read
+  *Regular customer 5% −6.750*, service charge 6.413, total 134.663 (from 141.750). The
+  address and the history length did not change, and focus was on Discount.
+- **The change sheet** then read *Regular customer — 5% −6.750* with no note, and only the
+  free-form replacement was gated.
+- **A free-form discount.** *15* and Apply opened the manager prompt, *Replace Regular
+  customer 5% — with Other discount 15% −20.250*, over an inert sheet and an inert order whose
+  totals had not moved. With five digits the confirm key was `aria-disabled` and a press
+  changed nothing. Cancel returned to the sheet with *15* still typed and focus on Apply. A
+  second Apply mounted an empty pad. Six digits and confirm closed both, and the totals read
+  *Other discount 15% −20.250*, total 120.488.
+- **A free-form discount gates what follows.** The change sheet drew all three controls
+  gated. *Remove* opened the prompt; Escape closed the prompt alone and left the sheet and the
+  order as they were.
+- **A full discount.** A free-form 100%, confirmed, gave a total of 0. After Send, Settle
+  showed *Nothing to collect* and closed with no tenders. POS-05 listed *Table 2 · Other
+  discount 100% · no payment taken · 0*, beside the fixture's *Comp 100% · no payment taken*.
+- **Settlement and closed orders.** Table 3 with *Staff meal — 10%*: total 127.575 on POS-03,
+  127.575 due on POS-04, a Card tender of 127.575, then POS-05's row at 127.575 and POS-06's
+  *Staff meal 10% −13.500* under *What was charged*.
+- **The fixture addresses.** At `sheet-discount`, *Regular customer — 5%* landed on `default`
+  with the totals reading *Regular customer 5% −20.250*, total 403.988. At `sheet-remove`,
+  the picker's *Comp — 100%* landed on `zero` with a total of 0.
+- **A lock.** At `lock-draft` the Discount control is `aria-disabled` and a press opens
+  nothing.
+- The browser console showed no error.
+
+**Lead ruling on criterion 11's wording: the builder's reading is accepted.** The picker
+always offers the *Staff meal* preset, so "shows no *Staff meal*" cannot be literal. What the
+criterion means, and what is tested, is that no *Currently applied* card is drawn and the
+panel has no discount row.
+
+**Lead ruling on *a preset is applied at once*: accepted as built.** That test stubs the
+store, so it asserts what the store was asked; the order changing is criterion 13's test in
+`discount-apply.test.tsx`.
+
+**Not proved by the builder, for the reviewer to weigh:** no separate mutation was run for
+the place-lock cases, the closed-order refusal or `unknown-preset` in the store. Their tests
+exist and pass.
 
 ## Handoff
 
