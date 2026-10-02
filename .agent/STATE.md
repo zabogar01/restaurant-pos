@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-02, third lead session of the day: the owner said to run the housekeeping slice, and
-**FE-034 is complete on `agent/fe-034`, pushed, waiting for the owner's merge**. Narrative:
+2026-10-02, third lead session of the day: the housekeeping slice, **FE-034, ran from task file
+to merge (PR #42)**; the lead's record merged as PR #41. No task is running or written. Narrative:
 [journal/2026-10-02.md](journal/2026-10-02.md) (its last section is this session) and [journal/2026-10-01.md](journal/2026-10-01.md).
 
 ## Phase and gates
@@ -28,13 +28,13 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted.
 - **Last verify by the lead:** `npm run verify` green at **2544 tests / 37 files** on 2026-10-02
-  on `agent/fe-034` at `39fda22` (`development` alone: 2537). `apps/server/test/migrate.test.ts` needs
+  on `development` at `9e492e1`, in the kit worktree. `apps/server/test/migrate.test.ts` needs
   `npm run db:up`; without it its seven tests fail with `ECONNREFUSED 127.0.0.1:5433` (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `658fdfd` (PR #40) on
-  GitHub; the local `development` matches it (fetched 2026-10-02). `main` and
+- **`development` is the integration branch** (owner, 2026-09-29), at `9e492e1` (PR #42) on
+  GitHub; the local `development` matches it (fast-forwarded 2026-10-02). `main` and
   `development` are protected: PR required, 0 approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch`
   and fast-forward the main checkout (`git merge --ff-only origin/development`) **before reporting
@@ -42,24 +42,23 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
   current (checked 2026-10-02 after the last fast-forward). Rerun after any merge that changes
   `.githooks/` or agents.yaml.
-- **Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1002c`** (cut from
-  `658fdfd`), **committed and pushed** (owner's word): this file, QUEUE.md, DECISIONS.md, the journal and one line in
-  AGENTS.md. Until the owner merges it, the main checkout's STATE.md is the PR #40 copy,
-  which says no task is running: read the kit worktree's copy.
-- **For the owner to remove, or to allow** (the classifier refuses the lead without the owner's
-  word): worktree `../restaurant-pos-wt/FE-033` (merged, clean) and run dirs `.agent/runs/FE-032/`
-  and `.agent/runs/FE-033/` (main checkout). The FE-032 worktree went on 2026-10-02 (owner's word).
+- **Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1002d`** (cut from
+  `9e492e1`), **committed and pushed** (owner's word): this file, QUEUE.md and the journal. Until
+  the owner merges it, the main checkout's STATE.md is the PR #41 copy, which still says FE-034
+  awaits its merge: read the kit worktree's copy, then cut a new lead branch.
+- **No task worktree or run directory is left** (removed 2026-10-02 on the owner's word: the
+  FE-033 and FE-034 worktrees, `.agent/runs/FE-032/`, `FE-033/` and `FE-034/`). The classifier
+  refuses the lead a removal without the owner's word. Untouched, not the lead's: see Live agents.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations` (`735301d`, behind). Merged, still existing: `agent/design-direction`
-  (worktree `../restaurant-pos-design`), `agent/design-010`, `agent/fe-030` to `agent/fe-033`, eleven `agent/lead-*`.
+  (worktree `../restaurant-pos-design`), `agent/design-010`, `agent/fe-030` to `agent/fe-034`, twelve `agent/lead-*`.
 
 ## Running tasks and agents
 
-- **No task is running. FE-034 is complete** at `800f2a8` on `agent/fe-034` (worktree
-  `../restaurant-pos-wt/FE-034`), **pushed** (owner's word): `sendPending` in `fire.ts`, the `unavailable`
-  close refusal pinned, the jsdom line gone. One review finding (a comment's width), fixed in
-  cycle 1. Its task file, only on that branch, holds the Handoff, both lead verifies, the review.
+- **No task is running and none is written.** FE-034 (`sendPending` in `fire.ts`, the
+  `unavailable` close refusal pinned, the jsdom line gone) merged 2026-10-02 as PR #42. Its task
+  file holds the Handoff, both lead verifies and the review (one finding, fixed in cycle 1).
 - **The owner asked how to review the frontend** and was given the steps (journal 2026-10-02,
   wrap-up). The owner has not said the review is done or what it found.
 - **FE-032's open acceptance criteria:** AC-11, AC-14, AC-18, AC-25 and AC-34: the refund is an
@@ -109,10 +108,10 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
-- **Merge `agent/fe-034`** (pushed; then its worktree and `.agent/runs/FE-034/` go). **Next:** the
-  B-5 `closeOrder` task (money, architect consult first) or the back-office design audit (QUEUE 9)?
-- **Merge `agent/lead-1002c`** (pushed). Also the leftovers to remove (Integration branch, above), and the
-  Prettier ruling, which is yours to overturn (a config and one formatting commit is the other way).
+- **What runs next:** the B-5 `closeOrder` task (QUEUE 8b; money, architect consult first), the
+  designer's items (8c) or the back-office design audit (9)? Your frontend review outranks them.
+- **Merge `agent/lead-1002d`** (pushed). The Prettier ruling, merged, is yours to overturn (a
+  config and one formatting commit is the other way).
 - **FE-033's lead rulings, merged, yours to overturn:** a live Close stays on the plain floor
   and never shows the receipt chip (no printer in the client); a quick sale with no line is not
   on the strip, and one the book holds is listed on every state but `loading` and `error`; a new
@@ -147,4 +146,4 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-[QUEUE.md](QUEUE.md): FE-034's merge; then 8b (B-5) or the back-office design audit (9), on the owner's word; backend after the frontend review.
+[QUEUE.md](QUEUE.md): 8b (B-5), 8c (the designer's items) or the back-office design audit (9), on the owner's word; backend after the frontend review.

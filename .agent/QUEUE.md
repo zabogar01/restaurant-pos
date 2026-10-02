@@ -35,12 +35,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    - **Deferred to FR-A:** Release in the POS-02/05/06 headers, and clearing the closed-day
      banner at session end (owner's 2026-09-30 ruling) — the client has no session or idle lock.
 7. *(Done 2026-09-30: the light-only note in the DESIGN-003 and DESIGN-005 task files.)*
-8. **FE-034, code housekeeping** — `closeOrder` sends a quick sale's lines without passing
-   `type: 'table'` (a shared `sendPending` in `fire.ts`), a test pins the `unavailable` close
-   refusal, and FE-033's modified-click test stops printing a jsdom line — depends on nothing —
-   **complete 2026-10-02 at `800f2a8` on `agent/fe-034`, pushed, waiting for the owner's merge**.
-   Settled without a builder: Prettier (no formatter; AGENTS.md), and the POS-03 URL after Add
-   (by design, pinned by `own-items.test.tsx:381-393`).
+8. *(Done: FE-034, code housekeeping — `sendPending` in `fire.ts`, the `unavailable` close
+   refusal pinned, the jsdom line gone — merged 2026-10-02 as PR #42. Settled without a builder:
+   Prettier (no formatter; AGENTS.md) and the POS-03 URL after Add (by design).)*
 8b. **`closeOrder` refuses a non-cash tender above the running balance (no ID yet)** — B-5,
    ARCH-003 question 9.6; unreachable today because the Add gate holds — depends on an architect
    consult (`touches: money`) and the owner's look before merge — not written.
