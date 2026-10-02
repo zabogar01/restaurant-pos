@@ -5,7 +5,7 @@ category: ui
 touches: []
 depends_on: []
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: review
+status: complete
 cycles: 0
 ---
 # FE-033 — POS-02 floor: after Close, the open quick sale, and lines
