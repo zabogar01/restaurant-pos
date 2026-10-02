@@ -511,5 +511,12 @@ Run from the worktree root after the last edit: typecheck clean for `apps/server
 
 The one thing you do not have is a browser: I could not look at the screens, so the focus return to *Discount* (AC 13) and the inert sheet behind the prompt are proved in jsdom only. Commit: see the branch log on `agent/fe-035`.
 
-DONE
+### Review round 1 (fix cycle 1 of 2)
 
+**Finding 1.** `changeDiscount` in `discountChange.ts` now validates the value of every non-removal snapshot, preset or free-form, after `unknown-preset` and before the gate is decided, so an invalid one answers `invalid-value` with the same order object. Three tests in `discount-change.test.ts` cover an active preset with a percent above 100, a percent that does not parse and a negative fixed amount; one covers a gated transition called `'direct'` answering `invalid-value` and not `needs-manager`; one covers a preset whose fixed amount is above the subtotal still applying with a total of 0. I proved them red by limiting the check to free-form: four failed (the three refusals and the gate-order test), then restored it.
+
+**L3.** In `DiscountSheets.tsx` a showing step of `change` over an order with nothing applied now draws the picker, so `Change` is never reached without a discount (its own throw stays as a guard). One test in `discount-apply.test.tsx` runs `PosRoutes` at `?state=sheet-remove`, presses *Remove the discount*, goes back to `?state=sheet-remove` with a `popstate`, and sees the picker titled *Discount* with no *Currently applied* card. Proved red by reverting the line: the render threw *the change sheet needs a discount to change*, then restored it.
+
+The blank line at the end of this file is removed. `npm run verify` from the worktree root: typecheck clean, 39 test files, 2644 tests, all passed. No existing test was changed.
+
+DONE

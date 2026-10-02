@@ -64,7 +64,10 @@ export function DiscountSheet({
   const [prompt, setPrompt] = useState<{ next: DiscountChange; request: ApprovalRequest }>();
   const promptOpen = useRef(false);
   const raisedBy = useRef<HTMLElement | null>(null);
-  const step = trail[trail.length - 1]!;
+  // A change step over an order with nothing applied shows the picker: the
+  // order is the store's, so a fixture's step can disagree with it.
+  const last = trail[trail.length - 1]!;
+  const step = last === 'change' && !applied ? 'picker' : last;
 
   // The order has been asked to change. A refusal is not a landing: the prompt,
   // if it was open, closes and the sheet stays, showing what the store holds.

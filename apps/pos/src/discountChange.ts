@@ -82,7 +82,8 @@ export function changeDiscount<T extends DiscountCarrier>(
   if (change.kind === 'remove' && !order.applied) return refuse('nothing-to-remove');
   const snapshot = snapshotFor(change, facts.presets);
   if (change.kind === 'preset' && !snapshot) return refuse('unknown-preset');
-  if (change.kind === 'free-form' && !valid(change.value)) return refuse('invalid-value');
+  // A preset's value is an input fact too, and is not trusted to be valid.
+  if (snapshot && !valid(snapshot.value)) return refuse('invalid-value');
   // The gate is decided on the order about to be written, never on the sheet.
   const gated = needsManager(order.applied, change.kind === 'remove' ? 'remove' : { source: change.kind });
   if (gated && through !== 'manager-prompt') return refuse('needs-manager');

@@ -525,6 +525,19 @@ describe('the four addresses write the order they stand over (19)', () => {
   });
 });
 
+describe('a change step over an order with no discount (L3)', () => {
+  it('draws the picker and does not throw', () => {
+    load('/pos/order?state=sheet-remove');
+    press(inSheet('Remove the discount'));
+    expect(sheet()).toBeNull();
+    expect(hasDiscountRow()).toBe(false);
+    window.history.replaceState(null, '', '/pos/order?state=sheet-remove');
+    act(() => window.dispatchEvent(new PopStateEvent('popstate')));
+    expect(title()).toBe('Discount');
+    expect(sheet()!.querySelector('.discount-applied')).toBeNull();
+  });
+});
+
 // ---- a refusal (20) ----
 
 /** A discount sheet over an order, handed a store that answers every change with `refused`. */

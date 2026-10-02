@@ -188,6 +188,37 @@ describe('validity is the value’s own (FR-M5)', () => {
   });
 });
 
+describe('a preset’s value is validated as a free-form’s is', () => {
+  const broken = (value: Preset['value']): DiscountFacts => ({
+    ...open,
+    presets: [{ id: 'odd', name: 'Odd', value, active: true }],
+  });
+  const ODD: DiscountChange = { kind: 'preset', presetId: 'odd' };
+
+  it.each([
+    ['a percent above 100%', { kind: 'percent', percent: '100.0001' }],
+    ['a percent that does not parse', { kind: 'percent', percent: 'ten' }],
+    ['a negative fixed amount', { kind: 'fixed', amount: -1n }],
+  ] as const)('refuses an active preset with %s, and returns the same order', (_name, value) => {
+    const result = changeDiscount(bare, ODD, 'direct', broken(value));
+    expect(result.refused).toBe('invalid-value');
+    expect(result.order).toBe(bare);
+  });
+
+  it('answers invalid-value, not needs-manager, on a gated transition called direct', () => {
+    const order = carrying(OTHER_15);
+    const result = changeDiscount(order, ODD, 'direct', broken({ kind: 'percent', percent: '101' }));
+    expect(result.refused).toBe('invalid-value');
+    expect(result.order).toBe(order);
+  });
+
+  it('a preset whose fixed amount is above the subtotal still applies', () => {
+    const result = changeDiscount(bare, ODD, 'direct', broken({ kind: 'fixed', amount: 500_000n }));
+    expect(result.refused).toBeUndefined();
+    expect(orderTotals(SUBTOTAL, result.order.applied!).total).toBe(0n);
+  });
+});
+
 describe('the note belongs to one application', () => {
   it('every applied change clears it, a removal clears both fields, and a refusal leaves it', () => {
     const order = carrying(STAFF_MEAL);
