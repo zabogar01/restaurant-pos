@@ -66,9 +66,10 @@ export type CloseRefused = CloseRefusal | { reason: 'locked' } | { reason: 'unav
  *
  * A quick sale's PENDING lines become one `queued` round (FR-E5), built by
  * `sendPending`, the round-building every fire shares, without the fire's
- * order-type gate (a quick sale has no fire control; settling fires it). `queued` means sent, never printed
- * (ARCH-002). A table order cannot reach this with a pending line: `pending`
- * refuses it first. `closedAt` is an argument; this module reads no clock.
+ * order-type gate (a quick sale has no fire control; settling fires it).
+ * `queued` means sent, never printed (ARCH-002). A table order cannot reach
+ * this with a pending line: `pending` refuses it first. `closedAt` is an
+ * argument; this module reads no clock.
  *
  * A refusal changes nothing (B-20).
  */

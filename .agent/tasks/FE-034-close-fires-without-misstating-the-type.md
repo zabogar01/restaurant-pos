@@ -205,5 +205,6 @@ Each of these is deliberate, not forgotten.
 
 **Next agent.** Nothing missing.
 
-DONE
+**Review finding 1.** Rewrapped the `closeOrder` doc comment in `close.ts` to the file's line width, wording unchanged, and removed the trailing blank line here; `git diff --check development` is clean.
 
+DONE
