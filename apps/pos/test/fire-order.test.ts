@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fireOrder } from '../src/fire.js';
+import { fireOrder, sendPending } from '../src/fire.js';
 import type { OrderLine, RoundGroup } from '../src/orderFixtures.js';
 
 // FE-022, ARCH-002 §3: the fire as a pure transition. T-1..T-8 are criteria
@@ -158,5 +158,39 @@ describe('fireOrder', () => {
     const groups = [fired(1, [line('a', 'fired')], null), pending([line('b', 'pending')])];
     const result = fireOrder(groups, OPEN);
     expect(result.groups[0]).toBe(groups[0]);
+  });
+
+  // Red case: the gate checks move behind the round-building, so an 86'd
+  // quick sale answers with the 86 refusal and the Send path is no longer shut.
+  it('a quick sale that also holds a pending 86’d line is refused "quick_sale", not the 86 refusal', () => {
+    const groups = [pending([line('steak', 'pending')])];
+    const result = fireOrder(groups, { ...OPEN, type: 'quick_sale', unavailable: ['steak'] });
+    expect(result.refused).toBe('quick_sale');
+    expect(result.groups).toBe(groups);
+  });
+});
+
+describe('sendPending', () => {
+  const { type: _type, locked: _locked, ...SEND } = OPEN;
+
+  // Red case: the shared builder drifts from what a table fire answers.
+  it('lines pending after a fired round answer as a table fire does', () => {
+    expect(sendPending(base(), SEND)).toEqual(fireOrder(base(), OPEN));
+  });
+
+  it('nothing pending answers as a table fire does, and returns the very same groups', () => {
+    const groups = [fired(1, [line('burger', 'fired')])];
+    const result = sendPending(groups, SEND);
+    expect(result).toEqual(fireOrder(groups, OPEN));
+    expect(result.refused).toBe('nothing');
+    expect(result.groups).toBe(groups);
+  });
+
+  it('a pending 86’d line answers as a table fire does, and returns the very same groups', () => {
+    const groups = base();
+    const result = sendPending(groups, { ...SEND, unavailable: ['steak'] });
+    expect(result).toEqual(fireOrder(groups, { ...OPEN, unavailable: ['steak'] }));
+    expect(result.refused).toMatchObject({ names: ['steak'] });
+    expect(result.groups).toBe(groups);
   });
 });

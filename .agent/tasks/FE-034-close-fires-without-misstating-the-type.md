@@ -191,3 +191,19 @@ Each of these is deliberate, not forgotten.
 
 ## Handoff
 
+**What I did.** In `apps/pos/src/fire.ts` I extracted the round-building into an exported `sendPending(groups, { unavailable, firedAt })` with exactly the signature the task gave; no cast was needed, the generic return type expresses cleanly. `fireOrder` keeps its signature, `FireInput` and its refusal order (`quick_sale`, then `locked`, then whatever `sendPending` answers) and delegates the rest; the `sendableLines`, `blockingLines` and new-round code now appears once, inside `sendPending`. `apps/pos/src/close.ts` imports and calls `sendPending` and no longer holds `type: 'table'` or `fireOrder`; the `kept`, `position`, `closeRefusal`, tender, change and total lines are untouched. Doc comments on `fireOrder` and `closeOrder` were rewritten to describe the split. In `floor-quick-sale.test.tsx` the modified-click half of the Resume test now uses the `document.body` listener pattern from `floor.test.tsx:503-518`; its plain-press assertions are unchanged.
+
+**Tests added.** `fire-order.test.ts`: a quick sale holding a pending 86'd line is refused `'quick_sale'`; a `sendPending` describe with three cases (pending after a fired round, nothing pending, pending 86'd line), each `toEqual` against `fireOrder` with `type: 'table'`, and `toBe` on `groups` for the two refusals. `close-order.test.ts`: a quick sale with an 86'd pending line refuses `{ reason: 'unavailable' }` with no `closed`; the same order with `unavailable: []` closes with one `queued` round stamped `closedAt`; a quick sale with only a fired round closes with `groups` the same reference.
+
+**Existing tests changed.** Only the one the task listed, `floor-quick-sale.test.tsx` "Resume opens that order client side; a modified click opens nothing". No other existing test was modified.
+
+**Red proofs.** (1) Dropping the `unavailable` refusal from `closeOrder` made the new close test fail ("expected undefined to deeply equal { reason: 'unavailable' }"). (2) Moving `sendPending` ahead of the gate checks in `fireOrder` made the new quick-sale-plus-86 test fail (received the 86 refusal object, not `'quick_sale'`). (3) Removing `event.metaKey` from `isPlainClick` in `navigation.ts` made the rewritten modified-click test fail at `expect(preventedByUs).toBe(false)`. All three mutations were reverted; `git status` shows only the five owned files modified. I did not mutate the `sendPending` equality tests separately (criterion 3).
+
+**Found, not fixed.** Nothing new. The out-of-scope items (non-cash tender above balance, copy for the `unavailable` close refusal, reopened book-only order URL) are untouched.
+
+**Verify.** `npm run verify` from the root: typecheck clean; 37 files, 2544 tests passed (baseline 2537 plus my 7 added). The output holds no `Not implemented` line (read by eye; I did not grep). The server migration tests are part of that run and passed; I did not separately run `db:up`. No formatter was run; formatting was matched by hand. No browser was needed or used.
+
+**Next agent.** Nothing missing.
+
+DONE
+

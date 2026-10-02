@@ -142,25 +142,41 @@ export type FireInput = {
  * finds nothing pending, changes nothing.
  *
  * The refusals are the fire's own rules, checked here whatever the panel drew:
- * a quick sale has no fire (FR-E5, C-2); a lock blocks it (FR-G12/G13); an
- * order with nothing pending has nothing to send, so there is never an empty
- * round; and a PENDING 86'd line blocks it (FR-E4, B-17).
- *
- * The new round is `queued`: committed, delivery unknown. A client with no
- * printer can claim nothing more (ARCH-002 §2.3).
+ * a quick sale has no fire (FR-E5, C-2) and a lock blocks it (FR-G12/G13),
+ * both before anything else; the rest — nothing pending, a PENDING 86'd line —
+ * are `sendPending`'s, which builds the round.
  */
 export function fireOrder<G extends RoundGroup>(
   groups: ReadonlyArray<G>,
   { type, unavailable, locked, firedAt }: FireInput
 ): { groups: ReadonlyArray<G | RoundGroup>; refused?: undefined } | { groups: ReadonlyArray<G>; refused: FireRefused } {
-  const refuse = (refused: FireRefused) => ({ groups, refused });
-  if (type === 'quick_sale') return refuse('quick_sale');
-  if (locked) return refuse('locked');
+  if (type === 'quick_sale') return { groups, refused: 'quick_sale' };
+  if (locked) return { groups, refused: 'locked' };
+  return sendPending(groups, { unavailable, firedAt });
+}
+
+/**
+ * The round-building a fire and a quick sale's close share: every PENDING line
+ * becomes one new `queued` round after the fired ones. It takes no order type
+ * and no lock — those are the callers' gates (`fireOrder` refuses a quick sale
+ * and a lock; the close has its own lock check) — and reads no clock.
+ *
+ * It refuses `'nothing'` when no line is pending, so there is never an empty
+ * round, and with a `FireRefusal` when a PENDING line holds an 86'd item
+ * (FR-E4, B-17). A refusal returns the very same `groups` (B-20).
+ *
+ * The new round is `queued`: committed, delivery unknown. A client with no
+ * printer can claim nothing more (ARCH-002 §2.3).
+ */
+export function sendPending<G extends RoundGroup>(
+  groups: ReadonlyArray<G>,
+  { unavailable, firedAt }: { unavailable: ReadonlyArray<string>; firedAt: string }
+): { groups: ReadonlyArray<G | RoundGroup>; refused?: undefined } | { groups: ReadonlyArray<G>; refused: FireRefusal | 'nothing' } {
   const lines = groups.flatMap((g) => g.lines);
   const sending = sendableLines(lines);
-  if (sending.length === 0) return refuse('nothing');
+  if (sending.length === 0) return { groups, refused: 'nothing' };
   const blocked = fireRefusal(blockingLines(lines, unavailable));
-  if (blocked) return refuse(blocked);
+  if (blocked) return { groups, refused: blocked };
 
   const fired = groups.filter((g) => g.kind === 'fired');
   const round = fired.reduce((max, g) => (g.kind === 'fired' ? Math.max(max, g.round) : max), 0) + 1;

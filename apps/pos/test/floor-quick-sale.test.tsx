@@ -175,9 +175,17 @@ describe('the open quick-sale strip', () => {
   it('Resume opens that order client side; a modified click opens nothing', () => {
     load('/pos/floor');
     const modified = new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true });
+    let preventedByUs: boolean | undefined;
+    const observe = (e: Event) => {
+      preventedByUs = e.defaultPrevented;
+      e.preventDefault();
+    };
+    document.body.addEventListener('click', observe);
     act(() => {
       controls()[0]!.dispatchEvent(modified);
     });
+    document.body.removeEventListener('click', observe);
+    expect(preventedByUs).toBe(false);
     expect(path()).toBe('/pos/floor');
     press(controls()[0]!);
     expect(path()).toBe('/pos/order?state=quick');

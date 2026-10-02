@@ -1,5 +1,5 @@
 import type { Money } from '@pos/money';
-import { fireOrder } from './fire.js';
+import { sendPending } from './fire.js';
 import { orderVariant, type OrderLine, type OrderVariant, type RoundGroup } from './orderFixtures.js';
 import { settlementPosition } from './tender.js';
 
@@ -65,7 +65,8 @@ export type CloseRefused = CloseRefusal | { reason: 'locked' } | { reason: 'unav
  * and a zero-total order closes with no tenders.
  *
  * A quick sale's PENDING lines become one `queued` round (FR-E5), built by
- * `fireOrder` as every fire's round is. `queued` means sent, never printed
+ * `sendPending`, the round-building every fire shares, without the fire's
+ * order-type gate (a quick sale has no fire control; settling fires it). `queued` means sent, never printed
  * (ARCH-002). A table order cannot reach this with a pending line: `pending`
  * refuses it first. `closedAt` is an argument; this module reads no clock.
  *
@@ -84,7 +85,7 @@ export function closeOrder(
 
   let groups = order.groups;
   if (orderVariant(order) === 'quick_sale') {
-    const fired = fireOrder(order.groups, { type: 'table', unavailable: order.unavailable ?? [], locked: false, firedAt: closedAt });
+    const fired = sendPending(order.groups, { unavailable: order.unavailable ?? [], firedAt: closedAt });
     if (fired.refused && fired.refused !== 'nothing') return { refused: { reason: 'unavailable' } };
     if (!fired.refused) groups = fired.groups;
   }
