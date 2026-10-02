@@ -162,8 +162,17 @@ export function orderVariant(fixture: Pick<OrderFixture, 'type'>): OrderVariant 
  * fixture.
  */
 export function orderCountLabel(type: OrderVariant, count: number): string {
-  const items = count === 1 ? '1 item' : `${count} items`;
-  return type === 'quick_sale' ? `${items} · not yet sent` : items;
+  const lines = count === 1 ? '1 line' : `${count} lines`;
+  return type === 'quick_sale' ? `${lines} · not yet sent` : lines;
+}
+
+/**
+ * FE-033: the one count of an order's lines — the ones not voided, across every
+ * group. The floor's tile, the order panel and the open quick-sale strip all read
+ * it; a quantity stays on its line and is not counted here.
+ */
+export function countLines(groups: ReadonlyArray<RoundGroup>): number {
+  return groups.flatMap((g) => g.lines).filter((l) => l.status !== 'voided').length;
 }
 
 /**

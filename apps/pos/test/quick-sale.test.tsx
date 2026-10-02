@@ -51,10 +51,10 @@ const rowRemove = (lineId: string) => device().querySelector(`.order-line[data-l
 
 describe('the four consequences derive from the order’s variant (FR-D2), never from view.state', () => {
   it('orderCountLabel: a table-order count and a quick-sale count from the same number', () => {
-    expect(orderCountLabel('table', 2)).toBe('2 items');
-    expect(orderCountLabel('quick_sale', 2)).toBe('2 items · not yet sent');
-    expect(orderCountLabel('table', 1)).toBe('1 item');
-    expect(orderCountLabel('quick_sale', 1)).toBe('1 item · not yet sent');
+    expect(orderCountLabel('table', 2)).toBe('2 lines');
+    expect(orderCountLabel('quick_sale', 2)).toBe('2 lines · not yet sent');
+    expect(orderCountLabel('table', 1)).toBe('1 line');
+    expect(orderCountLabel('quick_sale', 1)).toBe('1 line · not yet sent');
   });
 
   it('pendingGroupHeading: the same two words either way', () => {
@@ -112,11 +112,11 @@ describe('quick: draws the counter order', () => {
     expect(host.querySelector('.order-panel__title')!.textContent).toBe('Order · counter');
   });
 
-  it('counts "2 items · not yet sent", and "1 item" once a line is gone', () => {
-    expect(host.querySelector('.order-panel__count')!.textContent).toBe('2 items · not yet sent');
+  it('counts "2 lines · not yet sent", and "1 line" once a line is gone', () => {
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('2 lines · not yet sent');
     render('quick');
     press(rowRemove('q-burger'));
-    expect(host.querySelector('.order-panel__count')!.textContent).toBe('1 item · not yet sent');
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('1 line · not yet sent');
   });
 
   it('draws one group headed "Not sent to the kitchen yet", tagged REMOVE FREELY', () => {
@@ -269,12 +269,12 @@ describe('quick-line: the line editor’s quick form, opened over the line that 
 // ---------------------------------------------------------------------------
 
 describe('quick: the row’s own × removes that line, landing on the artifact’s figures', () => {
-  it('removing Burger leaves Soda at 31.500, and the count reads "1 item · not yet sent"', () => {
+  it('removing Burger leaves Soda at 31.500, and the count reads "1 line · not yet sent"', () => {
     render('quick');
     press(rowRemove('q-burger'));
     expect(text('.order-line__name')).toEqual(['Soda']);
     expect(text('.totals dd')).toEqual(['30.000', '1.500', '31.500', '2.727']);
-    expect(host.querySelector('.order-panel__count')!.textContent).toBe('1 item · not yet sent');
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('1 line · not yet sent');
   });
 
   it('removing Soda leaves Burger at 141.750', () => {

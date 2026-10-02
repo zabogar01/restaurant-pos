@@ -18,6 +18,7 @@ import {
   ITEM_SHEET_ORIGINS,
   ORDER_STATES,
   PENDING_TAG,
+  countLines,
   orderCountLabel,
   orderVariant,
   orderViewFrom,
@@ -392,7 +393,7 @@ export function OrderPanel({
   const type = orderVariant(order);
   const { totals, groups } = order;
 
-  const count = groups.flatMap((g) => g.lines).filter((l) => l.status !== 'voided').length;
+  const count = countLines(groups);
   const empty = groups.length === 0;
 
   // FR-E4, B-17. **One fact, read off the order that is on screen.** The items

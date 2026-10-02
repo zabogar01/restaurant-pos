@@ -261,6 +261,8 @@ export type OrderBook = {
   orderFor: (orderId: string) => ShownOrder | undefined;
   /** Makes a fixture's order active, seeding it from that fixture the first time and never after. */
   openFixture: (state: OrderState) => void;
+  /** FE-033: makes an order the book already holds active, by id and without reseeding it. An unknown id changes nothing. */
+  openOrder: (orderId: string) => void;
   /** Every order the book holds, open, closed or refunded (FE-027: POS-05 lists the closed ones). */
   orders: () => ReadonlyArray<BookOrder>;
   /**
@@ -448,6 +450,10 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
     }));
   }, []);
 
+  const openOrder = useCallback((orderId: string) => {
+    setBook((prev) => (prev.orders[orderId] ? { ...prev, activeId: orderId } : prev));
+  }, []);
+
   const openTable = useCallback((n: number) => {
     const { id: activeId } = tableSlot(bookRef.current.orders, n);
     setBook((prev) => {
@@ -482,6 +488,6 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
 
   return {
     store: { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire, close },
-    book: { activeId: book.activeId, orderFor, orders, refund, openOrderIdOf, hasOrderFor, openFixture, openTable, newQuickSale },
+    book: { activeId: book.activeId, orderFor, orders, refund, openOrderIdOf, hasOrderFor, openFixture, openOrder, openTable, newQuickSale },
   };
 }
