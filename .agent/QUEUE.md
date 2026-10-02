@@ -31,11 +31,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    - *(Done: FE-030, F4e-1, the POS-05 list, merged 2026-10-01 as PR #33.)*
    - *(Done: FE-031, F4e-2, the POS-06 detail and reprint, merged 2026-10-01 as PR #35.)*
    - *(Done: FE-032, F4e-3, the refund on POS-06, merged 2026-10-02 as PR #37.)*
-   - **FE-033 (F4e-4)** — floor: the `after-close` and `after-close-receipt` states, the
-     `dayclosed` header naming the open day, the open quick-sale strip, *lines* on floor and
-     order panel (DESIGN-009 Part C and D) — `ui`, no `touches` flag; depends on nothing open —
-     **complete 2026-10-02** (`82a4d07` on `agent/fe-033`, Codex review clean, no fix cycle),
-     pushed 2026-10-02, waiting on the owner's merge.
+   - *(Done: FE-033, F4e-4, the floor's after-close states, strip and line counts, merged 2026-10-02 as PR #39.)*
    - **Deferred to FR-A:** Release in the POS-02/05/06 headers, and clearing the closed-day
      banner at session end (owner's 2026-09-30 ruling) — the client has no session or idle lock.
 7. *(Done 2026-09-30: the light-only note in the DESIGN-003 and DESIGN-005 task files.)*
