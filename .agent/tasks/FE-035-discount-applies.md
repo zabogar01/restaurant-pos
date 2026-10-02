@@ -5,8 +5,8 @@ category: ui
 touches: [money, audit, identity]
 depends_on: []
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: active
-cycles: 0
+status: complete
+cycles: 1
 ---
 # FE-035 — The discount applies
 
@@ -440,6 +440,25 @@ flags.
 
 Nothing else changes. Re-run `npm run verify`, commit, and add a short section to the Handoff
 for this round. This is fix cycle 1 of 2.
+
+## Lead verify of the fix (2026-10-02)
+
+At `621a282` the lead read the fix and ran `npm run verify` in this worktree: typecheck clean,
+39 files and 2644 tests, green (six more than the round before), no `Not implemented` line,
+and `git diff --check development` clean.
+
+- **Finding 1.** `discountChange.ts` now refuses `invalid-value` for any non-removal snapshot
+  whose value is invalid, after `unknown-preset` and before the gate. It is one changed line,
+  and it is the fix the reviewer proposed. Five tests cover the three invalid preset values,
+  the order against `needs-manager`, and a preset above the subtotal still applying.
+- **L3.** `DiscountSheets.tsx` shows the picker when the showing step is `change` and the
+  order carries nothing. One test reproduces the reviewer's probe through `PosRoutes`.
+- No existing test changed, and no file outside the round's five has a diff from `440df58`.
+
+The fix was not sent for a second review: it is two source lines, one of them the reviewer's
+own proposal, each with a test the builder proved red. It was not walked again in a browser:
+neither change is reachable by a press, and both are proved in the suite. The task touches
+money, audit and identity, so it waits for the owner's look before merge.
 
 ## Handoff
 
