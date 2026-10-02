@@ -35,9 +35,21 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    - **Deferred to FR-A:** Release in the POS-02/05/06 headers, and clearing the closed-day
      banner at session end (owner's 2026-09-30 ruling) — the client has no session or idle lock.
 7. *(Done 2026-09-30: the light-only note in the DESIGN-003 and DESIGN-005 task files.)*
-8. **Code housekeeping (no IDs yet)** — the P3s in STATE.md (the jsdom noise of FE-033's modified-click test among them); `closeOrder` refusing a non-cash tender above the running balance (B-5, ARCH-003 question 9.6); re-check the POS-03 URL
-   after Add; decide Prettier either way — depends on nothing, can ride with F4e as a small
-   slice — not written. (The modal move was FE-029, KIT-004's pilot.)
+8. **FE-034, code housekeeping** — `closeOrder` sends a quick sale's lines without passing
+   `type: 'table'` (a shared `sendPending` in `fire.ts`), a test pins the `unavailable` close
+   refusal, and FE-033's modified-click test stops printing a jsdom line — depends on nothing —
+   **complete 2026-10-02 at `800f2a8` on `agent/fe-034`, pushed, waiting for the owner's merge**.
+   Settled without a builder: Prettier (no formatter; AGENTS.md), and the POS-03 URL after Add
+   (by design, pinned by `own-items.test.tsx:381-393`).
+8b. **`closeOrder` refuses a non-cash tender above the running balance (no ID yet)** — B-5,
+   ARCH-003 question 9.6; unreachable today because the Add gate holds — depends on an architect
+   consult (`touches: money`) and the owner's look before merge — not written.
+8c. **For the designer (no ID yet)** — the settlement state for a quick sale whose pending line
+   is 86'd at Close (today a live-looking Close that does nothing); *Nothing outstanding* drawn
+   twice on POS-07; `floor.html:48` and the two strip questions (STATE.md, Live conflicts) —
+   depends on the owner's word — not written.
+8d. **A reopened book-only order's URL** (`?state=default` names Table 1's fixture) — depends on
+   the server's order ids (Phase 1); not worth a fixture-only URL scheme — deferred.
 8a. **POS-03 Q6 (no ID yet)** — Cancel while a manager approval is verifying cancels the
    action, with no partial state (`B-20`), and the cancelled approval is audited per `FR-J3` —
    depends on the owner confirming the 2026-09-24 ruling (DECISIONS.md, conversation only) and
