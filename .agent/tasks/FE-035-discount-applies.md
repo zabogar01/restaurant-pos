@@ -5,7 +5,7 @@ category: ui
 touches: [money, audit, identity]
 depends_on: []
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: review
+status: active
 cycles: 0
 ---
 # FE-035 — The discount applies
@@ -404,6 +404,42 @@ store, so it asserts what the store was asked; the order changing is criterion 1
 **Not proved by the builder, for the reviewer to weigh:** no separate mutation was run for
 the place-lock cases, the closed-order refusal or `unknown-preset` in the store. Their tests
 exist and pass.
+
+## Review round 1: one finding, accepted, and one lead addition (2026-10-02)
+
+Codex `gpt-6-astra` (strong, the other family) reviewed `440df58`:
+[reviews/FE-035-review.md](../reviews/FE-035-review.md). It ran verify itself (2638 tests in
+39 files) and cleared the live read, the gate through both doors, the locks, the note, the
+prompt and the closed-order label. It could not open a browser.
+
+**Finding 1 (P2), accepted. Fix it.** `changeDiscount` validates only a free-form value
+(`discountChange.ts:84`). A preset whose value is invalid (a percent above 100, a percent
+that does not parse, a negative fixed amount) is written, and every later total then throws.
+R3, R4 and R8 do not distinguish the source, and the preset list is an input fact the
+operation must not trust. The fix: after `unknown-preset`, validate the value of every
+non-removal snapshot, preset or free-form, before the gate is decided and before anything is
+written; an invalid one answers `invalid-value` with the same order object. The order of R3
+is unchanged, so `invalid-value` still answers before `needs-manager`. Add tests: an active
+preset with each of the three invalid values is refused `invalid-value`; one that is also a
+gated transition called `'direct'` answers `invalid-value`, not `needs-manager`; and a
+preset whose fixed amount is above the subtotal still applies.
+
+**Lead addition L3, from the reviewer's probe (not a finding).** `Change` throws *the change
+sheet needs a discount to change* (`DiscountSheets.tsx:339`) when a fixture address whose
+step is `change` (`sheet-remove`, `sheet-remove-freeform`) is drawn over an order that
+carries no discount. Before this task the fixture supplied the discount, so the two could not
+disagree; now the order is the store's. No press reaches it today (the fixture links reload
+the document and reseed the order), but a thrown render blanks the whole screen. Rule: a
+discount sheet whose showing step is `change` over an order with nothing applied shows the
+**picker**, as `panelDiscount` already chooses for the close bar. No new copy. Add a test:
+`PosRoutes` at `?state=sheet-remove`, *Remove the discount*, then a same-document change back
+to `?state=sheet-remove` followed by a `popstate` draws the picker and does not throw.
+
+**Also:** remove the blank line at the end of this file that `git diff --check development`
+flags.
+
+Nothing else changes. Re-run `npm run verify`, commit, and add a short section to the Handoff
+for this round. This is fix cycle 1 of 2.
 
 ## Handoff
 
