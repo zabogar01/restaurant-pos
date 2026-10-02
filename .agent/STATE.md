@@ -43,8 +43,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   current (checked 2026-10-02 after the last fast-forward). Rerun after any merge that changes
   `.githooks/` or agents.yaml.
 - **Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1002c`** (cut from
-  `658fdfd`), **committed, not pushed** (owner's word): this file, QUEUE.md, DECISIONS.md, the journal and one line in
-  AGENTS.md. Until it is pushed and merged, the main checkout's STATE.md is the PR #40 copy,
+  `658fdfd`), **committed and pushed** (owner's word): this file, QUEUE.md, DECISIONS.md, the journal and one line in
+  AGENTS.md. Until the owner merges it, the main checkout's STATE.md is the PR #40 copy,
   which says no task is running: read the kit worktree's copy.
 - **For the owner to remove, or to allow** (the classifier refuses the lead without the owner's
   word): worktree `../restaurant-pos-wt/FE-033` (merged, clean) and run dirs `.agent/runs/FE-032/`
@@ -111,7 +111,7 @@ Nothing here is decided. Detail is where each line points.
 
 - **Merge `agent/fe-034`** (pushed; then its worktree and `.agent/runs/FE-034/` go). **Next:** the
   B-5 `closeOrder` task (money, architect consult first) or the back-office design audit (QUEUE 9)?
-- **Push `agent/lead-1002c`?** (committed.) Also the leftovers to remove (Integration branch, above), and the
+- **Merge `agent/lead-1002c`** (pushed). Also the leftovers to remove (Integration branch, above), and the
   Prettier ruling, which is yours to overturn (a config and one formatting commit is the other way).
 - **FE-033's lead rulings, merged, yours to overturn:** a live Close stays on the plain floor
   and never shows the receipt chip (no printer in the client); a quick sale with no line is not
