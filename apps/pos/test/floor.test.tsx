@@ -51,7 +51,7 @@ function addBurger() {
 }
 
 // ---------------------------------------------------------------------------
-// Criterion 1 — the nine states as the artifact draws them
+// Criterion 1 — the eleven states as the artifact draws them
 // ---------------------------------------------------------------------------
 
 const MIXED = [
@@ -63,7 +63,7 @@ const MIXED = [
   ['Table 6', 'Free', 'Open table order', ''],
   ['Table 7', 'Payment in progress', '155.925 outstanding', '382.725'],
   ['Table 8', 'Free', 'Open table order', ''],
-  ['Table 9', '1 round fired · 5 items', 'Open', '173.250'],
+  ['Table 9', '1 round fired · 2 lines', 'Open', '173.250'],
   ['Table 10', 'Free', 'Open table order', ''],
   ['Table 11', 'Free', 'Open table order', ''],
   ['Table 12', '2 rounds fired · 1 line pending', 'Open', '155.925'],
@@ -79,7 +79,9 @@ type Expected = {
   extras: string[];
 };
 const OPEN = 'Business day open · 25 Sep';
-const CLOSED = 'Business day closed · 25 Sep';
+// The lead's ruling of 2026-09-30: after the close the header names the day that is open now.
+const CLOSED = 'Business day open · 26 Sep';
+const AFTER_CLOSE = MIXED.map((r, i) => (i === 0 ? (['Table 1', 'Free', 'Open table order', ''] as const) : r));
 const INCIDENT = ['Kitchen ticket did not print — Table 1, round 2', 'The order is unaffected. The kitchen has not seen this work.', 'Open incidents'];
 const TABLE: Record<FloorState, Expected> = {
   default: { tiles: MIXED, sub: '4 open · 8 free', day: OPEN, extras: [] },
@@ -96,10 +98,17 @@ const TABLE: Record<FloorState, Expected> = {
   },
   incident: { tiles: MIXED, sub: '4 open · 8 free', day: OPEN, extras: INCIDENT },
   'receipt-warning': { tiles: MIXED, sub: '4 open · 8 free', day: OPEN, extras: ['Receipt printer: 1 unprinted receipt', 'View receipts'] },
+  'after-close': { tiles: AFTER_CLOSE, sub: '3 open · 9 free', day: OPEN, extras: [] },
+  'after-close-receipt': {
+    tiles: AFTER_CLOSE,
+    sub: '3 open · 9 free',
+    day: OPEN,
+    extras: ['Receipt printer: 1 unprinted receipt', 'View receipts'],
+  },
 };
 
-describe('criterion 1: the nine floor states, as the artifact draws them', () => {
-  it('the states are the artifact’s nine, in its order', () => {
+describe('criterion 1: the eleven floor states, as the artifact draws them', () => {
+  it('the states are the artifact’s eleven, in its order', () => {
     expect(FLOOR_STATES.map((s) => s.id)).toEqual(Object.keys(TABLE));
     expect(Object.keys(FLOOR_FIXTURES)).toEqual(Object.keys(TABLE));
   });
@@ -212,7 +221,7 @@ describe('criterion 2: each occupied tile opens its own order', () => {
   it('Table 12’s pending Fries go without a prompt, to the design’s figures, and stay gone', () => {
     load('/pos/floor');
     press(tile(12));
-    expect(text(host.querySelector('.order-panel__count')!)).toBe('3 items');
+    expect(text(host.querySelector('.order-panel__count')!)).toBe('3 lines');
     press(host.querySelector('[data-line-id="t12-fries"] .order-line__remove')!);
     expect(grand()).toBe('80.325');
     expect(text(host.querySelector('.totals__row--included')!)).toContain('6.955');

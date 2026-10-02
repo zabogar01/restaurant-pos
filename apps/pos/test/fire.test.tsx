@@ -327,7 +327,7 @@ describe('fireblocked-overflow: the block clears while the order still has work 
   it('lands on the figures F2a already wrote for that removal', () => {
     render({ state: OF, gone: 'of-coffee' });
     expect(text('.totals dd')).toEqual(['1.115.000', '55.750', '1.170.750', '101.364']);
-    expect(host.querySelector('.order-panel__count')!.textContent).toBe('8 items');
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('8 lines');
   });
 
   it('the line’s own × is that void, with no prompt (AC-3, FR-H2)', () => {
@@ -577,7 +577,7 @@ describe('fireerror: the order a failed fire leaves behind', () => {
       ['fired', 'Soda', '30.000'],
     ]);
     expect(host.querySelectorAll('.order-line[data-line-status="pending"]')).toHaveLength(0);
-    expect(host.querySelector('.order-panel__count')!.textContent).toBe('2 items');
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('2 lines');
     expect(text('.totals dd')).toEqual(['165.000', '−16.500', '7.425', '155.925', '13.500']);
   });
 
@@ -801,7 +801,7 @@ describe('loading: the panel draws the skeleton too', () => {
 
   it('keeps the header and its count, which the artifact does not change', () => {
     expect(host.querySelector('.order-panel__title')!.textContent).toBe('Order · T1');
-    expect(host.querySelector('.order-panel__count')!.textContent).toBe('3 items');
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('3 lines');
   });
 
   it('hides the bars from the accessibility tree and marks the region busy', () => {

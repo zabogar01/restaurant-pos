@@ -2279,6 +2279,16 @@ button.settlement-close__action:not([aria-disabled="true"]):focus-visible:active
   gap: var(--frost-space-3);
 }
 
+/* FE-033: the open quick-sale strip. Its own class, so .floor-tools still holds exactly its two doors. */
+.floor-quick {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--frost-space-3);
+  padding: 0 var(--frost-space-5) var(--frost-space-3);
+}
+
 .floor-grid {
   flex: 1;
   display: grid;

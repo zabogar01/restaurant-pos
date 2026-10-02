@@ -309,3 +309,41 @@ Then run `herdr agent prompt lead "<your name>: FE-033 done — <tests> tests, <
 or `herdr agent prompt lead "<your name>: BLOCKED — <question>"`.
 
 ## Handoff
+
+**What I built.**
+- `apps/pos/src/orderFixtures.ts`: new exported `countLines(groups)`, the one count of non-voided lines. `orderCountLabel` now says `1 line` / `N lines`, keeping ` · not yet sent` for a quick sale.
+- `apps/pos/src/OrderPanel.tsx` reads `countLines` instead of its own filter. `FloorScreen.tsx`'s `statusOf` reads it too, and its strip reads it through `countLines(order.groups)`, so tile, panel and strip share one function. The free-table rule (`lineCount`, which counts voided lines) is untouched.
+- `apps/pos/src/floorFixtures.ts`: states `after-close` and `after-close-receipt` after `receipt-warning`, with the artifact's labels. Both use a mixed floor with Table 1 as a free tile. A new `quickSale` flag marks the six states that draw the fixture's strip. No figure is typed on the floor fixture. `dayClosed` copy is now `Business day open · 26 Sep` (ruling of 2026-09-30). New copy: `openQuickSale`, `quickSale`, `resume`.
+- `apps/pos/src/orderStore.ts`: new opener `book.openOrder(id)`, which makes an order the book already holds active without reseeding it, and ignores an unknown id.
+- `apps/pos/src/FloorScreen.tsx`: `quickSalesOf(fixture, book)` and the strip (`.floor-quick`, a label plus one `.floor-action` anchor per sale, each with `data-order-id`). `loading` and `error` return nothing.
+- `apps/pos/src/pos.css`: `.floor-quick`, wrapping flex row with the artifact's padding, tokens only. `.floor-tools` is unchanged.
+- Tests: new `apps/pos/test/floor-quick-sale.test.tsx` (20 tests). Word and list changes only in the tests named in the task.
+
+No file the task forbids was touched: `SettlementScreen.tsx`, `close.ts`, `tender.ts`, `refund.ts`, `refundDraft.ts` and `fire.ts` have no diff. Nothing under `docs/` changed.
+
+**Decisions.**
+- Premise of Part 3 holds: I found no print job or print result anywhere the client can produce one, so a live Close needs no change. The new test pins that a real close lands on exactly `/pos/floor` with no query and no chip, and that the live floor's tile grid, count and strip HTML equals a fresh load of `?state=after-close`.
+- The strip's order: the fixture's sale first, then every other open quick sale that holds a line, in book order. The fixture's sale, once the book holds `quick-1`, is decided by the book alone (open and holding a line, else not listed).
+- **Judgement call:** if the book holds `quick-1`, open and with lines, and the state is one that draws no fixture sale (`clear`, `dayclosed`, `empty`), I still list it, because rule 3 says every open quick sale in the book appears on every state that has read the floor, and hiding a real open sale would strand it. The task text could be read the other way; the lead may rule.
+- Resume for `quick-1` goes through `openFixture('quick')` to `/pos/order?state=quick`. Every other sale uses `openOrder(id)` to `/pos/order?state=quick-new`.
+- The after-close floor on a live close is the `default` floor state (as FE-027 already does for the post-close landing), and the book frees Table 1, which is why the criterion-4 comparison with the fixture holds.
+
+**Tests I changed, and why.** Only expected words or lists: `floor.test.tsx` (Table 9 `1 round fired · 2 lines`; `dayclosed` header; `TABLE` gained the two states; "nine" titles say eleven; `3 items` to `3 lines`), `order-panel.test.tsx:306,394`, `fire.test.tsx:330,580,804`, `quick-sale.test.tsx` (four `orderCountLabel` assertions, the two other tests and their titles). No assertion was removed or loosened. The toolbar assertion (`.floor-tools` holds exactly two doors), `close.test.tsx`, `incidents.test.tsx`, `settlement.test.tsx`, `closed-orders.test.tsx` and the three source scans pass unmodified.
+
+**Red cases run.** (1) Making `quickSalesOf` ignore a book that holds `quick-1`: two tests failed (the control kept `2 lines · 173.250` instead of `1 line · 31.500`, and a closed fixture sale stayed listed). Reverted. (2) Making the tile count units: one new test and six floor-state tests failed (`1 round fired · 5 lines`). Reverted.
+
+**Found and not fixed / design questions.**
+- A quick sale whose payment has drafts is listed with the same words; the artifact draws no *Payment in progress* form, and none was invented. Resume opens it locked. Design question: should the control say a payment is in progress?
+- Two sales with the same lines and total read identically on the strip, and nothing tells them apart. Design question.
+- The artifact still draws `Business day closed · 25 Sep` in `dayclosed`'s header (`floor.html:48`); the build follows the ruling. The lead takes this to the designer.
+- jsdom prints "Not implemented: navigation to another Document" during the run. I did not check whether it appears at baseline; it comes from clicking an anchor in tests and does not fail anything.
+
+**Process note.** I ran one Python heredoc to edit `floorFixtures.ts` before registering the rule against heredocs; the result is an ordinary file edit. I did not run Prettier.
+
+**Verify (real output).** `npm run verify`: typecheck clean; `Test Files 37 passed (37)`, `Tests 2537 passed (2537)`. Baseline was 36 files and 2515 tests, so +1 file and +22 tests (20 in the new file, plus two new floor-state rows in the table-driven test).
+
+**Criterion 17 (touch at 1280×800).** Not measured: I had no browser. The strip is a wrapping flex row with the artifact's padding; the lead walks it. The `overflow` grid is `flex: 1; min-height: 0`, so it should still scroll under the strip.
+
+**Next agent needs.** Browser walk of criterion 17; ruling on the `clear`/`empty`/`dayclosed` listing of a resumed `quick-1`.
+
+DONE

@@ -4,13 +4,22 @@ import {
   FLOOR_COPY,
   FLOOR_FIXTURES,
   FLOOR_STATES,
+  type FloorFixture,
   type FloorState,
   type FloorTable,
 } from './floorFixtures.js';
 import { orderTotals } from './discount.js';
 import { formatAmount } from './money.js';
 import { followClientSide, isPlainClick } from './navigation.js';
-import { FIRE_INCIDENT, ORDER_FIXTURES, type OrderState, type RoundGroup } from './orderFixtures.js';
+import {
+  countLines,
+  FIRE_INCIDENT,
+  ORDER_FIXTURES,
+  orderIdOf,
+  orderVariant,
+  type OrderState,
+  type RoundGroup,
+} from './orderFixtures.js';
 import type { OrderBook } from './orderStore.js';
 import type { PaymentSessions } from './paymentSession.js';
 import type { ShownOrder } from './voidFixtures.js';
@@ -33,16 +42,14 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 
 /**
  * The status line an order's own groups give: fired rounds, then the lines still
- * pending, or — with none pending — how many items the table holds. An *item* here
- * is a unit ordered, which is how the artifact counts Table 9's three Coffees and two
- * Sodas ("5 items"); the panel's own count is of lines (a design question, in the handoff).
+ * pending, or — with none pending — how many lines the table holds. Lines, as the
+ * order panel counts them (FE-033, `countLines`); a quantity stays on its line.
  */
 export function statusOf(groups: ReadonlyArray<RoundGroup>): string {
   const rounds = groups.filter((g) => g.kind === 'fired').length;
-  const items = groups.flatMap((g) => g.lines).reduce((sum, l) => (l.status === 'voided' ? sum : sum + l.quantity), 0);
   const pending = groups.filter((g) => g.kind === 'pending').flatMap((g) => g.lines).length;
   const fired = rounds > 0 ? `${plural(rounds, 'round')} fired` : undefined;
-  return [fired, pending > 0 ? `${plural(pending, 'line')} pending` : fired ? plural(items, 'item') : undefined]
+  return [fired, pending > 0 ? `${plural(pending, 'line')} pending` : fired ? plural(countLines(groups), 'line') : undefined]
     .filter(Boolean)
     .join(' · ');
 }
@@ -106,6 +113,46 @@ const freeTileOf = (table: FloorTable): Tile => ({
   state: undefined,
 });
 
+/** The fixture quick sale's id and state: the artifact's one open quick sale (floor.html:52). */
+const FIXTURE_QUICK_STATE: OrderState = 'quick';
+const FIXTURE_QUICK_ID = orderIdOf(ORDER_FIXTURES[FIXTURE_QUICK_STATE]);
+
+type QuickSale = { id: string; lines: number; total: string; open: () => void; destination: string };
+
+/**
+ * FE-033: the open quick sales the strip lists. The book is read before the fixture,
+ * as a tile reads it: the fixture's sale stands in until the book holds `quick-1`, and
+ * then the book decides. Every other open quick sale that holds a line follows, in the
+ * order the book holds them. Whether an order is a quick sale is its type, not its id.
+ */
+function quickSalesOf(fixture: FloorFixture, book: OrderBook): ReadonlyArray<QuickSale> {
+  if (fixture.message === 'loading' || fixture.message === 'error') return [];
+  const orders = book.orders();
+  const fixtureSale = (order: ShownOrder): QuickSale =>
+    saleOf(FIXTURE_QUICK_ID, order, () => book.openFixture(FIXTURE_QUICK_STATE), `/pos/order?state=${FIXTURE_QUICK_STATE}`);
+  const heldFixture = orders.find((o) => o.id === FIXTURE_QUICK_ID);
+  const sales: QuickSale[] = [];
+  if (heldFixture) {
+    // The book decides once it holds the fixture's order: open and holding a line, or not listed.
+    if (heldFixture.status === 'open' && countLines(heldFixture.order.groups) > 0) sales.push(fixtureSale(heldFixture.order));
+  } else if (fixture.quickSale) {
+    sales.push(fixtureSale(fixtureOrder(FIXTURE_QUICK_STATE)));
+  }
+  for (const o of orders) {
+    if (o.id === FIXTURE_QUICK_ID || o.status !== 'open' || orderVariant(o.order) !== 'quick_sale' || countLines(o.order.groups) === 0) continue;
+    sales.push(saleOf(o.id, o.order, () => book.openOrder(o.id), '/pos/order?state=quick-new'));
+  }
+  return sales;
+}
+
+const saleOf = (id: string, order: ShownOrder, open: () => void, destination: string): QuickSale => ({
+  id,
+  lines: countLines(order.groups),
+  total: formatAmount(order.totals.total),
+  open,
+  destination,
+});
+
 /** A fixture's order as the book would hold it, without seeding the book. */
 function fixtureOrder(state: OrderState): ShownOrder {
   const f = ORDER_FIXTURES[state];
@@ -126,6 +173,7 @@ export function FloorScreen({
   const fixture = FLOOR_FIXTURES[state];
   const tiles = fixture.tables.map((table) => tileFor(table, book, sessions));
   const openCount = tiles.filter((t) => t.open).length;
+  const quickSales = quickSalesOf(fixture, book);
 
   // Which order a tile opens, and where. An order that holds lines opens at its own
   // fixture's state (or `default`); a table that holds none opens the empty one.
@@ -192,6 +240,22 @@ export function FloorScreen({
             </a>
           </div>
         </div>
+        {quickSales.length > 0 && (
+          <div className="floor-quick">
+            <span className="floor-sub">{FLOOR_COPY.openQuickSale}</span>
+            {quickSales.map((sale) => (
+              <a
+                key={sale.id}
+                className="floor-action"
+                href={sale.destination}
+                data-order-id={sale.id}
+                onClick={(e) => go(e, sale.destination, sale.open)}
+              >
+                {`${FLOOR_COPY.quickSale} · ${plural(sale.lines, 'line')} · ${sale.total} · ${FLOOR_COPY.resume}`}
+              </a>
+            ))}
+          </div>
+        )}
 
         {fixture.message === 'loading' && (
           <section className="floor-message" aria-live="polite">

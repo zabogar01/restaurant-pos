@@ -1,7 +1,7 @@
 import type { Money } from '@pos/money';
 import type { OrderState } from './orderFixtures.js';
 
-// POS-02's nine states as fixtures, selected by ?state= as the reviewed artifact
+// POS-02's eleven states as fixtures, selected by ?state= as the reviewed artifact
 // selects them (docs/design/visual-directions/frost/pos/floor.html). Copy and data
 // are the artifact's, verbatim. What is *not* here is what the book knows: an
 // occupied table's total and status line are read from the order book whenever
@@ -17,7 +17,9 @@ export type FloorState =
   | 'overflow'
   | 'dayclosed'
   | 'incident'
-  | 'receipt-warning';
+  | 'receipt-warning'
+  | 'after-close'
+  | 'after-close-receipt';
 
 export const FLOOR_STATES: ReadonlyArray<{ id: FloorState; label: string }> = [
   { id: 'default', label: 'Mixed occupancy' },
@@ -29,6 +31,8 @@ export const FLOOR_STATES: ReadonlyArray<{ id: FloorState; label: string }> = [
   { id: 'dayclosed', label: 'Business day closed' },
   { id: 'incident', label: 'Kitchen emergency' },
   { id: 'receipt-warning', label: 'Receipt warning' },
+  { id: 'after-close', label: 'After Close · Table 1 free' },
+  { id: 'after-close-receipt', label: 'After Close · receipt warning' },
 ];
 
 /**
@@ -58,6 +62,8 @@ const tables = (count: number, occupied: boolean): ReadonlyArray<FloorTable> =>
   });
 
 const MIXED = tables(12, true);
+// FE-033: the mixed floor once Table 1 has closed. Free because the book (or, on a fresh load, this fixture) says so.
+const MIXED_AFTER_CLOSE: ReadonlyArray<FloorTable> = MIXED.map((t) => (t.n === 1 ? { n: 1 } : t));
 const FREE = tables(11, false);
 
 export type FloorFixture = {
@@ -67,18 +73,22 @@ export type FloorFixture = {
   dayClosed?: boolean;
   incident?: boolean;
   receiptWarning?: boolean;
+  /** The artifact's open quick sale (the `quick` order fixture) is drawn on the strip. Its figures are derived, never typed here. */
+  quickSale?: boolean;
 };
 
 export const FLOOR_FIXTURES: Record<FloorState, FloorFixture> = {
-  default: { tables: MIXED },
+  default: { tables: MIXED, quickSale: true },
   clear: { tables: FREE },
   empty: { tables: [], message: 'empty' },
   loading: { tables: [], message: 'loading' },
   error: { tables: [], message: 'error' },
-  overflow: { tables: tables(24, true) },
+  overflow: { tables: tables(24, true), quickSale: true },
   dayclosed: { tables: FREE, dayClosed: true },
-  incident: { tables: MIXED, incident: true },
-  'receipt-warning': { tables: MIXED, receiptWarning: true },
+  incident: { tables: MIXED, incident: true, quickSale: true },
+  'receipt-warning': { tables: MIXED, receiptWarning: true, quickSale: true },
+  'after-close': { tables: MIXED_AFTER_CLOSE, quickSale: true },
+  'after-close-receipt': { tables: MIXED_AFTER_CLOSE, receiptWarning: true, quickSale: true },
 };
 
 export function floorStateFrom(search: string): FloorState {
@@ -91,7 +101,8 @@ export const FLOOR_COPY = {
   actor: 'Ana R. · Cashier',
   idle: '90s',
   dayOpen: 'Business day open · 25 Sep',
-  dayClosed: 'Business day closed · 25 Sep',
+  // Lead ruling of 2026-09-30: after the day closed, the header names the day that is open now.
+  dayClosed: 'Business day open · 26 Sep',
   closedBannerTitle: 'Business day closed at 23:14',
   closedBannerBody: 'New orders belong to the next business day. Orders from the closed day can no longer be voided or refunded.',
   receiptWarning: 'Receipt printer: 1 unprinted receipt',
@@ -107,4 +118,7 @@ export const FLOOR_COPY = {
   freeAction: 'Open table order',
   open: 'Open',
   gridLabel: 'Tables — scroll for more',
+  openQuickSale: 'Open quick sale',
+  quickSale: 'Quick sale',
+  resume: 'Resume',
 } as const;

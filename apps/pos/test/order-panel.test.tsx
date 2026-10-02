@@ -303,7 +303,7 @@ describe('unlocked rows', () => {
     expect(rowsWith('pending')).toEqual([]);
     expect(text('.round-head__tag')).toEqual([FIRED_TAG, FIRED_TAG]);
     expect(text('.totals dd')).toEqual(['165.000', '−16.500', '7.425', '155.925', '13.500']);
-    expect(host.querySelector('.order-panel__count')!.textContent).toBe('2 items');
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('2 lines');
   });
 });
 
@@ -391,7 +391,7 @@ describe('empty and overflow', () => {
     const panel = host.querySelector('.order-panel')!;
     expect([...panel.children].map((c) => c.className)).toEqual(['order-panel__head', 'order-lines', 'order-sent', 'totals', 'order-actions']);
     expect(rows().length).toBeGreaterThanOrEqual(10);
-    expect(host.querySelector('.order-panel__count')!.textContent).toBe('9 items');
+    expect(host.querySelector('.order-panel__count')!.textContent).toBe('9 lines');
   });
 
   it('overflow: a voided row is struck and counts as no item', () => {
