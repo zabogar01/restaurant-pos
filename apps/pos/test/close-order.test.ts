@@ -50,6 +50,31 @@ describe('closeOrder', () => {
     expect(r.closed!.groups[0]!.lines.map((l) => l.status)).toEqual(['fired', 'fired']);
   });
 
+  describe('a quick sale holding an 86’d pending line (B-17)', () => {
+    const steak: OrderLine = { ...line('steak', 'pending'), itemId: 'steak' };
+    const sale = { type: 'quick_sale' as const, groups: [{ kind: 'pending', lines: [steak] } as RoundGroup], total: 100_000n };
+
+    it('refuses "unavailable" and does not close', () => {
+      const r = closeOrder({ ...sale, unavailable: ['steak'] }, [draft('Card', 100_000n)], AT);
+      expect(r.refused).toEqual({ reason: 'unavailable' });
+      expect(r.closed).toBeUndefined();
+    });
+
+    it('closes once the item is back, with one queued round stamped closedAt', () => {
+      const r = closeOrder({ ...sale, unavailable: [] }, [draft('Card', 100_000n)], AT);
+      expect(r.refused).toBeUndefined();
+      expect(r.closed!.groups).toHaveLength(1);
+      expect(r.closed!.groups[0]).toMatchObject({ kind: 'fired', round: 1, firedAt: AT, delivery: 'queued' });
+    });
+  });
+
+  it('a quick sale with nothing pending closes with its groups unchanged', () => {
+    const groups = [fired(1, line('a', 'fired'))];
+    const r = closeOrder({ type: 'quick_sale', groups, total: 100_000n }, [draft('Card', 100_000n)], AT);
+    expect(r.refused).toBeUndefined();
+    expect(r.closed!.groups).toBe(groups);
+  });
+
   it('a table order closes with its groups unchanged', () => {
     expect(closeOrder(paidTable, [draft('Card', 173_250n)], AT).closed!.groups).toBe(paidTable.groups);
   });
