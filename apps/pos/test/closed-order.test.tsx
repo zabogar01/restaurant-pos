@@ -96,7 +96,7 @@ const DEFAULT = {
   left: SPLIT,
   totals: STAFF_TOTALS,
   stored: STORED,
-  buttons: ['Reprint receipt'],
+  buttons: ['Reprint receipt', 'Refund this order'],
   why: [] as string[],
   message: '',
 };
@@ -145,6 +145,7 @@ const EXPECTED: Record<string, Partial<typeof DEFAULT>> = {
     note: NOTE('19:41'),
     left: ['2 lines · charged items', BURGER, SODA, 'Original payment', 'No payment taken · fully discounted'],
     totals: ['Subtotal 165.000', 'Comp 100% −165.000', 'Service charge 5% 0', 'Total 0'],
+    buttons: ['Reprint receipt'],
     why: ['No payment taken · fully discounted.'],
   },
   refunded: {
@@ -153,9 +154,10 @@ const EXPECTED: Record<string, Partial<typeof DEFAULT>> = {
     note: NOTE('19:58'),
     notices: [REFUNDED],
     left: ['2 lines · charged items', BURGER, SODA, 'Original payment', pay('Cash', '155.925'), 'Money returned · full order', pay('Cash', '155.925')],
+    buttons: ['Reprint receipt'],
     why: ['Already refunded · this order is final.'],
   },
-  dayclosed: { notices: [DAY_CLOSED], why: ['Refund unavailable · business day closed.'] },
+  dayclosed: { notices: [DAY_CLOSED], buttons: ['Reprint receipt'], why: ['Refund unavailable · business day closed.'] },
   reprint: { notices: [FAILED] },
   'reprint-unknown': { notices: [UNKNOWN] },
   'reprint-sent': { notices: ['Reprint sent'] },
@@ -185,8 +187,8 @@ describe('criterion 1: every state draws what the artifact draws', () => {
     });
   }
 
-  it('a state this slice does not build reads as default, and so does none at all', () => {
-    for (const url of ['?state=sheet-refund', '?state=nonsense', '?state=approval', '']) {
+  it('an unknown state reads as default, and so does none at all', () => {
+    for (const url of ['?state=nonsense', '']) {
       load(`/pos/closed-order${url}`);
       expect(draw(), url).toEqual(DEFAULT);
     }
@@ -369,7 +371,7 @@ describe('criterion 3: a live close is shown from the book', () => {
     expect(section('Original payment')).toEqual([pay('Card', total)]);
     expect(total).not.toBe('0');
     expect(shown.stored).toBe(STORED);
-    expect(shown.buttons).toEqual(['Reprint receipt']);
+    expect(shown.buttons).toEqual(['Reprint receipt', 'Refund this order']);
   });
 
   it('a quick sale closed through the route reads Quick sale, not a fixture’s order', () => {
@@ -619,7 +621,7 @@ describe('criterion 9: reprint', () => {
       const after = draw();
       expect(after.notices, state).toEqual(notices);
       expect(after.notices.at(-1), state).not.toMatch(TIME);
-      expect(after.buttons, state).toEqual(['Reprint receipt']);
+      expect(after.buttons, state).toEqual(state === 'default' ? ['Reprint receipt', 'Refund this order'] : ['Reprint receipt']);
       expect(after.why, state).toEqual(before.why);
       expect(after.tag, state).toBe(before.tag);
     }
@@ -682,15 +684,31 @@ describe('criterion 9: reprint', () => {
 // Criterion 10 — no refund, no void
 // ---------------------------------------------------------------------------
 
-describe('criterion 10: no refund, no void', () => {
-  it('no state draws a Refund or void control, hidden or otherwise, and the three reasons read as the artifact has them', () => {
+describe('criterion 10: the Refund control only where the order is refundable, and no void', () => {
+  // Refundable: not zero-total, not REFUNDED, not on a closed business day (FR-H5b, FR-H6, FR-H7).
+  const NOT_REFUNDABLE = ['zero', 'refunded', 'dayclosed', 'loading', 'error'];
+
+  it('Refund this order is drawn, live and destructive, exactly where the order is refundable; nowhere is there a void control', () => {
     for (const { id } of DETAIL_STATES) {
       load(`/pos/closed-order?state=${id}`);
       const s = screen();
-      expect(text(s), id).not.toMatch(/refund this|void|release|manager|approval pin/i);
-      expect(s.querySelectorAll('[data-action="refund"], [data-action="void"]'), id).toHaveLength(0);
-      // The only buttons are Reprint receipt and Retry; the only anchors the way back and the incidents link.
-      for (const b of s.querySelectorAll('button')) expect(['Reprint receipt', 'Retry'], id).toContain(text(b));
+      const refund = s.querySelectorAll<HTMLButtonElement>('[data-action="refund"]');
+      expect(refund.length, id).toBe(NOT_REFUNDABLE.includes(id) ? 0 : 1);
+      if (refund.length === 1) {
+        expect(text(refund[0]!), id).toBe('Refund this order');
+        expect(refund[0]!.tagName, id).toBe('BUTTON');
+        expect(refund[0]!.hasAttribute('disabled'), id).toBe(false);
+        expect(refund[0]!.getAttribute('aria-disabled'), id).toBeNull();
+        expect(refund[0]!.classList.contains('closed-button--destructive'), id).toBe(true);
+        // Beneath Reprint receipt, in the summary column.
+        expect([...refund[0]!.parentElement!.querySelectorAll('button')].map(text), id).toEqual(['Reprint receipt', 'Refund this order']);
+      }
+      expect(s.querySelectorAll('[data-action="void"]'), id).toHaveLength(0);
+      expect(text(s), id).not.toMatch(/void|release|manager|approval pin/i);
+      // Nothing opens by itself: no sheet and no approval in a state that is not a refund state.
+      expect(s.querySelectorAll('[role="dialog"]'), id).toHaveLength(0);
+      // The only buttons are Reprint receipt, Refund this order and Retry; the only anchors the way back and the incidents link.
+      for (const b of s.querySelectorAll('button')) expect(['Reprint receipt', 'Refund this order', 'Retry'], id).toContain(text(b));
       for (const a of s.querySelectorAll('a')) expect(['← Closed orders', 'View receipt incidents'], id).toContain(text(a));
       expect(s.querySelectorAll('[hidden], [aria-hidden="true"]'), id).toHaveLength(0);
     }

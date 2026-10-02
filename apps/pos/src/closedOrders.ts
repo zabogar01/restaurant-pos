@@ -4,7 +4,7 @@ import type { DiscountSnapshot } from './discount.js';
 import { FLOOR_FIXTURES } from './floorFixtures.js';
 import { formatAmount } from './money.js';
 import { orderVariant } from './orderFixtures.js';
-import { tableOf, type OrderBook } from './orderStore.js';
+import { reachedClosed, tableOf, type OrderBook } from './orderStore.js';
 import type { ShownOrder } from './voidFixtures.js';
 
 // POS-05, the closed orders list (FE-030), read-only. The fixture state selects
@@ -233,7 +233,7 @@ export function bookOrderName(id: string, order: ShownOrder): string {
 function bookRows(book: OrderBook): ReadonlyArray<ClosedRow> {
   return book
     .orders()
-    .flatMap((o) => (o.status === 'closed' && o.closedAt !== undefined ? [{ ...o, closedAt: o.closedAt }] : []))
+    .flatMap((o) => (reachedClosed(o.status) && o.closedAt !== undefined ? [{ ...o, closedAt: o.closedAt }] : []))
     .sort((a, b) => Date.parse(b.closedAt) - Date.parse(a.closedAt))
     .map((o) => {
       const tenders = o.tenders ?? [];
@@ -246,7 +246,7 @@ function bookRows(book: OrderBook): ReadonlyArray<ClosedRow> {
         payment: tenders.length > 0 ? tendersText(tenders) : isComp(o.order.applied) ? CLOSED_COPY.compNoPayment : CLOSED_COPY.noPayment,
         ...(change > 0n && { changeNote: changeNote(tenders, change) }),
         total,
-        refunded: false,
+        refunded: o.status === 'refunded',
         href: `${DETAIL}?${new URLSearchParams({ order: o.id })}`,
       };
     });
