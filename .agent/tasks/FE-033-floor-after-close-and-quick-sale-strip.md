@@ -5,7 +5,7 @@ category: ui
 touches: []
 depends_on: []
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # FE-033 — POS-02 floor: after Close, the open quick sale, and lines
@@ -307,6 +307,53 @@ BLOCKED: <question>.
 
 Then run `herdr agent prompt lead "<your name>: FE-033 done — <tests> tests, <one line>"`,
 or `herdr agent prompt lead "<your name>: BLOCKED — <question>"`.
+
+## Lead verify (2026-10-02)
+
+The lead ran `npm run verify` in this worktree at `16310c6` (37 files, 2537 tests, green; the
+baseline on `development` at `0fab43c` is 36 files and 2515 tests) and walked the floor in
+Chrome against the dev server, at the device's 1280×800. No defect was found, and nothing goes
+back to the builder.
+
+- **The diff** stays inside `owns:`. The four existing test files changed are the four the task
+  names, and each change is the expected word or list only. `SettlementScreen.tsx`, `close.ts`,
+  `tender.ts`, `refund.ts`, `refundDraft.ts` and `fire.ts` have no diff, and nothing under
+  `docs/` changed. The task file changed only below `## Handoff`.
+- **The two new states.** `after-close` draws Table 1 free, `3 open · 9 free`, the strip and no
+  chip; `after-close-receipt` adds *Receipt printer: 1 unprinted receipt* and *View receipts*.
+- **A live Close.** Table 1, with its pending Steak removed, was settled by Card and closed. The
+  address afterwards was `/pos/floor` with no query, the history length did not grow on Close,
+  no chip was drawn, and the twelve tiles, the count and the strip read exactly as
+  `?state=after-close` reads on a fresh load.
+- **Lines.** Table 9's tile reads *1 round fired · 2 lines*; Table 1's panel read *3 lines*;
+  the quick sale's read *2 lines · not yet sent* and *1 line · not yet sent*.
+- **The closed-day header** reads *Business day open · 26 Sep* above the unchanged banner.
+- **The strip.** Resume on the fixture's sale opened *Order · counter* at 173.250; with the
+  Burger removed the control read *Quick sale · 1 line · 31.500 · Resume*. Four new sales each
+  got their own control after it, and each resumed to its own order at `state=quick-new`. A sale
+  with a payment begun stayed listed in the same words and resumed locked. Closing it took it
+  off the strip and put it on POS-05's list.
+- **Criterion 17, measured.** The device stays 1280×800 in every state walked. One control: the
+  strip is one 60px row and the grid starts under it. Five controls wrap to two rows (the
+  rightmost control ends at 1016px), nothing leaves the frame and the grid keeps the rest. In
+  `overflow` the grid scrolls under the strip (content 952px in 564px) and Table 24 ends at
+  780px. In `dayclosed` with two strip rows the grid still scrolls inside the frame.
+- **Nothing read, nothing listed.** With five sales in the book, `loading` and `error` drew no
+  strip; `empty`, `clear` and `dayclosed` drew all five.
+- The browser console showed no error during the walk.
+
+**Lead ruling on the builder's judgement call: accepted.** A `quick-1` the book holds, open and
+with a line, is listed on `clear`, `dayclosed` and `empty` too. Part 4's rule 2 says the book
+decides once it holds that order, and a table the book holds open is drawn on `clear` in the
+same way (FE-026). Rule 1's five states only say where the *fixture* draws nothing.
+
+**One reading the lead accepts, for the reviewer to weigh.** A sale counts as holding a line by
+`countLines`, which leaves voided lines out, where a table's free rule (`lineCount`) counts them.
+A quick sale's lines are pending until close (FR-E5) and a pending line is removed, not voided,
+so the two cannot differ today.
+
+Not walked: a modified click on Resume, and a voided line in the count. Both rest on the
+builder's tests.
 
 ## Handoff
 
