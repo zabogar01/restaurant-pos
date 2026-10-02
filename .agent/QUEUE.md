@@ -34,12 +34,12 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    - **FE-033 (F4e-4)** — floor: the `after-close` and `after-close-receipt` states, the
      `dayclosed` header naming the open day, the open quick-sale strip, *lines* on floor and
      order panel (DESIGN-009 Part C and D) — `ui`, no `touches` flag; depends on nothing open —
-     **dispatched 2026-10-02** (owner's word; Sonnet builder, `agent/fe-033`); then the lead's
-     verify and browser walk, and a cross-family review.
+     **complete 2026-10-02** (`82a4d07` on `agent/fe-033`, Codex review clean, no fix cycle),
+     pushed 2026-10-02, waiting on the owner's merge.
    - **Deferred to FR-A:** Release in the POS-02/05/06 headers, and clearing the closed-day
      banner at session end (owner's 2026-09-30 ruling) — the client has no session or idle lock.
 7. *(Done 2026-09-30: the light-only note in the DESIGN-003 and DESIGN-005 task files.)*
-8. **Code housekeeping (no IDs yet)** — the four P3s in STATE.md; `closeOrder` refusing a non-cash tender above the running balance (B-5, ARCH-003 question 9.6); re-check the POS-03 URL
+8. **Code housekeeping (no IDs yet)** — the P3s in STATE.md (the jsdom noise of FE-033's modified-click test among them); `closeOrder` refusing a non-cash tender above the running balance (B-5, ARCH-003 question 9.6); re-check the POS-03 URL
    after Add; decide Prettier either way — depends on nothing, can ride with F4e as a small
    slice — not written. (The modal move was FE-029, KIT-004's pilot.)
 8a. **POS-03 Q6 (no ID yet)** — Cancel while a manager approval is verifying cancels the

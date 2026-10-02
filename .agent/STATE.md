@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-02, in the lead session that found FE-032 and `agent/lead-1001c` merged (PR #37, #36),
-fast-forwarded the main checkout, then wrote and dispatched FE-033 (owner's word). Narrative:
+fast-forwarded the main checkout, then ran FE-033 to a clean review (dispatched on the owner's word). Narrative:
 [journal/2026-10-02.md](journal/2026-10-02.md); the closed-order slices are in [journal/2026-10-01.md](journal/2026-10-01.md).
 
 ## Phase and gates
@@ -22,13 +22,13 @@ fast-forwarded the main checkout, then wrote and dispatched FE-033 (owner's word
   migration; no schema, no API and no auth.
 - **Frontend built so far** (fixtures plus a client order store): POS-01 lock, POS-02 floor,
   POS-03 order workspace, POS-04 settlement, POS-05 closed orders, POS-06 closed order (detail,
-  reprint and the refund), POS-07 print incidents. Not built: FE-033 (the floor's after-close
-  changes) and all 13 back-office screens.
+  reprint and the refund), POS-07 print incidents; FE-033 (the floor's after-close changes) is on
+  `agent/fe-033`. Not built: all 13 back-office screens.
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted.
-- **Last verify by the lead:** `npm run verify` green at **2515 tests / 36 files** on 2026-10-02
-  on `development` at `0fab43c`, in the kit worktree. `apps/server/test/migrate.test.ts` needs
+- **Last verify by the lead:** `npm run verify` green at **2537 tests / 37 files** on 2026-10-02
+  in the FE-033 worktree at `16310c6` (`development` at `0fab43c`: 2515 / 36). `apps/server/test/migrate.test.ts` needs
   `npm run db:up`; without it its seven tests fail with `ECONNREFUSED 127.0.0.1:5433` (L6-14).
 
 ## Integration branch
@@ -43,11 +43,11 @@ fast-forwarded the main checkout, then wrote and dispatched FE-033 (owner's word
   current (checked 2026-10-02 after the fast-forward). Rerun after any merge that changes
   `.githooks/` or agents.yaml.
 - Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1002` (cut from
-  `0fab43c`), committed and pushed 2026-10-02 (owner): this file, QUEUE.md and the journal. Until
-  it is merged the main checkout's copies are one session behind.
+  `0fab43c`), committed and pushed twice on 2026-10-02 (owner): this file, QUEUE.md and the
+  journal. Until it is merged the main checkout's copies are behind.
 - Task worktree `../restaurant-pos-wt/FE-033` (`agent/fe-033`, cut from `0fab43c`, the task file
   its first commit `887a0e1`) and run dir `.agent/runs/FE-033/` stay until that branch is merged.
-- **Left for the owner to remove** (the permission classifier refused the lead): worktree
+- **For the owner to remove, or to allow** (the permission classifier refused the lead): worktree
   `../restaurant-pos-wt/FE-032` (merged, clean) and run dir `.agent/runs/FE-032/` (main checkout).
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
@@ -56,15 +56,15 @@ fast-forwarded the main checkout, then wrote and dispatched FE-033 (owner's word
 
 ## Running tasks and agents
 
-- **FE-033 is running** (F4e-4, the floor: `after-close` and `after-close-receipt`, the open
-  quick-sale strip, *lines* on tile and panel, the `dayclosed` header), dispatched 2026-10-02 on
-  the owner's word: builder Claude Sonnet 5.5, interactive, Herdr agent `fe-033`, pane `FE-033`.
-  `ui`, no `touches` flag: an ordinary cross-family review after the lead's verify and browser
-  walk. Edit only the worktree's copy of the task file from now on. Cycles used: 0 of 2.
+- **No active task. FE-033 is complete** (F4e-4, the last F4e slice: the floor's two after-close
+  states, the open quick-sale strip, *lines* on tile and panel, the `dayclosed` header): `82a4d07`
+  on `agent/fe-033`, four commits, **pushed 2026-10-02** (owner's word). Sonnet 5.5 builder, no fix cycle; Codex
+  `gpt-6-astra` review clean (it could not open a browser). **Lead evidence:** verify green; diff
+  inside `owns:`; the floor walked in Chrome with a live close of Table 1 and five sales on the strip.
 - **FE-032 is merged** (PR #37). AC-11, AC-14, AC-18, AC-25 and AC-34 stay open: the refund is
   an in-memory stand-in for the server's command (DECISIONS.md, 2026-10-01), with no PIN
   verified, no approver and no audit. FE-032's Handoff lists what the server owes.
-- **Live agents:** the lead (`w2:p1`, named `lead`) and `fe-033`. Leftovers it did not make: agentless
+- **Live agents:** the lead only (`w2:p1`, named `lead`); FE-033's two panes closed themselves. Leftovers it did not make: agentless
   pane `w2:pE`; a detached worktree `.claude/worktrees/keen-chebyshev-ccf255` (`78153ab`).
 
 ## Kit facts the next session needs
@@ -97,7 +97,8 @@ fast-forwarded the main checkout, then wrote and dispatched FE-033 (owner's word
 - **P3, not filed** (L172-175, L206-213, L248-249): a reopened book-only order lands on
   `?state=default` and the URL names Table 1's fixture; `closeOrder` fires a quick sale with
   `type: 'table'`; a quick sale holding an 86'd pending line refuses Close silently with no
-  copy; *Nothing outstanding* appears twice when every incident is cleared (a designer's).
+  copy; *Nothing outstanding* appears twice when every incident is cleared (a designer's);
+  FE-033's modified-click test prints one jsdom `Not implemented: navigation` line (noise, no failure).
 - **Housekeeping:** Prettier is neither configured nor banned (L1936-1946); Release waits on `FR-A`.
 - **Must not become a guarantee:** `OrderLine.itemId` is optional, so a line with no identity
   can never block a fire (L1787). The in-memory refund and the change walk are stand-ins too.
@@ -109,12 +110,11 @@ fast-forwarded the main checkout, then wrote and dispatched FE-033 (owner's word
 
 Nothing here is decided. Detail is where each line points.
 
-- **FE-033's lead rulings, being built, yours to overturn:** a live Close stays on the plain
-  floor and never shows the receipt chip, because the client has no printer
-  (`after-close-receipt` is a fixture address only); an open quick sale with no line is not on
-  the strip; no strip in `loading` and `error`; a sale made with *New quick sale* resumes at
-  `?state=quick-new`; a sale being paid keeps the strip's ordinary words.
-- **Remove the FE-032 worktree and run dir** (above), or allow the lead to.
+- **Merge `agent/fe-033`** (`82a4d07`) **and `agent/lead-1002`**, both pushed; then pull.
+  **FE-033's lead rulings, built, yours to overturn:** a live Close stays on the plain floor and
+  never shows the receipt chip (no printer in the client); a quick sale with no line is not on the
+  strip, and one the book holds is listed on every state that has read the floor (not `loading`,
+  `error`); a new sale resumes at `?state=quick-new`; a sale being paid keeps the ordinary words.
 - **Lead rulings built, yours to overturn.** FE-031: an unknown book id draws `error`, never a
   fixture; a voided line is not listed as charged; the cash contribution is cash less change.
   FE-032: a cancelled refund sheet discards its draft; a refund confirmed on a fixture address
@@ -147,4 +147,4 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-[QUEUE.md](QUEUE.md): FE-033 to verify, review and merge, then the back office; backend tasks 3 to 12 after the frontend review.
+[QUEUE.md](QUEUE.md): the owner merges FE-033; then housekeeping and the back office; backend tasks 3 to 12 after the frontend review.
