@@ -118,3 +118,5 @@ breaking one, the task is wrong: stop and raise it.
 - Conventional Commits, ordinary prose, explaining *why*.
 - Never report a check as passing without running it and reading the output.
   Name anything you skipped.
+- Format by hand, matching the file you edit. The repository has no formatter
+  config, so Prettier rewrites a whole file to its defaults.
