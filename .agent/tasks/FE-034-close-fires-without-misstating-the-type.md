@@ -5,8 +5,8 @@ category: quick
 touches: []
 depends_on: []
 owns: [apps/pos/src/fire.ts, apps/pos/src/close.ts, apps/pos/test/fire-order.test.ts, apps/pos/test/close-order.test.ts, apps/pos/test/floor-quick-sale.test.tsx]
-status: active
-cycles: 0
+status: complete
+cycles: 1
 ---
 # FE-034 — Close fires without misstating the type; one quiet test
 
@@ -188,6 +188,42 @@ Each of these is deliberate, not forgotten.
 - Prettier configuration, and the other modified-click tests
   (`floor.test.tsx`, `closed-orders.test.tsx`, `closed-order.test.tsx`,
   `incidents.test.tsx`), which already print nothing.
+
+## Lead verify (2026-10-02)
+
+The lead ran `npm run verify` in this worktree at `f499ef4`: typecheck clean, 37 files and
+2544 tests, green (the baseline on `development` at `658fdfd` is 2537; the seven added are the
+seven the Handoff lists). `grep -ci "not implemented"` over the whole output printed `0`; at
+the baseline the POS suite prints the line once. No browser walk: no screen, route or copy
+changed.
+
+- **The diff** stays inside `owns:`. The only existing test changed is the one the task names
+  (`floor-quick-sale.test.tsx`, eight added lines around the modified click; its plain-press
+  assertions are untouched). `fire-order.test.ts` and `close-order.test.ts` only gained tests.
+- **Criterion 1.** `grep -n "type: 'table'\|fireOrder" apps/pos/src/close.ts` prints nothing.
+- **Criterion 2.** `sendableLines(lines)`, `blockingLines(lines, …)` and the new-round literal
+  each appear once in `fire.ts`, inside `sendPending`. `fireOrder` is two gate checks and a
+  delegation.
+- **Criteria 3 to 6 and 8** are each a test in the diff, read against its wording.
+- **The money in `closeOrder`** (`kept`, `position`, `closeRefusal`, the tenders, change and
+  total) has no diff: the only changed code line in `close.ts` is the `sendPending` call.
+
+## Review round 1: one finding, accepted (2026-10-02)
+
+Codex `gpt-6-luna` (light, the other family) reviewed `f499ef4`:
+[reviews/FE-034-review.md](../reviews/FE-034-review.md). It cleared the split, the refusal
+order and the tests against FR-E1, FR-E2, FR-E4, FR-E5, FR-G5, FR-G10, B-16, B-17 and B-20, and
+ran verify itself (2544 / 37, no `Not implemented` line). It did not reproduce the builder's
+three mutation proofs. **Finding 1 (minor):** the rewritten `closeOrder` comment ran one line
+past the file's width. `git diff --check` also flagged a blank line at the end of this file.
+The lead accepted both and resumed the builder (cycle 1 of 2).
+
+## Lead verify of the fix (2026-10-02)
+
+At `39fda22` the comment is rewrapped with its wording unchanged (the commit's only source
+change is those comment lines), `git diff --check development` is clean, and
+`npm run verify` is green again at 2544 tests in 37 files with no `Not implemented` line. The
+fix was not sent for a second review: it changes no code.
 
 ## Handoff
 
