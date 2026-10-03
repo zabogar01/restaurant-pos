@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-03: the owner merged FE-035 (PR #45) and the lead's record (PR #44), then reported the
-discount "still" inert. Cause: the main checkout had not been fast-forwarded, so the owner's dev
-server served old code. Fixed by the fast-forward. Narrative: [journal/2026-10-03.md](journal/2026-10-03.md).
+2026-10-03: the owner merged the lead's record (PR #46) and said to start on the void, accepting
+the lead's two recommendations (DECISIONS.md). FE-036 (the void) is complete at `19210c5`, not
+pushed: built from ARCH-005, two review findings fixed. It waits on the owner's look and merge. Narrative: [journal/2026-10-03.md](journal/2026-10-03.md).
 
 ## Phase and gates
 
@@ -33,8 +33,8 @@ server served old code. Fixed by the fast-forward. Narrative: [journal/2026-10-0
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `3203289` (PR #45) on
-  GitHub; the local `development` matches it (fast-forwarded 2026-10-02). `main` and
+- **`development` is the integration branch** (owner, 2026-09-29), at `60f877e` (PR #46) on
+  GitHub; the local `development` matches it (fast-forwarded 2026-10-03). `main` and
   `development` are protected: PR required, 0 approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch`
   and fast-forward the main checkout (`git merge --ff-only origin/development`) **before reporting
@@ -42,8 +42,8 @@ server served old code. Fixed by the fast-forward. Narrative: [journal/2026-10-0
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
   current (checked 2026-10-02 after the last fast-forward). Rerun after any merge that changes
   `.githooks/` or agents.yaml.
-- **Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1003`** (cut from
-  `3203289`), **committed and pushed** (owner's word): this file, QUEUE, DECISIONS, LESSONS, journal.
+- **Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1003b`** (cut from
+  `60f877e`), **not committed**: this file, QUEUE, DECISIONS, journal, ARCH-005's brief and report.
 - **No task worktree or run directory is left** (FE-035's removed 2026-10-03, owner's word).
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
@@ -52,15 +52,13 @@ server served old code. Fixed by the fast-forward. Narrative: [journal/2026-10-0
 
 ## Running tasks and agents
 
-- **No task is running and none is written. FE-035 (the discount) merged 2026-10-03 as PR #45**;
-  the lead confirmed it on the owner's own dev server (Steak 250.000, Staff meal 10%: total
-  236.250). Its task file holds the Handoff, both lead verifies and the review. FE-034 (`sendPending` in `fire.ts`, the
-  `unavailable` close refusal pinned, the jsdom line gone) merged 2026-10-02 as PR #42. Its task
-  file holds the Handoff, both lead verifies and the review (one finding, fixed in cycle 1).
-- **The owner's frontend review is complete once the void is settled** (DECISIONS.md, 2026-10-03);
-  the discount finding is fixed (FE-035). Then the backend pause may lift.
+- **FE-036 (the void, QUEUE 8f) complete at `19210c5` on `agent/fe-036`, not pushed**; worktree
+  `../restaurant-pos-wt/FE-036`. 2722 tests / 41 files green (lead). Both fix cycles used (ruling B1;
+  review F1, F2); lead browser walks before and after. Touches money, audit, identity: owner looks first.
+- **Merged:** FE-035 (discount, PR #45, confirmed on the owner's dev server), FE-034 (PR #42). Each
+  task file holds its Handoff, lead verifies and review. Frontend review complete once the void is settled.
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount AC-8/9/18/21.
-- **Live agents:** the lead only (`w2:p1`); every pane the lead opened is closed. No dev server runs. Leftovers the lead did not
+- **Live agents:** the lead (`w2:p1`) only; the builder's and the architect's panes are closed. No dev server runs. Leftovers the lead did not
   make: agentless pane `w2:pE` (not re-checked); worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
@@ -88,9 +86,7 @@ server served old code. Fixed by the fast-forward. Narrative: [journal/2026-10-0
 
 - **Owner to see in a browser, then close:** the Burger-tile fix (FE-021 `7268943`, L257-262), and
   Add from POS-03 `eightysix` returning there by design (L353; `own-items.test.tsx:381-393`).
-- **Discount is inert on a live order (owner's finding, QUEUE 8e).** `DiscountSheet` only navigates
-  (`panelDiscount`'s `landsOn: () => view`); nothing writes the store's `applied`. FE-014 left it as
-  "next slice" (its task file, :181-185) and no slice was ever queued. Not a regression.
+- **Void is inert on a live order** (QUEUE 8f): fixed on `agent/fe-036`, not merged.
 - **Money, not filed (ARCH-003, 9.6):** `closeOrder` (`close.ts:74–101`) accepts any drafts; only the
   Add gate (`tender.ts:39–41`) keeps a card under the balance (B-5). Unreachable today; own task, architect consult.
 - **P3, left out of FE-034 on purpose** (QUEUE 8c, 8d): a reopened book-only order lands on
@@ -108,10 +104,13 @@ server served old code. Fixed by the fast-forward. Narrative: [journal/2026-10-0
 
 Nothing here is decided. Detail is where each line points.
 
-- **Void is inert on a live order too** (fired-line and whole-order void: the same FE-014
-  deferral as the discount; a pending line's × works). Not queued: say if it should follow FE-035.
-- **The void (QUEUE 8f):** the lead recommends FE-036 like FE-035, after an architect consult, with
-  the refund's stand-in. Owner to rule: the stand-in for the void; where a voided order goes (POS-05?).
+- **The lead read "okay start working on the void" as accepting both void recommendations**
+  (the stand-in; a voided order listed nowhere): recorded in DECISIONS.md, yours to overturn.
+- **FE-036 lead rulings, yours to overturn (ARCH-005, For the owner 1-2):** a line voided in the client
+  shows only its strike-through (no *Voided 19:51*); the sheets keep the reviewed *A cancellation ticket
+  will print* and *recorded against your name*, though the client prints and records nothing.
+- **ARCH-005, before Phase 2:** how a cashier abandons an opened order with no lines (Void order is off
+  on it; on the server it blocks end-of-day, FR-I2); does an approved void the server refuses write `REFUSED`?
 - **After the void:** resume Phase 0 backend with the designer on the back-office audit alongside?
 - **FE-033's lead rulings, merged, yours to overturn:** a live Close stays on the plain floor
   and never shows the receipt chip (no printer in the client); a quick sale with no line is not
@@ -147,4 +146,4 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-[QUEUE.md](QUEUE.md): 8e (the discount, once ruled); then 8b, 8c or the back-office design audit (9), on the owner's word; backend after the frontend review.
+[QUEUE.md](QUEUE.md): the owner looks at and merges FE-036; the frontend review is then complete and the backend pause lifts (Phase 0 plus the designer on 9).
