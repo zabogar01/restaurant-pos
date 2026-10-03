@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-02, third lead session of the day: FE-034 merged (PR #42); then **the owner reviewed the
-frontend and found the discount does nothing** (confirmed; never wired). No task is running. Narrative:
-[journal/2026-10-02.md](journal/2026-10-02.md) (its last section is this session) and [journal/2026-10-01.md](journal/2026-10-01.md).
+2026-10-03: the owner merged FE-035 (PR #45) and the lead's record (PR #44), then reported the
+discount "still" inert. Cause: the main checkout had not been fast-forwarded, so the owner's dev
+server served old code. Fixed by the fast-forward. Narrative: [journal/2026-10-03.md](journal/2026-10-03.md).
 
 ## Phase and gates
 
@@ -27,13 +27,13 @@ frontend and found the discount does nothing** (confirmed; never wired). No task
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted.
-- **Last verify by the lead:** `npm run verify` green at **2644 tests / 39 files** on 2026-10-02
-  on `agent/fe-035` at `621a282` (`development` alone: 2544 / 37). `apps/server/test/migrate.test.ts` needs
+- **Last verify by the lead:** `npm run verify` green at **2644 tests / 39 files** on 2026-10-03
+  on `development` at `3203289`, in the main checkout. `apps/server/test/migrate.test.ts` needs
   `npm run db:up`; without it its seven tests fail with `ECONNREFUSED 127.0.0.1:5433` (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `493ba49` (PR #43) on
+- **`development` is the integration branch** (owner, 2026-09-29), at `3203289` (PR #45) on
   GitHub; the local `development` matches it (fast-forwarded 2026-10-02). `main` and
   `development` are protected: PR required, 0 approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch`
@@ -42,10 +42,9 @@ frontend and found the discount does nothing** (confirmed; never wired). No task
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
   current (checked 2026-10-02 after the last fast-forward). Rerun after any merge that changes
   `.githooks/` or agents.yaml.
-- **Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1002e`** (cut from
-  `493ba49`), **committed and pushed** (owner's word): this file, QUEUE, DECISIONS, the journal and
-  ARCH-004's brief and report. Until merged, the main checkout's STATE.md is PR #43's: read this copy.
-- **No task worktree or run directory is left** (removed 2026-10-02, owner's word); a removal needs it.
+- **Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1003`** (cut from
+  `3203289`), **committed and pushed** (owner's word): this file, QUEUE, DECISIONS, LESSONS, journal.
+- **No task worktree or run directory is left** (FE-035's removed 2026-10-03, owner's word).
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations` (`735301d`, behind). Merged, still existing: `agent/design-direction`
@@ -53,15 +52,14 @@ frontend and found the discount does nothing** (confirmed; never wired). No task
 
 ## Running tasks and agents
 
-- **No task is running. FE-035 (the discount) is complete** at `5cf5d7b` on `agent/fe-035` (worktree
-  `../restaurant-pos-wt/FE-035`), **pushed** (owner's word). One P2 review finding fixed in cycle 1; lead verify
-  2644 / 39 green; Chrome walk clean. Touches money, audit, identity: **the owner's look before merge.** FE-034 (`sendPending` in `fire.ts`, the
+- **No task is running and none is written. FE-035 (the discount) merged 2026-10-03 as PR #45**;
+  the lead confirmed it on the owner's own dev server (Steak 250.000, Staff meal 10%: total
+  236.250). Its task file holds the Handoff, both lead verifies and the review. FE-034 (`sendPending` in `fire.ts`, the
   `unavailable` close refusal pinned, the jsdom line gone) merged 2026-10-02 as PR #42. Its task
   file holds the Handoff, both lead verifies and the review (one finding, fixed in cycle 1).
-- **The owner reviewed the frontend (2026-10-02): one finding, the discount does nothing.** The
-  owner has not said whether the review is otherwise complete, or that the backend pause lifts.
-- **FE-032's open acceptance criteria:** AC-11, AC-14, AC-18, AC-25 and AC-34: the refund is an
-  in-memory stand-in (DECISIONS.md, 2026-10-01). FE-032's Handoff lists what the server owes.
+- **The owner's frontend review is complete once the void is settled** (DECISIONS.md, 2026-10-03);
+  the discount finding is fixed (FE-035). Then the backend pause may lift.
+- **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount AC-8/9/18/21.
 - **Live agents:** the lead only (`w2:p1`); every pane the lead opened is closed. No dev server runs. Leftovers the lead did not
   make: agentless pane `w2:pE` (not re-checked); worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
@@ -112,7 +110,9 @@ Nothing here is decided. Detail is where each line points.
 
 - **Void is inert on a live order too** (fired-line and whole-order void: the same FE-014
   deferral as the discount; a pending line's × works). Not queued: say if it should follow FE-035.
-- **Look at and merge `agent/fe-035`** (pushed), then `agent/lead-1002e`. Then 8b, 8c, 8f or 9? Is the frontend review complete?
+- **The void (QUEUE 8f):** the lead recommends FE-036 like FE-035, after an architect consult, with
+  the refund's stand-in. Owner to rule: the stand-in for the void; where a voided order goes (POS-05?).
+- **After the void:** resume Phase 0 backend with the designer on the back-office audit alongside?
 - **FE-033's lead rulings, merged, yours to overturn:** a live Close stays on the plain floor
   and never shows the receipt chip (no printer in the client); a quick sale with no line is not
   on the strip, and one the book holds is listed on every state but `loading` and `error`; a new
