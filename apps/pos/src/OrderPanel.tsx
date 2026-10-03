@@ -221,7 +221,9 @@ export function ControlledOrderScreen({
   // FE-036: the void sheets read and write store.order too. A line that is not a
   // FIRED line of it draws no sheet, so decided here, before `inert`, the focus
   // return and `overlayAt` see a sheet that is not drawn.
-  const voidFixture = VOID_FIXTURES[view.state] ?? (voidOpened && panelVoid(voidOpened, view));
+  // A target the cashier opened from a row or the close bar takes precedence over
+  // the address's fixture, which may name a line this order does not hold.
+  const voidFixture = voidOpened ? panelVoid(voidOpened, view) : VOID_FIXTURES[view.state];
   const voiding = voidFixture && subjectOf(voidFixture, store.order) ? voidFixture : undefined;
 
   /**

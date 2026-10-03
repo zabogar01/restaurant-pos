@@ -9,8 +9,8 @@ import { discountAmount, orderTotals, snapshotOf } from '../src/discount.js';
 import { PRESETS, STAFF_MEAL } from '../src/discountFixtures.js';
 import { MENU_ITEMS } from '../src/menuFixtures.js';
 import { formatAmount } from '../src/money.js';
-import { OrderScreen } from '../src/OrderPanel.js';
-import type { OrderState, OrderView, Totals } from '../src/orderFixtures.js';
+import { ControlledOrderScreen, OrderScreen } from '../src/OrderPanel.js';
+import { orderViewFrom, type OrderState, type OrderView, type Totals } from '../src/orderFixtures.js';
 import { noLongerOpen, reachedClosed, useOrderBook, type LiveOrderStore, type Locked, type OrderBook, type OrderStatus, type VoidOutcome } from '../src/orderStore.js';
 import { PosRoutes } from '../src/PosRoutes.js';
 import { LINE_REASONS, VOID_FIXTURES, shownOrder, type ShownOrder } from '../src/voidFixtures.js';
@@ -135,6 +135,20 @@ function mountStore(initial: OrderView, lock: Locked = false) {
   }
   act(() => root.render(<Probe />));
   return { out, setLock: (next: Locked) => act(() => setLock.current(next)) };
+}
+
+/** The routed screen's own wiring over a book the test can read: `ControlledOrderScreen` over `useOrderBook`. */
+function mountScreen(state: OrderState) {
+  const out = {} as { book: OrderBook; store: LiveOrderStore };
+  window.history.replaceState(null, '', `/pos/order?state=${state}`);
+  function Screen() {
+    const [view, setView] = useState<OrderView>({ state });
+    const held = useOrderBook(view);
+    Object.assign(out, held);
+    return <ControlledOrderScreen view={view} store={held.store} onLocationChange={() => setView(orderViewFrom(window.location.search))} />;
+  }
+  act(() => root.render(<Screen key={++mount} />));
+  return out;
 }
 
 const AT = '2026-10-03T12:00:00.000Z';
@@ -571,19 +585,9 @@ describe('the three addresses are live (20, R13, R15)', () => {
     expect(rows('voided').map(rowName)).toEqual(['Burger']);
   });
 
-  it.each(['sheet-voidorder', 'sheet-voidorder-fired'] as const)('%s: the void voids the active order and lands on /pos/floor', (state) => {
-    const { out } = mountStore({ state });
-    window.history.replaceState(null, '', `/pos/order?state=${state}`);
-    act(() =>
-      root.render(
-        <OrderScreen key={++mount} view={{ state }} />
-      )
-    );
-    // The wrapper owns its own store: voiding through it must leave its order voided.
-    if (state === 'sheet-voidorder') press(voidOrderButton());
-    else {
-      press(voidOrderButton());
-    }
+  it.each(['sheet-voidorder', 'sheet-voidorder-fired'] as const)('%s: the void voids the order in the book the screen writes and lands on /pos/floor', (state) => {
+    const out = mountScreen(state);
+    expect(out.book.orders().map((o) => o.status)).toEqual(['open']);
     expect(sheet()).not.toBeNull();
     if (state === 'sheet-voidorder-fired') {
       chooseOrderReason();
@@ -593,7 +597,42 @@ describe('the three addresses are live (20, R13, R15)', () => {
       press(inSheet('Void order'));
     }
     expect(window.location.pathname).toBe('/pos/floor');
-    expect(out.book.orders()).toHaveLength(1);
+    expect(out.book.orders().map((o) => [o.id, o.status])).toEqual([['table-1', 'voided']]);
+  });
+});
+
+describe('an opened target takes precedence over the address (F1)', () => {
+  /** Table 2 with two fired Burgers, then an address naming a line the order does not hold. */
+  function atDeadAddress() {
+    const [first] = firedTable2();
+    window.history.replaceState(null, '', '/pos/order?state=sheet-voidline');
+    act(() => window.dispatchEvent(new PopStateEvent('popstate')));
+    expect(sheet()).toBeNull();
+    return first!;
+  }
+
+  it('a tap on a live fired row opens that row’s sheet, and the void applies', () => {
+    const first = atDeadAddress();
+    tapRow(first);
+    expect(sheet()).not.toBeNull();
+    expect(sheet()!.querySelector('.void-subject__row')!.textContent).toContain('Burger');
+    chooseReason();
+    press(inSheet('Continue'));
+    approve();
+    expect(sheet()).toBeNull();
+    expect(rowOf(first).getAttribute('data-line-status')).toBe('voided');
+    expect(rows('fired')).toHaveLength(1);
+  });
+
+  it('Void order opens the order’s sheet, and the void applies', () => {
+    atDeadAddress();
+    press(voidOrderButton());
+    expect(sheet()!.querySelector('h2')!.textContent).toBe('Void this order');
+    chooseOrderReason();
+    press(inSheet('Continue'));
+    approve();
+    expect(window.location.pathname).toBe('/pos/floor');
+    expect(table(2).getAttribute('aria-label')).toBe('Table 2, free, open new order');
   });
 });
 
