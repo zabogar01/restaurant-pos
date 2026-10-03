@@ -5,8 +5,8 @@ category: ui
 touches: [money, audit, identity]
 depends_on: []
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: active
-cycles: 0
+status: complete
+cycles: 2
 ---
 # FE-036 — The void applies
 
@@ -425,6 +425,21 @@ mutation (the order callback returns `{ cancels: [] }` without calling `store.vo
 the state starts with `sheet-voidorder`) and show it now fails.
 
 Report both in the Handoff under a *Round 2* heading, with the verify output.
+
+## Lead verify of the fix (2026-10-03)
+
+Round 2 (`7958d74`, Handoff `723c99a`) changes one line of source, the selection at
+`OrderPanel.tsx:226`, exactly as ruled (it is the reviewer's own diagnostic control), and the
+tests of both findings. `npm run verify` in this worktree: 2722 tests in 41 files, green. The
+builder ran the reviewer's no-op mutation and reports four tests now failing, and restored the
+old selection to show both F1 tests red. Browser check (Chrome, this worktree's dev server):
+Table 9 under `?state=sheet-voidline` draws no sheet and the frame is live; a tap on its fired
+Coffee row then opens Coffee's sheet, and Void order opens the order's gated sheet at 173.250.
+The dev server was stopped.
+
+**No second review.** The fix is one expression the reviewer itself proposed and tested in
+memory, and the tests answer its two failing scenarios with the mutations it named. The task
+touches money, audit and identity, so the owner looks before merging in any case.
 
 ## Handoff
 
