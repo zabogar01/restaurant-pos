@@ -52,6 +52,19 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    depends on the owner confirming the 2026-09-24 ruling (DECISIONS.md, conversation only) and
    on a design check of the approval prompt's verifying state — not written.
 
+8e. **FE-035, the discount applies** — the owner's frontend-review finding, 2026-10-02. The
+   sheet reads the order on screen and a choice writes it, through one pure operation that
+   decides the manager gate itself (ARCH-004); gated changes use the refund's no-PIN stand-in
+   (owner, 2026-10-02). `touches: money, audit, identity`, so a strong review and the owner's
+   look before merge — **complete 2026-10-02 at `5cf5d7b` on `agent/fe-035`, pushed, waiting for the owner's look and merge**.
+8f. **The void applies on a live order (no ID yet)** — fired-line and whole-order void are
+   inert in the same way, and the void sheet reads the fixture's order (`OrderPanel.tsx:325`).
+   Needs its own architect consult (manager-gated, cancellation ticket, B-16) — depends on the
+   owner's word — not written.
+8g. **The three line mutations refuse under a lock in the store (no ID yet)** — `addLine`,
+   `removeLine`, `setQuantity` rely on the screen not offering them (ARCH-004) — small, can
+   ride with 8b — not written.
+
 ## Back office
 
 9. **Back-office design** — 13 screens (BO-01 to BO-13). Only the menu and a report detail
