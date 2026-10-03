@@ -9,7 +9,7 @@ import { ControlledOrderScreen } from './OrderPanel.js';
 import { incidentStateFrom } from './incidentFixtures.js';
 import { IncidentsScreen } from './IncidentsScreen.js';
 import { orderViewFrom, type OrderView } from './orderFixtures.js';
-import { reachedClosed, useOrderBook } from './orderStore.js';
+import { noLongerOpen, useOrderBook } from './orderStore.js';
 import { usePaymentSessions } from './paymentSession.js';
 import { beginsSession, ControlledSettlementScreen, initialDrafts, settlementStateFrom } from './SettlementScreen.js';
 
@@ -87,8 +87,9 @@ export function PosRoutes() {
   // (or Forward) onto its order or settlement route replaces that entry with the
   // floor — navigation only, so no live Close, Add, Send or line control is ever
   // drawn for it.
-  // A refunded order has reached CLOSED too (FE-032): `reachedClosed` counts it.
-  const closedActive = (onOrder || onSettlement) && book.orders().some((o) => o.id === book.activeId && reachedClosed(o.status));
+  // A refunded order has reached CLOSED too (FE-032), and a voided one (FE-036)
+  // is no longer open: `noLongerOpen` counts all three.
+  const closedActive = (onOrder || onSettlement) && book.orders().some((o) => o.id === book.activeId && noLongerOpen(o.status));
   useEffect(() => {
     if (!closedActive) return;
     window.history.replaceState(null, '', '/pos/floor');

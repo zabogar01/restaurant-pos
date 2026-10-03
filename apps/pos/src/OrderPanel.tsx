@@ -37,7 +37,7 @@ import {
 import { SHEET_FIXTURES, panelLine } from './sheetFixtures.js';
 import { SheetView } from './Sheets.js';
 import { VOID_FIXTURES, VOID_ORDER_ACTION, panelVoid, shownOrder, type ShownOrder, type VoidSheetFixture } from './voidFixtures.js';
-import { VoidSheet } from './VoidSheets.js';
+import { VoidSheet, subjectOf } from './VoidSheets.js';
 
 // POS-03: the running order panel (F2a) beside the menu region (F2b), with a
 // sheet (F2c) over them when one is open. The header bar is not built yet; it
@@ -166,11 +166,6 @@ export function ControlledOrderScreen({
     closeOpened();
   }
 
-  // The void sheet still reads the fixture-only derivation (FE-014's
-  // correction to this task): it is not wired to the store. The discount sheets
-  // are (FE-035): they read and write store.order.
-  const order = shownOrder(view);
-
   // After a fire the pressed control is inert in place, so focus would fall to
   // the document. It goes to the new round's heading instead (DESIGN-007), and a
   // polite status line says what happened. Both wait for the round to exist in
@@ -223,7 +218,11 @@ export function ControlledOrderScreen({
     fixtureSheet?.kind === 'item' && view.state.startsWith('sheet-item-') ? { ...fixtureSheet, cancel: cancelTo, add: addTo } : fixtureSheet;
   const approval = APPROVAL_FIXTURES[view.state];
   const discount = DISCOUNT_FIXTURES[view.state] ?? (discountOpened ? panelDiscount(view, store.order) : undefined);
-  const voiding = VOID_FIXTURES[view.state] ?? (voidOpened && panelVoid(voidOpened, view));
+  // FE-036: the void sheets read and write store.order too. A line that is not a
+  // FIRED line of it draws no sheet, so decided here, before `inert`, the focus
+  // return and `overlayAt` see a sheet that is not drawn.
+  const voidFixture = VOID_FIXTURES[view.state] ?? (voidOpened && panelVoid(voidOpened, view));
+  const voiding = voidFixture && subjectOf(voidFixture, store.order) ? voidFixture : undefined;
 
   /**
    * SITEMAP §1: a [SHEET], a [MODAL] and an [INLINE] state are none of them
@@ -253,6 +252,16 @@ export function ControlledOrderScreen({
   }
 
   const go = (next: OrderView) => navigate(viewSearch(next));
+
+  // A voided order is no longer on this screen's to show: the floor replaces the
+  // entry (as Close does), so Back cannot return to it. PosRoutes' redirect stays
+  // as the guard for Back and Forward. In the standalone wrapper, which has no
+  // floor, only the URL and the order change.
+  const leaveVoided = () => {
+    window.history.replaceState(null, '', '/pos/floor');
+    closeOpened();
+    onLocationChange();
+  };
 
   useLayoutEffect(() => {
     if (!returnFocusTo.current) return;
@@ -331,7 +340,17 @@ export function ControlledOrderScreen({
             go={go}
           />
         )}
-        {voiding && <VoidSheet key={voidKey} fixture={voiding} order={order} go={go} />}
+        {voiding && (
+          <VoidSheet
+            key={voidKey}
+            fixture={voiding}
+            order={store.order}
+            voidLine={store.voidLine}
+            voidOrder={(reason, through) => store.voidOrder(reason, through, new Date().toISOString())}
+            go={go}
+            leave={leaveVoided}
+          />
+        )}
       </div>
       {import.meta.env.DEV && <OrderFixtureStates current={view.state} />}
     </>

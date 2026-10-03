@@ -462,9 +462,9 @@ describe('the digits go nowhere (18)', () => {
   });
 
   it('the manager-prompt literal is written in that handler and nowhere else in the client', () => {
-    const files = readdirSync(srcDir).filter((f) => /\.tsx?$/.test(f) && f !== 'discountChange.ts');
+    const files = readdirSync(srcDir).filter((f) => /\.tsx?$/.test(f) && !['discountChange.ts', 'voidChange.ts'].includes(f));
     const holders = files.filter((f) => code(f).includes("'manager-prompt'"));
-    expect(holders).toEqual(['DiscountSheets.tsx']);
+    expect(holders).toEqual(['DiscountSheets.tsx', 'VoidSheets.tsx']);
     expect(sheets.match(/'manager-prompt'/g)).toHaveLength(1);
     expect(sheets.split('\n').find((l) => l.includes("'manager-prompt'"))).toMatch(/onSubmit=\{\(\)\s*=>/);
   });

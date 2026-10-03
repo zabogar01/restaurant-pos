@@ -1,11 +1,13 @@
 import type { Money } from '@pos/money';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { ApprovalPrompt } from './Approval.js';
-import type { ApprovalFixture, ApprovalRequest } from './approvalFixtures.js';
+import { ApprovalDialog } from './Approval.js';
+import type { ApprovalRequest } from './approvalFixtures.js';
 import { formatAmount } from './money.js';
 import type { OrderLine, OrderView } from './orderFixtures.js';
+import type { VoidOutcome } from './orderStore.js';
 import { SheetFrame } from './Sheets.js';
-import { givenReason, voidRule, type ReasonChoice, type VoidReason, type VoidRule } from './void.js';
+import type { VoidThrough } from './voidChange.js';
+import { firedWork, givenReason, voidRule, type ReasonChoice, type VoidReason, type VoidRule } from './void.js';
 import { linesOf, type ShownOrder, type VoidSheetFixture } from './voidFixtures.js';
 
 // The void sheets (F2j): a FIRED line, reached from its row body (I-12), and
@@ -25,6 +27,10 @@ import { linesOf, type ShownOrder, type VoidSheetFixture } from './voidFixtures.
 // manager approves the void and the reason together (M-1). Cancelling it
 // returns to the sheet exactly as it was, reason kept (B-20).
 //
+// FE-036: the sheet reads the order on screen and writes through the store's
+// two void operations (voidChange.ts), which decide the gate again on the order
+// they write. A line that is not a FIRED line of that order has no sheet.
+//
 // B-15: the sheets say a cancellation ticket will print, in the artifact's
 // words, and nothing else about printing. The void never waits on a printer,
 // so no copy and no indicator here suggests it does.
@@ -32,22 +38,46 @@ import { linesOf, type ShownOrder, type VoidSheetFixture } from './voidFixtures.
 /** The artifact's last reason. Choosing it asks for the cashier's own words. */
 export const OTHER_REASON = 'Other — type a reason';
 
-// The view the prompt is handed for Cancel. Compared by identity: it is never
-// navigated to, it only tells the sheet the prompt was cancelled.
-const STAY: OrderView = { state: 'default' };
-
 type Go = (view: OrderView) => void;
 
-export function VoidSheet({ fixture, order, go }: { fixture: VoidSheetFixture; order: ShownOrder; go: Go }) {
+type VoidSheetProps = {
+  fixture: VoidSheetFixture;
+  /** The order on screen, which the sheet reads and the store writes. */
+  order: ShownOrder;
+  voidLine: (lineId: string, reason: string | undefined, through: VoidThrough) => VoidOutcome;
+  voidOrder: (reason: string | undefined, through: VoidThrough) => VoidOutcome;
+  go: Go;
+  /** The order is voided: the order screen takes the cashier to the floor. */
+  leave: () => void;
+};
+
+/** Draws nothing for a line that is not a FIRED line of the order (R13): there is nothing to void. */
+export function VoidSheet(props: VoidSheetProps) {
+  const subject = subjectOf(props.fixture, props.order);
+  return subject && <VoidSheetBody {...props} subject={subject} />;
+}
+
+function VoidSheetBody({ fixture, voidLine, voidOrder, go, leave, subject }: VoidSheetProps & { subject: Subject }) {
   const [choice, setChoice] = useState<ReasonChoice>();
   const [refusal, setRefusal] = useState<string>();
-  const [prompt, setPrompt] = useState<ApprovalFixture>();
+  const [prompt, setPrompt] = useState<ApprovalRequest>();
   const promptOpen = useRef(false);
   const raisedBy = useRef<HTMLElement | null>(null);
   const other = useRef<HTMLInputElement>(null);
 
-  const subject = subjectOf(fixture, order);
   const rule = voidRule(subject.target);
+
+  // The order has been asked to change. A refusal is not a landing: the prompt,
+  // if it was open, closes and the sheet stays, showing what the store holds.
+  function settle(result: VoidOutcome) {
+    promptOpen.current = false;
+    if (result.refused) return setPrompt(undefined);
+    if (subject.kind === 'line') go(fixture.landsOn);
+    else leave();
+  }
+
+  const apply = (reason: string | undefined, through: VoidThrough) =>
+    subject.kind === 'line' ? voidLine(subject.line.id, reason, through) : voidOrder(reason, through);
 
   // The one door. voidRule decides; the sheet only carries out the answer.
   function commit(from: HTMLElement) {
@@ -57,18 +87,16 @@ export function VoidSheet({ fixture, order, go }: { fixture: VoidSheetFixture; o
       other.current?.focus();
       return;
     }
-    if (!rule.approval) return go(fixture.landsOn);
+    if (!rule.approval) return settle(apply(reason, 'direct'));
     raisedBy.current = from;
     promptOpen.current = true;
-    // The prompt displays the request; opener, cancel and approve are the
-    // review harness's routing, and only approve is ever navigated to.
-    setPrompt({ request: requestFor(subject, rule, reason!), opener: '', cancel: STAY, approve: fixture.landsOn });
+    // The prompt displays the request, and what it displays is what it submits.
+    setPrompt(requestFor(subject, rule, reason!));
   }
 
-  function promptGo(view: OrderView) {
+  function cancelPrompt() {
     promptOpen.current = false;
-    if (view === STAY) setPrompt(undefined);
-    else go(view);
+    setPrompt(undefined);
   }
 
   // Cancelling the prompt hands focus back to the control that raised it.
@@ -178,7 +206,17 @@ export function VoidSheet({ fixture, order, go }: { fixture: VoidSheetFixture; o
           </SheetFrame>
         )}
       </div>
-      {prompt && <ApprovalPrompt approval={prompt} go={promptGo} />}
+      {prompt && (
+        <ApprovalDialog
+          request={prompt}
+          requireFull
+          // The confirm key stands for the server accepting the command. Nothing
+          // is verified here: the six digits are neither read nor kept, so the
+          // handler takes no parameter, and a second attempt mounts a fresh prompt.
+          onSubmit={() => settle(apply(prompt.reason, 'manager-prompt'))}
+          onCancel={cancelPrompt}
+        />
+      )}
     </>
   );
 }
@@ -264,12 +302,12 @@ function Reasons({
   );
 }
 
-type Subject =
+export type Subject =
   | { kind: 'line'; target: { kind: 'line'; line: OrderLine }; line: OrderLine; detail?: string; sent: string }
   | { kind: 'order'; target: { kind: 'order'; lines: ReadonlyArray<OrderLine> }; name: string; total: Money };
 
-/** What the sheet would void, read from the order beside it. */
-function subjectOf(fixture: VoidSheetFixture, order: ShownOrder): Subject {
+/** What the sheet would void, read from the order beside it. Undefined for a line that is not a FIRED line of it. */
+export function subjectOf(fixture: VoidSheetFixture, order: ShownOrder): Subject | undefined {
   const all = linesOf(order);
   if (fixture.target.kind === 'order') {
     const lines = all.map((x) => x.line);
@@ -277,11 +315,11 @@ function subjectOf(fixture: VoidSheetFixture, order: ShownOrder): Subject {
   }
   const { lineId } = fixture.target;
   const found = all.find((x) => x.line.id === lineId);
-  if (!found) throw new Error(`no line ${lineId} on this order`);
+  if (!found) return undefined;
   const { line, group } = found;
   // I-12: a PENDING line is taken off from its row's own control, and a
   // VOIDED one is inert, so this sheet is only ever a FIRED line's.
-  if (group.kind !== 'fired') throw new Error('only a FIRED line is voided from this sheet (I-12)');
+  if (group.kind !== 'fired' || firedWork({ kind: 'line', line }).length === 0) return undefined;
   return {
     kind: 'line',
     target: { kind: 'line', line },
