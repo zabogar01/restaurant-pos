@@ -5,7 +5,7 @@ category: ui
 touches: [money, audit, identity]
 depends_on: []
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: review
+status: active
 cycles: 0
 ---
 # FE-036 — The void applies
@@ -385,6 +385,46 @@ which hold the type and the comparison), and the holders are exactly
 (one occurrence, on the `onSubmit={() =>` line) as they are; criterion 17 asserts the same of
 `VoidSheets.tsx` in the void's own tests. Weaken nothing else. Say in the Handoff that you
 changed it and why.
+
+## Lead verify (2026-10-03)
+
+`npm run verify` in this worktree: 2720 tests in 41 files, green. Every changed path is inside
+`owns`; the existing tests changed are the four listed and B1's. The source diff was read
+against R1 to R18. Browser walk (Chrome, this worktree's dev server): a fired line through
+the prompt (five digits leave confirm off, six apply; struck through, inert; totals 270.000,
+−27.000, 12.150, 255.150 checked by hand); Void order with fired work (the voided line not
+counted, typed reason in the request, Cancel keeps reason and order, confirm replaces the entry
+with `/pos/floor`, the table frees, Back does not reopen it, POS-05 does not list it); an order
+with one pending line and the quick sale each voided with no prompt; `?state=sheet-voidline`
+over an order with no Burger draws no sheet and leaves the frame live, no console error. The
+walk did not tap a live row after that address, which is review finding 1.
+
+## Review round 1: two findings, both accepted (2026-10-03)
+
+The report is `.agent/reviews/FE-036-review.md`. This is fix round 2 of 2, the last.
+
+**F1 (P2, accepted).** At `OrderPanel.tsx:224` the address's fixture wins over a target the
+cashier opened, so once `?state=sheet-voidline` names a line the order does not hold, a tap on
+a live fired row or on Void order draws nothing. Fix: **a target opened from a row or the close
+bar takes precedence over the address's fixture**
+(`voidOpened ? panelVoid(voidOpened, view) : VOID_FIXTURES[view.state]`, or equivalent), and
+the R13 subject check still applies to whichever is chosen. The key and the focus return follow
+the chosen one. Add regression tests through `PosRoutes`: after the address draws no sheet,
+tapping a live fired row opens that row's sheet and Void order opens the order's sheet, and each
+void then applies. Prove each red against the current selection.
+
+**F2 (P2, accepted).** `void-apply.test.tsx:574-596` asserts on a probe store that is not the
+one the screen mutates, and `void.test.tsx:378` checks only the URL; a mutation that skips
+`store.voidOrder` at the two `sheet-voidorder*` addresses passes both files. Fix: exercise
+both addresses so that the assertion reads the book the screen actually writes, either through
+`PosRoutes` (the table frees and a tap on it opens a new, empty order) or through a test
+harness that renders `ControlledOrderScreen` over a `useOrderBook` it exposes, and assert the
+order's status is `voided`. Remove the unrelated probe assertion. Give `void.test.tsx:378` the
+same proof, since the task's list said it would assert the order is voided. Run the reviewer's
+mutation (the order callback returns `{ cancels: [] }` without calling `store.voidOrder` when
+the state starts with `sheet-voidorder`) and show it now fails.
+
+Report both in the Handoff under a *Round 2* heading, with the verify output.
 
 ## Handoff
 
