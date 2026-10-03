@@ -5,7 +5,7 @@ category: ui
 touches: [money, audit, identity]
 depends_on: []
 owns: [apps/pos/src/**, apps/pos/test/**]
-status: active
+status: review
 cycles: 0
 ---
 # FE-036 — The void applies
