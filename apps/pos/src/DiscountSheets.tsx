@@ -1,69 +1,96 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { ApprovalPrompt } from './Approval.js';
-import type { ApprovalFixture, ApprovalRequest } from './approvalFixtures.js';
+import { ApprovalDialog } from './Approval.js';
+import type { ApprovalRequest } from './approvalFixtures.js';
 import {
   discountAmount,
   discountName,
   needsManager,
   parseFreeForm,
-  snapshotOf,
   totalsLabel,
   type DiscountSnapshot,
   type FreeFormEntry,
 } from './discount.js';
-import { FREE_FORM_NAME, type DiscountSheetFixture, type DiscountStep } from './discountFixtures.js';
+import { snapshotFor, type DiscountChange, type DiscountThrough } from './discountChange.js';
+import type { DiscountSheetFixture, DiscountStep } from './discountFixtures.js';
 import { formatAmount } from './money.js';
 import type { OrderView } from './orderFixtures.js';
+import type { DiscountOutcome } from './orderStore.js';
 import { SheetFrame } from './Sheets.js';
+import type { ShownOrder } from './voidFixtures.js';
 
 // M-3, the discount sheets (F2i): the preset picker, free-form entry, and the
 // change sheet for a discount already applied. Three sheets to the eye, one
 // family to the order: the cashier moves between them without leaving the
 // sheet, and every one of them knows what the order carries now.
 //
-// Nothing here decides a gate. Every change goes through one door, change(),
-// which asks needsManager (FR-F8's table, discount.ts) about what is applied
-// and what would replace it. Ungated, the change is made; gated, the manager
-// prompt (M-1) opens over the sheet. The prompt is component state, never a
-// URL: a [MODAL] is neither a route nor back-stackable (SITEMAP §1), so no
-// approval ever reaches the address bar or the history. Cancelling it returns
-// to the sheet exactly as it was (B-20), with focus on the control that
-// raised it.
+// FE-035: the sheets read the order on screen — its discount, that discount's
+// note and its subtotal — and write through the store's changeDiscount, never
+// a fixture's order. A fixture says only which sheet shows, what is half-typed,
+// who opened it and where the screen lands.
+//
+// Nothing here decides a gate for the order. Every change goes through one
+// door, change(), which asks needsManager (FR-F8's table, discount.ts) about
+// what is applied and what would replace it, to draw a control gated and to
+// decide whether to open the manager prompt (M-1). Ungated, the change is
+// made; gated, the prompt opens over the sheet. The operation decides the gate
+// again, on the order it writes (discountChange.ts). The prompt is component
+// state, never a URL: a [MODAL] is neither a route nor back-stackable (SITEMAP
+// §1), so no approval ever reaches the address bar or the history. Cancelling
+// it returns to the sheet exactly as it was (B-20), with focus on the control
+// that raised it.
 //
 // Every control that acts is a <button>. The free-form value is the one field.
 
 /** The gated marker, as the artifact writes it on "Other amount — needs a manager". */
 export const NEEDS_MANAGER = ' — needs a manager';
 
-// The view the prompt is handed for Cancel. Compared by identity: it is never
-// navigated to, it only tells the sheet the prompt was cancelled.
-const STAY: OrderView = { state: 'default' };
-
-export function DiscountSheet({ fixture, go }: { fixture: DiscountSheetFixture; go: (view: OrderView) => void }) {
-  const { applied, subtotal } = fixture;
+export function DiscountSheet({
+  fixture,
+  order,
+  changeDiscount,
+  go,
+}: {
+  fixture: DiscountSheetFixture;
+  /** The order on screen, which the sheet reads and the store writes. */
+  order: ShownOrder;
+  changeDiscount: (change: DiscountChange, through: DiscountThrough) => DiscountOutcome;
+  go: (view: OrderView) => void;
+}) {
+  const { applied } = order;
+  const subtotal = order.totals.subtotal;
   const [trail, setTrail] = useState(fixture.trail);
   const [entry, setEntry] = useState<FreeFormEntry>(fixture.entry ?? { kind: 'percent', text: '' });
   const [refusal, setRefusal] = useState<string>();
-  const [prompt, setPrompt] = useState<ApprovalFixture>();
+  const [prompt, setPrompt] = useState<{ next: DiscountChange; request: ApprovalRequest }>();
   const promptOpen = useRef(false);
   const raisedBy = useRef<HTMLElement | null>(null);
-  const step = trail[trail.length - 1]!;
+  // A change step over an order with nothing applied shows the picker: the
+  // order is the store's, so a fixture's step can disagree with it.
+  const last = trail[trail.length - 1]!;
+  const step = last === 'change' && !applied ? 'picker' : last;
 
-  // The one door. FR-F8 decides from the order, never from the sheet.
-  function change(next: DiscountSnapshot | 'remove', from: HTMLElement) {
-    const lands = fixture.landsOn(next);
-    if (!needsManager(applied, next)) return go(lands);
-    raisedBy.current = from;
-    promptOpen.current = true;
-    // The prompt displays the request; opener, cancel and approve are the
-    // review harness's routing, and only approve is ever navigated to.
-    setPrompt({ request: requestFor(applied, next, subtotal), opener: '', cancel: STAY, approve: lands });
+  // The order has been asked to change. A refusal is not a landing: the prompt,
+  // if it was open, closes and the sheet stays, showing what the store holds.
+  function settle(result: DiscountOutcome, next: DiscountChange) {
+    promptOpen.current = false;
+    if (result.refused) return setPrompt(undefined);
+    go(fixture.landsOn(next));
   }
 
-  function promptGo(view: OrderView) {
+  // The one door. FR-F8 decides from the order, never from the sheet.
+  function change(next: DiscountChange, from: HTMLElement) {
+    const shown = next.kind === 'remove' ? 'remove' : snapshotFor(next, fixture.presets);
+    if (!shown || !needsManager(applied, next.kind === 'remove' ? 'remove' : { source: next.kind })) {
+      return settle(changeDiscount(next, 'direct'), next);
+    }
+    raisedBy.current = from;
+    promptOpen.current = true;
+    setPrompt({ next, request: requestFor(applied, shown, subtotal) });
+  }
+
+  function cancelPrompt() {
     promptOpen.current = false;
-    if (view === STAY) setPrompt(undefined);
-    else go(view);
+    setPrompt(undefined);
   }
 
   // Cancelling the prompt hands focus back to the control that raised it.
@@ -98,10 +125,11 @@ export function DiscountSheet({ fixture, go }: { fixture: DiscountSheetFixture; 
   return (
     <>
       <div className="discount-flow" {...inert}>
-        {step === 'picker' && <Picker fixture={fixture} change={change} open={open} cancel={cancel} onEscape={onEscape} />}
+        {step === 'picker' && <Picker fixture={fixture} applied={applied} change={change} open={open} cancel={cancel} onEscape={onEscape} />}
         {step === 'free-form' && (
           <FreeForm
-            fixture={fixture}
+            applied={applied}
+            subtotal={subtotal}
             entry={entry}
             setEntry={(e) => {
               setEntry(e);
@@ -111,20 +139,32 @@ export function DiscountSheet({ fixture, go }: { fixture: DiscountSheetFixture; 
             apply={(from) => {
               const parsed = parseFreeForm(entry, subtotal);
               if (!parsed.ok) return setRefusal(parsed.message);
-              change({ source: 'free-form', name: FREE_FORM_NAME, value: parsed.value }, from);
+              change({ kind: 'free-form', value: parsed.value }, from);
             }}
             back={back}
             onEscape={onEscape}
           />
         )}
-        {step === 'change' && <Change fixture={fixture} change={change} open={open} cancel={cancel} onEscape={onEscape} />}
+        {step === 'change' && (
+          <Change applied={applied} appliedNote={order.appliedNote} subtotal={subtotal} change={change} open={open} cancel={cancel} onEscape={onEscape} />
+        )}
       </div>
-      {prompt && <ApprovalPrompt approval={prompt} go={promptGo} />}
+      {prompt && (
+        <ApprovalDialog
+          request={prompt.request}
+          requireFull
+          // The confirm key stands for the server accepting the command. Nothing
+          // is verified here: the six digits are neither read nor kept, so the
+          // handler takes no parameter, and a second attempt mounts a fresh prompt.
+          onSubmit={() => settle(changeDiscount(prompt.next, 'manager-prompt'), prompt.next)}
+          onCancel={cancelPrompt}
+        />
+      )}
     </>
   );
 }
 
-type MakeChange = (next: DiscountSnapshot | 'remove', from: HTMLElement) => void;
+type MakeChange = (next: DiscountChange, from: HTMLElement) => void;
 
 /** A control that makes or begins a change. Gated, it says so and is drawn dashed, as the artifact draws it. */
 function ChangeButton({ label, gated, onPress }: { label: string; gated: boolean; onPress: (el: HTMLElement) => void }) {
@@ -142,18 +182,19 @@ function ChangeButton({ label, gated, onPress }: { label: string; gated: boolean
 
 function Picker({
   fixture,
+  applied,
   change,
   open,
   cancel,
   onEscape,
 }: {
   fixture: DiscountSheetFixture;
+  applied: DiscountSnapshot | undefined;
   change: MakeChange;
   open: (step: DiscountStep) => void;
   cancel: () => void;
   onEscape: () => void;
 }) {
-  const { applied } = fixture;
   // Every preset is gated alike, because the table decides by kind: none is,
   // unless what the order carries is free-form.
   const presetsGated = needsManager(applied, { source: 'preset' });
@@ -182,7 +223,7 @@ function Picker({
               key={p.id}
               label={discountName(p)}
               gated={presetsGated}
-              onPress={(el) => change(snapshotOf(p), el)}
+              onPress={(el) => change({ kind: 'preset', presetId: p.id }, el)}
             />
           ))}
       </div>
@@ -199,7 +240,8 @@ function Picker({
 const PRESETS_GATED = 'Presets — need a manager';
 
 function FreeForm({
-  fixture,
+  applied,
+  subtotal,
   entry,
   setEntry,
   refusal,
@@ -207,7 +249,8 @@ function FreeForm({
   back,
   onEscape,
 }: {
-  fixture: DiscountSheetFixture;
+  applied: DiscountSnapshot | undefined;
+  subtotal: bigint;
   entry: FreeFormEntry;
   setEntry: (entry: FreeFormEntry) => void;
   refusal: string | undefined;
@@ -215,7 +258,7 @@ function FreeForm({
   back: () => void;
   onEscape: () => void;
 }) {
-  const gated = needsManager(fixture.applied, { source: 'free-form' });
+  const gated = needsManager(applied, { source: 'free-form' });
   const kind = (k: FreeFormEntry['kind'], label: string) => (
     <button
       type="button"
@@ -249,7 +292,7 @@ function FreeForm({
       </div>
       <label className="sheet__label" htmlFor="discount-value">
         {/* PROVISIONAL COPY for a fixed amount: the artifact draws Percent chosen. */}
-        {entry.kind === 'percent' ? 'Value — 0 to 100%' : `Value — 0 to ${formatAmount(fixture.subtotal)}`}
+        {entry.kind === 'percent' ? 'Value — 0 to 100%' : `Value — 0 to ${formatAmount(subtotal)}`}
       </label>
       <div className={refusal ? 'discount-field discount-field--invalid' : 'discount-field'}>
         <input
@@ -280,19 +323,22 @@ function FreeForm({
 }
 
 function Change({
-  fixture,
+  applied,
+  appliedNote,
+  subtotal,
   change,
   open,
   cancel,
   onEscape,
 }: {
-  fixture: DiscountSheetFixture;
+  applied: DiscountSnapshot | undefined;
+  appliedNote: string | undefined;
+  subtotal: bigint;
   change: MakeChange;
   open: (step: DiscountStep) => void;
   cancel: () => void;
   onEscape: () => void;
 }) {
-  const { applied, subtotal } = fixture;
   if (!applied) throw new Error('the change sheet needs a discount to change');
 
   return (
@@ -315,7 +361,7 @@ function Change({
           <span>{discountName(applied)}</span>
           <span>{formatAmount(-discountAmount(subtotal, applied.value))}</span>
         </div>
-        {fixture.appliedNote && <div className="discount-applied__note">{fixture.appliedNote}</div>}
+        {appliedNote && <div className="discount-applied__note">{appliedNote}</div>}
       </div>
       <div className="discount-options">
         <ChangeButton
@@ -328,7 +374,7 @@ function Change({
           gated={needsManager(applied, { source: 'free-form' })}
           onPress={() => open('free-form')}
         />
-        <ChangeButton label="Remove the discount" gated={needsManager(applied, 'remove')} onPress={(el) => change('remove', el)} />
+        <ChangeButton label="Remove the discount" gated={needsManager(applied, 'remove')} onPress={(el) => change({ kind: 'remove' }, el)} />
       </div>
     </SheetFrame>
   );

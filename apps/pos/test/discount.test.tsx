@@ -24,9 +24,11 @@ import {
   STAFF_MEAL_NOTE,
   type DiscountSheetFixture,
 } from '../src/discountFixtures.js';
+import type { DiscountChange, DiscountRefusal, DiscountThrough } from '../src/discountChange.js';
 import { DiscountSheet } from '../src/DiscountSheets.js';
 import { OrderScreen } from '../src/OrderPanel.js';
 import { ORDER_FIXTURES, ORDER_STATES, type OrderState, type OrderView } from '../src/orderFixtures.js';
+import { shownOrder, type ShownOrder } from '../src/voidFixtures.js';
 
 // M-3, the discount family (F2i). What this file is for:
 // - FR-F8's whole-transition gate, every row, decided by what the order carries
@@ -68,17 +70,40 @@ function render(state: OrderState) {
   act(() => root.render(<OrderScreen key={++mount} view={{ state }} />));
 }
 
-/** A discount sheet on its own, for fixtures no ?state= draws. Records where it sends the order. */
-function renderSheet(fixture: DiscountSheetFixture): OrderView[] {
+/**
+ * A discount sheet on its own, over an order of its own (FE-035: the sheet reads
+ * the order it is handed, never the fixture). Records where it sends the screen
+ * and what it asks the store for; `refuses` makes the store answer with that
+ * refusal, as a store would that the screen could not have prevented.
+ */
+function renderSheet(fixture: DiscountSheetFixture, order: ShownOrder, refuses?: DiscountRefusal) {
   const went: OrderView[] = [];
+  const asked: Array<[DiscountChange, DiscountThrough]> = [];
   act(() =>
     root.render(
       <div className="pos-device" key={++mount}>
-        <DiscountSheet fixture={fixture} go={(v) => went.push(v)} />
+        <DiscountSheet
+          fixture={fixture}
+          order={order}
+          changeDiscount={(change, through) => {
+            asked.push([change, through]);
+            return refuses ? { refused: refuses } : {};
+          }}
+          go={(v) => went.push(v)}
+        />
       </div>
     )
   );
-  return went;
+  return { went, asked };
+}
+
+/** The order a ?state= draws, as the store seeds it. */
+const orderOf = (state: OrderState) => shownOrder({ state });
+
+/** The same order with no discount on it: the subtotal and the lines are the state's own. */
+function withoutDiscount(order: ShownOrder): ShownOrder {
+  const { applied: _applied, appliedNote: _note, ...rest } = order;
+  return rest;
 }
 
 const device = () => host.querySelector('.pos-device')!;
@@ -161,6 +186,8 @@ describe('FR-F8: the gate decides from what is applied and what replaces it', ()
     expect(sheets).not.toMatch(/source\s*===\s*'(preset|free-form)'/);
     expect(sheets).not.toMatch(/gated=\{(true|false)\}/);
     expect(code('discountFixtures.ts')).not.toMatch(/gated|needsManager/);
+    // The operation decides the gate once more, on the order it writes, by the same table.
+    expect(code('discountChange.ts')).not.toMatch(/source\s*===\s*'(preset|free-form)'/);
   });
 });
 
@@ -263,29 +290,31 @@ describe('free-form applied (the state FE-007 adds; the artifact never draws it)
 });
 
 describe('nothing applied (FR-F2, FR-F3), on a sheet no ?state= draws', () => {
-  const bare: DiscountSheetFixture = { ...DISCOUNT_FIXTURES['sheet-discount']!, applied: undefined };
+  const bare = DISCOUNT_FIXTURES['sheet-discount']!;
+  const bareOrder = withoutDiscount(orderOf('default'));
 
   it('presets need no approval; a free-form does, and asks to apply rather than replace', () => {
-    const went = renderSheet(bare);
+    const { went, asked } = renderSheet(bare, bareOrder);
     expect(sheet()!.querySelector('.sheet__label')!.textContent).toBe('Presets — no approval needed');
     press(inSheet('Other amount — needs a manager'));
     typeValue('15');
     press(inSheet('Apply'));
     expect(prompt()!.querySelector('.modal__request')!.textContent).toBe('Apply a discount — Other discount 15% −60.750');
     expect(went).toEqual([]);
+    expect(asked).toEqual([]);
   });
 
-  it('a preset is applied at once', () => {
-    const went = renderSheet(bare);
+  it('a preset is applied at once: the store is asked directly, with no prompt, and the screen lands', () => {
+    const { went, asked } = renderSheet(bare, bareOrder);
     press(inSheet('Staff meal — 10%'));
     expect(prompt()).toBeNull();
+    expect(asked).toEqual([[{ kind: 'preset', presetId: 'staff-meal' }, 'direct']]);
     expect(went).toEqual([{ state: 'default' }]);
   });
 });
 
 describe('every drawn change control agrees with the table', () => {
   it.each(SHEET_STATES)('%s, and every sheet reachable from it', (state) => {
-    const fixture = DISCOUNT_FIXTURES[state]!;
     const check = () => {
       for (const b of sheet()!.querySelectorAll<HTMLElement>('.discount-option')) {
         const gated = b.dataset.gated === 'true';
@@ -309,7 +338,7 @@ describe('every drawn change control agrees with the table', () => {
     for (const b of sheet()!.querySelectorAll<HTMLElement>('.discount-option')) {
       if (b.textContent!.startsWith('Other amount')) continue;
       if (sheet()!.querySelector('h2')!.textContent !== 'Discount') continue;
-      expect(b.dataset.gated).toBe(String(needsManager(fixture.applied, { source: 'preset' })));
+      expect(b.dataset.gated).toBe(String(needsManager(orderOf(state).applied, { source: 'preset' })));
     }
   });
 });
@@ -341,7 +370,7 @@ describe('opening the prompt writes no URL and no history (SITEMAP §1)', () => 
   });
 
   it('no discount source writes an approval state, a route, or the history', () => {
-    for (const f of ['DiscountSheets.tsx', 'discountFixtures.ts', 'discount.ts']) {
+    for (const f of ['DiscountSheets.tsx', 'discountFixtures.ts', 'discount.ts', 'discountChange.ts']) {
       const c = code(f);
       expect(c).not.toMatch(/['"`]approval(-\w+)?['"`]|state=approval/);
       expect(c).not.toMatch(/pushState|replaceState|location\./);
@@ -396,15 +425,16 @@ describe('cancelling the prompt returns to the sheet with nothing changed (B-20)
 describe('a preset deactivated or edited after it was applied (FR-F5, B-8)', () => {
   const retired: Preset[] = PRESETS.map((p) => (p.id === 'staff-meal' ? { ...p, active: false } : p));
   const onRetired: DiscountSheetFixture = { ...DISCOUNT_FIXTURES['sheet-remove']!, presets: retired };
+  const carrying = orderOf('sheet-remove');
 
   it('still reads on the order that carries it', () => {
-    renderSheet(onRetired);
+    renderSheet(onRetired, carrying);
     const card = sheet()!.querySelector('.discount-applied')!;
     expect(card.querySelector('.discount-applied__row')!.textContent).toBe('Staff meal — 10%−40.500');
   });
 
   it('is absent from the picker', () => {
-    renderSheet(onRetired);
+    renderSheet(onRetired, carrying);
     press(inSheet('Replace with another preset'));
     const offered = [...sheet()!.querySelectorAll('.discount-option')].map((b) => b.textContent);
     expect(offered).toEqual(['Regular customer — 5%', 'Service recovery — 50.000 off', 'Comp — 100%', 'Other amount — needs a manager']);
@@ -412,12 +442,12 @@ describe('a preset deactivated or edited after it was applied (FR-F5, B-8)', () 
 
   it('reads the value it was applied at, not the preset’s value today', () => {
     const edited: Preset[] = PRESETS.map((p) => (p.id === 'staff-meal' ? { ...p, value: { kind: 'percent', percent: '20' } } : p));
-    renderSheet({ ...DISCOUNT_FIXTURES['sheet-remove']!, presets: edited });
+    renderSheet({ ...DISCOUNT_FIXTURES['sheet-remove']!, presets: edited }, carrying);
     expect(sheet()!.querySelector('.discount-applied__row')!.textContent).toBe('Staff meal — 10%−40.500');
   });
 
   it('never looks the preset up: a reference to nothing reads the same', () => {
-    renderSheet({ ...DISCOUNT_FIXTURES['sheet-remove']!, presets: [], applied: { ...STAFF_MEAL, presetId: 'gone' } });
+    renderSheet({ ...DISCOUNT_FIXTURES['sheet-remove']!, presets: [] }, { ...carrying, applied: { ...STAFF_MEAL, presetId: 'gone' } });
     expect(sheet()!.querySelector('.discount-applied__row')!.textContent).toBe('Staff meal — 10%−40.500');
   });
 });
@@ -426,8 +456,9 @@ describe('a preset deactivated or edited after it was applied (FR-F5, B-8)', () 
 
 describe('no discount applies itself (B-21, FR-F7)', () => {
   it.each(SHEET_STATES)('%s: opening it changes nothing and chooses nothing', (state) => {
-    const went = renderSheet(DISCOUNT_FIXTURES[state]!);
+    const { went, asked } = renderSheet(DISCOUNT_FIXTURES[state]!, orderOf(state));
     expect(went).toEqual([]);
+    expect(asked).toEqual([]);
     expect(prompt()).toBeNull();
     for (const b of sheet()!.querySelectorAll('.discount-option')) expect(b.getAttribute('aria-pressed')).toBeNull();
   });
@@ -439,7 +470,7 @@ describe('no discount applies itself (B-21, FR-F7)', () => {
   });
 
   it('no timer, clock or date anywhere in the discount code', () => {
-    for (const f of ['DiscountSheets.tsx', 'discountFixtures.ts', 'discount.ts']) {
+    for (const f of ['DiscountSheets.tsx', 'discountFixtures.ts', 'discount.ts', 'discountChange.ts']) {
       expect(code(f)).not.toMatch(/setTimeout|setInterval|requestAnimationFrame|\bDate\b|performance\.|Temporal/);
     }
   });
