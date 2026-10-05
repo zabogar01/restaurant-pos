@@ -9,17 +9,17 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-03: the owner merged the lead's record (PR #46) and said to start on the void, accepting
-the lead's two recommendations (DECISIONS.md). FE-036 (the void) is complete at `19210c5`, not
-pushed: built from ARCH-005, two review findings fixed. It waits on the owner's look and merge. Narrative: [journal/2026-10-03.md](journal/2026-10-03.md).
+2026-10-05: the owner merged FE-036, the void (PR #48), and the lead's record (PR #47). The lead
+fast-forwarded the main checkout to `31483c2`, verified it green and, on the owner's word, removed
+FE-036's worktree and run directory. Narrative: [journal/2026-10-05.md](journal/2026-10-05.md).
 
 ## Phase and gates
 
 - **Phase 0**, started 2026-09-14. Backend tasks 1 and 2 of 12 are done (scaffold and
   PostgreSQL, money module). Tasks 3 to 12 (schema and grants, PIN, audit, throttling,
-  sessions, HTTPS server, auth routes, approval, acceptance tests) are **paused** until the
-  owner has reviewed the frontend. The server has a pool, a migration runner and one
-  migration; no schema, no API and no auth.
+  sessions, HTTPS server, auth routes, approval, acceptance tests) **resumed** on the owner's
+  word 2026-10-05 (DECISIONS.md), task 3 first. The server has a pool, a migration runner and
+  one migration; no schema, no API and no auth.
 - **Frontend built** (fixtures plus a client order store): POS-01 lock, POS-02 floor, POS-03
   order workspace, POS-04 settlement, POS-05 closed orders, POS-06 closed order (detail, reprint
   and the refund), POS-07 print incidents. Every designed POS screen is built, bar Release
@@ -27,39 +27,40 @@ pushed: built from ARCH-005, two review findings fixed. It waits on the owner's 
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted.
-- **Last verify by the lead:** `npm run verify` green at **2644 tests / 39 files** on 2026-10-03
-  on `development` at `3203289`, in the main checkout. `apps/server/test/migrate.test.ts` needs
+- **Last verify by the lead:** `npm run verify` green (exit 0) at **2722 tests / 41 files** on
+  2026-10-05 on `development` at `31483c2`, in the main checkout. `apps/server/test/migrate.test.ts` needs
   `npm run db:up`; without it its seven tests fail with `ECONNREFUSED 127.0.0.1:5433` (L6-14).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `60f877e` (PR #46) on
-  GitHub; the local `development` matches it (fast-forwarded 2026-10-03). `main` and
+- **`development` is the integration branch** (owner, 2026-09-29), at `31483c2` (PR #48) on
+  GitHub; the local `development` matches it (fast-forwarded 2026-10-05). `main` and
   `development` are protected: PR required, 0 approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch`
   and fast-forward the main checkout (`git merge --ff-only origin/development`) **before reporting
   or dispatching**: on 2026-10-02 it was 11 commits behind and the lead's first report was wrong.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
-  current (checked 2026-10-02 after the last fast-forward). Rerun after any merge that changes
+  current (checked 2026-10-05 after the last fast-forward). Rerun after any merge that changes
   `.githooks/` or agents.yaml.
-- **Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1003b`** (cut from
-  `60f877e`), **not committed**: this file, QUEUE, DECISIONS, journal, ARCH-005's brief and report.
-- **No task worktree or run directory is left** (FE-035's removed 2026-10-03, owner's word).
+- **Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1005`** (cut from
+  `31483c2`), **not committed**: this file, QUEUE, journal 2026-10-05.
+- **No task worktree or run directory is left** (FE-036's removed 2026-10-05, owner's word).
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations` (`735301d`, behind). Merged, still existing: `agent/design-direction`
-  (worktree `../restaurant-pos-design`), `agent/design-010`, `agent/fe-030` to `agent/fe-034`, thirteen `agent/lead-*`.
+  (worktree `../restaurant-pos-design`), `agent/design-010`, `agent/fe-030` to `agent/fe-036`, fourteen `agent/lead-*`.
 
 ## Running tasks and agents
 
-- **FE-036 (the void, QUEUE 8f) complete at `19210c5` on `agent/fe-036`, not pushed**; worktree
-  `../restaurant-pos-wt/FE-036`. 2722 tests / 41 files green (lead). Both fix cycles used (ruling B1;
-  review F1, F2); lead browser walks before and after. Touches money, audit, identity: owner looks first.
-- **Merged:** FE-035 (discount, PR #45, confirmed on the owner's dev server), FE-034 (PR #42). Each
-  task file holds its Handoff, lead verifies and review. Frontend review complete once the void is settled.
-- **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount AC-8/9/18/21.
-- **Live agents:** the lead (`w2:p1`) only; the builder's and the architect's panes are closed. No dev server runs. Leftovers the lead did not
-  make: agentless pane `w2:pE` (not re-checked); worktree `.claude/worktrees/keen-chebyshev-ccf255`.
+- **No task is running and none is written.** Merged: FE-036 (the void, PR #48, 2026-10-05; built
+  from ARCH-005, both fix cycles used), FE-035 (discount, PR #45), FE-034 (PR #42). Each task file
+  holds its Handoff, lead verifies and review.
+- **The owner's frontend review is complete** now that the void is merged (DECISIONS.md,
+  2026-10-03); the backend pause lifted 2026-10-05. Next: PHASE0-003's task file, then dispatch.
+- **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
+  AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
+- **Live agents:** the lead (`w2:p1`) only. No lead dev server. Not the lead's: agentless pane
+  `w2:pE`; worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
@@ -86,7 +87,6 @@ pushed: built from ARCH-005, two review findings fixed. It waits on the owner's 
 
 - **Owner to see in a browser, then close:** the Burger-tile fix (FE-021 `7268943`, L257-262), and
   Add from POS-03 `eightysix` returning there by design (L353; `own-items.test.tsx:381-393`).
-- **Void is inert on a live order** (QUEUE 8f): fixed on `agent/fe-036`, not merged.
 - **Money, not filed (ARCH-003, 9.6):** `closeOrder` (`close.ts:74–101`) accepts any drafts; only the
   Add gate (`tender.ts:39–41`) keeps a card under the balance (B-5). Unreachable today; own task, architect consult.
 - **P3, left out of FE-034 on purpose** (QUEUE 8c, 8d): a reopened book-only order lands on
@@ -111,19 +111,15 @@ Nothing here is decided. Detail is where each line points.
   will print* and *recorded against your name*, though the client prints and records nothing.
 - **ARCH-005, before Phase 2:** how a cashier abandons an opened order with no lines (Void order is off
   on it; on the server it blocks end-of-day, FR-I2); does an approved void the server refuses write `REFUSED`?
-- **After the void:** resume Phase 0 backend with the designer on the back-office audit alongside?
-- **FE-033's lead rulings, merged, yours to overturn:** a live Close stays on the plain floor
-  and never shows the receipt chip (no printer in the client); a quick sale with no line is not
-  on the strip, and one the book holds is listed on every state but `loading` and `error`; a new
-  sale resumes at `?state=quick-new`; a sale being paid keeps the strip's ordinary words.
-- **Earlier lead rulings, yours to overturn.** FE-031: an unknown book id draws `error`, never
-  a fixture; a voided line is not listed as charged; the cash contribution is cash less change.
-  FE-032: a cancelled refund sheet discards its draft; a refund confirmed on a fixture address
-  keeps the artifact's `20:31`. FE-030 (builder readings): session closes list above all fixture
-  rows by real instant; the time filter accepts a three-digit entry shown as `08:00`.
+- **FE-033's lead rulings, yours to overturn:** live Close lands on the plain floor, no receipt chip; an
+  empty quick sale is off the strip; a new sale resumes at `?state=quick-new`; a paying sale keeps plain words.
+- **Earlier lead rulings, yours to overturn:** FE-031 (unknown book id draws `error`; voided line not
+  charged; cash contribution is cash less change); FE-032 (cancelled refund discards its draft; fixture
+  refund keeps `20:31`); FE-030 (session closes list first by instant; `800` reads `08:00`).
 - **Kit:** add `Bash(grep:*)` to the builder allowlist? Should the dispatcher ping the lead on
   `BLOCKED ON APPROVAL`? Do builders stay interactive by default (`roles.builder.mode`)? Should
-  `/lead` fetch and fast-forward before its report (the stale report of 2026-10-02)?
+  `/lead` fetch and fast-forward before its report (it was 13 behind on 2026-10-05)? Builders edit
+  by `python3` heredoc against their rule (two owner prompts on FE-036): allow it, or say so in the prompt?
 - **Before Phase 5 (ARCH-003):** is an abandoned approval prompt (idle lock, navigation, a closed
   tab) a *cancelled approval* for FR-J3 and AC-18? It joins POS-03 Q6, the verifying-state cancel.
 - **FR-M3 / B-2 wording.** The contract says "half-up" but not what that means below zero;
@@ -146,4 +142,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-[QUEUE.md](QUEUE.md): the owner looks at and merges FE-036; the frontend review is then complete and the backend pause lifts (Phase 0 plus the designer on 9).
+[QUEUE.md](QUEUE.md): Phase 0 task 3 (schema and grants), owner's go 2026-10-05, with the designer on
+the back-office audit (9) alongside; 8b and 8g (store guards) can follow as a small money task.
