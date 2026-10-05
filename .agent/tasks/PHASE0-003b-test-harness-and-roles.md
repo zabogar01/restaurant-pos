@@ -144,4 +144,45 @@ New tests (in `apps/server/test/`):
 
 ## Handoff
 
-*(Written by the builder.)*
+**What I did.** One commit on `agent/phase0-003b` (hash in `git log`; the Handoff is part of it).
+
+- `vitest.config.ts` (new, root): two inline projects. `server` is `apps/server/test/**/*.test.ts` with `fileParallelism: false`, `globalSetup: apps/server/test/support/global-setup.ts`, and `env` from `serverTestEnv()`. `client` is vitest's defaults with `apps/server/**` added to the exclude list. The preferred design worked; the chained-invocation fallback was not needed.
+- `apps/server/test/support/global-setup.ts`: opens a dedicated owner connection to `pos`, takes `pg_advisory_lock(hashtext('restaurant-pos:server-tests'))` on it (try first, print a waiting line, then block), runs `provision`, and returns a teardown that ends the connection and so releases the lock.
+- `apps/server/test/support/env.ts`: reads `db/dev.env` with `util.parseEnv`, lets shell variables override it, and returns the environment for the server project with `DATABASE_URL` and `MIGRATION_DATABASE_URL` retargeted to `pos_test`. A missing variable throws naming it.
+- `apps/server/test/support/database.ts`: `ownerClient()`, `ownerQuery()` and `resetDatabase()`.
+- `apps/server/scripts/provision.ts` (never imported by `src`): idempotent; creates `pos_app` if absent, and every run `ALTER ROLE ... LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD <pg.escapeLiteral>`; creates `pos_test` if absent. `npm run db:up` is now `docker compose --env-file db/dev.env up -d --wait && npm run provision -w apps/server`.
+- `apps/server/src/db/pool.ts`: reads `DATABASE_URL` only, no fallback; unset throws `DATABASE_URL is not set...`. `requireEnv` is not exported. `apps/server/src/db/migrate.ts`: owns its own `pg.Client` from `MIGRATION_DATABASE_URL` (unset throws naming it), runs BEGIN, the file, the `schema_migration` insert, COMMIT, with ROLLBACK on error; same error text as before. It no longer imports `pool.ts`, so nothing else under `src` reaches the owner connection.
+- `db/dev.env` (new, committed): header says throwaway, loopback-only; holds owner credentials, `pos_app` password, `pos` and `pos_test` names, and both URLs for `pos`. `docker-compose.yml` now interpolates from it, and its healthcheck uses `$${POSTGRES_USER}`. `apps/server/package.json`: `migrate` and the new `provision` use `tsx --env-file=../../db/dev.env`. `apps/server/tsconfig.json` now includes `scripts`.
+- New tests: `pool.test.ts` (pos_app attributes, no CREATE on public, DDL denied, unset `DATABASE_URL` and `MIGRATION_DATABASE_URL` throw naming the variable), `provision.test.ts` (twice in a row), `harness-race.test.ts` (reset in `beforeEach`, assert on migrations' output; the harness's regression test).
+
+**Librarian answers** (cited from `.agent/bin/ask.sh librarian`, Context7 vitest v4.1.6 docs, tsx and node-postgres docs): per-project `fileParallelism: false` limits that project to one worker while other projects still run in parallel; `sequence.groupOrder` exists but I did not need it. Global setup runs in a separate scope, so worker env should come from project `env` (what I used) or `provide`/`inject`. A session-level advisory lock lives as long as its connection. The escape function is the top-level `pg.escapeLiteral`, not a `Client.prototype` method. `tsx --env-file=...` is supported; it does not override variables already in the environment, which is what lets the test workers' `pos_test` URLs win in the `npm run db:migrate` subprocess that `migrate.test.ts` spawns, so that test does not touch `pos`.
+
+**Decisions.**
+- `migrate.test.ts`: besides the schema drop and the `schema_migration` reads, I also moved the two `information_schema.tables` reads to the owner connection. As `pos_app` with no grants, `information_schema.tables` returns no rows for the role, so those assertions could not pass; the assertions themselves are untouched. The `query` import became `ownerQuery`. This is the only existing test file changed.
+- `resetDatabase()` runs `DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT USAGE ON SCHEMA public TO PUBLIC;`. A recreated `public` loses PostgreSQL 16's default USAGE grant, so without it `pos_app` could not even see the schema, and tests would differ from `pos`. `migrate.test.ts`'s own `beforeEach` keeps its original bare statement. Cost: 003c must still grant `pos_app` its table privileges explicitly; it gets none here beyond LOGIN and the default USAGE on `public`.
+- Provisioning and the lock connect to database `pos`, not `pos_test`: they must exist before `pos_test` does. Connecting is all they do to `pos`.
+- Role and database names: the role name `pos_app` is a constant in `provision.ts`; the database name comes from `POS_TEST_DB_NAME`.
+
+**Evidence.**
+- Client counts: before (`npx vitest run` excluding `apps/server`) 40 files and 2719 tests; after, 44 files and 2733 tests in total, that is the same 40 and 2719 plus 4 server files and 14 server tests (7 `migrate`, 4 `pool`, 1 `provision`, 2 `harness-race`). The 2726 in the task is 2719 plus the 7 migrate tests.
+- Ten consecutive `npm run verify` runs: exit codes 0 0 0 0 0 0 0 0 0 0.
+- `npx vitest run apps/server/test/migrate.test.ts` alone: 1 file, 7 tests passed.
+- `pos` before and after verify: `schema_migration` exists with 0 rows (left by earlier runs), and is the only table; unchanged after.
+- Race red proof: with `fileParallelism: true` in the server project, `npx vitest run --project server` fails 4 tests across `harness-race`, `migrate` and `pool` (`duplicate key value violates unique constraint "pg_type_typname_nsp_index"`, `relation "schema_migration" does not exist`). Reverted; green again.
+- Lock: I held the advisory lock from another session for 8 seconds; `npx vitest run --project server` printed `another server test run holds the database; waiting for it to finish` and finished in 9.03 s versus 1.7 s unblocked.
+- `grep -rn "devpassword\|apppassword\|postgres://" apps/server/src db/migrations apps/server/test` returns nothing.
+- Final `npm run verify`: typecheck clean; `Test Files 44 passed (44)`, `Tests 2733 passed (2733)`.
+
+**Not fully verified.**
+- Acceptance 7 literally (`npm run db:up` from a clean shell): this machine already has the main checkout's `restaurant-pos-db-1` container on 127.0.0.1:5433, so `docker compose up` for this worktree failed with port already allocated (I removed the project I had created). I ran the second half, `npm run provision -w apps/server`, against the existing container: it provisioned `pos_app` and `pos_test`. The compose half, with the new interpolation, was started successfully up to the port bind, but I did not see a healthy container from it. Also `npm run db:migrate` against `pos` was not run, to leave `pos` unchanged for criterion 4; the migrate path is exercised against `pos_test` by `migrate.test.ts`.
+- Acceptance 5 was shown with a held lock rather than two simultaneous verifies (one background verify overlapped one foreground run and both passed).
+
+**Found, not fixed.**
+- Vite prints a warning on every run: `vitest.config.ts` is ESM syntax loaded as CommonJS because the root `package.json` has no `"type": "module"`. Harmless. Fix is either `"type": "module"` at the root (affects other config) or a `.mts` name, which is outside the task's owned-path wording; the lead should rule.
+- Worktrees share the single container on port 5433 and the single `pos_test`; that is why the advisory lock matters.
+- The development database's compose volume is `restaurant-pos_pgdata`; a worktree directory with another name would make `db:up` build a different volume on the same port, so only one checkout's container can be up.
+- I ran a `for` loop, `sed -i` and wrote to `/tmp` for the ten runs and one edit, against the one-command shell rule; no repository effect, but noted.
+
+**Next agent (003c) needs:** `resetDatabase()` and `ownerQuery()` in `apps/server/test/support/database.ts`; `pos_app` has LOGIN and USAGE on `public` only, so each table's grants must be in its migration; the `pos_app` attribute test in `pool.test.ts` will need no change.
+
+DONE
