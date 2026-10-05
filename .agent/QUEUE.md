@@ -77,10 +77,11 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     task files are written one at a time from what the previous task built, not all up front.
     The plan's SQL and code are **superseded wherever ARCH-006 differs**
     (`.agent/reviews/ARCH-006-phase0-core-schema.md`).
-    - **PHASE0-003a** — brand `Rate` — dispatched 2026-10-05.
+    - *(Done: PHASE0-003a, brand `Rate`, merged 2026-10-05 as PR #50.)*
     - **PHASE0-003b** — serial server tests on `pos_test`, provisioned `pos_app`, pool split —
-      written, waits for the builder slot.
-    - **PHASE0-003c** — the five tables and 21 tests from ARCH-006 — depends on 003b merged — not written.
+      built at `0810504`, lead verify green (44 files, 2733 tests), in review.
+    - **PHASE0-003c** — the six tables and 21 tests from ARCH-006 — depends on 003b merged —
+      written (untracked in the kit worktree), dispatched after the merge.
     - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
       three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — the
