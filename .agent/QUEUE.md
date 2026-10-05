@@ -53,34 +53,38 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    on a design check of the approval prompt's verifying state — not written.
 
 8e. *(Done: FE-035, the discount applies, merged 2026-10-03 as PR #45.)*
-8f. **FE-036, the void applies on a live order** — fired-line and whole-order void are
-   inert in the same way, and the void sheet reads the fixture's order (`OrderPanel.tsx:334`).
-   Owner's word 2026-10-03: go, with the refund's stand-in, and a voided order listed nowhere in
-   the POS (DECISIONS.md). FE-036 complete 2026-10-03 at `19210c5`; waits on the owner's look and merge.
+8f. *(Done: FE-036, the void applies on a live order, merged 2026-10-05 as PR #48.)*
 8g. **The three line mutations refuse under a lock in the store (no ID yet)** — `addLine`,
    `removeLine`, `setQuantity` rely on the screen not offering them (ARCH-004) — small, can
    ride with 8b — not written.
 
 ## Back office
 
-9. **Back-office design** — 13 screens (BO-01 to BO-13). Only the menu and a report detail
-   have Frost artifacts (2026-09-14); the other screens render through a variable remap and were
-   never reviewed. Needs an audit and a design task first — depends on DESIGN-009 — not written.
-   The two Frost back-office artifacts still link to the wireframe 51 times (`menu.html` 40,
-   `report-detail.html` 11); that design task re-points them.
+9. **Back-office design** — 13 screens (BO-01 to BO-13). *(Done: DESIGN-011, the audit,
+   2026-10-05, `.agent/reviews/DESIGN-011-back-office-audit.md`.)* Nine slices, each a designer
+   task re-pointing the wireframe links whose Frost destinations it creates:
+   - **A — shared shell, global alerts, M-6, forms, modals** — depends on the owner's Q3 — next, not written.
+   - B (BO-01, 02; Q4, Q2) · C (BO-13; brings I-8 into the inventory) · D (BO-03, 04) · E (BO-05,
+     06; Q4, Q5) · F (BO-07, 08; Q5) · G (BO-09; Q2) · H (BO-10, 11; Q2, Q7) · I (BO-12; Q8) — after A.
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
 
-## Backend (paused by the owner until the frontend has been reviewed)
+## Backend (resumed by the owner 2026-10-05)
 
 11. **PHASE0-003 to PHASE0-012** — schema and grants, PIN, audit, throttling, sessions, HTTPS
     server, auth routes, approval, client shells wiring, acceptance tests, from
-    `docs/superpowers/plans/2026-09-08-phase-0-foundations.md` — depends on the owner's review
-    of the frontend — **paused**; task files are written one at a time from what the previous
-    task built, not all up front.
-    Before task 3: brand `Rate` and leave `Money` as `bigint`; settle `fileParallelism: false`
-    versus a database per worker; the append-only grant test must connect as `pos_app`, not the
-    superuser default (L2685-2694, L2789-2803).
+    `docs/superpowers/plans/2026-09-08-phase-0-foundations.md` — the owner's go 2026-10-05 —
+    task files are written one at a time from what the previous task built, not all up front.
+    The plan's SQL and code are **superseded wherever ARCH-006 differs**
+    (`.agent/reviews/ARCH-006-phase0-core-schema.md`).
+    - **PHASE0-003a** — brand `Rate` — dispatched 2026-10-05.
+    - **PHASE0-003b** — serial server tests on `pos_test`, provisioned `pos_app`, pool split —
+      written, waits for the builder slot.
+    - **PHASE0-003c** — the five tables and 21 tests from ARCH-006 — depends on 003b merged — not written.
+    - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
+      three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
+    - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — the
+      owner's word to commission it — not written.
 12. **PRD wording proposal** — replace "half-up" in FR-M3 and B-2 with the half-away-from-zero
     sentence (L2699-2701) — depends on the owner (contract text) — waiting.
 
