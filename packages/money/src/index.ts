@@ -6,8 +6,14 @@ export { encodeMoney, decodeMoney } from './codec.js';
 export { divHalfUp } from './rounding.js';
 export { formatMoney } from './format.js';
 
-/** Rates are integers in parts per million (FR-M5). 10% === 100_000n. */
-export type Rate = bigint;
+/**
+ * Rates are integers in parts per million (FR-M5). 10% === 100_000n.
+ *
+ * Branded so that a swapped `mulRate(rate, amount)` or a bare bigint passed as
+ * a rate fails to compile. Only `rateFromPercent` and `rateFromPpm` produce one.
+ * `Money` stays a plain bigint, so a Rate is still accepted where Money is.
+ */
+export type Rate = bigint & { readonly __rate: unique symbol };
 
 export const RATE_SCALE = 1_000_000n;
 
@@ -38,7 +44,17 @@ export function rateFromPercent(percent: string): Rate {
     throw new Error('rate precision is limited to one part per million');
   }
 
-  return BigInt(whole) * PPM_PER_PERCENT + BigInt(significant.padEnd(PPM_PERCENT_DIGITS, '0'));
+  return (BigInt(whole) * PPM_PER_PERCENT +
+    BigInt(significant.padEnd(PPM_PERCENT_DIGITS, '0'))) as Rate;
+}
+
+/**
+ * Brands a rate already held in parts per million: one read from a bigint
+ * column, or a fixture. Rejects a negative, like `rateFromPercent`.
+ */
+export function rateFromPpm(ppm: bigint): Rate {
+  if (ppm < 0n) throw new Error('rate must not be negative');
+  return ppm as Rate;
 }
 
 /** amount x rate, rounded half-up once. */

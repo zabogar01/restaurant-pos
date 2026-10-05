@@ -109,4 +109,18 @@ that test must not either.
 
 ## Handoff
 
-*(Written by the builder.)*
+**What I did.** In `packages/money/src/index.ts`, `Rate` is now `bigint & { readonly __rate: unique symbol }`. `rateFromPercent` keeps its behaviour and carries one cast at its return. A new exported `rateFromPpm(ppm: bigint): Rate` throws `'rate must not be negative'` for a negative and otherwise returns its argument branded; it holds the only other `as Rate` in `src/`. `RATE_SCALE` stays a plain `bigint`, and the runtime negative-rate guards in `mulRate` and `taxIncludedIn` are unchanged. In `packages/money/test/money.test.ts` I added `rateFromPpm` cases (`0n`, `1n` and `RATE_SCALE` returned unchanged; `-1n` throws), wrapped the generated rates of the three property tests and the `0n` rate in `rateFromPpm`, and gave the two negative-rate cases one commented `as Rate` cast each. In `packages/money/test/no-number.types.ts`, `rate` is now `rateFromPpm(100_000n)`, and I added four `@ts-expect-error` lines, each with a reason: a bare `bigint` is not a `Rate`, `mulRate(rate, amount)` (the swap), `taxIncludedIn(rate, amount)`, and `rateFromPpm(100_000)` (a `number`). `bareRate` was added to the trailing `void [...]` list so it is not an unused variable. Nothing is committed in this handoff text itself; the commit is on `agent/phase0-003a` (see `git log`).
+
+**Evidence for the decisions.** Red proof for acceptance criterion 1: I removed the directive above `mulRate(rate, amount)` and ran `npm run typecheck`. It failed with `packages/money/test/no-number.types.ts(30,17): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'Rate'.` I then restored the directive. I proved only this one of the four new directives red, as the task asked for one run. The `grep -rn "as Rate" packages/money` output is exactly four lines: `src/index.ts:48` and `:57` (the two constructors) and `test/money.test.ts:88` and `:130` (the two deliberate negative-rate casts), which meets criterion 2. No file under `apps/` changed, and the client callers compiled unchanged.
+
+**Existing tests changed.** Only the two files the task lists. In `money.test.ts` the changes were the ones above, and every existing expectation keeps its value. In `no-number.types.ts`, `const rate: Rate = 100_000n` no longer compiled, so it became `rateFromPpm(100_000n)`. No existing `@ts-expect-error` was weakened.
+
+**Stated limit.** `Money` stays a plain `bigint` (lead's ruling, 2026-09-14), so a `Rate` is still accepted where `Money` is wanted, and `mulRate(rate, rate)` compiles. The brand catches a swapped rate and amount and a bare `bigint` passed as a rate, and nothing else.
+
+**Found and not fixed.** Nothing. I did not run Prettier and no formatter touched any file.
+
+**`npm run verify` output.** Typecheck of `apps/server`, `packages/money` and `apps/pos` is clean. Vitest: `Test Files 41 passed (41)`, `Tests 2726 passed (2726)`. That is the baseline 2722 tests in 41 files plus the four new `rateFromPpm` cases (three returns-unchanged cases and one throw).
+
+**Next agent.** Nothing outstanding. 003b and 003c do not depend on this. When Phase 2 reads a rate from a `bigint` column, it should go through `rateFromPpm`. No browser was needed or used.
+
+DONE
