@@ -42,10 +42,9 @@ FE-036's worktree and run directory. Narrative: [journal/2026-10-05.md](journal/
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
   current (checked 2026-10-05 after the last fast-forward). Rerun after any merge that changes
   `.githooks/` or agents.yaml.
-- **Lead work happens in the worktree `../restaurant-pos-kit`, on `agent/lead-1005`**, pushed (owner's
-  word) with both consult reports. Waiting on the owner's PR and merge, **before 003b is dispatched**.
-  Untracked there on purpose: `tasks/PHASE0-003b-*.md` (the dispatcher commits it to its own branch).
-- **Task worktree left:** `../restaurant-pos-wt/PHASE0-003a` and `.agent/runs/PHASE0-003a/`; remove after merge.
+- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1005b`** (cut from `e9d5b96`), pushed (owner).
+  `agent/lead-1005` (PR #49) and `agent/phase0-003a` (PR #50) merged 2026-10-05; main checkout fast-forwarded
+  to `e9d5b96`, hooks current; 003a's worktree and run directory removed.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations` (`735301d`, behind). Merged, still existing: `agent/design-direction`
@@ -58,15 +57,15 @@ FE-036's worktree and run directory. Narrative: [journal/2026-10-05.md](journal/
   superuser, mutable settings). Task 3 is split: **003a** `Rate` brand; **003b** serial server tests on
   `pos_test`, advisory lock, provisioned `pos_app`, pool split, no credential in source; **003c** the
   schema, from ARCH-006's four migrations and 21 test cases, cut after 003b merges.
-- **PHASE0-003a complete** at `c6022c8`, **pushed** (owner's word): verify 2726/41, Codex review clean
-  (round 2; journal). Owner opens the PR, looks (money), merges. **003b written**, waits on lead-1005's merge.
+- **PHASE0-003a merged** (PR #50). **PHASE0-003b complete** at `6c3eb58`, pushed: F1 (high, tests aimable at `pos`)
+  fixed; F2 (low, placeholder `u:p` URLs in a test) accepted by the lead, both cycles used. Verify 45/2737. **003c written**.
 - **DESIGN-011 done** (`.agent/reviews/DESIGN-011-back-office-audit.md`; pane closed): 11 of 13 BO screens
   are greyscale wireframes; nine design slices A-I, **A first**. Q3 ruled (same manager only, DECISIONS).
   **The owner will first try an external AI design tool** on the design work; the lead's designer if not good enough.
 - Merged: FE-036 (the void, PR #48), FE-035 (PR #45), FE-034 (PR #42). The frontend review is complete.
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) only. No lead dev server. Not the lead's: agentless pane
+- **Live agents:** the lead (`w2:p1`), no other. No lead dev server. Not the lead's: agentless pane
   `w2:pE`; worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
@@ -113,8 +112,8 @@ Nothing here is decided. Detail is where each line points.
 - **ARCH-006 for the owner** (none blocks 003): a cashier's approval refused by the cooldown is audit,
   security event, or both (before plan Task 10)? Does the failure count reset when a cooldown ends
   (Task 6)? Kitchen staff as records (Phase 1)? A deactivated user's PIN reusable? Commission ADR-008?
-- **DESIGN-011 for the owner:** Q3's eight-hour half (Login, draft kept locally, never resent?); Q4 staff number, bootstrap; Q5 Seats and
-  Reactivate in scope?; Q7 where a failed report print shows; Q8 refund before/after in audit. Report has each.
+- **DESIGN-011 for the owner:** Q3's eight-hour half; Q4 the MVP back-office credential (PIN until SSO, or a password?)
+  and first-manager bootstrap; Q5 out of scope (blocks nothing, lead); Q7 report-print failure: BO-13 or report only? Q8 ruled (lead, delegated).
 - **"go" read as accepting both** the void's (2026-10-03) and Phase 0's (designer alongside) recommendations.
 - **FE-036 lead rulings, yours to overturn:** a client-voided line shows only its strike-through; the
   sheets keep *A cancellation ticket will print* and *recorded against your name*.
