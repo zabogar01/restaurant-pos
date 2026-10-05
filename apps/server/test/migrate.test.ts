@@ -6,18 +6,18 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { runMigrations } from '../src/db/migrate.js';
-import { query } from '../src/db/pool.js';
+import { ownerQuery } from './support/database.js';
 
 describe('runMigrations', () => {
   beforeEach(async () => {
-    await query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
+    await ownerQuery('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
   });
 
   it('applies pending migrations and records them', async () => {
     const applied = await runMigrations('db/migrations');
     expect(applied).toContain('0001_extensions.sql');
 
-    const rows = await query<{ filename: string }>(
+    const rows = await ownerQuery<{ filename: string }>(
       'SELECT filename FROM schema_migration ORDER BY filename'
     );
     expect(rows.map((r) => r.filename)).toContain('0001_extensions.sql');
@@ -55,13 +55,13 @@ describe('runMigrations', () => {
     it('leaves nothing of the failed file behind and stops before later files', async () => {
       await runMigrations(dir).catch(() => undefined);
 
-      const tables = await query<{ table_name: string }>(
+      const tables = await ownerQuery<{ table_name: string }>(
         `SELECT table_name FROM information_schema.tables
           WHERE table_schema = 'public' ORDER BY table_name`
       );
       expect(tables.map((t) => t.table_name)).toEqual(['good_table', 'schema_migration']);
 
-      const recorded = await query<{ filename: string }>(
+      const recorded = await ownerQuery<{ filename: string }>(
         'SELECT filename FROM schema_migration ORDER BY filename'
       );
       expect(recorded.map((r) => r.filename)).toEqual(['0001_good.sql']);
@@ -84,7 +84,7 @@ describe('runMigrations', () => {
 
       await expect(runMigrations(dir)).rejects.toThrow('0001_unrecordable.sql');
 
-      const tables = await query<{ table_name: string }>(
+      const tables = await ownerQuery<{ table_name: string }>(
         `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`
       );
       expect(tables.map((t) => t.table_name)).toEqual(['schema_migration']);
@@ -101,7 +101,7 @@ describe('runMigrations', () => {
       const { stdout } = await run('npm', ['run', 'db:migrate'], { cwd: repoRoot });
       expect(stdout).toContain('applied: 0001_extensions.sql');
 
-      const rows = await query<{ filename: string }>('SELECT filename FROM schema_migration');
+      const rows = await ownerQuery<{ filename: string }>('SELECT filename FROM schema_migration');
       expect(rows.map((r) => r.filename)).toContain('0001_extensions.sql');
     });
 

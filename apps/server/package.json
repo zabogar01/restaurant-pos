@@ -2,7 +2,8 @@
   "name": "@pos/server",
   "type": "module",
   "scripts": {
-    "migrate": "tsx src/db/migrate.ts",
+    "migrate": "tsx --env-file=../../db/dev.env src/db/migrate.ts",
+    "provision": "tsx --env-file=../../db/dev.env scripts/provision.ts",
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {

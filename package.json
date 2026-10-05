@@ -10,7 +10,7 @@
     "e2e"
   ],
   "scripts": {
-    "db:up": "docker compose up -d --wait",
+    "db:up": "docker compose --env-file db/dev.env up -d --wait && npm run provision -w apps/server",
     "db:migrate": "npm run migrate -w apps/server",
     "test": "vitest run",
     "test:unit": "vitest run",
