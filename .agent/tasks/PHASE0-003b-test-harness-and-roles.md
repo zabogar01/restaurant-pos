@@ -230,4 +230,12 @@ Append a `### Round 2` section to your Handoff answering F1, with the new test's
 
 **Next agent (003c) needs:** `resetDatabase()` and `ownerQuery()` in `apps/server/test/support/database.ts`; `pos_app` has LOGIN and USAGE on `public` only, so each table's grants must be in its migration; the `pos_app` attribute test in `pool.test.ts` will need no change.
 
+### Round 2
+
+**F1 answered.** `serverTestEnv()` (`apps/server/test/support/env.ts`) now throws, before any connection is opened (it runs at vitest config load, ahead of the global setup), when the test database equals the development database. The development names are `POS_DB_NAME`, the database in the development `DATABASE_URL`, and the database in the development `MIGRATION_DATABASE_URL`; the URLs are resolved with `new URL` and `decodeURIComponent`, not compared as strings. The error names the variable and the database: `POS_TEST_DB_NAME is "pos", which is the development database; refusing to run tests against it`. I also made it reject a `POS_TEST_DB_NAME` that is not a plain identifier (`[A-Za-z0-9_]+`), so a name such as `%70os`, which the URL would resolve to `pos` while provisioning created a different database, cannot slip past; the task asked for this case only "if your check covers it", and this is how it does.
+
+**New test:** `apps/server/test/server-test-env.test.ts`, suite "serverTestEnv refuses the development database as a test target": refuses `POS_TEST_DB_NAME=pos`; refuses when the development URLs name it (two URLs, two names, `POS_DB_NAME` set to something else); refuses `%70os`; and still returns `pos_test` by default. None opens a connection. Inside a worker the process environment already holds the `pos_test` URLs, so the default-case test stubs the development URLs back to `pos` first; note that a shell that exports `DATABASE_URL` naming `pos_test` would now also make verify refuse, which I consider correct.
+
+**Evidence.** `env POS_TEST_DB_NAME=pos npx vitest run --project server` now stops at config load with the error above and touches nothing. `npm run verify`: typecheck clean, `Test Files 45 passed (45)`, `Tests 2737 passed (2737)` (44 and 2733 before, plus the one new file and 4 tests). I did not mutate the guard away to watch the new unit test fail, since the unguarded path drops the schema of `pos`; the live refusal above is the red-to-green evidence.
+
 DONE
