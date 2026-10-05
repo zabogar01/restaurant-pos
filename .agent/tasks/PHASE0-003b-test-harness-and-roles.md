@@ -5,7 +5,7 @@ category: feature
 touches: [audit, identity]
 depends_on: []
 owns: [vitest.config.ts, package.json, package-lock.json, docker-compose.yml, db/dev.env, scripts/**, apps/server/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-003b — Test harness and database roles
@@ -141,6 +141,29 @@ New tests (in `apps/server/test/`):
 - Any table, grant or migration (003c). The `Rate` brand (003a).
 - `config.ts`, the HTTPS server and anything else in plan Tasks 4 to 12.
 - A non-superuser owner distinct from `pos_owner` (pre-production gate).
+
+## Lead rulings after the build (2026-10-05)
+
+Written by the lead after its own verify (exit 0, 44 files, 2733 tests), for the review.
+
+1. **`migrate.test.ts`, the two `information_schema.tables` reads.** Item 7 permitted only the
+   schema drop and the `schema_migration` reads to move to the owner connection. The builder also
+   moved the two `information_schema.tables` reads, because as `pos_app` with no grants that view
+   returns no rows, so the unchanged assertions could not pass. Accepted: the reads go through the
+   owner connection, the assertions are unchanged, and no assertion was weakened.
+2. **`resetDatabase()` re-grants `USAGE ON SCHEMA public TO PUBLIC`.** Accepted: it restores the
+   default a fresh PostgreSQL 16 database has, so `pos_test` after a reset matches `pos`. It gives
+   `pos_app` nothing a new database would not.
+3. **Acceptance 5 and 7, partly shown.** Accepted as evidence for this round: 5 by an advisory lock
+   held from another session (the run waited 9.03 s against 1.7 s); 7 by `npm run provision`
+   against the running container, with `docker compose --env-file db/dev.env config` rendering the
+   same owner, password, database and loopback port as before, and plain `docker compose config`
+   refusing with `required variable POS_OWNER_USER is missing`. The lead runs `npm run db:up` in
+   the main checkout after the merge, where the one container lives.
+4. **The vitest ESM warning** (`vitest.config.ts` loaded as CommonJS) is left as is: harmless, and
+   the fix (`.mts`, or `"type": "module"` at the root) is a housekeeping change for a later task.
+5. **The builder's `for` loop, `sed -i` and `/tmp` writes** had no repository effect. Noted, not a
+   finding.
 
 ## Handoff
 
