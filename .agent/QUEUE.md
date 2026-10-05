@@ -53,10 +53,10 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    on a design check of the approval prompt's verifying state — not written.
 
 8e. *(Done: FE-035, the discount applies, merged 2026-10-03 as PR #45.)*
-8f. **The void applies on a live order (no ID yet)** — fired-line and whole-order void are
-   inert in the same way, and the void sheet reads the fixture's order (`OrderPanel.tsx:325`).
-   Needs its own architect consult (manager-gated, cancellation ticket, B-16) — depends on the
-   owner's word — not written.
+8f. **FE-036, the void applies on a live order** — fired-line and whole-order void are
+   inert in the same way, and the void sheet reads the fixture's order (`OrderPanel.tsx:334`).
+   Owner's word 2026-10-03: go, with the refund's stand-in, and a voided order listed nowhere in
+   the POS (DECISIONS.md). FE-036 complete 2026-10-03 at `19210c5`; waits on the owner's look and merge.
 8g. **The three line mutations refuse under a lock in the store (no ID yet)** — `addLine`,
    `removeLine`, `setQuantity` rely on the screen not offering them (ARCH-004) — small, can
    ride with 8b — not written.
