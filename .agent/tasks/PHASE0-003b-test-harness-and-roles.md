@@ -5,7 +5,7 @@ category: feature
 touches: [audit, identity]
 depends_on: []
 owns: [vitest.config.ts, package.json, package-lock.json, docker-compose.yml, db/dev.env, scripts/**, apps/server/**]
-status: active
+status: review
 cycles: 0
 ---
 # PHASE0-003b — Test harness and database roles
