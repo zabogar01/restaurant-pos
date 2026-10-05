@@ -35,7 +35,10 @@ export type VoidSheetFixture = {
   /** The control that opened the sheet, which takes focus back when it closes. */
   opener: string;
   cancel: OrderView;
-  /** Where the order lands once the void is made, approved or not. */
+  /**
+   * Where the order lands once a LINE void is made. A whole-order void lands on
+   * the floor, which the order screen navigates to (it is not a `?state=` view).
+   */
   landsOn: OrderView;
 };
 

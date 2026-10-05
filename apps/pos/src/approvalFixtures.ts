@@ -73,6 +73,9 @@ const base = {
   approve: { state: 'default' },
 } satisfies Omit<ApprovalFixture, 'notice' | 'throttled'>;
 
+// FE-036: these addresses picture M-1 (a wrong PIN, the cooldown, a PIN that is
+// not a manager's) and perform nothing. Their request is a fixture's line and a
+// reason nobody chose, so the confirm key only routes; no void is made from one.
 export const APPROVAL_FIXTURES: Partial<Record<OrderState, ApprovalFixture>> = {
   approval: base,
 

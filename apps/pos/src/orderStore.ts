@@ -4,6 +4,7 @@ import { orderTotals, type DiscountSnapshot } from './discount.js';
 import { closeOrder, type ClosedOrder } from './close.js';
 import { changeDiscount as applyDiscountChange, type DiscountChange, type DiscountRefusal, type DiscountThrough } from './discountChange.js';
 import { PRESETS } from './discountFixtures.js';
+import { voidLine as applyVoidLine, voidOrder as applyVoidOrder, type VoidRefusal, type VoidResult, type VoidThrough } from './voidChange.js';
 import { refundOrder, type RefundRecord, type RefundRequest, type RefundResult } from './refund.js';
 import { fireOrder } from './fire.js';
 import { DEFAULT_CATEGORY, MENU_ITEMS, originFacts, type CategoryId } from './menuFixtures.js';
@@ -55,6 +56,8 @@ type StoreState = {
   closed?: Pick<ClosedOrder, 'closedAt' | 'tenders' | 'change'>;
   /** FE-032: set once by `refundInBook`, never unset. The refund is its own record: nothing above changes with it. */
   refunded?: RefundRecord;
+  /** FE-036: set once by a whole-order void, never unset. Nothing else on the order changes with it. */
+  voided?: { voidedAt: string };
 };
 
 export type NewLine = {
@@ -112,10 +115,29 @@ export type OrderStore = {
    * Optional so a hand-built store (a test's) need not supply one.
    */
   changeDiscount?: (change: DiscountChange, through: DiscountThrough) => DiscountOutcome;
+  /**
+   * FE-036: voids one FIRED line of the active order — a STAND-IN for the server's
+   * fired-line void command (see `voidChange.ts`, which lists what it leaves out).
+   * `through` decides the manager gate inside the operation; the reason is checked
+   * and dropped. A refusal changes nothing. Applied through the functional
+   * updater, so a second call in the same tick sees the first.
+   * Optional so a hand-built store (a test's) need not supply one.
+   */
+  voidLine?: (lineId: string, reason: string | undefined, through: VoidThrough) => VoidOutcome;
+  /**
+   * FE-036: voids the active order — a STAND-IN for the server's whole-order void
+   * command. `voidedAt` is the caller's clock, as `closedAt` is. The order stays
+   * in the book, VOIDED, and its table is free.
+   * Optional so a hand-built store (a test's) need not supply one.
+   */
+  voidOrder?: (reason: string | undefined, through: VoidThrough, voidedAt: string) => VoidOutcome;
 };
 
-/** The store the hook builds, which always supplies `changeDiscount`: the order screen asks for this one. */
-export type LiveOrderStore = OrderStore & Required<Pick<OrderStore, 'changeDiscount'>>;
+/** The store the hook builds, which always supplies what the order screen calls: that screen asks for this one. */
+export type LiveOrderStore = OrderStore & Required<Pick<OrderStore, 'changeDiscount' | 'voidLine' | 'voidOrder'>>;
+
+/** What the store answers a void with: the refusal, or the ids of the FIRED lines it cancelled. Nothing is stored for them (B-15, B-16). */
+export type VoidOutcome = { refused: VoidRefusal } | { refused?: undefined; cancels: ReadonlyArray<string> };
 
 /** What the store answers a discount change with: the refusal, or nothing. */
 export type DiscountOutcome = { refused: DiscountRefusal } | { refused?: undefined };
@@ -182,18 +204,25 @@ export function tableOf(orderId: string): string | undefined {
 
 const isClosed = (o: StoreState) => o.closed !== undefined;
 
-/** What the book reports. `refunded` is derived from the record's presence and stored nowhere else. */
-export type OrderStatus = 'open' | 'closed' | 'refunded';
+/** An order accepts a change until it is closed or voided. */
+const isOpen = (o: StoreState) => o.closed === undefined && o.voided === undefined;
 
-/** Whether an order has reached CLOSED, REFUNDED included: its table is free and it accepts no edit. One predicate, so no reader compares against `'closed'` alone. */
-export const reachedClosed = (status: OrderStatus): boolean => status !== 'open';
+/** What the book reports. `refunded` and `voided` are derived from their records' presence and stored nowhere else. */
+export type OrderStatus = 'open' | 'closed' | 'refunded' | 'voided';
 
-const statusOf = (o: StoreState): OrderStatus => (o.refunded ? 'refunded' : isClosed(o) ? 'closed' : 'open');
+/** Whether an order has reached CLOSED, REFUNDED included: the orders POS-05 lists and FR-I5 counts. A voided order has not. */
+const REACHED_CLOSED: ReadonlyArray<OrderStatus> = ['closed', 'refunded'];
+export const reachedClosed = (status: OrderStatus): boolean => REACHED_CLOSED.includes(status);
+
+/** Whether an order is anything but open: its table is free and it accepts no edit, closed, refunded or voided. */
+export const noLongerOpen = (status: OrderStatus): boolean => status !== 'open';
+
+const statusOf = (o: StoreState): OrderStatus => (o.voided ? 'voided' : o.refunded ? 'refunded' : isClosed(o) ? 'closed' : 'open');
 
 /** FR-D1's at-most-one applies to open orders: the table's open order, if any, and otherwise the id a new one takes (`table-9`, then `table-9-2`…). */
 function tableSlot(orders: Readonly<Record<string, StoreState>>, n: number): { id: string; exists: boolean } {
   const ids = Object.keys(orders).filter((id) => tableOf(id) === String(n));
-  const open = ids.find((id) => !isClosed(orders[id]!));
+  const open = ids.find((id) => isOpen(orders[id]!));
   if (open) return { id: open, exists: true };
   return { id: ids.length === 0 ? `table-${n}` : `table-${n}-${ids.length + 1}`, exists: false };
 }
@@ -356,8 +385,8 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
   const update = useCallback((change: (prev: StoreState) => StoreState) => {
     setBook((prev) => {
       const current = prev.orders[prev.activeId];
-      // A closed order is never editable (FE-027 rule 6).
-      if (!current || isClosed(current)) return prev;
+      // A closed or voided order is never editable (FE-027 rule 6).
+      if (!current || !isOpen(current)) return prev;
       const next = change(current);
       return next === current ? prev : { ...prev, orders: { ...prev.orders, [prev.activeId]: next } };
     });
@@ -439,7 +468,7 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
         closedAt
       );
     const now = bookRef.current.orders[bookRef.current.activeId];
-    if (!now || isClosed(now) || attempt(now).refused) return false;
+    if (!now || !isOpen(now) || attempt(now).refused) return false;
     update((prev) => {
       const result = attempt(prev);
       if (result.refused) return prev;
@@ -455,7 +484,7 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
     const { view, locked } = context.current;
     const lockedNow = locked || originFacts(view).lock !== undefined;
     const attempt = (order: StoreState) =>
-      applyDiscountChange(order, change, through, { closed: isClosed(order), locked: lockedNow, presets: PRESETS });
+      applyDiscountChange(order, change, through, { closed: !isOpen(order), locked: lockedNow, presets: PRESETS });
     const { orders, activeId } = bookRef.current;
     const now = orders[activeId];
     // With no order open there is nothing to change, which is a closed order's answer too.
@@ -471,6 +500,39 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
     });
     return {};
   }, [update]);
+
+  // The facts are read now, at the press, as the discount reads them: both locks
+  // refuse a void, this tab's own payment session included.
+  const runVoid = useCallback((attempt: (order: StoreState, locked: boolean) => VoidResult<StoreState>): VoidOutcome => {
+    const { view, locked } = context.current;
+    const lockedNow = locked || originFacts(view).lock !== undefined;
+    const { orders, activeId } = bookRef.current;
+    const now = orders[activeId];
+    // With no order open there is nothing to void, which is a closed order's answer too.
+    if (!now) return { refused: 'not-open' };
+    const result = attempt(now, lockedNow);
+    if (result.refused) return { refused: result.refused };
+    // The ref is advanced here as well as by the render, so a second call in the
+    // same tick reads the first one's order. The updater is the write.
+    bookRef.current = { orders: { ...orders, [activeId]: result.order }, activeId };
+    update((prev) => {
+      const next = attempt(prev, lockedNow);
+      return next.refused ? prev : next.order;
+    });
+    return { cancels: result.cancels };
+  }, [update]);
+
+  const voidLine = useCallback(
+    (lineId: string, reason: string | undefined, through: VoidThrough): VoidOutcome =>
+      runVoid((order, locked) => applyVoidLine(order, lineId, reason, through, { open: isOpen(order), locked })),
+    [runVoid]
+  );
+
+  const voidOrder = useCallback(
+    (reason: string | undefined, through: VoidThrough, voidedAt: string): VoidOutcome =>
+      runVoid((order, locked) => applyVoidOrder(order, reason, through, voidedAt, { open: isOpen(order), locked })),
+    [runVoid]
+  );
 
   const refund = useCallback((orderId: string, request: RefundRequest, refundedAt: string): RefundResult => {
     // The ref is advanced here as well as by the render, so a second call in the
@@ -527,7 +589,7 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
   const hasOrderFor = (n: number) => Object.keys(book.orders).some((id) => tableOf(id) === String(n));
 
   return {
-    store: { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire, close, changeDiscount },
+    store: { order: toShownOrder(data), category, selectCategory, addLine, removeLine, setQuantity, fire, close, changeDiscount, voidLine, voidOrder },
     book: { activeId: book.activeId, orderFor, orders, refund, openOrderIdOf, hasOrderFor, openFixture, openOrder, openTable, newQuickSale },
   };
 }

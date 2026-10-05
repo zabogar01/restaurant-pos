@@ -2,11 +2,12 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { act } from 'react';
+import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { OrderScreen } from '../src/OrderPanel.js';
-import { ORDER_FIXTURES, ORDER_STATES, type OrderLine, type OrderState, type OrderView, type RoundGroup } from '../src/orderFixtures.js';
+import { ControlledOrderScreen, OrderScreen } from '../src/OrderPanel.js';
+import { useOrderBook, type OrderBook } from '../src/orderStore.js';
+import { ORDER_FIXTURES, ORDER_STATES, orderViewFrom, type OrderLine, type OrderState, type OrderView, type RoundGroup } from '../src/orderFixtures.js';
 import { firedWork, givenReason, voidRule } from '../src/void.js';
 import {
   LINE_REASONS,
@@ -61,17 +62,39 @@ function render(state: OrderState, gone?: string) {
   act(() => root.render(<OrderScreen key={++mount} view={view} />));
 }
 
-/** A void sheet on its own, over any order. Records where it sends the order. */
-function renderSheet(fixture: VoidSheetFixture, order: ShownOrder): OrderView[] {
+/** The routed screen's wiring over a book the test can read, so an assertion reads what the screen writes. */
+function renderBook(state: OrderState): { book: OrderBook } {
+  const out = {} as { book: OrderBook };
+  window.history.replaceState(null, '', `/pos/order?state=${state}`);
+  function Screen() {
+    const [view, setView] = useState<OrderView>({ state });
+    const held = useOrderBook(view);
+    out.book = held.book;
+    return <ControlledOrderScreen view={view} store={held.store} onLocationChange={() => setView(orderViewFrom(window.location.search))} />;
+  }
+  act(() => root.render(<Screen key={++mount} />));
+  return out;
+}
+
+/** A void sheet on its own, over any order, with a store that accepts every void. Records where it sends the order. */
+function renderSheet(fixture: VoidSheetFixture, order: ShownOrder): { went: OrderView[]; left: number[] } {
   const went: OrderView[] = [];
+  const left: number[] = [];
   act(() =>
     root.render(
       <div className="pos-device" key={++mount}>
-        <VoidSheet fixture={fixture} order={order} go={(v) => went.push(v)} />
+        <VoidSheet
+          fixture={fixture}
+          order={order}
+          voidLine={() => ({ cancels: [] })}
+          voidOrder={() => ({ cancels: [] })}
+          go={(v) => went.push(v)}
+          leave={() => left.push(left.length)}
+        />
       </div>
     )
   );
-  return went;
+  return { went, left };
 }
 
 const device = () => host.querySelector('.pos-device')!;
@@ -343,12 +366,14 @@ describe('the order sheet draws whichever variant the order calls for, not the ?
   });
 
   it('the fired fixture over an order with nothing fired is not', () => {
-    const went = renderSheet(firedFixture, nothingFired);
+    const { went, left } = renderSheet(firedFixture, nothingFired);
     expect(tag()).toBeNull();
     expect(reasons()).toEqual([]);
     press(inSheet('Void order'));
     expect(prompt()).toBeNull();
-    expect(went).toEqual([{ state: 'default' }]);
+    // An order void lands on the floor, which the screen navigates to: not a view.
+    expect(went).toEqual([]);
+    expect(left).toHaveLength(1);
   });
 
   it('a fired round that is not printed makes no difference to the gate or the copy', () => {
@@ -361,11 +386,13 @@ describe('the order sheet draws whichever variant the order calls for, not the ?
 
 describe('FR-H3: an order with nothing fired voids at once (AC-10)', () => {
   it('Void order: no prompt, no reason asked, and the order leaves the sheet', () => {
-    render('sheet-voidorder');
+    const out = renderBook('sheet-voidorder');
     press(inSheet('Void order'));
     expect(prompt()).toBeNull();
     expect(sheet()).toBeNull();
-    expect(urlState()).toBe('default');
+    // FE-036: the order is voided in the book the screen writes, and the cashier is on the floor.
+    expect(window.location.pathname).toBe('/pos/floor');
+    expect(out.book.orders().map((o) => [o.id, o.status])).toEqual([['table-1', 'voided']]);
   });
 });
 
@@ -549,13 +576,20 @@ describe.each(GATED_STATES)('%s: cancelling the prompt returns to the sheet with
   });
 
   it('approved, the void lands on the order', () => {
-    render(state);
+    const out = renderBook(state);
     press(reasons()[0]!);
     press(inSheet('Continue'));
     approve();
     expect(prompt()).toBeNull();
     expect(sheet()).toBeNull();
-    expect(urlState()).toBe('default');
+    // A line void lands on the order; an order void lands on the floor (FE-036).
+    if (state === 'sheet-voidline') {
+      expect(urlState()).toBe('default');
+      expect(panelRows('voided').map((r) => r.querySelector('.order-line__name')!.textContent)).toContain('Burger');
+    } else {
+      expect(window.location.pathname).toBe('/pos/floor');
+      expect(out.book.orders().map((o) => o.status)).toEqual(['voided']);
+    }
   });
 });
 
@@ -694,7 +728,8 @@ describe('a fired row body opens the void sheet for that line, and no other (acc
     approve();
     expect(sheet()).toBeNull();
     expect(urlState()).toBe('overflow');
-    expect(panelRows('fired')).toHaveLength(6);
+    expect(panelRows('fired')).toHaveLength(5);
+    expect(panelRows('voided').map((r) => r.querySelector('.order-line__name')!.textContent)).toContain('Chicken Wings');
   });
 
   it('opens as component state: the URL and the history are untouched, and the panel behind is inert', () => {
