@@ -5,7 +5,7 @@ category: feature
 touches: [audit, identity]
 depends_on: []
 owns: [vitest.config.ts, package.json, package-lock.json, docker-compose.yml, db/dev.env, scripts/**, apps/server/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-003b — Test harness and database roles
@@ -164,6 +164,28 @@ Written by the lead after its own verify (exit 0, 44 files, 2733 tests), for the
    the fix (`.mts`, or `"type": "module"` at the root) is a housekeeping change for a later task.
 5. **The builder's `for` loop, `sed -i` and `/tmp` writes** had no repository effect. Noted, not a
    finding.
+
+## Round 2 — the review's finding (lead ruling, 2026-10-05)
+
+Review: `.agent/reviews/PHASE0-003b-review.md` (untracked; leave it alone, the lead commits it).
+One high finding, accepted as the reviewer proposed. Change nothing else.
+
+**F1 — a test-database override can select the development database.** `serverTestEnv()`
+(`apps/server/test/support/env.ts:29-34`) accepts any non-empty `POS_TEST_DB_NAME`, so
+`POS_TEST_DB_NAME=pos npm run verify` would point `resetDatabase()` and `migrate.test.ts` at `pos`
+and drop its schema. That breaks item 2 and acceptance 4.
+
+Fix: `serverTestEnv()` refuses, with an error that names the variable and the database, any test
+target that equals the development database, that is: the database named by `POS_DB_NAME`, or the
+database in the development `DATABASE_URL`, or the database in the development
+`MIGRATION_DATABASE_URL`, compared after resolving each URL (not as strings). It throws before the
+global setup opens any connection, so provisioning never runs against the wrong target. Add a
+regression test in `apps/server/test/` that calls `serverTestEnv()` with `POS_TEST_DB_NAME=pos` (and
+once with the URLs naming the test database as `pos` some other way, if your check covers it) and
+asserts the throw, opening no connection. The default (`pos_test`) keeps working.
+
+Append a `### Round 2` section to your Handoff answering F1, with the new test's name and the
+`npm run verify` counts. Commit on `agent/phase0-003b`.
 
 ## Handoff
 
