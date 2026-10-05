@@ -15,6 +15,7 @@ import {
   formatMoney,
   mulRate,
   rateFromPercent,
+  rateFromPpm,
   taxIncludedIn,
   type Money,
   type Rate,
@@ -22,7 +23,16 @@ import {
 
 export function numbersAreNotMoney(): void {
   const amount: Money = 1485n;
-  const rate: Rate = 100_000n;
+  const rate: Rate = rateFromPpm(100_000n);
+
+  // @ts-expect-error a bare bigint is not a Rate
+  const bareRate: Rate = 100_000n;
+  // @ts-expect-error swapped arguments: Money (a bare bigint) is not a Rate
+  mulRate(rate, amount);
+  // @ts-expect-error swapped arguments to taxIncludedIn
+  taxIncludedIn(rate, amount);
+  // @ts-expect-error rateFromPpm must not take a number
+  rateFromPpm(100_000);
 
   // @ts-expect-error a number is not Money
   const asMoney: Money = 1485;
@@ -70,5 +80,5 @@ export function numbersAreNotMoney(): void {
   // @ts-expect-error rateFromPercent returns a Rate, never a number
   const parsed: number = rateFromPercent('10');
 
-  void [asMoney, asRate, product, tax, decoded, quotient, parsed];
+  void [bareRate, asMoney, asRate, product, tax, decoded, quotient, parsed];
 }

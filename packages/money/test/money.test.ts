@@ -3,6 +3,8 @@ import fc from 'fast-check';
 import {
   RATE_SCALE,
   rateFromPercent,
+  rateFromPpm,
+  type Rate,
   mulRate,
   taxIncludedIn,
   formatMoney,
@@ -56,6 +58,16 @@ describe('rateFromPercent', () => {
   });
 });
 
+describe('rateFromPpm', () => {
+  it.each([0n, 1n, RATE_SCALE])('returns %s unchanged', (ppm) => {
+    expect(rateFromPpm(ppm)).toBe(ppm);
+  });
+
+  it('rejects a negative rate', () => {
+    expect(() => rateFromPpm(-1n)).toThrow('rate must not be negative');
+  });
+});
+
 describe('mulRate', () => {
   it('applies a rate and rounds half-up once', () => {
     // 1485 * 5% = 74.25 -> 74
@@ -72,7 +84,8 @@ describe('mulRate', () => {
   });
 
   it('rejects a negative rate', () => {
-    expect(() => mulRate(1485n, -1n)).toThrow('rate must not be negative');
+    // Deliberate cast: tests the runtime guard behind the type.
+    expect(() => mulRate(1485n, -1n as Rate)).toThrow('rate must not be negative');
   });
 
   it('returns the amount unchanged at 100%', () => {
@@ -89,7 +102,7 @@ describe('mulRate', () => {
       fc.property(
         fc.bigInt({ min: 0n, max: 10n ** 12n }),
         fc.bigInt({ min: 0n, max: RATE_SCALE }),
-        (amount, rate) => mulRate(amount, rate) <= amount
+        (amount, rate) => mulRate(amount, rateFromPpm(rate)) <= amount
       )
     );
   });
@@ -109,11 +122,12 @@ describe('taxIncludedIn', () => {
   });
 
   it('extracts nothing at a zero rate', () => {
-    expect(taxIncludedIn(1485n, 0n)).toBe(0n);
+    expect(taxIncludedIn(1485n, rateFromPpm(0n))).toBe(0n);
   });
 
   it('rejects a negative rate', () => {
-    expect(() => taxIncludedIn(1485n, -1n)).toThrow('rate must not be negative');
+    // Deliberate cast: tests the runtime guard behind the type.
+    expect(() => taxIncludedIn(1485n, -1n as Rate)).toThrow('rate must not be negative');
   });
 
   it('lands within half a unit of amount x r / (1 + r)', () => {
@@ -121,7 +135,8 @@ describe('taxIncludedIn', () => {
       fc.property(
         fc.bigInt({ min: 0n, max: 10n ** 12n }),
         fc.bigInt({ min: 0n, max: 10n * RATE_SCALE }),
-        (amount, rate) => {
+        (amount, ppm) => {
+          const rate = rateFromPpm(ppm);
           const tax = taxIncludedIn(amount, rate);
           // tax ~ amount*rate / (SCALE + rate), so compare without dividing
           const err = tax * (RATE_SCALE + rate) - amount * rate;
@@ -137,7 +152,7 @@ describe('taxIncludedIn', () => {
       fc.property(
         fc.bigInt({ min: 0n, max: 10n ** 12n }),
         fc.bigInt({ min: 0n, max: 10n * RATE_SCALE }),
-        (amount, rate) => taxIncludedIn(amount, rate) <= amount
+        (amount, rate) => taxIncludedIn(amount, rateFromPpm(rate)) <= amount
       )
     );
   });
