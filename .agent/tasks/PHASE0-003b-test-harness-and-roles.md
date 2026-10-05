@@ -5,7 +5,7 @@ category: feature
 touches: [audit, identity]
 depends_on: []
 owns: [vitest.config.ts, package.json, package-lock.json, docker-compose.yml, db/dev.env, scripts/**, apps/server/**]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE0-003b — Test harness and database roles
@@ -186,6 +186,17 @@ asserts the throw, opening no connection. The default (`pos_test`) keeps working
 
 Append a `### Round 2` section to your Handoff answering F1, with the new test's name and the
 `npm run verify` counts. Commit on `agent/phase0-003b`.
+
+## Lead ruling on the round-2 review (2026-10-05)
+
+The re-review closed F1 and raised **F2 (low)**: `apps/server/test/server-test-env.test.ts:18-19,
+33-34` stub `DATABASE_URL` and `MIGRATION_DATABASE_URL` with literals of the form
+`postgres://u:p@127.0.0.1:5433/<db>`, against the Constraints' second bullet. Both fix cycles are
+used. **Ruled: accepted, not fixed.** The constraint exists to keep the real development credentials
+(ARCH-006 rule 5) out of source; `u:p` is a placeholder that authenticates nothing, the cases open
+no connection, and the test needs exact URLs to prove the guard resolves them. The owner may
+overturn this; the fix is to derive the four URLs from the setup's environment with only the
+database path changed. The verify on `50c0185` (45 files, 2737 tests) stands; nothing changed since.
 
 ## Handoff
 
