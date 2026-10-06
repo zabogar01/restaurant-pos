@@ -559,7 +559,8 @@ scheduled discount campaigns. More than one discount per order.
 - **Currency and precision.** IDR at precision 0.
 - **Restaurant time zone.** WIB (Asia/Jakarta, UTC+7), with no daylight
   saving. Every stored and displayed time is in WIB, shown as 24-hour
-  `HH:MM`. A business day runs 00:00–23:59 WIB.
+  `HH:MM`. A business day runs from one end-of-day close to the next and
+  is named by the WIB date on which it opened (FR-I1).
 - **Implementation stack.** TypeScript, Node, Fastify, React, Vite, and
   PostgreSQL. Recorded here only so this document does not contradict the
   Phase 0 plan; the stack itself belongs to the architecture, not to the

@@ -67,8 +67,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    - **B (BO-01, 02)** carries DESIGN-012's three low findings N1-N3 as its first items — waits on Q2, Q4.
    - *(Done: C, DESIGN-013, BO-13 print incidents, merged 2026-10-06 as PR #57.)*
      The BO-13 frontend task must carry its re-review rules N1 and N2 (task file, end).
-   - **Ready now (A merged):** D (BO-03, 04) · F (BO-07, 08; Q5 ruled out of scope by the lead) · I (BO-12; Q8 ruled).
-   - **Wait on the owner:** E (BO-05, 06; Q4) · G (BO-09; Q2) · H (BO-10, 11; Q2, Q7).
+   - **Ready now (Q2, Q4, Q7 ruled 2026-10-06):** B (BO-01, 02) · D (BO-03, 04) · E (BO-05, 06) ·
+     F (BO-07, 08; Q5 ruled out of scope by the lead) · G (BO-09) · H (BO-10, 11) · I (BO-12; Q8 ruled).
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
 
@@ -88,8 +88,10 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       actor, no `clientInstanceId`, no `RETURNING`) — next — not written.
     - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
       three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
-    - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — the
-      owner's word to commission it — not written.
+    - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
+      by the owner 2026-10-06, possibly to after the MVP — not written.
+    - **PIN reuse** (DECISIONS 2026-10-06): `pin_lookup` unique only among active users, by a forward
+      migration — rides with a Phase 0 task (005 or 007) — not written.
 12. **PRD wording proposal** — replace "half-up" in FR-M3 and B-2 with the half-away-from-zero
     sentence (L2699-2701) — depends on the owner (contract text) — waiting.
 

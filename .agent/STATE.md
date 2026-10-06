@@ -9,10 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-06, end of day (wrap-up): the owner merged PHASE0-004 (PR #56), DESIGN-013 (PR #57) and the
-lead's record (PR #58). The lead fast-forwarded to `c507dfc`, ran `npm ci` (new dependency) and verify,
-removed both task worktrees and run directories, and cut `agent/lead-1006c` for this wrap-up.
-Narrative: [journal/2026-10-06.md](journal/2026-10-06.md).
+2026-10-06, late: the owner answered fourteen open questions (business day, back-office credential,
+cooldown, PIN reuse, DESIGN-013, ARCH-005, abandoned approvals, rate range); all are in DECISIONS.md.
+Earlier: PRs #56-#58 merged, `development` at `c507dfc`. Narrative: [journal/2026-10-06.md](journal/2026-10-06.md).
 
 ## Phase and gates
 
@@ -59,10 +58,13 @@ Narrative: [journal/2026-10-06.md](journal/2026-10-06.md).
   003c's and 004's Handoffs (reset with `resetDatabase()`, never `DELETE`; the `typeof` guard lesson
   for any value that could carry a PIN). Touches audit: Codex review; the owner looks before merge.
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
-  three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
-- **Next design task: slice D (BO-03, 04), F (BO-07, 08) or I (BO-12)**, ready; B, E, G and H wait on
-  Q2, Q4 and Q7. Slice B must take DESIGN-012's lows N1-N3 first (its task file, end). Each slice
-  consumes `office.css`/`office.js` and repoints only the wireframe links it replaces.
+  three). The owner's answers are in (DECISIONS 2026-10-06: cooldown refusal is audit; count resets).
+- **PIN reuse (DECISIONS 2026-10-06) conflicts with the schema:** `0002_staff_user.sql:29` makes
+  `pin_lookup` unique across every row, deactivated included. Needs a forward migration (unique only
+  among active users) and a lookup that ignores inactive rows: give it to a Phase 0 task, not a new one.
+- **Next design task: any of slices B, D, E, F, G, H, I** — Q2, Q4, Q7 are ruled. Slice B must take
+  DESIGN-012's lows N1-N3 first (its task file, end); M-6 becomes password-only plus "another manager".
+  Each slice consumes `office.css`/`office.js` and repoints only the wireframe links it replaces.
 - **The BO-13 frontend task** carries DESIGN-013's rules N1, N2 and the async-focus rule (its task file).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
@@ -105,13 +107,12 @@ Narrative: [journal/2026-10-06.md](journal/2026-10-06.md).
 
 Nothing here is decided. Detail is where each line points.
 
-- **DESIGN-013 (new):** is a back-office reprint of a *cancellation* ticket a "kitchen ticket" for
-  FR-J3's audit (lead: yes)? When a work ticket is reprinted after one of its lines was cancelled,
-  does the row mark that line (reviewer: yes, "Burger — cancelled 20:02"; the POS artifact pairs them too)?
-- **DESIGN-011:** Q2 business day (contract wording proposed: close to close, named by the WIB date
-  it opened); Q4 the MVP back-office credential (M-6 drawn as *Password*, strings in `shell.js`'s
-  `credentialCopy`), first-manager bootstrap, and does another manager's valid credential in M-6
-  count as a LOGIN failure?; Q7 report-print failure: BO-13 or report screen only?; Q3's eight-hour half.
+- **PRD wording owed, not yet drafted** for the other 2026-10-06 rulings that touch the contract:
+  username and password with M-6's other-manager option (FR-A2b), report-print failure placement,
+  void `REFUSED` and abandoned approval as cancelled (FR-J3, AC-18), empty order cancelled, no rate
+  range (§9 question 3), post-close corrections by adjustment in the open day (§9 question 2).
+- **PRD §9 question 1, receipt content:** the owner asked the lead to research the usual content of an
+  F&B receipt in Indonesia and propose it. Not started; a librarian task, one step at a time.
 - **Lead rulings, yours to overturn:** PHASE0-004 (Argon2id m=19456,t=2,p=1 in code; no `zod` until
   Task 8; `PIN_PEPPER` in `db/dev.env`); DESIGN-013 (reprint ungated, no audit wording on results,
   three re-review lows carried rather than a third round); DESIGN-012 (wireframe links until each
@@ -119,20 +120,12 @@ Nothing here is decided. Detail is where each line points.
   token stored as SHA-256; `APPROVAL_FAILED`/`APPROVAL_CANCELLED`; append-only trigger for every role;
   app role INSERT-only on evidence); FE-036 (strike-through only; sheet copy kept); FE-030 to FE-033's
   (journal 2026-10-05, end); DESIGN-011 Q5 and Q8.
-- **ARCH-006 for the owner:** a cashier's approval refused by the cooldown is audit, security event,
-  or both (before plan Task 10)? Does the failure count reset when a cooldown ends (Task 6)? Kitchen
-  staff as records (Phase 1)? A deactivated user's PIN reusable? Commission ADR-008?
-- **ARCH-005, before Phase 2:** abandoning an opened order with no lines; does a server-refused approved void write `REFUSED`?
 - **Kit:** add `Bash(grep:*)` to the builder allowlist? Should the dispatcher ping the lead on
   `BLOCKED ON APPROVAL`? Builders interactive by default? Should `/lead` fetch and fast-forward
   before its report? Allow builders' `python3`/`sed` edits (FE-036, PHASE0-004 twice)? Should the
   dispatcher support a hand-opened designer, and a non-Codex reviewer when Codex is out?
-- **Before Phase 5 (ARCH-003):** is an abandoned approval prompt a *cancelled approval* (FR-J3, AC-18)? Joins POS-03 Q6.
 - **FR-M3 / B-2 wording:** "half-up" below zero; the code rounds half away from zero. Proposed at L2699-2701.
-- **PRD section 9, three questions still open:** receipt content and fiscal requirements
-  (blocks Phase 4), post-close corrections (blocks Phase 5), permitted tax and service-charge
-  rate range (before Phase 2).
-- **Confirm or reject the eight `conversation only` lines** in DECISIONS.md (POS-03 Q5, Q6, Q9 among them).
+- **Confirm or reject the ten `conversation only` lines** in DECISIONS.md (POS-03 Q5, Q6, Q9 among them).
 
 ## Live conflicts
 
@@ -140,8 +133,6 @@ Nothing here is decided. Detail is where each line points.
   ruling. Owed to the designer, with two strip questions (a sale being paid; telling equal sales apart).
 - **DESIGN-007 contradicts itself on `fireerror`** (`:365`/`:407` versus `:578`). You ruled the
   `:578` reading (L349); FE-022 built it. The design file itself is unchanged.
-- **Business day (Q2), contract text, owner's:** PRD §9 and DECISIONS 2026-09-24 say 00:00-23:59 WIB;
-  FR-I1/I3, the glossary, ARCHITECTURE §6.6 and the inventory say close to close.
 
 ## Next up
 
