@@ -52,19 +52,19 @@ Earlier the same day: PRs #53-#55 merged, `development` at `2ee2285`. Narrative:
 
 ## Running tasks and agents
 
-- **PHASE0-004 (PIN) in review:** built at `14ba093` in one round; lead verify 47/2772. Codex review
-  dispatched 19:30 (oneshot). Check it covers: `verifyPin(encoded, pin)` order, `createStaffUser`
-  returning `string` (plan Tasks 6/7/10 use `{ id }`), Handoff `^2.2.1` vs `^2.2.2`. Owner looks before merge.
-- **DESIGN-013 (slice C, BO-13) in review:** done at `a4ef56d` (Codex resumed after its reset); 29 states,
-  checks 185/185 and DESIGN-012's 216/216; lead verify 46/2758; lead walked AC-3/AC-4 in Chrome; designer
-  pane closed. Claude Opus review dispatched (oneshot).
+- **PHASE0-004 (PIN) complete** at `77b672c` on `agent/phase0-004`, not pushed: two rounds (review found a
+  B-12 leak via a numeric PIN, and API drift from the plan; both fixed, re-review clean); lead verify
+  47/2780. Owner's look, push and merge. The reviewer wrote into the Handoff; the lead reverted it.
+- **DESIGN-013 (slice C, BO-13) round 2:** round 1 at `a4ef56d` (29 states, checks 185/185 and 216/216,
+  lead walked AC-3/AC-4). Opus review: 8 findings (2 medium), all accepted, rulings `f1813e8`. Codex
+  `design013` resumed in pane `w2:p30` (session `01a110ab…`). Cycle 1 of 2.
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
   three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
 - **Design slices still ready:** D, F and I. Slice B (BO-01, 02) must take DESIGN-012's three lows
   N1-N3 as first items (its task file, end).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) and two oneshot reviewers (PHASE0-004, DESIGN-013). Not the lead's: pane `w2:pE`, worktree `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`) and `design013` (`w2:p30`). Not the lead's: pane `w2:pE`, worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
@@ -114,7 +114,7 @@ Nothing here is decided. Detail is where each line points.
   or both (before plan Task 10)? Does the failure count reset when a cooldown ends (Task 6)? Kitchen
   staff as records (Phase 1)? A deactivated user's PIN reusable? Commission ADR-008?
 - **New (DESIGN-013):** is a back-office reprint of a *cancellation* ticket a "kitchen ticket" for
-  FR-J3's audit? Lead proposes yes. PHASE0-004 and DESIGN-013 lead rulings are in their task files.
+  FR-J3's audit? Lead proposes yes. Does a reprinted work ticket mark a line cancelled since (review F5)? PHASE0-004 and DESIGN-013 lead rulings are in their task files.
 - **DESIGN-012 lead rulings, yours to overturn:** nav, *Log out* and alert links stay on wireframes
   until each slice lands; three low findings carried to slice B rather than a third round.
 - **FE-036 lead rulings, yours to overturn:** a client-voided line shows only its strike-through; the
@@ -145,5 +145,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-[QUEUE.md](QUEUE.md): verify, review and hand over PHASE0-004 and DESIGN-013 as each finishes; then
-PHASE0-005 (audit writer, plan Task 5, B-13 fix from ARCH-006 §8) and the next design slice (D, F or I).
+Owner looks at, pushes and merges PHASE0-004. Then PHASE0-005 (audit writer, plan Task 5; ARCH-006 §8:
+no null actor, no `clientInstanceId`, no `RETURNING`). DESIGN-013 round 2, then the next slice (D, F or I).
