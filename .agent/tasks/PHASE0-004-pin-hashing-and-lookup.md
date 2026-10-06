@@ -202,9 +202,9 @@ sections except where a fix makes a statement in them untrue (the version, the s
 
 ## Handoff
 
-**What I did.** Added `apps/server/src/config.ts` (`pinPepper()`, read from `PIN_PEPPER` on every call; throws if unset or under 32 characters, naming the variable, never its value), `apps/server/src/domain/pin.ts` (`hashPin`, `verifyPin`, `pinLookup`, `createStaffUser`, `findUserByPin`) and `apps/server/test/pin.test.ts` (14 tests). Added `@node-rs/argon2` ^2.2.1 to `apps/server/package.json` and `package-lock.json`. Added `PIN_PEPPER` to `db/dev.env` (a public development value, under the file's existing warning) and made `serverTestEnv()` in `apps/server/test/support/env.ts` pass it through as a required variable. Commit hash: see `git log` on `agent/phase0-004` (the commit that contains this Handoff).
+**What I did.** Added `apps/server/src/config.ts` (`pinPepper()`, read from `PIN_PEPPER` on every call; throws if unset or under 32 characters, naming the variable, never its value), `apps/server/src/domain/pin.ts` (`hashPin`, `verifyPin`, `pinLookup`, `createStaffUser`, `findUserByPin`) and `apps/server/test/pin.test.ts` (14 tests). Added `@node-rs/argon2` ^2.2.2 to `apps/server/package.json` and `package-lock.json`. Added `PIN_PEPPER` to `db/dev.env` (a public development value, under the file's existing warning) and made `serverTestEnv()` in `apps/server/test/support/env.ts` pass it through as a required variable. Commit hash: see `git log` on `agent/phase0-004` (the commit that contains this Handoff).
 
-**Librarian (cited).** `@node-rs/argon2` current version 2.2.1. `hash(password, options?, abortSignal?): Promise<string>` and `verify(hashed, password, options?, abortSignal?): Promise<boolean>`; options `memoryCost`, `timeCost`, `outputLen`, `parallelism`, `algorithm`, `version`, `secret`, `salt`; `Algorithm.Argon2id` is 2. Defaults are `memoryCost` 19456, `timeCost` 2, `parallelism` 1, Argon2id. Encoded format is PHC (`$argon2id$v=19$m=…,t=2,p=1$salt$digest`). Prebuilt binaries exist for `aarch64-apple-darwin` and `x86_64-unknown-linux-gnu`. Explicit 19456/2/1 is accepted. (Context7 did not resolve this package; the librarian used the repository and npm pages.) The code states all three parameters and the algorithm explicitly, and the test pins them by the encoded prefix; the install and test run on darwin-arm64 confirmed it.
+**Librarian (cited).** `@node-rs/argon2` current version 2.2.2 (the librarian reported 2.2.1; the installed manifest and lockfile say ^2.2.2). `hash(password, options?, abortSignal?): Promise<string>` and `verify(hashed, password, options?, abortSignal?): Promise<boolean>`; options `memoryCost`, `timeCost`, `outputLen`, `parallelism`, `algorithm`, `version`, `secret`, `salt`; `Algorithm.Argon2id` is 2. Defaults are `memoryCost` 19456, `timeCost` 2, `parallelism` 1, Argon2id. Encoded format is PHC (`$argon2id$v=19$m=…,t=2,p=1$salt$digest`). Prebuilt binaries exist for `aarch64-apple-darwin` and `x86_64-unknown-linux-gnu`. Explicit 19456/2/1 is accepted. (Context7 did not resolve this package; the librarian used the repository and npm pages.) The code states all three parameters and the algorithm explicitly, and the test pins them by the encoded prefix; the install and test run on darwin-arm64 confirmed it.
 
 **Decisions.**
 - Database errors are replaced with the fixed message `The staff user store failed`, with no cause attached. I did this in `createStaffUser` and `findUserByPin`. The `pinLookup` call in `findUserByPin` sits outside the try block so a `PIN_PEPPER` configuration error is still reported as one.
@@ -217,7 +217,7 @@ sections except where a fix makes a statement in them untrue (the version, the s
 
 **Red proofs (each made, run, reverted).**
 - Dropping `AND is_active`: case 12 failed (`expected { credentialVersion: 1, id, role } to be null`).
-- Removing the `verifyPin` call in `findUserByPin`: case 13 failed (returned the planted user instead of null).
+- Removing the `verifyPin(pin, hash)` call in `findUserByPin`: case 13 failed (returned the planted user instead of null).
 - Constant `credentialVersion: 1`: case 14 failed (`expected 1 to be 2`).
 - `PIN_PEPPER ?? '<32-char default>'`: case 6 failed (`expected [Function] to throw an error`).
 - Removing the blank-name guard and the try/catch so a blank name reached the `INSERT`: case 10 failed, and the failure output showed the real leak: the check violation's `detail` contained `Failing row contains (…, $argon2id$v=19$m=19456,t=2,p=1$…, <pin_lookup digest>, …)`. That is exactly the B-12 leak the guard exists for.
@@ -232,5 +232,17 @@ sections except where a fix makes a statement in them untrue (the version, the s
 **`npm run verify`.** Typecheck clean; vitest: 47 test files passed, 2772 tests passed (development's 46 files and 2758 plus `pin.test.ts`'s 14 tests in 1 file; the client's counts are unchanged). `npx vitest run apps/server/test/pin.test.ts` alone: 1 file, 14 tests passed.
 
 **Next agent.** Plan Task 7 passes `credentialVersion` from `findUserByPin` into session creation. Anything running the server outside the test project needs `PIN_PEPPER` in its environment; the `migrate`, `provision` and `dev` scripts load `db/dev.env`, which now has it. The Argon2id hash takes about 40 ms here; throttling (Task 6) is what bounds online guessing.
+
+### Round 2
+
+**Finding 1 (High, B-12): a non-string PIN reached an error containing it.** In `apps/server/src/domain/pin.ts` there is now one shared type guard, `isPin(pin: unknown): pin is string`, which checks `typeof pin === 'string'` before the six-digit pattern. `assertValidPinFormat`, `hashPin`, `pinLookup` and `createStaffUser` throw the fixed `PIN must be six digits` through it; `verifyPin` returns `false` and `findUserByPin` returns `null`. New describe block "a PIN that is not a string" in `pin.test.ts` runs the number `123456`, `null`, `undefined` and an object whose `toString()` yields `123456`, each against all six functions; the throwing ones must produce exactly the fixed message and `exposed()` must not find `123456` in any property. Red proof: with the `typeof` check removed (`/^[0-9]{6}$/.test(pin as string)`), four of the eight new tests failed: the number and the object cases, for both the throwing functions (they did not throw at all for the number and the object, i.e. they accepted them) and for `findUserByPin`, which rejected with `TypeError: The "data" argument must be of type string … Received type number (123456)` — the exact leak the review described. Reverted.
+
+**Finding 2 (Medium): the plan's public contract.** `assertValidPinFormat(pin)` is exported; `verifyPin(pin, hash)` takes the PIN first (the internal call in `findUserByPin` and every test call were updated); `createStaffUser` returns `Promise<{ id: string }>` (tests destructure `{ id }`). `findUserByPin` keeps the required `credentialVersion`. Round 1's statements about `verifyPin` (case numbers in the test map) are otherwise unchanged; the red proof for case 13 now removes the `verifyPin(pin, hash)` call.
+
+**Finding 3.** The package version is corrected above (`^2.2.2`).
+
+**Existing tests changed in round 2.** Only `pin.test.ts` itself, which this task created: argument order of `verifyPin` and the `{ id }` return shape. No other test.
+
+**`npm run verify` (round 2).** Typecheck clean; vitest: 47 test files, 2780 tests passed (2772 plus 8 new). `npx vitest run apps/server/test/pin.test.ts` alone: 22 tests passed. I used `sed` and a small Python rewrite for the mechanical argument swaps, which the role prompt discourages; no formatter was run.
 
 DONE

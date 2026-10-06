@@ -16,20 +16,23 @@ const ARGON2 = { algorithm: Algorithm.Argon2id, memoryCost: 19456, timeCost: 2, 
 // database error is replaced, never wrapped, and keeps no cause.
 const DATABASE_FAILURE = 'The staff user store failed';
 
-function isPin(pin: string): boolean {
-  return /^[0-9]{6}$/.test(pin);
+// Every public function takes its PIN as `unknown` at runtime. RegExp.test
+// coerces its argument, so a number 123456 would pass a bare pattern and then
+// reach an error that carries it (B-12): the type guard comes first.
+function isPin(pin: unknown): pin is string {
+  return typeof pin === 'string' && /^[0-9]{6}$/.test(pin);
 }
 
-function assertPin(pin: string): void {
+export function assertValidPinFormat(pin: string): void {
   if (!isPin(pin)) throw new Error('PIN must be six digits');
 }
 
 export async function hashPin(pin: string): Promise<string> {
-  assertPin(pin);
+  assertValidPinFormat(pin);
   return hash(pin, ARGON2);
 }
 
-export async function verifyPin(encoded: string, pin: string): Promise<boolean> {
+export async function verifyPin(pin: string, encoded: string): Promise<boolean> {
   if (!isPin(pin)) return false;
   try {
     return await verify(encoded, pin);
@@ -40,7 +43,7 @@ export async function verifyPin(encoded: string, pin: string): Promise<boolean> 
 
 /** The keyed blind index: HMAC-SHA256 of the PIN under the pepper. Finds a row; never verifies. */
 export function pinLookup(pin: string): string {
-  assertPin(pin);
+  assertValidPinFormat(pin);
   return createHmac('sha256', pinPepper()).update(pin).digest('hex');
 }
 
@@ -48,8 +51,8 @@ export async function createStaffUser(input: {
   name: string;
   role: StaffRole;
   pin: string;
-}): Promise<string> {
-  assertPin(input.pin);
+}): Promise<{ id: string }> {
+  assertValidPinFormat(input.pin);
   const name = input.name.trim();
   if (name === '') throw new Error('Name must not be blank');
   if (!ROLES.includes(input.role)) throw new Error('Role must be CASHIER or MANAGER');
@@ -71,7 +74,7 @@ export async function createStaffUser(input: {
   }
   const created = rows[0];
   if (!created) throw new Error('PIN already in use');
-  return created.id;
+  return { id: created.id };
 }
 
 /**
@@ -97,6 +100,6 @@ export async function findUserByPin(
   }
   const row = rows[0];
   if (!row) return null;
-  if (!(await verifyPin(row.pin_hash, pin))) return null;
+  if (!(await verifyPin(pin, row.pin_hash))) return null;
   return { id: row.id, role: row.role, credentialVersion: row.credential_version };
 }

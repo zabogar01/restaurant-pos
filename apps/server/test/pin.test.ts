@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { getPool } from '../src/db/pool.js';
 import {
+  assertValidPinFormat,
   createStaffUser,
   findUserByPin,
   hashPin,
@@ -59,8 +60,8 @@ describe('hashPin and verifyPin', () => {
   it('emits Argon2id with the stated parameters, verifies the PIN and refuses another', async () => {
     const encoded = await hashPin('123456');
     expect(encoded.startsWith('$argon2id$v=19$m=19456,t=2,p=1$')).toBe(true);
-    await expect(verifyPin(encoded, '123456')).resolves.toBe(true);
-    await expect(verifyPin(encoded, '654321')).resolves.toBe(false);
+    await expect(verifyPin('123456', encoded)).resolves.toBe(true);
+    await expect(verifyPin('654321', encoded)).resolves.toBe(false);
   });
 
   it('never contains the PIN and salts every hash', async () => {
@@ -71,11 +72,11 @@ describe('hashPin and verifyPin', () => {
   });
 
   it('returns false, never throws, for a malformed hash or a PIN that is not six digits', async () => {
-    await expect(verifyPin('not-a-hash', '123456')).resolves.toBe(false);
-    await expect(verifyPin('$argon2id$garbage', '123456')).resolves.toBe(false);
+    await expect(verifyPin('123456', 'not-a-hash')).resolves.toBe(false);
+    await expect(verifyPin('123456', '$argon2id$garbage')).resolves.toBe(false);
     const encoded = await hashPin('123456');
-    await expect(verifyPin(encoded, '12345')).resolves.toBe(false);
-    await expect(verifyPin(encoded, 'abcdef')).resolves.toBe(false);
+    await expect(verifyPin('12345', encoded)).resolves.toBe(false);
+    await expect(verifyPin('abcdef', encoded)).resolves.toBe(false);
   });
 });
 
@@ -109,7 +110,7 @@ describe('pinLookup', () => {
 
 describe('createStaffUser', () => {
   it('stores an Argon2id hash, the lookup digest, an active row at credential version 1', async () => {
-    const id = await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
+    const { id } = await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
     const [found] = await ownerQuery<{
       pin_hash: string;
       pin_lookup: string;
@@ -120,7 +121,7 @@ describe('createStaffUser', () => {
     ]);
     const row = found!;
     expect(row.pin_hash).toMatch(/^\$argon2id\$/);
-    await expect(verifyPin(row.pin_hash, '123456')).resolves.toBe(true);
+    await expect(verifyPin('123456', row.pin_hash)).resolves.toBe(true);
     expect(row.pin_lookup).toBe(pinLookup('123456'));
     expect(row.is_active).toBe(true);
     expect(row.credential_version).toBe(1);
@@ -173,7 +174,7 @@ describe('createStaffUser', () => {
 
 describe('findUserByPin', () => {
   it('finds a user by PIN alone', async () => {
-    const id = await createStaffUser({ name: 'Sari', role: 'MANAGER', pin: '123456' });
+    const { id } = await createStaffUser({ name: 'Sari', role: 'MANAGER', pin: '123456' });
     await expect(findUserByPin('123456')).resolves.toEqual({
       id,
       role: 'MANAGER',
@@ -182,7 +183,7 @@ describe('findUserByPin', () => {
   });
 
   it('returns null for an unknown PIN, a deactivated user and a non-six-digit value', async () => {
-    const id = await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
+    const { id } = await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
     await expect(findUserByPin('654321')).resolves.toBeNull();
     await expect(findUserByPin('12345')).resolves.toBeNull();
     await expect(findUserByPin('')).resolves.toBeNull();
@@ -199,9 +200,46 @@ describe('findUserByPin', () => {
   });
 
   it('returns the credential version of the row it verified', async () => {
-    const id = await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
+    const { id } = await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
     await ownerQuery('UPDATE staff_user SET credential_version = 2 WHERE id = $1', [id]);
     const found = await findUserByPin('123456');
     expect(found?.credentialVersion).toBe(2);
   });
+});
+
+// Every function takes its PIN as `unknown` at runtime. A number must not pass
+// the pattern (RegExp.test coerces it) and must not reach an error that carries it.
+describe('a PIN that is not a string', () => {
+  const notStrings: [string, unknown][] = [
+    ['the number 123456', 123456],
+    ['null', null],
+    ['undefined', undefined],
+    ['an object', { toString: () => '123456' }],
+  ];
+  const asPin = (value: unknown) => value as string;
+
+  for (const [label, value] of notStrings) {
+    describe(label, () => {
+      it('is refused by every throwing function with the fixed message and no PIN', async () => {
+        const calls: (() => unknown)[] = [
+          () => assertValidPinFormat(asPin(value)),
+          () => hashPin(asPin(value)),
+          () => pinLookup(asPin(value)),
+          () => createStaffUser({ name: 'Sari', role: 'CASHIER', pin: asPin(value) }),
+        ];
+        for (const call of calls) {
+          const err = await failureOf(async () => call());
+          expect((err as Error).message).toBe('PIN must be six digits');
+          expect(exposed(err)).not.toContain('123456');
+        }
+      });
+
+      it('makes verifyPin return false and findUserByPin return null', async () => {
+        const encoded = await hashPin('123456');
+        await expect(verifyPin(asPin(value), encoded)).resolves.toBe(false);
+        await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
+        await expect(findUserByPin(asPin(value))).resolves.toBeNull();
+      });
+    });
+  }
 });
