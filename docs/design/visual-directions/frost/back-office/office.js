@@ -35,7 +35,7 @@
   top.insertAdjacentHTML('beforeend','<span class="office-day">Business day · Tue 6 Oct</span><span class="office-actor">M. Iqbal · Manager</span>');
   top.append(logout);
   const incidents = 'incidents.html';
-  const kitchenIncident = {title:params.get('kitchenTitle') || 'Kitchen ticket did not print',identity:params.get('kitchenIdentity') || '1 failed ticket · Table 1, round 2 · Sent 19:58'};
+  const kitchenIncident = {title:'Kitchen printing needs attention',identity:params.get('kitchenIdentity') || '1 kitchen ticket · Table 1, round 2 · 19:58'};
   let alertMode = params.get('alerts') || (['none','kitchen','receipt','both'].includes(state) ? state : (state === 'reauth-kitchen' ? 'kitchen' : 'none'));
   let kitchen = alertMode === 'kitchen' || alertMode === 'both';
   let receipt = alertMode === 'receipt' || alertMode === 'both';
@@ -81,8 +81,9 @@
     params.set('incidentDelivery',rows.map(r=>r.id+':'+r.delivery).join(','));
     if(kitchen){
       const first=urgent[0];
-      kitchenIncident.title=first.kind==='cancel'?'Cancellation ticket needs attention':'Kitchen ticket needs attention';
-      kitchenIncident.identity=urgent.length+' unresolved · '+first.order+', round '+first.round+' · '+first.time+' · '+first.delivery;
+      const work=urgent.filter(r=>r.kind==='kitchen').length,cancellations=urgent.filter(r=>r.kind==='cancel').length;
+      const counts=[work?work+' kitchen ticket'+(work===1?'':'s'):'',cancellations?cancellations+' cancellation'+(cancellations===1?'':'s'):''].filter(Boolean).join(' · ');
+      kitchenIncident.identity=counts+' · '+first.order+', round '+first.round+' · '+(first.kind==='cancel'?'Cancelled ':'')+first.time;
       params.set('kitchenTitle',kitchenIncident.title);params.set('kitchenIdentity',kitchenIncident.identity);
     }
     if(receipt)params.set('receiptText',receipts.length+' receipt warning'+(receipts.length===1?'':'s')+' · '+receipts[0].order+' · '+receipts[0].time);

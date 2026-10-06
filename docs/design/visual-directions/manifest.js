@@ -856,6 +856,54 @@ window.MOCKUPS = [
     [
       "receipt-reprint-printed",
       "Receipt — Server confirms printed"
+    ],
+    [
+      "kitchen-reread-pending",
+      "Kitchen ticket — Reread pending"
+    ],
+    [
+      "kitchen-reread-unknown",
+      "Kitchen ticket — Reread still UNKNOWN"
+    ],
+    [
+      "kitchen-reread-failed",
+      "Kitchen ticket — Reread confirms FAILED"
+    ],
+    [
+      "kitchen-reread-error",
+      "Kitchen ticket — Reread failed — Try again"
+    ],
+    [
+      "cancel-reread-pending",
+      "Cancellation — Reread pending"
+    ],
+    [
+      "cancel-reread-unknown",
+      "Cancellation — Reread still UNKNOWN"
+    ],
+    [
+      "cancel-reread-failed",
+      "Cancellation — Reread confirms FAILED"
+    ],
+    [
+      "cancel-reread-error",
+      "Cancellation — Reread failed — Try again"
+    ],
+    [
+      "receipt-reread-pending",
+      "Receipt — Reread pending"
+    ],
+    [
+      "receipt-reread-unknown",
+      "Receipt — Reread still UNKNOWN"
+    ],
+    [
+      "receipt-reread-failed",
+      "Receipt — Reread confirms FAILED"
+    ],
+    [
+      "receipt-reread-error",
+      "Receipt — Reread failed — Try again"
     ]
   ],
   "width": 1440,

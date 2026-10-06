@@ -13,7 +13,7 @@
 .emergency-table tbody tr, .emergency-table tbody tr:hover { background: var(--frost-emergency); color: var(--frost-emergency-text); }
 .emergency-table td { border-bottom-color: var(--frost-emergency-secondary); }
 .emergency-table .incident-meta { color: var(--frost-emergency-secondary); }
-.emergency-table .office-button:not(:disabled) { color: var(--frost-emergency); border-color: var(--frost-emergency-text); }
+.emergency-table .office-button:not(:disabled):not(.incident-result .office-button) { color: var(--frost-emergency); border-color: var(--frost-emergency-text); }
 .incident-recovery { display: flex; align-items: center; gap: var(--frost-space-3); margin-top: var(--frost-space-3); }
 .incident-recovery label { display: flex; align-items: center; gap: var(--frost-space-2); font-size: var(--frost-text-13); }
 .incident-recovery input { margin: 0; accent-color: var(--frost-primary); flex: none; }
@@ -23,3 +23,13 @@
 .receipt-table .office-button:not(:disabled) { color: var(--frost-warning); border-color: var(--frost-warning); }
 .receipt-table .incident-meta { color: var(--frost-warning); }
 html[data-state='overflow'] .incident-table td { padding: var(--frost-table-cell-tight-padding); }
+
+/* An external clearance retains its measured row geometry until the next action. */
+.incident-live { position: fixed; clip-path: inset(100%); }
+.incident-table .incident-cleared, .incident-table .incident-cleared:hover { background: var(--frost-surface); color: var(--frost-muted); }
+.incident-table .incident-cleared .incident-meta { color: var(--frost-muted); }
+.incident-cleared td:last-child { position: relative; }
+.incident-cleared td:last-child > :not(.incident-cleared-message) { visibility: hidden; }
+.incident-cleared-message { position: absolute; inset: 0; padding: var(--frost-table-cell-padding); }
+
+.incident-alert-space { visibility: hidden; }

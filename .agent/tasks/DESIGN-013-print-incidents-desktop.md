@@ -259,7 +259,7 @@ fixture for design review, not an application implementation. The entry point is
 `docs/design/visual-directions/frost/back-office/incidents.html?state=default`.
 The gallery entry is
 `docs/design/visual-directions/index.html?direction=frost&screen=back-office/incidents.html&state=default`.
-All 29 declared states are registered in the manifest and reachable directly.
+The original 29 states and 12 Round 2 reread states are registered in the manifest; all 41 are reachable directly.
 
 | File | Change and purpose |
 |---|---|
@@ -268,7 +268,7 @@ All 29 declared states are registered in the manifest and reachable directly.
 | `frost/back-office/incidents.js` | Incident-specific reprint, delivery reread, checked clearance, receipt dismissal and simulated POS clearance. |
 | `frost/back-office/office.js` | Narrow alert-context extension: Frost BO-13 destinations, incident identities/results in the URL, updated remaining-incident banner/chip, and explicit `alerts=none` after the final resolution. Shared authentication, dialog and form behavior is unchanged. |
 | `frost/back-office/menu.html`, `report-detail.html` | Each authored Printing link now points to `incidents.html`. No page content changed. |
-| `manifest.js`, `index.html` | Frost-only BO-13 gallery registration, all 29 states, and gallery scope copy. |
+| `manifest.js`, `index.html` | Frost-only BO-13 gallery registration, expanded to 41 states in Round 2, and gallery scope copy. |
 | `docs/design/SCREEN-INVENTORY.md` | Only the three requested I-8/BO-12/BO-13 edits. |
 | `docs/design/prototype/back-office/incidents.html` | Only the requested I-8 annotation replacement, with a link to Frost. |
 | `docs/design/checks/design013.cjs` | Re-runnable 1440×900 state, identity, recovery, navigation and geometry checks; external evidence only. |
@@ -284,22 +284,22 @@ unchanged. No new token was needed.
 | Requirement | State or demonstrated walk |
 |---|---|
 | A1: kitchen work, order/round/time/lines | `default`, `kitchen-failed`, `kitchen-unknown`; `overflow` includes table and quick-sale orders. Table 1 round 2 at 19:58 contains one Burger and one Fries. |
-| A2: cancellation identity and cancelled lines | `cancel-failed`, `cancel-unknown`, and the cancellation row in `default`. Table 1 round 2's cancellation at 20:02 contains only one Burger and says “Stop the cancelled work.” |
+| A2: cancellation identity and cancelled lines | `cancel-failed`, `cancel-unknown`, and the cancellation row in `default`. Table 4 round 2's cancellation at 20:02 (moved to a separate order in Round 2) contains only one Burger and says “Stop the cancelled work.” |
 | A3: receipt FAILED/UNKNOWN, closed order | `receipt-failed`, `receipt-unknown`, and the receipt row in `default`. Table 1 closed at 20:14; total 155.925 IDR. The receipt section states that these orders are closed. |
 | A4: unequal urgency and desktop density | `default`: work and cancellation in the upper solid-red table; receipts in a separate lower amber table. Emergency recovery is 36px; receipt recovery/dismissal is 28px. |
 | B1: reprint outcomes for all three classes | `kitchen-reprint-{pending,sent,failed,unknown,printed}`, `cancel-reprint-{pending,sent,failed,unknown,printed}`, `receipt-reprint-{pending,sent,failed,unknown,printed}`. Each composition retains all three original incidents and places its result only on the named incident. |
 | B1: live subject preservation | From `default`, choose each response under Review controls and reprint each class in turn. The browser compared the other two rows' complete HTML before and after each of the 12 combinations; all were unchanged. A cancellation always retained `kind=cancel` and its cancellation result. |
-| B1: uncertainty | `*-reprint-unknown` disables reprint and offers “Check delivery status”, a read only. In the interactive Unknown fixture, the request is followed by a simulated reread that resolves to server-confirmed PRINTED. No resend occurs. Direct states hold for inspection until the read action is taken. |
+| B1: uncertainty | Round 2 replaces the original always-PRINTED reread: `*-reprint-unknown` offers an explicit reprint and a delivery read when idle; reprint is disabled only while a request or reread is in flight. The reread selector supplies PRINTED, UNKNOWN, FAILED or a read error. No automatic resend occurs. |
 | B2: explicit kitchen/cancellation clearance | `kitchen-checked`, `cancel-checked`; unchecked Clear is disabled. Check “I checked: the kitchen has this ticket/cancellation.”, then Clear. No reprint outcome checks the box or removes the row. |
 | B3: separate receipt dismissal | `receipt-failed` or `receipt-unknown` → Dismiss. One action, no kitchen acknowledgement or confirmation dialog. |
-| B4: cleared elsewhere | `cleared-elsewhere`, or `default` → Review controls → Simulate Table 1 kitchen clearance on POS. Only `ticket-1` leaves; the notice says it “was cleared on the POS.” The cancellation and receipt remain. |
+| B4: cleared elsewhere | `cleared-elsewhere`, or `default` → Review controls → Simulate Table 1 kitchen clearance on POS. Only `ticket-1` is resolved; Round 2 retains a non-interactive “Cleared on the POS” marker until the next manager action/read, with a live announcement and no focus move. The cancellation and receipt remain. |
 | B5: last incident and cross-page alerts | The browser walked the kitchen banner from shell, patterns, menu and report detail to the same Table 1 round 2 at 19:58. It checked and cleared that ticket, returned to each source and verified emergency absence with the receipt chip still present. It then followed the chip, dismissed the receipt, returned, and verified both alerts absent. |
 | C: empty | `empty`, or clear/dismiss all rows: “Nothing outstanding” / “No unresolved print incidents.” No claim that every paper printed. |
 | C: loading/error/retry | `loading`, `error`; Try again visibly traverses loading and returns the mixed table. Counts and rows are withheld while unread. Incoming known global alerts remain visible. |
 | C: overflow | `overflow`: 21 incidents, seven per class, with work then cancellation then receipts; compact table padding and a header sticky inside `.bocontent`. |
 | C: permission denied | Not drawn, as the inventory says n/a for the manager-only back office. |
 | D1: every BO-13 destination | Shared banner, receipt chip and Printing navigation target Frost; menu/report authored links do too. `alerts` and incident context survive navigation. No Frost back-office file references the old prototype BO-13 destination. |
-| D2: gallery | All 29 states registered. The browser opened the gallery directly at `cancel-reprint-unknown` and verified its iframe destination. |
+| D2: gallery | All 41 states registered after Round 2. The original browser pass opened the gallery directly at `cancel-reprint-unknown` and verified its iframe destination. |
 | D3: settled I-8 text | The inventory's I-8 ruling and BO-13 bullet use the task's exact wording; BO-12 receives the requested audit-list insertion. The wireframe annotation is one sentence saying I-8 is settled/audited under FR-J3 and linking to Frost. |
 
 ### Decisions a builder needs
@@ -307,7 +307,8 @@ unchanged. No new token was needed.
 The emergency table columns are Ticket/order, Round/time, Lines on the ticket,
 Delivery, and Recovery. Cancellation rows retain their own ticket class and
 cancelled lines in every result. The time is the ticket's time: original work at
-19:58 or cancellation at 20:02, with the original round identified in both.
+19:58 or “Cancelled 20:02 WIB”, with the original round identified in both.
+The cancellation belongs to Table 4 after the Round 2 fixture correction.
 Receipts have Order, Closed at, Total, Delivery, and Recovery. Totals are bare
 whole-rupiah figures; IDR appears once in the receipt caption. Both tables consume
 `.office-table`; intrinsic column sizing permits wrapping without truncating
@@ -322,9 +323,10 @@ printed; the delivery cell reads “Sending…” or “Awaiting result”. Only
 server-confirmed fixture says PRINTED. Results use the shared neutral blue notice,
 never success green, and make no audit claims.
 
-A sent, pending, unknown or confirmed-printed reprint disables another reprint.
-Pending/sent/unknown offer “Check delivery status”; a definite failed-again result
-permits a new explicit attempt. Kitchen clearance still requires the checked
+Round 2 corrects the original disable rule: only an in-flight request or reread
+disables another reprint. Completed results permit an explicit attempt.
+Pending/sent/unknown retain “Check delivery status”; it is disabled during a
+request/reread. A failed read offers “Try again”. Kitchen clearance still requires the checked
 paper acknowledgement, including after PRINTED. Receipt dismissal remains
 available independently of its print result. Checking paper acknowledges this
 particular incident; it does not fire, void, close or otherwise operate an order.
@@ -333,7 +335,9 @@ The alert context extends DESIGN-012's URL-scoped fixtures, without browser
 storage. It carries remaining IDs, deliveries, results and the first outstanding
 emergency/receipt identity; `alerts=none` takes precedence over a named kitchen
 state after clearance. A cleared work ticket cannot hide a remaining cancellation:
-the banner switches to that cancellation. Navigation and reload preserve cleared
+the banner
+retains its shared title and updates its per-class counts and first identity to
+that cancellation, without a raw delivery suffix. Navigation and reload preserve cleared
 rows and outcome uncertainty. This demonstrates shared incident meaning and
 incoming POS updates locally; no real cross-client transport or persistence
 contract is implemented. Already-open independent browser tabs are not a service
@@ -402,7 +406,8 @@ Screen-reader, physical-device, real-printer and other-browser tests were not ru
 - Q2, full business-day labeling, remains open. Proposed interim answer: retain
   slice A's opening-date indicator and HH:MM WIB ticket times. No start/end is
   inferred.
-- No additional product conflict or token proposal was found. The task's Q9
+- Round 1 found no additional product conflict or token proposal. Round 2 raises
+  the cancelled-line reprint question recorded below. The task's Q9
   presentation answer remains the existing 36px/28px desktop recovery sizes,
   supported by the measurements above. DESIGN-012 lows N1–N3 remain slice B's.
 
@@ -426,5 +431,96 @@ checks still pass with Frost BO-13 as their incident destination.
 
 All assigned work is complete for design review. The path-scoped commit includes
 only this task's Handoff and the design files listed above; nothing is pushed.
+
+DONE
+
+### Round 2 — review fixes
+
+Completed by design013 on 2026-10-06 against the lead's eight accepted findings
+and exact inventory ruling. The original round's measurement and test results
+above remain historical evidence. Statements about the current cancellation
+fixture, reread behavior, state count and POS-clearance behavior have been
+corrected where Round 2 made them untrue.
+
+| Finding | Change | Evidence |
+|---|---|---|
+| F1: UNKNOWN recovery and reread outcomes | Reprint is disabled only during the request or reread. The reread review selector offers PRINTED, still UNKNOWN, FAILED and read failure. UNKNOWN retains the base check-the-printer wording; read failure retains last-known delivery and offers Try again. Added `kitchen/cancel/receipt-reread-{pending,unknown,failed,error}` to the artifact and gallery, bringing the total to 41. | The browser exercised all four reread responses for each of the three classes, checked the in-flight disabled state, the actual result, the restored reprint action, unchanged neighboring incidents and recovery after reload. It retried each read error. The original unconditional `check(true, …)` is replaced by assertions on the result and busy state. |
+| F2: focus crosses incident boundaries or throws | Row replacement first checks whether that row contained focus. It restores the matching enabled control only within that row; a missing/disabled control falls back to that row's result region. All control lookups are guarded. | With fixture timers paused, the browser activated cancellation reprint using Enter, pressed Shift+Tab twice to reach kitchen reprint, delivered the cancellation failure, and verified focus stayed on kitchen reprint. Enter then started only the kitchen request. A second interleaving retained focus on the kitchen's Check delivery status while the cancellation failed and its URL result updated. The disappearing-check-control case stayed within its own incident without throwing. |
+| F3: banner counts, wording and raw delivery | One title, “Kitchen printing needs attention”, is used before and after entering BO-13. The banner counts work tickets and cancellations separately and names the first incident without a raw FAILED/PRINTED suffix. | Default reads “1 kitchen ticket · 1 cancellation”; overflow reads “7 kitchen tickets · 7 cancellations”. Browser checks cover pending, sent and PRINTED banners and identical title/identity before and after navigation from the shell. |
+| F4: unsolicited clearance moves focus and rows | A POS update removes the incident from active context and alerts but preserves its existing row geometry as a neutral, non-interactive “Cleared on the POS” marker. A separate live region announces the event without inserting visible content above the table or moving focus. The marker retires on the next manager action/read. If the last emergency clears, an invisible space temporarily retains the former banner geometry too. | The browser invoked the review event without changing focus. In the mixed table, the cancellation row stayed at y=497.765625 with height=116.6875 before and after; its Reprint cancellation retained focus. In the last-kitchen-only composition, the following fixture section stayed at y=513.828125 with height=35.84375, while focus stayed on Menu. All controls in the marker were disabled and hidden. The next manager action removed the marker. |
+| F5: cancelled-line reprint policy | `cancel-1` now belongs to Table 4, round 2. It no longer cancels a line on Table 1's outstanding work ticket. No product behavior about reprinting cancelled lines is invented. | The browser verified the cancellation's distinct order. The unresolved question and the reviewer's proposed answer are recorded below. |
+| F6: cancellation time ambiguity | Cancellation time now reads “Cancelled 20:02 WIB” in its cell. | Browser text assertion and visual inspection of the cancellation read-error capture. |
+| F7: result-button border | The emergency white-border override excludes buttons within `.incident-result`. Those buttons inherit the shared office control stroke. | Computed border color on Check delivery status was `rgb(113, 132, 135)`, equal to the shared control. The read-error capture shows the same stroke on Try again. |
+| F8: fixture robustness | Direct reprint/reread initialization guards absent classes; incoming alert context wins. Reloading `cleared-elsewhere` retains the marker and announcement. POS simulation is disabled and guarded until the list is read. | All 27 reprint/reread states were opened with alert context excluding their class; each rendered the one permitted incident without a result or script error. Reload retained the cleared-elsewhere state. Loading/error checks verified disabled simulation and no incident rows after attempting it. |
+| Inventory wording | Removed only the final open-question sentence from the I-8 ruling cell, yielding exactly the lead's replacement wording. | `git diff -- docs/design/SCREEN-INVENTORY.md` contains one changed line and no other inventory changes. The audit question remains in this Handoff for the owner. |
+
+**Builder rule:** an asynchronous result never moves focus to, or away from, a
+different incident. An unsolicited POS clearance announces its own attribution;
+it does not execute the manager's clear path or move the manager's focus. The
+remaining non-interactive marker is no longer an outstanding incident and cannot
+be reprinted or cleared again. Its invisible controls retain layout only; they
+are disabled and excluded from interaction. The temporary blank banner space
+when the final emergency clears is removed with the marker on the next action.
+
+Round 2 changes only `incidents.html`, `incidents.js`, `incidents.css`, the narrow
+banner wording in `office.js`, `manifest.js`, `design013.cjs`, the single I-8
+inventory line and this Handoff. `office.css`, the tokens, DESIGN, the four product
+documents, POS artifacts and application files remain untouched. The existing
+`design012.cjs` was rerun without modification in this round.
+
+**New owner question (F5).** When an immutable work ticket is reprinted after one
+of its lines was cancelled, should the back-office row identify that cancellation?
+The reviewer's proposed answer is: the immutable ticket reprints as fired, and the
+row marks any line with an outstanding or delivered cancellation, for example
+“Burger — cancelled 20:02, see cancellation”, so the manager reprints knowingly.
+This is a proposal, not a ruling or a drawn behavior. The POS incidents artifact
+contains the same Table 1 work/cancellation pairing and needs consideration when
+the owner rules. The lead has added this question to the owner's questions. The
+previous cancellation-ticket audit classification, report-print incident scope
+and business-day-labeling questions remain open as recorded above.
+
+**Verification.** The owner approved this DESIGN-013 execution before it ran:
+
+```sh
+env DESIGN013_OUTPUT=/tmp/design013-evidence/round2 PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design013.cjs
+```
+
+It passed **371/371 assertions across 41 states** at **1440×900**, with zero
+JavaScript errors and zero horizontal document/content overflow. Captures and
+`measurements.json` are external in `/tmp/design013-evidence/round2/`. I inspected
+the cancellation read-error and mixed-table POS-clearance captures. No second
+DESIGN-013 browser run was needed.
+
+Frame measurements remain 220px navigation, 64px top bar, 24px content padding,
+14px body text, 36px kitchen recovery and 28px receipt recovery. The banner is
+unchanged at x=220, y=64, width=1220, height=80. After content scrollTop=450, the
+overflow header is at y=144 and is 40.9375px high; the banner's rectangle is
+identical before and after scrolling. A hit test again finds the header directly
+below the banner without a row showing above it.
+
+`npm run verify` passed typechecking and **46 test files / 2,758 tests**. The
+existing Vite native-config-loader warning remains. JavaScript syntax checks,
+`git diff --check` and the single Impeccable detector pass were clean. No token
+was introduced. Screen-reader, other-browser, physical-device and real-printer
+checks were not run.
+
+The owner separately approved the unchanged DESIGN-012 regression check:
+
+```sh
+PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node ./docs/design/checks/design012.cjs
+```
+
+It passed **216/216 assertions across 47 states**, with zero JavaScript errors
+and no failed assertions. The shared frame, field, dialog and action measurements
+remain unchanged: 220px navigation, 64px top bar, 24px padding, 14px body, 40px
+fields, 640px dialog, and 36px/28px alert actions. Its output is at
+`/tmp/design012-evidence/round2/`; a copy for this round is preserved at
+`/tmp/design013-evidence/round2/shared-regression/`. No shared-shell test was
+removed or weakened in Round 2.
+
+The authored prototype-link counts remain 39 for menu and 10 for report detail;
+no Frost back-office file targets prototype BO-13. All eight review findings and
+the inventory wording correction are complete for re-review. The path-scoped
+commit stays on `agent/design-013`; nothing is pushed.
 
 DONE

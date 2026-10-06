@@ -23,7 +23,7 @@ const base=path.resolve('docs/design/visual-directions'),out=process.env.DESIGN0
   result.states.push(measurement);check(measurement.state===state,'reachable '+state);check(measurement.overflow===0&&measurement.contentOverflow===0,'no horizontal overflow '+state,measurement);
   if(state.includes('cancel'))check(measurement.text.includes('Cancellation ticket'),'cancellation remains named '+state);
   if(state.endsWith('-unknown')&&!state.includes('reprint'))check(measurement.text.includes('May already have printed.'),'uncertain delivery copy '+state);
-  if(state.includes('reprint')){const kind=state.split('-')[0];check(await row(ids[kind]).locator('[data-result]').count()===1,'result belongs to '+state);check(await p.locator('[data-result]').count()===1,'only one result '+state);}
+  if(state.includes('reprint')||state.includes('reread')){const kind=state.split('-')[0];check(await row(ids[kind]).locator('[data-result]').count()===1,'result belongs to '+state);check(await p.locator('[data-result]').count()===1,'only one result '+state);}
   await p.screenshot({path:path.join(out,state+'.png')});
  }
  await p.goto(url());
@@ -37,15 +37,91 @@ const base=path.resolve('docs/design/visual-directions'),out=process.env.DESIGN0
   await p.waitForFunction(({id,response})=>{const e=document.querySelector('[data-result="'+id+'"]');return e&&(response==='sent'?e.innerText.includes('reprint sent.'):response==='failed'?e.innerText.includes('failed again.'):response==='unknown'?e.innerText.includes('outcome unknown.'):e.innerText.includes('server confirmed PRINTED'));},{id,response});
   check(JSON.stringify(before)===JSON.stringify(await Promise.all(others.map(x=>row(x).innerHTML()))),'other incidents unchanged '+kind+'/'+response);
   check(await row(id).getAttribute('data-kind')===kind,'class preserved '+kind+'/'+response);
-  if(response==='unknown'){check(await p.locator('[data-reprint="'+id+'"]').isDisabled(),'unknown cannot resend '+kind);await p.waitForFunction(id=>document.querySelector('[data-result="'+id+'"]').innerText.includes('server confirmed PRINTED'),id);check(true,'unknown rereads '+kind);}
+  if(response==='unknown'){check(await row(id).locator('[data-result]').getAttribute('aria-busy')==='true'&&await p.locator('[data-reprint="'+id+'"]').isDisabled(),'automatic reread is busy '+kind);await p.waitForFunction(id=>document.querySelector('[data-result="'+id+'"]').dataset.outcome==='printed',id);check(await row(id).locator('[data-result]').getAttribute('aria-busy')==='false'&&(await row(id).innerText()).includes('server confirmed PRINTED'),'unknown reread confirms authoritative result '+kind);}
   check(await row(id).count()===1,'reprint never clears '+kind+'/'+response);
  }
  for(const kind of ['kitchen','cancel']){
   await p.goto(url('incidents',kind+'-failed'));const id=ids[kind];check(await p.locator('[data-clear="'+id+'"]').isDisabled(),'unchecked clear disabled '+kind);
   await p.locator('[data-checked="'+id+'"]').check();check(await p.locator('[data-clear="'+id+'"]').isEnabled(),'checked clear enabled '+kind);await p.locator('[data-clear="'+id+'"]').click();check(await p.locator('.office-emergency').isHidden()&&await p.locator('#read-status').innerText()==='Nothing outstanding\n\nNo unresolved print incidents.','last emergency clears '+kind);
  }
- await p.goto(url());await p.locator('.office-fixture summary').click();await p.locator('#resolve-pos').click();check(await row('ticket-1').count()===0&&await row('cancel-1').count()===1&&(await p.locator('#incident-status').innerText()).includes('was cleared on the POS'),'cross-client identity and attribution');
+ await p.goto(url());await p.locator('.office-fixture summary').click();await p.locator('#resolve-pos').click();check(await row('ticket-1').count()===0&&await row('cancel-1').count()===1&&(await p.locator('#external-status').innerText()).includes('was cleared on the POS'),'cross-client identity and attribution');
  await p.goto(url('incidents','error'));await p.getByRole('button',{name:'Try again',exact:true}).click();check((await p.locator('#read-status').innerText()).includes('Reading'),'retry traverses loading');await p.waitForSelector('[data-incident]');check(await p.locator('[data-incident]').count()===3,'retry returns mixed table');
+ // Round 2: each reread outcome, keyboard interleavings, and external clearance.
+ for(const [kind,id] of Object.entries(ids))for(const response of ['unknown','failed','error','printed']){
+  await p.goto(url('incidents',kind+'-reprint-unknown'));
+  await p.locator('.office-fixture summary').click();await p.locator('#reread-response').selectOption(response);
+  const others=Object.values(ids).filter(x=>x!==id),before=await Promise.all(others.map(x=>row(x).innerHTML()));
+  await p.locator('[data-check="'+id+'"]').click();
+  check(await p.locator('[data-reprint="'+id+'"]').isDisabled()&&await row(id).locator('[data-result]').getAttribute('aria-busy')==='true','reread in flight disables reprint '+kind+'/'+response);
+  await p.waitForFunction(id=>document.querySelector('[data-result="'+id+'"]').getAttribute('aria-busy')==='false',id);
+  const outcome=response==='printed'?'printed':'read-'+response;
+  check(await row(id).locator('[data-result]').getAttribute('data-outcome')===outcome,'reread selects actual response '+kind+'/'+response);
+  check(await p.locator('[data-reprint="'+id+'"]').isEnabled(),'completed reread restores explicit reprint '+kind+'/'+response);
+  check(JSON.stringify(before)===JSON.stringify(await Promise.all(others.map(x=>row(x).innerHTML()))),'reread leaves other incidents unchanged '+kind+'/'+response);
+  if(response==='unknown')check((await row(id).innerText()).includes('May already have printed. Check the printer before reprinting.'),'still unknown retains delivery warning '+kind);
+  if(response==='failed')check((await row(id).innerText()).includes('The reread confirms it did not print.'),'failed reread is definite '+kind);
+  if(response==='error'){
+   check(await p.locator('[data-check="'+id+'"]').innerText()==='Try again','read error has retry '+kind);
+   await p.locator('#reread-response').selectOption('unknown');await p.locator('[data-check="'+id+'"]').click();
+   await p.waitForFunction(id=>document.querySelector('[data-result="'+id+'"]').dataset.outcome==='read-unknown',id);
+   check(await p.locator('[data-reprint="'+id+'"]').isEnabled(),'read error retry recovers '+kind);
+  }
+  await p.reload();check(await p.locator('[data-reprint="'+id+'"]').isEnabled(),'completed reread remains recoverable after reload '+kind+'/'+response);
+ }
+ // Freeze fixture timers so the keyboard interleaving is deterministic.
+ await p.clock.install();await p.clock.pauseAt(new Date());
+ for(const target of ['reprint','check']){
+  await p.goto(url('incidents',target==='check'?'kitchen-reprint-sent':'default'));
+  await p.locator('.office-fixture summary').click();await p.locator('#reprint-response').selectOption('failed');
+  await p.locator('[data-reprint="cancel-1"]').focus();await p.keyboard.press('Enter');
+  if(target==='reprint'){
+   // Cancellation result gets focus while sending; two Shift+Tabs return to the work reprint.
+   await p.keyboard.press('Shift+Tab');await p.keyboard.press('Shift+Tab');
+  }else await p.locator('[data-check="ticket-1"]').focus();
+  check(await p.locator('[data-'+target+'="ticket-1"]').evaluate(e=>e===document.activeElement),'keyboard reaches other incident '+target);
+  await p.clock.runFor(650);
+  check(await p.locator('[data-'+target+'="ticket-1"]').evaluate(e=>e===document.activeElement),'asynchronous cancellation preserves other incident focus '+target);
+  check(new URL(p.url()).searchParams.get('incidentResults').includes('cancel-1:failed'),'async completion updates context without exception '+target);
+  if(target==='reprint'){
+   await p.keyboard.press('Enter');
+   check(await row('ticket-1').locator('[data-result]').getAttribute('data-outcome')==='pending'&&await row('cancel-1').locator('[data-result]').getAttribute('data-outcome')==='failed','Enter acts on intended kitchen incident');
+  }
+ }
+ // A disappeared Check delivery control falls back within its own incident safely.
+ await p.goto(url('incidents','kitchen-reprint-sent'));await p.locator('[data-check="ticket-1"]').focus();await p.keyboard.press('Enter');await p.clock.runFor(650);
+ check(await row('ticket-1').evaluate(e=>e.contains(document.activeElement))&&new URL(p.url()).searchParams.get('incidentResults').includes('ticket-1:printed'),'missing control restores focus within original incident');
+ // Simulate the unsolicited POS event without pointer/focus moving to the review button.
+ for(const state of ['default','kitchen-failed']){
+  await p.goto(url('incidents',state));const focus=state==='default'?'[data-reprint="cancel-1"]':'[data-nav="menu"]';await p.locator(focus).focus();
+  const selector=state==='default'?'[data-incident="cancel-1"]':'.office-fixture';const before=await p.locator(selector).boundingBox();
+  await p.evaluate(()=>document.querySelector('#resolve-pos').click());
+  const after=await p.locator(selector).boundingBox();
+  check(await p.locator(focus).evaluate(e=>e===document.activeElement),'POS clearance preserves unrelated focus '+state);
+  check(before.y===after.y&&before.height===after.height,'POS clearance does not shift rows or following content '+state,{before,after});
+  check(await p.locator('[data-cleared="ticket-1"]').isVisible()&&await p.locator('[data-cleared] button:enabled,[data-cleared] input:enabled').count()===0,'POS marker is present and non-interactive '+state);
+  check((await p.locator('#external-status').textContent()).includes('was cleared on the POS'),'POS clearance announces attribution '+state);
+  await p.screenshot({path:path.join(out,'pos-clearance-'+state+'.png')});
+  await p.locator('.office-fixture summary').click();check(await p.locator('[data-cleared]').count()===0,'next manager action retires marker '+state);
+ }
+ await p.clock.resume();
+ await p.goto(url('incidents','cleared-elsewhere'));await p.reload();check(await p.locator('[data-cleared="ticket-1"]').isVisible()&&(await p.locator('#external-status').textContent()).includes('was cleared on the POS'),'cleared-elsewhere survives reload');
+ for(const state of ['loading','error']){
+  await p.goto(url('incidents',state));check(await p.locator('#resolve-pos').isDisabled(),'POS simulation disabled before list read '+state);
+  await p.evaluate(()=>document.querySelector('#resolve-pos').click());check(await p.locator('[data-incident]').count()===0&&await p.locator('#urgent-section').isHidden(),'unread page cannot render incident rows '+state);
+ }
+ for(const state of states.filter(s=>s.includes('reprint')||s.includes('reread'))){
+  const mode=state.startsWith('kitchen')?'receipt':'kitchen';await p.goto(url('incidents',state,'&alerts='+mode));
+  check(await p.locator('[data-incident]').count()===1&&await p.locator('[data-result]').count()===0,'excluded class respects incoming alerts '+state);
+ }
+ await p.goto(url());check((await row('cancel-1').innerText()).includes('Table 4')&&!(await row('ticket-1').innerText()).includes('Table 4'),'cancellation fixture belongs to another order');
+ check((await row('cancel-1').innerText()).includes('Cancelled 20:02 WIB'),'cancellation time labelled');
+ check((await p.locator('.office-emergency p').innerText()).startsWith('1 kitchen ticket · 1 cancellation'),'banner counts both emergency classes');
+ await p.goto(url('incidents','overflow'));check((await p.locator('.office-emergency p').innerText()).startsWith('7 kitchen tickets · 7 cancellations'),'overflow banner counts each class');
+ for(const state of ['kitchen-reprint-pending','kitchen-reprint-sent','kitchen-reprint-printed']){await p.goto(url('incidents',state));check(!/FAILED|PRINTED/.test(await p.locator('.office-emergency').innerText()),'banner avoids stale delivery '+state);}
+ await p.goto(url('shell','kitchen'));const title=await p.locator('.bomain > .office-emergency strong').innerText(),identity=await p.locator('.bomain > .office-emergency p').innerText();
+ await p.locator('.bomain > .office-emergency a').click();await p.locator('#confirm-logout').click();await p.waitForURL('**/incidents.html*');
+ check(await p.locator('.office-emergency strong').innerText()===title&&await p.locator('.office-emergency p').innerText()===identity,'initial and carried banner wording identical');
+ await p.goto(url('incidents','kitchen-reprint-sent'));result.resultBorder=await p.locator('[data-check="ticket-1"]').evaluate(e=>({border:getComputedStyle(e).borderColor,shared:getComputedStyle(document.querySelector('#resolve-pos')).borderColor}));check(result.resultBorder.border===result.resultBorder.shared,'result button retains shared control border',result.resultBorder);
  // Use actual incident links to carry surviving context through all adopted artifacts.
  result.navigation=[];
  for(const file of ['shell','patterns','menu','report-detail']){
@@ -63,7 +139,7 @@ const base=path.resolve('docs/design/visual-directions'),out=process.env.DESIGN0
   check(await p.locator('.bomain > .office-emergency').isHidden()&&await p.locator('.office-receipt:visible').count()===0,'last receipt removes chip on '+file);
   check(await p.locator('a[href*="prototype/back-office/incidents.html"]').count()===0,'all BO13 destinations Frost '+file);result.navigation.push({file,url:p.url()});
  }
- await p.goto(url());await p.locator('[data-checked="ticket-1"]').check();await p.locator('[data-clear="ticket-1"]').click();check(await p.locator('.office-emergency').isVisible()&&(await p.locator('.office-emergency').innerText()).includes('Cancellation'),'cancellation keeps emergency after work clears');await p.reload();check(await row('ticket-1').count()===0&&await row('cancel-1').count()===1,'clearance survives reload');
+ await p.goto(url());await p.locator('[data-checked="ticket-1"]').check();await p.locator('[data-clear="ticket-1"]').click();check(await p.locator('.office-emergency').isVisible()&&(await p.locator('.office-emergency').innerText()).includes('1 cancellation'),'cancellation keeps emergency after work clears');await p.reload();check(await row('ticket-1').count()===0&&await row('cancel-1').count()===1,'clearance survives reload');
  await p.goto(url('incidents','overflow'));const bannerBefore=await p.locator('.office-emergency').boundingBox();await p.locator('.bocontent').evaluate(e=>e.scrollTop=450);
  result.sticky={header:await p.locator('.emergency-table th').first().boundingBox(),bannerBefore,bannerAfter:await p.locator('.office-emergency').boundingBox(),scroll:await p.locator('.bocontent').evaluate(e=>e.scrollTop)};
  check(result.sticky.header.y===144,'sticky header meets scroll owner edge',result.sticky);check(JSON.stringify(bannerBefore)===JSON.stringify(result.sticky.bannerAfter),'emergency remains fixed on scroll');check(await p.evaluate(()=>!!document.elementFromPoint(300,145).closest('th')),'no rows above sticky header');await p.screenshot({path:path.join(out,'overflow-scrolled.png')});
