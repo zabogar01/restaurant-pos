@@ -63,11 +63,12 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
 9. **Back-office design** — 13 screens (BO-01 to BO-13). *(Done: DESIGN-011, the audit,
    2026-10-05, `.agent/reviews/DESIGN-011-back-office-audit.md`.)* Nine slices, each a designer
    task re-pointing the wireframe links whose Frost destinations it creates:
-   - *(Done: A, DESIGN-012, the shell, alerts, M-6 and shared patterns, complete at `c20c56d`, two
-     rounds, waits on the owner's look and merge.)*
+   - *(Done: A, DESIGN-012, the shell, alerts, M-6 and shared patterns, merged 2026-10-06 as PR #55.)*
    - **B (BO-01, 02)** carries DESIGN-012's three low findings N1-N3 as its first items — waits on Q2, Q4.
-   - **Ready now:** C (BO-13; brings I-8 into the inventory) · D (BO-03, 04) · E (BO-05,
-     06; Q4, Q5) · F (BO-07, 08; Q5) · G (BO-09; Q2) · H (BO-10, 11; Q2, Q7) · I (BO-12; Q8) — after A.
+   - **C, DESIGN-013 (BO-13)** — complete 2026-10-06 at `39f9847`, two rounds — waits on the owner's look and merge.
+     The BO-13 frontend task must carry its re-review rules N1 and N2 (task file, end).
+   - **Ready now (A merged):** D (BO-03, 04) · F (BO-07, 08; Q5 ruled out of scope by the lead) · I (BO-12; Q8 ruled).
+   - **Wait on the owner:** E (BO-05, 06; Q4) · G (BO-09; Q2) · H (BO-10, 11; Q2, Q7).
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
 
@@ -81,10 +82,11 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     (`.agent/reviews/ARCH-006-phase0-core-schema.md`).
     - *(Done: PHASE0-003a, brand `Rate`, merged 2026-10-05 as PR #50.)*
     - *(Done: PHASE0-003b, serial server tests on `pos_test`, `pos_app`, merged 2026-10-06 as PR #51.)*
-    - **PHASE0-003c** — the six tables and 21 tests from ARCH-006 — complete at `33769d0`
-      (review clean) — waits on the owner's look, push and merge.
+    - *(Done: PHASE0-003c, the six tables and 21 schema tests, merged 2026-10-06 as PR #53.)*
     - **PHASE0-004** — PIN hashing and lookup (plan Task 4), against ARCH-006 §8 item 1 and
-      003c's Handoff — after 003c merges — not written.
+      003c's Handoff — complete 2026-10-06 at `77b672c`, two rounds — waits on the owner's look and merge.
+    - **PHASE0-005** — audit and telemetry writers (plan Task 5), with ARCH-006 §8's fixes (no null
+      actor, no `clientInstanceId`, no `RETURNING`) — after 004 merges — not written.
     - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
       three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — the
