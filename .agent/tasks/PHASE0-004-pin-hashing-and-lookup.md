@@ -5,7 +5,7 @@ category: feature
 touches: [identity]
 depends_on: [PHASE0-003c]
 owns: [apps/server/src/**, apps/server/test/**, apps/server/package.json, package-lock.json, db/dev.env]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-004 — PIN hashing and lookup
@@ -175,6 +175,30 @@ Every case that touches the database starts from `resetDatabase()`.
   domain code (FR-B3, Phase 1).
 - Rotating `PIN_PEPPER`, and production secret storage (pre-production gate).
 - The vitest ESM warning (`vitest.config.ts` loaded as CommonJS).
+
+## Round 2 — the review's two findings (lead rulings, 2026-10-06)
+
+The review is `.agent/reviews/PHASE0-004-review.md` (Codex `gpt-6-astra`, at `dc9bbe4`). Read it
+in full. Both findings are accepted; this is fix cycle 1 of 2.
+
+1. **High, B-12: a numeric PIN reaches an error that contains it.** `RegExp.test` coerces its
+   argument, so the number `123456` passes `isPin`, and `Hmac.update` then throws a `TypeError`
+   carrying the value. Every public function takes its PIN as `unknown` at runtime: check
+   `typeof pin === 'string'` before the pattern (the plan's guard, `plan:1222`), with one type
+   guard shared by all of them. Throwing paths (`assertValidPinFormat`, `hashPin`, `pinLookup`,
+   `createStaffUser`) throw the fixed `PIN must be six digits`; `verifyPin` returns `false` and
+   `findUserByPin` returns `null`. Add test cases for a numeric `123456` (and `null`, `undefined`,
+   an object) into each of the six functions, asserting with your `exposed()` helper that no error
+   property contains `123456`. Red proof: remove the `typeof` check and show the new case failing.
+2. **Medium: keep the plan's public contract** (`plan:1063`), which the task kept and did not
+   supersede: export `assertValidPinFormat`; `verifyPin(pin, hash)` in that order;
+   `createStaffUser` returns `Promise<{ id: string }>`. `findUserByPin` keeps the required
+   `credentialVersion`. Update the tests and the internal call to match.
+3. Correct the Handoff's package version (the manifest and lockfile say `^2.2.2`).
+
+Re-run `npm run verify` and `npx vitest run apps/server/test/pin.test.ts` and add a **Round 2**
+section to the Handoff mapping each finding to its change and evidence. Do not rewrite round 1's
+sections except where a fix makes a statement in them untrue (the version, the signatures).
 
 ## Handoff
 
