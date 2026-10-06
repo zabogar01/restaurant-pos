@@ -84,8 +84,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-003b, serial server tests on `pos_test`, `pos_app`, merged 2026-10-06 as PR #51.)*
     - *(Done: PHASE0-003c, the six tables and 21 schema tests, merged 2026-10-06 as PR #53.)*
     - *(Done: PHASE0-004, PIN hashing and lookup, merged 2026-10-06 as PR #56.)*
-    - **PHASE0-005** — audit and telemetry writers (plan Task 5), with ARCH-006 §8's fixes (no null
-      actor, no `clientInstanceId`, no `RETURNING`) — next — not written.
+    - **PHASE0-005** — audit and security-event writers (plan Task 5) — complete 2026-10-06 at
+      `0240db0`, two rounds — waits on the owner's look and merge.
     - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
       three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred

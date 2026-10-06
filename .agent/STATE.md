@@ -51,12 +51,15 @@ Earlier: PRs #56-#58 merged, `development` at `c507dfc`. Narrative: [journal/202
 
 ## Running tasks and agents
 
-- **Nothing is running.** No task worktree under `../restaurant-pos-wt/`; `.agent/runs/` is empty.
-- **Next backend task: PHASE0-005** (audit and telemetry writers, plan Task 5), not written. Write it
-  from the plan, ARCH-006 §6 and §8 (`AuditInput.actorId` is never null, B-13; no `clientInstanceId`,
-  which `audit_entry` lacks; no `RETURNING`, since `pos_app` cannot read the evidence tables), and
-  003c's and 004's Handoffs (reset with `resetDatabase()`, never `DELETE`; the `typeof` guard lesson
-  for any value that could carry a PIN). Touches audit: Codex review; the owner looks before merge.
+- **PHASE0-005 (audit and security-event writers) complete** at `0240db0` on `agent/phase0-005`, not
+  pushed: two rounds. Builder Claude Sonnet 5.5; review on OpenCode `openai/gpt-6.1-sol` (Codex at its
+  limit) found one low test gap (case 11 did not prove "before SQL"), fixed in `af1f368` with a pool spy
+  and a red proof; no re-review (test-only). Lead verify 48/2815. Touches audit: owner's look, push, merge.
+- **For plan Task 6 (from the Handoff):** `writeSecurityEvent` writes on its own pool call, so a
+  failed-PIN event survives a rolled-back login, and a caller cannot put it inside its transaction.
+- **A non-Codex reviewer:** the dispatcher cannot override the reviewer's CLI, so the lead set
+  `reviewer.pick.anthropic.strong` to OpenCode for one run, reinstalled hooks, then restored both.
+  Repeat that while Codex is out; the kit question stands.
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
   three). The owner's answers are in (DECISIONS 2026-10-06: cooldown refusal is audit; count resets).
 - **PIN reuse (DECISIONS 2026-10-06) conflicts with the schema:** `0002_staff_user.sql:29` makes
@@ -68,7 +71,7 @@ Earlier: PRs #56-#58 merged, `development` at `c507dfc`. Narrative: [journal/202
 - **The BO-13 frontend task** carries DESIGN-013's rules N1, N2 and the async-focus rule (its task file).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) only. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`) only; worktree `../restaurant-pos-wt/PHASE0-005` awaits merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
@@ -136,6 +139,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-[QUEUE.md](QUEUE.md): write and dispatch PHASE0-005 (audit writer); alongside it, write and open
-design slice D, F or I (lead's pick: I, BO-12, which reads the audit vocabulary 005 writes). Check
-Codex's allowance first: it reviews 005 and draws the slice.
+Owner looks at, pushes and merges PHASE0-005 (and `agent/lead-1006c`). Then fast-forward, remove the
+worktree and `.agent/runs/PHASE0-005/`. Next: an architect consult for plan Task 6 (throttling), and
+a design slice (I, BO-12, reads the audit vocabulary) once Codex's allowance resets.
