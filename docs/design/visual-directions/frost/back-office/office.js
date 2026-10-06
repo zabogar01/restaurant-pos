@@ -35,13 +35,14 @@
   top.insertAdjacentHTML('beforeend','<span class="office-day">Business day · Tue 6 Oct</span><span class="office-actor">M. Iqbal · Manager</span>');
   top.append(logout);
   const incidents = '../../../prototype/back-office/incidents.html';
+  const kitchenIncident = {title:'Kitchen ticket did not print',identity:'1 failed ticket · Table 1, round 2 · Sent 19:58'};
   const alertMode = params.get('alerts') || (['none','kitchen','receipt','both'].includes(state) ? state : (state === 'reauth-kitchen' ? 'kitchen' : 'none'));
   const kitchen = alertMode === 'kitchen' || alertMode === 'both';
   const receipt = alertMode === 'receipt' || alertMode === 'both';
   const emergency = document.createElement('section');
   emergency.className = 'office-emergency'; emergency.hidden = !kitchen;
   emergency.setAttribute('aria-label','Kitchen print emergency');
-  emergency.innerHTML = '<div><strong>Kitchen ticket did not print</strong><p>1 failed ticket · Table 1, round 2 · Sent 19:58</p></div><a class="office-button" href="'+incidents+'">Open print incidents</a>';
+  emergency.innerHTML = '<div><strong>'+kitchenIncident.title+'</strong><p>'+kitchenIncident.identity+'</p></div><a class="office-button" href="'+incidents+'">Open print incidents</a>';
   top.after(emergency);
   if (receipt) {
     const chip = document.createElement('a'); chip.href = incidents;
@@ -61,6 +62,9 @@
   let opener;
   function open(dialog, focus) {
     if (!dialog.open) { opener = document.activeElement; dialog.showModal(); }
+    const body=dialog.querySelector('.office-dialog__body');
+    if(body && body.scrollHeight>body.clientHeight){body.tabIndex=0;body.setAttribute('role','region');body.setAttribute('aria-labelledby',dialog.getAttribute('aria-labelledby'));}
+    else if(body){body.removeAttribute('tabindex');body.removeAttribute('role');body.removeAttribute('aria-labelledby');}
     (focus || dialog.querySelector('button:not(:disabled), input:not(:disabled), [tabindex]'))?.focus();
   }
   function close(dialog, restore = opener) { dialog.close(); restore?.focus({preventScroll:true}); }
@@ -76,5 +80,5 @@
     document.documentElement.dataset.state=value;
     const u=new URL(location.href);u.searchParams.set('state',value);history.replaceState(null,'',u);
   }
-  window.Office = {open,close,setState,kitchen,receipt,incidents,emergency,logout};
+  window.Office = {open,close,setState,kitchen,receipt,incidents,kitchenIncident,emergency,logout};
 })();

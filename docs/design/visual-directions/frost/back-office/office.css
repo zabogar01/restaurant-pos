@@ -82,7 +82,7 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 .office-fixture summary { cursor: pointer; font-weight: var(--frost-weight-medium); }
 .office-fixture .office-actions { margin-top: var(--frost-space-3); }
 .office-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--frost-elevated); }
-.office-table th { position: sticky; top: 0; z-index: 1; padding: var(--frost-table-head-padding); background: var(--frost-group); border-bottom: var(--frost-control-stroke); text-align: left; font-size: var(--frost-text-11); font-weight: var(--frost-weight-medium); text-transform: var(--frost-table-head-case); letter-spacing: var(--frost-tracking-table); }
+.office-table th { position: sticky; top: calc(-1 * var(--frost-office-content-padding)); z-index: 1; padding: var(--frost-table-head-padding); background: var(--frost-group); border-bottom: var(--frost-control-stroke); text-align: left; font-size: var(--frost-text-11); font-weight: var(--frost-weight-medium); text-transform: var(--frost-table-head-case); letter-spacing: var(--frost-tracking-table); }
 .office-table td { padding: var(--frost-table-cell-padding); border-bottom: var(--frost-divider-stroke); vertical-align: top; }
 .office-table td:first-child { font-weight: var(--frost-weight-medium); max-width: var(--frost-office-nav-width); overflow-wrap: anywhere; }
 .office-table .num { text-align: right; font-variant-numeric: var(--frost-numeric-variant); white-space: nowrap; }

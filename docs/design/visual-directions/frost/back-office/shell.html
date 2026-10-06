@@ -3,7 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Back-office shell and preserved draft</title>
 <link rel="stylesheet" href="office.css">
-<script>window.WF={id:'BO-shell',client:'bo',nav:'',name:'Office shell and M-6',reqs:'FR-A2b, A2c, A5, E3, E6, I1',states:[['none','No alerts'],['kitchen','Kitchen emergency'],['receipt','Receipt warning'],['both','Both alerts'],['reauth','Re-authenticate'],['reauth-verifying','Verification pending'],['reauth-error','Wrong credential'],['reauth-other','Different manager refused'],['reauth-throttled','LOGIN cooldown'],['reauth-logout','Discard before logout'],['reauth-kitchen','Kitchen failure during re-authentication'],['resumed','Draft resumed']]};</script>
+<script>window.WF={id:'BO-shell',client:'bo',nav:'',name:'Office shell and M-6',reqs:'FR-A2b, A2c, A5, E3, E6, I1',states:[['none','No alerts'],['kitchen','Kitchen emergency'],['receipt','Receipt warning'],['both','Both alerts'],['reauth','Re-authenticate'],['reauth-verifying','Verification pending'],['reauth-error','Wrong credential'],['reauth-other','Different manager refused'],['reauth-throttled','LOGIN cooldown'],['reauth-logout','Discard before logout'],['reauth-kitchen','Kitchen failure during re-authentication'],['resumed','Draft resumed'],['unsaved','Leave the draft']]};</script>
 <script defer src="../../mockup.js"></script><script defer src="office.js"></script><script defer src="shell.js"></script>
 </head><body>
 <header class="wfbar"></header>
@@ -30,14 +30,15 @@
 </main>
 </div>
 </div>
-<dialog class="office-dialog" id="reauth-dialog" aria-labelledby="reauth-title" aria-describedby="reauth-description">
+<dialog class="office-dialog" id="reauth-dialog" closedby="none" aria-labelledby="reauth-title" aria-describedby="reauth-description">
 <header class="office-dialog__head"><h2 id="reauth-title">Your session timed out</h2></header>
-<section class="office-emergency" id="reauth-alert" role="alert" hidden><div><strong>Kitchen ticket did not print</strong><p>1 failed ticket · Table 1, round 2 · Sent 19:58</p><p>Continue your session to open print incidents.</p></div><button class="office-button" id="queue-incidents">Open print incidents after sign-in</button></section>
+<section class="office-emergency" id="reauth-alert" role="alert" hidden><div><strong></strong><p data-incident-identity></p><p>Continue your session to open print incidents.</p></div><button class="office-button" id="queue-incidents">Open print incidents after sign-in</button></section>
 <form id="verify-form" class="office-dialog__body" novalidate>
   <p id="reauth-description">Your unsaved changes are kept. Continue as M. Iqbal to resume them. To sign in as someone else, log out.</p>
   <label for="manager">Manager</label><input id="manager" class="office-field" value="M. Iqbal" readonly>
   <label for="credential" id="credential-label"></label><input id="credential" class="office-field" type="password" autocomplete="current-password" aria-describedby="credential-message">
   <span id="credential-message" class="office-error" role="status"></span>
+  <p id="other-note" class="office-fixture" hidden>Review fixture: reauth-other deliberately uses the same refusal as reauth-error. LOGIN counting awaits the owner's credential decision.</p>
   <p id="cooldown" role="status" hidden></p>
   <details class="office-fixture"><summary>Review fixture · simulated response</summary><label for="verify-result">Next local verification result</label><select class="office-field" id="verify-result"><option value="resumed">Same manager</option><option value="reauth-error">Wrong secret</option><option value="reauth-other">Different manager</option></select><p>No credential is checked or stored. Enter any sample text, then Continue.</p></details>
 </form>
@@ -45,7 +46,7 @@
 </dialog>
 <dialog class="office-dialog" id="logout-dialog" aria-labelledby="logout-title" aria-describedby="logout-description">
 <header class="office-dialog__head"><h2 id="logout-title">Log out and discard your changes?</h2></header>
-<div class="office-dialog__body"><p id="logout-description">The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session.</p></div>
+<div class="office-dialog__body"><p id="logout-description">The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session.</p><p id="logout-cooldown" role="status" hidden></p></div>
 <footer class="office-dialog__foot"><button class="office-button" id="keep-session">Keep this draft</button><a class="office-button danger final" id="confirm-logout" href="../../../prototype/back-office/login.html">Discard changes and log out</a></footer>
 </dialog>
 </body></html>

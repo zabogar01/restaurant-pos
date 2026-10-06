@@ -313,8 +313,9 @@ My finishing changes were:
   to the shell does not silently lose a kitchen or receipt incident.
 - Apply the existing tabular-number token to the standalone shared stylesheet;
   these new artifacts do not inherit `visual.css`'s body rule.
-- Prevent shared-pattern navigation during pending or unknown command outcomes,
-  consistent with the disabled Leave action, while the fixture reconciles the result.
+- Initially prevent shared-pattern navigation during pending or unknown command
+  outcomes. Review finding F1 rejected this choice; round 2 replaces it with an
+  explicit leave decision while preserving the uncertain result.
 - Keep gallery selection valid when a requested state is excluded from Paper's
   options. The historical Paper artifacts were not edited.
 - Extend the inherited browser check with per-state captures, field focus and
@@ -332,7 +333,7 @@ All artifact paths in the requirement map below are relative to
 |---|---|
 | `office.css` | Shared frame, alert classes, native fields, actions, dialogs, tables and result treatment; imports `../../../tokens/frost.css`. |
 | `office.js` | Shared navigation, day and manager context, alert identity and URL continuity, dialog open/close and keyboard containment. |
-| `shell.html`, `shell.js` | Neutral changed-form fixture and all twelve shell/M-6 states. Credential-dependent copy lives in `shell.js`. |
+| `shell.html`, `shell.js` | Neutral changed-form fixture and thirteen shell/M-6 states, including the round-2 unsaved departure state. Credential-dependent copy lives in `shell.js`. |
 | `patterns.html`, `patterns.js` | Twenty walkable desktop-pattern states with synthetic reads, commands and table paging. |
 | `menu.html`, `report-detail.html` | Existing page content inside the shared frame, including each page's new `kitchen` state. |
 | `../../manifest.js`, `../../review.js`, `../../index.html` | Gallery registration, direction-aware selection and updated scope copy. |
@@ -349,7 +350,7 @@ The artifacts are local fixtures; no service, authentication or print command is
 
 Every state in this table is directly reachable with `?state=` and registered in
 `manifest.js`. The check compared each artifact's complete declared state list to
-its manifest registration: shell 12, patterns 20, menu 10, report detail 4, **46 total**.
+its manifest registration in round 1: shell 12, patterns 20, menu 10, report detail 4, **46 total**. Round 2 adds shell `unsaved`, bringing the current total to 47.
 
 | Requirement | Artifact and state or walk |
 |---|---|
@@ -370,11 +371,11 @@ its manifest registration: shell 12, patterns 20, menu 10, report detail 4, **46
 | C3: named destructive confirmation | Patterns `destructive` → `removed`; Keep Evening sample cancels, Remove Evening sample completes the local demonstration. Final action uses desktop destructive styling. |
 | C4: read states | Patterns `loading`, `empty`, `load-error`; counts/rows are withheld until known, empty has zero samples and Create sample, Try again traverses loading to `table`. |
 | C5: command result | Patterns `pending`, `saved`, `refused`, `unknown`, `reconciled`. Save sample uses the review response selector; refusal keeps edits; unknown disables submission and starts a simulated reread. Direct `unknown` exposes Check saved sample, a read-only reconciliation action. |
-| C6: unsaved navigation | Patterns `unsaved`; Leave this sample or navigation after editing offers Stay and keep editing / Discard changes and leave. Shell navigation similarly protects its changed draft. |
+| C6: unsaved navigation | Patterns `unsaved`; Leave this sample or navigation after editing offers Stay and keep editing / Discard changes and leave. Shell `unsaved` similarly protects its changed draft without labelling ordinary navigation as re-authentication. |
 | C7: table | Patterns `table`, `table-page-2`, `row-detail`; 24 samples in pages of 12, sticky headers, wrapping long name, `155.925`, HH:MM WIB times, and subject-specific accessible names on View sample actions. |
 | D1: existing pages adopt shell | Menu and report `default` / `kitchen`; retained content and authored 40/11 prototype links. Report date/currency and Print report move to a content subbar to leave room for global context. |
-| D2: gallery and missing state | All 46 states registered; BO-03 `category-invalid` added; shell/patterns explicitly Frost-only. |
-| D3: All screens | Generated back-office link now reaches `../../index.html?direction=frost`, the existing gallery. Both new artifacts also expose an explicit gallery link. |
+| D2: gallery and missing state | All 47 current states registered (46 in round 1); BO-03 `category-invalid` added; shell/patterns explicitly Frost-only. |
+| D3: All screens | Generated back-office link reaches the existing `../../index.html` gallery with its current Paper or Frost direction. Both new artifacts also expose an explicit gallery link. |
 
 ### Design decisions and downstream use
 
@@ -387,7 +388,9 @@ These are entry actions to BO-13; its recovery table remains slice C's work.
 **Scroll ownership (Q10).** The viewport holds the frame; `.bocontent` owns page
 scrolling. The rail may independently scroll on a shorter viewport. The alert sits
 between the top bar and the content, outside the page scroll owner. The table uses
-`position: sticky; top: 0` inside that owner, with layer 1 above its rows. Native
+`position: sticky` with the negative existing content-padding token inside that
+owner, with layer 1 above its rows. Round 2 moves the stuck header to the visible
+scroll edge so rows cannot show in a band above it. Native
 dialogs use the browser top layer and a body-only scroll region; no fixed 900px
 height or extra layer token is introduced.
 
@@ -434,7 +437,7 @@ run output and are not part of the commit.
 | Dialog | 640px wide; long dialog top 24px, bottom 876px |
 | Long dialog body overflow | 988px, scrolled independently while head and Close remain visible |
 | Persistent kitchen banner | x=220, y=64, width=1220, height=80, identical before and after content scrollTop=857 |
-| Sticky table header | y=88 after scrolling; 40.938px high, at the padded content scrollport's upper edge |
+| Sticky table header, round 1 | y=88 after scrolling; this left a visible band of rows above it and is superseded by the round-2 correction below. |
 | LOGIN cooldown | “Five attempts failed. Try again in 5:00. Log out is still available.” |
 
 **Preservation method.** The check edits the name to “Owner-edited fixture”, chooses
@@ -447,7 +450,8 @@ endpoints. Before and after are exactly equal: name “Owner-edited fixture”, 
 
 **Keyboard method.** The check sends eight Tabs and eight Shift+Tabs in M-6, and
 four of each in the ordinary dialog, asserting every active element remains in
-the open dialog. Escape leaves M-6 open. Closing the ordinary dialog returns focus
+the open dialog. Round 1 tested one Escape after Alt+I; that did not establish resistance to repeated
+Escape. The stronger round-2 checks are recorded below. Closing the ordinary dialog returns focus
 to `open-dialog`. The wrong-secret and different-manager states clear/focus the
 secret; five submitted failures disable Continue, and keep-draft from logout does
 not reset the cooldown. Read-only select/radio values survive attempted changes.
@@ -516,11 +520,11 @@ alert links are separate from those authored counts.
 1. `Password`
 2. `Incorrect password. Try again.`
 3. `Enter your password.`
-4. `This password belongs to another manager. Log out to switch.`
 
-If the credential changes, review those four strings plus the secret field's
+If the credential changes, review those three strings plus the secret field's
 `type="password"` and `autocomplete="current-password"` semantics. No staff PIN or
-SSO is drawn. If the chosen credential verifies only against the named manager's
+SSO is drawn. Both refusal fixtures now use the same second string; the old
+other-manager disclosure was removed under F4. If the chosen credential verifies only against the named manager's
 account, a different manager's otherwise valid password is merely incorrect for
 that account, making `reauth-other` unreachable. It remains drawn as requested;
 the eventual identity contract determines which refusal can actually occur.
@@ -535,8 +539,8 @@ consume existing tokens, with intrinsic/fractional layout composed where appropr
 **Proposals deliberately not registered:** login width and narrow credential/numeric
 widths (slice B or the owning form); menu column recipes (slice D); report internal
 figure recipes (slice H); generic fixed table widths (intrinsic wrapping suffices);
-sticky offset/layer tokens (zero offset, one local sticky layer, native dialog top
-layer); modal maximum-height token (viewport minus twice existing 24px space);
+sticky offset/layer tokens (negative existing content padding, one local sticky
+layer, native dialog top layer); modal maximum-height token (viewport minus twice existing 24px space);
 custom 16px radio marks (native controls); multiline minimum (no assigned multiline
 field); skeleton dimensions (contextual loading text is sufficient); 60px large-empty
 padding (existing 48px token); emergency/receipt action-size tokens (existing 36/28px);
@@ -552,5 +556,62 @@ answers are documented above for review. I found no additional blocking question
 requiring a new product or boundary decision. The previously audited BO-03/BO-11
 content gaps remain assigned to slices D/H; the stale inventory/incident audit
 language remains the lead's reconciliation from DESIGN-011, not a designer edit.
+
+### Round 2
+
+Completed by design012 on 2026-10-06, continuing design012b's uncommitted round-2
+work described in the lead's handover. I inherited changes in nine files:
+`docs/DESIGN.md`, `docs/design/checks/design012.cjs`, `office.css`, `office.js`,
+`patterns.js`, `shell.html`, `shell.js`, `manifest.js` and `mockup.js`. I checked
+each change against the full review and the lead's rulings and retained those
+implementation fixes. My finishing changes correct the DESIGN frontmatter's
+designed-token count, record individual browser assertions, strengthen the
+keyboard-scroll evidence with header/footer geometry, and update this Handoff
+where round 1's statements became untrue. No product policy or token was added.
+
+| Finding | Change and evidence |
+|---|---|
+| F1 — uncertain saves blocked recovery | Pending and unknown saves now offer a leave decision for shared navigation, kitchen incidents, receipt incidents and logout. Copy says the outcome is unknown and leaving does not resend. DESIGN states the rule. All eight browser combinations (two states × four destinations) reached the selected destination after explicit Leave. |
+| F2 — repeated Escape bypassed M-6 | M-6 has `closedby="none"`, consumes Escape keydown and reopens after an unauthorized close while re-authentication is required. Direct-load Escape before other input, four further Escape presses, repeated Escape after Alt+I, and a scripted close all left the gate open and the background inert. |
+| F3 — keyboard could not scroll the dialog | An overflowing dialog body becomes a focusable region named by its title and participates in the focus loop. Shift+Tab from Close reached the body; Page Down changed its scroll position. After further keyboard scrolling, the dialog remained at y=24–876, with its heading at y=25 and footer bottom at y=875. |
+| F4 — refusal disclosed credential identity | Both refusal fixtures show “Incorrect password. Try again.” The different-manager fixture has the required visible reviewer note explaining that it is deliberately indistinguishable. Browser checks confirmed the shared refusal copy and cleared, focused secret. LOGIN counting remains the open Q4 dependency below. |
+| F5 — throttled logout omitted its consequence | Logout confirmation now reports the remaining installation-wide sign-in cooldown, says logout does not end it, and explains that waiting keeps the draft. The five-failure flow displayed 5:00 in both M-6 and confirmation; Keep returned to the still-throttled gate. |
+| F6 — rows appeared above the sticky header | The header offsets the existing content padding with its negative token value. After content scroll, the header starts at y=64, flush with the top bar; the element at (300,65) is a header cell. The post-scroll capture shows no row above it. |
+| F7 — timeout restored an older field | Timeout captures the actual active element and its selection. Browser checks restored the Simulate button, Menu navigation and Log out exactly. The edited draft, validation, focused numeric field and selection [1,4] also matched before and after authentication. |
+| F8 — DESIGN contradicted its supplement | The three earlier passages now describe five designed tokens, the existing native controls, and the shared shell/M-6 alongside eleven unconverted content pages. Each carries the required review marker; the supplement retains new material. Frontmatter also reports 170 sourced plus five designed tokens. |
+| F9 — six smaller inconsistencies | Row names begin with visible “View sample”; read-only changes do not dirty the form; kitchen title/identity come from `Office`; dialog dismissal restores the underlying state and Sample 13 survives reload; alert-query precedence is stated below; Paper's All screens link preserves its direction. The browser exercised row/reload/close, page-2 cancellation, read-only departure without a prompt, shell Leave/Stay state and focus, and Paper's gallery destination. Shell's explicit unsaved state brings the gallery/check total to 47 states. |
+
+An explicit `alerts` query takes precedence over the named fixture state, so
+`state=receipt&alerts=kitchen` displays the kitchen alert.
+
+**Verification.** `npm run verify` passed in this worktree after the inherited
+implementation changes: typechecking, 45 test files and 2,737 tests. The existing
+Vite future-native-config-loader warning remains. Syntax checks passed for the
+six changed JavaScript/check files. The authored prototype-link counts remain
+40 in menu and 11 in report detail; the prototype ledger above still applies.
+Static checks found no unregistered office token references, no literal pixel
+dimensions in the shared office CSS/JavaScript, and no inline style attributes
+in the four adopted HTML pages.
+
+The owner-approved round-2 Chrome execution used the command recorded above at
+1440×900. It passed **216 of 216 assertions across 47 states**, with no page
+JavaScript errors, no failed assertions and no horizontal document overflow.
+Evidence is outside the repository in `/tmp/design012-evidence/round2/`, including
+`measurements.json` and the post-scroll table, keyboard-scrolled dialog,
+unknown-save leave decision and throttled-logout captures. Those four captures
+were visually inspected. Frame dimensions remain 220px navigation, 64px brand
+and top bar, 24px content padding, 14px body text, 36px kitchen and 28px receipt
+actions, 40px input height and 640px dialog width. The kitchen banner remains
+at x=220, y=64, width=1220, height=80 across content scrolling. No second browser
+execution was needed. Screen-reader, physical-device and other-browser checks
+were not run.
+
+**Open question for Q4, not a new policy decision:** Does another manager's valid
+credential count as a LOGIN failure? The fixture does not add that separate
+refusal to its failure counter. Proposed answer if the final contract verifies
+only the named manager: an incorrect secret is an ordinary failed attempt, and
+a separately identified other-manager outcome is unreachable. The owner must
+settle the credential and counting contract; this round changes only the
+non-disclosing presentation required by the lead.
 
 DONE

@@ -1,6 +1,6 @@
 ---
 name: Restaurant POS — Frost
-description: The Frost light direction, chosen 2026-09-14, stated as values an implementation can consume. 170 tokens trace to a reviewed Frost artifact; four (pressed ring, invalid, invalid border, round-tag size) were designed under DESIGN-005, are marked designed in the registry and here, and await review.
+description: The Frost light direction, chosen 2026-09-14, stated as values an implementation can consume. 170 tokens trace to a reviewed Frost artifact; five are designed and await review (four under DESIGN-005 and the office form grid under DESIGN-012). Updated by DESIGN-012, awaiting review.
 colors:
   surface: "#fafafa"
   elevated: "#ffffff"
@@ -492,12 +492,15 @@ with a path, line, selector, property and the authored value. Two of them,
 registered by DESIGN-010 after the fact. Their source cites the declaration
 that consumes them, so the authored value there is the token itself; the
 values were first authored in DESIGN-009 round 1 (`06f3a25`, `closed.css:12`
-and `:17`) and approved by the lead's ruling on round 2's question 4. Four were
+and `:17`) and approved by the lead's ruling on round 2's question 4. Five tokens
+are designed (updated by DESIGN-012, awaiting review). Four were
 designed under DESIGN-005 — `--frost-pressed-ring`, `--frost-invalid`,
 `--frost-invalid-border`, `--frost-round-tag-size` — and carry `source: null`
 and a `designed` block naming the task, the date, the author, the review
 status, the stylesheet that holds the rule, the fixture states that show it,
-and why. A designed token never cites a file and line as if it had been read
+and why. The fifth, `--frost-office-form-columns`, was designed under DESIGN-012
+with the same null-source provenance; see the shared back-office supplement.
+A designed token never cites a file and line as if it had been read
 there; a null is the honest answer. The frontmatter above is the
 same values in the portable DESIGN.md schema, for tools that read it. That
 schema has no *minimum* height, so the order line (72px minimum) and the
@@ -1264,8 +1267,10 @@ wherever they appear.
 
 1. **Dark palette.** The MVP ships light only; the dark palette is deferred.
    No dark value exists and none is proposed here.
-2. **Form controls beyond the numeric field — mostly absent, one inherited.**
-   Select, checkbox, and any toggle are absent. A 40px text field *is*
+2. **Form controls — mixed coverage (updated by DESIGN-012, awaiting review).**
+   Native text, secret, select and radio controls now have shared Frost fixtures
+   in `frost/back-office/patterns.html`, including focus, invalid, read-only and
+   disabled states. Checkbox and custom toggle patterns remain absent. A 40px text field is
    rendered in the Frost category modal (`frost/back-office/menu.html:142`,
    `field-small`) through the shared `.field` rules — inherited, and the
    modal was not a reviewed screen. The back-office 86 switch is a row-level
@@ -1289,9 +1294,12 @@ wherever they appear.
    has a Frost artifact at `frost/pos/floor.html`. DESIGN-009 adds
    `frost/pos/closed-orders.html` and `frost/pos/closed-order.html`, including
    touch filters and refund allocation; these additions await design review
-   and do not establish production implementation or acceptance. The eleven
-   remaining back-office screens still exist only as greyscale wireframes
-   loading `wireframe.css`; their Frost appearance is absent. The
+   and do not establish production implementation or acceptance. **Updated by
+   DESIGN-012, awaiting review:** the shared back-office frame, alerts and M-6
+   now have Frost artifacts in `frost/back-office/shell.html` and `patterns.html`.
+   The eleven back-office screen-specific content slices outside menu/report
+   still exist only as greyscale wireframes; shared coverage does not complete
+   those screens. The
    sheets and modals *inside* the six screens — item configuration, line
    editor in both forms including the quick-sale form
    (`frost/pos/order.html`, state `quick-line`), discount picker and
@@ -1327,8 +1335,7 @@ The desktop operating surface now has a shared stylesheet,
 context, manager/logout placement, incident identity and dialog focus handling.
 The shell and patterns artifacts consume these directly. The existing menu and
 report also import the stylesheet and runtime; their content remains for slices
-D and H. This supplement replaces the earlier statement that these shared
-patterns are absent. It does not approve them or complete those screen slices.
+D and H. These shared patterns await review and do not complete those screen slices.
 
 At the 1440-wide desktop target, the frame fills the viewport without fixing a
 900px product height. The 220px navigation rail and 64px top bar remain in place;
@@ -1350,13 +1357,21 @@ prototype destinations have not adopted the new frame and await their slices.
 
 M-6 is a native modal dialog, 640px wide, with the manager’s name read-only and
 one secret field provisionally labelled Password. It cannot be dismissed with
-Escape or a click outside. Tab and Shift+Tab remain inside; the underlying form
+Escape or a click outside: `closedby="none"`, Escape keydown prevention and a
+close-event guard retain the dialog while re-authentication is required.
+Tab and Shift+Tab remain inside; the underlying form
 is inert through the native modal top layer. Values, selected options, radio
 choice, validation, focused field and text selection remain in the same DOM
 form. Success restores them without submitting. A different manager cannot
 resume the draft. Explicit logout requires discard confirmation, with keeping
-the draft as the initial focus. Five failed fixture responses show the LOGIN
-five-minute cooldown; Continue is disabled and Log out remains available.
+the draft as the initial focus. Both credential refusals use “Incorrect password.
+Try again.”; no response identifies another credential's owner. Whether the
+`reauth-other` fixture affects LOGIN counting remains an owner question with Q4;
+it does not change the counter in this fixture. Five wrong-secret responses show the LOGIN
+five-minute cooldown; Continue is disabled and Log out remains available. During
+cooldown, logout confirmation states the remaining installation-wide wait and
+that waiting keeps the draft. Timeout captures the actual active element and
+text selection, including focus outside the draft, and success restores them.
 These are local demonstrations, not implemented authentication or persisted
 server throttling. Absolute expiry belongs to BO-01 and is not drawn here.
 
@@ -1380,7 +1395,9 @@ must preserve those semantics rather than silently submitting a changed choice.
 
 Dialogs use the existing 640px width, scrim, border, radius and office type.
 Their maximum height is `calc(100dvh - 2 * var(--frost-space-6))`; their bodies
-scroll, while headings and actions stay visible. Ordinary dialogs close on
+scroll, while headings and actions stay visible. An overflowing body is a focusable
+region labelled by the dialog title, reachable in the focus loop and scrollable
+with Page Down. Ordinary dialogs close on
 Escape and return focus to the opener. Destructive confirmations name their
 subject, start focus on the keep action and use a 36px final destructive action.
 They contain no POS approval control.
@@ -1391,12 +1408,16 @@ failed read offers Try again. Command results distinguish pending, saved,
 definitely refused with edits kept, and outcome unknown. Unknown disables
 resubmission and rereads the saved fixture before confirming its outcome;
 Check saved sample is a read, never a resend. Results use the grouping-blue and
-neutral palette. While a command is pending or its outcome is unknown, the
-fixture keeps navigation on the current page until the result is reconciled.
+neutral palette. No page state makes the kitchen action, receipt chip or Log out
+inert. Pending/unknown navigation opens a leave decision explaining that the save
+may or may not have succeeded and leaving never resends it. Stay retains the
+request/result context; Leave without resending follows the chosen destination.
 Navigation with unsaved edits otherwise offers stay or explicit discard.
 
-The sample table uses native table headers, sticky at zero inside the content
-scroll owner, and the existing cell/header padding. A wrapping subject column
+The sample table uses native table headers, sticky at the scroll owner's visible
+edge by offsetting the existing content padding with its negative token value.
+Rows cannot show through a gap above the header. It retains the existing
+cell/header padding. A wrapping subject column
 absorbs long names; time, whole-rupiah figures and named row actions remain
 legible. Paging changes both rows and the displayed range. No menu-specific
 column recipe or report figure recipe is established by this table.
@@ -1409,5 +1430,4 @@ by `.office-fieldrow` in shell and patterns; dialogs stack labels above fields.
 The registry now has 175 entries: 170 sourced and five designed. No color,
 weight, fixed viewport height, custom radio mark, skeleton recipe, login width,
 large-empty padding or incident-action size token is added. All other values
-compose the existing registry. The earlier provenance count of four designed
-entries describes the registry before this supplement.
+compose the existing registry.
