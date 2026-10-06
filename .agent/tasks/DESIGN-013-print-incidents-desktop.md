@@ -5,7 +5,7 @@ category: ui
 touches: [audit]
 depends_on: [DESIGN-012]
 owns: [docs/design/**]
-status: review
+status: active
 cycles: 0
 ---
 # DESIGN-013 — BO-13 print incidents (slice C)
@@ -211,6 +211,44 @@ Commit on `agent/design-013` only, after verify is green where it applies, and n
 
     herdr agent prompt lead "design013: DESIGN-013 done — <one line>"
     herdr agent prompt lead "design013: BLOCKED — <question>"
+
+## Round 2 — the review's eight findings (lead rulings, 2026-10-06)
+
+The review is `.agent/reviews/DESIGN-013-review.md` (Claude Opus 5.5, at `0c9f0f0`). Read it in
+full. Every finding is accepted; this is fix cycle 1 of 2. The reviewer could not run a browser;
+the lead walked `default` in Chrome (a cancellation reprint kept its result on its own row; clearing
+both emergencies left Menu with the receipt chip only), so AC-3 and AC-4 hold for those paths.
+
+- **F1 (medium):** as proposed. Draw the reread outcomes as states: still `UNKNOWN` (reprint live
+  again, with the base `UNKNOWN` check-the-printer wording), `FAILED`, and reread failed (*Try
+  again*). Reprint is disabled only while a request or a reread is in flight. Add a review control
+  for the reread response; replace the check at `design013.cjs:40` and the `check(true, …)`
+  assertion with ones that can fail.
+- **F2 (medium):** as proposed. Restore focus only when the re-rendered row contained it, guard the
+  missing control, and state the rule in the Handoff: an asynchronous result never moves focus to,
+  or away from, a different incident. Add a keyboard check of the interleaving the review describes.
+- **F3 (low):** per-class counts in the banner ("1 kitchen ticket · 1 cancellation"); one title
+  wording for the default and the carried context; no raw delivery suffix that can read `PRINTED`
+  under "needs attention". This is a narrow `office.js` change; slice A's check must still pass.
+- **F4 (low):** as proposed: announce without moving focus, and keep a non-interactive *Cleared on
+  the POS* row in place until the next read or the manager's next action.
+- **F5 (low): change the fixture, raise the question.** Whether a reprint of a work ticket should
+  mark a line that has since been cancelled is product behaviour and goes to the owner (the lead
+  adds it to the owner's questions). Until it is ruled, the `default` and related fixtures must not
+  pair a work ticket with a cancellation of one of its lines: give the cancellation another order or
+  round. List the question in the Handoff with the reviewer's proposed answer, and note that the POS
+  artifact draws the same pairing.
+- **F6 (low):** label the cancellation's time in its cell ("Cancelled 20:02 WIB").
+- **F7 (low):** exclude buttons inside `.incident-result` from the emergency border override.
+- **F8 (low):** the three robustness fixes as proposed.
+- **The inventory note (the lead's error):** the I-8 row's last sentence contradicts the table's
+  "Nothing below is open". Replace the I-8 ruling cell with exactly: **Audited** (owner, 2026-09-24;
+  FR-J3): the entry names the actor, the order and the round reprinted. No gate is added: none is
+  granted, and I-11 keeps PIN gates on the POS. Drawn on BO-13. No other inventory change.
+
+Re-run `npm run verify` and both browser checks (each run is the owner's to approve). Add a
+**Round 2** section to the Handoff mapping each finding to its change and its evidence; do not
+rewrite round 1's sections except where a fix makes a statement in them untrue.
 
 ## Handoff
 
