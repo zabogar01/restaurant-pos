@@ -56,8 +56,8 @@ PHASE0-003c, and started DESIGN-012 (slice A). Narrative: [journal/2026-10-06.md
   superuser, mutable settings). Task 3 is split: **003a** `Rate` brand; **003b** serial server tests on
   `pos_test`, advisory lock, provisioned `pos_app`, pool split, no credential in source; **003c** the
   schema, from ARCH-006's four migrations and 21 test cases, cut after 003b merges.
-- **003a and 003b merged** (PRs #50, #51). **PHASE0-003c running**: Sonnet 5.5 builder, interactive, pane
-  `PHASE0-003c`, worktree `../restaurant-pos-wt/PHASE0-003c`; baseline 45/2737. Lead watches for approval prompts.
+- **003a and 003b merged** (PRs #50, #51). **PHASE0-003c complete** at `33769d0`, not pushed: one round, Codex review
+  clean, lead verify 46/2758, schema test alone 21/21, `pos` holds 0001-0005 (owner-approved migrate). Owner's look before merge.
 - **DESIGN-011 done** (audit; nine slices A-I). **The owner handed the design to the lead** (2026-10-06, no external
   tool). **DESIGN-012 (slice A) running**: Codex `gpt-6-astra` high, `design012`, pane `w2:p3K`, worktree
   `../restaurant-pos-wt/DESIGN-012` on `agent/design-012`; opened by hand (journal 2026-10-05 launch line).
@@ -65,7 +65,7 @@ PHASE0-003c, and started DESIGN-012 (slice A). Narrative: [journal/2026-10-06.md
 - Merged: FE-036 (the void, PR #48), FE-035 (PR #45), FE-034 (PR #42). The frontend review is complete.
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`), `phase0-003c` (`w2:p3J`), `design012` (`w2:p3K`). No lead dev server. Not the lead's: agentless pane
+- **Live agents:** the lead (`w2:p1`), `design012` (`w2:p3K`). No lead dev server. Not the lead's: agentless pane
   `w2:pE`; worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
@@ -145,5 +145,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-[QUEUE.md](QUEUE.md): verify and review PHASE0-003c (owner looks before merge: audit, identity);
+[QUEUE.md](QUEUE.md): owner looks at and pushes/merges PHASE0-003c; then PHASE0-004 (PIN), written from ARCH-006 §8;
 verify DESIGN-012, then a design review; then slices B-I as the owner answers Q2, Q4 and Q7.

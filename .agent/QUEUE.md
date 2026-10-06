@@ -81,8 +81,10 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     (`.agent/reviews/ARCH-006-phase0-core-schema.md`).
     - *(Done: PHASE0-003a, brand `Rate`, merged 2026-10-05 as PR #50.)*
     - *(Done: PHASE0-003b, serial server tests on `pos_test`, `pos_app`, merged 2026-10-06 as PR #51.)*
-    - **PHASE0-003c** — the six tables and 21 tests from ARCH-006 — dispatched 2026-10-06
-      (Sonnet 5.5 builder, interactive) — running.
+    - **PHASE0-003c** — the six tables and 21 tests from ARCH-006 — complete at `33769d0`
+      (review clean) — waits on the owner's look, push and merge.
+    - **PHASE0-004** — PIN hashing and lookup (plan Task 4), against ARCH-006 §8 item 1 and
+      003c's Handoff — after 003c merges — not written.
     - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
       three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — the
