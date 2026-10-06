@@ -5,7 +5,7 @@ category: feature
 touches: [audit]
 depends_on: [PHASE0-004]
 owns: [apps/server/src/**, apps/server/test/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-005 — Audit and security-event writers
@@ -183,6 +183,22 @@ made where a case needs an approver.
 - `REFUSED` and its `refusal_code` (later phase), an action vocabulary, an audit reader or viewer.
 - Reusing a deactivated user's PIN (owner, 2026-10-06): a migration in another Phase 0 task.
 - The vitest ESM warning.
+
+## Round 2 — the review's one finding (lead ruling, 2026-10-06)
+
+The review is `.agent/reviews/PHASE0-005-review.md` (OpenCode `openai/gpt-6.1-sol`, at `fc8f4d6`;
+Codex was at its limit). Read it in full. Its one finding is accepted; this is fix cycle 1 of 2.
+
+1. **Low: case 11 does not prove "before SQL" for `writeSecurityEvent`.** An empty table shows no
+   row survived, not that no SQL ran. For each invalid input in case 11, observe the pool's query
+   entry point that `writeSecurityEvent` uses (a `vi.spyOn` on the pool, for example
+   `getPool().query`, restored after each test) and assert zero calls. Keep the real-database
+   assertions. Do not change `audit.ts`'s signature or `pool.ts`. Red proof: add a harmless
+   `await query('SELECT 1')` before validation in `writeSecurityEvent`, show the new assertion
+   failing, revert.
+
+Re-run `npm run verify` and the focused file, and add a **Round 2** section to the Handoff with
+the change, the red proof and the counts. Do not rewrite round 1's sections.
 
 ## Handoff
 
