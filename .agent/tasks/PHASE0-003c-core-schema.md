@@ -5,7 +5,7 @@ category: feature
 touches: [audit, identity, money]
 depends_on: [PHASE0-003b]
 owns: [db/migrations/**, apps/server/test/**]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE0-003c — Core schema and append-only grants
