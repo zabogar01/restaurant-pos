@@ -177,3 +177,36 @@ Every case that touches the database starts from `resetDatabase()`.
 - The vitest ESM warning (`vitest.config.ts` loaded as CommonJS).
 
 ## Handoff
+
+**What I did.** Added `apps/server/src/config.ts` (`pinPepper()`, read from `PIN_PEPPER` on every call; throws if unset or under 32 characters, naming the variable, never its value), `apps/server/src/domain/pin.ts` (`hashPin`, `verifyPin`, `pinLookup`, `createStaffUser`, `findUserByPin`) and `apps/server/test/pin.test.ts` (14 tests). Added `@node-rs/argon2` ^2.2.1 to `apps/server/package.json` and `package-lock.json`. Added `PIN_PEPPER` to `db/dev.env` (a public development value, under the file's existing warning) and made `serverTestEnv()` in `apps/server/test/support/env.ts` pass it through as a required variable. Commit hash: see `git log` on `agent/phase0-004` (the commit that contains this Handoff).
+
+**Librarian (cited).** `@node-rs/argon2` current version 2.2.1. `hash(password, options?, abortSignal?): Promise<string>` and `verify(hashed, password, options?, abortSignal?): Promise<boolean>`; options `memoryCost`, `timeCost`, `outputLen`, `parallelism`, `algorithm`, `version`, `secret`, `salt`; `Algorithm.Argon2id` is 2. Defaults are `memoryCost` 19456, `timeCost` 2, `parallelism` 1, Argon2id. Encoded format is PHC (`$argon2id$v=19$m=…,t=2,p=1$salt$digest`). Prebuilt binaries exist for `aarch64-apple-darwin` and `x86_64-unknown-linux-gnu`. Explicit 19456/2/1 is accepted. (Context7 did not resolve this package; the librarian used the repository and npm pages.) The code states all three parameters and the algorithm explicitly, and the test pins them by the encoded prefix; the install and test run on darwin-arm64 confirmed it.
+
+**Decisions.**
+- Database errors are replaced with the fixed message `The staff user store failed`, with no cause attached. I did this in `createStaffUser` and `findUserByPin`. The `pinLookup` call in `findUserByPin` sits outside the try block so a `PIN_PEPPER` configuration error is still reported as one.
+- `createStaffUser` stores the trimmed name. The task says only "non-blank after trimming"; storing the trimmed value seemed the least surprising. Say if you want it stored as given.
+- Case 10's forced database failure: the test adds a `CHECK (name <> 'Forced')` constraint through the owner connection, then creates a user named `Forced`. That reaches the `INSERT` and produces a real check violation whose PostgreSQL `detail` carries the whole row.
+- The pepper tests mutate `process.env.PIN_PEPPER` and restore it in `beforeEach` and `afterAll`.
+- Test helper `exposed()` walks an error's own properties deeply (message, stack, `detail`, `where`, cause), so case 10 checks everything it can leak.
+
+**Test-name map.** Case 1 → "PIN format › accepts six digits and rejects everything else"; 2 → "hashPin and verifyPin › emits Argon2id with the stated parameters…"; 3 → "…never contains the PIN and salts every hash"; 4 → "…returns false, never throws, for a malformed hash or a PIN that is not six digits"; 5 → "pinLookup › is a deterministic, keyed, 64-character hex digest…"; 6 → "pinLookup › refuses an unset or short PIN_PEPPER…"; 7 → "createStaffUser › stores an Argon2id hash, the lookup digest, an active row at credential version 1"; 8 → "…refuses a duplicate PIN and writes no second row"; 9 → "…refuses an invalid PIN, a blank name and a bad role before any row is written"; 10 → "…lets no error expose the PIN, its digest or a hash"; 11 → "findUserByPin › finds a user by PIN alone"; 12 → "…returns null for an unknown PIN, a deactivated user and a non-six-digit value"; 13 → "…lets Argon2id, not the digest, decide"; 14 → "…returns the credential version of the row it verified".
+
+**Red proofs (each made, run, reverted).**
+- Dropping `AND is_active`: case 12 failed (`expected { credentialVersion: 1, id, role } to be null`).
+- Removing the `verifyPin` call in `findUserByPin`: case 13 failed (returned the planted user instead of null).
+- Constant `credentialVersion: 1`: case 14 failed (`expected 1 to be 2`).
+- `PIN_PEPPER ?? '<32-char default>'`: case 6 failed (`expected [Function] to throw an error`).
+- Removing the blank-name guard and the try/catch so a blank name reached the `INSERT`: case 10 failed, and the failure output showed the real leak: the check violation's `detail` contained `Failing row contains (…, $argon2id$v=19$m=19456,t=2,p=1$…, <pin_lookup digest>, …)`. That is exactly the B-12 leak the guard exists for.
+- `timeCost: 1`: case 2 failed (the encoded prefix no longer matched `t=2`).
+
+**Existing tests changed.** None. `server-test-env.test.ts` stayed green.
+
+**Constraint grep.** `grep -rn "apppassword\|devpassword\|postgres://" apps/server/src` printed nothing.
+
+**Found, not fixed.** `apps/server/tsconfig` has `noUncheckedIndexedAccess`, so rows indexed with `[0]` need a guard; the plan's snippets do not have one. The vitest ESM warning remains (out of scope). The reuse of a deactivated user's PIN is untested and unchanged, as instructed. I ran no formatter. No browser was needed.
+
+**`npm run verify`.** Typecheck clean; vitest: 47 test files passed, 2772 tests passed (development's 46 files and 2758 plus `pin.test.ts`'s 14 tests in 1 file; the client's counts are unchanged). `npx vitest run apps/server/test/pin.test.ts` alone: 1 file, 14 tests passed.
+
+**Next agent.** Plan Task 7 passes `credentialVersion` from `findUserByPin` into session creation. Anything running the server outside the test project needs `PIN_PEPPER` in its environment; the `migrate`, `provision` and `dev` scripts load `db/dev.env`, which now has it. The Argon2id hash takes about 40 ms here; throttling (Task 6) is what bounds online guessing.
+
+DONE

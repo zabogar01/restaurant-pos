@@ -56,6 +56,7 @@ export function serverTestEnv(): Record<string, string> {
   return {
     POS_APP_PASSWORD: need(merged, 'POS_APP_PASSWORD'),
     POS_TEST_DB_NAME: testDatabase,
+    PIN_PEPPER: need(merged, 'PIN_PEPPER'),
     DATABASE_URL: retarget(developmentUrl, testDatabase),
     MIGRATION_DATABASE_URL: retarget(migrationUrl, testDatabase),
     // The server this run provisions through; the same host as the test URLs
