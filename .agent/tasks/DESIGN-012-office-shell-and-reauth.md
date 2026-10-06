@@ -282,6 +282,13 @@ Rulings on the rest:
   accepted (the owner chose Frost); the *All screens* link on a Paper page must keep Paper's
   direction, since Paper is left untouched.
 
+**Round 2 handover (2026-10-06, 13:52).** OpenCode `design012b` hit its usage limit after
+editing nine files for these findings (uncommitted in this worktree: `docs/DESIGN.md`, the check
+script, `office.css`, `office.js`, `patterns.js`, `shell.html`, `shell.js`, `manifest.js`,
+`mockup.js`) and before its browser run. Codex, after its reset, finishes round 2 from there:
+check each of the nine findings against the uncommitted diff, complete what is missing, then
+verify, run the browser check and write the Round 2 Handoff section, naming what it inherited.
+
 Re-run `npm run verify` and the browser check (each run is the owner's to approve). Add a
 **Round 2** section to the Handoff mapping each finding to its change and its evidence; do not
 rewrite round 1's sections except where a fix makes a statement in them untrue.
