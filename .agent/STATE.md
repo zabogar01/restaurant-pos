@@ -52,20 +52,19 @@ Earlier the same day: PRs #53-#55 merged, `development` at `2ee2285`. Narrative:
 
 ## Running tasks and agents
 
-- **PHASE0-004 (PIN) built** at `14ba093`, DONE in one round; lead verify 47/2772; `status: review`
-  (`dc9bbe4`). Codex review waits on Codex's 19:25 reset (dispatcher allows no other reviewer). For the
-  review: `verifyPin(encoded, pin)` order and `createStaffUser` returning `string` differ from the plan.
-- **DESIGN-013 (slice C, BO-13) opened by hand:** Codex `design013`, pane `w2:p3V`, worktree
-  `../restaurant-pos-wt/DESIGN-013` (task `37b81e0`); `runs/DESIGN-013/builder/meta.json` says codex.
-  Codex hit its limit (reset 19:25) with 29 states, check 185/185, Handoff drafted, all uncommitted. Owner:
-  resume the same session (`01a110ab-4bcf-7d22-b410-8c145052c85a`, pane still open); then the 004 review.
+- **PHASE0-004 (PIN) in review:** built at `14ba093` in one round; lead verify 47/2772. Codex review
+  dispatched 19:30 (oneshot). Check it covers: `verifyPin(encoded, pin)` order, `createStaffUser`
+  returning `string` (plan Tasks 6/7/10 use `{ id }`), Handoff `^2.2.1` vs `^2.2.2`. Owner looks before merge.
+- **DESIGN-013 (slice C, BO-13) in review:** done at `a4ef56d` (Codex resumed after its reset); 29 states,
+  checks 185/185 and DESIGN-012's 216/216; lead verify 46/2758; lead walked AC-3/AC-4 in Chrome; designer
+  pane closed. Claude Opus review dispatched (oneshot).
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
   three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
 - **Design slices still ready:** D, F and I. Slice B (BO-01, 02) must take DESIGN-012's three lows
   N1-N3 as first items (its task file, end).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`), `design013` (`w2:p3V`, idle at its limit). Not the lead's: pane `w2:pE`, worktree `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`) and two oneshot reviewers (PHASE0-004, DESIGN-013). Not the lead's: pane `w2:pE`, worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
