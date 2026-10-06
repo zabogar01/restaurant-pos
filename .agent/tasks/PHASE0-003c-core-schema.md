@@ -117,5 +117,144 @@ by `npm run db:migrate`, and one test file proves every grant, constraint and ty
 
 ## Handoff
 
-*(Written by the builder.)* It must also list, for the later task files, the seven items under
-ARCH-006 §8 *Found in Tasks 4 to 10*, and say that tests reset with `resetDatabase()`.
+### What I did
+
+Created the four migrations exactly as ARCH-006 gives them, file names included:
+`db/migrations/0002_staff_user.sql`, `0003_client_instance_and_actor_session.sql`,
+`0004_audit_entry_and_security_event.sql`, `0005_pin_throttle_bucket.sql`. Each grants for the
+tables it creates; there is no `ALTER DEFAULT PRIVILEGES`, no sequence grant, no role, password,
+or settings, staff or rate row. The only seeded rows are the two throttle buckets (FR-A5). The
+lead's five rulings were applied: no `settings_version`, `token_hash` kept, the three outcome
+spellings (the migration comment says the check will widen), the statement-level trigger for every
+role, and INSERT-only column-level grants on the evidence tables with no `SELECT`.
+
+Wrote `apps/server/test/schema.test.ts` with ARCH-006's 21 cases. Every test resets with
+`resetDatabase()`; none cleans with `DELETE`, `UPDATE` or `TRUNCATE`, and `audit_entry` is only
+touched by those statements in case 6, which proves the trigger refuses them. `pos_app` actions go
+through `query` from `apps/server/src/db/pool.ts`; fixtures and every read of an evidence table go
+through the owner connection. Failures are asserted by SQLSTATE and, for check and unique
+violations, by constraint name (`error.constraint`), so a refusal for the wrong reason fails.
+
+Edited `apps/server/test/harness-race.test.ts` as the task allows: both cases now assert the exact
+sorted list `actor_session, audit_entry, client_instance, pin_throttle_bucket, schema_migration,
+security_event, staff_user` (a shared `MIGRATED_TABLES` constant) with `toEqual`, never
+`toContain`. Every assertion stays; only the expected list changed.
+
+No commit hash is given here because the Handoff is part of the commit; the commit is on
+`agent/phase0-003c` and is the one that adds this file.
+
+### Librarian answers (via `.agent/bin/ask.sh librarian`, citing PostgreSQL 16 docs)
+
+- Identity column: an `INSERT` that takes the generated value needs only `INSERT` on the table or
+  columns; no privilege on the sequence (https://www.postgresql.org/docs/16/sql-insert.html,
+  `.../sql-createtable.html`). The test confirms it: `pos_app` inserts into both evidence tables
+  with no sequence grant, and case 1 asserts no sequence privilege.
+- One trigger may be `BEFORE UPDATE OR DELETE OR TRUNCATE ... FOR EACH STATEMENT`; TRUNCATE can
+  only be statement-level; an enabled trigger also fires for the owner and superusers
+  (`.../sql-createtrigger.html`, `.../sql-altertable.html`; `session_replication_role` can bypass
+  it, which is worth knowing for ADR-008).
+- Column privileges: `information_schema.column_privileges` expands table-level grants into every
+  column and depends on the current role; `aclexplode(pg_attribute.attacl)` shows only column-level
+  entries. I used `has_table_privilege` and `has_column_privilege` for `pos_app`, which give the
+  effective answer including PUBLIC, and subtracted table-level grants to get column-only ones.
+
+### Decisions and evidence
+
+- Case 1 builds the effective privilege map from the catalog functions (above) for every relation
+  in `public`, compares the key set to the expected map (so an unnamed table fails), then compares
+  the full map. `schema_migration` must have no privilege. Sequences are checked separately.
+- Case 4, `id` supplied: `GENERATED ALWAYS` refuses a supplied `id` in the rewriter before the
+  privilege check, so a plain insert fails with an identity error, not *permission denied*. The test
+  asserts that refusal, and also an `OVERRIDING SYSTEM VALUE` insert, which does reach the privilege
+  check and gets 42501. Both are in the one test.
+- `noUncheckedIndexedAccess` is on, so the test has a small `only(rows)` helper.
+- B-1 case: reads `before_amount` as 9007199254740993 (2^53 + 1) and gets the same string, relying
+  on the bigint-as-string parser that `pool.ts` registers when the test imports it.
+
+### Case number to test name (all in `apps/server/test/schema.test.ts`)
+
+1 `gives pos_app exactly the privileges in the expected map, and none on schema_migration (case 1)` ·
+2 `makes pos_app the owner of nothing and gives it no CREATE on schema public (case 2)` ·
+3 `lets pos_app insert into audit_entry and refuses UPDATE, DELETE, TRUNCATE and SELECT (case 3)` ·
+4 `refuses a pos_app insert into audit_entry that supplies occurred_at or id (case 4)` ·
+5 `gives security_event the same refusals and lets pos_app insert (case 5)` ·
+6 `makes the trigger refuse UPDATE, DELETE and TRUNCATE on audit_entry, even for the owner (case 6)` ·
+7 `refuses pos_app INSERT, DELETE and a class rename on pin_throttle_bucket, and allows a counter update (case 7)` ·
+8 `refuses pos_app DELETE on staff_user, actor_session and client_instance (case 8)` ·
+9 `rejects a null actor_id on audit_entry (case 9)` ·
+10 `rejects an approver on a failed or cancelled approval and accepts SUCCESS with or without one (case 10)` ·
+11 `rejects an outcome outside the three (case 11)` ·
+12 `has exactly the columns written here on audit_entry and security_event (case 12)` ·
+13 `gives security_event no foreign key to staff_user (case 13)` ·
+14 `has no floating-point, numeric or money column, and keeps bigint amounts exact (case 14)` ·
+15 `rejects a duplicate pin_lookup on staff_user (case 15)` ·
+16 `rejects KITCHEN as a staff_user role (case 16)` ·
+17 `rejects a pin_hash that is not an Argon2id encoded hash (case 17)` ·
+18 `starts credential_version at 1 on a new staff_user row (case 18)` ·
+19 `rejects an actor_session insert without credential_version (case 19)` ·
+20 `rejects an unknown audience, a BACK_OFFICE session with no expiry and a duplicate token_hash (case 20)` ·
+21 `holds exactly the LOGIN and MANAGER_APPROVAL buckets (case 21)`.
+
+### Red proofs (each mutation made, run read, reverted; `git status` afterwards shows only the intended files)
+
+1. `GRANT SELECT ON audit_entry TO pos_app` in 0004: case 1 failed (received `table: ["SELECT"]` where
+   `[]` was expected) and case 3 failed (the `SELECT` statement succeeded). 2 failed, 19 passed.
+2. `DROP TRIGGER audit_entry_append_only ON audit_entry` in 0004: case 6 failed (the owner's
+   statement succeeded). 1 failed, 20 passed.
+3. `actor_id` made nullable in 0004: case 9 failed (insert succeeded) and case 12 failed (`actor_id
+   uuid NULL`). 2 failed, 19 passed.
+4. `detail jsonb` added to `security_event`: case 12 failed (`detail jsonb NULL` extra). 1 failed.
+5. A temporary `0006_tmp_red_proof.sql` creating `seventh`: case 1 failed (`seventh` in the table
+   list but not in the map). 1 failed. The file was deleted.
+
+### Existing test changed
+
+`apps/server/test/harness-race.test.ts`, listed by the task, for the reason above. Nothing else.
+
+### Verify and acceptance output
+
+- `npm run verify`: typecheck clean; `Test Files 46 passed (46)`, `Tests 2758 passed (2758)`.
+  That is 2737 + 21 and 45 + 1, as expected. I did not separately re-count the client's 40 files
+  and 2719 tests, but the total accounts for them unchanged. (My first verify run failed on
+  typecheck, seven `TS2532` errors from `noUncheckedIndexedAccess` in my test; fixed with `only`.)
+- `npx vitest run apps/server/test/schema.test.ts` alone: 1 file, 21 tests passed.
+- `npm run db:migrate` against `pos`: first run printed `applied: 0001_extensions.sql,
+  0002_staff_user.sql, 0003_client_instance_and_actor_session.sql,
+  0004_audit_entry_and_security_event.sql, 0005_pin_throttle_bucket.sql` (this `pos` database had
+  not been migrated before, so 0001 came with it). Second run: `no pending migrations`.
+- No formatter was run. No browser is relevant here.
+
+### Found and not fixed
+
+- The vitest ESM warning remains (out of scope).
+- `session_replication_role = replica` stops the append-only trigger firing for a role allowed to
+  set it (superuser only by default). `pos_app` cannot. Relevant to ADR-008's wording.
+- `migrate.test.ts` still drops the schema without restoring `GRANT USAGE ... TO PUBLIC`; harmless
+  since 0002 grants `USAGE` to `pos_app`, and I did not touch it.
+- `pos_app` has `SELECT` on no evidence table, so a later reader task must add a grant in its own
+  migration, per ARCH-006's rule 2.
+
+### For the later task files: ARCH-006 §8 *Found in Tasks 4 to 10*
+
+1. **Task 4:** `config.ts` carries `postgres://pos_app:apppassword@...` as a default (a credential
+   in source), and `findUserByPin` does not return the credential version.
+2. **Tasks 4 to 10:** tests reset state with `DELETE FROM` through `query()`. That is `pos_app`
+   and now fails; for `audit_entry` it is B-7. **Tests reset with `resetDatabase()`**
+   (`apps/server/test/support/database.ts`), never with `DELETE`.
+3. **Task 5:** `AuditInput.actorId` is `string | null` (a B-13 defect) and carries `clientInstanceId`,
+   which `audit_entry` does not have.
+4. **Task 6:** writes a `PIN_FAILURE` event with a free-form `detail` (the column does not exist);
+   its `recordFailure` leaves the counter at five after a cooldown ends, so the first failure
+   afterwards blocks again at once (ARCH-006 *For the owner*, 2).
+5. **Task 7:** invalidates sessions by sweep, not by credential version (ARCH-006 section 4).
+6. **Task 9:** sets both session cookies `sameSite: 'lax'`; section 7.2 says `SameSite=Strict`,
+   origin validation and an anti-CSRF token.
+7. **Task 10:** counts the failure and then writes the audit entry in a second transaction, and
+   writes no audit entry when the approval is refused by the cooldown (ARCH-006 *For the owner*, 1).
+
+### What the next agent needs and does not have
+
+`pos_app` can insert into `audit_entry` and `security_event` but cannot read them or `RETURNING` a
+column from them; Task 5's writer must not use `RETURNING`. AC-18 and AC-19 are not closed here.
+
+DONE
