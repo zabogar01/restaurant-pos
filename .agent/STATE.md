@@ -57,7 +57,8 @@ Earlier the same day: PRs #53-#55 merged, `development` at `2ee2285`. Narrative:
   @node-rs/argon2`. Lead rulings in its file. Touches identity: Codex review; owner looks before merge.
 - **DESIGN-013 (slice C, BO-13) opened by hand:** Codex `design013`, pane `w2:p3V`, worktree
   `../restaurant-pos-wt/DESIGN-013` (task `37b81e0`); `runs/DESIGN-013/builder/meta.json` says codex.
-  41% of Codex's 5h allowance at launch: a handover may be needed (journal 2026-10-06, *Designer how-to*).
+  At 18:31: 29 states drawn, its BO-13 check 185/185, all uncommitted, no Handoff; Codex near its limit.
+  Owner: resume the same session (`01a110ab-4bcf-7d22-b410-8c145052c85a`) after the reset.
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
   three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
 - **Design slices still ready:** D, F and I. Slice B (BO-01, 02) must take DESIGN-012's three lows
