@@ -55,16 +55,16 @@ Earlier the same day: PRs #53-#55 merged, `development` at `2ee2285`. Narrative:
 - **PHASE0-004 (PIN) complete** at `77b672c` on `agent/phase0-004`, not pushed: two rounds (review found a
   B-12 leak via a numeric PIN, and API drift from the plan; both fixed, re-review clean); lead verify
   47/2780. Owner's look, push and merge. The reviewer wrote into the Handoff; the lead reverted it.
-- **DESIGN-013 (slice C, BO-13) round 2:** round 1 at `a4ef56d` (29 states, checks 185/185 and 216/216,
-  lead walked AC-3/AC-4). Opus review: 8 findings (2 medium), all accepted, rulings `f1813e8`. Codex
-  `design013` resumed in pane `w2:p30` (session `01a110ab…`). Cycle 1 of 2.
+- **DESIGN-013 (slice C, BO-13) complete** at `39f9847` on `agent/design-013`, not pushed: two rounds
+  (Opus review 8 findings, all closed; 41 states, checks 371/371 and DESIGN-012 216/216; lead verify
+  46/2758; lead walked AC-3/4 and F1). Three re-review lows: N1, N2 carried as rules into the BO-13 build.
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
   three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
 - **Design slices still ready:** D, F and I. Slice B (BO-01, 02) must take DESIGN-012's three lows
   N1-N3 as first items (its task file, end).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) and `design013` (`w2:p30`). Not the lead's: pane `w2:pE`, worktree `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`) only. Worktrees `../restaurant-pos-wt/PHASE0-004`, `DESIGN-013` await merge. Not the lead's: pane `w2:pE`, worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
@@ -145,5 +145,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Owner looks at, pushes and merges PHASE0-004. Then PHASE0-005 (audit writer, plan Task 5; ARCH-006 §8:
-no null actor, no `clientInstanceId`, no `RETURNING`). DESIGN-013 round 2, then the next slice (D, F or I).
+Owner looks at, pushes and merges PHASE0-004 and DESIGN-013 (and `agent/lead-1006b`). Then PHASE0-005
+(audit writer, plan Task 5; ARCH-006 §8: no null actor, no `clientInstanceId`, no `RETURNING`) and the
+next design slice (D, F or I). After a merge: remove the worktree and `.agent/runs/<ID>/`.

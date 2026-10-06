@@ -65,7 +65,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    task re-pointing the wireframe links whose Frost destinations it creates:
    - *(Done: A, DESIGN-012, the shell, alerts, M-6 and shared patterns, merged 2026-10-06 as PR #55.)*
    - **B (BO-01, 02)** carries DESIGN-012's three low findings N1-N3 as its first items — waits on Q2, Q4.
-   - **C, DESIGN-013 (BO-13)** — round 2 of the review's eight findings — running.
+   - **C, DESIGN-013 (BO-13)** — complete 2026-10-06 at `39f9847`, two rounds — waits on the owner's look and merge.
+     The BO-13 frontend task must carry its re-review rules N1 and N2 (task file, end).
    - **Ready now (A merged):** D (BO-03, 04) · F (BO-07, 08; Q5 ruled out of scope by the lead) · I (BO-12; Q8 ruled).
    - **Wait on the owner:** E (BO-05, 06; Q4) · G (BO-09; Q2) · H (BO-10, 11; Q2, Q7).
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
