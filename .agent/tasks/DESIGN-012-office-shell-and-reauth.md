@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-011]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
+status: complete
 cycles: 1
 ---
 # DESIGN-012 — Back-office shell, global alerts, M-6 and shared patterns (slice A)
@@ -292,6 +292,22 @@ verify, run the browser check and write the Round 2 Handoff section, naming what
 Re-run `npm run verify` and the browser check (each run is the owner's to approve). Add a
 **Round 2** section to the Handoff mapping each finding to its change and its evidence; do not
 rewrite round 1's sections except where a fix makes a statement in them untrue.
+
+## Lead ruling on the re-review (2026-10-06): complete, three lows carried to slice B
+
+The re-review closed all nine round-1 findings and raised three new low findings, none on a
+boundary. The lead pressed *Escape* five times on a direct load of `?state=reauth-logout` in
+Chrome: the confirmation stayed open over the draft, so N1's failure is not reproduced. The task
+is complete without a third round. The three are carried, as first items, into the slice-B
+design task (BO-01 and BO-02), which draws the login throttle that N3's countdown pattern feeds:
+
+- **N1:** a `close` listener on `#logout-dialog` that reopens M-6 while re-authentication is
+  required, and the key sequence added to the check (hardening; not reproduced).
+- **N2:** one sentence after the inert-action rule in `docs/DESIGN.md`: while a modal decision is
+  open, the emergency is repeated inside it and its action is deferred until the decision is
+  made; no other state may defer it.
+- **N3:** announce a lockout once; the ticking time is not a live region (or updates once a
+  minute). Applies to `#cooldown`, `#logout-cooldown` and BO-01's throttle.
 
 ## Handoff
 

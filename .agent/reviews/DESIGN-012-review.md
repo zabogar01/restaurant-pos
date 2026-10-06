@@ -1,319 +1,216 @@
 # DESIGN-012 review — back-office shell, global alerts, M-6 and shared patterns
 
 **Reviewer:** Claude Opus 5.5 (the designers were Codex and OpenCode on `gpt-6-astra`).
-**Reviewed:** branch `agent/design-012` at `b0ee42f`, diff against `development` (17 files).
+**Round 2 reviewed:** branch `agent/design-012` at `8c256ba` (fix commit `9931a8f`), diffed
+against the round-1 commit `b0ee42f`.
+**Round 1 reviewed:** `b0ee42f` against `development`.
 **Date:** 2026-10-06.
 
 ## 1. Verdict
 
-**findings** — nine findings: one I rate high, three medium, five low. No boundary in
-`docs/BOUNDARIES.md` is broken. The frame, the four alert states, the M-6 state set, the token
-work and the gallery registration are sound. The findings are in behaviour that later slices will
-copy from the shared patterns, so they are cheaper to fix now than after slices B to I consume
-them.
+**findings** — all nine round-1 findings are **closed**. Round 2 leaves three new findings, all
+low, none of which I would hold the task for. No boundary in `docs/BOUNDARIES.md` is broken, and
+round 2 touched nothing outside `docs/design/`, `docs/DESIGN.md` and the task file.
 
-I did not run a browser. Every finding below is from reading the committed source; where a
-finding depends on browser behaviour that I could not observe, it says **inferred** and names the
-test that would settle it.
+I did not run a browser in either round. Where a closure depends on rendered behaviour, I say
+whose observation it rests on: the lead's (F2, and the round-1 confirmation of F6) or the
+designer's round-2 check run as reported in the Handoff (F3, F6, and the walks). My own evidence
+is the committed source, `npm run verify`, and the static checks listed in section 4.
 
-## 2. Findings
+## 2. Round-1 findings, re-reviewed
 
-### F1 (high) — A pending or unknown command silently kills the kitchen alert's action and *Log out*
+| # | Round-1 finding (severity then) | Round 2 | Basis |
+|---|---|---|---|
+| F1 | A pending or unknown command silently cancelled every link in the frame, including the kitchen banner's action and *Log out* (high) | **Closed** | Read in source |
+| F2 | M-6 stayed open on *Escape* only through one cancelable event (medium, inferred; the lead confirmed it and raised it to high) | **Closed** | Source, plus the lead's Chrome confirmation |
+| F3 | The long dialog's body could not be scrolled from the keyboard (medium, inferred) | **Closed** | Source; the scroll itself is the designer's observation |
+| F4 | `reauth-other` told a guesser the password was valid for another manager, and counted toward the lockout (medium) | **Closed**; one owner question remains | Read in source |
+| F5 | Logging out during the lockout discarded the draft without saying that sign-in was locked too (low) | **Closed** | Read in source |
+| F6 | Rows were visible above the sticky table header (low, inferred; the lead confirmed it) | **Closed** | Source; the rendered result is the designer's observation |
+| F7 | Focus and selection were restored exactly only on the `Alt+I` path (low) | **Closed** | Read in source |
+| F8 | `docs/DESIGN.md` contradicted its own supplement (low) | **Closed** | Read in source |
+| F9 | Six smaller items (low) | **Closed**, all six | Read in source |
 
-**Location:** `docs/design/visual-directions/frost/back-office/patterns.js:74`, with `:36–39`;
-asserted as correct by `docs/design/checks/design012.cjs:67`.
+**F1.** `patterns.js:89` now routes every link through `leave()` whenever the form is dirty or
+busy, and `leave()` (`:87`) opens the decision in both cases. `leaveCopy()` (`:81–86`) says, when
+busy, that the save "may or may not have succeeded" and that leaving "does not send it again",
+and relabels the action *Leave without resending*. *Leave this sample* is no longer disabled
+while busy (`:43`). If the result arrives while the decision is open, `command()` updates the
+copy instead of the URL state (`:41`, `:54`), so the dialog does not go on describing an
+uncertainty that has ended. The check's old assertion that navigation is blocked is gone;
+`design012.cjs:83–91` walks both states against all four destinations. `docs/DESIGN.md` states
+the rule.
 
-**What is wrong.** The shared click handler is
-`if(a&&(dirty||busy)){e.preventDefault();if(!busy)leave(a.href,a);}` and matches every link
-inside `.bo`. While `busy` is true (states `pending` and `unknown`) every such link is cancelled
-and nothing else happens: no dialog, no message, no explanation. The links inside `.bo` include
-the kitchen banner's *Open print incidents* (`office.js:44`), the receipt chip (`office.js:47`)
-and the top bar's *Log out* (`office.js:30–36`). One guard is shared by all navigation, and it
-hides the one state in which it is wrong: the emergency.
+**F2.** Three independent defences are now in place: `closedby="none"` on the dialog
+(`shell.html:33`), a capturing `keydown` handler that cancels *Escape* while M-6 is open
+(`shell.js:82`), and a `close` listener that reopens the dialog while `reauthRequired` is true
+(`shell.js:83`). `reauthRequired` is cleared only on success (`:59`) and on confirmed logout
+(`:102`). The check now presses *Escape* four times on a direct load before any other input,
+four times after `Alt+I`, and closes the dialog from script to prove the guard
+(`design012.cjs:36–39`, `:43`). The lead reports five *Escape* presses leave M-6 open in Chrome.
 
-**Authority.** FR-E3 requires failed kitchen work to be a persistent emergency "with an explicit
-reprint action, so a manager working in the back office cannot miss a failed kitchen ticket".
-Part A2 of the task requires the banner to carry "one action that opens print incidents" in a
-form that is "identical on any page". FR-A2b grants "explicit logout". Part C5 and Q11 ask only
-that an unknown outcome is never resent automatically; neither asks for navigation to be blocked.
-The task's own Part B treats the same collision correctly: M-6 queues the incident route instead
-of swallowing it.
+**F3.** `office.js:65–67` makes an overflowing `.office-dialog__body` focusable, gives it
+`role="region"` and names it by the dialog title, and removes all three when the body fits. The
+focus loop's selector already includes `[tabindex="0"]`, so the region is in the loop. The check
+reaches it with `Shift+Tab` from *Close*, presses *Page Down* and waits for `scrollTop` to
+increase (`design012.cjs:77–79`). That the key scrolls is the designer's reported result.
 
-**Failing scenario.** Open `patterns.html?state=unknown&alerts=kitchen`. The red banner says
-*Kitchen ticket did not print* and offers *Open print incidents*. Clicking it does nothing.
-Clicking *Log out* does nothing. In the direct `unknown` state this lasts until the manager
-finds *Check saved sample*; in production an unknown outcome lasts as long as the network fault
-that caused it, which is exactly when a print failure is likely to arrive. The Handoff presents
-this as a deliberate finishing change ("Prevent shared-pattern navigation during pending or
-unknown command outcomes"), and the check script locks it in with the assertion
-`unknown prevents navigation during reread`, so a green check run is evidence for the defect, not
-against it.
+**F4.** The disclosing string is deleted. Both refusals render `credentialCopy.wrong`
+(`shell.js:53`); `reauth-other` survives as a named state with a visible reviewer's note
+(`shell.html:41`); only a wrong secret increments the counter (`shell.js:94`). The check asserts
+the two messages are identical (`design012.cjs:53`). Whether another manager's valid credential
+counts as a `LOGIN` failure is listed in the Handoff as the owner's, with Q4. That question is
+open by ruling, not by omission.
 
-**Proposed fix.** Never cancel a click silently. During `pending` and `unknown`, route navigation
-through the leave decision with copy that states the truth ("The save may or may not have
-succeeded. Leaving does not send it again."), and let the alert links and *Log out* reach that
-decision in every state. Change the check's assertion to match. Record in `docs/DESIGN.md` that
-no page state may make the emergency action or *Log out* inert.
+**F5.** `logoutCooldown()` (`shell.js:31–35`) puts the remaining time, "installation-wide", and
+"Waiting here keeps your draft" into the confirmation whenever a cooldown is running, and the
+running interval keeps it current. The round-1 edge where an expiring cooldown re-rendered M-6
+underneath an open confirmation is also fixed (`:40`).
 
-### F2 (medium, inferred) — M-6's resistance to *Escape* rests on one `preventDefault()` that Chrome does not always honour
+**F6.** The header now uses `top: calc(-1 * var(--frost-office-content-padding))`
+(`office.css:85`), an existing token and no raw value. The check asserts the header at y = 64 and
+that the element at (300, 65) is a header cell, and captures the state after scrolling
+(`design012.cjs:95`).
 
-**Location:** `frost/back-office/shell.js:70`; the claim at `docs/DESIGN.md` (DESIGN-012
-supplement, "It cannot be dismissed with Escape or a click outside"); the test at
-`docs/design/checks/design012.cjs:39`.
+**F7.** `remember()` (`shell.js:23–26`) records whatever element is active, with its selection
+when it has one, and runs once per timeout (`:28`), so returning from the logout confirmation
+does not overwrite it with the *Keep this draft* button. The check restores focus to the
+*Simulate* button, a navigation link and *Log out* (`design012.cjs:54–60`).
 
-**What is wrong.** The only thing keeping the re-authentication dialog open is
-`dialog.addEventListener('cancel',e=>e.preventDefault())`. Chrome routes *Escape* on a modal
-dialog through a close watcher, and my understanding of the HTML Standard's close-watcher rules is
-that the `cancel` event is cancelable only when the page holds fresh user activation, which the
-event then consumes. If that is right, two cases close M-6 with no credential: a second
-consecutive *Escape*, and a first *Escape* on a page that has had no interaction since load
-(for example `shell.html?state=reauth` opened directly). Nothing listens for `close`, so the
-dialog would simply vanish and leave the draft form live with the state still reading `reauth`.
+**F8.** The token count (frontmatter and `:495–503`), the form-controls passage (`:1270–1273`)
+and the coverage passage (`:1297–1302`) are corrected in place and marked as updated by
+DESIGN-012; the two sentences in the supplement that pointed back at stale text are removed.
 
-**How sure I am.** Not certain. I asked the librarian to confirm; it could reach only MDN and
-could not fetch the HTML Standard or the Chrome documentation, so it confirmed only that
-`closedby="none"` exists and makes a dialog dismissible "only with a developer-specified
-mechanism". The cancelability rule is from memory in both my reading and the librarian's. The
-check script cannot tell either way: it presses *Escape* once, immediately after `Alt+I`, which
-is the one sequence in which the event is certainly cancelable.
+**F9.**
 
-**Authority.** Task Part B, state `reauth`: "No close button, and *Escape* does not dismiss it."
-FR-A2b places the preserved draft "behind re-authentication".
+1. The accessible name starts with the visible text: "View sample: Sample 13"
+   (`patterns.js:16`).
+2. A read-only form no longer becomes dirty (`patterns.js:7`, `:66`).
+3. The incident's title and identity come from `Office.kitchenIncident` in both places
+   (`office.js:38`, `shell.js:20–21`).
+4. Closing a dialog restores the state it was opened from (`patterns.js:8`, `:22`, `:70`, `:75`,
+   `:78`, `:90`); plain navigation away from the shell draft is a new, registered state `unsaved`
+   and declining it restores the prior state and focus (`shell.js:68`, `:79`, `:100`, `:109`;
+   `manifest.js`). Shell and manifest agree at 13 states.
+5. The Handoff states that `alerts` takes precedence over a named alert state.
+6. The *All screens* link follows the page's own direction (`mockup.js:60`); both Paper
+   back-office pages declare `data-direction="paper"`, and round 2 changed no file under
+   `paper/`.
 
-**Proposed fix.** First settle it in the browser: press *Escape* twice in a row in `reauth`, and
-once on a direct load of `?state=reauth` before any other input. Whatever the result, do not
-leave one cancelable event as the only defence in a pattern slices will copy. Add
-`closedby="none"` to `#reauth-dialog`, cancel the *Escape* `keydown` while it is open, and add a
-`close` listener that reopens the dialog while re-authentication is still required. Extend the
-check with both sequences.
+## 3. New findings in round 2
 
-### F3 (medium, inferred) — The long dialog's body cannot be scrolled from the keyboard
+### N1 (low, inferred) — The logout confirmation reached from M-6 has no close guard of its own
 
-**Location:** `frost/back-office/office.js:64` and `:67–74`; `patterns.html:30`;
-`office.css:73`; the test at `design012.cjs:61–63`.
+**Location:** `frost/back-office/shell.js:83–84`.
 
-**What is wrong.** The focus loop builds its list from
-`a[href],button,input,select,textarea,summary,[tabindex="0"]`. In the long dialog that list has
-one member, *Close*. *Close* is therefore both first and last, so `Tab` and `Shift+Tab` are both
-cancelled and focus never leaves it. *Close* sits in the footer, outside
-`.office-dialog__body`, and the dialog itself is `overflow: hidden`, so arrow keys, *Page Down*
-and *Space* have no scrollable ancestor to act on. Chrome would normally put a scroller with no
-focusable children into the tab order, but this loop cancels the `Tab` that would reach it. A
-keyboard user can read the first screen of the dialog and nothing below it.
+**What is wrong.** The reopening guard listens on `#reauth-dialog` only. While the confirmation
+is open over a required re-authentication, M-6 is closed and `#logout-dialog` is the only thing
+between the keyboard and the draft. It has no `closedby`, and its protection is a `cancel`
+handler that clicks *Keep this draft*. My reading is that this is safe: the `cancel` event fires
+even when Chrome will not let it be cancelled, so the handler still returns the user to M-6.
+That is the same class of reasoning that was wrong about M-6 in round 1, and neither the lead's
+five presses nor the check exercise it, since both test `#reauth-dialog`.
 
-**How sure I am.** The loop's behaviour is read directly from the code. That keyboard scrolling
-follows the focused element's scrollable ancestors is standard behaviour that I did not observe
-here. The check does not exercise it: it scrolls the body with `scrollTop = scrollHeight` from
-script, a path no user has, and its trap assertion ("focus stays inside") is trivially true when
-focus cannot move at all.
+**Authority.** Task Part B, `reauth`: "*Escape* does not dismiss it"; FR-A2b.
 
-**Authority.** Task Part C2: "*Tab* and *Shift+Tab* stay inside, focus returns to the opener on
-close, the body scrolls inside the viewport while the head and actions stay." A body that scrolls
-only for a pointer does not meet it on a seated, keyboard-first desktop client.
+**Failing scenario, if my reading is wrong.** Open `shell.html?state=reauth-logout` directly and
+press *Escape* repeatedly. If the confirmation ever closes without the handler running, the draft
+is live with no dialog over it.
 
-**Proposed fix.** When the body overflows, give `.office-dialog__body` `tabindex="0"`,
-`role="region"` and an `aria-labelledby` pointing at the dialog title, and include it in the
-loop's list. Add a check that presses *Page Down* and asserts the body's `scrollTop` changed.
+**Proposed fix.** Add a `close` listener on `#logout-dialog` that calls `start()` whenever
+`reauthRequired` is true and neither dialog is open, and add that key sequence to the check. This
+costs two lines and removes the inference.
 
-### F4 (medium, identity) — `reauth-other` tells a guesser that the password is valid for someone else, and counts toward the lockout
+### N2 (low) — The new rule in `docs/DESIGN.md` is broader than what is drawn
 
-**Location:** `frost/back-office/shell.js:7` (the `other` string) and `:81` (`failures++` on
-both refusals).
+**Location:** `docs/DESIGN.md`, DESIGN-012 supplement, "No page state makes the kitchen action,
+receipt chip or Log out inert"; `frost/back-office/shell.js:77`.
 
-**What is wrong.** The refusal reads "This password belongs to another manager. Log out to
-switch." Shown to whoever is at the keyboard, that confirms a guessed secret is a live credential
-for a different manager account. To produce it at all, the server would have to test the
-submitted secret against every manager, not only the named one. The same branch increments the
-failure counter, so a different manager's correct credential also moves the installation toward
-the five-minute lockout.
+**What is wrong.** The rule is the right one and I asked for it. As worded, though, a slice
+designer could read it against the two modal cases this task draws on purpose. Under M-6 the
+banner behind the scrim is inert and the in-dialog copy offers a queued action instead; in the
+logout confirmation the repeated emergency has its action removed (`shell.js:77`) and offers
+none. Both are defensible, and the Handoff argues the first. The document should say so, or the
+next slice will either break the rule or think this one did.
 
-**Authority.** There is no boundary or requirement that names this directly, and I am not citing
-one that does not carry it. It is a defect against the intent of FR-A5, which exists to make
-guessing expensive, and it sits on the two rulings the task records as binding: same manager only
-(Q3) and an undecided credential (Q4). The task did require the state to be drawn; it did not
-require this wording. The Handoff already notes that the state is unreachable if the credential
-is checked only against the named manager, which is the conventional design and the one this
-wording argues for.
+**Authority.** FR-E3; task Part B, `reauth-kitchen` ("argue it in the Handoff").
 
-**Failing scenario.** M. Iqbal's session idles. A second person tries a password they have seen
-another manager type. The dialog replies that the password belongs to another manager. They log
-out and sign in as that manager.
+**Proposed fix.** One sentence after the rule: while a modal decision is open, the emergency is
+repeated inside it and its action is deferred until the decision is made; no other state may
+defer it.
 
-**Proposed fix.** Use one refusal string for both cases, the existing "Incorrect password. Try
-again.", and keep "Log out to switch" in the dialog's standing description, where it already is
-(`shell.html:37`). Keep the `reauth-other` state as a named fixture so the ruling stays visible,
-with a note that it is indistinguishable from `reauth-error` by design. Put the question "does a
-different manager's valid credential count as a LOGIN failure?" to the owner alongside Q4.
+### N3 (low) — Two countdowns announce themselves every second
 
-### F5 (low) — Logging out during the lockout discards the draft and lands on a login that is locked too
+**Location:** `frost/back-office/shell.html:42` and `:49`; `shell.js:34`, `:38`, `:56`.
 
-**Location:** `frost/back-office/shell.js:31` and `:61–65`.
+**What is wrong.** `#cooldown` and the new `#logout-cooldown` are `role="status"` and have their
+text replaced once a second for five minutes, so a screen reader re-reads the whole sentence
+each time. `#cooldown` was present in round 1 and I did not raise it then; round 2 adds the
+second one, and this is the pattern BO-01's throttle will copy.
 
-**What is wrong.** FR-A5 makes the `LOGIN` throttle installation-wide. During
-`reauth-throttled` the dialog says "Log out is still available", and its standing copy says "To
-sign in as someone else, log out." Nobody can sign in for the remaining minutes, whoever they
-are. The discard confirmation that follows uses the ordinary wording and does not mention it, so
-a manager can destroy the preserved draft to reach a screen that refuses them for the same
-reason.
+**Authority.** `docs/DESIGN.md` item 9 of the unreviewed list already records that
+assistive-technology checks have not been done; this is a note for that pass, not a contract
+breach.
 
-**Authority.** FR-A5 ("installation-wide throttle classes"); FR-A2b (the draft is what M-6
-exists to keep).
+**Proposed fix.** Announce the lockout once, and put the ticking time in an element that is not
+a live region (or update the live text once a minute).
 
-**Proposed fix.** In the throttled state, make the confirmation say that sign-in is unavailable
-for the time remaining and that waiting keeps the draft.
+One smaller observation, not a finding: after a direct load of `?state=row-detail&return=…`,
+`showDetail()` rewrites the `return` parameter before the requested value is applied
+(`patterns.js:26`, `:117`), so a second reload forgets it. It affects only the review fixture.
 
-### F6 (low, inferred) — Rows are visible above the sticky table header
+## 4. What I ran and what I did not
 
-**Location:** `frost/back-office/office.css:27` and `:85`.
+**Observed, round 2.**
 
-**What is wrong.** The header is `position: sticky; top: 0` inside `.bocontent`, which has 24px
-of padding. The Handoff's own measurement puts the stuck header at y = 88, which is the top bar
-(64) plus that padding, so there is a 24px band between the frame and the header through which
-scrolling rows remain visible. I did not see the rendering; the measurement is the designer's and
-the conclusion is mine. The capture the check takes for this state is made before it scrolls, so
-no committed evidence shows it either way.
-
-**Authority.** Task Part C7 ("a sticky header inside its scroll owner"); `docs/DESIGN.md`
-`:1138–1157`.
-
-**Proposed fix.** Look at `patterns.html?state=table` after scrolling. If rows show above the
-header, pull the header up by the content padding using the existing
-`--frost-office-content-padding` token, or move the padding to an inner wrapper so the scroll
-owner's edge and the sticky edge coincide. Capture the state after scrolling.
-
-### F7 (low) — "Exactly as before" holds only on the `Alt+I` path
-
-**Location:** `frost/back-office/shell.js:18` and `:21–24`.
-
-**What is wrong.** `resumeFocus` starts as `#draft-limit` and `selection` as `[0,6]`, and both
-are refreshed only while focus is inside the form. If the timeout fires while focus is elsewhere
-(the navigation, the top bar, or the *Simulate 30-minute idle timeout* button itself), resuming
-moves focus to a field that did not have it, with a selection recorded at the moment that field
-was last entered, not the selection it had when it was left. A real idle timeout does not move
-focus first, so the `Alt+I` path the check uses is the faithful one and it passes; the button in
-the review fixtures is the path a human reviewer will use, and it does not show what it claims.
-
-**Authority.** Acceptance criterion 4 ("the focused field … identical before `reauth` and after
-`resumed`"); task Part B, state `resumed`.
-
-**Proposed fix.** Record `document.activeElement` at the timeout whatever it is, and restore to
-it. Update the stored selection on `selectionchange`, or drop the button in favour of `Alt+I`
-with a line saying why.
-
-### F8 (low) — `docs/DESIGN.md` now contradicts itself
-
-**Location:** `docs/DESIGN.md:489–501`, `:1267–1272`, `:1293–1294`, against the appended
-DESIGN-012 supplement.
-
-**What is wrong.** The body still says four tokens are designed, that select and other controls
-are "absent", and that the "eleven remaining back-office screens" have no Frost appearance. The
-supplement says five tokens, draws a select and a radio group, and states that it "replaces the
-earlier statement" without changing it. A reader who lands on the earlier section gets the old
-answer with no pointer to the new one. The file is the designer's to edit, so nothing prevented
-correcting the statements in place.
-
-**Authority.** The task's token ruling requires a new token to be registered in
-`docs/DESIGN.md`; `docs/DESIGN.md:488–489` itself says the two provenance counts are stated
-there.
-
-**Proposed fix.** Correct the three passages in place, each with a short "updated by DESIGN-012,
-awaiting review" note, and keep the supplement for the new material only.
-
-### F9 (low) — Smaller items, grouped
-
-1. **Visible label is not in the accessible name.** `patterns.js:13` shows *View sample* and
-   names the button "View Sample 02". A speech-input user who says the visible words gets no
-   match. Make the accessible name start with the visible text ("View sample: Sample 02"), or
-   put the subject in the visible label, which is what "named row actions" in Part C7 reads as.
-2. **The read-only state can become dirty.** In `fields-readonly` an attempted change on the
-   select fires `change`; `patterns.js:59` sets `dirty` before `:88` reverts the value, so
-   leaving a form that cannot be edited asks whether to discard changes.
-3. **The incident's identity is written twice.** `office.js:44` and `shell.html:35` each hold
-   "1 failed ticket · Table 1, round 2 · Sent 19:58". Part A2 requires the identity to read the
-   same everywhere; today it does, by coincidence of two literals. Render the in-dialog copy
-   from `Office`.
-4. **State names drift after a dialog closes.** Closing a row detail or cancelling a removal
-   sets `fields` (`patterns.js:66`, `:69`) even from page 2 of the table; declining to leave the
-   shell sets `resumed` (`shell.js:87`) when no re-authentication happened, and opening the
-   leave decision sets `reauth-logout` (`shell.js:68`) for plain navigation. A reload of the
-   resulting URL shows a different screen from the one the reviewer was looking at.
-5. **`alerts` overrides a named alert state.** `office.js:38` prefers the query parameter, so
-   `shell.html?state=receipt&alerts=kitchen` shows the kitchen banner under the label *Receipt
-   warning*. Reachable only by hand; worth one sentence in the Handoff.
-6. **Paper's *All screens* link now switches direction.** `mockup.js:60` is shared, so the link
-   on a Paper back-office page returns to the gallery with `direction=frost`. The gallery's
-   default direction also changed from Paper to Frost (`review.js:5`), which the task did not
-   ask for; it is reasonable given the owner's choice of Frost, and the lead should know it
-   happened.
-
-## 3. What I ran and what I did not
-
-**Observed.**
-
-- `npm run verify` at `b0ee42f`: typecheck clean, **45 test files and 2,737 tests passed**. The
-  only output besides the counts was Vite's existing `configLoader: 'native'` warning.
-- The tree did not move: `git status --short` was empty and `git rev-parse HEAD` returned
-  `b0ee42febd7691f0352837f27822b021bee2b0c0` both before and after the verify run.
-- `grep -c "prototype/"`: `menu.html` **40**, `report-detail.html` **11**, `shell.html` 1 (the
-  logout confirmation), `patterns.html` 0, `office.js` 3, `shell.js` 0, `patterns.js` 0.
-- No `style=` attribute remains in the four pages, and no literal pixel value appears in
-  `office.css`, `office.js`, `shell.js` or `patterns.js`.
-- Every `--frost-*` name that `office.css` references exists in `docs/design/tokens/frost.css`.
-  I listed the references with `grep -o` and compared them against the file by reading.
-- I read in full: the task file; `office.css`, `office.js`, `shell.html`, `shell.js`,
-  `patterns.html`, `patterns.js`, `design012.cjs`, `mockup.js`; the diff of `menu.html`,
-  `report-detail.html`, `manifest.js`, `review.js`, `index.html`, both token files and
-  `docs/DESIGN.md`; `docs/BOUNDARIES.md`; PRD FR-A2b, FR-A2c, FR-A5, FR-E3, FR-E6;
-  `SITEMAP.md:230–354`; `SCREEN-INVENTORY.md` M-6 and ruling I-11.
+- `npm run verify` at `8c256ba`: typecheck clean, **45 test files and 2,737 tests passed**, with
+  Vite's existing `configLoader: 'native'` warning and nothing else.
+- The tree did not move: `git status --short` was empty before and after the verify run, and
+  `git rev-parse HEAD` returned `8c256bacd633c650ff9147106bca2c95fe7a82ae`.
+- `grep -c "prototype/"`: `menu.html` **40**, `report-detail.html` **11**, `shell.html` 1,
+  `patterns.html` 0, unchanged from round 1.
+- `git diff --stat b0ee42f HEAD` over `paper/`, `docs/design/tokens/`, `apps/`, `packages/`,
+  `db/`, the four product documents, `SITEMAP.md` and `SCREEN-INVENTORY.md` is empty.
+- I read the current `office.js`, `patterns.js`, `shell.js`, `shell.html` and `design012.cjs` in
+  full, and the round-2 diff of `office.css`, `manifest.js`, `mockup.js`, `docs/DESIGN.md` and
+  the task file.
 
 **Not run, and why.**
 
-- **No browser.** The check script needs the owner's approval for each run and this was an
-  unattended session. I therefore did not reproduce any measurement in the Handoff, did not see
-  any state rendered, and did not confirm F2, F3 or F6 in Chrome. The Handoff's measurements are
-  the designer's report, not my observation.
-- **No evidence captures.** `/tmp/design012-evidence/` is outside the directories this session
-  may read.
-- **No mutation run.** Nothing here was re-proven by mutating code, in memory or otherwise.
-- **Librarian.** `.agent/bin/ask.sh librarian` exited non-zero (it suggested a rate limit), so I
-  used the librarian subagent as the script directs. It could fetch only MDN; the close-watcher
-  rule behind F2 and the focusable-scroller behaviour behind F3 remain unconfirmed by citation.
-- I did not read `.agent/reviews/DESIGN-011-back-office-audit.md` in full, FR-I1 beyond the
-  business-day indicator's wording, or `docs/DESIGN.md` beyond `:484–506`, `:1262–1320` and the
-  supplement. The inline widths removed from the menu table (`menu.html` diff, the `th` cells)
-  change its column layout; I could not see the result.
+- **No browser, in either round.** Each run of the check needs the owner's approval and both
+  sessions were unattended. The Handoff's "216 of 216 assertions across 47 states", every
+  measurement in it, and the four captures it says were inspected are the designer's report. I
+  confirmed that the check script contains assertions for each closure I credit to it; I did not
+  see them pass.
+- **No evidence captures.** `/tmp/design012-evidence/round2/` is outside the directories this
+  session may read.
+- **No mutation run.** Nothing was re-proven by mutating code.
+- I did not re-read the cited product documents in round 2; nothing in the round-2 diff changes
+  which requirement applies.
 
-## 4. Cleared
+**Round 1, for the record.** Verify was green with the same counts at `b0ee42f`. Three of the
+nine findings (F2, F3, F6) were inferred from source without a browser; the lead later confirmed
+F2 and F6 in Chrome. A librarian query in round 1 could reach only MDN and confirmed only that
+`closedby="none"` exists.
 
-- **Boundaries.** No POS operation, PIN pad, approval wording or approval-granting control
-  appears anywhere (FR-A2c, B-14, I-11; `SITEMAP.md:313–319`). Neither alert offers a dismissal,
-  and nothing implies that opening BO-13 clears an incident (FR-E3, B-15). Amounts are whole
-  rupiah with dot grouping and no `Rp` in cells; times are 24-hour.
-- **Part A.** Navigation order and destinations match `menu.html:18–33`. The top bar carries
-  title, business day by opening date with no time, manager and *Log out*. The four alert states
-  exist; kitchen and receipt differ in weight, placement and size (AC-23, FR-E6). The banner sits
-  outside `.bocontent`, the only page scroll owner, so it cannot scroll away.
-- **Part B.** All eight M-6 states are present and reachable. The dialog names the manager, has
-  one *Password* field and no close control. The wrong-credential path clears and refocuses the
-  field. The lockout disables *Continue* and keeps *Log out*, and survives *Keep this draft*.
-  The emergency is repeated inside the dialog above the scrim and in the logout confirmation,
-  and its action queues navigation without bypassing sign-in. No absolute-expiry state and no
-  SSO are drawn. The draft is the same DOM form throughout, so values, selection and the invalid
-  message cannot diverge.
-- **Credential strings.** All four are in `credentialCopy` (`shell.js:3–8`), as the Handoff
-  lists.
-- **Part C.** Field states, error association by `aria-describedby`, the fieldset and legend,
-  native `disabled` and `readonly`; the destructive confirmation names its subject, starts focus
-  on the keeping action and uses the destructive palette at 36px; loading withholds count and
-  rows; empty shows zero and *Create sample*; a failed read offers *Try again*; a refusal keeps
-  edits; an unknown outcome disables resubmission and rereads; paging changes rows and range.
-- **Part D.** Both existing pages import the shared stylesheet and script and gain a `kitchen`
-  state whose content matches `default` (I checked every `data-when` and `data-unless`).
-  Manifest and artifacts agree at 12, 20, 10 and 4 states; `category-invalid` is registered. The
-  *All screens* link resolves to the gallery. The currency suffix in `mockup.js:120` still
-  reaches the Paper report's top bar and the Frost report's sub-bar.
-- **Tokens.** One new token, `--frost-office-form-columns`, in both token files and
-  `docs/DESIGN.md`, with `source: null` and a `designed` record. No new colour, no success
-  green. The token tests pass unchanged.
-- **Handover rulings.** No evidence is committed, and the check script takes its Playwright
-  path from `PLAYWRIGHT_MODULE`.
+## 5. Cleared
+
+- **Boundaries and scope.** Still no POS operation, PIN pad, approval wording, SSO, success
+  green or dark mode. Neither alert can be dismissed and nothing implies that opening BO-13
+  clears an incident (FR-E3, B-15). Whole rupiah, 24-hour times.
+- **Tokens.** Round 2 adds none. The sticky offset composes an existing token; `office.css`
+  still holds no literal pixel value.
+- **State registration.** Shell 13, patterns 20, menu 10, report detail 4: 47 states, matching
+  the manifest. The new `unsaved` shell state is reachable directly and returns to `none`.
+- **M-6 behaviour around the new guards.** Success, confirmed logout and the queued incident
+  route all clear or respect `reauthRequired` in the right order, so the reopening guard does not
+  fight a legitimate close. The lockout survives *Keep this draft*, and an expired lockout
+  returns to the resting state.
+- **Uncertain-save decision.** *Stay* restores `pending` or `unknown` with *Save* still
+  disabled; a refusal arriving while the decision is open turns it back into an ordinary discard
+  decision; a confirmed save turns it into a plain leave.
+- **Handoff.** The Round 2 section maps each finding to its change, names what the second
+  designer inherited, lists the open Q4 counting question, and corrects the round-1 statements
+  the fixes made untrue.
+
+DONE
