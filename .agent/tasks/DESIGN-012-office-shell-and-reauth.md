@@ -220,6 +220,28 @@ content link into `prototype/`. Criterion 6 now reads: the two existing pages ke
 11 authored links, and the Handoff lists every `prototype/` link in the new artifacts, each one a
 navigation, *Log out* or alert link.
 
+## Lead rulings, 2026-10-06 (handover)
+
+1. **Handover.** The first designer (Codex `gpt-6-astra`, `design012`) hit its usage limit
+   before writing the Handoff. Its work is uncommitted in this worktree: the shared stylesheet
+   and script (`office.css`, `office.js`), `shell.html` and `patterns.html` with their scripts,
+   the two existing pages moved onto the frame, new tokens in `frost.css`, `frost.tokens.json`
+   and `docs/DESIGN.md`, gallery and manifest changes, the check script
+   `docs/design/checks/design012.cjs`, and evidence in `docs/design/evidence/design012/`. Its
+   last reported state: `npm run verify` green, the browser check had passed most states, and a
+   fix to text selection and the sticky-header assertion awaited one confirmation run. The
+   second designer (OpenCode `gpt-6-astra`) finishes the task from there: it reviews that work
+   against every part and criterion of this file, completes what is missing, runs the checks,
+   writes the Handoff, and commits. It does not start over, and it says in the Handoff which
+   parts it inherited, which it changed, and why.
+2. **Evidence is not committed.** Screenshots and `measurements.json` are run output: move
+   `docs/design/evidence/` outside the repository (to `/tmp/design012-evidence/`) and quote the
+   measurements in the Handoff, as DESIGN-011 did. The check script may stay in
+   `docs/design/checks/` if it runs from a fresh checkout; its Playwright path must come from the
+   environment, not from one agent's runtime cache.
+3. **Browser runs.** Each run of the check script still needs the owner's approval in the pane;
+   ask before it, not after.
+
 ## Handoff
 
 *(Written by the designer.)* It ends with `DONE` or `BLOCKED: <one question>`.
