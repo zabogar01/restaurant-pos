@@ -736,7 +736,134 @@ window.MOCKUPS = [
     "directions": [
       "frost"
     ]
-  }
+  },
+{
+  "path": "back-office/incidents.html",
+  "title": "Office print incidents",
+  "states": [
+    [
+      "default",
+      "All three incident classes"
+    ],
+    [
+      "kitchen-failed",
+      "Kitchen work — FAILED"
+    ],
+    [
+      "kitchen-unknown",
+      "Kitchen work — UNKNOWN"
+    ],
+    [
+      "cancel-failed",
+      "Cancellation — FAILED"
+    ],
+    [
+      "cancel-unknown",
+      "Cancellation — UNKNOWN"
+    ],
+    [
+      "receipt-failed",
+      "Receipt — FAILED"
+    ],
+    [
+      "receipt-unknown",
+      "Receipt — UNKNOWN"
+    ],
+    [
+      "empty",
+      "Nothing outstanding"
+    ],
+    [
+      "loading",
+      "Reading incidents"
+    ],
+    [
+      "error",
+      "Read failed"
+    ],
+    [
+      "overflow",
+      "Many mixed incidents"
+    ],
+    [
+      "kitchen-checked",
+      "Kitchen acknowledgement checked"
+    ],
+    [
+      "cancel-checked",
+      "Cancellation acknowledgement checked"
+    ],
+    [
+      "cleared-elsewhere",
+      "Kitchen incident cleared on POS"
+    ],
+    [
+      "kitchen-reprint-pending",
+      "Kitchen ticket — Reprint pending"
+    ],
+    [
+      "kitchen-reprint-sent",
+      "Kitchen ticket — Reprint sent"
+    ],
+    [
+      "kitchen-reprint-failed",
+      "Kitchen ticket — Reprint failed again"
+    ],
+    [
+      "kitchen-reprint-unknown",
+      "Kitchen ticket — Reprint outcome unknown"
+    ],
+    [
+      "kitchen-reprint-printed",
+      "Kitchen ticket — Server confirms printed"
+    ],
+    [
+      "cancel-reprint-pending",
+      "Cancellation — Reprint pending"
+    ],
+    [
+      "cancel-reprint-sent",
+      "Cancellation — Reprint sent"
+    ],
+    [
+      "cancel-reprint-failed",
+      "Cancellation — Reprint failed again"
+    ],
+    [
+      "cancel-reprint-unknown",
+      "Cancellation — Reprint outcome unknown"
+    ],
+    [
+      "cancel-reprint-printed",
+      "Cancellation — Server confirms printed"
+    ],
+    [
+      "receipt-reprint-pending",
+      "Receipt — Reprint pending"
+    ],
+    [
+      "receipt-reprint-sent",
+      "Receipt — Reprint sent"
+    ],
+    [
+      "receipt-reprint-failed",
+      "Receipt — Reprint failed again"
+    ],
+    [
+      "receipt-reprint-unknown",
+      "Receipt — Reprint outcome unknown"
+    ],
+    [
+      "receipt-reprint-printed",
+      "Receipt — Server confirms printed"
+    ]
+  ],
+  "width": 1440,
+  "height": 900,
+  "directions": [
+    "frost"
+  ]
+}
 ];
 
 // The legacy gallery hard-codes six labels and assumes both directions exist.

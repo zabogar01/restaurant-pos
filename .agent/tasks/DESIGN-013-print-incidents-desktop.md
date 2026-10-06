@@ -213,3 +213,180 @@ Commit on `agent/design-013` only, after verify is green where it applies, and n
     herdr agent prompt lead "design013: BLOCKED — <question>"
 
 ## Handoff
+
+### Delivery and entry points
+
+Designed by design013 on 2026-10-06 on `agent/design-013`. This is a local Frost
+fixture for design review, not an application implementation. The entry point is
+`docs/design/visual-directions/frost/back-office/incidents.html?state=default`.
+The gallery entry is
+`docs/design/visual-directions/index.html?direction=frost&screen=back-office/incidents.html&state=default`.
+All 29 declared states are registered in the manifest and reachable directly.
+
+| File | Change and purpose |
+|---|---|
+| `frost/back-office/incidents.html` | BO-13 structure, five-column emergency table, separate receipt table, read/result regions, and labelled fixture controls. |
+| `frost/back-office/incidents.css` | Token-only incident treatment layered on the imported shared office stylesheet. The emergency rows remain solid red; receipts remain pale amber. |
+| `frost/back-office/incidents.js` | Incident-specific reprint, delivery reread, checked clearance, receipt dismissal and simulated POS clearance. |
+| `frost/back-office/office.js` | Narrow alert-context extension: Frost BO-13 destinations, incident identities/results in the URL, updated remaining-incident banner/chip, and explicit `alerts=none` after the final resolution. Shared authentication, dialog and form behavior is unchanged. |
+| `frost/back-office/menu.html`, `report-detail.html` | Each authored Printing link now points to `incidents.html`. No page content changed. |
+| `manifest.js`, `index.html` | Frost-only BO-13 gallery registration, all 29 states, and gallery scope copy. |
+| `docs/design/SCREEN-INVENTORY.md` | Only the three requested I-8/BO-12/BO-13 edits. |
+| `docs/design/prototype/back-office/incidents.html` | Only the requested I-8 annotation replacement, with a link to Frost. |
+| `docs/design/checks/design013.cjs` | Re-runnable 1440×900 state, identity, recovery, navigation and geometry checks; external evidence only. |
+| `docs/design/checks/design012.cjs` | Its uncertain-navigation destination assertion now compares the destination pathname and retained `alerts` context. BO-13 adds its incident context to the URL when read; exact full-URL equality would reject that intended extension. No assertion was removed. |
+
+Paths beginning `frost/`, `manifest.js` and `index.html` above are relative to
+`docs/design/visual-directions/`. `office.css`, the tokens, `docs/DESIGN.md`, the
+four product documents, SITEMAP, the POS artifact and all application files are
+unchanged. No new token was needed.
+
+### Requirement and state map
+
+| Requirement | State or demonstrated walk |
+|---|---|
+| A1: kitchen work, order/round/time/lines | `default`, `kitchen-failed`, `kitchen-unknown`; `overflow` includes table and quick-sale orders. Table 1 round 2 at 19:58 contains one Burger and one Fries. |
+| A2: cancellation identity and cancelled lines | `cancel-failed`, `cancel-unknown`, and the cancellation row in `default`. Table 1 round 2's cancellation at 20:02 contains only one Burger and says “Stop the cancelled work.” |
+| A3: receipt FAILED/UNKNOWN, closed order | `receipt-failed`, `receipt-unknown`, and the receipt row in `default`. Table 1 closed at 20:14; total 155.925 IDR. The receipt section states that these orders are closed. |
+| A4: unequal urgency and desktop density | `default`: work and cancellation in the upper solid-red table; receipts in a separate lower amber table. Emergency recovery is 36px; receipt recovery/dismissal is 28px. |
+| B1: reprint outcomes for all three classes | `kitchen-reprint-{pending,sent,failed,unknown,printed}`, `cancel-reprint-{pending,sent,failed,unknown,printed}`, `receipt-reprint-{pending,sent,failed,unknown,printed}`. Each composition retains all three original incidents and places its result only on the named incident. |
+| B1: live subject preservation | From `default`, choose each response under Review controls and reprint each class in turn. The browser compared the other two rows' complete HTML before and after each of the 12 combinations; all were unchanged. A cancellation always retained `kind=cancel` and its cancellation result. |
+| B1: uncertainty | `*-reprint-unknown` disables reprint and offers “Check delivery status”, a read only. In the interactive Unknown fixture, the request is followed by a simulated reread that resolves to server-confirmed PRINTED. No resend occurs. Direct states hold for inspection until the read action is taken. |
+| B2: explicit kitchen/cancellation clearance | `kitchen-checked`, `cancel-checked`; unchecked Clear is disabled. Check “I checked: the kitchen has this ticket/cancellation.”, then Clear. No reprint outcome checks the box or removes the row. |
+| B3: separate receipt dismissal | `receipt-failed` or `receipt-unknown` → Dismiss. One action, no kitchen acknowledgement or confirmation dialog. |
+| B4: cleared elsewhere | `cleared-elsewhere`, or `default` → Review controls → Simulate Table 1 kitchen clearance on POS. Only `ticket-1` leaves; the notice says it “was cleared on the POS.” The cancellation and receipt remain. |
+| B5: last incident and cross-page alerts | The browser walked the kitchen banner from shell, patterns, menu and report detail to the same Table 1 round 2 at 19:58. It checked and cleared that ticket, returned to each source and verified emergency absence with the receipt chip still present. It then followed the chip, dismissed the receipt, returned, and verified both alerts absent. |
+| C: empty | `empty`, or clear/dismiss all rows: “Nothing outstanding” / “No unresolved print incidents.” No claim that every paper printed. |
+| C: loading/error/retry | `loading`, `error`; Try again visibly traverses loading and returns the mixed table. Counts and rows are withheld while unread. Incoming known global alerts remain visible. |
+| C: overflow | `overflow`: 21 incidents, seven per class, with work then cancellation then receipts; compact table padding and a header sticky inside `.bocontent`. |
+| C: permission denied | Not drawn, as the inventory says n/a for the manager-only back office. |
+| D1: every BO-13 destination | Shared banner, receipt chip and Printing navigation target Frost; menu/report authored links do too. `alerts` and incident context survive navigation. No Frost back-office file references the old prototype BO-13 destination. |
+| D2: gallery | All 29 states registered. The browser opened the gallery directly at `cancel-reprint-unknown` and verified its iframe destination. |
+| D3: settled I-8 text | The inventory's I-8 ruling and BO-13 bullet use the task's exact wording; BO-12 receives the requested audit-list insertion. The wireframe annotation is one sentence saying I-8 is settled/audited under FR-J3 and linking to Frost. |
+
+### Decisions a builder needs
+
+The emergency table columns are Ticket/order, Round/time, Lines on the ticket,
+Delivery, and Recovery. Cancellation rows retain their own ticket class and
+cancelled lines in every result. The time is the ticket's time: original work at
+19:58 or cancellation at 20:02, with the original round identified in both.
+Receipts have Order, Closed at, Total, Delivery, and Recovery. Totals are bare
+whole-rupiah figures; IDR appears once in the receipt caption. Both tables consume
+`.office-table`; intrinsic column sizing permits wrapping without truncating
+identity, lines or recovery copy.
+
+The shared table's sticky header and existing 36px/28px office actions are reused,
+not forked. No new modal is necessary: reprint is one action, the kitchen
+acknowledgement is explicit within the row, and receipt dismissal is one action.
+The destructive-confirmation pattern was read but is not added where the task
+has granted no extra gate. Pending/sent results say neither failed again nor
+printed; the delivery cell reads “Sending…” or “Awaiting result”. Only the
+server-confirmed fixture says PRINTED. Results use the shared neutral blue notice,
+never success green, and make no audit claims.
+
+A sent, pending, unknown or confirmed-printed reprint disables another reprint.
+Pending/sent/unknown offer “Check delivery status”; a definite failed-again result
+permits a new explicit attempt. Kitchen clearance still requires the checked
+paper acknowledgement, including after PRINTED. Receipt dismissal remains
+available independently of its print result. Checking paper acknowledges this
+particular incident; it does not fire, void, close or otherwise operate an order.
+
+The alert context extends DESIGN-012's URL-scoped fixtures, without browser
+storage. It carries remaining IDs, deliveries, results and the first outstanding
+emergency/receipt identity; `alerts=none` takes precedence over a named kitchen
+state after clearance. A cleared work ticket cannot hide a remaining cancellation:
+the banner switches to that cancellation. Navigation and reload preserve cleared
+rows and outcome uncertainty. This demonstrates shared incident meaning and
+incoming POS updates locally; no real cross-client transport or persistence
+contract is implemented. Already-open independent browser tabs are not a service
+simulation.
+
+### Verification and browser evidence
+
+The owner approved the DESIGN-013 browser command in this pane before execution:
+
+```sh
+PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design013.cjs
+```
+
+The committed check requires an installed Playwright module through
+`PLAYWRIGHT_MODULE`, with an optional `CHROME_PATH`; it contains no machine-specific
+module default. It ran installed headless Chrome at 1440×900, passed **185/185
+assertions across 29 states**, and found **zero page JavaScript errors** and
+**zero horizontal document or content overflow**. Evidence is outside the repo
+at `/tmp/design013-evidence/`, including every state capture,
+`overflow-scrolled.png` and `measurements.json`.
+
+| Measurement | Observed |
+|---|---|
+| Frame | 1440×900 |
+| Navigation / top bar | 220px / 64px |
+| Content padding / body type | 24px / 14px |
+| Emergency banner | x=220, y=64, width=1220, height=80 |
+| Kitchen recovery | 36px high; default Reprint ticket width 110.671875px |
+| Receipt recovery | 28px high; default Reprint receipt width 102.046875px |
+| Overflow sticky header | y=144 after content scrollTop=450; header height 56.875px |
+| Banner after overflow scroll | Exactly the same rectangle as before scrolling |
+
+The header begins at the content owner's visible edge immediately below the
+banner; the browser's hit test at (300,145) finds a header cell, not a row in a
+gap. I visually inspected the default, cancellation-unknown result,
+receipt-unknown and scrolled-overflow captures. The receipt-only state retains
+lower visual weight even when there is no emergency. No visual iteration or
+second DESIGN-013 run was necessary.
+
+`npm run verify` first failed because the sandbox refused the existing PostgreSQL
+connection at 127.0.0.1:5433. The approved rerun passed typechecking and **46 test
+files / 2,758 tests**, including the unchanged token tests. The existing Vite
+future-native-config-loader warning remains. JavaScript syntax checks and
+`git diff --check` passed. Impeccable context and craft guidance were used; its
+context loader selected the historical comparison DESIGN, so the task's
+`docs/DESIGN.md` remained authoritative. The one mechanical detector run returned
+an empty findings list. No raw color, pixel size or numeric font weight was found
+in the new artifacts or the changed office runtime.
+
+The authored prototype-link counts are **39** in menu and **10** in report detail.
+`git diff -- docs/design/SCREEN-INVENTORY.md docs/design/prototype/back-office/incidents.html`
+was inspected: exactly three inventory hunks and one annotation hunk, with no
+other changes in either file. `git diff -- docs/design/SITEMAP.md` is empty.
+Screen-reader, physical-device, real-printer and other-browser tests were not run.
+
+### Unresolved owner questions and proposed answers
+
+- Cancellation-ticket reprint audit classification under FR-J3 remains open.
+  Proposed answer: yes, as already proposed by the lead, because it prints at the
+  kitchen and B-16 makes its correction identity critical. The artifact makes no
+  audit statement and introduces no gate.
+- Q7, report-print incidents, remains open. Proposed answer: keep failure and
+  explicit retry local to the report until the owner grants a BO-13 class. No
+  report row or third urgency class is drawn; the existing report promise is
+  unchanged for slice H.
+- Q2, full business-day labeling, remains open. Proposed interim answer: retain
+  slice A's opening-date indicator and HH:MM WIB ticket times. No start/end is
+  inferred.
+- No additional product conflict or token proposal was found. The task's Q9
+  presentation answer remains the existing 36px/28px desktop recovery sizes,
+  supported by the measurements above. DESIGN-012 lows N1–N3 remain slice B's.
+
+### DESIGN-012 regression and completion
+
+After a separate owner approval in this pane, I ran:
+
+```sh
+env PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design012.cjs
+```
+
+The regression passed **216/216 assertions across 47 states**, with zero page
+JavaScript errors and no failed assertions. Its external evidence remains in
+`/tmp/design012-evidence/round2/measurements.json` and the adjacent captures.
+Navigation remains 220px, brand/top bar 64px, content padding 24px and body text
+14px; emergency/receipt actions remain 36px/28px, fields 40px, and the dialog
+640px wide at y=24–876. The shared table header remains at y=64 when scrolled
+without a banner. I inspected its scrolled-table capture. This confirms slice A's
+shell, forms, re-authentication, uncertain-command departure, table and gallery
+checks still pass with Frost BO-13 as their incident destination.
+
+All assigned work is complete for design review. The path-scoped commit includes
+only this task's Handoff and the design files listed above; nothing is pushed.
+
+DONE

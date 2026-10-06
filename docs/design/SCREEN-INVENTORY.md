@@ -843,7 +843,7 @@ amounts and business reason*.
 - **Append-only. No edit, no delete, no soft-delete, no hide** (FR-J1, B-7).
   A designer must not draw a row action menu here.
 - Audited actions are exactly: whole-order void, fired-line void, discount
-  apply/replace/remove, refund, manager takeover of a CheckoutLease, and every
+  apply/replace/remove, refund, manager takeover of a CheckoutLease, back-office reprint of a kitchen ticket, and every
   manager-approval outcome (FR-J3). Removing a PENDING line is **not** audited
   (FR-H2) and must not appear.
 - A successful approved action is **one combined entry**, not two (FR-J3,
@@ -879,8 +879,7 @@ distinction* · *reprint result*.
   AC-23).
 - This is a **data-table** rendering of the same domain object the POS renders
   as touch cards. Independent components, one meaning (NFR-5).
-- Whether a back-office reprint of a kitchen ticket is gated or audited is
-  unspecified — see implied item I-8. Do not decide it.
+- A back-office reprint of a kitchen ticket is audited and not gated (FR-J3, I-8). The screen makes no claim about what is recorded.
 
 ---
 
@@ -988,7 +987,7 @@ The product lead has ruled on each. Nothing below is open.
 | I-5 | Deliberate lease release | **Yes.** An explicit "Cancel payment" on POS-04 releases the lease and returns to the order. Releasing a lease you already hold moves no money and needs no approval. A cashier must never wait five minutes because a customer changed their mind. |
 | I-6 | Whether BO-09's open-order list links into the POS | Designer's call. **It does not link.** Two separately bootstrapped clients with separate sessions cannot hand an actor context to each other (NFR-5, FR-A2c), so a link would be a lie. A "Check again" control re-reads authoritative server state instead. |
 | I-7 | Fire-round history on POS-03 | Designer's call. **Lines are grouped by fire round**, with the round's time and print status in the group header, so the cashier can answer "did this go to the kitchen?" without asking anyone. |
-| I-8 | Back-office reprint of a kitchen ticket | **Still open.** FR-E3 grants the action; FR-J3 does not audit it. Drawn ungated and unaudited, matching the requirements as written, and flagged on BO-13. Not settled by the designer. |
+| I-8 | Back-office reprint of a kitchen ticket | **Audited** (owner, 2026-09-24; FR-J3): the entry names the actor, the order and the round reprinted. No gate is added: none is granted, and I-11 keeps PIN gates on the POS. Drawn on BO-13. Whether a cancellation-ticket reprint counts is open with the owner. |
 | I-9 | Where a custom payment-method name comes from | **Back-office configuration**, a new area under BO-08 Settings. B-24 forbids inventing configuration as free text on the fastest, most error-prone screen in the product. |
 | I-10 | Voiding several orders in sequence at end of day | Designer's call. **No bulk void.** Each void is a deliberate, separately reasoned act (FR-H3/H4); a batch control would make the rare path routine, against principle 3. |
 | I-11 | Confirmation dialogs | Designer's call, now a standing rule: **confirmations on the back office, PIN gates on the POS, nothing in between.** The back-office reader is seated and the action irreversible (B-9); the POS reader will not read a dialog, so protection there is a PIN or nothing (FR-H2). |
