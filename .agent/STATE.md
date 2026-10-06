@@ -52,20 +52,20 @@ Earlier the same day: PRs #53-#55 merged, `development` at `2ee2285`. Narrative:
 
 ## Running tasks and agents
 
-- **PHASE0-004 (PIN) dispatched** 2026-10-06 17:00: Sonnet 5.5 builder `phase0-004`, pane `w2:p3T`,
-  worktree `../restaurant-pos-wt/PHASE0-004`. First blocked on the owner's approval of `npm install
-  @node-rs/argon2`. Lead rulings in its file. Touches identity: Codex review; owner looks before merge.
+- **PHASE0-004 (PIN) built** at `14ba093`, DONE in one round; lead verify 47/2772; `status: review`
+  (`dc9bbe4`). Codex review waits on Codex's 19:25 reset (dispatcher allows no other reviewer). For the
+  review: `verifyPin(encoded, pin)` order and `createStaffUser` returning `string` differ from the plan.
 - **DESIGN-013 (slice C, BO-13) opened by hand:** Codex `design013`, pane `w2:p3V`, worktree
   `../restaurant-pos-wt/DESIGN-013` (task `37b81e0`); `runs/DESIGN-013/builder/meta.json` says codex.
-  At 18:31: 29 states drawn, its BO-13 check 185/185, all uncommitted, no Handoff; Codex near its limit.
-  Owner: resume the same session (`01a110ab-4bcf-7d22-b410-8c145052c85a`) after the reset.
+  Codex hit its limit (reset 19:25) with 29 states, check 185/185, Handoff drafted, all uncommitted. Owner:
+  resume the same session (`01a110ab-4bcf-7d22-b410-8c145052c85a`, pane still open); then the 004 review.
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
   three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
 - **Design slices still ready:** D, F and I. Slice B (BO-01, 02) must take DESIGN-012's three lows
   N1-N3 as first items (its task file, end).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`), `phase0-004` (`w2:p3T`), `design013` (`w2:p3V`). Not the lead's: pane `w2:pE`, worktree `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`), `design013` (`w2:p3V`, idle at its limit). Not the lead's: pane `w2:pE`, worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
