@@ -1944,6 +1944,23 @@
         "property": "width",
         "authoredValue": "var(--frost-allocation-field-width)"
       }
+    },
+    "--frost-office-form-columns": {
+      "value": "minmax(0, 1fr) minmax(0, 2fr)",
+      "group": "Geometry",
+      "source": null,
+      "designed": {
+        "task": ".agent/tasks/DESIGN-012-office-shell-and-reauth.md",
+        "date": "2026-10-06",
+        "by": "design012 (Codex designer)",
+        "status": "designed under DESIGN-012; awaiting design review",
+        "stylesheet": "docs/design/visual-directions/frost/back-office/office.css — .office-fieldrow",
+        "shown": [
+          "docs/design/visual-directions/frost/back-office/shell.html?state=reauth",
+          "docs/design/visual-directions/frost/back-office/patterns.html?state=fields"
+        ],
+        "why": "A shared desktop label/value grid gives the editable value twice the label space; dialog fields stack vertically. No new fixed field width or color is needed."
+      }
     }
   }
 }

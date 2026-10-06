@@ -3,6 +3,7 @@
  * Four tokens (pressed ring, invalid, invalid border, round tag size) were DESIGNED
  * under DESIGN-005 on 2026-09-14 and read from no reviewed artifact; in the JSON their
  * source is null and a "designed" block says why. They await design-reviewer.
+ * DESIGN-012 adds the designed office form grid; source: null, awaiting review.
  * Import in either client; these properties do not apply layout or behavior.
  */
 :root {
@@ -180,4 +181,5 @@
   --frost-invalid-border: 2px solid #83611c;
   --frost-closed-list-columns: 88px 172px minmax(0,1fr) 180px;
   --frost-allocation-field-width: 180px;
+  --frost-office-form-columns: minmax(0, 1fr) minmax(0, 2fr);
 }

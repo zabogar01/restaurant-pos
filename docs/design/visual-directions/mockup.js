@@ -57,7 +57,7 @@
   }).join('');
   bar.innerHTML =
     '<div class="wfbar__row">' +
-      (WF.client === 'pos' ? '<a href="floor.html">&larr; POS floor</a>' : '<a href="../index.html">&larr; All screens</a>') +
+      (WF.client === 'pos' ? '<a href="floor.html">&larr; POS floor</a>' : '<a href="../../index.html?direction=' + (document.documentElement.dataset.direction === 'paper' ? 'paper' : 'frost') + '">&larr; All screens</a>') +
       '<span class="wfbar__id">' + (WF.id || '') + '</span>' +
       '<span class="wfbar__name">' + (WF.name || '') + '</span>' +
       '<span class="wfbar__meta">' + target + '</span>' +
@@ -117,6 +117,6 @@
   $('.totals .t--grand > span:first-child').forEach(e=>{e.textContent='Total · Rp';});
   if(window.WF.id==='BO-03')$('.dtable th').forEach(e=>{if(e.textContent.trim()==='Price')e.textContent='Price · Rp';});
   if(window.WF.id==='BO-11'){
-    $('.botop b').forEach(e=>e.textContent+=' · IDR');
+    $('.office-subbar b, .botop:not(:has(+ .bocontent .office-subbar)) b').forEach(e=>e.textContent+=' · IDR');
   }
 })();
