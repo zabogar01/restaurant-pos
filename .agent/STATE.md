@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-05: the owner merged FE-036, the void (PR #48), and the lead's record (PR #47). The lead
-fast-forwarded the main checkout to `31483c2`, verified it green and, on the owner's word, removed
-FE-036's worktree and run directory. Narrative: [journal/2026-10-05.md](journal/2026-10-05.md).
+2026-10-06: the owner merged PHASE0-003b (PR #51) and the lead's record (PR #52). The lead
+fast-forwarded to `d7384a7`, ran `db:up`, verified green, removed 003b's worktree, dispatched
+PHASE0-003c, and started DESIGN-012 (slice A). Narrative: [journal/2026-10-06.md](journal/2026-10-06.md).
 
 ## Phase and gates
 
@@ -27,24 +27,23 @@ FE-036's worktree and run directory. Narrative: [journal/2026-10-05.md](journal/
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted.
-- **Last verify by the lead:** `npm run verify` green (exit 0) at **2722 tests / 41 files** on
-  2026-10-05 on `development` at `31483c2`, in the main checkout. `apps/server/test/migrate.test.ts` needs
-  `npm run db:up`; without it its seven tests fail with `ECONNREFUSED 127.0.0.1:5433` (L6-14).
+- **Last verify by the lead:** `npm run verify` green at **2737 tests / 45 files** on 2026-10-06 on
+  `development` at `d7384a7`, main checkout, after `npm run db:up` (now compose with `db/dev.env`, then
+  provision `pos_app` and `pos_test`). Server tests need the database up.
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `31483c2` (PR #48) on
-  GitHub; the local `development` matches it (fast-forwarded 2026-10-05). `main` and
+- **`development` is the integration branch** (owner, 2026-09-29), at `d7384a7` (PR #52) on
+  GitHub; the local `development` matches it (fast-forwarded 2026-10-06). `main` and
   `development` are protected: PR required, 0 approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch`
   and fast-forward the main checkout (`git merge --ff-only origin/development`) **before reporting
   or dispatching**: on 2026-10-02 it was 11 commits behind and the lead's first report was wrong.
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
-  current (checked 2026-10-05 after the last fast-forward). Rerun after any merge that changes
+  current (checked 2026-10-06 after the last fast-forward). Rerun after any merge that changes
   `.githooks/` or agents.yaml.
-- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1005b`** (cut from `e9d5b96`), pushed (owner).
-  `agent/lead-1005` (PR #49) and `agent/phase0-003a` (PR #50) merged 2026-10-05; main checkout fast-forwarded
-  to `e9d5b96`, hooks current; 003a's worktree and run directory removed.
+- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1006`** (cut from `d7384a7`), not pushed.
+  `agent/phase0-003b` (PR #51) and `agent/lead-1005b` (PR #52) merged 2026-10-06; 003b's worktree and run dir removed.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations` (`735301d`, behind). Merged, still existing: `agent/design-direction`
@@ -57,15 +56,16 @@ FE-036's worktree and run directory. Narrative: [journal/2026-10-05.md](journal/
   superuser, mutable settings). Task 3 is split: **003a** `Rate` brand; **003b** serial server tests on
   `pos_test`, advisory lock, provisioned `pos_app`, pool split, no credential in source; **003c** the
   schema, from ARCH-006's four migrations and 21 test cases, cut after 003b merges.
-- **PHASE0-003a merged** (PR #50). **PHASE0-003b complete** at `6c3eb58`, pushed: F1 (high, tests aimable at `pos`)
-  fixed; F2 (low, placeholder `u:p` URLs in a test) accepted by the lead, both cycles used. Verify 45/2737. **003c written**.
-- **DESIGN-011 done** (`.agent/reviews/DESIGN-011-back-office-audit.md`; pane closed): 11 of 13 BO screens
-  are greyscale wireframes; nine design slices A-I, **A first**. Q3 ruled (same manager only, DECISIONS).
-  **The owner will first try an external AI design tool** on the design work; the lead's designer if not good enough.
+- **003a and 003b merged** (PRs #50, #51). **PHASE0-003c running**: Sonnet 5.5 builder, interactive, pane
+  `PHASE0-003c`, worktree `../restaurant-pos-wt/PHASE0-003c`; baseline 45/2737. Lead watches for approval prompts.
+- **DESIGN-011 done** (audit; nine slices A-I). **The owner handed the design to the lead** (2026-10-06, no external
+  tool). **DESIGN-012 (slice A) running**: Codex `gpt-6-astra` high, `design012`, pane `w2:p3K`, worktree
+  `../restaurant-pos-wt/DESIGN-012` on `agent/design-012`; opened by hand (journal 2026-10-05 launch line).
+  Lead rulings in its file: M-6 credential drawn as *Password* (Q4 open); day shown by its opening WIB date (Q2 open).
 - Merged: FE-036 (the void, PR #48), FE-035 (PR #45), FE-034 (PR #42). The frontend review is complete.
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`), no other. No lead dev server. Not the lead's: agentless pane
+- **Live agents:** the lead (`w2:p1`), `phase0-003c` (`w2:p3J`), `design012` (`w2:p3K`). No lead dev server. Not the lead's: agentless pane
   `w2:pE`; worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
@@ -145,5 +145,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-[QUEUE.md](QUEUE.md): owner merges `agent/phase0-003a` and `agent/lead-1005`; lead fast-forwards, removes
-003a's worktree, dispatches 003b. Design: the owner's external tool first, then slice A.
+[QUEUE.md](QUEUE.md): verify and review PHASE0-003c (owner looks before merge: audit, identity);
+verify DESIGN-012, then a design review; then slices B-I as the owner answers Q2, Q4 and Q7.

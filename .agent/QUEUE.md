@@ -63,7 +63,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
 9. **Back-office design** — 13 screens (BO-01 to BO-13). *(Done: DESIGN-011, the audit,
    2026-10-05, `.agent/reviews/DESIGN-011-back-office-audit.md`.)* Nine slices, each a designer
    task re-pointing the wireframe links whose Frost destinations it creates:
-   - **A — shared shell, global alerts, M-6, forms, modals** — depends on the owner's Q3 — next, not written.
+   - **A — DESIGN-012: shared shell, global alerts, M-6, forms, modals** — Q3 ruled; Q4's credential
+     drawn as *Password* by lead ruling — running (Codex designer `design012`), the owner handed the
+     design to the lead 2026-10-06 instead of an external tool.
    - B (BO-01, 02; Q4, Q2) · C (BO-13; brings I-8 into the inventory) · D (BO-03, 04) · E (BO-05,
      06; Q4, Q5) · F (BO-07, 08; Q5) · G (BO-09; Q2) · H (BO-10, 11; Q2, Q7) · I (BO-12; Q8) — after A.
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
@@ -78,10 +80,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     The plan's SQL and code are **superseded wherever ARCH-006 differs**
     (`.agent/reviews/ARCH-006-phase0-core-schema.md`).
     - *(Done: PHASE0-003a, brand `Rate`, merged 2026-10-05 as PR #50.)*
-    - **PHASE0-003b** — serial server tests on `pos_test`, provisioned `pos_app`, pool split —
-      built at `0810504`, lead verify green (44 files, 2733 tests), in review.
-    - **PHASE0-003c** — the six tables and 21 tests from ARCH-006 — depends on 003b merged —
-      written (untracked in the kit worktree), dispatched after the merge.
+    - *(Done: PHASE0-003b, serial server tests on `pos_test`, `pos_app`, merged 2026-10-06 as PR #51.)*
+    - **PHASE0-003c** — the six tables and 21 tests from ARCH-006 — dispatched 2026-10-06
+      (Sonnet 5.5 builder, interactive) — running.
     - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
       three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — the
