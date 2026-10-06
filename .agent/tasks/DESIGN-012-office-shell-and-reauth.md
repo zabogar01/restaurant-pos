@@ -5,8 +5,8 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-011]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # DESIGN-012 — Back-office shell, global alerts, M-6 and shared patterns (slice A)
 
@@ -241,6 +241,50 @@ navigation, *Log out* or alert link.
    environment, not from one agent's runtime cache.
 3. **Browser runs.** Each run of the check script still needs the owner's approval in the pane;
    ask before it, not after.
+
+## Round 2 — the review's nine findings (lead rulings, 2026-10-06)
+
+The review is `.agent/reviews/DESIGN-012-review.md` (Claude Opus 5.5, at `b0ee42f`). Read it in
+full. Every finding is accepted; fix all nine in this round, which is fix cycle 1 of 2. The lead
+settled the reviewer's two browser inferences in Chrome at 1440×900:
+
+- **F2 is confirmed and raised to high.** On a direct load of `shell.html?state=reauth`, one
+  *Escape* left M-6 open, but two more *Escape* presses closed it with no password, leaving the
+  draft form live while the URL still read `reauth`. Apply the reviewer's fix in full
+  (`closedby="none"`, cancel the *Escape* keydown while open, a `close` listener that reopens it
+  while re-authentication is required) and extend the check with both sequences: repeated
+  *Escape*, and *Escape* on a direct load before any other input.
+- **F6 is confirmed.** On `patterns.html?state=table` after scrolling, a row ("Sample 03") shows
+  in the band between the top bar and the stuck header. Fix as proposed, and capture the state
+  after scrolling.
+
+Rulings on the rest:
+
+- **F1 (high):** as proposed. No page state makes the kitchen action, the receipt chip or
+  *Log out* inert. During `pending` and `unknown`, navigation goes through the leave decision with
+  copy that says the outcome is not known and leaving does not send it again. Change the check's
+  assertion, and state the rule in `docs/DESIGN.md`.
+- **F3:** as proposed: the overflowing dialog body is focusable, named and in the focus loop; the
+  check presses *Page Down* and asserts the body scrolled.
+- **F4:** one refusal string for a wrong password and for another manager's password, the
+  existing *Incorrect password. Try again.* Keep the `reauth-other` state as a named fixture with
+  a visible note that it is deliberately indistinguishable from `reauth-error`. Do not tell the
+  person at the keyboard whose credential they typed. Whether a different manager's valid
+  credential counts as a LOGIN failure is the owner's, with Q4; list it under open questions.
+- **F5:** as proposed: in `reauth-throttled`, the logout confirmation says sign-in is unavailable
+  for the time remaining, installation-wide, and that waiting keeps the draft.
+- **F7:** as proposed: record the active element and its selection at the timeout, whatever it
+  is, and restore exactly that; the *Simulate* button must show what it claims.
+- **F8:** correct the three passages of `docs/DESIGN.md` in place, each marked "updated by
+  DESIGN-012, awaiting review"; the supplement keeps only new material.
+- **F9:** items 1 to 4 as proposed (for item 1, the accessible name starts with the visible text).
+  Item 5: one sentence in the Handoff. Item 6: the gallery's default direction becoming Frost is
+  accepted (the owner chose Frost); the *All screens* link on a Paper page must keep Paper's
+  direction, since Paper is left untouched.
+
+Re-run `npm run verify` and the browser check (each run is the owner's to approve). Add a
+**Round 2** section to the Handoff mapping each finding to its change and its evidence; do not
+rewrite round 1's sections except where a fix makes a statement in them untrue.
 
 ## Handoff
 
