@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-011]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: review
 cycles: 1
 ---
 # DESIGN-012 — Back-office shell, global alerts, M-6 and shared patterns (slice A)
