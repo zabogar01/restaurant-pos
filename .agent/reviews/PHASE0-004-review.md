@@ -2,9 +2,9 @@
 
 ## Verdict
 
-**findings** — two findings. Reviewed `agent/phase0-004` at `dc9bbe46cd76b22865857415dc1c71ebc64c3d03` against `development` at `2ee22857e0608a2b528348e9117e86993d0f7a2e`, the task file, its cited plan and architecture sections, the schema and test harness, FR-A2/FR-A3/FR-A4, and B-11/B-12.
+**clean** — Round 2 closes both findings; no new findings. See the Re-review section for current evidence and the standalone-run limitation. The original review below is retained as history: it found two issues at `dc9bbe46cd76b22865857415dc1c71ebc64c3d03` against `development` at `2ee22857e0608a2b528348e9117e86993d0f7a2e`.
 
-## Findings
+## Findings from Round 1 (both closed in Round 2)
 
 ### 1. High: the shared PIN guard permits a runtime number to reach an error that exposes the PIN
 
@@ -42,3 +42,33 @@ The implementation explicitly selects Argon2id with memory/time/parallelism 1945
 For valid string inputs, creation validates the name and role before SQL, stores the hash and digest, relies on the existing unique index through `ON CONFLICT DO NOTHING`, and replaces database exceptions with a fixed error without a cause. The forced check-violation test exercises actual PostgreSQL error sanitization. Lookup filters inactive users, verifies the selected row's hash instead of trusting the digest, and returns its ID, role, and credential version from one SELECT. The planted mismatched row and changed credential-version tests cover those distinct states.
 
 The domain code uses the application pool; fixture changes and schema resets use the owner connection. No audit writer, session behavior, throttle, migration change, or deactivated-PIN reuse policy was introduced. Those remain outside this task's scope. Only this review report was intentionally written; no source, test, task, or memory file was edited, and no commit or push was made.
+
+## Re-review — Round 2
+
+### Verdict
+
+**clean** — both accepted findings are closed, with no new findings in the fix. Reviewed the implementation at `56779f6`. The checked-out HEAD was `51c33c66b65ca57df2e493118c53c6efb3286c9e`; its only change after `56779f6` is the task's status from `active` to `review`. I inspected the fix diff and the full branch changes against the unchanged `development` baseline, plus the task's Round 2 rulings and Handoff.
+
+### Findings and closure evidence
+
+**Finding 1 is closed.** At `apps/server/src/domain/pin.ts:22`, the shared predicate checks the runtime type before applying the regex. The four throwing functions use the fixed format error; verification and lookup return `false` and `null`. This satisfies Round 2 ruling 1 and closes the demonstrated B-12 leak. The eight new tests at `apps/server/test/pin.test.ts:212` cover the required number, null, undefined, and coercible object across all six functions, including inspection of error properties. Independent probes also exercised an object whose coercion throws, an array, a boolean, and a symbol. All were rejected safely without invoking object coercion. These probes ran with the pepper unset, confirming rejection occurs before configuration or database access.
+
+**Finding 2 is closed.** `assertValidPinFormat` is exported at `apps/server/src/domain/pin.ts:26`; `verifyPin(pin, encoded)` has the required order at line 35; creation returns `{ id }` at line 77. The internal verification call at line 103 and all test call sites use that order. A direct probe verified a real matching hash using the documented API and rejected a different PIN. The database tests destructure the creation result and use its ID to read the stored row. These changes satisfy Round 2 ruling 2 and the plan's interface contract at line 1063. The same-row `credentialVersion` return is preserved.
+
+The Handoff now identifies `^2.2.2`, consistent with the manifest and lockfile, satisfying Round 2 ruling 3. The shared guard was checked across valid string, malformed string, and non-string states; the fix neither coerces invalid values nor prevents valid PIN verification.
+
+### What I ran and what I did not
+
+- **Observed:** `npm run verify` passed typechecking and **47 test files / 2,780 tests**. This is eight more tests than Round 1. The existing Vite configuration warning remains.
+- **Observed:** before and after the green run, `git diff --stat` was empty, HEAD and `development` hashes were unchanged, and the branch diff remained **9 files changed, 913 insertions, 10 deletions**. The reviewed implementation was stable. Report and Handoff updates were made afterward.
+- **Observed:** the read-only Node probes described above passed. The call-site search found the corrected public argument order throughout server source and tests. The credential-default search returned no matches.
+- **Observed limitation:** `npx vitest run apps/server/test/pin.test.ts` could not complete setup because connecting to `127.0.0.1:5433` returned `EPERM`. It also printed “No test files found.” I do not count this as a standalone pass or an assertion failure. The full verification run did pass; the builder separately reports 22 standalone PIN tests passing.
+- **Not run:** I did not repeat the builder's mutation run removing the type check, or the original six mutation proofs. Their reported failures remain builder evidence. No browser, endpoint, or cross-platform binary testing was performed; the fix introduces no screen, route, or dependency change.
+
+### Cleared and handoff
+
+The fix changes only the shared runtime guard, the exported contract, its callers, and the corresponding tests. Argon2id parameters, per-call pepper lookup, duplicate handling, database-error sanitization, inactive-user rejection, mismatched-hash rejection, and same-row credential-version selection remain intact and covered by the passing suite. No new boundary violation was found in the changed paths.
+
+Both findings are ready for the lead's disposition. At the user's explicit request, I appended this re-review's outcome to the task's Handoff; no other task content, source, tests, or memory files were changed. No commit or push was made.
+
+DONE
