@@ -5,7 +5,7 @@ category: ui
 touches: [audit]
 depends_on: [DESIGN-012]
 owns: [docs/design/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # DESIGN-013 — BO-13 print incidents (slice C)
