@@ -5,7 +5,7 @@ category: feature
 touches: [audit]
 depends_on: [PHASE0-004]
 owns: [apps/server/src/**, apps/server/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-005 — Audit and security-event writers
