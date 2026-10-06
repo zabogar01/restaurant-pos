@@ -59,14 +59,14 @@ PHASE0-003c, and started DESIGN-012 (slice A). Narrative: [journal/2026-10-06.md
 - **003a and 003b merged** (PRs #50, #51). **PHASE0-003c complete** at `33769d0`, not pushed: one round, Codex review
   clean, lead verify 46/2758, schema test alone 21/21, `pos` holds 0001-0005 (owner-approved migrate). Owner's look before merge.
 - **DESIGN-011 done** (audit; nine slices A-I). **The owner handed the design to the lead** (2026-10-06, no external
-  tool). **DESIGN-012 (slice A) in re-review (cycle 1 used)**: round 1 `dfd44f4`, 9 findings all accepted; round 2 `9931a8f`
-  (OpenCode then Codex after both hit limits), 216/216 checks, 47 states; lead verify 45/2737, F2 fix seen in Chrome; worktree
+  tool). **DESIGN-012 (slice A) complete** at `c20c56d`, not pushed: 9 review findings closed in round 2 (`9931a8f`), 3 new lows
+  carried to slice B; 216/216 browser checks, 47 states; lead verify 45/2737; owner's look before merge; worktree
   `../restaurant-pos-wt/DESIGN-012` on `agent/design-012`; opened by hand (journal 2026-10-05 launch line).
   Lead rulings in its file: M-6 credential drawn as *Password* (Q4 open); day shown by its opening WIB date (Q2 open).
 - Merged: FE-036 (the void, PR #48), FE-035 (PR #45), FE-034 (PR #42). The frontend review is complete.
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`); the DESIGN-012 Claude Opus reviewer, resumed for the round-2 re-review. No lead dev server. Not the lead's: agentless pane
+- **Live agents:** the lead (`w2:p1`) only. No lead dev server. Not the lead's: agentless pane
   `w2:pE`; worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
@@ -113,7 +113,7 @@ Nothing here is decided. Detail is where each line points.
 - **ARCH-006 for the owner** (none blocks 003): a cashier's approval refused by the cooldown is audit,
   security event, or both (before plan Task 10)? Does the failure count reset when a cooldown ends
   (Task 6)? Kitchen staff as records (Phase 1)? A deactivated user's PIN reusable? Commission ADR-008?
-- **DESIGN-011 for the owner:** Q3's eight-hour half; Q4 the MVP back-office credential (PIN until SSO, or a password?)
+- **DESIGN-011 for the owner:** Q3's eight-hour half; Q4 the MVP credential (M-6 drawn as *Password*; does another manager's valid one count as a LOGIN failure?)
   and first-manager bootstrap; Q5 out of scope (blocks nothing, lead); Q7 report-print failure: BO-13 or report only? Q8 ruled (lead, delegated).
 - **"go" read as accepting both** the void's (2026-10-03) and Phase 0's (designer alongside) recommendations.
 - **FE-036 lead rulings, yours to overturn:** a client-voided line shows only its strike-through; the
@@ -146,5 +146,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-[QUEUE.md](QUEUE.md): owner looks at and pushes/merges PHASE0-003c; then PHASE0-004 (PIN), written from ARCH-006 §8;
-verify DESIGN-012, then a design review; then slices B-I as the owner answers Q2, Q4 and Q7.
+[QUEUE.md](QUEUE.md): owner looks at and pushes/merges PHASE0-003c and DESIGN-012; then PHASE0-004 (PIN), from ARCH-006 §8;
+next design slice: C (BO-13), D, F or I, ready now; B, E, G, H wait on the owner's Q2, Q4 and Q7.
