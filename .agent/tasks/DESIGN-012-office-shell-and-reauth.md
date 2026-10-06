@@ -210,6 +210,16 @@ Commit on `agent/design-012` only, after verify is green where it applies, and n
     herdr agent prompt lead "design012: DESIGN-012 done — <one line>"
     herdr agent prompt lead "design012: BLOCKED — <question>"
 
+## Lead ruling, 2026-10-06 (design012's question on navigation links)
+
+Acceptance criterion 6 meant content links, and contradicted Parts A and D for navigation. The
+shared navigation keeps its existing destinations: an entry whose screen has a Frost artifact
+(Menu, BO-03) links to it, and every other entry keeps its current `prototype/back-office/`
+destination until its slice lands, as do *Log out* (BO-01) and the alert links (BO-13). No new
+content link into `prototype/`. Criterion 6 now reads: the two existing pages keep their 40 and
+11 authored links, and the Handoff lists every `prototype/` link in the new artifacts, each one a
+navigation, *Log out* or alert link.
+
 ## Handoff
 
 *(Written by the designer.)* It ends with `DONE` or `BLOCKED: <one question>`.
