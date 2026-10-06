@@ -231,4 +231,12 @@ the change, the red proof and the counts. Do not rewrite round 1's sections.
 
 **Next agent needs.** No browser was involved. Nothing is missing.
 
+### Round 2
+
+**Change.** In `apps/server/test/audit.test.ts`, each "case 11: refuses … before any row is written" test now wraps the call in `vi.spyOn(getPool(), 'query')`, asserts the spy was never called, and restores it in a `finally`. The real-database assertion that the table stays empty is kept. `audit.ts`, `pool.ts` and the signatures are unchanged. The spy works because `writeSecurityEvent` calls the pool's `query` through `getPool()`, the same singleton the spy wraps.
+
+**Red proof.** I added `await query('SELECT 1')` before validation in `writeSecurityEvent`. All five case 11 refusal tests failed with `expected "query" to not be called at all, but actually been called 1 times`, showing `"SELECT 1"` as the call. The empty-table assertion alone would have passed. I reverted the line.
+
+**Counts.** `npm run verify`: typecheck clean; `Test Files 48 passed (48)`, `Tests 2815 passed (2815)`, unchanged from round 1 because I strengthened five existing tests rather than adding any. The focused file alone ran 35 tests (30 passed with the mutation in place, 5 failed as shown). No existing test other than my own was touched; no formatter was run.
+
 DONE

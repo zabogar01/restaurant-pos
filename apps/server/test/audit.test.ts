@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getPool, withTransaction } from '../src/db/pool.js';
 import * as auditModule from '../src/domain/audit.js';
 import {
@@ -264,9 +264,15 @@ describe('writeSecurityEvent', () => {
   ];
 
   it.each(bad)('case 11: refuses %s before any row is written', async (_n, input, field) => {
-    await expect(writeSecurityEvent(input as never)).rejects.toThrow(
-      `invalid security event: ${field}`
-    );
+    const spy = vi.spyOn(getPool(), 'query');
+    try {
+      await expect(writeSecurityEvent(input as never)).rejects.toThrow(
+        `invalid security event: ${field}`
+      );
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
     expect(await eventRows()).toHaveLength(0);
   });
 
