@@ -1,0 +1,35 @@
+/* BO-13 consumes the shared desktop table, action and result patterns. */
+.incident-section-heading { display: flex; align-items: baseline; gap: var(--frost-space-4); margin-bottom: var(--frost-space-3); }
+.incident-section-heading h2 { margin: 0; font-size: var(--frost-text-18); font-weight: var(--frost-weight-semibold); }
+.incident-section-heading p { margin: 0; color: var(--frost-muted); }
+.incident-caption { text-align: left; padding: var(--frost-space-3); font-weight: var(--frost-weight-medium); background: var(--frost-surface); }
+.emergency-table .incident-caption { background: var(--frost-emergency); color: var(--frost-emergency-text); }
+.incident-table td { min-width: 0; }
+.incident-table .incident-subject { display: block; font-weight: var(--frost-weight-semibold); }
+.incident-table .incident-meta { display: block; margin-top: var(--frost-space-1); font-size: var(--frost-text-13); }
+.incident-table .incident-lines { margin: 0; padding-left: var(--frost-space-4); }
+.incident-table .incident-lines li + li { margin-top: var(--frost-space-1); }
+.incident-table .incident-time { white-space: nowrap; }
+.emergency-table tbody tr, .emergency-table tbody tr:hover { background: var(--frost-emergency); color: var(--frost-emergency-text); }
+.emergency-table td { border-bottom-color: var(--frost-emergency-secondary); }
+.emergency-table .incident-meta { color: var(--frost-emergency-secondary); }
+.emergency-table .office-button:not(:disabled):not(.incident-result .office-button) { color: var(--frost-emergency); border-color: var(--frost-emergency-text); }
+.incident-recovery { display: flex; align-items: center; gap: var(--frost-space-3); margin-top: var(--frost-space-3); }
+.incident-recovery label { display: flex; align-items: center; gap: var(--frost-space-2); font-size: var(--frost-text-13); }
+.incident-recovery input { margin: 0; accent-color: var(--frost-primary); flex: none; }
+.incident-result { color: var(--frost-text); margin: var(--frost-space-3) 0 0; }
+.incident-result .office-button { margin-top: var(--frost-space-2); }
+.receipt-table .incident-caption, .receipt-table tbody tr, .receipt-table tbody tr:hover { background: var(--frost-warning-surface); color: var(--frost-warning); }
+.receipt-table .office-button:not(:disabled) { color: var(--frost-warning); border-color: var(--frost-warning); }
+.receipt-table .incident-meta { color: var(--frost-warning); }
+html[data-state='overflow'] .incident-table td { padding: var(--frost-table-cell-tight-padding); }
+
+/* An external clearance retains its measured row geometry until the next action. */
+.incident-live { position: fixed; clip-path: inset(100%); }
+.incident-table .incident-cleared, .incident-table .incident-cleared:hover { background: var(--frost-surface); color: var(--frost-muted); }
+.incident-table .incident-cleared .incident-meta { color: var(--frost-muted); }
+.incident-cleared td:last-child { position: relative; }
+.incident-cleared td:last-child > :not(.incident-cleared-message) { visibility: hidden; }
+.incident-cleared-message { position: absolute; inset: 0; padding: var(--frost-table-cell-padding); }
+
+.incident-alert-space { visibility: hidden; }
