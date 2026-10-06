@@ -66,7 +66,7 @@ PHASE0-003c, and started DESIGN-012 (slice A). Narrative: [journal/2026-10-06.md
 - Merged: FE-036 (the void, PR #48), FE-035 (PR #45), FE-034 (PR #42). The frontend review is complete.
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) only. DESIGN-012 round 2 waits for Codex's reset (14:23); OpenCode hit its limit too. No lead dev server. Not the lead's: agentless pane
+- **Live agents:** the lead (`w2:p1`); `design012` (Codex, resumed session, pane `w2:p3R`) finishing DESIGN-012 round 2. No lead dev server. Not the lead's: agentless pane
   `w2:pE`; worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
