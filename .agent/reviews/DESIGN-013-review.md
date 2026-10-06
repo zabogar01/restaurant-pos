@@ -4,9 +4,13 @@ Reviewed 2026-10-06 by the reviewer (Claude Opus 5.5; the designer was Codex
 `gpt-6-astra`). Branch `agent/design-013` at `0c9f0f0`, diffed against
 `development` (13 files, 833 insertions, 30 deletions).
 
+> **Current verdict (round 2, at `964eca8`): findings** — all eight round-1
+> findings and the I-8 wording are closed by reading; three new low findings
+> came with the fixes. See *Re-review — round 2* at the end of this file.
+
 ## 1. Verdict
 
-**findings** — eight: two medium, six low. None breaks a boundary outright.
+**findings** (round 1, at `0c9f0f0`) — eight: two medium, six low. None breaks a boundary outright.
 The two medium findings are each a place where the artifact, taken as the
 behavioural specification a builder will follow, leads to a wrong or missing
 recovery action on a kitchen incident.
@@ -327,3 +331,177 @@ have, so I accept it.
   removed.
 - **Scope.** Nothing under `apps/`, `packages/` or `db/` changed, and the POS
   incidents artifact is untouched.
+
+---
+
+# Re-review — round 2
+
+Re-reviewed 2026-10-06 by the same reviewer. Fix commit `964eca8`, diffed
+against the round-1 commit `0c9f0f0`; `HEAD` was `6f142bd`, which differs from
+`964eca8` only in the task file. Read against the task file's *Round 2*
+rulings and the Handoff's *Round 2 — review fixes* section.
+
+## R1. Verdict
+
+**findings** — three new, all low. All eight round-1 findings and the I-8
+inventory wording are **closed by reading the source**. No browser was run in
+this round either, so the Handoff's 371/371 and 216/216 results remain the
+designer's evidence, not mine. Of the three new findings, N1 is the one I
+would fix before the artifact is built from: it is the round-1 theme (an
+uncertain outcome worded as a known failure) on a path that F1's fix opened.
+
+## R2. Round-1 findings
+
+| Finding | Status | What I checked |
+|---|---|---|
+| F1 reprint dead end on `UNKNOWN` | **Closed** | `incidents.js:93` and `:121` disable reprint only while `result` is `pending` or a reread is in flight. The reread takes its response from a new review control (`:83`) and draws `read-unknown`, `read-failed` and `read-error` (*Try again*), with twelve new registered states. `design013.cjs:40` and `:50–70` now assert the busy state, the actual outcome and the restored reprint; the `check(true, …)` is gone. See N1 for a path the fix opened. |
+| F2 focus crosses incidents or throws | **Closed** | `incidents.js:141–148` restores focus only when the old row contained it (`old.contains(active)`), looks up the control inside the new row, and falls back to that row's result region or the row itself when the control is missing or disabled. No unguarded dereference remains. The builder rule is stated in the Handoff. `design013.cjs:72–92` adds the keyboard interleaving with fixture timers paused. |
+| F3 banner | **Closed** | `office.js:38` uses one fixed title; the default identity and the identity `setIncidents` builds for a single kitchen ticket are the same string. Counts are per class (`:84–86`), and no delivery value is appended. `design012.cjs` has no assertion on the old title and is unchanged; `shell.js` reads the title at load and follows it. |
+| F4 cleared on the POS | **Closed as ruled** | `incidents.js:66–77` leaves the row in place as a disabled, muted *Cleared on the POS* marker, announces through a separate visually hidden live region, and does not move focus. See N2 for the moment the marker retires. |
+| F5 fixture pairing | **Closed** | `cancel-1` is Table 4 (`incidents.js:7`). No kitchen row in `default` or `overflow` shares an order and round with a cancellation row. The question, my proposed answer and the POS artifact's identical pairing are in the Handoff. |
+| F6 cancellation time | **Closed** | `incidents.js:112` renders "Cancelled 20:02 WIB"; the banner uses the same word. |
+| F7 result-button border | **Closed** | `incidents.css:16` excludes buttons inside `.incident-result` from the emergency override, so they keep the shared stroke and text colour. |
+| F8 fixture robustness | **Closed** | `:42` and `:44` guard the missing class; `:168` restores the marker when `cleared-elsewhere` is reloaded; the POS simulation is disabled in the markup and guarded by `listRead` until the list has been read. See N3 for one sibling. |
+| I-8 wording | **Closed** | The I-8 ruling cell is exactly the lead's round-2 wording. The round-2 diff of `SCREEN-INVENTORY.md` is that one line. |
+
+## R3. New findings
+
+### N1 (low) — A reread that fails after a *sent* reprint puts "FAILED · Did not print." back in the delivery cell
+
+**Where:** `incidents.js:88` (a read error keeps `r.delivery`), `:116–117`
+(the delivery cell falls back to `r.delivery` once `result` is no longer
+`sent`), reached from `:98–99` (a `sent` response does not change
+`r.delivery`).
+
+**What is wrong.** While a reprint is `sent`, the delivery cell correctly
+reads "Awaiting result · Reprint sent; delivery is not confirmed." If the
+manager then presses *Check delivery status* and the read fails, `result`
+becomes `read-error` and the cell shows `r.delivery` again, which for the
+kitchen ticket and the receipt is still the original `FAILED` with "Did not
+print." That value describes the first print, not the reprint that has just
+been sent and may have printed. The notice beside it says "The last known
+delivery is kept", which is accurate but does not undo the cell, and
+*Reprint ticket* is live next to it. The registered `*-reread-error` states
+do not show this, because they set the delivery to `UNKNOWN` directly
+(`:44`); only the interactive path from `sent` reaches it, and the check
+exercises rereads from `*-reprint-unknown` only (`design013.cjs:51`). This is
+the shape the role prompt names: one value (`r.delivery`) shared by the
+before-reprint and after-reprint states, wrong in the one state the drawn
+fixtures hide. Derived from reading; not run.
+
+**Authority.** Task Part A1 (`FAILED` and `UNKNOWN` read differently; `UNKNOWN`
+is never worded as the kitchen not having the work), DESIGN-011's BO-13 P1
+("UNKNOWN cannot be presented as known failure"), and the reason B-16 gives: a
+duplicate ticket is duplicated food.
+
+**Failing scenario.** Open `?state=default`. Leave *Next reprint response* on
+*Sent*, set *Next reread response* to *Read failed*. Press *Reprint ticket*,
+then *Check delivery status*. Expected by this finding: the delivery cell
+reads "FAILED · Did not print." while a reprint is in transit. The manager
+believes it and reprints again.
+
+**Proposed fix.** Once a reprint has been sent, the first print's delivery is
+no longer the last known state of the paper. Keep "Awaiting result" (or
+`UNKNOWN` with the may-already-have-printed wording) in the cell through a
+read error, and add a check that rereads from `*-reprint-sent` with each
+response.
+
+### N2 (low) — The *Cleared on the POS* marker retires on the manager's click, so the rows shift under the pointer at that moment
+
+**Where:** `incidents.js:164` and `:55–62`.
+
+**What is wrong.** The marker is removed in the capture phase of the
+manager's next click anywhere in the page. The click itself still reaches the
+control that was aimed at, which is correct. But the rows below the marker
+move up by one row height during that click, so the pointer now rests on the
+next incident's control in the same column. In `overflow`, where rows are the
+same height, a double-click on *Reprint ticket* sends the second click to the
+next incident's reprint. When the last emergency was the one cleared, the
+banner's 80px is held as blank space until that same click and then
+collapses, shifting the whole page. Derived from reading; not run.
+`design013.cjs:104` asserts only that the marker is gone after the next
+action.
+
+**Authority.** The round-2 ruling for F4 allows retirement at "the next read
+or the manager's next action", and the work follows it, so this is a residual
+of the ruling rather than a departure from it. The underlying concern is the
+one F4 raised: a single ungated reprint must not land on a different incident
+(acceptance criterion 3; B-16's reason).
+
+**Proposed fix.** For the lead to weigh: retire the marker only on the next
+list read or navigation, or give the marker row its own *Dismiss* so its
+removal is a deliberate action aimed at that row.
+
+### N3 (low) — `*-reread-pending` is no longer a pending reread after one reload
+
+**Where:** `incidents.js:44`.
+
+**What is wrong.** The three `*-reread-pending` states set `reading` only when
+the URL carries no `incidentIds`. The first render writes `incidentIds` into
+the URL, and `reading` is not part of the carried context, so a reload shows
+the idle `reprint-unknown` composition (reprint and *Check delivery status*
+both live) under a state named "Reread pending". This is the sibling of the
+`cleared-elsewhere` reload in F8, which was fixed. It affects reviewability
+only.
+
+**Proposed fix.** Apply the state's `reading` flag whether or not
+`incidentIds` is present, as line 46 already does for the `-checked` states.
+
+### Observation for the lead (follows the ruling; not a finding)
+
+Under the F1 ruling, *Reprint* is live in every completed state, including
+`sent` ("Awaiting result") and server-confirmed `PRINTED`. That matches the
+POS artifact, which keeps its reprint link after `reprint-printed`. It does
+mean one click prints a second copy of a ticket the server has confirmed. If
+the owner wants a different rule for confirmed paper, it is a product
+question and belongs with the F5 question.
+
+## R4. What I ran and what I did not
+
+**Ran and observed.**
+
+- `npm run verify` at `6f142bd`: typecheck passed; **46 test files, 2,758
+  tests, all passed**; the Vite native-config-loader warning is present.
+- Tree stability: `git status --porcelain` empty before the first read and
+  after the verify run; `HEAD` `6f142bd` throughout. `git diff --stat 964eca8
+  HEAD` shows the task file only.
+- `git diff 0c9f0f0 HEAD` for the inventory, `incidents.css`,
+  `incidents.html`, `office.js` and `manifest.js`, read in full; the current
+  `incidents.js` and `design013.cjs` read in full.
+- `grep -c "prototype/"`: 39 for `menu.html`, 10 for `report-detail.html`.
+- A path-limited diff from `0c9f0f0` over `design012.cjs`, `office.css`,
+  `docs/design/tokens`, `docs/DESIGN.md`, the four product documents,
+  `SITEMAP.md`, `apps`, `packages` and `db` is empty.
+
+**Did not run.** Neither browser check (each run is the owner's to approve,
+and this review ran unattended). No evidence capture was read; the evidence
+directory is outside this session's readable paths. No mutation run. N1 and N2
+are therefore inferred from the code paths cited, and the closures in R2 are
+closures by reading. I did not confirm the 41-state manifest against
+`WF.states` mechanically; the twelve added entries match by eye, in order, and
+the check asserts equality at `design013.cjs:19`.
+
+**On the request to update the Handoff.** The dispatch asked both that I write
+only this report and that I update the Handoff with a last line of `DONE` or
+`BLOCKED`. The Handoff is part of the task file, which the reviewer role and
+the same dispatch forbid me to edit, so I have not touched it. This report's
+last line carries the status instead.
+
+## R5. Cleared in round 2
+
+- No raw colour, pixel size or weight in the round-2 CSS; the marker and the
+  live region use registered tokens only. No new token.
+- The marker row overrides the emergency row's red by specificity
+  (`.incident-table .incident-cleared` over `.emergency-table tbody tr`), so a
+  cleared incident does not stay solid red. Its controls are disabled and
+  hidden, and its message does not say the manager cleared it.
+- The banner held as blank space uses `visibility: hidden`, so it is out of
+  the accessibility tree and Playwright's `isHidden()` in both checks still
+  reads true.
+- In-flight timers for a row cleared on the POS stop at `rows.includes(r)`
+  (`incidents.js:86`, `:97`), so a late result cannot revive the marker row.
+- Still no audit wording, no gate, no report class, and no success green.
+- Round 1's Handoff sections were corrected only where round 2 made them
+  untrue (fixture order, state count, reread rule, clearance behaviour).
+
+DONE

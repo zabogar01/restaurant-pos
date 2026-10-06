@@ -5,8 +5,8 @@ category: ui
 touches: [audit]
 depends_on: [DESIGN-012]
 owns: [docs/design/**]
-status: review
-cycles: 0
+status: complete
+cycles: 1
 ---
 # DESIGN-013 — BO-13 print incidents (slice C)
 
@@ -249,6 +249,22 @@ both emergencies left Menu with the receipt chip only), so AC-3 and AC-4 hold fo
 Re-run `npm run verify` and both browser checks (each run is the owner's to approve). Add a
 **Round 2** section to the Handoff mapping each finding to its change and its evidence; do not
 rewrite round 1's sections except where a fix makes a statement in them untrue.
+
+## Lead ruling on the re-review (2026-10-06): complete, three lows carried to the BO-13 build
+
+The re-review closed all eight round-1 findings and the I-8 wording, and raised three new low
+findings, none on a boundary. The lead confirmed F1 in Chrome (`kitchen-reread-unknown`: the reprint
+is live again with the check-the-printer wording). The task is complete without a third round, as
+DESIGN-012 was. The three are carried, as binding rules, into the BO-13 frontend task when it is
+written (QUEUE item 10):
+
+- **N1:** once a reprint has been sent, the first print's delivery is no longer the last known state
+  of the paper. A failed reread after a sent reprint keeps *Awaiting result* (or `UNKNOWN` with the
+  may-already-have-printed wording); the cell never falls back to `FAILED · Did not print`.
+- **N2:** a *Cleared on the POS* marker retires only on the next list read or navigation, never on
+  the manager's click, so no row moves under the pointer during a click. The held banner space
+  follows the same rule.
+- **N3:** fixture-only (a reload of `*-reread-pending`); not carried.
 
 ## Handoff
 
