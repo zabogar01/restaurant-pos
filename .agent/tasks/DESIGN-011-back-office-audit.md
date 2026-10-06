@@ -5,7 +5,7 @@ category: docs
 touches: []
 depends_on: [DESIGN-009]
 owns: [.agent/reviews/DESIGN-011-back-office-audit.md]
-status: not-started
+status: complete
 cycles: 0
 ---
 # DESIGN-011 — Back-office design audit
