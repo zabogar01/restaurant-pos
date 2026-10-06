@@ -59,14 +59,14 @@ PHASE0-003c, and started DESIGN-012 (slice A). Narrative: [journal/2026-10-06.md
 - **003a and 003b merged** (PRs #50, #51). **PHASE0-003c complete** at `33769d0`, not pushed: one round, Codex review
   clean, lead verify 46/2758, schema test alone 21/21, `pos` holds 0001-0005 (owner-approved migrate). Owner's look before merge.
 - **DESIGN-011 done** (audit; nine slices A-I). **The owner handed the design to the lead** (2026-10-06, no external
-  tool). **DESIGN-012 (slice A) running**: Codex `design012` hit its 5h limit (resets 14:23) mid-task; the owner had
-  OpenCode `gpt-6-astra` (`design012b`) finish it, this once (handover ruling in the task file); worktree
+  tool). **DESIGN-012 (slice A) in review**: Codex `design012` hit its 5h limit mid-task; OpenCode `design012b` finished it
+  at `dfd44f4` (owner's one-off; lead verify 45/2737, 40/11 links, no raw values); designer panes closed; worktree
   `../restaurant-pos-wt/DESIGN-012` on `agent/design-012`; opened by hand (journal 2026-10-05 launch line).
   Lead rulings in its file: M-6 credential drawn as *Password* (Q4 open); day shown by its opening WIB date (Q2 open).
 - Merged: FE-036 (the void, PR #48), FE-035 (PR #45), FE-034 (PR #42). The frontend review is complete.
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`), `design012b` (OpenCode `openai/gpt-6-astra`, `w2:p3N`). No lead dev server. Not the lead's: agentless pane
+- **Live agents:** the lead (`w2:p1`); the DESIGN-012 Claude Opus reviewer (oneshot, pane `DESIGN-012-review`). No lead dev server. Not the lead's: agentless pane
   `w2:pE`; worktree `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
