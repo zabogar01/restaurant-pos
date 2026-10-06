@@ -5,7 +5,7 @@ category: feature
 touches: [identity]
 depends_on: [PHASE0-003c]
 owns: [apps/server/src/**, apps/server/test/**, apps/server/package.json, package-lock.json, db/dev.env]
-status: active
+status: review
 cycles: 0
 ---
 # PHASE0-004 — PIN hashing and lookup
