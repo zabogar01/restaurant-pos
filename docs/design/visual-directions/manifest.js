@@ -307,6 +307,8 @@ window.MOCKUPS = [
     "path": "back-office/menu.html",
     "title": "Menu — items and categories",
     "states": [
+      ["kitchen", "Kitchen emergency"],
+      ["category-invalid", "Modal — category, empty name refused"],
       [
         "default",
         "Items list"
@@ -347,6 +349,7 @@ window.MOCKUPS = [
     "path": "back-office/report-detail.html",
     "title": "Report detail — immutable snapshot",
     "states": [
+      ["kitchen", "Kitchen emergency"],
       [
         "default",
         "Stored report"
@@ -582,7 +585,157 @@ window.MOCKUPS = [
   ],
   "width": 1280,
   "height": 800
-}
+},
+  {
+    "path": "back-office/shell.html",
+    "title": "Office shell and M-6",
+    "states": [
+      [
+        "none",
+        "No alerts"
+      ],
+      [
+        "kitchen",
+        "Kitchen emergency"
+      ],
+      [
+        "receipt",
+        "Receipt warning"
+      ],
+      [
+        "both",
+        "Both alerts"
+      ],
+      [
+        "reauth",
+        "Re-authenticate"
+      ],
+      [
+        "reauth-verifying",
+        "Verification pending"
+      ],
+      [
+        "reauth-error",
+        "Wrong credential"
+      ],
+      [
+        "reauth-other",
+        "Different manager refused"
+      ],
+      [
+        "reauth-throttled",
+        "LOGIN cooldown"
+      ],
+      [
+        "reauth-logout",
+        "Discard before logout"
+      ],
+      [
+        "reauth-kitchen",
+        "Kitchen failure during re-authentication"
+      ],
+      [
+        "resumed",
+        "Draft resumed"
+      ]
+    ],
+    "width": 1440,
+    "height": 900,
+    "directions": [
+      "frost"
+    ]
+  },
+  {
+    "path": "back-office/patterns.html",
+    "title": "Shared desktop patterns",
+    "states": [
+      [
+        "fields",
+        "Fields — resting"
+      ],
+      [
+        "fields-focused",
+        "Fields — focus"
+      ],
+      [
+        "fields-invalid",
+        "Fields — invalid"
+      ],
+      [
+        "fields-readonly",
+        "Fields — read-only"
+      ],
+      [
+        "fields-disabled",
+        "Fields — disabled"
+      ],
+      [
+        "dialog",
+        "Dialog — contained scrolling"
+      ],
+      [
+        "destructive",
+        "Named destructive confirmation"
+      ],
+      [
+        "loading",
+        "Read pending"
+      ],
+      [
+        "empty",
+        "Empty collection"
+      ],
+      [
+        "load-error",
+        "Read failed"
+      ],
+      [
+        "pending",
+        "Command pending"
+      ],
+      [
+        "saved",
+        "Command saved"
+      ],
+      [
+        "refused",
+        "Command refused"
+      ],
+      [
+        "unknown",
+        "Outcome unknown — reread"
+      ],
+      [
+        "reconciled",
+        "Reread confirms saved"
+      ],
+      [
+        "unsaved",
+        "Leave unsaved work"
+      ],
+      [
+        "table",
+        "Table — first page"
+      ],
+      [
+        "table-page-2",
+        "Table — second page"
+      ],
+      [
+        "row-detail",
+        "Named row detail"
+      ],
+      [
+        "removed",
+        "Removal completed"
+      ]
+    ],
+    "width": 1440,
+    "height": 900,
+    "directions": [
+      "frost"
+    ]
+  }
 ];
 
 // The legacy gallery hard-codes six labels and assumes both directions exist.

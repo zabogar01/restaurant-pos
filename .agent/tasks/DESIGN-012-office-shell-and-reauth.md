@@ -244,4 +244,262 @@ navigation, *Log out* or alert link.
 
 ## Handoff
 
-*(Written by the designer.)* It ends with `DONE` or `BLOCKED: <one question>`.
+### Delivery and inheritance
+
+Completed by design012b on 2026-10-06, continuing design012's uncommitted work on
+`agent/design-012`. This is a Frost design-fixture delivery awaiting design review.
+
+I inherited the shared frame, both new artifacts and their state models, the
+existing-page adoption, the form-grid token, the DESIGN supplement, gallery changes,
+and the browser check. I retained their composition and interaction approach,
+including the predecessor's text-selection restoration and sticky-header assertion.
+My finishing changes were:
+
+- Make the browser check require `PLAYWRIGHT_MODULE` from the environment, permit
+  `CHROME_PATH`, create its external output directory, and remove the runtime-cache
+  path from committed code. Move inherited evidence to `/tmp/design012-evidence/`.
+- Give incoming `alerts` context precedence over a page's default state so a return
+  to the shell does not silently lose a kitchen or receipt incident.
+- Apply the existing tabular-number token to the standalone shared stylesheet;
+  these new artifacts do not inherit `visual.css`'s body rule.
+- Prevent shared-pattern navigation during pending or unknown command outcomes,
+  consistent with the disabled Leave action, while the fixture reconciles the result.
+- Keep gallery selection valid when a requested state is excluded from Paper's
+  options. The historical Paper artifacts were not edited.
+- Extend the inherited browser check with per-state captures, field focus and
+  read-only checks, different-manager refusal, queued incident navigation,
+  failed-read recovery, destructive completion, unresolved-save navigation,
+  cross-page alert persistence and a rendered prototype-link ledger.
+- Write this Handoff and complete the verification recorded below.
+
+### Files and entry points
+
+All artifact paths in the requirement map below are relative to
+`docs/design/visual-directions/frost/back-office/`.
+
+| File | Responsibility |
+|---|---|
+| `office.css` | Shared frame, alert classes, native fields, actions, dialogs, tables and result treatment; imports `../../../tokens/frost.css`. |
+| `office.js` | Shared navigation, day and manager context, alert identity and URL continuity, dialog open/close and keyboard containment. |
+| `shell.html`, `shell.js` | Neutral changed-form fixture and all twelve shell/M-6 states. Credential-dependent copy lives in `shell.js`. |
+| `patterns.html`, `patterns.js` | Twenty walkable desktop-pattern states with synthetic reads, commands and table paging. |
+| `menu.html`, `report-detail.html` | Existing page content inside the shared frame, including each page's new `kitchen` state. |
+| `../../manifest.js`, `../../review.js`, `../../index.html` | Gallery registration, direction-aware selection and updated scope copy. |
+| `../../mockup.js` | Correct gallery return destination and report currency-context placement. |
+| `docs/design/tokens/frost.tokens.json`, `frost.css` | One designed form-grid token, in registry and CSS. |
+| `docs/DESIGN.md` | Shared-pattern specification and designed-token provenance supplement. |
+| `docs/design/checks/design012.cjs` | Re-runnable browser measurements and interaction assertions. |
+
+The gallery entry is
+`docs/design/visual-directions/index.html?direction=frost&screen=back-office/shell.html&state=none`.
+The artifacts are local fixtures; no service, authentication or print command is sent.
+
+### Requirement-to-state map
+
+Every state in this table is directly reachable with `?state=` and registered in
+`manifest.js`. The check compared each artifact's complete declared state list to
+its manifest registration: shell 12, patterns 20, menu 10, report detail 4, **46 total**.
+
+| Requirement | Artifact and state or walk |
+|---|---|
+| A1: shared frame, ordered navigation, title/day/manager/logout | `shell.html?state=none`; the same frame is consumed by patterns, menu and report. Menu and Reports show their selected navigation state. |
+| A2: no alerts, kitchen, receipt, both | Shell `none`, `kitchen`, `receipt`, `both`. Kitchen has no dismissal action; both incident actions open BO-13. |
+| A3: scroll ownership and persistent emergency | Shell `both`, scroll its long sample section; `.bocontent` alone scrolls beneath the frame and alert. |
+| B: genuinely changed form | Every shell state: original name “Evening service” becomes “Evening service — revised”; First choice becomes Second choice; Standard becomes Alternate; `12` becomes `twelve` with “Enter a whole number.” |
+| B: resting re-authentication | Shell `reauth`: read-only M. Iqbal, Password, Continue, Log out, preserved draft, no close control; Escape is prevented. |
+| B: verification pending | Shell `reauth-verifying`; Continue reads “Verifying…” and verification controls are disabled. Submit from `reauth` also traverses this state. |
+| B: incorrect credential | Shell `reauth-error`; secret is cleared and focused, with “Incorrect password. Try again.” |
+| B: different manager | Shell `reauth-other`; cleared focused secret and refusal, never draft adoption. |
+| B: LOGIN throttle | Shell `reauth-throttled`; five failed local responses also enter this state, starting at 5:00. Continue is disabled, Log out works, keeping the draft retains the cooldown. |
+| B: logout decision | Shell `reauth-logout`; names the loss of unsaved changes, focuses Keep this draft, offers explicit discard and logout to BO-01. |
+| B: emergency over re-authentication | Shell `reauth-kitchen`; a solid-red alert inside the native dialog stays above the scrim. Its queued route is walked through same-manager success and a discard/stay decision. |
+| B: exact resumption | Shell `resumed`, reached by Continue with the Same manager fixture response; Alt+I simulates idle without first moving field focus. |
+| C1: text, secret, select and radio field states | Patterns `fields`, `fields-focused`, `fields-invalid`, `fields-readonly`, `fields-disabled`. Each control can receive focus where enabled; Tab/click walks focus beyond the initially focused text field. Errors are associated through `aria-describedby`; radio has a fieldset and legend. |
+| C2: scrolling dialog and focus | Patterns `dialog`, also opened through Open long dialog; head/footer stay visible, body scrolls, Tab/Shift+Tab remain inside, Close/Escape return to the opener. |
+| C3: named destructive confirmation | Patterns `destructive` → `removed`; Keep Evening sample cancels, Remove Evening sample completes the local demonstration. Final action uses desktop destructive styling. |
+| C4: read states | Patterns `loading`, `empty`, `load-error`; counts/rows are withheld until known, empty has zero samples and Create sample, Try again traverses loading to `table`. |
+| C5: command result | Patterns `pending`, `saved`, `refused`, `unknown`, `reconciled`. Save sample uses the review response selector; refusal keeps edits; unknown disables submission and starts a simulated reread. Direct `unknown` exposes Check saved sample, a read-only reconciliation action. |
+| C6: unsaved navigation | Patterns `unsaved`; Leave this sample or navigation after editing offers Stay and keep editing / Discard changes and leave. Shell navigation similarly protects its changed draft. |
+| C7: table | Patterns `table`, `table-page-2`, `row-detail`; 24 samples in pages of 12, sticky headers, wrapping long name, `155.925`, HH:MM WIB times, and subject-specific accessible names on View sample actions. |
+| D1: existing pages adopt shell | Menu and report `default` / `kitchen`; retained content and authored 40/11 prototype links. Report date/currency and Print report move to a content subbar to leave room for global context. |
+| D2: gallery and missing state | All 46 states registered; BO-03 `category-invalid` added; shell/patterns explicitly Frost-only. |
+| D3: All screens | Generated back-office link now reaches `../../index.html?direction=frost`, the existing gallery. Both new artifacts also expose an explicit gallery link. |
+
+### Design decisions and downstream use
+
+**Desktop urgency (Q9).** Keep the existing 36px office action for the kitchen
+banner and the 28px action for the receipt chip. The kitchen receives a full-width
+80px-minimum red field with white 18px heading; the receipt remains a pale amber
+top-bar chip. Coverage, placement, wording and persistence carry urgency together.
+These are entry actions to BO-13; its recovery table remains slice C's work.
+
+**Scroll ownership (Q10).** The viewport holds the frame; `.bocontent` owns page
+scrolling. The rail may independently scroll on a shorter viewport. The alert sits
+between the top bar and the content, outside the page scroll owner. The table uses
+`position: sticky; top: 0` inside that owner, with layer 1 above its rows. Native
+dialogs use the browser top layer and a body-only scroll region; no fixed 900px
+height or extra layer token is introduced.
+
+**Emergency during M-6.** The same incident identity is repeated in a solid-red
+section inside the modal, before its scrollable body. It therefore stays visible
+and undimmed even when the original banner is behind the scrim. Open print incidents
+after sign-in queues navigation; it does not make the background interactive or
+bypass same-manager re-authentication. On success, leaving the unsaved draft still
+requires an explicit discard decision. The logout decision also retains the alert.
+No acknowledgement or clearing is implied by any of these actions.
+
+**Uncertainty (Q11).** Pending keeps values and disables editing/submission. A
+definite refusal returns the editable draft without claiming success. An unknown
+outcome does not offer a second save: it rereads the saved fixture, then reports
+the confirmed outcome. The demonstration's reread resolves to saved. A production
+slice must supply its authoritative read/result contract; this is not an invented
+server reconciliation API or a persistence policy.
+
+### Browser evidence and verification
+
+The owner approved one execution of the following command in this pane before it
+ran. The script launched installed headless Chrome at **1440×900** and passed all
+assertions, with **zero page JavaScript errors** and **zero horizontal document
+overflow in all 46 states**:
+
+```sh
+PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design012.cjs
+```
+
+That module location is this machine's invocation, not a committed script default.
+From a fresh checkout, provide an installed Playwright module through
+`PLAYWRIGHT_MODULE`; provide `CHROME_PATH` when not using installed macOS Chrome.
+The script creates `/tmp/design012-evidence/` itself. Every later browser execution
+still requires a fresh owner approval. Captures and `measurements.json` are external
+run output and are not part of the commit.
+
+| Browser measurement | Observed value |
+|---|---|
+| Frame / navigation width | 1440px / 220px |
+| Brand / top-bar height | 64px / 64px |
+| Content padding / office body | 24px / 14px |
+| Kitchen action / receipt action | 36px / 28px high |
+| Native input | 40px high; sample input 562.672px wide |
+| Dialog | 640px wide; long dialog top 24px, bottom 876px |
+| Long dialog body overflow | 988px, scrolled independently while head and Close remain visible |
+| Persistent kitchen banner | x=220, y=64, width=1220, height=80, identical before and after content scrollTop=857 |
+| Sticky table header | y=88 after scrolling; 40.938px high, at the padded content scrollport's upper edge |
+| LOGIN cooldown | “Five attempts failed. Try again in 5:00. Log out is still available.” |
+
+**Preservation method.** The check edits the name to “Owner-edited fixture”, chooses
+First choice and Standard, leaves invalid `twelve`, focuses `draft-limit`, selects
+characters 1–4 and presses Alt+I. After same-manager Continue, it compares complete
+FormData entries, the validation text, `aria-invalid`, active element and selection
+endpoints. Before and after are exactly equal: name “Owner-edited fixture”, choice
+“First choice”, mode `standard`, limit `twelve`, “Enter a whole number.”,
+`aria-invalid="true"`, focus `draft-limit`, selection `[1,4]`.
+
+**Keyboard method.** The check sends eight Tabs and eight Shift+Tabs in M-6, and
+four of each in the ordinary dialog, asserting every active element remains in
+the open dialog. Escape leaves M-6 open. Closing the ordinary dialog returns focus
+to `open-dialog`. The wrong-secret and different-manager states clear/focus the
+secret; five submitted failures disable Continue, and keep-draft from logout does
+not reset the cooldown. Read-only select/radio values survive attempted changes.
+
+The browser also walked refused-save preservation, unknown-result reconciliation,
+the pending-navigation guard, unsaved Stay, failed-read retry, destructive completion,
+page 2 and Sample 13 detail, queued incident navigation, and both alerts across a
+navigation to Menu. I visually inspected the combined alerts, kitchen-over-M-6,
+wrong-secret and throttled M-6, regular and invalid fields, long dialog, long-name
+table, and menu/report kitchen captures. No second browser run was needed.
+
+`npm run verify` was run in this worktree and passed: typechecking plus **45 test
+files and 2,737 tests**, including the unchanged token tests. Vite emitted its
+existing future-native-config-loader warning. JavaScript syntax checks passed for
+the three office scripts, gallery/runtime/manifest scripts and browser check.
+`git diff --check` passed. The required `grep -c "prototype/"` check returned **40**
+for menu and **11** for report detail. The initial equivalent `rg` invocation could
+not run because ripgrep is not installed; the task's grep command supplied the counts.
+
+Impeccable context, polish/craft guidance and one mechanical detector pass were used.
+The context tool selected the superseded comparison DESIGN, so the task's
+`docs/DESIGN.md` remained authoritative. Detector padding findings on token-based
+notices, emergency sections and dialog wrappers were checked against their CSS and
+captures: text is inset by the padded sections, not flush with the outer wrapper.
+Inherited 10px menu/report tags and legacy report typography remain findings for
+slices D/H under the task's content boundary. The scrim warning refers to the
+existing registered Frost scrim; em-dash advice includes table placeholders.
+These are documented exceptions, not a claim that the detector returned no findings.
+Screen-reader, physical-device and other-browser testing were not run.
+
+### Prototype-link ledger
+
+The lead's navigation ruling is applied. Both new artifacts receive the following
+links from `office.js`; paths are beneath `../../../prototype/back-office/`:
+
+| Label / occurrence | Destination | Class |
+|---|---|---|
+| Today | `today.html` | Navigation |
+| End of day | `end-of-day.html` | Navigation |
+| Reports | `reports.html` | Navigation |
+| Audit | `audit.html` | Navigation |
+| Tables | `tables.html` | Navigation |
+| Staff | `users.html` | Navigation |
+| Discount presets | `presets.html` | Navigation |
+| Settings | `settings.html` | Navigation |
+| Printing | `incidents.html` | Navigation |
+| Log out | `login.html` | Logout |
+| Open print incidents, in the shared kitchen banner | `incidents.html` | Alert |
+| Receipt warning chip, when present | `incidents.html` | Alert |
+| Shell Discard changes and log out | `login.html` | Logout confirmation |
+| Shell queued incident destination after re-authentication | `incidents.html` | Alert navigation after explicit discard |
+
+Menu navigation points to the existing Frost `menu.html`. Shell confirmation can
+also reuse a clicked navigation destination; patterns Discard does the same. These
+are the listed navigation links passing through the unsaved-work decision, not
+new content destinations. Active `alerts` parameters carry fixture context. Existing
+prototype destinations do not yet render the new frame, as anticipated by the
+lead ruling; subsequent screen slices must adopt it. New content links stay in
+Frost. The pre-existing menu/report authored ledger remains 40+11; runtime-generated
+alert links are separate from those authored counts.
+
+### Credential dependency, tokens and remaining questions
+
+**Q4-dependent strings**, all in `shell.js`'s `credentialCopy` object:
+
+1. `Password`
+2. `Incorrect password. Try again.`
+3. `Enter your password.`
+4. `This password belongs to another manager. Log out to switch.`
+
+If the credential changes, review those four strings plus the secret field's
+`type="password"` and `autocomplete="current-password"` semantics. No staff PIN or
+SSO is drawn. If the chosen credential verifies only against the named manager's
+account, a different manager's otherwise valid password is merely incorrect for
+that account, making `reauth-other` unreachable. It remains drawn as requested;
+the eventual identity contract determines which refusal can actually occur.
+
+**Registered token:** `--frost-office-form-columns` =
+`minmax(0, 1fr) minmax(0, 2fr)`, with `source: null` and a DESIGN-012 designed record
+attributing the original author, date, rationale and fixture states, awaiting review.
+The registry contains 175 entries: 170 sourced and five designed. No new colors,
+sizes or weights were introduced into the shared artifacts; dimensions and type
+consume existing tokens, with intrinsic/fractional layout composed where appropriate.
+
+**Proposals deliberately not registered:** login width and narrow credential/numeric
+widths (slice B or the owning form); menu column recipes (slice D); report internal
+figure recipes (slice H); generic fixed table widths (intrinsic wrapping suffices);
+sticky offset/layer tokens (zero offset, one local sticky layer, native dialog top
+layer); modal maximum-height token (viewport minus twice existing 24px space);
+custom 16px radio marks (native controls); multiline minimum (no assigned multiline
+field); skeleton dimensions (contextual loading text is sufficient); 60px large-empty
+padding (existing 48px token); emergency/receipt action-size tokens (existing 36/28px);
+new readonly/destructive/status colors (existing semantic palette); incidental
+spacing tokens (existing scale). No fixed 900px height, 28px type or success green.
+
+**Unresolved dependencies, not new rulings:** Q4's MVP credential remains the owner's
+choice; proposed interim answer is exactly the lead's single Password field, with
+the copy centralized above. Q2's full business-day labeling remains open; proposed
+interim answer is the opening WIB date alone, as drawn. The same-manager decision
+and the navigation-link question are already ruled. Q9/Q10/Q11's presentation
+answers are documented above for review. I found no additional blocking question
+requiring a new product or boundary decision. The previously audited BO-03/BO-11
+content gaps remain assigned to slices D/H; the stale inventory/incident audit
+language remains the lead's reconciliation from DESIGN-011, not a designer edit.
+
+DONE

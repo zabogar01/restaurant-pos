@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-direction="frost"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Back-office shell and preserved draft</title>
+<link rel="stylesheet" href="office.css">
+<script>window.WF={id:'BO-shell',client:'bo',nav:'',name:'Office shell and M-6',reqs:'FR-A2b, A2c, A5, E3, E6, I1',states:[['none','No alerts'],['kitchen','Kitchen emergency'],['receipt','Receipt warning'],['both','Both alerts'],['reauth','Re-authenticate'],['reauth-verifying','Verification pending'],['reauth-error','Wrong credential'],['reauth-other','Different manager refused'],['reauth-throttled','LOGIN cooldown'],['reauth-logout','Discard before logout'],['reauth-kitchen','Kitchen failure during re-authentication'],['resumed','Draft resumed']]};</script>
+<script defer src="../../mockup.js"></script><script defer src="office.js"></script><script defer src="shell.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<div class="bo">
+<nav class="bonav" aria-label="Back office"></nav>
+<div class="bomain">
+<header class="botop"><strong class="office-title">Draft fixture</strong></header>
+<main class="bocontent" id="office-content">
+  <div class="office-heading"><h1>Preserved work</h1><p>Unsaved changes</p></div>
+  <p class="office-muted">Neutral design fixture. These sample fields do not configure a restaurant screen.</p>
+  <div class="office-notice" id="resume-status" role="status" hidden><strong>Your session has resumed.</strong><p>Your changes are still here. Nothing has been submitted.</p></div>
+  <form class="office-form" id="draft" novalidate>
+    <div class="office-fieldrow"><label for="draft-name">Sample name</label><div><input class="office-field" id="draft-name" name="name" value="Evening service"></div></div>
+    <div class="office-fieldrow"><label for="draft-choice">Sample selection</label><div><select class="office-field" id="draft-choice" name="choice"><option selected>First choice</option><option>Second choice</option></select></div></div>
+    <div class="office-fieldrow"><span class="office-label">Sample mode</span><fieldset class="office-radio"><legend>Choose a sample mode</legend><label><input type="radio" name="mode" value="standard" checked>Standard</label><label><input type="radio" name="mode" value="alternate">Alternate</label></fieldset></div>
+    <div class="office-fieldrow"><label for="draft-limit">Sample whole number</label><div><input class="office-field" id="draft-limit" name="limit" value="12" aria-invalid="true" aria-describedby="draft-error"><span id="draft-error" class="office-error">Enter a whole number.</span></div></div>
+  </form>
+  <details class="office-fixture" open><summary>Review fixtures · outside the product</summary>
+    <p>Original values: “Evening service”, First choice, Standard, 12. The edited draft above is held in the same form through idle expiry.</p>
+    <div class="office-actions"><button class="office-button" id="idle">Simulate 30-minute idle timeout</button><a class="office-button" href="patterns.html">Open shared patterns</a><a href="../../index.html?direction=frost&amp;screen=back-office/shell.html">All screens</a></div>
+    <p>Focus a field and press Alt+I to simulate idle expiry without changing focus first. Use the local response selector in the dialog to inspect each verification result.</p>
+  </details>
+  <section class="office-section"><h2>Scroll fixture</h2><p class="office-muted">The following neutral samples make the page long enough to inspect the persistent frame.</p><div id="scroll-samples"></div></section>
+</main>
+</div>
+</div>
+<dialog class="office-dialog" id="reauth-dialog" aria-labelledby="reauth-title" aria-describedby="reauth-description">
+<header class="office-dialog__head"><h2 id="reauth-title">Your session timed out</h2></header>
+<section class="office-emergency" id="reauth-alert" role="alert" hidden><div><strong>Kitchen ticket did not print</strong><p>1 failed ticket · Table 1, round 2 · Sent 19:58</p><p>Continue your session to open print incidents.</p></div><button class="office-button" id="queue-incidents">Open print incidents after sign-in</button></section>
+<form id="verify-form" class="office-dialog__body" novalidate>
+  <p id="reauth-description">Your unsaved changes are kept. Continue as M. Iqbal to resume them. To sign in as someone else, log out.</p>
+  <label for="manager">Manager</label><input id="manager" class="office-field" value="M. Iqbal" readonly>
+  <label for="credential" id="credential-label"></label><input id="credential" class="office-field" type="password" autocomplete="current-password" aria-describedby="credential-message">
+  <span id="credential-message" class="office-error" role="status"></span>
+  <p id="cooldown" role="status" hidden></p>
+  <details class="office-fixture"><summary>Review fixture · simulated response</summary><label for="verify-result">Next local verification result</label><select class="office-field" id="verify-result"><option value="resumed">Same manager</option><option value="reauth-error">Wrong secret</option><option value="reauth-other">Different manager</option></select><p>No credential is checked or stored. Enter any sample text, then Continue.</p></details>
+</form>
+<footer class="office-dialog__foot"><button class="office-button" id="reauth-logout">Log out</button><button class="office-button primary" type="submit" form="verify-form" id="continue">Continue</button></footer>
+</dialog>
+<dialog class="office-dialog" id="logout-dialog" aria-labelledby="logout-title" aria-describedby="logout-description">
+<header class="office-dialog__head"><h2 id="logout-title">Log out and discard your changes?</h2></header>
+<div class="office-dialog__body"><p id="logout-description">The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session.</p></div>
+<footer class="office-dialog__foot"><button class="office-button" id="keep-session">Keep this draft</button><a class="office-button danger final" id="confirm-logout" href="../../../prototype/back-office/login.html">Discard changes and log out</a></footer>
+</dialog>
+</body></html>

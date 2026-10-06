@@ -4,9 +4,11 @@
 <title>BO-11 Report detail</title>
 <link rel="stylesheet" href="../../structure.css">
 <script>window.WF={id:'BO-11',client:'bo',nav:'reports',name:'Report detail — immutable snapshot',reqs:'FR-I4, I5',states:[
-['default','Stored report'],['emptyday','Day with no trading'],['reprint','Reprint result']]};</script>
+['default','Stored report'],['kitchen','Kitchen emergency'],['emptyday','Day with no trading'],['reprint','Reprint result']]};</script>
 <script defer src="../../mockup.js"></script>
 <link rel="stylesheet" href="../../visual.css">
+<link rel="stylesheet" href="office.css">
+<script defer src="office.js"></script>
 </head><body>
 <header class="wfbar"></header>
 <main class="wfmain">
@@ -27,16 +29,18 @@
     <a href="../../../prototype/back-office/settings.html" data-nav="settings">Settings</a>
     <div class="bonav__sec">Hardware</div>
     <a href="../../../prototype/back-office/incidents.html" data-nav="incidents">Printing</a>
-    <div style="padding:16px;border-top:1px solid var(--line2);margin-top:16px">
-      <div class="muted" style="font-size:12px">M. Iqbal &middot; Manager</div>
-      <a href="../../../prototype/back-office/login.html" style="font-size:12px">Log out</a>
+    <div class="office-legacy-actor">
+      <div class="muted">M. Iqbal &middot; Manager</div>
+      <a href="../../../prototype/back-office/login.html">Log out</a>
     </div>
   </nav>
   <div class="bomain">
-    <div class="botop"><a href="../../../prototype/back-office/reports.html">&larr; Reports</a><b>9 Sep 2026</b>
-      <span class="tag">STORED &mdash; DOES NOT CHANGE</span>
-      <span style="margin-left:auto"><a class="bobtn bobtn--sm" href="report-detail.html?state=reprint">Print report</a></span></div>
+    <div class="botop"><b class="office-title">Report detail</b></div>
     <div class="bocontent">
+    <div class="office-subbar"><a href="../../../prototype/back-office/reports.html">&larr; Reports</a><b>9 Sep 2026</b>
+      <span class="tag">STORED &mdash; DOES NOT CHANGE</span>
+      <span class="office-push"><a class="bobtn bobtn--sm" href="report-detail.html?state=reprint">Print report</a></span></div>
+
 
       <div class="banner banner--soft" data-when="reprint">
         <div class="banner__t">Report sent to the printer</div>
@@ -50,13 +54,13 @@
         today's menu, prices or presets does not change any of it.</div>
       </div>
 
-      <div class="empty" data-when="emptyday" style="padding:60px">
-        <div style="font-weight:700;margin-bottom:6px">Nothing was sold on this day</div>
+      <div class="empty office-legacy-empty" data-when="emptyday" >
+        <div class="office-empty-title">Nothing was sold on this day</div>
         <div>The day was opened and closed with no orders. The report exists and is
         stored, with every figure at zero.</div>
       </div>
 
-      <div class="grid2" style="align-items:start" data-unless="emptyday">
+      <div class="grid2 office-align-start" data-unless="emptyday">
         <div>
           <div class="card">
             <div class="card__t">Sales</div>
@@ -68,14 +72,14 @@
               <div>Service charge 5%</div><div class="n">118.200</div><div class="n">&minus;7.425</div><div class="n">110.775</div>
               <div>Discounts given</div><div class="n">264.000</div><div class="n">&minus;16.500</div><div class="n">247.500</div>
             </div>
-            <div class="muted" style="margin-top:10px">Gross sales include orders that were
+            <div class="muted office-small-space">Gross sales include orders that were
             later refunded. A refunded order's discount stays in gross and appears again
             as a reversal, so the net figures reconcile without rewriting history.</div>
           </div>
 
           <div class="card">
             <div class="card__t">Orders</div>
-            <div class="figs" style="grid-template-columns:1fr auto">
+            <div class="figs office-count-grid">
               <div class="h">&nbsp;</div><div class="h n">Count</div>
               <div>Orders that reached closed</div><div class="n">9</div>
               <div>Of which later refunded</div><div class="n">1</div>
@@ -93,13 +97,13 @@
               <div>Meal voucher</div><div class="n">100.000</div><div class="n">0</div><div class="n">100.000</div>
               <div class="sec">Total</div><div class="sec n">2.483.500</div><div class="sec n">&minus;155.925</div><div class="sec n">2.327.575</div>
             </div>
-            <div class="muted" style="margin-top:10px">"Taken" is what each method actually
+            <div class="muted office-small-space">"Taken" is what each method actually
             contributed &mdash; cash tendered less change given. Change is not revenue.</div>
           </div>
 
           <div class="card">
             <div class="card__t">Voids</div>
-            <div class="figs" style="grid-template-columns:1fr auto auto">
+            <div class="figs office-void-grid">
               <div class="h">&nbsp;</div><div class="h n">Count</div><div class="h n">Value</div>
               <div class="sec">Whole orders voided</div><div class="sec n">2</div><div class="sec n">342.000</div>
               <div class="muted">Valued at the order total immediately before the void</div><div></div><div></div>
@@ -108,7 +112,7 @@
               <div>Value of those lines, as recorded</div><div class="n">&nbsp;</div><div class="n">225.000</div>
               <div>Actual reduction in order totals</div><div class="n">&nbsp;</div><div class="n">212.900</div>
             </div>
-            <div class="muted" style="margin-top:10px">The two line-void figures differ whenever
+            <div class="muted office-small-space">The two line-void figures differ whenever
             a percentage discount or a service charge applies. Both are shown because
             neither one answers the question on its own.</div>
           </div>

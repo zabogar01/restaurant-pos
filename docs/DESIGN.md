@@ -1318,3 +1318,96 @@ wherever they appear.
    the same way — rendered in Chrome at actual size and measured — and not
    on a touch device; whether a 2px ring is enough under a real finger on
    a real floor is a device-test question.
+
+## Shared back-office patterns — DESIGN-012 (designed, awaiting review)
+
+The desktop operating surface now has a shared stylesheet,
+`design/visual-directions/frost/back-office/office.css`, and a fixture runtime,
+`office.js`. The runtime owns navigation destinations, current business-day
+context, manager/logout placement, incident identity and dialog focus handling.
+The shell and patterns artifacts consume these directly. The existing menu and
+report also import the stylesheet and runtime; their content remains for slices
+D and H. This supplement replaces the earlier statement that these shared
+patterns are absent. It does not approve them or complete those screen slices.
+
+At the 1440-wide desktop target, the frame fills the viewport without fixing a
+900px product height. The 220px navigation rail and 64px top bar remain in place;
+only `.bocontent` scrolls, with 24px padding and 14px body. The navigation may
+scroll independently when the viewport is shorter than its entries. A kitchen
+banner sits between the top bar and content, never inside the scrolling pane.
+The current day is labelled by its opening WIB date: “Business day · Tue 6 Oct”.
+It carries no opening or closing time. A stored report’s historical content is
+separate from this current-day indicator.
+
+Desktop kitchen emergencies reuse the solid red field, white text, 18px title
+and 80px minimum banner. Their action is 36px high; the receipt chip’s action is
+28px high, amber on pale amber. These are the existing office action tokens,
+not the POS recovery dimensions. The banner identifies one failed ticket for
+Table 1, round 2, sent at 19:58; the chip identifies one failed receipt for
+Table 1 at 20:14. Neither clears an incident. Both open BO-13. The `alerts`
+query parameter carries the fixture identity between Frost pages; the remaining
+prototype destinations have not adopted the new frame and await their slices.
+
+M-6 is a native modal dialog, 640px wide, with the manager’s name read-only and
+one secret field provisionally labelled Password. It cannot be dismissed with
+Escape or a click outside. Tab and Shift+Tab remain inside; the underlying form
+is inert through the native modal top layer. Values, selected options, radio
+choice, validation, focused field and text selection remain in the same DOM
+form. Success restores them without submitting. A different manager cannot
+resume the draft. Explicit logout requires discard confirmation, with keeping
+the draft as the initial focus. Five failed fixture responses show the LOGIN
+five-minute cooldown; Continue is disabled and Log out remains available.
+These are local demonstrations, not implemented authentication or persisted
+server throttling. Absolute expiry belongs to BO-01 and is not drawn here.
+
+When a kitchen failure arrives during M-6, a solid red emergency section lives
+inside the modal, above its scrolling body and therefore above the scrim. It
+repeats the same incident identity. Its action queues opening print incidents
+after the same manager resumes; it does not bypass authentication. Navigation
+away from the unsaved fixture then asks whether to keep or discard the draft.
+The logout confirmation keeps the emergency visible as well. This makes the
+emergency unmistakable without making the background reachable.
+
+Native text and secret inputs and selects use the 40px small field. Labels sit
+in a one-third column, values in two-thirds; each invalid field names its error
+with `aria-describedby` and an existing amber border/message. Radio groups use
+native inputs and a labelled fieldset. Text read-only states use `readonly`;
+select/radio read-only fixtures retain focus and their value while suppressing
+mouse and keyboard changes, because HTML has no native readonly attribute for
+those controls. Their explanation is visible. Disabled controls use native
+`disabled`, neutral disabled colors and a dashed border. A production component
+must preserve those semantics rather than silently submitting a changed choice.
+
+Dialogs use the existing 640px width, scrim, border, radius and office type.
+Their maximum height is `calc(100dvh - 2 * var(--frost-space-6))`; their bodies
+scroll, while headings and actions stay visible. Ordinary dialogs close on
+Escape and return focus to the opener. Destructive confirmations name their
+subject, start focus on the keep action and use a 36px final destructive action.
+They contain no POS approval control.
+
+The shared reading states retain the collection context while withholding
+unread counts and rows; empty means zero samples and offers creation, and a
+failed read offers Try again. Command results distinguish pending, saved,
+definitely refused with edits kept, and outcome unknown. Unknown disables
+resubmission and rereads the saved fixture before confirming its outcome;
+Check saved sample is a read, never a resend. Results use the grouping-blue and
+neutral palette. While a command is pending or its outcome is unknown, the
+fixture keeps navigation on the current page until the result is reconciled.
+Navigation with unsaved edits otherwise offers stay or explicit discard.
+
+The sample table uses native table headers, sticky at zero inside the content
+scroll owner, and the existing cell/header padding. A wrapping subject column
+absorbs long names; time, whole-rupiah figures and named row actions remain
+legible. Paging changes both rows and the displayed range. No menu-specific
+column recipe or report figure recipe is established by this table.
+
+### One new designed token
+
+`--frost-office-form-columns: minmax(0, 1fr) minmax(0, 2fr)` is registered with
+`source: null` and a DESIGN-012 `designed` record, awaiting review. It is used
+by `.office-fieldrow` in shell and patterns; dialogs stack labels above fields.
+The registry now has 175 entries: 170 sourced and five designed. No color,
+weight, fixed viewport height, custom radio mark, skeleton recipe, login width,
+large-empty padding or incident-action size token is added. All other values
+compose the existing registry. The earlier provenance count of four designed
+entries describes the registry before this supplement.
