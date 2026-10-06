@@ -183,3 +183,36 @@ made where a case needs an approver.
 - `REFUSED` and its `refusal_code` (later phase), an action vocabulary, an audit reader or viewer.
 - Reusing a deactivated user's PIN (owner, 2026-10-06): a migration in another Phase 0 task.
 - The vitest ESM warning.
+
+## Handoff
+
+**What I did.** I added `apps/server/src/domain/audit.ts` with exactly three exports: `writeAudit(client, entry)`, `writeAuditOwnTransaction(entry)` and `writeSecurityEvent(input)`, plus the types `AuditInput`, `AuditOutcome` and `SecurityEventInput`. I added `apps/server/test/audit.test.ts` with 35 tests. Both are committed on `agent/phase0-005` together with this Handoff. No migration, `pool.ts`, `pin.ts`, config or document was changed, and no dependency was added.
+
+**What I decided.**
+- Validation is hand-written runtime checks that throw `invalid audit entry: <field>` or `invalid security event: <field>` and never include the value. The checks run in this order: entry, `actorId`, `action`, `outcome`, `approverId`, `subject`, `reason`, amounts. `approverId` is checked after `outcome`, so an approver on a non-SUCCESS entry reports `approverId`.
+- `reason: null` is refused; only `undefined` counts as absent. `approverId` accepts `undefined`, `null` or a non-empty string. The task said "absent" for `reason` and I read it strictly.
+- `writeAuditOwnTransaction` validates once before opening a transaction, then `writeAudit` validates again inside it, so a bad entry never even takes a connection.
+- Case 11 choice: unknown keys such as `detail` and `actorId` on a security event are **ignored**, never read or written. The test also asserts the table's column list, so nothing can store them.
+- `writeSecurityEvent` uses the pool's `query`, not a transaction, since it is a single statement. Database errors are rethrown unchanged (ruling 4), proven by case 8 (`code === '23503'`).
+- Amounts go to `pg` as `bigint.toString()`. The test client for "before SQL" is a recording stub passed as the client; the real-client path is covered by the other cases.
+
+**Existing tests changed:** none.
+
+**Case-to-test map** (all in `apps/server/test/audit.test.ts`): 1 `case 1: writes one row with every field and a database timestamp`; 2 `case 2: a rolled-back transaction leaves no row and the original error surfaces`; 3 `case 3: entries in one transaction commit together`; 4 `case 4: amounts beyond 2^53, zero and negative are stored exactly`; 5 `case 5: failed and cancelled approvals commit on their own`; 6 `case 6: a SUCCESS entry may name the actor as approver`; 7 the 14 `case 7: <name>` rows plus 4 `case 7: the entry itself is …` rows (each field case also runs through `writeAuditOwnTransaction` and checks no row); 8 `case 8: an unknown actor is a foreign key error, rethrown, with no row`; 9 `case 9: no message contains the offending value`; 10 two `case 10:` tests; 11 five `case 11: refuses …` rows and `case 11: detail and actorId keys are ignored and never written`; 12 `case 12: exports only the three writers`.
+
+**Red proofs** (each mutated, run, read, reverted; the final file has none of them):
+1. `RETURNING id` added to the insert: 7 failures, all `permission denied for table audit_entry` (code 42501), including cases 1, 2, 3, 4, 5, 6 and 8.
+2. Insert through `query` instead of the caller's client: case 2 failed, `expected [ { id: '1', … } ] to have a length of +0 but got 1`.
+3. `String(Number(e.beforeAmount))`: case 4 failed, `expected '9007199254740992' to be '9007199254740993'`.
+4. Approver-outcome check removed: case 7 `approver with APPROVAL_FAILED` and `approver with APPROVAL_CANCELLED` failed with `expected the call to fail`, meaning the recording client accepted the entry, so the refusal is before SQL.
+5. `typeof` check on `actorId` removed (left `=== ''` and `=== null`): case 7 `actorId number` failed with `expected the call to fail`.
+
+**Grep** `grep -rn "UPDATE\|DELETE\|TRUNCATE\|RETURNING\|console\." apps/server/src/domain/audit.ts` printed nothing.
+
+**Verify** (`npm run verify`, after the final edit): typecheck clean; `Test Files 48 passed (48)`, `Tests 2815 passed (2815)`. That is 2780 + 35 and 47 + 1 files, with the client's counts unchanged. `npx vitest run apps/server/test/audit.test.ts` alone: 35 passed. My first verify failed typecheck on `noUncheckedIndexedAccess` in the test (`rows[0]` possibly undefined); I fixed the test, not the config. No formatter was run.
+
+**Found and not fixed.** Nothing in committed work outside my slice. One note for Task 6: `writeSecurityEvent` opens its own pool call, so a caller that wants the event to survive a rolled-back login transaction gets that for free; a caller that wants it inside a transaction has no way to, because the task fixed the signature without a client.
+
+**Next agent needs.** No browser was involved. Nothing is missing.
+
+DONE
