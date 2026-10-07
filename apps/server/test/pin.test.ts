@@ -172,6 +172,80 @@ describe('createStaffUser', () => {
   });
 });
 
+// FR-A4: a PIN is unique among active users only. Deactivation and
+// reactivation are fixtures here; no domain function does them yet.
+describe('PIN uniqueness among active users', () => {
+  const countWithPin = async (pin: string) => {
+    const [row] = await ownerQuery<{ n: string }>(
+      'SELECT count(*) AS n FROM staff_user WHERE pin_lookup = $1',
+      [pinLookup(pin)]
+    );
+    return row?.n;
+  };
+
+  it('still refuses a PIN held by an active user and writes no second row (case 1)', async () => {
+    await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
+    await expect(createStaffUser({ name: 'Budi', role: 'MANAGER', pin: '123456' })).rejects.toThrow(
+      'PIN already in use'
+    );
+    expect(await countWithPin('123456')).toBe('1');
+  });
+
+  it('gives a PIN held only by a deactivated user to a new user (case 2)', async () => {
+    const old = await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
+    await ownerQuery('UPDATE staff_user SET is_active = false WHERE id = $1', [old.id]);
+    const fresh = await createStaffUser({ name: 'Budi', role: 'MANAGER', pin: '123456' });
+    expect(fresh.id).toEqual(expect.any(String));
+    expect(fresh.id).not.toBe(old.id);
+    expect(await countWithPin('123456')).toBe('2');
+    const [inactive] = await ownerQuery<{ n: string }>(
+      'SELECT count(*) AS n FROM staff_user WHERE pin_lookup = $1 AND NOT is_active',
+      [pinLookup('123456')]
+    );
+    expect(inactive?.n).toBe('1');
+  });
+
+  it('finds the new user, never the deactivated one, by that PIN (case 3)', async () => {
+    const old = await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
+    await ownerQuery('UPDATE staff_user SET is_active = false WHERE id = $1', [old.id]);
+    const fresh = await createStaffUser({ name: 'Budi', role: 'MANAGER', pin: '123456' });
+    await expect(findUserByPin('123456')).resolves.toEqual({
+      id: fresh.id,
+      role: 'MANAGER',
+      credentialVersion: 1,
+    });
+  });
+
+  it('refuses to reactivate a user whose PIN an active user now holds (case 4)', async () => {
+    const old = await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
+    await ownerQuery('UPDATE staff_user SET is_active = false WHERE id = $1', [old.id]);
+    await createStaffUser({ name: 'Budi', role: 'MANAGER', pin: '123456' });
+
+    const failure = (await failureOf(() =>
+      ownerQuery('UPDATE staff_user SET is_active = true WHERE id = $1', [old.id])
+    )) as { code?: string; constraint?: string };
+    expect(failure.code).toBe('23505');
+    expect(failure.constraint).toBe('staff_user_active_pin_lookup_key');
+    const [row] = await ownerQuery<{ is_active: boolean }>(
+      'SELECT is_active FROM staff_user WHERE id = $1',
+      [old.id]
+    );
+    expect(row?.is_active).toBe(false);
+  });
+
+  it('lets deactivated users share a PIN, and a new active user take it too (case 5)', async () => {
+    const a = await createStaffUser({ name: 'Sari', role: 'CASHIER', pin: '123456' });
+    await ownerQuery('UPDATE staff_user SET is_active = false WHERE id = $1', [a.id]);
+    const b = await createStaffUser({ name: 'Budi', role: 'CASHIER', pin: '123456' });
+    await ownerQuery('UPDATE staff_user SET is_active = false WHERE id = $1', [b.id]);
+    expect(await countWithPin('123456')).toBe('2');
+
+    const c = await createStaffUser({ name: 'Dewi', role: 'MANAGER', pin: '123456' });
+    expect(await countWithPin('123456')).toBe('3');
+    await expect(findUserByPin('123456')).resolves.toMatchObject({ id: c.id });
+  });
+});
+
 describe('findUserByPin', () => {
   it('finds a user by PIN alone', async () => {
     const { id } = await createStaffUser({ name: 'Sari', role: 'MANAGER', pin: '123456' });
