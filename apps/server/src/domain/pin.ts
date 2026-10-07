@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { Algorithm, hash, verify } from '@node-rs/argon2';
+import type pg from 'pg';
 import { pinPepper } from '../config.js';
 import { query } from '../db/pool.js';
 
@@ -83,18 +84,17 @@ export async function createStaffUser(input: {
  * from the same row and the same SELECT as the hash it was verified against.
  */
 export async function findUserByPin(
-  pin: string
+  pin: string,
+  client?: Pick<pg.PoolClient, 'query'>
 ): Promise<{ id: string; role: StaffRole; credentialVersion: number } | null> {
   if (!isPin(pin)) return null;
   const lookup = pinLookup(pin);
   let rows: { id: string; role: StaffRole; pin_hash: string; credential_version: number }[];
   try {
-    rows = await query(
-      `SELECT id, role, pin_hash, credential_version
+    const sql = `SELECT id, role, pin_hash, credential_version
          FROM staff_user
-        WHERE pin_lookup = $1 AND is_active`,
-      [lookup]
-    );
+        WHERE pin_lookup = $1 AND is_active`;
+    rows = client ? (await client.query(sql, [lookup])).rows : await query(sql, [lookup]);
   } catch {
     throw new Error(DATABASE_FAILURE);
   }
