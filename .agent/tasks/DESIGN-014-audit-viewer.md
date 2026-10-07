@@ -265,4 +265,230 @@ Commit on `agent/design-014` only, after verify is green where it applies, and n
 
 ## Handoff
 
-*(The designer writes this section.)*
+### Delivery and design decisions
+
+Designed by design014 on `agent/design-014`. The entry point is
+`docs/design/visual-directions/frost/back-office/audit.html`. This is a read-only
+local fixture for design review, not an application or an audit-storage implementation.
+The gallery registers all 23 states and keeps the original artifact indices intact.
+
+The list has eight columns: Time, Action, Outcome, Actor, Approver, Order, Summary
+and Detail. Time includes its WIB date so that an all-days result is unambiguous.
+Summary carries labelled monetary values rather than discount names in place of
+money; the detail carries the discount snapshots. Outcomes use explicit words,
+with supplementary brick, amber or muted type for unsuccessful outcomes. Success
+has ordinary ink and no success green. An absent approver reads “None” in the list;
+detail distinguishes approval not required from approval not granted. A manager
+approving their own void is explicitly labelled “Self-approved”. The historical
+actor Ratna Ayu Kartikasari Prameswari remains named and searchable after deactivation.
+
+Detail uses the shared 640px native dialog. Its protected reading focus allows
+the manager to inspect a complete reason and monetary transition while retaining
+the exact originating row, filters and page underneath. It consumes `Office.open`
+and `Office.close`, including the shared focus containment and overflowing-body
+behavior, rather than adding another panel or dialog implementation. Close and
+Escape restore the originating Open button. Each button's accessible name includes
+its action, order reference and time. The dialog contains only a Close action.
+
+Business-day filtering initially selects Tue 6 Oct 2026, identified by opening
+date without invented start/end times. The four filters combine immediately;
+person matches actor or approver. Clear filters selects all business days, all
+actions, all outcomes and anyone. Changing a filter resets to page 1. Twelve
+entries occupy a page; Newer and Older move to distinct records, state the range
+and page position, and preserve filters. URL query values also preserve filters,
+page and the opened entry through reload. The viewport frame, scroll owner,
+sticky header, fields, read notices, empties and dialog consume `office.css`.
+Only the overflow state uses the existing tight-cell-padding token.
+
+### Requirement and state map
+
+Every named state below is directly reachable through `?state=` and registered
+in `manifest.js`. The dedicated browser check is
+`docs/design/checks/design014.cjs`; its results and the visual correction are
+recorded below.
+
+| Requirement | State or walk |
+|---|---|
+| A1: newest-first table and required columns | `default`; eight columns described above. |
+| A2 and C1: full refund | `entry-refund`: Table 8 / T8-0610, actor Rina Putri, approver M. Iqbal, reason, Charged 155.925, Refunded 155.925, Net 0. Original order total explicitly remains 155.925. |
+| A2 and C1: whole-order void | `entry-void`: T7-0610, total before void and void value both 132.000, actor, approver and reason. |
+| A2: self-approval | `entry-self`: T12-0610, M. Iqbal in both roles, total/value 88.000. |
+| A2 and C1: fired-line void | `entry-line`: Table 4 / T4-0610, Burger, round 2, line snapshot 50.000, total before 155.925, after 108.675, reduction 47.250, actor, approver and reason. |
+| A2 and C1: discount apply/replace/remove | `entry-apply`, `entry-replace`, `entry-remove`: one T10-0610 transition per entry, both discount snapshots and monetary before/after values. These free-form transitions name actor and approver. |
+| A2: ungated preset | `entry-preset`: Q17-0610, Sari Wulandari, no approver, Neighbour discount preset snapshot, 100.000 to 95.000. |
+| A2, A3 and D: failed approval | `entry-failed`: attempted fired-line void, T2-0610, actor, no approver and no amounts. |
+| A2, A3 and D: cancelled approval | `entry-cancelled`: attempted whole-order void, T5-0610; the prompt was abandoned, actor named, no approver or amounts. |
+| A2, A3 and D: approved then refused | `entry-refused-refund`, `entry-refused-void`: T3-0510 and T6-0510 respectively; actor and approver, REFUSED, illustrative BUSINESS_DAY_CLOSED refusal code, no amounts. The void follows the owner's ruling, not unapproved PRD wording. |
+| A2, A3 and D: approval request during cooldown | `entry-cooldown`: attempted refund, T9-0610, actor only, plain-language outcome with no stored-outcome code or amounts. It describes the identified request, not a cooldown-start security event. |
+| A2 and C1: takeover | `entry-takeover`: Q18-0610, M. Iqbal, checkout lease subject, no approver or amounts. |
+| A2 and C1: both reprint classes | `entry-kitchen`: Table 1, round 2, original work at 19:58; `entry-cancellation`: Table 4, round 2, cancelled at 20:02. Both name M. Iqbal, order and ticket class, without approver or amounts. Audit success does not assert physical print delivery. |
+| A2 and B-13: deactivated actor and long content | `entry-long`: Ratna Ayu Kartikasari Prameswari, marked Deactivated, CATER-0610, 999.999.999 before void and void value. |
+| B1: combined filters | Change business day, action, outcome and actor/approver independently and together; Clear filters restores all 48 fixture entries. |
+| B2 and D: overflow | `overflow`; scroll `.bocontent` to the sticky table header, then Older/Newer across real pages. Filtering Discount apply still leaves multiple pages. |
+| B3 and D: two empty states | `empty` disables filters because no entries exist; `nomatch` retains filters and offers Clear filters. |
+| C2/C3: keyboard and preservation | Open with Enter; Tab/Shift+Tab remain in the shared dialog; Close/Escape return to the same Open button, filters and page. The paged older-entry walk also reloads before closing. |
+| D: loading/error | `loading` withholds rows and counts; `error` offers Try again, visibly traverses loading and returns the list. Permission denied is n/a and is not invented. |
+| E1: navigation | Shared Audit destination plus the authored links in menu/report detail now reach Frost BO-12. |
+| E2: gallery | Frost-only registration and all 23 states; gallery scope copy names the audit viewer. |
+| E3: inventory/wireframe | Only the exact audited-actions insertion, REFUSED/cooldown bullet, and wireframe annotation replacement requested in Part E. |
+
+### Fixture arithmetic and source boundaries
+
+There are 40 entries for the business day opened 6 October and eight for 5
+October. Seventeen distinct core entries cover the required subjects and outcomes;
+31 older preset applications supply distinct order references and times for paging.
+All values are integer rupiah. Older preset applications reduce their respective
+100.000 + n × 10.000 subtotal by 5%, without tax/service arithmetic changes.
+
+The fired-line fixture starts from 165.000 in tax-inclusive lines. A 10% discount
+leaves 148.500, and 5% service adds 7.425, giving 155.925. Removing a 50.000 line
+leaves 115.000 in lines, less 11.500 discount plus 5.175 service: 108.675. Thus the
+line snapshot is 50.000 while the total reduction is 47.250. Its 20:02 Table 4,
+round 2 subject aligns with DESIGN-013's cancellation. That reprint at 20:06 and
+Table 1's work-ticket reprint at 20:04 describe separate orders.
+
+The discount transition fixture has 200.000 in lines with no service charge:
+10% free-form discount gives 180.000; replacement with a fixed 25.000 discount
+gives 175.000; removing that discount restores 200.000. Each transition has one
+combined entry, not a separate approval entry. The refund is a separate closed
+order with charged total 155.925; the full reversal leaves net charged zero
+without rewriting that order's original total.
+
+The three lead amount rulings remain the owner's to overturn: whole-order void
+shows pre-void total and equal void value; fired-line void shows the line snapshot
+and both order totals; discount changes show monetary before/after and both
+discount snapshots. The refund display separately follows the delegated Q8 ruling.
+The schema was read for meaning only; the fixture does not propose API fields,
+storage extensions, cooldown outcome names or a complete refusal-code vocabulary.
+
+### Changed files and exclusions
+
+`audit.html`, `audit.css` and `audit.js` contain the new surface, token-only local
+layout and fixture behavior. `office.js` changes only the destination resolver's
+Frost list to include `audit`. `menu.html` and `report-detail.html` each change only
+their authored Audit destination. `manifest.js` and gallery `index.html` register
+the surface. `design014.cjs` is the reproducible browser check. The two inventory
+edits and single prototype annotation edit are constrained as described above.
+This Handoff is the only task-file change.
+
+No token was added or changed. `office.css`, `docs/DESIGN.md`, SITEMAP, application
+code, packages, migrations and the four product documents remain unchanged.
+No slice-A or slice-C assertion has been removed or weakened; neither existing
+check currently requires an expectation change.
+
+### Open questions and proposed wording
+
+The task's already-open PRD follow-ups remain owed. Proposed FR-J3 replacement
+for the approved-refund sentence: “A refund or void that is approved and then
+refused by the server (for example because its business day closed in the
+meantime) creates one entry naming actor and approver, with outcome `REFUSED`
+and the refusal code, and no before/after amounts.” Proposed addition after its
+failed/cancelled sentence: “An abandoned approval prompt is a cancelled approval.”
+These are proposals for the owner; the artifact follows the existing rulings.
+
+The current FR-H3 and AC-10 still say an unfired-order cancellation is audited,
+contrary to the task's owner ruling of 2026-10-06. No such entry is drawn.
+Proposed FR-H3 replacement: “Voiding an order with no `FIRED` lines requires no
+approval and writes no audit entry.” Proposed AC-10 replacement: “Voiding an
+order with nothing fired succeeds with no prompt and writes no audit entry;
+voiding an order holding a fired line raises the manager prompt.” The lead
+should reconcile these contract sentences with the recorded ruling.
+
+A post-close correction would appear as a new adjustment entry in the currently
+open business day, referencing the original closed-day subject. It is not drawn
+because no authorized creating screen or FR-J3 action exists yet. Proposed next
+step: the owner approves its audit classification and subject/amount semantics
+before adding a filter option or fixture. The cooldown refusal's stored name and
+the full refusal-code set remain intentionally undecided and outside this slice.
+
+### Verification
+
+The owner approved the initial DESIGN-014 browser execution in this pane:
+
+```sh
+env PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design014.cjs
+```
+
+It passed 214/214 assertions across 23 states at 1440×900, with zero page
+JavaScript errors and zero horizontal document, content or dialog overflow.
+Evidence is outside the repository at `/tmp/design014-evidence/`, including
+state captures, `overflow-scrolled.png`, `long-row.png` and `measurements.json`.
+The check covers each subject's own values, absence of unsuccessful amounts,
+filter intersections, distinct pages, keyboard focus containment/return,
+reload preservation, both empties, retry and gallery/navigation destinations.
+
+I inspected the default, refund, cooldown-refused, scrolled-overflow and long-row
+captures. This exposed one visual defect despite the assertions passing:
+“Succeeded” broke inside the word on page 2. The outcome label now overrides the
+cell's permissive word wrapping, and the check asserts that the short success
+label occupies one line in every state. The separately approved confirmation
+passed 237/237 assertions across the same 23 states. Its long-row capture was
+inspected and confirms the correction. Evidence is in
+`/tmp/design014-evidence/confirmation/`; there were again zero script errors and
+zero horizontal document, content or dialog overflow. No further UI change or
+browser iteration was needed.
+
+| Browser measurement, unchanged in confirmation | Observed value |
+|---|---|
+| Frame | 1440×900 |
+| Navigation / brand / top bar | 220px / 64px / 64px |
+| Content padding / body type | 24px / 14px |
+| Filter height / row Open height | 40px / 28px |
+| Sticky header after content scrollTop=450 | y=64, height 40.9375px |
+| Long-row and amount overflow | Zero; 999.999.999 remains complete |
+
+`git diff --check` passed. The required authored prototype-link counts are 38
+for menu and 9 for report detail. The inspected inventory/wireframe diff contains
+only the requested two inventory edits and one annotation replacement; SITEMAP,
+DESIGN, tokens and the existing DESIGN-012/013 check scripts have empty diffs.
+
+The automatic Impeccable hook's `cramped-padding` finding was triaged as a shared
+pattern exception. The dialog intentionally has zero wrapper padding while its
+header/footer have 16px × 20px token padding and its body has 20px token padding;
+table cells and fixed-height fields/actions consume their existing desktop tokens.
+The inspected captures support preserving those insets. Following the hook's
+explicit instruction, a single-rule, single-file ignore was persisted through
+`impeccable hooks ignore-value` for `audit.html`. It lives in the repository's
+ignored `.impeccable/config.json`, is disclosed here, and is not force-added to
+the path-scoped design commit. No shared CSS was altered to silence the detector.
+
+The owner separately approved each of these three executions before it ran:
+
+```sh
+env DESIGN014_OUTPUT=/tmp/design014-evidence/confirmation PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design014.cjs
+env PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design012.cjs
+env DESIGN013_OUTPUT=/tmp/design014-evidence/design013-regression PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design013.cjs
+```
+
+The unchanged DESIGN-012 regression passed 216/216 assertions across 47 states,
+with zero page JavaScript errors or failed assertions. Its fixed output directory
+is `/tmp/design012-evidence/round2/`; the completed evidence was copied to
+`/tmp/design014-evidence/design012-regression/`. The unchanged DESIGN-013
+regression passed 371/371 assertions across 41 states, also with zero JavaScript
+errors or failed assertions. Its evidence is in the explicitly supplied external
+directory above. Shared measurements remain 220px navigation, 64px top bar,
+24px content padding, 14px body, 40px fields, 640px dialog, and 36px/28px
+emergency/receipt actions. The incident banner retains x=220, y=64, width=1220,
+height=80 before and after scrolling; its sticky table header remains at y=144.
+
+The lead authorized repository verification, syntax checks, the final diff check
+and the path-scoped commit; the owner approved the sandbox prompts in this pane.
+The first `npm run verify` stopped before typechecking because this fresh worktree
+had no installed dependencies and `tsc` was unavailable. An approved `npm ci`
+installed the existing lockfile without changing it. The approved verification
+rerun passed typechecking and all 50 test files / 2,876 tests, including the
+unchanged token tests and existing database tests. The existing Vite warning
+about its future native config loader remains. Installation also reported one
+high-severity dependency advisory; dependency remediation was not attempted in
+this design task, and no separate dependency audit was run.
+
+JavaScript syntax checks passed for `audit.js`, `office.js`, `manifest.js` and
+`design014.cjs`; the final `git diff --check` passed. No token was introduced,
+no test was weakened, and no product or application file changed. Screen-reader,
+other-browser, physical-device, live-service and real-printer tests were not run;
+this is design-fixture evidence only.
+
+All assigned work is complete for design review. The commit is scoped to this
+Handoff and the listed design files on `agent/design-014`; nothing is pushed.
+
+DONE

@@ -911,7 +911,15 @@ window.MOCKUPS = [
   "directions": [
     "frost"
   ]
-}
+},
+  {
+    "path": "back-office/audit.html",
+    "title": "Audit — actions and outcomes",
+    "directions": ["frost"],
+    "states": [['default','Audit entries'],['empty','No entries yet'],['nomatch','No matching entries'],['loading','Reading entries'],['error','Read failed'],['overflow','Long log — paging and sticky header'],['entry-refund','Refund — charged, refunded and net'],['entry-void','Whole-order void'],['entry-self','Self-approved void'],['entry-line','Fired-line void — distinct values'],['entry-apply','Discount applied'],['entry-replace','Discount replaced'],['entry-remove','Discount removed'],['entry-preset','Preset applied — no approval'],['entry-failed','Approval failed'],['entry-cancelled','Approval cancelled'],['entry-refused-refund','Approved refund refused'],['entry-refused-void','Approved void refused'],['entry-cooldown','Approval request refused by cooldown'],['entry-takeover','Checkout takeover'],['entry-kitchen','Kitchen work-ticket reprint'],['entry-cancellation','Cancellation-ticket reprint'],['entry-long','Long name and amount']],
+    "width": 1440,
+    "height": 900
+  }
 ];
 
 // The legacy gallery hard-codes six labels and assumes both directions exist.

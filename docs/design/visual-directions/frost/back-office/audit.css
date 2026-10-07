@@ -1,0 +1,29 @@
+/* BO-12 consumes the shared frame, fields, table, read states and dialog. */
+.audit-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: var(--frost-space-3); align-items: end; }
+.audit-filters label { display: grid; gap: var(--frost-space-2); font-size: var(--frost-text-12); color: var(--frost-muted); min-width: 0; }
+.audit-filters .office-field { min-width: 0; }
+.audit-help { margin: var(--frost-space-2) 0 var(--frost-space-4); font-size: var(--frost-text-12); }
+.audit-table caption { text-align: left; color: var(--frost-muted); font-size: var(--frost-text-12); padding: 0 0 var(--frost-space-3); }
+.audit-table td { overflow-wrap: anywhere; }
+.audit-table .audit-person { max-width: var(--frost-office-nav-width); }
+.audit-table .audit-action { font-weight: var(--frost-weight-medium); }
+.audit-table small { display: block; color: var(--frost-muted); font-size: var(--frost-text-12); margin-top: var(--frost-space-1); }
+.audit-table.audit-tight td { padding: var(--frost-table-cell-tight-padding); }
+.audit-outcome { display: inline-block; overflow-wrap: normal; font-weight: var(--frost-weight-medium); }
+.audit-outcome[data-outcome='failed'], .audit-outcome[data-outcome='refused'] { color: var(--frost-destructive); }
+.audit-outcome[data-outcome='cooldown'] { color: var(--frost-warning); }
+.audit-outcome[data-outcome='cancelled'] { color: var(--frost-muted); }
+.audit-money { white-space: nowrap; font-variant-numeric: var(--frost-numeric-variant); }
+.audit-summary-money { display: grid; grid-template-columns: auto auto; gap: var(--frost-space-1) var(--frost-space-3); font-size: var(--frost-text-12); }
+.audit-summary-money strong { text-align: right; font-size: var(--frost-text-14); font-weight: var(--frost-weight-medium); }
+.audit-facts { display: grid; grid-template-columns: var(--frost-office-form-columns); gap: var(--frost-space-3) var(--frost-space-4); margin: var(--frost-space-5) 0; }
+.audit-facts dt { color: var(--frost-muted); }
+.audit-facts dd { margin: 0; overflow-wrap: anywhere; }
+.audit-amounts { background: var(--frost-group); padding: var(--frost-space-4); }
+.audit-amounts h3, .audit-reason h3 { margin: 0 0 var(--frost-space-3); font-size: var(--frost-text-14); font-weight: var(--frost-weight-medium); }
+.audit-amounts dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: var(--frost-space-2) var(--frost-space-4); }
+.audit-amounts dd { margin: 0; text-align: right; font-weight: var(--frost-weight-medium); }
+.audit-amounts p { margin-bottom: 0; }
+.audit-reason { margin-top: var(--frost-space-5); }
+.audit-reason p { margin: 0; }
+.audit-readonly { margin-right: auto; align-self: center; }
