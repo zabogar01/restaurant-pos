@@ -9,17 +9,17 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-07: the owner merged PHASE0-005 (PR #59) and the lead's record (PR #60); `development` at
-`bbe1dce`. The lead cleaned up after #59 and started architect consult ARCH-007 (plan Task 6, throttle).
-Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
+2026-10-07, afternoon: the owner merged PHASE0-006 (PR #61) and the lead's record (PR #62); `development`
+at `20ae39e`. PHASE0-006b (PIN unique among active staff) dispatched; ARCH-008 (sessions and the
+back-office credential) running. Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
 
 ## Phase and gates
 
-- **Phase 0**, started 2026-09-14. Backend tasks 1 to 5 of 12 are done: scaffold and PostgreSQL,
+- **Phase 0**, started 2026-09-14. Backend tasks 1 to 6 of 12 are done: scaffold and PostgreSQL,
   money module, Task 3 in three slices (003a `Rate` brand, 003b serial test harness with an
   unprivileged `pos_app` pool, 003c the six-table schema with append-only audit), and Task 4 (PIN:
   Argon2id hash, keyed lookup digest under `PIN_PEPPER`, `findUserByPin` returning the credential
-  version), and Task 5 (`audit.ts`: `writeAudit`, `writeAuditOwnTransaction`, `writeSecurityEvent`). Tasks 6 to 12 (throttling, sessions, HTTPS server, auth routes, approval,
+  version), and Task 5 (`audit.ts`: `writeAudit`, `writeAuditOwnTransaction`, `writeSecurityEvent`). Task 6 (`throttle.ts`: `verifyPinThrottled` under a row lock). Tasks 7 to 12 ( sessions, HTTPS server, auth routes, approval,
   client shells, acceptance tests) remain. No API and no auth routes yet.
 - **Frontend built** (fixtures plus a client order store): POS-01 to POS-07, every designed POS
   screen, bar Release (FR-A). Not built: all 13 back-office screens.
@@ -34,7 +34,7 @@ Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `bbe1dce` (PR #60) on
+- **`development` is the integration branch** (owner, 2026-09-29), at `20ae39e` (PR #61) on
   GitHub; the local `development` matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch`
@@ -42,7 +42,7 @@ Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
   or dispatching**, then `npm ci` if the lockfile changed (LESSONS).
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
   current (checked 2026-10-06 at `c507dfc`). Rerun after any merge that changes `.githooks/` or agents.yaml.
-- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1007`** (from `bbe1dce`), not pushed.
+- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1007b`** (from `20ae39e`), not pushed.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations` (`735301d`, behind). Merged, still existing: `agent/design-direction`
@@ -51,14 +51,17 @@ Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
 
 ## Running tasks and agents
 
-- **PHASE0-006 (throttled PIN verification) complete** at `413a51b` on `agent/phase0-006`, not pushed: two
-  rounds. One `verifyPinThrottled` under a row lock (ARCH-007). OpenCode review found `now()` stale after
-  the lock wait; lead ruled `clock_timestamp()` after the lock (`1633fd4`, cases 22-23, red proof); no
-  re-review (15-line diff read by the lead). Lead verify 49/2838, throttle file 3x green. Owner looks.
-- **Next after 006: PIN reuse, its own task** (ARCH-007 §8: migration `0006` partial unique index on
-  active users, `createStaffUser`'s `ON CONFLICT ... WHERE is_active` in the same commit; FR-A4 now says so).
-  Reactivation (Phase 1) keeps the PIN unless another active user took it (DECISIONS 2026-10-07). Not written.
-  Task 10's consult must add an audit outcome for a cooldown-refused approval (none of the three fits).
+- **PHASE0-006b (PIN unique among active staff) complete** at its last commit on `agent/phase0-006b`, not
+  pushed: one round, Codex review clean. Migration `0006` (partial unique index) and the conflict clause;
+  lead verify 49/2844. Identity: owner looks. **After merge, run `npm run db:migrate` on the dev `pos`.**
+- **PHASE0-007 (sessions) complete** at `3873175` on `agent/phase0-007`, not pushed: one round, Codex review
+  clean. Built from ARCH-008: token + SHA-256, credential-version predicate, required `interactive`,
+  `clock_timestamp()`, `IDLE`, M-6 renews the same row. 32 tests, 10 red proofs; lead verify 50/2870,
+  session file 3x green. Its dispatcher hit the 30-minute background limit (LESSONS); lead closed the pane.
+- **Back-office credential task (no ID yet), blocked on the owner:** ARCH-008 rules its own table
+  `back_office_credential` with a per-account throttle, after 007 and before the routes; it needs a new
+  ADR and PRD/B-11/B-12 wording (ARCH-008 *For the owner* 1-4).
+- **Task 10's consult must add** an audit outcome for a cooldown-refused approval (none of the three fits).
 - **Codex reset** (owner, 2026-10-07): reviews go back to the default pick. If Codex runs out again, the
   temporary OpenCode pick in journal 2026-10-07 is the way; the kit question stands.
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
@@ -72,7 +75,7 @@ Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
 - **The BO-13 frontend task** carries DESIGN-013's rules N1, N2 and the async-focus rule (its task file).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) only; worktree `../restaurant-pos-wt/PHASE0-006` awaits merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`) only; worktrees `../restaurant-pos-wt/PHASE0-006b` and `PHASE0-007` await merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
@@ -116,19 +119,20 @@ Nothing here is decided. Detail is where each line points.
   range (§9 question 3), post-close corrections by adjustment in the open day (§9 question 2).
 - **PRD §9 question 1, receipt content:** the owner asked the lead to research the usual content of an
   F&B receipt in Indonesia and propose it. Not started; a librarian task, one step at a time.
-- **Lead rulings, yours to overturn:** PHASE0-004 (Argon2id m=19456,t=2,p=1 in code; no `zod` until
-  Task 8; `PIN_PEPPER` in `db/dev.env`); DESIGN-013 (reprint ungated, no audit wording on results,
-  three re-review lows carried rather than a third round); DESIGN-012 (wireframe links until each
-  slice lands, lows to slice B); ARCH-006 (Task 3 split; no `settings_version` until Phase 1; session
-  token stored as SHA-256; `APPROVAL_FAILED`/`APPROVAL_CANCELLED`; append-only trigger for every role;
-  app role INSERT-only on evidence); FE-036 (strike-through only; sheet copy kept); FE-030 to FE-033's
-  (journal 2026-10-05, end); DESIGN-011 Q5 and Q8.
+- **Lead rulings, yours to overturn,** each in its task file's *Lead rulings*: PHASE0-004 to 006b,
+  DESIGN-011 to 013, ARCH-006, FE-030 to FE-036 (FE-030 to 033 in journal 2026-10-05, end).
 - **Kit:** add `Bash(grep:*)` to the builder allowlist? Should the dispatcher ping the lead on
   `BLOCKED ON APPROVAL`? Builders interactive by default? Should `/lead` fetch and fast-forward
   before its report? Allow builders' `python3`/`sed` edits (FE-036, PHASE0-004 twice)? Should the
   dispatcher support a hand-opened designer, and a non-Codex reviewer when Codex is out?
 - **Pre-production gate, owner-accepted risk (DECISIONS 2026-10-07):** the same-class reset lets a cashier
   guess four PINs, log in as themselves and repeat. Revisit before any networked use.
+- **ARCH-008, for the owner (items 1-4 block the credential task, none blocks 007):** (1) PRD wording for
+  FR-A1, A2b, A3, new A5b, B3, AC-32, new AC-35, and is the password throttle per account? (2) B-11/B-12
+  to name passwords; (3) commission the ADR (+ ARCHITECTURE amendments)? (4) username 3-32 lower-case
+  chars, never reused; password 8-128, no composition rules; (5) one credential version for both, own
+  password change keeps the session?; (6) accept username discovery for the MVP; first-manager script
+  does not refuse a second run. Exact wording: report `:1102-1196`.
 - **FR-M3 / B-2 wording:** "half-up" below zero; the code rounds half away from zero. Proposed at L2699-2701.
 - **Confirm or reject the ten `conversation only` lines** in DECISIONS.md (POS-03 Q5, Q6, Q9 among them).
 
@@ -141,5 +145,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Owner looks at, pushes and merges PHASE0-006 and `agent/lead-1007`; then cleanup. Next: the PIN-reuse
-task (ARCH-007 §8), then Task 7's consult (sessions). Design slice I when Codex resets.
+Owner looks at, pushes and merges PHASE0-006b, PHASE0-007 and `agent/lead-1007b`; then `npm run db:migrate`
+and cleanup. Then the owner's rulings on ARCH-008's credential questions, or Task 8's consult (HTTPS server).
