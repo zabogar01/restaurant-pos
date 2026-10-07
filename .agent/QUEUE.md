@@ -84,14 +84,15 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-003b, serial server tests on `pos_test`, `pos_app`, merged 2026-10-06 as PR #51.)*
     - *(Done: PHASE0-003c, the six tables and 21 schema tests, merged 2026-10-06 as PR #53.)*
     - *(Done: PHASE0-004, PIN hashing and lookup, merged 2026-10-06 as PR #56.)*
-    - **PHASE0-005** — audit and security-event writers (plan Task 5) — complete 2026-10-06 at
-      `0240db0`, two rounds — waits on the owner's look and merge.
+    - *(Done: PHASE0-005, audit and security-event writers, merged 2026-10-07 as PR #59.)*
+    - **PHASE0-006** — throttled PIN verification (plan Task 6), from ARCH-007 — complete 2026-10-07 at
+      `413a51b`, two rounds — waits on the owner's look and merge.
+    - **PIN reuse (no ID yet)** — migration `0006`, partial unique index on active users (ARCH-007 §8) —
+      after 006 — not written.
     - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
       three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
       by the owner 2026-10-06, possibly to after the MVP — not written.
-    - **PIN reuse** (DECISIONS 2026-10-06): `pin_lookup` unique only among active users, by a forward
-      migration — rides with a Phase 0 task (005 or 007) — not written.
 12. **PRD wording proposal** — replace "half-up" in FR-M3 and B-2 with the half-away-from-zero
     sentence (L2699-2701) — depends on the owner (contract text) — waiting.
 

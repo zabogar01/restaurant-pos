@@ -79,7 +79,8 @@ enums and do not acquire redundant booleans.
   may do, and a client-supplied header alone is never sufficient.
 - **FR-A3** PINs are stored using Argon2id, never in plaintext, and never
   written to any log.
-- **FR-A4** PINs are unique per user, so an audit actor is unambiguous.
+- **FR-A4** PINs are unique among active users, so an audit actor is
+  unambiguous. A deactivated user's PIN may be given to another user.
 - **FR-A5** PIN verification has two installation-wide throttle classes:
   `LOGIN` and `MANAGER_APPROVAL`. After five consecutive failures in either
   class, the server rejects further verification in that class for five

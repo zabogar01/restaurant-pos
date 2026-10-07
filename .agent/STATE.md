@@ -9,17 +9,17 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-06, late: the owner answered fourteen open questions (business day, back-office credential,
-cooldown, PIN reuse, DESIGN-013, ARCH-005, abandoned approvals, rate range); all are in DECISIONS.md.
-Earlier: PRs #56-#58 merged, `development` at `c507dfc`. Narrative: [journal/2026-10-06.md](journal/2026-10-06.md).
+2026-10-07: the owner merged PHASE0-005 (PR #59) and the lead's record (PR #60); `development` at
+`bbe1dce`. The lead cleaned up after #59 and started architect consult ARCH-007 (plan Task 6, throttle).
+Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
 
 ## Phase and gates
 
-- **Phase 0**, started 2026-09-14. Backend tasks 1 to 4 of 12 are done: scaffold and PostgreSQL,
+- **Phase 0**, started 2026-09-14. Backend tasks 1 to 5 of 12 are done: scaffold and PostgreSQL,
   money module, Task 3 in three slices (003a `Rate` brand, 003b serial test harness with an
   unprivileged `pos_app` pool, 003c the six-table schema with append-only audit), and Task 4 (PIN:
   Argon2id hash, keyed lookup digest under `PIN_PEPPER`, `findUserByPin` returning the credential
-  version). Tasks 5 to 12 (audit writer, throttling, sessions, HTTPS server, auth routes, approval,
+  version), and Task 5 (`audit.ts`: `writeAudit`, `writeAuditOwnTransaction`, `writeSecurityEvent`). Tasks 6 to 12 (throttling, sessions, HTTPS server, auth routes, approval,
   client shells, acceptance tests) remain. No API and no auth routes yet.
 - **Frontend built** (fixtures plus a client order store): POS-01 to POS-07, every designed POS
   screen, bar Release (FR-A). Not built: all 13 back-office screens.
@@ -34,7 +34,7 @@ Earlier: PRs #56-#58 merged, `development` at `c507dfc`. Narrative: [journal/202
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `c507dfc` (PR #57) on
+- **`development` is the integration branch** (owner, 2026-09-29), at `bbe1dce` (PR #60) on
   GitHub; the local `development` matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch`
@@ -42,7 +42,7 @@ Earlier: PRs #56-#58 merged, `development` at `c507dfc`. Narrative: [journal/202
   or dispatching**, then `npm ci` if the lockfile changed (LESSONS).
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
   current (checked 2026-10-06 at `c507dfc`). Rerun after any merge that changes `.githooks/` or agents.yaml.
-- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1006c`** (from `c507dfc`), this wrap-up, not pushed.
+- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1007`** (from `bbe1dce`), not pushed.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations` (`735301d`, behind). Merged, still existing: `agent/design-direction`
@@ -51,15 +51,16 @@ Earlier: PRs #56-#58 merged, `development` at `c507dfc`. Narrative: [journal/202
 
 ## Running tasks and agents
 
-- **PHASE0-005 (audit and security-event writers) complete** at `0240db0` on `agent/phase0-005`, not
-  pushed: two rounds. Builder Claude Sonnet 5.5; review on OpenCode `openai/gpt-6.1-sol` (Codex at its
-  limit) found one low test gap (case 11 did not prove "before SQL"), fixed in `af1f368` with a pool spy
-  and a red proof; no re-review (test-only). Lead verify 48/2815. Touches audit: owner's look, push, merge.
-- **For plan Task 6 (from the Handoff):** `writeSecurityEvent` writes on its own pool call, so a
-  failed-PIN event survives a rolled-back login, and a caller cannot put it inside its transaction.
-- **A non-Codex reviewer:** the dispatcher cannot override the reviewer's CLI, so the lead set
-  `reviewer.pick.anthropic.strong` to OpenCode for one run, reinstalled hooks, then restored both.
-  Repeat that while Codex is out; the kit question stands.
+- **PHASE0-006 (throttled PIN verification) complete** at `413a51b` on `agent/phase0-006`, not pushed: two
+  rounds. One `verifyPinThrottled` under a row lock (ARCH-007). OpenCode review found `now()` stale after
+  the lock wait; lead ruled `clock_timestamp()` after the lock (`1633fd4`, cases 22-23, red proof); no
+  re-review (15-line diff read by the lead). Lead verify 49/2838, throttle file 3x green. Owner looks.
+- **Next after 006: PIN reuse, its own task** (ARCH-007 §8: migration `0006` partial unique index on
+  active users, `createStaffUser`'s `ON CONFLICT ... WHERE is_active` in the same commit; FR-A4 now says so).
+  Reactivation (Phase 1) keeps the PIN unless another active user took it (DECISIONS 2026-10-07). Not written.
+  Task 10's consult must add an audit outcome for a cooldown-refused approval (none of the three fits).
+- **Codex reset** (owner, 2026-10-07): reviews go back to the default pick. If Codex runs out again, the
+  temporary OpenCode pick in journal 2026-10-07 is the way; the kit question stands.
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
   three). The owner's answers are in (DECISIONS 2026-10-06: cooldown refusal is audit; count resets).
 - **PIN reuse (DECISIONS 2026-10-06) conflicts with the schema:** `0002_staff_user.sql:29` makes
@@ -71,7 +72,7 @@ Earlier: PRs #56-#58 merged, `development` at `c507dfc`. Narrative: [journal/202
 - **The BO-13 frontend task** carries DESIGN-013's rules N1, N2 and the async-focus rule (its task file).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) only; worktree `../restaurant-pos-wt/PHASE0-005` awaits merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`) only; worktree `../restaurant-pos-wt/PHASE0-006` awaits merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
@@ -101,7 +102,6 @@ Earlier: PRs #56-#58 merged, `development` at `c507dfc`. Narrative: [journal/202
   Add from POS-03 `eightysix` returning there by design (L353; `own-items.test.tsx:381-393`).
 - **Money, not filed (ARCH-003, 9.6):** `closeOrder` (`close.ts:74–101`) accepts any drafts; only the
   Add gate (`tender.ts:39–41`) keeps a card under the balance (B-5). Unreachable today; own task, architect consult.
-- **P3, left out of FE-034 on purpose:** QUEUE 8c and 8d.
 - **Must not become a guarantee:** optional `OrderLine.itemId` (L1787); the in-memory refund and change walk.
 - **Backend:** ARCH-006 §8 lists plan defects in Tasks 5-10. `session_replication_role` (superuser
   only) bypasses the append-only trigger: for ADR-008's wording.
@@ -127,6 +127,8 @@ Nothing here is decided. Detail is where each line points.
   `BLOCKED ON APPROVAL`? Builders interactive by default? Should `/lead` fetch and fast-forward
   before its report? Allow builders' `python3`/`sed` edits (FE-036, PHASE0-004 twice)? Should the
   dispatcher support a hand-opened designer, and a non-Codex reviewer when Codex is out?
+- **Pre-production gate, owner-accepted risk (DECISIONS 2026-10-07):** the same-class reset lets a cashier
+  guess four PINs, log in as themselves and repeat. Revisit before any networked use.
 - **FR-M3 / B-2 wording:** "half-up" below zero; the code rounds half away from zero. Proposed at L2699-2701.
 - **Confirm or reject the ten `conversation only` lines** in DECISIONS.md (POS-03 Q5, Q6, Q9 among them).
 
@@ -139,6 +141,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Owner looks at, pushes and merges PHASE0-005 (and `agent/lead-1006c`). Then fast-forward, remove the
-worktree and `.agent/runs/PHASE0-005/`. Next: an architect consult for plan Task 6 (throttling), and
-a design slice (I, BO-12, reads the audit vocabulary) once Codex's allowance resets.
+Owner looks at, pushes and merges PHASE0-006 and `agent/lead-1007`; then cleanup. Next: the PIN-reuse
+task (ARCH-007 §8), then Task 7's consult (sessions). Design slice I when Codex resets.
