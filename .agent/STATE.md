@@ -9,10 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-07, end of day (wrap-up): the owner merged PHASE0-006b (PR #63), PHASE0-007 (PR #64) and the
-lead's record (PR #65); `development` at `93c6f2c`. The lead fast-forwarded, migrated the dev database
-to `0006`, removed both worktrees and run directories, verified, and cut `agent/lead-1007c` for this
-wrap-up. Nothing is running. Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
+2026-10-07, evening: the owner agreed to all of ARCH-008 *For the owner*; the PRD and B-11/B-12 now
+say it (`408f707` on `agent/lead-1007c`). DESIGN-014 (slice I, BO-12) and ARCH-009 (the credential
+ADR) are running. `development` at `93c6f2c`. Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
 
 ## Phase and gates
 
@@ -52,20 +51,26 @@ wrap-up. Nothing is running. Narrative: [journal/2026-10-07.md](journal/2026-10-
 
 ## Running tasks and agents
 
-- **Nothing is running.** No task worktree under `../restaurant-pos-wt/`; `.agent/runs/` is empty.
-- **Live agents:** the lead (`w2:p1`) only. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
-- **Next backend, either:** (a) the **back-office credential** task, blocked on the owner's rulings on
-  ARCH-008 *For the owner* (below); or (b) **ARCH-009, the consult for plan Task 8** (HTTPS server,
-  loopback guard, client instance), not blocked. Then Task 9 (auth routes) needs both 007 and the
-  credential; Task 10 (approval) needs a consult that adds an audit outcome for a cooldown-refused
-  approval (none of the three fits; ARCH-007 §7).
+- **DESIGN-014 (slice I, BO-12 audit viewer) running:** `design014`, Codex `gpt-6-astra` high, pane
+  `w2:p4E`, worktree `../restaurant-pos-wt/DESIGN-014` on `agent/design-014` (task file `7f3750e`).
+  Three lead rulings on audit amounts (void, line void, discount) there, owner's to overturn.
+- **ARCH-009 running:** `architect9`, Opus, pane `w2:p4F`, worktree `../restaurant-pos-wt/ARCH-009` on
+  `agent/arch-009` (`d675025`): ADR-009 Proposed (ADR-008 stays reserved for DB roles) plus ARCHITECTURE
+  §2.1/5.1/7.2/7.3/13/16 amendments, for the owner to accept together.
+- **Live agents:** the lead (`w2:p1`), `design014`, `architect9`. Not the lead's: pane `w2:pE`,
+  `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Next backend:** the **back-office credential** task, written from ARCH-008 §5 and ADR-009 once
+  the owner accepts it; **ARCH-010, the consult for plan Task 8** (HTTPS server, loopback guard,
+  client instance), not blocked. Task 9 (auth routes) needs 007 and the credential; Task 10 needs a
+  consult that adds an audit outcome for a cooldown-refused approval (ARCH-007 §7).
+- **Slice B must also fix** SCREEN-INVENTORY BO-01 `:548–550` and SITEMAP `:248` (still a PIN and the
+  shared `LOGIN` class at the back office; ARCH-008 §5).
 - **Pattern for identity/audit tasks:** an Opus consult first (ARCH-006 to 008), then a task file that
   copies the consult's *For the task file* sections verbatim (the report is not yet on `development`).
 - **Carry-forwards for Tasks 8 to 10** are in the Handoffs of PHASE0-005 to 007 (six-digit rule at the
   route, `interactive` per route, `MANAGER` guard, no cookie logging; AC-19/27/28 close only via routes).
-- **Next design task: any of slices B, D, E, F, G, H, I** (Q2, Q4, Q7 ruled). The owner has not said
-  when to start one; Codex reset 2026-10-07. Slice B takes DESIGN-012's lows N1-N3 first; M-6 becomes
-  password-only plus "another manager". Each slice repoints only the wireframe links it replaces.
+- **Design slices left after I: B, D, E, F, G, H.** Slice B takes DESIGN-012's lows N1-N3 first; M-6
+  becomes password-only plus "another manager". Each slice repoints only the wireframe links it replaces.
 - **The BO-13 frontend task** carries DESIGN-013's rules N1, N2 and the async-focus rule (its task file).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
@@ -110,19 +115,13 @@ wrap-up. Nothing is running. Narrative: [journal/2026-10-07.md](journal/2026-10-
 
 Nothing here is decided. Detail is where each line points.
 
-- **ARCH-008, the back-office credential** (items 1-4 block that task; exact wording at
-  `.agent/reviews/ARCH-008-sessions.md:1102-1196`): (1) PRD wording for FR-A1, A2b, A3, new A5b, B3,
-  AC-32, new AC-35, and is the password throttle **per account** (architect and lead: yes)? (2) B-11 and
-  B-12 to name passwords; (3) commission the ADR, with ARCHITECTURE §2.1, 5.1, 7.2, 7.3, 13, 16 amendments?
-  (4) username 3-32 lower-case chars, case-insensitive, never reused; password 8-128, no composition
-  rules; (5) one credential version for PIN and password, and a manager's own password change keeps their
-  session? (6) accept username discovery for the MVP; the first-manager script does not refuse a rerun.
-  The lead offered "agree to all"; the owner has not answered.
-- **When to start a design slice** (I, BO-12, was the lead's pick) now that Codex has reset.
+- **Push `agent/lead-1007c`?** It holds the wrap-up and the owner-approved contract commit `408f707`
+  (PRD FR-A1/A2b/A3/A5b/B3, AC-32/35, §6; B-11/B-12; DECISIONS 2026-10-07 evening).
+- **ADR-009 acceptance** when ARCH-009 lands (with its ARCHITECTURE.md amendments).
 - **PRD wording owed, not yet drafted,** for 2026-10-06 rulings that touch the contract: report-print
   failure placement, void `REFUSED` and abandoned approval as cancelled (FR-J3, AC-18), empty order
   cancelled, no rate range (§9 question 3), post-close corrections by adjustment (§9 question 2),
-  reactivation keeps the PIN unless taken (FR-B3). The credential wording is ARCH-008's, above.
+  reactivation keeps the PIN unless taken (FR-B3), cooldown-refused approval as an audit entry.
 - **PRD §9 question 1, receipt content:** the owner asked the lead to research the usual content of an
   Indonesian F&B receipt and propose it. Not started; a librarian task, one step at a time.
 - **Lead rulings, yours to overturn,** each in its task file's *Lead rulings* or round section:
@@ -146,5 +145,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Ask the owner for the ARCH-008 credential rulings ("agree to all" is offered). Meanwhile write
-ARCH-009 (plan Task 8, HTTPS server) and start its architect. Offer design slice I on Codex.
+Watch `design014` and `architect9`; route their permission prompts to the owner. When DESIGN-014
+lands: verify, browser walk, Opus review (hand-opened designer: write `meta.json` first). When
+ARCH-009 lands: read, take ADR-009 to the owner. Then ARCH-010 (Task 8 consult).

@@ -67,8 +67,11 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    - **B (BO-01, 02)** carries DESIGN-012's three low findings N1-N3 as its first items — waits on Q2, Q4.
    - *(Done: C, DESIGN-013, BO-13 print incidents, merged 2026-10-06 as PR #57.)*
      The BO-13 frontend task must carry its re-review rules N1 and N2 (task file, end).
-   - **Ready now (Q2, Q4, Q7 ruled 2026-10-06):** B (BO-01, 02) · D (BO-03, 04) · E (BO-05, 06) ·
-     F (BO-07, 08; Q5 ruled out of scope by the lead) · G (BO-09) · H (BO-10, 11) · I (BO-12; Q8 ruled).
+   - **I, DESIGN-014 (BO-12 audit viewer)** — started 2026-10-07 (owner: "you can start the design
+     now") — running.
+   - **Ready now (Q2, Q4, Q7 ruled 2026-10-06):** B (BO-01, 02; also BO-01 and SITEMAP `:248` still
+     name a PIN at the back office) · D (BO-03, 04) · E (BO-05, 06) · F (BO-07, 08; Q5 ruled out of
+     scope by the lead) · G (BO-09) · H (BO-10, 11).
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
 
@@ -88,10 +91,13 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-006, throttled PIN verification, merged 2026-10-07 as PR #61.)*
     - *(Done: PHASE0-006b, PIN unique among active staff, merged 2026-10-07 as PR #63.)*
     - *(Done: PHASE0-007, sessions, merged 2026-10-07 as PR #64.)*
-    - **ARCH-009 / PHASE0-008** — consult, then HTTPS server, loopback guard, client instance (plan
+    - **ARCH-009** — ADR-009 (Proposed), the back-office credential, with its ARCHITECTURE.md
+      amendments — commissioned by the owner 2026-10-07 — running.
+    - **ARCH-010 / PHASE0-008** — consult, then HTTPS server, loopback guard, client instance (plan
       Task 8) — not blocked — not written.
     - **Back-office credential (no ID yet)** — `back_office_credential`, per-account throttle (ARCH-008 §5)
-      — after 007, before the routes — waits on the owner's ADR and contract rulings — not written.
+      — after 007, before the routes — contract ruled 2026-10-07; waits on ADR-009's acceptance — not
+      written.
     - **Before Task 10:** an architect consult (ARCH-006 §8), which must add an audit outcome for a
       cooldown-refused approval (ARCH-007 §7). Tasks 6 and 7 had theirs (ARCH-007, ARCH-008).
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
