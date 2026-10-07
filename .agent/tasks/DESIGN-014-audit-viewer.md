@@ -308,10 +308,12 @@ section to the Handoff mapping each finding to its change and its evidence; do n
 Designed by design014 on `agent/design-014`. The entry point is
 `docs/design/visual-directions/frost/back-office/audit.html`. This is a read-only
 local fixture for design review, not an application or an audit-storage implementation.
-The gallery registers all 23 states and keeps the original artifact indices intact.
+The gallery registers all 24 states after Round 2 and keeps the original artifact
+indices intact.
 
 The list has eight columns: Time, Action, Outcome, Actor, Approver, Order, Summary
-and Detail. Time includes its WIB date so that an all-days result is unambiguous.
+and Detail. Time includes the occurrence’s WIB calendar date, independently of
+the business day’s opening date, so that an all-days result is unambiguous.
 Summary carries labelled monetary values rather than discount names in place of
 money; the detail carries the discount snapshots. Outcomes use explicit words,
 with supplementary brick, amber or muted type for unsuccessful outcomes. Success
@@ -336,7 +338,11 @@ entries occupy a page; Newer and Older move to distinct records, state the range
 and page position, and preserve filters. URL query values also preserve filters,
 page and the opened entry through reload. The viewport frame, scroll owner,
 sticky header, fields, read notices, empties and dialog consume `office.css`.
-Only the overflow state uses the existing tight-cell-padding token.
+BO-12 is built at standard 15px × 12px cell padding regardless of record count.
+Only the explicitly selected overflow review fixture uses the existing 9px × 12px
+tight-cell-padding token; there is no automatic density threshold or product
+density switch. Filtering, Clear filters, paging, detail and reload retain that
+fixture choice.
 
 ### Requirement and state map
 
@@ -348,7 +354,7 @@ recorded below.
 | Requirement | State or walk |
 |---|---|
 | A1: newest-first table and required columns | `default`; eight columns described above. |
-| A2 and C1: full refund | `entry-refund`: Table 8 / T8-0610, actor Rina Putri, approver M. Iqbal, reason, Charged 155.925, Refunded 155.925, Net 0. Original order total explicitly remains 155.925. |
+| A2 and C1: full refund | `entry-refund`: Table 8 / T8-0610, actor Rina Putri, approver M. Iqbal, reason, Charged 184.800, Refunded 184.800, Net 0. Original order total explicitly remains 184.800. Occurred Wed 7 Oct at 00:20, in the business day opened Tue 6 Oct. |
 | A2 and C1: whole-order void | `entry-void`: T7-0610, total before void and void value both 132.000, actor, approver and reason. |
 | A2: self-approval | `entry-self`: T12-0610, M. Iqbal in both roles, total/value 88.000. |
 | A2 and C1: fired-line void | `entry-line`: Table 4 / T4-0610, Burger, round 2, line snapshot 50.000, total before 155.925, after 108.675, reduction 47.250, actor, approver and reason. |
@@ -356,7 +362,7 @@ recorded below.
 | A2: ungated preset | `entry-preset`: Q17-0610, Sari Wulandari, no approver, Neighbour discount preset snapshot, 100.000 to 95.000. |
 | A2, A3 and D: failed approval | `entry-failed`: attempted fired-line void, T2-0610, actor, no approver and no amounts. |
 | A2, A3 and D: cancelled approval | `entry-cancelled`: attempted whole-order void, T5-0610; the prompt was abandoned, actor named, no approver or amounts. |
-| A2, A3 and D: approved then refused | `entry-refused-refund`, `entry-refused-void`: T3-0510 and T6-0510 respectively; actor and approver, REFUSED, illustrative BUSINESS_DAY_CLOSED refusal code, no amounts. The void follows the owner's ruling, not unapproved PRD wording. |
+| A2, A3 and D: approved then refused | `entry-refused-refund`, `entry-refused-void`: T3-0510 and T6-0610 respectively; actor and approver, REFUSED, illustrative BUSINESS_DAY_CLOSED and ORDER_NOT_OPEN refusal codes respectively, no amounts. The refund’s day closes after approval; another client settles the void’s order after approval. The void follows the owner's ruling, not unapproved PRD wording. |
 | A2, A3 and D: approval request during cooldown | `entry-cooldown`: attempted refund, T9-0610, actor only, plain-language outcome with no stored-outcome code or amounts. It describes the identified request, not a cooldown-start security event. |
 | A2 and C1: takeover | `entry-takeover`: Q18-0610, M. Iqbal, checkout lease subject, no approver or amounts. |
 | A2 and C1: both reprint classes | `entry-kitchen`: Table 1, round 2, original work at 19:58; `entry-cancellation`: Table 4, round 2, cancelled at 20:02. Both name M. Iqbal, order and ticket class, without approver or amounts. Audit success does not assert physical print delivery. |
@@ -367,14 +373,14 @@ recorded below.
 | C2/C3: keyboard and preservation | Open with Enter; Tab/Shift+Tab remain in the shared dialog; Close/Escape return to the same Open button, filters and page. The paged older-entry walk also reloads before closing. |
 | D: loading/error | `loading` withholds rows and counts; `error` offers Try again, visibly traverses loading and returns the list. Permission denied is n/a and is not invented. |
 | E1: navigation | Shared Audit destination plus the authored links in menu/report detail now reach Frost BO-12. |
-| E2: gallery | Frost-only registration and all 23 states; gallery scope copy names the audit viewer. |
+| E2: gallery | Frost-only registration and all 24 current states; gallery scope copy names the audit viewer. |
 | E3: inventory/wireframe | Only the exact audited-actions insertion, REFUSED/cooldown bullet, and wireframe annotation replacement requested in Part E. |
 
 ### Fixture arithmetic and source boundaries
 
 There are 40 entries for the business day opened 6 October and eight for 5
-October. Seventeen distinct core entries cover the required subjects and outcomes;
-31 older preset applications supply distinct order references and times for paging.
+October. Eighteen distinct core entries cover the required subjects and outcomes;
+30 older preset applications supply distinct order references and times for paging.
 All values are integer rupiah. Older preset applications reduce their respective
 100.000 + n × 10.000 subtotal by 5%, without tax/service arithmetic changes.
 
@@ -389,7 +395,7 @@ The discount transition fixture has 200.000 in lines with no service charge:
 10% free-form discount gives 180.000; replacement with a fixed 25.000 discount
 gives 175.000; removing that discount restores 200.000. Each transition has one
 combined entry, not a separate approval entry. The refund is a separate closed
-order with charged total 155.925; the full reversal leaves net charged zero
+order with charged total 184.800; the full reversal leaves net charged zero
 without rewriting that order's original total.
 
 The three lead amount rulings remain the owner's to overturn: whole-order void
@@ -418,9 +424,10 @@ check currently requires an expectation change.
 
 The task's already-open PRD follow-ups remain owed. Proposed FR-J3 replacement
 for the approved-refund sentence: “A refund or void that is approved and then
-refused by the server (for example because its business day closed in the
-meantime) creates one entry naming actor and approver, with outcome `REFUSED`
-and the refusal code, and no before/after amounts.” Proposed addition after its
+refused by the server creates one entry naming actor and approver, with outcome
+`REFUSED` and the refusal code, and no before/after amounts. A refund may be
+refused because its business day closed after approval; a void may be refused
+because another client settled the order after approval.” Proposed addition after its
 failed/cancelled sentence: “An abandoned approval prompt is a cancelled approval.”
 These are proposals for the owner; the artifact follows the existing rulings.
 
@@ -528,5 +535,93 @@ this is design-fixture evidence only.
 
 All assigned work is complete for design review. The commit is scoped to this
 Handoff and the listed design files on `agent/design-014`; nothing is pushed.
+
+DONE
+
+### Round 2 — review fixes
+
+The five accepted findings are addressed under the lead's 2026-10-07 rulings.
+This round changes `audit.js`, the state declaration in `audit.html`, the matching
+`manifest.js` entry, `design014.cjs` and this Handoff. It changes no token, CSS,
+shared-office behavior, incident behavior, contract or inventory. Round 1's
+verification results remain historical evidence; its current fixture descriptions
+above are corrected where this round made them untrue.
+
+| Finding | Change | Observed browser evidence |
+|---|---|---|
+| F1: impossible refused-void state and copied summary | T6-0610 belongs to the open day and is refused after another client settles it, with illustrative ORDER_NOT_OPEN. T3-0510's refund is refused just after its business day closes between approval and commit. Each record supplies its own refusal explanation to both list and detail. Both codes are visibly labelled illustrative. The void has no separate closed-order business-day fact. | The check requires the distinct codes and explanations in each detail and list row, rejects BUSINESS_DAY_CLOSED and the old T6-0510 identity from the void, and continues to require no amounts for either refusal. |
+| F2: occurrence date conflated with business day | Every record has an occurrence date independent of its business day. The list and Occurred fact use it; filtering still uses the business day. Records sort by occurrence date and HH:MM. The successful T8-0610 refund occurs at 00:20 on Wed 7 Oct while still belonging to the day opened Tue 6 Oct. | The check reads both dates in refund detail, requires Wed 7 Oct in its first-row Time cell and verifies chronological ordering across all 48 entries and all pages. The existing business-day filter checks remain. |
+| F3: hard-coded fired-line summary amounts | The summary selects the line snapshot and total reduction from the entry's own amount pairs. Added `entry-line-second`, registered as the 24th state: T11-0610, Iced tea, round 1, with different values. One generated preset row was replaced, retaining 48 total entries and 40/8 per business day. | The check filters to both successful line voids and compares each list summary with its own expected amounts while rejecting its neighbor's values. Both detail states are also exercised. |
+| F4: refund shares another order's amount | T8-0610 now has Charged 184.800, Refunded 184.800 and Net 0; its immutable original total remains 184.800. | Refund detail must not contain the first line void's 155.925 or other distinguishing values. Each line detail must reject the refund amount and the other line's distinguishing values. |
+| F5: incomplete secret/control checks and density ambiguity | Secret and telemetry checks now read the whole body while the detail dialog is open. An explicit allowlist validates every button, link, select, input, textarea, summary and explicitly interactive role, including shared navigation and separately identified authoring links. Clear filters retains the selected fixture density. | The checks run in all registered states and with both global alerts over an open detail. Separate standard/overflow walks filter, clear and reload, requiring unchanged 15px × 12px or 9px × 12px cell padding respectively. |
+
+**Refusal timeline.** The day opened Mon 5 Oct is still open when the manager
+approves T3-0510's refund at 00:04 on Tue 6 Oct. The end-of-day close commits at
+00:05, with all orders already closed or voided, and opens the day named Tue 6
+Oct. At 00:06 the pending refund reaches its commit check and is refused. Its
+audit entry therefore occurs in the new open day and refers to the now-closed
+order day. These times explain this fixture only; they introduce no fixed close
+schedule or business-day boundary rule and are not drawn as filter boundaries.
+The separate void attempt occurs at 22:14 on Tue 6 Oct: another client settles
+T6-0610 after approval, so it is no longer open when the void reaches commit.
+Neither scenario depends on an open order surviving an end-of-day close.
+
+**Second line arithmetic.** T11-0610 has 80.000 in tax-inclusive lines, less a
+10% discount (8.000), plus 5% service on 72.000 (3.600), giving 75.600. Removing
+the 20.000 Iced tea leaves 60.000 in lines, less 6.000 discount plus 2.700 service,
+giving 56.700. The total reduction is 18.900, distinct from the 20.000 line
+snapshot and from Table 4's 50.000 / 47.250 pair. The added state has the same
+actor, approver, reason and read-only detail treatment as the existing line void.
+
+**Density rule for the builder.** Use the standard shared table density for
+BO-12, including long logs. Tight density is a deliberately selected overflow
+review fixture, not a production response to count, filtering or scrolling.
+No density selector is added. The fixture's choice survives Clear filters and
+reload, so one interaction never silently changes row padding.
+
+**Verification.** The owner approved each of the following runs in this pane
+before execution:
+
+```sh
+env DESIGN014_OUTPUT=/tmp/design014-evidence/round2 PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design014.cjs
+env PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design012.cjs
+env DESIGN013_OUTPUT=/tmp/design014-evidence/round2/design013-regression PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright node docs/design/checks/design013.cjs
+```
+
+DESIGN-014 passed **288/288 assertions across 24 states**. The unchanged
+DESIGN-012 regression passed **216/216 across 47 states**; its completed fixed-path
+output was copied to `/tmp/design014-evidence/round2/design012-regression/`.
+The unchanged DESIGN-013 regression passed **371/371 across 41 states**.
+All three completed with zero page JavaScript errors and no failed assertions.
+The audit check found zero horizontal document, content or dialog overflow in
+all 24 states. The commands above identify the external screenshots and
+`measurements.json` directories; no evidence artifact is committed.
+
+I visually inspected the successful after-midnight refund, both refused-entry
+details, the filtered two-line-void list and the filtered two-refusal list.
+Occurrence and business-day dates differ visibly on the successful refund;
+the two refusal summaries and codes describe their own subjects; and the line
+summaries show 50.000 / 47.250 and 20.000 / 18.900 respectively. The whole-document
+secret scan and explicit control allowlist passed while each detail was open,
+including the extra composition with both shared global alerts. No follow-up
+browser run or visual correction was needed.
+
+At 1440×900, the frame remains 220px navigation, 64px brand/top bar, 24px content
+padding and 14px body text. Filters remain 40px high and Open buttons 28px.
+After `.bocontent.scrollTop=450`, the audit header is at y=64 and is 40.9375px
+high, with no row visible above it. The default-density clear/reload walk retained
+15px × 12px cell padding; the overflow walk retained 9px × 12px. The incident
+regression's 80px banner remained fixed at x=220, y=64, width=1220, and its table
+header remained at y=144. No shared geometry changed.
+
+`git diff --check` passed. `npm run verify` was intentionally not rerun under the
+lead's explicit round-2 rule because no token changed; Round 1's 2,876-test result
+is historical, not claimed as a new run. Screen-reader, other-browser,
+physical-device, live-service and real-printer testing remain unperformed.
+No new owner question arose; the already recorded contract wording proposals
+and deferred adjustment/cooldown-code questions remain with their owners.
+
+All five findings are complete for re-review. This round's path-scoped commit
+contains only the five files named above on `agent/design-014`; nothing is pushed.
 
 DONE
