@@ -52,8 +52,8 @@ ADR) are running. `development` at `93c6f2c`. Narrative: [journal/2026-10-07.md]
 ## Running tasks and agents
 
 - **DESIGN-014 in review:** built at `619dd8f` (23 states; checks 237/237, slice A 216/216, C 371/371);
-  lead verify 50/2876 and Chrome walk clean; status `review` `82e622d`. Opus review dispatched (oneshot).
-  Designer pane `w2:p4E` kept for round 2. Lead amount rulings (void, line void, discount) owner's to overturn.
+  lead verify 50/2876, Chrome walk clean. Opus review: 5 findings (F1 medium: refused void in a closed
+  day is impossible), all ruled into round 2 (`b1d00aa`, cycle 1 of 2); `design014` working on it. Lead amount rulings (void, line void, discount) owner's to overturn.
 - **ARCH-009 complete, waiting on the owner:** `cbf3aef` on `agent/arch-009` (worktree
   `../restaurant-pos-wt/ARCH-009`, pane `w2:p4F` kept open for a possible round). ADR-009 Proposed plus
   ARCHITECTURE §2.1/5.1/7.2/7.3/13/16. Handoff: FR-B3 vs own-password ruling, follow-up wording.
