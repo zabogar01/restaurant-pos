@@ -56,11 +56,11 @@ Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
   the lock wait; lead ruled `clock_timestamp()` after the lock (`1633fd4`, cases 22-23, red proof); no
   re-review (15-line diff read by the lead). Lead verify 49/2838, throttle file 3x green. Owner looks.
 - **Next after 006: PIN reuse, its own task** (ARCH-007 §8: migration `0006` partial unique index on
-  active users, `createStaffUser`'s `ON CONFLICT ... WHERE is_active` in the same commit). Not written.
+  active users, `createStaffUser`'s `ON CONFLICT ... WHERE is_active` in the same commit; FR-A4 now says so).
+  Reactivation (Phase 1) keeps the PIN unless another active user took it (DECISIONS 2026-10-07). Not written.
   Task 10's consult must add an audit outcome for a cooldown-refused approval (none of the three fits).
-- **A non-Codex reviewer:** the dispatcher cannot override the reviewer's CLI, so the lead set
-  `reviewer.pick.anthropic.strong` to OpenCode for one run, reinstalled hooks, then restored both.
-  Repeat that while Codex is out; the kit question stands.
+- **Codex reset** (owner, 2026-10-07): reviews go back to the default pick. If Codex runs out again, the
+  temporary OpenCode pick in journal 2026-10-07 is the way; the kit question stands.
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
   three). The owner's answers are in (DECISIONS 2026-10-06: cooldown refusal is audit; count resets).
 - **PIN reuse (DECISIONS 2026-10-06) conflicts with the schema:** `0002_staff_user.sql:29` makes
@@ -127,11 +127,8 @@ Nothing here is decided. Detail is where each line points.
   `BLOCKED ON APPROVAL`? Builders interactive by default? Should `/lead` fetch and fast-forward
   before its report? Allow builders' `python3`/`sed` edits (FE-036, PHASE0-004 twice)? Should the
   dispatcher support a hand-opened designer, and a non-Codex reviewer when Codex is out?
-- **ARCH-007, for the owner (none blocks 006):** (1) FR-A4 wording for PIN reuse, proposed: "PINs are
-  unique among active users, so an audit actor is unambiguous. A deactivated user's PIN may be given
-  to another user." Can a deactivated user be reactivated (architect: only with a new PIN)? (2) Accept
-  for the MVP that a cashier can guess four PINs, log in as themselves, and repeat without a cooldown
-  (FR-A5's same-class reset)? (3) Confirm a failed manager approval goes to audit only, no `PIN_FAILURE`.
+- **Pre-production gate, owner-accepted risk (DECISIONS 2026-10-07):** the same-class reset lets a cashier
+  guess four PINs, log in as themselves and repeat. Revisit before any networked use.
 - **FR-M3 / B-2 wording:** "half-up" below zero; the code rounds half away from zero. Proposed at L2699-2701.
 - **Confirm or reject the ten `conversation only` lines** in DECISIONS.md (POS-03 Q5, Q6, Q9 among them).
 
