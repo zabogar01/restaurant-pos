@@ -5,8 +5,8 @@ category: feature
 touches: [identity]
 depends_on: [PHASE0-005]
 owns: [apps/server/src/**, apps/server/test/**]
-status: active
-cycles: 0
+status: complete
+cycles: 1
 ---
 # PHASE0-006 — Throttled PIN verification
 
