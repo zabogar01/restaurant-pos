@@ -54,10 +54,10 @@ back-office credential) running. Narrative: [journal/2026-10-07.md](journal/2026
 - **PHASE0-006b (PIN unique among active staff) complete** at its last commit on `agent/phase0-006b`, not
   pushed: one round, Codex review clean. Migration `0006` (partial unique index) and the conflict clause;
   lead verify 49/2844. Identity: owner looks. **After merge, run `npm run db:migrate` on the dev `pos`.**
-- **PHASE0-007 (sessions) dispatched** 2026-10-07 from ARCH-008 (`.agent/reviews/ARCH-008-sessions.md`),
-  binding sections copied verbatim: token + SHA-256, credential-version predicate, required
-  `interactive`, `clock_timestamp()`, `IDLE` status, M-6 renews the same row. Builder Claude Sonnet in pane
-  `PHASE0-007`, worktree `../restaurant-pos-wt/PHASE0-007` from `20ae39e`. Identity: Codex review, owner looks.
+- **PHASE0-007 (sessions) complete** at `3873175` on `agent/phase0-007`, not pushed: one round, Codex review
+  clean. Built from ARCH-008: token + SHA-256, credential-version predicate, required `interactive`,
+  `clock_timestamp()`, `IDLE`, M-6 renews the same row. 32 tests, 10 red proofs; lead verify 50/2870,
+  session file 3x green. Its dispatcher hit the 30-minute background limit (LESSONS); lead closed the pane.
 - **Back-office credential task (no ID yet), blocked on the owner:** ARCH-008 rules its own table
   `back_office_credential` with a per-account throttle, after 007 and before the routes; it needs a new
   ADR and PRD/B-11/B-12 wording (ARCH-008 *For the owner* 1-4).
@@ -75,7 +75,7 @@ back-office credential) running. Narrative: [journal/2026-10-07.md](journal/2026
 - **The BO-13 frontend task** carries DESIGN-013's rules N1, N2 and the async-focus rule (its task file).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) and `phase0-007`; worktree `../restaurant-pos-wt/PHASE0-006b` awaits merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`) only; worktrees `../restaurant-pos-wt/PHASE0-006b` and `PHASE0-007` await merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
@@ -145,5 +145,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Verify and review PHASE0-006b; read ARCH-008 and write PHASE0-007 (sessions) from it. Design slice I
-(BO-12) on Codex when the owner says go. Draft owed PRD wording one item at a time; receipt research after.
+Owner looks at, pushes and merges PHASE0-006b, PHASE0-007 and `agent/lead-1007b`; then `npm run db:migrate`
+and cleanup. Then the owner's rulings on ARCH-008's credential questions, or Task 8's consult (HTTPS server).

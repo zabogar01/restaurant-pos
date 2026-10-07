@@ -88,6 +88,10 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-006, throttled PIN verification, merged 2026-10-07 as PR #61.)*
     - **PHASE0-006b** — PIN unique among active staff (ARCH-007 §8) — complete 2026-10-07, Codex review
       clean — waits on the owner's look and merge.
+    - **PHASE0-007** — sessions (plan Task 7), from ARCH-008 — complete 2026-10-07, Codex review clean —
+      waits on the owner's look and merge.
+    - **Back-office credential (no ID yet)** — `back_office_credential`, per-account throttle (ARCH-008 §5)
+      — after 007, before the routes — waits on the owner's ADR and contract rulings — not written.
     - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
       three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
