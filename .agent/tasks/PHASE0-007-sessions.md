@@ -5,7 +5,7 @@ category: feature
 touches: [identity]
 depends_on: [PHASE0-006]
 owns: [apps/server/src/**, apps/server/test/**]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE0-007 — Sessions
