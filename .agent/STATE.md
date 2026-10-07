@@ -51,14 +51,13 @@ Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
 
 ## Running tasks and agents
 
-- **PHASE0-006 (throttled PIN verification, plan Task 6) dispatched** 2026-10-07: builder Claude Sonnet
-  5.5 interactive in pane `PHASE0-006`, worktree `../restaurant-pos-wt/PHASE0-006`, from `bbe1dce`. Written
-  from ARCH-007 (`.agent/reviews/ARCH-007-throttle.md`), whose binding sections it copies verbatim:
-  one `verifyPinThrottled` under a row lock; `findUserByPin` gains an optional client; events after
-  commit; no `PIN_FAILURE` for approvals. Touches identity: owner looks before merge.
+- **PHASE0-006 (throttled PIN verification) complete** at `413a51b` on `agent/phase0-006`, not pushed: two
+  rounds. One `verifyPinThrottled` under a row lock (ARCH-007). OpenCode review found `now()` stale after
+  the lock wait; lead ruled `clock_timestamp()` after the lock (`1633fd4`, cases 22-23, red proof); no
+  re-review (15-line diff read by the lead). Lead verify 49/2838, throttle file 3x green. Owner looks.
 - **Next after 006: PIN reuse, its own task** (ARCH-007 §8: migration `0006` partial unique index on
   active users, `createStaffUser`'s `ON CONFLICT ... WHERE is_active` in the same commit). Not written.
-- **Task 10's consult must add** an audit outcome for a cooldown-refused approval (none of the three fits).
+  Task 10's consult must add an audit outcome for a cooldown-refused approval (none of the three fits).
 - **A non-Codex reviewer:** the dispatcher cannot override the reviewer's CLI, so the lead set
   `reviewer.pick.anthropic.strong` to OpenCode for one run, reinstalled hooks, then restored both.
   Repeat that while Codex is out; the kit question stands.
@@ -73,7 +72,7 @@ Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
 - **The BO-13 frontend task** carries DESIGN-013's rules N1, N2 and the async-focus rule (its task file).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) and `phase0-006`; `architect7` closed. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`) only; worktree `../restaurant-pos-wt/PHASE0-006` awaits merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
@@ -103,7 +102,6 @@ Narrative: [journal/2026-10-07.md](journal/2026-10-07.md).
   Add from POS-03 `eightysix` returning there by design (L353; `own-items.test.tsx:381-393`).
 - **Money, not filed (ARCH-003, 9.6):** `closeOrder` (`close.ts:74–101`) accepts any drafts; only the
   Add gate (`tender.ts:39–41`) keeps a card under the balance (B-5). Unreachable today; own task, architect consult.
-- **P3, left out of FE-034 on purpose:** QUEUE 8c and 8d.
 - **Must not become a guarantee:** optional `OrderLine.itemId` (L1787); the in-memory refund and change walk.
 - **Backend:** ARCH-006 §8 lists plan defects in Tasks 5-10. `session_replication_role` (superuser
   only) bypasses the append-only trigger: for ADR-008's wording.
@@ -146,5 +144,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-ARCH-007's report, then write and dispatch PHASE0-006 (throttle) from it. Design slice I (BO-12) once
-Codex's allowance resets. Draft the owed PRD wording one item at a time; the receipt research after.
+Owner looks at, pushes and merges PHASE0-006 and `agent/lead-1007`; then cleanup. Next: the PIN-reuse
+task (ARCH-007 §8), then Task 7's consult (sessions). Design slice I when Codex resets.
