@@ -423,3 +423,41 @@ Each is a mutation the builder makes, runs, reads and reverts, reporting the fai
   separate task after the owner's ADR and contract rulings; ARCH-008 *For the owner*).
 - Cookies, routes, CSRF and origin checks (Tasks 8 and 9); approval (Task 10); FR-B3's writer
   (Phase 1).
+
+## Handoff
+
+**What I did.** Added `apps/server/src/domain/session.ts` and `apps/server/test/session.test.ts`, committed on `agent/phase0-007` (the commit touching these two files and this Handoff; hash in `git log`). No migration, grant, or change to `pin.ts`, `throttle.ts`, `audit.ts` or any existing test. No formatter was run.
+
+The module follows ARCH-008 as copied above. The predicate (token, audience, not released, user active, credential version equal, absolute limit) is one string constant `VALID`; the idle clause is a second constant `NOT_IDLE`, so the IDLE/NONE fallback uses `VALID` alone. Interactive resolution is one `UPDATE ... FROM staff_user ... RETURNING` with `GREATEST`; non-interactive is one `SELECT`; on no row one more `SELECT` without the idle clause decides IDLE or NONE. `reauthenticateSession` is one `UPDATE`. `createSession` is the only statement with `now()` and never reads `staff_user`. Token validation (`digestOf`) checks type, the 43-character base64url shape, and that decoding gives 32 bytes that re-encode to the same string, so a non-canonical spelling of the same bytes is refused; a malformed token costs no query.
+
+**Decisions.** (1) Database errors are replaced with a constant `The session store failed` and keep no cause, as `pin.ts` does, because a PostgreSQL error's `detail` can carry the failing row (here the digest). Rule 4 asked that no error carry the token or digest; the task did not say how, so I followed the existing house pattern. (2) Case 8 needs a real `client_instance` row (the column is a foreign key), so the test inserts one through `ownerQuery`. (3) Case 32 provokes real database errors from `createSession` (unknown user id, a null credential version) and checks the error text and its own properties for the token, the digest hex and any `\x` 32-byte literal. I could not provoke a database error from `resolveSession` without breaking the pool, so that path is covered by the shared `run` wrapper only.
+
+**Spec deviation in test 13.** The case as written ("aged to 29 minutes, polled, then aged to 31") would not catch a polling touch if "aged to 31" overwrote `last_interactive_at` absolutely, because the overwrite erases the touch. Red proof 5 showed it: with my first version only case 12 failed. I changed case 13 to move the row a further 2 minutes (2 seconds for POS) back relative to wherever the poll left it, so a touching poll leaves the row ACTIVE. With that change the proof fails cases 12 and 13 as the task expects.
+
+**Existing tests changed:** none.
+
+**Case to test map** (all in `apps/server/test/session.test.ts`; each test name begins with its case number): 1 SESSION_POLICY literals; 2 POS no limit, back office eight hours; 3 stores the version given; 4 token shape and SHA-256 only; 5 fresh ACTIVE; 6 audience NONE both ways; 7 malformed tokens; 8 client_instance_id; 9 role change; 10 POS 89/91; 11 back office 29/31 minutes; 12 interactive moves, non-interactive unchanged; 13 polling does not extend; 14 never moves back; 15 absolute limit; 16 issued_at and absolute unchanged; 17 version raised; 18 inactive; 19 ARCH-006 interleaving; 20 other user unaffected; 21 release and idempotence; 22 idle release is NONE; 23 wrong-audience release; 24 renewal; 25 different manager; 26 released, limit, inactive, version differs (one test, four labelled assertions); 27 ACTIVE re-authentication; 28 release wins the race; 29 clock read after the wait; 30 twenty-five simultaneous; 31 exact exports; 32 errors carry no token.
+
+**Red proofs** (each mutated in `session.ts`, run, read, reverted by restoring a saved copy; the final file is the one that went green):
+1. Version clause removed: cases 17, 19 and 20 failed (`expected ACTIVE to equal NONE`). Case 20 fails because the raised user's own session still resolves ACTIVE.
+2. `u.is_active` removed: cases 18 and 26 failed (26: `inactive: expected { token, sessionId } to be null`).
+3. `createSession` reads the user's current version: cases 3 (`expected '2' to be '1'`) and 19 failed.
+4. Audience clause replaced with a no-op using `$2`: case 6 failed (`expected 'ACTIVE' to be 'NONE'`).
+5. Non-interactive resolution touches: cases 12 and 13 failed (12 shows `last_interactive_at` moved from 05:18 to 05:28). See the deviation above.
+6. `now()` instead of `clock_timestamp()` in the idle clause: case 29 returned `ACTIVE`, expected `IDLE`.
+7. Interactive resolution split into `SELECT` then `UPDATE ... WHERE id`: case 28 returned `ACTIVE` (expected NONE), and case 29 also failed.
+8. `s.staff_user_id = $4` dropped: case 25 returned a token instead of null.
+9. `token_hash` left unchanged on re-authentication: cases 24 and 27 failed (24 at the new-token resolve, 27 because the old token still resolved ACTIVE).
+10. `GREATEST` dropped: case 14 failed; `last_interactive_at` moved from +5 seconds back to the present.
+
+**Greps.** `grep -n "Date\|console\." apps/server/src/domain/session.ts` printed nothing. `grep -n "now()" apps/server/src/domain/session.ts` printed only `87:                  ELSE now() + make_interval(secs => $5::int) END)`, the insert.
+
+**Verify.** `npx vitest run apps/server/test/session.test.ts` was green three times in a row (32 of 32 each time, about 3.5 seconds). `npm run verify`: typecheck clean; 50 files, 2870 tests passed. Against `development`'s 49 files and 2838 tests that is one file and 32 tests added, exactly this task's; the client files are untouched.
+
+**Found and not fixed.** An idle session past its absolute limit is NONE, as the owner ruled. Expired rows are never marked or deleted. Nothing bumps `credential_version` on a role change, so a demoted manager keeps a resolving session with role CASHIER; refusing that is the route guard's, as ARCH-008 says.
+
+**Carry forward.** For Task 9: the cookie carries `token`; the cookie's name and attributes are Task 9's; every route declares `interactive`, and polling, health and `/me` are not; the back-office guard requires role `MANAGER` on every request; M-6 asks the idled manager for their password and calls `reauthenticateSession`, while another manager gets a fresh sign-in; `IDLE` is never an actor, and POS routes treat it as NONE; a login releases a presented session first; the token never reaches a log. For Task 8: the request serializer must not log cookie headers. For Task 10: a session of either audience never satisfies an approval (B-14, FR-A2c). AC-27 and AC-28 are proved here only at the domain level and close when Task 9 proves them through routes; AC-32 closes when FR-B3's writer exists in Phase 1.
+
+**Not available.** No browser was needed or used.
+
+DONE
