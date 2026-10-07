@@ -86,14 +86,14 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-004, PIN hashing and lookup, merged 2026-10-06 as PR #56.)*
     - *(Done: PHASE0-005, audit and security-event writers, merged 2026-10-07 as PR #59.)*
     - *(Done: PHASE0-006, throttled PIN verification, merged 2026-10-07 as PR #61.)*
-    - **PHASE0-006b** — PIN unique among active staff (ARCH-007 §8) — complete 2026-10-07, Codex review
-      clean — waits on the owner's look and merge.
-    - **PHASE0-007** — sessions (plan Task 7), from ARCH-008 — complete 2026-10-07, Codex review clean —
-      waits on the owner's look and merge.
+    - *(Done: PHASE0-006b, PIN unique among active staff, merged 2026-10-07 as PR #63.)*
+    - *(Done: PHASE0-007, sessions, merged 2026-10-07 as PR #64.)*
+    - **ARCH-009 / PHASE0-008** — consult, then HTTPS server, loopback guard, client instance (plan
+      Task 8) — not blocked — not written.
     - **Back-office credential (no ID yet)** — `back_office_credential`, per-account throttle (ARCH-008 §5)
       — after 007, before the routes — waits on the owner's ADR and contract rulings — not written.
-    - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
-      three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
+    - **Before Task 10:** an architect consult (ARCH-006 §8), which must add an audit outcome for a
+      cooldown-refused approval (ARCH-007 §7). Tasks 6 and 7 had theirs (ARCH-007, ARCH-008).
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
       by the owner 2026-10-06, possibly to after the MVP — not written.
 12. **PRD wording proposal** — replace "half-up" in FR-M3 and B-2 with the half-away-from-zero
