@@ -54,19 +54,17 @@ ADR) are running. `development` at `93c6f2c`. Narrative: [journal/2026-10-07.md]
 - **DESIGN-014 (slice I, BO-12 audit viewer) running:** `design014`, Codex `gpt-6-astra` high, pane
   `w2:p4E`, worktree `../restaurant-pos-wt/DESIGN-014` on `agent/design-014` (task file `7f3750e`).
   Three lead rulings on audit amounts (void, line void, discount) there, owner's to overturn.
-- **ARCH-009 running:** `architect9`, Opus, pane `w2:p4F`, worktree `../restaurant-pos-wt/ARCH-009` on
-  `agent/arch-009` (`d675025`): ADR-009 Proposed (ADR-008 stays reserved for DB roles) plus ARCHITECTURE
-  §2.1/5.1/7.2/7.3/13/16 amendments, for the owner to accept together.
+- **ARCH-009 complete, waiting on the owner:** `cbf3aef` on `agent/arch-009` (worktree
+  `../restaurant-pos-wt/ARCH-009`, pane `w2:p4F` kept open for a possible round). ADR-009 Proposed plus
+  ARCHITECTURE §2.1/5.1/7.2/7.3/13/16. Handoff: FR-B3 vs own-password ruling, follow-up wording.
 - **Live agents:** the lead (`w2:p1`), `design014`, `architect9`. Not the lead's: pane `w2:pE`,
   `.claude/worktrees/keen-chebyshev-ccf255`.
 - **Next backend:** the **back-office credential** task, written from ARCH-008 §5 and ADR-009 once
   the owner accepts it; **ARCH-010, the consult for plan Task 8** (HTTPS server, loopback guard,
   client instance), not blocked. Task 9 (auth routes) needs 007 and the credential; Task 10 needs a
   consult that adds an audit outcome for a cooldown-refused approval (ARCH-007 §7).
-- **Slice B must also fix** SCREEN-INVENTORY BO-01 `:548–550` and SITEMAP `:248` (still a PIN and the
-  shared `LOGIN` class at the back office; ARCH-008 §5).
-- **Pattern for identity/audit tasks:** an Opus consult first (ARCH-006 to 008), then a task file that
-  copies the consult's *For the task file* sections verbatim (the report is not yet on `development`).
+- **Pattern for identity/audit tasks:** an Opus consult first, then a task file copying its *For the
+  task file* sections verbatim. Slice B fixes BO-01 `:548–550`, SITEMAP `:248` (PIN at back office).
 - **Carry-forwards for Tasks 8 to 10** are in the Handoffs of PHASE0-005 to 007 (six-digit rule at the
   route, `interactive` per route, `MANAGER` guard, no cookie logging; AC-19/27/28 close only via routes).
 - **Design slices left after I: B, D, E, F, G, H.** Slice B takes DESIGN-012's lows N1-N3 first; M-6
@@ -117,7 +115,9 @@ Nothing here is decided. Detail is where each line points.
 
 - **Push `agent/lead-1007c`?** It holds the wrap-up and the owner-approved contract commit `408f707`
   (PRD FR-A1/A2b/A3/A5b/B3, AC-32/35, §6; B-11/B-12; DECISIONS 2026-10-07 evening).
-- **ADR-009 acceptance** when ARCH-009 lands (with its ARCHITECTURE.md amendments).
+- **ADR-009 acceptance** (ARCH-009 Handoff): accept with amendments? FR-B3 own-password exception;
+  cooldown-end reset for passwords (FR-A5/A5b text); AC-35 unknown username; stale §1/3.2/5.1/11/12/
+  14.2/16 wording on acceptance. Phase 1: own change needs current password? own PIN reset? role bump?
 - **PRD wording owed, not yet drafted,** for 2026-10-06 rulings that touch the contract: report-print
   failure placement, void `REFUSED` and abandoned approval as cancelled (FR-J3, AC-18), empty order
   cancelled, no rate range (§9 question 3), post-close corrections by adjustment (§9 question 2),
