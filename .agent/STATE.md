@@ -51,14 +51,13 @@ ADR) are running. `development` at `93c6f2c`. Narrative: [journal/2026-10-07.md]
 
 ## Running tasks and agents
 
-- **DESIGN-014 (slice I, BO-12 audit viewer) running:** `design014`, Codex `gpt-6-astra` high, pane
-  `w2:p4E`, worktree `../restaurant-pos-wt/DESIGN-014` on `agent/design-014` (task file `7f3750e`).
-  Three lead rulings on audit amounts (void, line void, discount) there, owner's to overturn.
+- **DESIGN-014 in review:** built at `619dd8f` (23 states; checks 237/237, slice A 216/216, C 371/371);
+  lead verify 50/2876 and Chrome walk clean; status `review` `82e622d`. Opus review dispatched (oneshot).
+  Designer pane `w2:p4E` kept for round 2. Lead amount rulings (void, line void, discount) owner's to overturn.
 - **ARCH-009 complete, waiting on the owner:** `cbf3aef` on `agent/arch-009` (worktree
   `../restaurant-pos-wt/ARCH-009`, pane `w2:p4F` kept open for a possible round). ADR-009 Proposed plus
   ARCHITECTURE §2.1/5.1/7.2/7.3/13/16. Handoff: FR-B3 vs own-password ruling, follow-up wording.
-- **Live agents:** the lead (`w2:p1`), `design014`, `architect9`. Not the lead's: pane `w2:pE`,
-  `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** lead `w2:p1`, `design014`, `architect9`, DESIGN-014 reviewer. Not ours: `w2:pE`, keen-chebyshev.
 - **Next backend:** the **back-office credential** task, written from ARCH-008 §5 and ADR-009 once
   the owner accepts it; **ARCH-010, the consult for plan Task 8** (HTTPS server, loopback guard,
   client instance), not blocked. Task 9 (auth routes) needs 007 and the credential; Task 10 needs a
@@ -121,7 +120,8 @@ Nothing here is decided. Detail is where each line points.
 - **PRD wording owed, not yet drafted,** for 2026-10-06 rulings that touch the contract: report-print
   failure placement, void `REFUSED` and abandoned approval as cancelled (FR-J3, AC-18), empty order
   cancelled, no rate range (§9 question 3), post-close corrections by adjustment (§9 question 2),
-  reactivation keeps the PIN unless taken (FR-B3), cooldown-refused approval as an audit entry.
+  reactivation keeps the PIN unless taken (FR-B3), cooldown-refused approval as an audit entry; FR-H3 and
+  AC-10 still audit an unfired-order cancel (DESIGN-014 Handoff has wording).
 - **PRD §9 question 1, receipt content:** the owner asked the lead to research the usual content of an
   Indonesian F&B receipt and propose it. Not started; a librarian task, one step at a time.
 - **Lead rulings, yours to overturn,** each in its task file's *Lead rulings* or round section:
