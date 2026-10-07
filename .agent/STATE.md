@@ -9,78 +9,87 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-06, evening: the owner said go on the lead's proposal. The lead wrote and dispatched
-PHASE0-004 (PIN) and wrote DESIGN-013 (slice C, BO-13) and opened its Codex designer by hand.
-Earlier the same day: PRs #53-#55 merged, `development` at `2ee2285`. Narrative: [journal/2026-10-06.md](journal/2026-10-06.md).
+2026-10-06, late: the owner answered fourteen open questions (business day, back-office credential,
+cooldown, PIN reuse, DESIGN-013, ARCH-005, abandoned approvals, rate range); all are in DECISIONS.md.
+Earlier: PRs #56-#58 merged, `development` at `c507dfc`. Narrative: [journal/2026-10-06.md](journal/2026-10-06.md).
 
 ## Phase and gates
 
-- **Phase 0**, started 2026-09-14. Backend tasks 1 to 3 of 12 are done: scaffold and PostgreSQL,
-  money module, and Task 3 in three slices (003a `Rate` brand, 003b serial test harness on
-  `pos_test` with an unprivileged `pos_app` pool, 003c the six-table schema with append-only
-  audit). Tasks 4 to 12 (PIN, audit writer, throttling, sessions, HTTPS server, auth routes,
-  approval, client shells, acceptance tests) remain; resumed by the owner 2026-10-05. The server
-  has a pool, a migration runner and migrations 0001-0005; no API and no auth yet.
+- **Phase 0**, started 2026-09-14. Backend tasks 1 to 4 of 12 are done: scaffold and PostgreSQL,
+  money module, Task 3 in three slices (003a `Rate` brand, 003b serial test harness with an
+  unprivileged `pos_app` pool, 003c the six-table schema with append-only audit), and Task 4 (PIN:
+  Argon2id hash, keyed lookup digest under `PIN_PEPPER`, `findUserByPin` returning the credential
+  version). Tasks 5 to 12 (audit writer, throttling, sessions, HTTPS server, auth routes, approval,
+  client shells, acceptance tests) remain. No API and no auth routes yet.
 - **Frontend built** (fixtures plus a client order store): POS-01 to POS-07, every designed POS
   screen, bar Release (FR-A). Not built: all 13 back-office screens.
-- **Back-office design:** shared frame, alerts, M-6 and patterns drawn (DESIGN-012); BO-03, BO-11
-  in older Frost; the other eleven are greyscale wireframes.
+- **Back-office design:** slice A (DESIGN-012: frame, alerts, M-6, patterns) and slice C (DESIGN-013:
+  BO-13 print incidents, 41 states) drawn in Frost. BO-03, BO-11 in older Frost; ten are greyscale.
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted.
-- **Last verify by the lead:** `npm run verify` green at **2758 tests / 46 files** on 2026-10-06 on
-  `development` at `2ee2285`, main checkout. Server tests need `npm run db:up` (compose from
-  `db/dev.env`, then provision `pos_app` and `pos_test`). The dev database `pos` holds 0001-0005.
+- **Last verify by the lead:** `npm run verify` green at **2780 tests / 47 files** on 2026-10-06 on
+  `development` at `c507dfc`, main checkout, after `npm ci`. Server tests need `npm run db:up`
+  (compose from `db/dev.env`, then provision `pos_app` and `pos_test`). The dev database `pos` holds 0001-0005.
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `2ee2285` (PR #55) on
-  GitHub; the local `development` matches it (fast-forwarded 2026-10-06). `main` and
-  `development` are protected: PR required, 0 approvals, admins too.
+- **`development` is the integration branch** (owner, 2026-09-29), at `c507dfc` (PR #57) on
+  GitHub; the local `development` matches it. `main` and `development` are protected: PR
+  required, 0 approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch`
   and fast-forward the main checkout (`git merge --ff-only origin/development`) **before reporting
-  or dispatching**: on 2026-10-02 it was 11 commits behind and the lead's first report was wrong.
+  or dispatching**, then `npm ci` if the lockfile changed (LESSONS).
 - **Guard hooks** are installed in the shared `.git/hooks` with an `agents.yaml` snapshot,
-  current (checked 2026-10-06 after the last fast-forward). Rerun after any merge that changes
-  `.githooks/` or agents.yaml.
-- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1006b`** (from `2ee2285`), not pushed.
+  current (checked 2026-10-06 at `c507dfc`). Rerun after any merge that changes `.githooks/` or agents.yaml.
+- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1006c`** (from `c507dfc`), this wrap-up, not pushed.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations` (`735301d`, behind). Merged, still existing: `agent/design-direction`
-  (worktree `../restaurant-pos-design`), `agent/design-010`, `agent/design-012`, `agent/fe-030` to
-  `agent/fe-036`, `agent/phase0-003a` to `003c`, and the `agent/lead-*` branches.
+  (worktree `../restaurant-pos-design`), `agent/design-010`, `-012`, `-013`, `agent/fe-030` to
+  `agent/fe-036`, `agent/phase0-003a` to `003c`, `agent/phase0-004`, and the `agent/lead-*` branches.
 
 ## Running tasks and agents
 
-- **PHASE0-004 (PIN) complete** at `77b672c` on `agent/phase0-004`, not pushed: two rounds (review found a
-  B-12 leak via a numeric PIN, and API drift from the plan; both fixed, re-review clean); lead verify
-  47/2780. Owner's look, push and merge. The reviewer wrote into the Handoff; the lead reverted it.
-- **DESIGN-013 (slice C, BO-13) complete** at `39f9847` on `agent/design-013`, not pushed: two rounds
-  (Opus review 8 findings, all closed; 41 states, checks 371/371 and DESIGN-012 216/216; lead verify
-  46/2758; lead walked AC-3/4 and F1). Three re-review lows: N1, N2 carried as rules into the BO-13 build.
+- **PHASE0-005 (audit and security-event writers) complete** at `0240db0` on `agent/phase0-005`, not
+  pushed: two rounds. Builder Claude Sonnet 5.5; review on OpenCode `openai/gpt-6.1-sol` (Codex at its
+  limit) found one low test gap (case 11 did not prove "before SQL"), fixed in `af1f368` with a pool spy
+  and a red proof; no re-review (test-only). Lead verify 48/2815. Touches audit: owner's look, push, merge.
+- **For plan Task 6 (from the Handoff):** `writeSecurityEvent` writes on its own pool call, so a
+  failed-PIN event survives a rolled-back login, and a caller cannot put it inside its transaction.
+- **A non-Codex reviewer:** the dispatcher cannot override the reviewer's CLI, so the lead set
+  `reviewer.pick.anthropic.strong` to OpenCode for one run, reinstalled hooks, then restored both.
+  Repeat that while Codex is out; the kit question stands.
 - **Before plan Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
-  three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
-- **Design slices still ready:** D, F and I. Slice B (BO-01, 02) must take DESIGN-012's three lows
-  N1-N3 as first items (its task file, end).
+  three). The owner's answers are in (DECISIONS 2026-10-06: cooldown refusal is audit; count resets).
+- **PIN reuse (DECISIONS 2026-10-06) conflicts with the schema:** `0002_staff_user.sql:29` makes
+  `pin_lookup` unique across every row, deactivated included. Needs a forward migration (unique only
+  among active users) and a lookup that ignores inactive rows: give it to a Phase 0 task, not a new one.
+- **Next design task: any of slices B, D, E, F, G, H, I** — Q2, Q4, Q7 are ruled. Slice B must take
+  DESIGN-012's lows N1-N3 first (its task file, end); M-6 becomes password-only plus "another manager".
+  Each slice consumes `office.css`/`office.js` and repoints only the wireframe links it replaces.
+- **The BO-13 frontend task** carries DESIGN-013's rules N1, N2 and the async-focus rule (its task file).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) only. Worktrees `../restaurant-pos-wt/PHASE0-004`, `DESIGN-013` await merge. Not the lead's: pane `w2:pE`, worktree `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`) only; worktree `../restaurant-pos-wt/PHASE0-005` awaits merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
 - **Dispatch** with `.agent/bin/dispatch.sh <ID> --dry-run`, then without it in the background
   (the `/dispatch` skill), from `../restaurant-pos-kit`, where an undispatched task file lives
   untracked (delete that copy once dispatched). The worktree is cut from the **local** `development`.
-- **A permission prompt does not wake the lead:** the dispatcher prints `BLOCKED ON APPROVAL`
-  and keeps waiting. After every dispatch or resume, run in the background: wait until
-  `herdr agent get <id>` says `working`, then `herdr agent wait <id> --until blocked`; re-arm after
-  each prompt. Only the owner answers. A queued Codex question keeps the agent `blocked`, so
-  watch `herdr pane read` for a new commit or prompt instead.
+- **A permission prompt does not wake the lead:** after every dispatch or resume, run in the
+  background: wait until `herdr agent get <id>` says `working`, then `herdr agent wait <id> --until
+  blocked`; re-arm after each prompt. Only the owner answers. A queued Codex question keeps the
+  agent `blocked`: watch `herdr pane read` instead.
 - **`max_fix_cycles` is 2:** two `--resume` rounds, whatever their cause; a third goes to the owner.
+- **Codex is the only reviewer for a Claude-built task** and shares one five-hour allowance with the
+  Codex designer; `/status` in a Codex pane shows the reset. Reviewers write only their report (LESSONS).
 - **Tests expected to change: grep first**; the explorer is a cross-check only.
-- **Designers are opened by hand** (Codex launch, resume, OpenCode stand-in, usage limits, handover
+- **Designers are opened by hand** (Codex launch, resume by session id, OpenCode stand-in, handover
   notes, the loopback walk server: journal 2026-10-06, *Designer how-to*). Write the run's
-  `meta.json` before the review (LESSONS); close each designer pane when its round ends (owner).
+  `meta.json` (`cli: codex`) before the review; close each designer pane when its round ends (owner).
+  Codex's browser checks, `git add` and `git commit` each need the owner's approval in its pane.
 - Architect launch line: journal 2026-10-01. POS browser-walk traps: journal 2026-10-02.
 - **YAML 1.1 reads `caveman: off` as `false`.** **`--model <m>`** swaps the model for one run on
   the same CLI. The owner's `auto` classifier may refuse the lead `git worktree remove` or `rm -rf`
@@ -94,43 +103,32 @@ Earlier the same day: PRs #53-#55 merged, `development` at `2ee2285`. Narrative:
   Add gate (`tender.ts:39–41`) keeps a card under the balance (B-5). Unreachable today; own task, architect consult.
 - **P3, left out of FE-034 on purpose:** QUEUE 8c and 8d.
 - **Must not become a guarantee:** optional `OrderLine.itemId` (L1787); the in-memory refund and change walk.
-- **Backend:** ARCH-006 §8 lists plan defects in Tasks 4-10. `session_replication_role` (superuser
+- **Backend:** ARCH-006 §8 lists plan defects in Tasks 5-10. `session_replication_role` (superuser
   only) bypasses the append-only trigger: for ADR-008's wording.
 
 ## Questions waiting for the owner
 
 Nothing here is decided. Detail is where each line points.
 
-- **DESIGN-011:** Q2 business day (contract wording proposed: close to close, named by the WIB date
-  it opened); Q4 the MVP back-office credential (M-6 drawn as *Password*, four strings in
-  `shell.js`'s `credentialCopy`) and first-manager bootstrap, plus: does another manager's valid
-  credential typed into M-6 count as a LOGIN failure?; Q7 report-print failure: BO-13 or report
-  screen only?; Q3's eight-hour half (to Login, draft kept locally, never resent). Q5 out of scope
-  and Q8 ruled by the lead, yours to overturn.
-- **ARCH-006 lead rulings, yours to overturn:** Task 3 split in three; no `settings_version` until
-  Phase 1; session token stored only as its SHA-256; outcomes `APPROVAL_FAILED`/`APPROVAL_CANCELLED`;
-  an append-only trigger on `audit_entry` for every role; app role INSERT-only on evidence.
-- **ARCH-006 for the owner:** a cashier's approval refused by the cooldown is audit, security event,
-  or both (before plan Task 10)? Does the failure count reset when a cooldown ends (Task 6)? Kitchen
-  staff as records (Phase 1)? A deactivated user's PIN reusable? Commission ADR-008?
-- **New (DESIGN-013):** is a back-office reprint of a *cancellation* ticket a "kitchen ticket" for
-  FR-J3's audit? Lead proposes yes. Does a reprinted work ticket mark a line cancelled since (review F5)? PHASE0-004 and DESIGN-013 lead rulings are in their task files.
-- **DESIGN-012 lead rulings, yours to overturn:** nav, *Log out* and alert links stay on wireframes
-  until each slice lands; three low findings carried to slice B rather than a third round.
-- **FE-036 lead rulings, yours to overturn:** a client-voided line shows only its strike-through; the
-  sheets keep *A cancellation ticket will print* and *recorded against your name*.
-- **ARCH-005, before Phase 2:** abandoning an opened order with no lines; does a server-refused approved void write `REFUSED`?
-- **Earlier lead rulings, yours to overturn:** FE-030 to FE-033's (journal 2026-10-05, end); "go" read as accepting both recommendations.
+- **PRD wording owed, not yet drafted** for the other 2026-10-06 rulings that touch the contract:
+  username and password with M-6's other-manager option (FR-A2b), report-print failure placement,
+  void `REFUSED` and abandoned approval as cancelled (FR-J3, AC-18), empty order cancelled, no rate
+  range (§9 question 3), post-close corrections by adjustment in the open day (§9 question 2).
+- **PRD §9 question 1, receipt content:** the owner asked the lead to research the usual content of an
+  F&B receipt in Indonesia and propose it. Not started; a librarian task, one step at a time.
+- **Lead rulings, yours to overturn:** PHASE0-004 (Argon2id m=19456,t=2,p=1 in code; no `zod` until
+  Task 8; `PIN_PEPPER` in `db/dev.env`); DESIGN-013 (reprint ungated, no audit wording on results,
+  three re-review lows carried rather than a third round); DESIGN-012 (wireframe links until each
+  slice lands, lows to slice B); ARCH-006 (Task 3 split; no `settings_version` until Phase 1; session
+  token stored as SHA-256; `APPROVAL_FAILED`/`APPROVAL_CANCELLED`; append-only trigger for every role;
+  app role INSERT-only on evidence); FE-036 (strike-through only; sheet copy kept); FE-030 to FE-033's
+  (journal 2026-10-05, end); DESIGN-011 Q5 and Q8.
 - **Kit:** add `Bash(grep:*)` to the builder allowlist? Should the dispatcher ping the lead on
   `BLOCKED ON APPROVAL`? Builders interactive by default? Should `/lead` fetch and fast-forward
-  before its report? Allow builders' `python3` heredoc edits? Should the dispatcher support a
-  hand-opened designer (record its CLI, accept `ui` design tasks)?
-- **Before Phase 5 (ARCH-003):** is an abandoned approval prompt a *cancelled approval* (FR-J3, AC-18)? Joins POS-03 Q6.
+  before its report? Allow builders' `python3`/`sed` edits (FE-036, PHASE0-004 twice)? Should the
+  dispatcher support a hand-opened designer, and a non-Codex reviewer when Codex is out?
 - **FR-M3 / B-2 wording:** "half-up" below zero; the code rounds half away from zero. Proposed at L2699-2701.
-- **PRD section 9, three questions still open:** receipt content and fiscal requirements
-  (blocks Phase 4), post-close corrections (blocks Phase 5), permitted tax and service-charge
-  rate range (before Phase 2).
-- **Confirm or reject the eight `conversation only` lines** in DECISIONS.md (POS-03 Q5, Q6, Q9 among them).
+- **Confirm or reject the ten `conversation only` lines** in DECISIONS.md (POS-03 Q5, Q6, Q9 among them).
 
 ## Live conflicts
 
@@ -138,13 +136,9 @@ Nothing here is decided. Detail is where each line points.
   ruling. Owed to the designer, with two strip questions (a sale being paid; telling equal sales apart).
 - **DESIGN-007 contradicts itself on `fireerror`** (`:365`/`:407` versus `:578`). You ruled the
   `:578` reading (L349); FE-022 built it. The design file itself is unchanged.
-- **Business day (Q2), contract text, owner's:** PRD §9 and DECISIONS 2026-09-24 say 00:00-23:59 WIB;
-  FR-I1/I3, the glossary, ARCHITECTURE §6.6 and the inventory say close to close.
-- **I-8 audited** (DECISIONS) but SCREEN-INVENTORY `:845-848`, `:991` and `P/incidents.html:110-113`
-  still say open: owed to design slice C.
 
 ## Next up
 
-Owner looks at, pushes and merges PHASE0-004 and DESIGN-013 (and `agent/lead-1006b`). Then PHASE0-005
-(audit writer, plan Task 5; ARCH-006 §8: no null actor, no `clientInstanceId`, no `RETURNING`) and the
-next design slice (D, F or I). After a merge: remove the worktree and `.agent/runs/<ID>/`.
+Owner looks at, pushes and merges PHASE0-005 (and `agent/lead-1006c`). Then fast-forward, remove the
+worktree and `.agent/runs/PHASE0-005/`. Next: an architect consult for plan Task 6 (throttling), and
+a design slice (I, BO-12, reads the audit vocabulary) once Codex's allowance resets.
