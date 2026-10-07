@@ -421,7 +421,17 @@ describe('identity', () => {
     await insertStaff({ pin_lookup: 'same' });
     const failure = await refusal(insertStaff({ pin_lookup: 'same' }));
     expect(failure.code).toBe(UNIQUE_VIOLATION);
-    expect(failure.constraint).toBe('staff_user_pin_lookup_key');
+    expect(failure.constraint).toBe('staff_user_active_pin_lookup_key');
+  });
+
+  it('accepts the same pin_lookup on two rows when one is inactive (case 15)', async () => {
+    const first = await insertStaff({ pin_lookup: 'same' });
+    await ownerQuery('UPDATE staff_user SET is_active = false WHERE id = $1', [first]);
+    await insertStaff({ pin_lookup: 'same' });
+    const rows = await ownerQuery<{ n: string }>(
+      `SELECT count(*) AS n FROM staff_user WHERE pin_lookup = 'same'`
+    );
+    expect(only(rows).n).toBe('2');
   });
 
   it('rejects KITCHEN as a staff_user role (case 16)', async () => {

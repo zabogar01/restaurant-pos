@@ -66,7 +66,7 @@ export async function createStaffUser(input: {
     rows = await query<{ id: string }>(
       `INSERT INTO staff_user (name, role, pin_hash, pin_lookup)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (pin_lookup) DO NOTHING
+       ON CONFLICT (pin_lookup) WHERE is_active DO NOTHING
        RETURNING id`,
       [name, input.role, pinHash, lookup]
     );
