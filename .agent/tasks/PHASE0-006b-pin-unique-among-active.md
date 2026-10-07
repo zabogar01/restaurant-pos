@@ -107,3 +107,49 @@ In `schema.test.ts`:
 
 - A reactivation, deactivation or PIN-change command (Phase 1, FR-B3).
 - Sessions (plan Task 7), routes, approval.
+
+## Handoff
+
+**What I did.** Commit `4128484` on `agent/phase0-006b`. Added
+`db/migrations/0006_staff_user_active_pin_lookup.sql`, which drops
+`staff_user_pin_lookup_key` and creates `staff_user_active_pin_lookup_key`, a unique index on
+`pin_lookup` `WHERE is_active`, with a comment citing FR-A4 and the owner's 2026-10-07 ruling.
+Changed the one line in `apps/server/src/domain/pin.ts` so the conflict clause reads
+`ON CONFLICT (pin_lookup) WHERE is_active DO NOTHING`. Nothing else in `pin.ts` changed, and `0001`
+to `0005` are untouched. I did not run `npm run db:migrate`; the server tests apply `0006` through
+`resetDatabase()`.
+
+**Test map.** `apps/server/test/pin.test.ts`, new `describe('PIN uniqueness among active users')`:
+case 1 "still refuses a PIN held by an active user and writes no second row (case 1)"; case 2
+"gives a PIN held only by a deactivated user to a new user (case 2)"; case 3 "finds the new user,
+never the deactivated one, by that PIN (case 3)"; case 4 "refuses to reactivate a user whose PIN an
+active user now holds (case 4)" (asserts `23505`, constraint `staff_user_active_pin_lookup_key`, row
+still inactive); case 5 "lets deactivated users share a PIN, and a new active user take it too
+(case 5)". `apps/server/test/schema.test.ts`, case 6 of the task: the existing case-15 test now
+expects `staff_user_active_pin_lookup_key`, and a new test "accepts the same pin_lookup on two rows
+when one is inactive (case 15)" sits beside it. Deactivation and reactivation are done through
+`ownerQuery`.
+
+**Existing tests changed.** Only `schema.test.ts` case 15: the expected constraint name. Nothing
+loosened.
+
+**Red proofs.** (a) With `WHERE is_active` removed from the `ON CONFLICT` clause, 15 of 27 tests in
+`pin.test.ts` failed, every one that calls `createStaffUser` successfully, with "The staff user
+store failed" (PostgreSQL refuses the inference against a partial index). (b) With `WHERE is_active`
+removed from the new index, `pin.test.ts` cases 2, 3, 4 and 5 failed with "PIN already in use", and
+the new `schema.test.ts` test failed with a duplicate key on `staff_user_active_pin_lookup_key`.
+Case 2 failed as the task required. Both mutations reverted; the files match the commit.
+
+**Verify.** `npm run verify`: typecheck clean; 49 test files passed, 2844 tests passed (development
+was 49 files and 2838 tests, so +6: five in `pin.test.ts`, one in `schema.test.ts`). The run does
+not split server from client counts, so I cannot show the client's 40 files and 2719 tests
+separately; no client file was touched.
+
+**Found, not fixed.** The existing test "refuses a duplicate PIN and writes no second row" in
+`pin.test.ts` now overlaps case 1. I left it as is rather than remove coverage. No browser was
+used or needed.
+
+**Next agent.** The lead must run `npm run db:migrate` against the dev database `pos` after merge.
+No formatter was run.
+
+DONE
