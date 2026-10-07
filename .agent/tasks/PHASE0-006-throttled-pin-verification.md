@@ -258,3 +258,88 @@ Each is a mutation the builder makes, runs, reads and reverts, reporting the fai
 - The cooldown-refused approval's audit outcome (Task 10's consult), routes and the six-digit
   check at the route (Task 9), sessions (Task 7), a bucket reader for the lock screen.
 - Changing FR-A5's reset rule (an owner question in ARCH-007, *For the owner* 2).
+
+## Handoff
+
+**What I did.** Added `apps/server/src/domain/throttle.ts`, which exports exactly `ThrottleClass`,
+`MAX_FAILURES`, `COOLDOWN_MINUTES`, `ThrottledVerification` and `verifyPinThrottled` (at runtime the
+three values; the types vanish). One attempt is one `withTransaction`: the class's row is read with
+`SELECT ... FOR UPDATE`; a missing row throws (a message naming the class, never the PIN);
+`blocked_until > now()` returns `THROTTLED` having written nothing; otherwise `findUserByPin(pin, client)`
+runs on the transaction's client, success (`LOGIN`: any active user; `MANAGER_APPROVAL`: role
+`MANAGER`) resets that class's row, and anything else is one `UPDATE ... RETURNING` using the
+illustrative SQL's `CASE` (an ended cooldown restarts the count at 1). All time is PostgreSQL's; the
+file has no `Date`. After the commit, a `LOGIN` failure writes `PIN_FAILURE` and a failure that
+started a cooldown writes `COOLDOWN_STARTED`, through `writeSecurityEvent`, passing
+`clientInstanceId` through. `findUserByPin` in `apps/server/src/domain/pin.ts` gained the optional
+`Pick<pg.PoolClient, 'query'>` second parameter and an `import type pg`; nothing else in `pin.ts`
+changed. Added `apps/server/test/throttle.test.ts` (21 tests, one per case). Commit hash: see
+`git log` on `agent/phase0-006` (the commit follows this Handoff, so its hash cannot be written here).
+
+**Decisions.** I followed the task's SQL and rules without deviation. `retryAfterSeconds` is
+converted with `Number()` because PostgreSQL's `::int` arrives as a JS number already; it is not
+money. A failed evidence write (case 16) rejects the call after the count has committed, as the task
+requires; the `COOLDOWN_STARTED` write is skipped in that case because `PIN_FAILURE` throws first
+(the task does not say otherwise). Cases 7 and 9 call `resetDatabase()` and recreate fixtures
+mid-test to test the reverse direction from a clean bucket; that is slower but keeps each case in one
+test as the task numbers them.
+
+**Existing tests changed:** none. `pin.test.ts` and the others are untouched.
+
+**Case to test name** (`apps/server/test/throttle.test.ts`): 1 "1: four wrong PINs count without a
+cooldown, then a correct PIN verifies"; 2 "2: the fifth wrong PIN starts a five-minute cooldown";
+3 "3: during the cooldown the correct PIN is THROTTLED and nothing is written"; 4 "4: retryAfterSeconds
+is the time left on a cooldown set by the owner"; 5 "5: a wrong PIN after an ended cooldown counts as
+the first failure"; 6 "6: a correct PIN after an ended cooldown verifies and resets the row"; 7 "7: a
+cooldown in one class leaves the other verifying"; 8 "8: a correct login does not reset the approval
+class (FR-A5, AC-19)"; 9 "9: a cashier's own PIN fails approval; a manager's verifies and resets"; 10
+"10: a success resets its own class's row only"; 11 "11: twenty-five simultaneous wrong PINs settle as
+five failures and twenty throttled" (30 s timeout); 12 "12: the row lock is real: ..." (30 s, polls
+`pg_stat_activity` for at least six `pos_app` backends waiting on `Lock`); 13 "13: the decision is
+made from the row as read under the lock"; 14 to 17 the "evidence" tests of the same numbers; 18 "18:
+a fresh module still refuses, and the table is a permanent one"; 19 "19: the module exports exactly
+the agreed names"; 20 "20: a missing bucket row is an error, never 'not throttled'"; 21 "21: no error
+and no event row contains the PIN".
+
+**Red proofs** (each mutated, run, read, reverted; `throttle.ts` is back to its green state):
+1. Removed `FOR UPDATE`: case 11 `expected ... length of 5 but got 23`; case 12 `length of 5 but got
+   12`; case 13 `expected 'VERIFIED' to be 'THROTTLED'`. Case 12 is deterministic as the task says.
+2. `findUserByPin(pin)` without the client: case 11 `Test timed out in 30000ms`, and every later test
+   hit `Hook timed out in 10000ms` (the pool was exhausted by 10 held transactions each waiting for an
+   11th connection).
+3. Inserted the `PIN_FAILURE` row inside the transaction through the client: case 16 `expected +0 to be
+   1` (the foreign-key error rolled the count back).
+4. Count always `consecutive_failures + 1` (both `CASE`s): case 5 `retryAfterSeconds` received 300,
+   expected null (the aged row went to 6 and started a cooldown at once).
+5. `accepted` forced true (role rule dropped): case 9 received `outcome: 'VERIFIED'` for the cashier in
+   `MANAGER_APPROVAL`.
+6. Success `UPDATE` without `WHERE throttle_class = $1`: case 8 `retryAfterSeconds` null, expected 300;
+   case 10 `expected +0 to be 3`.
+7. An unlocked read before the locking one, with the decision taken from it: case 13 `expected
+   'VERIFIED' to be 'THROTTLED'` (cases 11 and 12 failed too, with 23 and 12 FAILED).
+
+**Checks.** `grep -n "Date\|console\." apps/server/src/domain/throttle.ts` prints nothing.
+`npx vitest run apps/server/test/throttle.test.ts` passed three times in a row, 21 of 21 each time
+(about 2 s). `npm run verify`: typecheck clean; 49 test files, 2836 tests passed (against
+`development`'s 48 files and 2815: one new file, 21 new tests; the client's 40 files and 2719 tests
+are unchanged inside that total). No formatter was run. No browser was needed.
+
+**Found and not fixed.** Nothing in committed work. Note for the lead: the first draft of the test
+file failed typecheck (`managerId` used before assigned), fixed before commit by making it a local
+in case 9.
+
+**For Task 9.** The response rules are ARCH-007 question 7: `FAILED` carries `retryAfterSeconds` only
+on the failure that started a cooldown, otherwise null; `THROTTLED` always carries a whole number
+from 1 to 300. `verifyPinThrottled` does not check the six-digit rule: a non-six-digit PIN is simply a
+failure and counts. The route must apply the six-digit rule (and decide whether a malformed PIN
+should even reach the throttle) itself. The back-office login is no longer a PIN login.
+
+**For Task 10.** `THROTTLED` is a returned value and writes no event, no audit entry and no bucket
+change. The audit outcome for an approval refused by the cooldown does not exist yet (owner ruling:
+it must be audited; `AuditOutcome` has no member for it). A failed `MANAGER_APPROVAL` writes no
+`PIN_FAILURE`; only the cooldown start writes `COOLDOWN_STARTED`.
+
+**Closure.** AC-19 is proved here at the domain level only; it closes when Task 9 proves it through
+the route. AC-18 is not closed by this task.
+
+DONE
