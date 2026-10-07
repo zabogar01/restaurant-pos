@@ -5,8 +5,8 @@ category: ui
 touches: [audit, identity]
 depends_on: [DESIGN-012, DESIGN-013]
 owns: [docs/design/**]
-status: review
-cycles: 0
+status: running
+cycles: 1
 ---
 # DESIGN-014 — BO-12 audit viewer (slice I)
 
@@ -262,6 +262,44 @@ Commit on `agent/design-014` only, after verify is green where it applies, and n
 
     herdr agent prompt lead "design014: DESIGN-014 done — <one line>"
     herdr agent prompt lead "design014: BLOCKED — <question>"
+
+## Round 2 — the review's five findings (lead rulings, 2026-10-07)
+
+The review is `.agent/reviews/DESIGN-014-review.md` (Claude Opus 5.5, at `82e622d`). Read it in
+full. Every finding is accepted; this is fix cycle 1 of 2. The reviewer ran no browser; the lead
+walked `default` in Chrome (filters combine, `nomatch` clears to 48, Older reaches page 2, the
+refund and refused-void details are their own, Escape returns focus to the originating Open), so
+those paths hold.
+
+- **The lead's error, corrected.** The task's parenthesis under *Rulings* ("for example the
+  business day closed in the meantime") applied to the refund only. A void applies only to an
+  `OPEN` order (FR-H1), and end of day is refused while any order is open (FR-I2), so a void can
+  never be refused because its day closed. Read that ruling as: a refund may be refused because its
+  business day closed in the meantime; a void is refused for another reason.
+- **F1 (medium):** as proposed. The refused void is on an order in the open day (for example
+  T6-0610), refused because another client began settlement or settled it between approval and
+  commit (FR-G13). Its refusal code stays visibly illustrative (for example `ORDER_NOT_OPEN`); the
+  full list of codes is not this task's. Drop its "Order's business day" fact, and derive every
+  list summary from the record, never a literal. Also make the refused refund tell FR-J3's story:
+  its order's business day closes between approval and commit, and the Handoff states the timeline
+  the fixture implies. Choose the fixture; do not invent a rule.
+- **F2 (medium-low):** as proposed. Each record carries its own occurrence date and time apart
+  from its business day. Add at least one entry after midnight inside the business day opened Tue 6
+  Oct (for example 00:20 on Wed 7 Oct), so the list and the detail show the two dates differing.
+  The business-day filter keeps filtering on the business day; "newest first" orders by occurrence.
+- **F3 (low):** as proposed. The fired-line void's summary reads its own `amounts`.
+- **F4 (low):** as proposed. Give the refund its own total, distinct from 155.925, and make the
+  check assert that each entry detail does not contain a neighbouring entry's distinguishing amount.
+- **F5 (low):** as proposed. Scan the whole document, the open dialog included, for PIN, password
+  and telemetry wording in every entry state; assert the page's buttons, links and inputs against an
+  allowed list (the four filters, Clear filters, Newer, Older, Open, Try again, Close, plus the
+  shared frame's navigation and Log out). State in the Handoff which row density BO-12 is built at
+  and when, if ever, the tight density applies, and make `clear()` keep the state's density.
+
+Re-run the DESIGN-014 check and both regression checks (each run is the owner's to approve in the
+pane), and `git diff --check`. `npm run verify` is needed only if a token changes. Add a **Round 2**
+section to the Handoff mapping each finding to its change and its evidence; do not rewrite round
+1's sections except where a fix makes a statement in them untrue. Commit on `agent/design-014`.
 
 ## Handoff
 
