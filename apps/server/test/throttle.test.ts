@@ -264,6 +264,58 @@ describe('concurrency', () => {
   }, 30_000);
 });
 
+describe('the clock after a lock wait', () => {
+  async function holdLoginRow() {
+    const owner = await ownerClient();
+    await owner.query('BEGIN');
+    await owner.query(`SELECT 1 FROM pin_throttle_bucket WHERE throttle_class = 'LOGIN' FOR UPDATE`);
+    return owner;
+  }
+
+  it('22: seconds remaining are read after the wait, never above 300', async () => {
+    const owner = await holdLoginRow();
+    try {
+      const attempt = verifyPinThrottled('LOGIN', CASHIER_PIN);
+      await until(async () => (await waitingBackends()) >= 1);
+      await owner.query('SELECT pg_sleep(2)');
+      await owner.query(
+        `UPDATE pin_throttle_bucket
+            SET consecutive_failures = 5, blocked_until = clock_timestamp() + interval '5 minutes'
+          WHERE throttle_class = 'LOGIN'`
+      );
+      await owner.query('COMMIT');
+      const result = await attempt;
+      expect(result.outcome).toBe('THROTTLED');
+      if (result.outcome !== 'THROTTLED') throw new Error('unreachable');
+      expect(result.retryAfterSeconds).toBeGreaterThanOrEqual(298);
+      expect(result.retryAfterSeconds).toBeLessThanOrEqual(300);
+    } finally {
+      await owner.end();
+    }
+  }, 30_000);
+
+  it('23: a cooldown that ended during the wait no longer refuses', async () => {
+    await ownerQuery(
+      `UPDATE pin_throttle_bucket
+          SET consecutive_failures = 5, blocked_until = clock_timestamp() + interval '2 seconds'
+        WHERE throttle_class = 'LOGIN'`
+    );
+    const owner = await holdLoginRow();
+    try {
+      const attempt = verifyPinThrottled('LOGIN', CASHIER_PIN);
+      await until(async () => (await waitingBackends()) >= 1);
+      await owner.query('SELECT pg_sleep(3)');
+      await owner.query('COMMIT');
+      expect((await attempt).outcome).toBe('VERIFIED');
+      const row = await bucket('LOGIN');
+      expect(row.consecutive_failures).toBe(0);
+      expect(row.blocked_until).toBeNull();
+    } finally {
+      await owner.end();
+    }
+  }, 30_000);
+});
+
 describe('evidence', () => {
   async function clientInstance(): Promise<string> {
     const rows = await ownerQuery<{ id: string }>(

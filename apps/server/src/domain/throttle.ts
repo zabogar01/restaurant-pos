@@ -27,15 +27,22 @@ export async function verifyPinThrottled(
     | { kind: 'THROTTLED'; retryAfterSeconds: number }
     | { kind: 'FAILED'; retryAfterSeconds: number | null; cooldownStarted: boolean }
   >(async (client) => {
-    const locked = await client.query<{ blocked: boolean; retry_after_seconds: number | null }>(
-      `SELECT blocked_until IS NOT NULL AND blocked_until > now() AS blocked,
-              ceil(extract(epoch FROM blocked_until - now()))::int AS retry_after_seconds
-         FROM pin_throttle_bucket
-        WHERE throttle_class = $1
-          FOR UPDATE`,
+    const locked = await client.query(
+      `SELECT 1 FROM pin_throttle_bucket WHERE throttle_class = $1 FOR UPDATE`,
       [throttleClass]
     );
-    const bucket = locked.rows[0];
+    if (locked.rows.length === 0) throw new Error(`PIN throttle bucket ${throttleClass} is missing`);
+    // The transaction's start time is stale after a wait for the lock.
+    // The decision is read in a statement of its own, after the lock is held, from
+    // clock_timestamp().
+    const read = await client.query<{ blocked: boolean; retry_after_seconds: number | null }>(
+      `SELECT blocked_until IS NOT NULL AND blocked_until > clock_timestamp() AS blocked,
+              ceil(extract(epoch FROM blocked_until - clock_timestamp()))::int AS retry_after_seconds
+         FROM pin_throttle_bucket
+        WHERE throttle_class = $1`,
+      [throttleClass]
+    );
+    const bucket = read.rows[0];
     if (!bucket) throw new Error(`PIN throttle bucket ${throttleClass} is missing`);
     if (bucket.blocked) {
       return { kind: 'THROTTLED', retryAfterSeconds: Number(bucket.retry_after_seconds) };
@@ -61,10 +68,10 @@ export async function verifyPinThrottled(
                 CASE WHEN blocked_until IS NULL THEN consecutive_failures + 1 ELSE 1 END,
               blocked_until =
                 CASE WHEN (CASE WHEN blocked_until IS NULL THEN consecutive_failures + 1 ELSE 1 END) >= $2::int
-                     THEN now() + make_interval(mins => $3::int) END
+                     THEN clock_timestamp() + make_interval(mins => $3::int) END
         WHERE throttle_class = $1
     RETURNING blocked_until IS NOT NULL AS cooldown_started,
-              ceil(extract(epoch FROM blocked_until - now()))::int AS retry_after_seconds`,
+              ceil(extract(epoch FROM blocked_until - clock_timestamp()))::int AS retry_after_seconds`,
       [throttleClass, MAX_FAILURES, COOLDOWN_MINUTES]
     );
     const row = failed.rows[0];

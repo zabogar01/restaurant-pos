@@ -310,7 +310,8 @@ started a cooldown writes `COOLDOWN_STARTED`, through `writeSecurityEvent`, pass
 changed. Added `apps/server/test/throttle.test.ts` (21 tests, one per case). Commit hash: see
 `git log` on `agent/phase0-006` (the commit follows this Handoff, so its hash cannot be written here).
 
-**Decisions.** I followed the task's SQL and rules without deviation. `retryAfterSeconds` is
+**Decisions.** I followed the task's SQL and rules as written in round 1 (round 2 replaces `now()` with
+`clock_timestamp()` and splits the lock from the read; see Round 2). `retryAfterSeconds` is
 converted with `Number()` because PostgreSQL's `::int` arrives as a JS number already; it is not
 money. A failed evidence write (case 16) rejects the call after the count has committed, as the task
 requires; the `COOLDOWN_STARTED` write is skipped in that case because `PIN_FAILURE` throws first
@@ -375,5 +376,29 @@ it must be audited; `AuditOutcome` has no member for it). A failed `MANAGER_APPR
 
 **Closure.** AC-19 is proved here at the domain level only; it closes when Task 9 proves it through
 the route. AC-18 is not closed by this task.
+
+### Round 2
+
+**Change.** In `apps/server/src/domain/throttle.ts` the locking statement is now only `SELECT 1 FROM
+pin_throttle_bucket WHERE throttle_class = $1 FOR UPDATE` (zero rows still throws the missing-bucket
+error). The decision is read in a second statement on the same client, run after the lock is held:
+`blocked_until IS NOT NULL AND blocked_until > clock_timestamp()` and the seconds remaining from
+`clock_timestamp()`. The failure `UPDATE` uses `clock_timestamp()` for the new `blocked_until`, its
+`CASE` comparison's interval and its `RETURNING` seconds. `now()` no longer appears in the file (the
+grep for `now()`, `Date` and `console.` is empty; I reworded a comment that had named it). The row
+lock, the client and every other rule are unchanged. Cases 1 to 21 are unedited; none asserted
+`now()` itself. Added cases 22 ("22: seconds remaining are read after the wait, never above 300") and
+23 ("23: a cooldown that ended during the wait no longer refuses"), as specified, each with a 30 s
+timeout and a `pg_stat_activity` wait before the owner sleeps.
+
+**Red proof.** I put `now()` back in the decision statement only. Case 22 failed: `expected 303 to be
+less than or equal to 300`. Case 23 failed: `expected 'THROTTLED' to be 'VERIFIED'`. The other 21
+passed. Reverted.
+
+**Counts.** The throttle file passed three runs in a row, 23 of 23 each time (about 7 s, because
+cases 22 and 23 sleep inside the owner transaction). `npm run verify`: typecheck clean; 49 test
+files, 2838 tests passed (round 1's 2836 plus the two new cases). No formatter run, no browser.
+
+**Found and not fixed.** Nothing. The commit for this round follows this Handoff.
 
 DONE
