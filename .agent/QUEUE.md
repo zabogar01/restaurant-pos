@@ -85,10 +85,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-003c, the six tables and 21 schema tests, merged 2026-10-06 as PR #53.)*
     - *(Done: PHASE0-004, PIN hashing and lookup, merged 2026-10-06 as PR #56.)*
     - *(Done: PHASE0-005, audit and security-event writers, merged 2026-10-07 as PR #59.)*
-    - **PHASE0-006** — throttled PIN verification (plan Task 6), from ARCH-007 — complete 2026-10-07 at
-      `413a51b`, two rounds — waits on the owner's look and merge.
-    - **PIN reuse (no ID yet)** — migration `0006`, partial unique index on active users (ARCH-007 §8) —
-      after 006 — not written.
+    - *(Done: PHASE0-006, throttled PIN verification, merged 2026-10-07 as PR #61.)*
+    - **PHASE0-006b** — PIN unique among active staff (ARCH-007 §8) — complete 2026-10-07, Codex review
+      clean — waits on the owner's look and merge.
     - **Before Tasks 6, 7 and 10:** an architect consult each (ARCH-006 §8 found defects in all
       three), and the owner's answers on the cooldown-refused approval and the post-cooldown count.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
