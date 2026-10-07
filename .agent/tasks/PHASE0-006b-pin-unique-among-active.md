@@ -5,7 +5,7 @@ category: feature
 touches: [identity]
 depends_on: [PHASE0-006]
 owns: [db/migrations/**, apps/server/src/**, apps/server/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-006b — PIN unique among active staff
