@@ -120,4 +120,164 @@ of:
 
 ## Handoff
 
-*(The architect writes this section.)*
+`architect9`, 2026-10-07.
+
+### What was written
+
+- **`docs/decisions/ADR-009-back-office-username-and-password.md`**, `Status: Proposed`. It
+  states the six decided items with their reasoning (Decision 1 to 7), every alternative the
+  task names and why it lost, plus four the task did not name (SSO now; counting failures for
+  unknown usernames; marking an idle session released; a bootstrap screen or a refusing script
+  for the first manager), the consequences, the accepted MVP risks, and what an SSO ADR would
+  remove and keep.
+- **`docs/ARCHITECTURE.md`**, sections 2.1, 5.1, 7.2, 7.3, 13 and 16 only
+  (`git diff -U0` shows nine hunks, all inside those sections). The document's `Status:
+  Approved` header and section 18 are untouched, and nothing is marked accepted.
+
+No accepted ADR was edited. `git diff --check` is clean. That is the only check I ran: this is
+docs-only work and the task names no other lint. I ran no SQL and no tests.
+
+### Two edits that go a little past the task's parentheses, for the lead to keep or strip
+
+1. **Section 7.3's heading** now reads "PIN and password lookup, verification, and
+   throttling". The password rules sit in that section and a reader searching for them would
+   not look under "PIN". I searched the repository's Markdown for a link to the old anchor and
+   found none; documents cite the section by number.
+2. **Section 7.2's "unsaved form state" bullet** now also says that the same manager
+   re-authenticates with a password, that this renews the same session under a new token with
+   the absolute lifetime still running, and that another manager signs in afresh and never
+   receives the state. The task lists only the credential-version rules for 7.2, but this is
+   decided item 1 and the ADR's M-6 alternative, and section 7.2 is where the architecture
+   states session behaviour. Without it ARCHITECTURE.md does not say what M-6 does.
+
+### Where the contract text and the decided items do not agree
+
+I worked to the decided items and did not work around the text. Each of these needs the lead
+to draft and the owner to approve; none blocks the ADR.
+
+1. **FR-B3 contradicts decided item 5.** The new FR-B3 says resetting a password "invalidates
+   every session of that user". Item 5 says a manager who changes their own password stays
+   signed in. Proposed replacement for FR-B3's second sentence:
+
+   > Deactivating a user, or resetting their PIN or password, from the back office invalidates
+   > every session of that user, POS and back office, on its next authenticated request. The
+   > one exception is a manager who changes their own password: the back-office session the
+   > change was made from continues, and every other session of theirs is invalidated.
+
+   AC-32 is about deactivation only and needs no change.
+2. **FR-A5b's "only a successful verification of that account resets its counter" omits the
+   reset when a cooldown ends.** The owner ruled on 2026-10-06 that "the failure count resets
+   when a cooldown ends", in the context of the PIN classes. ARCH-008 applied it to the
+   password count and so does the ADR (Decision 4); without it the first wrong password after
+   a cooldown would start the next one at once. FR-A5 has the same omission. If the owner
+   wants the text to say it, add to FR-A5b after that sentence: "The count also returns to
+   zero when a cooldown ends." Please confirm the ruling extends to passwords; I have assumed
+   it does.
+3. **FR-A5b and AC-35 say "for one username"; an unknown username is never blocked.** There is
+   no row to count against. A tester reading AC-35 literally could expect five wrong attempts
+   on a name that does not exist to block it. This is the accepted username-discovery risk
+   seen from the other side. Suggested clarification for AC-35, after "block that username
+   for five minutes": "(a username that has no account is refused every time and is never
+   blocked)".
+4. **`.agent/DECISIONS.md` line 102** (the lead's delegated line of 2026-10-06) still says a
+   wrong password at M-6 "counts as a LOGIN failure". Line 113 refines it and FR-A5b now
+   forbids it. The file is append-only and the lead's; a builder reading 102 alone would be
+   misled, so the build task file should cite 113 and FR-A5b, not 102.
+5. **PRD section 6, the edge case at `:463`** ("that user's POS session is invalidated")
+   was flagged by ARCH-008 to read "that user's sessions are invalidated". The task file does
+   not list it among the changes on `agent/lead-1007c`, and I did not fetch that branch.
+
+### Stale wording elsewhere in ARCHITECTURE.md (outside the six sections; not edited)
+
+Exact replacements, to be applied if and when the owner accepts ADR-009:
+
+- **Section 1**, "preserve the seven consequential decisions": no change while ADR-009 is
+  Proposed. On acceptance, section 18 needs a second sentence and row rather than an edit to
+  the dated one: after the table, "ADR-009 was accepted on `<date>`:" and the row
+  `| [ADR-009](decisions/ADR-009-back-office-username-and-password.md) | Back-office sign-in
+  by username and password |`. Section 1's "seven" then becomes "eight", and so do the "seven
+  accepted ADRs" lines in AGENTS.md, CLAUDE.md and `.agent/roles/architect.md` (the lead's).
+- **Section 3.2**, the gate list has no entry for any accepted authentication risk. Add one
+  bullet: "a review of the authentication risks accepted for the loopback MVP: PIN guessing
+  that a cashier's own login resets, response-time differences in PIN and password
+  verification, back-office username discovery, per-account lockout, and the unaudited
+  first-manager script;". The first two are ARCH-007's and were accepted on 2026-10-07 with
+  the same "revisit at the gate" condition; nothing in section 3.2 records them either.
+- **Section 5.1, SecurityEvent row**: "containing no PIN and no claimed audit actor" should
+  read "containing no PIN, no password, no username and no claimed audit actor". It is inside
+  section 5.1, but the task names only two rows there, so I left it.
+- **Section 11**, last paragraph: "An unauthenticated failed login has no identified actor …
+  Audit and telemetry both exclude the PIN value in every form." should read "An
+  unauthenticated failed login, at the POS or the back office, has no identified actor and
+  therefore cannot satisfy B-13. It is recorded only as a SecurityEvent. Audit and telemetry
+  both exclude PIN and password values in every form."
+- **Section 12**, "do not expose SQL, stack traces, secrets, blind indexes, or PINs" should
+  end "blind indexes, PINs, or passwords".
+- **Section 14.2**, "throttle bucket races and restart durability" should read "PIN throttle
+  bucket and per-account password throttle races, their isolation from each other, and restart
+  durability".
+- **Section 16, first row**, "Exposure of PINs" could read "Exposure of PINs and passwords".
+  I left it because the task names two new rows, not this one.
+
+### Accepted ADRs
+
+None conflicts and none needs superseding. ADR-001 (separate session cookies, shared
+authentication primitives) and ADR-002 (PostgreSQL-backed sessions and throttle state) are
+consistent with the decision. ADR-007 says "Neither store may contain a PIN value"; that is
+now narrower than B-12, but it is not wrong, and ADR-009 states the password rule itself, so
+no superseding note is proposed.
+
+### For the designer (known to the lead already)
+
+SCREEN-INVENTORY BO-01 `:548–550` and SITEMAP `:248`, as the task says. One addition from the
+ADR's consequences: the users screen, when it is designed, must say before a PIN or password
+reset is confirmed that it ends all of that manager's sessions.
+
+### What the credential build task needs
+
+It is all in ARCH-008 and **nothing in it has changed**: the owner adopted every
+recommendation. The task file can be written from:
+
+- **Schema and grants:** ARCH-008 §5 "Schema: a table of its own" (`:450–497`).
+- **Interface, the throttle's statements, evidence:** ARCH-008 "The back-office credential
+  task" rules 1 to 9, test cases and red proofs (`:1040–1098`), which in turn cite ARCH-007
+  questions 1 to 6 for the locking protocol. Note that the built `throttle.ts` reads the clock
+  with `clock_timestamp()` after the lock, not `now()` as ARCH-007's sample had it (ARCH-008
+  `:64–66`); the password throttle follows the built code.
+- **M-6 against a session:** ARCH-008 §5 "M-6 against a session" (`:626–674`); the session
+  half is already PHASE0-007's `reauthenticateSession`.
+- **The first-manager script:** ARCH-008 §5 (`:676–696`) and rule 10; per decided item 6 it
+  does not refuse when a manager exists.
+
+Four things the ADR adds or sharpens that the task file should carry:
+
+1. **Setting or resetting a password does not touch `consecutive_failures` or
+   `blocked_until`.** ARCH-008 did not say either way; FR-A5b's "only" decides it. The column
+   grant permits the write, so the rule needs a test when the Phase 1 writer exists.
+2. **The own-password re-stamp is not this task's.** It needs a writer of `actor_session`
+   inside a user-management transaction, which PHASE0-007's rule 13 ("no function takes a
+   client") does not allow today. It belongs to the Phase 1 users-screen task and wants a
+   short architect consult then.
+3. **The migration number** in ARCH-008 (`0007`) assumed `0006` had landed; the builder takes
+   the next free number.
+4. **Success requires role Manager and an active user**, and a correct password that fails
+   that rule is counted. ARCH-008 rule 4 has it; I repeat it because it is the rule most
+   easily dropped.
+
+### Open product questions the ADR names and does not close
+
+- Does changing one's own password require the current password? I recommend yes: an
+  unattended signed-in back office otherwise lets a passer-by take the account and lock its
+  owner out, which the server cannot prevent any other way. Needed before the Phase 1 users
+  screen.
+- Does a manager who resets their **own PIN** from the back office stay signed in? Item 5
+  names the password only; as written, a PIN reset ends their session.
+- Does a role change increment the credential version? (ARCH-008 `:816–818`; Phase 1.)
+
+### Not verified
+
+I did not read `pin.ts`, so the ADR says "the same parameter definition as the PIN" and states
+no Argon2id numbers. I did not read `.agent/STATE.md`, `QUEUE.md` or the journal, and did not
+fetch `agent/lead-1007c`; the new contract text is taken from this task file.
+
+DONE

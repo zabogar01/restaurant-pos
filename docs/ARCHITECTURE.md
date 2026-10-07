@@ -72,9 +72,10 @@ Vite, and PostgreSQL.
 Use Node.js LTS, PostgreSQL 16, strict
 TypeScript, npm workspaces, SQL-first migrations, and a thin typed query layer.
 Use Zod or an equivalent schema library at HTTP and configuration boundaries,
-Argon2id for PIN verification, Vitest plus fast-check for unit and property
-tests, Playwright for browser workflows, and real PostgreSQL for integration
-tests. Avoid an active-record ORM that hides transaction and locking behavior.
+Argon2id for PIN and back-office password verification, Vitest plus
+fast-check for unit and property tests, Playwright for browser workflows, and
+real PostgreSQL for integration tests. Avoid an active-record ORM that hides
+transaction and locking behavior.
 
 The repository may share API schemas, validation primitives, the Money module,
 authentication primitives, and design tokens. It must not share one responsive
@@ -224,7 +225,8 @@ remain enums and do not acquire redundant boolean flags.
 
 | Entity | Responsibility and authoritative data |
 |---|---|
-| StaffUser | Staff identity, classification, optional authentication role, Argon2id PIN hash for authenticating users, active state, and credential version |
+| StaffUser | Staff identity, classification, optional authentication role, Argon2id PIN hash for authenticating users, active state, and the one credential version that covers the PIN and any back-office password |
+| BackOfficeCredential | A manager's back-office sign-in, held apart from StaffUser and at most one per StaffUser: a username that is unique and never reused, an Argon2id password hash, and that account's durable consecutive-failure counter and cooldown |
 | ClientInstance | Opaque server-issued browser-profile identifier for UI continuity and telemetry; never authorization |
 | ActorSession | Opaque session, actor, audience (`POS` or `BACK_OFFICE`), issue time, last interactive activity, absolute expiry, release, and credential version |
 | PinThrottleBucket | One durable installation-wide counter and cooldown for each of `LOGIN` and `MANAGER_APPROVAL` |
@@ -486,16 +488,24 @@ client-supplied header.
   an eight-hour absolute lifetime, and explicit logout.
 - Polling, health checks, and background refresh do not update interactive
   activity.
-- Unsaved back-office form state remains in the client behind re-authentication.
-- User deactivation or PIN reset increments a credential version and causes
-  that user's sessions to fail on their next authenticated request.
+- Unsaved back-office form state remains in the client behind
+  re-authentication. After an idle timeout the same manager re-authenticates
+  with their password, which renews the same session under a new token; the
+  absolute lifetime keeps running from the original sign-in. Another manager
+  signs in afresh instead, into a new session, and never receives that state.
+- A StaffUser has one credential version. Deactivation, a PIN reset, or a
+  back-office password set or reset increments it and causes every session of
+  that user, POS and back office, to fail on its next authenticated request.
+- A manager who changes their own password keeps the back-office session the
+  change was made from: the command re-stamps that one session with the new
+  version in the same transaction. Their other sessions fail as above.
 
 Audience determines route context and timeout policy, not business permission.
 Every request still checks the current active StaffUser and role.
 
-### 7.3 PIN lookup, verification, and throttling
+### 7.3 PIN and password lookup, verification, and throttling
 
-PINs are unique, six-digit, numeric, and verified with Argon2id. The raw PIN is
+PINs are unique among active staff, six-digit, numeric, and verified with Argon2id. The raw PIN is
 discarded immediately after verification and must never enter logs, traces,
 metrics, audit, telemetry, errors, or crash reports.
 
@@ -515,8 +525,28 @@ successful verification in the same class resets it. State survives browser,
 application, and database restart; deleting or replacing ClientInstance does
 not reset it.
 
+The back office never accepts a PIN. A manager signs in there with a username
+and a password (ADR-009). A username is 3 to 32 characters of lower-case
+letters, digits, dot, underscore and hyphen, compared case-insensitively by
+storing lower case, unique across every BackOfficeCredential, and never reused,
+even after its holder is deactivated. A password is 8 to 128 characters with no
+composition rules, is verified exactly as typed with Argon2id, and is subject
+to every rule above for a raw PIN. Verification succeeds only for an active
+StaffUser whose role is Manager.
+
+Password verification is throttled per account, on the BackOfficeCredential
+row, not in a third class. The row is atomically locked and updated. Five
+consecutive failures for one username cause a five-minute cooldown for that
+username. Only a successful verification of that same account resets it. A
+password failure never counts in `LOGIN` or `MANAGER_APPROVAL`, and no PIN
+verification changes a password counter. An unknown username has no row: it
+fails, is never refused as throttled, and is counted nowhere. State survives
+browser, application, and database restart. A failed back-office sign-in is a
+SecurityEvent that carries neither the password nor the username typed.
+
 ClientInstance is continuity and telemetry only. It neither authenticates a
-person nor weakens the installation-wide throttle.
+person nor weakens the installation-wide PIN throttle or the per-account
+password throttle.
 
 ## 8. Transaction and concurrency strategy
 
@@ -708,7 +738,7 @@ complete replacement Order.
 | `/api/pos/checkout/...` | Acquire/renew/release/take over lease; preview authoritative totals; atomically settle and close |
 | `/api/pos/history/...` | Closed-order lookup, receipt read/reprint, full refund |
 | `/api/pos/printing/...` | Incident projection and explicit reprint |
-| `/api/back-office/auth/...` | Manager login, current session, logout, re-authentication |
+| `/api/back-office/auth/...` | Manager sign-in by username and password, current session, logout, password re-authentication of an idle session |
 | `/api/back-office/config/...` | Settings, tables, users, menu, options, presets, tender types, 86 commands |
 | `/api/back-office/business-days/...` | Current day, close preview, commit close, immutable reports |
 | `/api/back-office/audit/...` | Manager-only filtered audit reads |
@@ -844,6 +874,8 @@ That is an architectural change, not a caching enhancement.
 | One local host is a single point of failure | All writes stop if the development machine or PostgreSQL stops | Fail visibly in MVP; appliance, UPS, backup, and recovery are mandatory before production | Deferred beyond MVP |
 | The MVP exercises table service sequentially through a combined cashier | It does not validate waiter/cashier handoff or real floor contention | State this limitation; validate waiter role and multi-terminal service at the pre-production gate | Deferred beyond MVP |
 | Installation-wide PIN cooldown can deny all logins or approvals for five minutes | Typing mistakes or abuse cause a bounded local denial of service | Separate LOGIN and MANAGER_APPROVAL buckets, clear UI, durable database-time cooldown; retain because client-reset-resistant throttling is required | Accepted architecture |
+| Back-office usernames can be discovered: a throttled account answers differently from an unknown username, and only a known username costs an Argon2id verification | An attacker learns which accounts to attack | A username is not a secret; the listener is loopback-only; reconsider at the gate in section 3.2 | Accepted for the MVP |
+| Anyone who knows a manager's username can lock that manager out of the back office | A bounded denial of service against one manager, five minutes at a time | Per-account counting, so no other manager, PIN login, or approval is affected; durable database-time cooldown that attempts cannot extend; reconsider at the gate in section 3.2 | Accepted for the MVP |
 | A PIN blind index becomes a fast verifier if its secret and database are both stolen | Six-digit PINs can be enumerated after complete-host compromise | Keep the key outside PostgreSQL, retain Argon2id as verifier, restrict host access, rotate credentials after compromise | Accepted architecture |
 | CheckoutLease outlives an abandoned tab | Order mutations are temporarily blocked | Five-minute renewable TTL, explicit release, database time, 15-minute authentication hard stop, audited takeover | Accepted architecture |
 | Takeover races a physical card charge | Customer may have been charged before software settlement | Explicit warning, audited takeover, displaced-token rejection, manager reconciliation | Accepted architecture |
