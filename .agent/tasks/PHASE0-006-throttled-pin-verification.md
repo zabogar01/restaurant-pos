@@ -5,7 +5,7 @@ category: feature
 touches: [identity]
 depends_on: [PHASE0-005]
 owns: [apps/server/src/**, apps/server/test/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-006 — Throttled PIN verification
@@ -258,6 +258,40 @@ Each is a mutation the builder makes, runs, reads and reverts, reporting the fai
 - The cooldown-refused approval's audit outcome (Task 10's consult), routes and the six-digit
   check at the route (Task 9), sessions (Task 7), a bucket reader for the lock screen.
 - Changing FR-A5's reset rule (an owner question in ARCH-007, *For the owner* 2).
+
+## Round 2 — the review's one finding (lead ruling, 2026-10-07)
+
+The review is `.agent/reviews/PHASE0-006-review.md` (OpenCode `openai/gpt-6.1-sol`, at `66cdbe4`;
+Codex at its limit). Read it in full. Its finding is accepted; this is fix cycle 1 of 2.
+
+**P2: `now()` is the transaction's start time, so an attempt that waited for the lock decides with
+a stale clock.** It can return `THROTTLED` with more than 300 seconds left, or refuse after the
+cooldown has ended. This corrects rule 8 and the illustrative SQL, which prescribed `now()`; the
+rule's intent stands (PostgreSQL's time, never Node's), only the moment changes:
+
+1. **Every time read after the lock uses `clock_timestamp()`, not `now()`.** The `SELECT ... FOR
+   UPDATE` takes the lock; the decision (blocked or not, and the seconds remaining) must be computed
+   from `clock_timestamp()` in a statement that runs **after** the lock is held, not in the locking
+   statement's own select list (PostgreSQL may evaluate that list before it waits). A second
+   statement on the same client is the plain way. The failure `UPDATE` uses `clock_timestamp()` for
+   the new `blocked_until`, its comparison, and its `RETURNING` seconds. `now()` no longer appears in
+   `throttle.ts`. Keep the row lock, the client, and every other rule.
+2. **Tests** (add them as cases 22 and 23; keep 1 to 21 green and unedited unless one asserted
+   `now()` itself):
+   - **22:** the owner takes the `LOGIN` row `FOR UPDATE`; one correct-PIN attempt starts; once it
+     shows as waiting in `pg_stat_activity`, the owner runs `SELECT pg_sleep(2)` and then sets
+     `blocked_until = clock_timestamp() + interval '5 minutes'` and commits. The attempt returns
+     `THROTTLED` with `retryAfterSeconds` from 298 to 300 (never above 300).
+   - **23:** the owner sets the row to count 5 and `blocked_until = clock_timestamp() + interval
+     '2 seconds'` and commits; then takes the row `FOR UPDATE`; one correct-PIN attempt starts;
+     once it is waiting, the owner runs `SELECT pg_sleep(3)` and commits. The attempt returns
+     `VERIFIED` and the row reads 0 and null.
+3. **Red proof:** put `now()` back in the decision statement; show case 23 (and 22 if it fails too)
+   failing; revert.
+
+Re-run `npm run verify` and the throttle file three times, and add a **Round 2** section to the
+Handoff with the change, the red proof and the counts. Do not rewrite round 1's sections except
+where the fix makes a statement in them untrue (the SQL and "All time is PostgreSQL's").
 
 ## Handoff
 
