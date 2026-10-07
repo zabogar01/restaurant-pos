@@ -54,9 +54,13 @@ back-office credential) running. Narrative: [journal/2026-10-07.md](journal/2026
 - **PHASE0-006b (PIN unique among active staff) complete** at its last commit on `agent/phase0-006b`, not
   pushed: one round, Codex review clean. Migration `0006` (partial unique index) and the conflict clause;
   lead verify 49/2844. Identity: owner looks. **After merge, run `npm run db:migrate` on the dev `pos`.**
-- **ARCH-008 running:** Opus `architect8` in pane `w2:p4A`, kit cwd, read-only, brief
-  `.agent/tasks/ARCH-008-sessions.md`, report `.agent/reviews/ARCH-008-sessions.md`. Plan Task 7 (sessions)
-  and the back-office username/password the owner ruled 2026-10-06 (no schema holds it; may need PRD wording).
+- **PHASE0-007 (sessions) dispatched** 2026-10-07 from ARCH-008 (`.agent/reviews/ARCH-008-sessions.md`),
+  binding sections copied verbatim: token + SHA-256, credential-version predicate, required
+  `interactive`, `clock_timestamp()`, `IDLE` status, M-6 renews the same row. Builder Claude Sonnet in pane
+  `PHASE0-007`, worktree `../restaurant-pos-wt/PHASE0-007` from `20ae39e`. Identity: Codex review, owner looks.
+- **Back-office credential task (no ID yet), blocked on the owner:** ARCH-008 rules its own table
+  `back_office_credential` with a per-account throttle, after 007 and before the routes; it needs a new
+  ADR and PRD/B-11/B-12 wording (ARCH-008 *For the owner* 1-4).
 - **Task 10's consult must add** an audit outcome for a cooldown-refused approval (none of the three fits).
 - **Codex reset** (owner, 2026-10-07): reviews go back to the default pick. If Codex runs out again, the
   temporary OpenCode pick in journal 2026-10-07 is the way; the kit question stands.
@@ -71,7 +75,7 @@ back-office credential) running. Narrative: [journal/2026-10-07.md](journal/2026
 - **The BO-13 frontend task** carries DESIGN-013's rules N1, N2 and the async-focus rule (its task file).
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
-- **Live agents:** the lead (`w2:p1`) and `architect8` (`w2:p4A`); worktree `../restaurant-pos-wt/PHASE0-006b` awaits merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead (`w2:p1`) and `phase0-007`; worktree `../restaurant-pos-wt/PHASE0-006b` awaits merge. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 
 ## Kit facts the next session needs
 
@@ -115,19 +119,20 @@ Nothing here is decided. Detail is where each line points.
   range (§9 question 3), post-close corrections by adjustment in the open day (§9 question 2).
 - **PRD §9 question 1, receipt content:** the owner asked the lead to research the usual content of an
   F&B receipt in Indonesia and propose it. Not started; a librarian task, one step at a time.
-- **Lead rulings, yours to overturn:** PHASE0-004 (Argon2id m=19456,t=2,p=1 in code; no `zod` until
-  Task 8; `PIN_PEPPER` in `db/dev.env`); DESIGN-013 (reprint ungated, no audit wording on results,
-  three re-review lows carried rather than a third round); DESIGN-012 (wireframe links until each
-  slice lands, lows to slice B); ARCH-006 (Task 3 split; no `settings_version` until Phase 1; session
-  token stored as SHA-256; `APPROVAL_FAILED`/`APPROVAL_CANCELLED`; append-only trigger for every role;
-  app role INSERT-only on evidence); FE-036 (strike-through only; sheet copy kept); FE-030 to FE-033's
-  (journal 2026-10-05, end); DESIGN-011 Q5 and Q8.
+- **Lead rulings, yours to overturn,** each in its task file's *Lead rulings*: PHASE0-004 to 006b,
+  DESIGN-011 to 013, ARCH-006, FE-030 to FE-036 (FE-030 to 033 in journal 2026-10-05, end).
 - **Kit:** add `Bash(grep:*)` to the builder allowlist? Should the dispatcher ping the lead on
   `BLOCKED ON APPROVAL`? Builders interactive by default? Should `/lead` fetch and fast-forward
   before its report? Allow builders' `python3`/`sed` edits (FE-036, PHASE0-004 twice)? Should the
   dispatcher support a hand-opened designer, and a non-Codex reviewer when Codex is out?
 - **Pre-production gate, owner-accepted risk (DECISIONS 2026-10-07):** the same-class reset lets a cashier
   guess four PINs, log in as themselves and repeat. Revisit before any networked use.
+- **ARCH-008, for the owner (items 1-4 block the credential task, none blocks 007):** (1) PRD wording for
+  FR-A1, A2b, A3, new A5b, B3, AC-32, new AC-35, and is the password throttle per account? (2) B-11/B-12
+  to name passwords; (3) commission the ADR (+ ARCHITECTURE amendments)? (4) username 3-32 lower-case
+  chars, never reused; password 8-128, no composition rules; (5) one credential version for both, own
+  password change keeps the session?; (6) accept username discovery for the MVP; first-manager script
+  does not refuse a second run. Exact wording: report `:1102-1196`.
 - **FR-M3 / B-2 wording:** "half-up" below zero; the code rounds half away from zero. Proposed at L2699-2701.
 - **Confirm or reject the ten `conversation only` lines** in DECISIONS.md (POS-03 Q5, Q6, Q9 among them).
 
