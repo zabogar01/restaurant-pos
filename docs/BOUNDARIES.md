@@ -72,13 +72,14 @@ refunded at most once.
 
 ## Identity and access
 
-**B-11. PINs are hashed with a modern password hash, never stored or
-transmitted in plaintext.**
+**B-11. PINs and passwords are hashed with a modern password hash, never
+stored or transmitted in plaintext.**
 argon2id or bcrypt. Not MD5, not SHA-256, not encrypted-and-decryptable.
-*Why: a PIN is a credential that authorises money movement.*
+*Why: a PIN or password is a credential that authorises money movement.*
 
-**B-12. No PIN value appears in any log, audit entry, error message, stack
-trace, or analytics event, in any form — including partially masked.**
+**B-12. No PIN or password value appears in any log, audit entry, error
+message, stack trace, or analytics event, in any form — including partially
+masked.**
 *Why: logs are copied, shipped, and read by people who should not be able to
 approve a refund.*
 
