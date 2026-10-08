@@ -134,15 +134,10 @@ export async function verifyPasswordThrottled(
           return { kind: 'THROTTLED', retryAfterSeconds: Number(decision.retry_after_seconds) };
         }
 
-        // A password outside 8 to 128 code points matches no stored hash.
-        let matches = false;
-        if (passwordFits(password)) {
-          try {
-            matches = await verify(row.password_hash, password);
-          } catch {
-            matches = false;
-          }
-        }
+        // A password outside 8 to 128 code points matches no stored hash. A
+        // verifier that throws has not decided anything: the exception leaves the
+        // callback, the transaction rolls back and nothing is counted (rule 6).
+        const matches = passwordFits(password) ? await verify(row.password_hash, password) : false;
         if (matches && row.is_active && row.role === 'MANAGER') {
           await client.query(
             `UPDATE back_office_credential

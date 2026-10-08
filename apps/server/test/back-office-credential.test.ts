@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createManager } from '../scripts/create-manager.js';
+import { PassThrough, Writable } from 'node:stream';
+import { createManager, prompt } from '../scripts/create-manager.js';
 import { getPool } from '../src/db/pool.js';
 import { writeSecurityEvent } from '../src/domain/audit.js';
 import * as credentialModule from '../src/domain/back-office-credential.js';
@@ -629,5 +630,91 @@ describe('the first-manager script', () => {
     await createManager(answers);
     await createManager({ name: 'Eko', pin: '888888', username: 'eko', password: 'another-pass-1' });
     expect(await managers()).toBe(before + 2);
+  });
+
+  it('32: the prompts keep their labels and no secret reaches the output, even through Up and Down', async () => {
+    const pin = '654321';
+    const password = 'hunter2-secret-pw';
+    const input = Object.assign(new PassThrough(), { isTTY: true, setRawMode: () => input });
+    let written = '';
+    const output = new Writable({
+      write(chunk, _encoding, callback) {
+        written += chunk.toString();
+        callback();
+      },
+    });
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 30));
+    const answered = prompt(input, output);
+
+    // Waits for the nth appearance of a label, lets readline finish redrawing,
+    // and returns what was on screen when the operator would start typing.
+    async function atQuestion(label: string, nth: number): Promise<string> {
+      await until(async () => written.split(label).length - 1 >= nth);
+      await settle();
+      return written;
+    }
+    const send = async (keys: string) => {
+      input.write(keys);
+      await settle();
+    };
+
+    // Readline may move the cursor after the label; it must not clear the line.
+    const labelSurvives = (screen: string, label: string) =>
+      !/\x1b\[(0?J|[0-2]K)/.test(screen.slice(screen.lastIndexOf(label) + label.length));
+    expect(labelSurvives(await atQuestion('Name: ', 1), 'Name: ')).toBe(true);
+    await send('Dewi\r');
+    await atQuestion('PIN: ', 1);
+    await send(`${pin}\r`);
+    await atQuestion('PIN (again): ', 1);
+    await send(`${pin}\r`);
+    const username = await atQuestion('Username: ', 1);
+    expect(labelSurvives(username, 'Username: ')).toBe(true);
+    await send('\x1b[A\x1b[A\x1b[B');
+    await send('dewi.owner\r');
+    await atQuestion('Password: ', 1);
+    await send(`${password}\r`);
+    await atQuestion('Password (again): ', 1);
+    await send(`${password}\r`);
+
+    expect(await answered).toEqual({ name: 'Dewi', pin, username: 'dewi.owner', password });
+    expect(written).not.toContain(pin);
+    expect(written).not.toContain(password);
+  }, 30_000);
+});
+
+describe('a verifier that throws', () => {
+  const BROKEN = '$argon2id$broken';
+
+  it('33: it rejects with a fixed message, counts nothing and writes no event', async () => {
+    await ownerQuery(`UPDATE back_office_credential SET password_hash = $2 WHERE staff_user_id = $1`, [
+      budiId,
+      BROKEN,
+    ]);
+    const before = await credential(budiId);
+    let message = '';
+    try {
+      await verifyPasswordThrottled({ username: 'budi' }, WRONG);
+    } catch (err) {
+      message = (err as Error).message;
+    }
+    expect(message).toBe('The back-office credential store failed');
+    for (const hidden of ['budi', WRONG, BROKEN]) expect(message).not.toContain(hidden);
+    const after = await credential(budiId);
+    expect(after.consecutive_failures).toBe(before.consecutive_failures);
+    expect(after.blocked_until).toBe(before.blocked_until);
+    expect(await count('security_event')).toBe(0);
+  });
+
+  it('34: a wrong password on another account is still a counted failure', async () => {
+    await ownerQuery(`UPDATE back_office_credential SET password_hash = $2 WHERE staff_user_id = $1`, [
+      budiId,
+      BROKEN,
+    ]);
+    expect(await verifyPasswordThrottled({ username: 'siti' }, WRONG)).toEqual({
+      outcome: 'FAILED',
+      retryAfterSeconds: null,
+    });
+    expect((await credential(sitiId)).consecutive_failures).toBe(1);
+    expect(await count('security_event')).toBe(1);
   });
 });

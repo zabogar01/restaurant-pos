@@ -36,24 +36,36 @@ export async function createManager(
   });
 }
 
-async function prompt(): Promise<NewManager> {
+/**
+ * Asks the four questions. The streams are parameters so a test can drive it
+ * without a terminal; the entry point passes process.stdin and process.stdout.
+ */
+export async function prompt(
+  input: NodeJS.ReadableStream = process.stdin,
+  terminalOutput: NodeJS.WritableStream = process.stdout
+): Promise<NewManager> {
   let muted = false;
   const output = new Writable({
     write(chunk, encoding, callback) {
-      if (!muted) process.stdout.write(chunk, encoding);
+      if (!muted) terminalOutput.write(chunk, encoding as BufferEncoding);
       callback();
     },
   });
-  const rl = createInterface({ input: process.stdin, output, terminal: true });
+  // historySize 0: a line is never kept, so Up at a visible question cannot
+  // recall a PIN or a password typed at a hidden one (B-12).
+  const rl = createInterface({ input, output, terminal: true, historySize: 0 });
 
   async function ask(label: string, secret: boolean): Promise<string> {
-    process.stdout.write(`${label}: `);
-    muted = secret;
+    if (!secret) return rl.question(`${label}: `);
+    // Readline redraws its prompt on every key; muted, the redraw shows nothing,
+    // so the label is written once, directly.
+    terminalOutput.write(`${label}: `);
+    muted = true;
     try {
       return await rl.question('');
     } finally {
       muted = false;
-      if (secret) process.stdout.write('\n');
+      terminalOutput.write('\n');
     }
   }
 

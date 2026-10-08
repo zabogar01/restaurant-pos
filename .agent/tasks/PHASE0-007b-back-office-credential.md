@@ -526,7 +526,7 @@ rewrite round 1's sections except where the fix makes a statement in them untrue
 **Decisions and evidence.**
 - `normaliseUsername` lower-cases ASCII letters only (`/[A-Z]/g`), not `toLowerCase()`. `'K'` (Kelvin sign) lower-cases to ASCII `k` under `toLowerCase()` and would have been accepted as a username, which the owner's alphabet forbids. Case 1 asserts it is refused.
 - The verification wraps only the `withTransaction` call in a catch that throws the fixed message "The back-office credential store failed" (rule 12). The two `writeSecurityEvent` calls sit outside that catch, so case 24 still sees the raw foreign-key error (`code` 23503), as `verifyPinThrottled` does.
-- A thrown Argon2 `verify` (malformed hash) is treated as a non-match and counted, as `verifyPin` does. The `CHECK` on `password_hash` makes that unreachable in practice.
+- ~~A thrown Argon2 `verify` is treated as a non-match and counted.~~ **Wrong; corrected in Round 2.** The `CHECK` tests only the `$argon2id$` prefix, so a stored `$argon2id$broken` is reachable. A thrown verification now rolls back and rejects with the fixed message.
 - Creation refusals map on the PostgreSQL error's `code` and `constraint` name: `back_office_credential_username_key` is "taken", `back_office_credential_pkey` is "already has a credential", `23503` is "does not exist", anything else is the fixed store-failure message. When `createBackOfficeCredential` runs on a caller's client, a refusal aborts that transaction; the script rolls back, which is the intent.
 - A password outside 8 to 128 code points skips Argon2 and is a counted failure for an existing row (rule 9).
 
@@ -552,7 +552,7 @@ rewrite round 1's sections except where the fix makes a statement in them untrue
 
 **Acceptance 5.** `npm run db:migrate` printed `applied: 0007_back_office_credential.sql` against the dev database.
 
-**Acceptance 6.** I could not run the literal `echo | npm run create-manager -w apps/server` because my shell allows no pipes. `npm run create-manager -w apps/server < /dev/null` is the same condition (standard input is not a TTY): it printed "create-manager needs a terminal; refusing to read from a pipe", exited 1 before any database connection, and so wrote nothing. **The interactive run was not made**: I have no terminal. The lead should run it once, with hidden input and the two mismatch cases, before the owner trusts it. The script's prompting code (muted `Writable` for secrets, `readline/promises`) is therefore untested; only `createManager` is covered by cases 29 to 31.
+**Acceptance 6.** I could not run the literal `echo | npm run create-manager -w apps/server` because my shell allows no pipes. `npm run create-manager -w apps/server < /dev/null` is the same condition (standard input is not a TTY): it printed "create-manager needs a terminal; refusing to read from a pipe", exited 1 before any database connection, and so wrote nothing. **The interactive run was not made**: I have no terminal. The lead should run it once, with hidden input and the two mismatch cases, before the owner trusts it. The script's prompting code was therefore untested in round 1; from Round 2 case 32 drives it with stream doubles marked as TTYs.
 
 **Found and not fixed.**
 - `docs/BOUNDARIES.md` B-24 and the task say the script holds no PIN; true. But the muted-output technique writes the prompt label directly to `process.stdout` and then mutes `readline`'s echo; on a terminal that does not honour that, a secret could echo. Needs the lead's interactive check.
@@ -567,5 +567,23 @@ rewrite round 1's sections except where the fix makes a statement in them untrue
 - *Command for the lead's commands list:* `npm run create-manager -w apps/server` (run at the host's terminal; it asks for name, PIN, username and password, the secrets twice and hidden).
 
 **What the next agent lacks.** An interactive terminal run of the script (above). Nothing else.
+
+### Round 2 (fix cycle 1 of 2)
+
+**Changes.**
+1. *P1, history shows a hidden PIN.* `apps/server/scripts/create-manager.ts`: the `readline` interface is created with `historySize: 0`, so no line typed at any question is kept and Up at `Username:` has nothing to recall.
+2. *P2, erased labels.* A visible question now passes its label to `rl.question('Name: ')`, so readline's own redraw keeps it. The secret path is unchanged: the label is written once to the output, the output is muted, then `rl.question('')`. The prompting is now an exported `prompt(input, output)` whose defaults are `process.stdin` and `process.stdout`; the entry point calls it with the defaults. Nothing else touches the process streams.
+3. *P2, verifier exception counted.* `apps/server/src/domain/back-office-credential.ts`: the inner `try/catch` around `verify` is removed. A thrown verification leaves the transaction callback, the transaction rolls back (no count, no event), and the existing outer catch rejects with the fixed message "The back-office credential store failed". A wrong password is still a counted failure.
+
+**New tests** (cases 1 to 31 are unedited and green). 32: drives `prompt` with a `PassThrough` input and a collecting `Writable` output, both marked as TTYs; it types a name, the PIN twice, `\x1b[A\x1b[A\x1b[B` at the username question, the username, then the password twice. It asserts that after `Name: ` and `Username: ` nothing that follows the label's last write clears the line, that the returned answers are exactly those typed, and that the whole output contains neither the PIN nor the password. One deviation from the ruling's wording: readline writes a cursor-move (`\x1b[7G`) after a visible label even in the correct build, so "the output ends with the label" is false for correct code. The test therefore forbids a line-clearing sequence (`\x1b[J`, `\x1b[0J`, `\x1b[0-2K`) after the label instead of requiring the label to be the last bytes. 33: with `$argon2id$broken` set on an account through the owner, `verifyPasswordThrottled` rejects with exactly the fixed message, containing neither username, password nor hash; the row's count and `blocked_until` are unchanged; `security_event` is empty. 34: with that hash on one account, a wrong password on another is `FAILED` with `null` and counted (1), with one `PASSWORD_FAILURE`.
+
+**Red proofs** (made, run, read, reverted):
+- (a) Removed `historySize: 0`: case 32 failed with the PIN recalled into the username buffer: expected `username: "dewi.owner"`, received `"654321dewi.owner"`.
+- (b) Wrote the label to the output and called `rl.question('')` for visible questions: case 32 failed at the first label check (`expected false to be true`, the `Name: ` screen contained `\x1b[0J` after the label).
+- (c) Restored the catch turning an exception into `matches = false`: case 33 failed (`expected '' to be 'The back-office credential store failed'`, i.e. the call resolved); case 34 still passed, as it should.
+
+**Counts.** `npm run verify`: typecheck clean; 51 files, 2910 tests passed (round 1: 2907, plus the three new cases). `back-office-credential.test.ts` alone: 34/34 on three consecutive runs. `throttle.test.ts` and `session.test.ts` were not re-run alone; the full run covers them.
+
+**Not done.** I cannot make a real-terminal run; the lead repeats it. Case 32 proves the readline sequence with doubles, not a particular terminal emulator. No Prettier run. The `grep` for `Date|console.|now()` on the credential module still finds nothing (the edit removed code only).
 
 DONE
