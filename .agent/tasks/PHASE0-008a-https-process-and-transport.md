@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-007b]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: active
+status: review
 cycles: 1
 ---
 # PHASE0-008a — The HTTPS process and transport
@@ -703,6 +703,17 @@ lines as unused, so `npm run typecheck` fails; show both failing outputs and rev
 **Then:** re-run `npm run verify`, `log-scan.test.ts` three times, and add a **Round 2** section to
 the Handoff with each change, the early paths found and how each is handled, the red proofs and the
 counts. Do not rewrite round 1's sections except where the fix makes a statement in them untrue.
+
+## Lead verification, round 2 (2026-10-08)
+
+- `npm run verify` at `c7c0eb9`: 56 files, 2994 tests, green.
+- **On a real HTTPS server** (`src/index.ts`, `pos` database): `/api/%zz?pin=…`,
+  `/nowhere/%zz?password=…` and a 150-character path with `%zz?pin=…` each answered 400
+  `{"error":{"code":"VALIDATION_FAILED"}}` with `cache-control: no-store`; no marker appeared in a
+  response or in the server log, and the log held three `FST_ERR_BAD_URL` lines. SIGINT exited 0.
+- The builder's handling of the two early paths left as they are (`return503OnClosing`'s fixed body
+  while closing, and Node's connection-level client errors) is accepted: neither can carry a
+  request value. Case 29's limit (no details-bearing code yet) is accepted and carried to Task 9.
 
 ## Handoff
 
