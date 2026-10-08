@@ -843,11 +843,15 @@ amounts and business reason*.
 - **Append-only. No edit, no delete, no soft-delete, no hide** (FR-J1, B-7).
   A designer must not draw a row action menu here.
 - Audited actions are exactly: whole-order void, fired-line void, discount
-  apply/replace/remove, refund, manager takeover of a CheckoutLease, back-office reprint of a kitchen ticket, and every
+  apply/replace/remove, refund, manager takeover of a CheckoutLease, back-office reprint of a kitchen ticket, a cancellation ticket included (owner, 2026-10-06), and every
   manager-approval outcome (FR-J3). Removing a PENDING line is **not** audited
   (FR-H2) and must not appear.
 - A successful approved action is **one combined entry**, not two (FR-J3,
   AC-18).
+- An approved refund or void that the server then refuses is one `REFUSED` entry naming actor and approver, with the
+  refusal code and no amounts (FR-J3, AC-18; the void by owner ruling, 2026-10-06). A manager
+  approval refused by the cooldown is an audit entry naming the actor, approver null (owner,
+  2026-10-06); the cooldown itself stays security telemetry.
 - Every entry names a specific human actor — no "system" actor, no
   terminal-attributed action (B-13).
 - **No PIN value appears here in any form, including partially masked**

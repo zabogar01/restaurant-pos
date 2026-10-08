@@ -157,8 +157,10 @@
     <li><b>Append only. No edit, no delete, no soft-delete, no hide.</b> A designer must
       not draw a row action menu here. <span class="req">FR-J1, B-7</span></li>
     <li>Audited actions are exactly: whole-order void, fired-line void, discount
-      apply/replace/remove, refund, manager takeover of a checkout lease, and every
-      manager-approval outcome. <span class="req">FR-J3</span></li>
+      apply/replace/remove, refund, manager takeover of a checkout lease, back-office reprint of a
+      kitchen ticket (a cancellation ticket included), and every manager-approval outcome. The
+      <a href="../../visual-directions/frost/back-office/audit.html">Frost BO-12 artifact</a>
+      draws them all. <span class="req">FR-J3</span></li>
     <li>Removing a pending line is <b>not</b> audited and must not appear. <span class="req">FR-H2</span></li>
     <li>A successful approved action is <b>one combined entry</b>, not two. A failed or
       cancelled approval is one entry with no approver. <span class="req">FR-J3, AC-18</span></li>
