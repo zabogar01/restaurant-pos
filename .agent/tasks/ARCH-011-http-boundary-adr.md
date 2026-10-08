@@ -5,7 +5,7 @@ category: arch
 touches: [identity, boundaries]
 depends_on: [ARCH-010]
 owns: [docs/decisions/**, docs/ARCHITECTURE.md]
-status: active
+status: complete
 cycles: 0
 ---
 # ARCH-011 — The HTTP boundary ADR
