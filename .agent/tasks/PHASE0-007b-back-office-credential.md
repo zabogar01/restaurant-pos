@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit]
 depends_on: [PHASE0-007, ARCH-009]
 owns: [db/migrations/**, apps/server/src/**, apps/server/test/**, apps/server/scripts/**, apps/server/package.json]
-status: active
+status: review
 cycles: 2
 ---
 # PHASE0-007b — The back-office credential
@@ -564,6 +564,16 @@ each `Interface` instance (`Symbol(_killRing)`), so state does not cross interfa
 **Then:** re-run `npm run verify` and the credential file three times, and add a **Round 3**
 section to the Handoff with the change, the red proof and the counts. The lead repeats the
 terminal run, including Ctrl+U then Ctrl+Y.
+
+## Lead verification, round 3 (2026-10-08)
+
+- `npm run verify` at `278af1c`: 51 files, 2911 tests, green. Round 3 changed only the script, the
+  test file and this file.
+- **Terminal re-run** in a Herdr pane against `pos_test`: at `PIN:` the PIN, Ctrl+U, the PIN again;
+  at `Username:` Ctrl+Y, Up and Down printed nothing; at `Password:` the password, Ctrl+U, the
+  password again. The pane never showed the PIN or the password; the account verified with exactly
+  the intended password. (A first attempt sent the control keys with a key name Herdr does not
+  support; the PIN entries then differed, the script refused and wrote nothing.)
 
 ## Handoff
 
