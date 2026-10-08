@@ -10,12 +10,11 @@ MVP runs on the owner's local machine only.
 
 ## What exists
 
-- `apps/pos` — the POS client (React, Vite). POS-01 lock, POS-02 floor,
-  POS-03 order workspace, POS-04 settlement and POS-07 print incidents are
-  built against fixtures and a client order store. POS-05, POS-06 and the
-  back office are not built yet.
-- `apps/server` — Fastify skeleton: a connection pool, a migration runner and
-  one migration. No schema, API or auth yet (Phase 0 tasks 3–12 are paused).
+- `apps/pos` — the POS client (React, Vite). POS-01 to POS-07 are built
+  against fixtures and a client order store. The back office is not built yet.
+- `apps/server` — the Phase 0 domain modules in `src/domain` (PIN, audit,
+  throttle, sessions, back-office credential) on migrations `0001` onwards. No
+  HTTP server, routes or API yet (plan Tasks 8 to 12).
 - `packages/money` (exact monetary arithmetic) and `packages/tokens` (Frost
   design tokens). `db/migrations`.
 - Stack: TypeScript, Node ≥ 22, Fastify, React, Vite, PostgreSQL 16 (Docker,
@@ -23,7 +22,9 @@ MVP runs on the owner's local machine only.
 
 **Commands:** `npm install` · `npm run db:up` · `npm run db:migrate` ·
 `npm run dev -w apps/pos` · `npm run verify` (typecheck + unit tests; the
-server's migration tests need `db:up` first).
+server's migration tests need `db:up` first) · `npm run create-manager -w
+apps/server` creates a manager and their back-office login; it reads only from
+a real terminal, so the owner runs it at the host.
 
 ## Agent base
 
@@ -95,7 +96,7 @@ not fix, and what they need but do not have. "Done" is not a Handoff.
 
 ## Architecture and contract
 
-**Architecture.** `docs/ARCHITECTURE.md` and eight accepted ADRs are binding.
+**Architecture.** `docs/ARCHITECTURE.md` and nine accepted ADRs are binding.
 `docs/ARCHITECTURE_PROPOSAL.md` is kept under a superseded banner as history.
 A new ADR starts as `Proposed`; only the owner accepts it. Never edit an
 accepted ADR; supersede it with a new one.

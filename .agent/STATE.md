@@ -9,16 +9,16 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-08, later: PHASE0-007b (the back-office credential) written, built in three rounds, final
-Codex re-review clean; complete at `92bc420`, not pushed. `development` at `ed80773`.
+2026-10-08, evening: the owner merged PHASE0-007b (PR #69) and the lead's record (PR #70);
+`development` at `d0865bf`. ARCH-010 (Task 8 consult) done; PHASE0-008a dispatched.
 Narrative: [journal/2026-10-08.md](journal/2026-10-08.md) (the evening before is in 2026-10-07.md).
 
 ## Phase and gates
 
-- **Phase 0**, started 2026-09-14. Tasks 1 to 7 of 12 done, plus 006b: scaffold, money, schema
-  (003a-c), PIN (`pin.ts`), audit (`audit.ts`), throttle (`throttle.ts`), PIN unique among active
-  staff (`0006`), sessions (`session.ts`). Tasks 8 to 12 (HTTPS server, auth routes, approval, client
-  shells, acceptance tests) remain, plus the back-office credential. No API yet.
+- **Phase 0**, started 2026-09-14. Tasks 1 to 7 of 12 done, plus 006b and 007b: scaffold, money,
+  schema (003a-c), PIN, audit, throttle, PIN unique among active staff (`0006`), sessions, and the
+  back-office credential (`0007`, per-account throttle, `create-manager`). Tasks 8 to 12 (HTTPS
+  server, auth routes, approval, client shells, acceptance tests) remain. No API yet.
 - **Back-office credential decided:** username and password in the PRD and B-11/B-12, and **ADR-009
   Accepted 2026-10-08** with its ARCHITECTURE amendments. Eight accepted ADRs; ADR-008 stays reserved.
 - **Frontend built** (fixtures plus a client order store): POS-01 to POS-07, every designed POS
@@ -29,22 +29,21 @@ Narrative: [journal/2026-10-08.md](journal/2026-10-08.md) (the evening before is
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted.
-- **Last verify by the lead:** `npm run verify` green at **2876 tests / 50 files** on 2026-10-08 on
-  `development` at `ed80773`, main checkout. Server tests need `npm run db:up` (compose from
-  `db/dev.env`, then provision `pos_app` and `pos_test`). The dev database `pos` holds 0001-0007
-  (0007 applied from the unmerged PHASE0-007b branch).
+- **Last verify by the lead:** `npm run verify` green at **2911 tests / 51 files** on 2026-10-08 on
+  `development` at `d0865bf`, main checkout. Server tests need `npm run db:up` (compose from
+  `db/dev.env`, then provision `pos_app` and `pos_test`). The dev database `pos` holds 0001-0007.
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `ed80773` (PR #66) on GitHub;
+- **`development` is the integration branch** (owner, 2026-09-29), at `d0865bf` (PR #69) on GitHub;
   the local `development` matches it. `main` and `development` are protected: PR required, 0
   approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch` and
   fast-forward the main checkout (`git merge --ff-only origin/development`) **before reporting or
   dispatching**, then `npm ci` if the lockfile changed, and `npm run db:migrate` if a migration landed.
 - **Guard hooks** in the shared `.git/hooks` with an `agents.yaml` snapshot, current (checked
-  2026-10-08 at `ed80773`). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1008`** (from `ed80773`), not pushed.
+  2026-10-08 at `d0865bf`). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
+- **Lead work happens in `../restaurant-pos-kit` on `agent/lead-1008b`** (from `d0865bf`), not pushed.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations`. Merged, still existing: `agent/design-direction` (worktree
@@ -53,18 +52,16 @@ Narrative: [journal/2026-10-08.md](journal/2026-10-08.md) (the evening before is
 
 ## Running tasks and agents
 
-- **PHASE0-007b complete** at `92bc420` on `agent/phase0-007b` (worktree `../restaurant-pos-wt/PHASE0-007b`),
-  not pushed: migration `0007`, credential module, `create-manager` script; three rounds, final Codex
-  re-review clean; lead verify 51/2911 and real-terminal runs. Waits on the owner's look and merge.
-  After merge: add `npm run create-manager -w apps/server` to AGENTS.md's commands; remove the worktree
-  and `.agent/runs/PHASE0-007b`.
-- **Live agents:** the lead (`w2:p1`) only. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
-- **Next after 007b:** ARCH-010 (Task 8 consult: HTTPS server, loopback guard, client instance), or a
-  design slice (B, D-H) on Codex. Task 9 needs 007b and Task 8; Task 10 needs a consult adding an
-  audit outcome for a cooldown-refused approval (ARCH-007 §7).
-- **Pattern for identity/audit tasks:** an Opus consult first, then a task file copying its *For the
-  task file* sections verbatim.
-- **Carry-forwards for Tasks 8 to 10** are in the Handoffs of PHASE0-005 to 007 (six-digit rule at the
+- **ARCH-010 done** (report uncommitted on lead-1008b): Task 8 split into 008a and 008b (Host/origin
+  guard, `rpos_cid` cookie); recommends ADR-010; Task 9 consult still owed (its §10 lists the scope).
+- **PHASE0-008a complete** at `95ccf8b` on `agent/phase0-008a`: three rounds; lead verify 56/3005; the
+  final review's absolute-form 404 finding carried to 008b by the owner. PR pending (owner: push all).
+- **ADR-010 accepted** (owner, 2026-10-08), status and §18 applied on `agent/arch-011` (`ARCH-011` complete,
+  worktree `../restaurant-pos-wt/ARCH-011`). The §16 certificate-row wording was not ruled.
+- **Live agents:** the lead (`w2:p1`) only. 008b's task file is drafted, untracked in the kit. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Next:** PHASE0-008b from ARCH-010 after 008a (browser cookie check by the lead, Chrome and Safari);
+  the Task 9 consult can run beside 008b; ADR-010 if the owner commissions it.
+- **Carry-forwards for Tasks 8 to 10** are in the Handoffs of PHASE0-005 to 007b (six-digit rule at the
   route, `interactive` per route, `MANAGER` guard, no cookie logging; AC-19/27/28 close only via routes).
 - **Design slices left: B, D, E, F, G, H.** B takes DESIGN-012's N1-N3, M-6 password-only plus "another
   manager", and BO-01 `:548–550`/SITEMAP `:248` (still a PIN at the back office). The users screen
@@ -115,8 +112,8 @@ Narrative: [journal/2026-10-08.md](journal/2026-10-08.md) (the evening before is
 
 Nothing here is decided. Detail is where each line points.
 
-- **PHASE0-007b ready:** the owner's look (identity, audit) and the three lead rulings in its task
-  file; push `agent/phase0-007b` and `agent/lead-1008` for PRs? (The lead pushes only on the owner's word.)
+- **PHASE0-007b's three lead rulings** (task file, Required inputs and rules 5, 9, 13) stand unless
+  overturned: creation checks no role and bumps no version; out-of-range passwords skip Argon2id.
 - **Phase 1 questions (ADR-009, "Not decided here"):** must a manager changing their own password give
   the current one (architect: yes)? Does a manager who resets their own PIN stay signed in? Does a
   role change bump the credential version? Needed before the users screen.
@@ -145,4 +142,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Owner's look at PHASE0-007b and the push. Then ARCH-010 (Task 8 consult), or a design slice on Codex.
+Watch `phase0-008a`; route prompts to the owner. Owner: ARCH-010 *For the owner* (cookie-jar risk,
+two readings, ADR-010). When 008a lands: verify, the lead's cert/dev/curl runs, Codex review.
