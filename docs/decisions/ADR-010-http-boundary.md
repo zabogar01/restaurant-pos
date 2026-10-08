@@ -1,12 +1,10 @@
 # ADR-010: The HTTP boundary
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Date:** 2026-10-08
 
-**Approved by:** Not yet. The product owner commissioned this record on
-2026-10-08 and accepts it, or not, together with the amendments to
-ARCHITECTURE.md that accompany it.
+**Approved by:** Product owner
 
 Nothing is superseded by this record. ADR-001 fixes one loopback-only Fastify
 server and one origin; no accepted ADR says what that server may send, log,

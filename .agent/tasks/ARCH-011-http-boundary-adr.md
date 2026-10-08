@@ -319,4 +319,36 @@ are withdrawn with it; they are not meant to stand alone.
   "nine", AGENTS.md's and the architect role prompt's counts follow, and the ADR's status block
   takes the form ADR-009's has. I made none of those changes.
 
+### Acceptance (applied 2026-10-08)
+
+The owner accepted ADR-010 with its ARCHITECTURE.md amendments on 2026-10-08, as the *Acceptance*
+section of this task file records. I applied exactly what that section lists, in the form ADR-009's
+acceptance took:
+
+1. **`docs/decisions/ADR-010-http-boundary.md`, the status block only.** `**Status:** Accepted`,
+   `**Date:** 2026-10-08` (unchanged), `**Approved by:** Product owner`, replacing the three-line
+   "Not yet …" sentence. The paragraph after it ("Nothing is superseded by this record …") and the
+   whole body are unchanged.
+2. **`docs/ARCHITECTURE.md` §18.** After the ADR-009 table, the sentence "ADR-010 was accepted on
+   2026-10-08:" and a one-row table, ADR-010, *The HTTP boundary*. The two earlier tables are as
+   they were.
+3. **`docs/ARCHITECTURE.md` §1.** "the eight consequential decisions" is now "the nine
+   consequential decisions".
+
+The amendments' "(ADR-010)" citations stay as written. Nothing else changed.
+
+Not applied, and why:
+
+- **The §16 certificate-row wording** (item 1 under *Stale text elsewhere*) was not ruled on and
+  stays a proposal.
+- **The ADR counts outside my paths.** `AGENTS.md:98` ("eight accepted ADRs") and
+  `.agent/roles/architect.md:9` ("eight ADRs (`ADR-001` to `ADR-007` and `ADR-009`)") now
+  understate by one, and `CLAUDE.md:101` (seven accepted ADRs, then ADR-009) does not mention
+  ADR-010. They are the lead's files; the lead should bring them to nine and name ADR-010.
+- **The body of ADR-010 still says, under *Not decided here* and in the `__Host-` alternative, what
+  Task 9 is to settle.** That is correct for an accepted record and was left alone, as the
+  Acceptance section requires.
+
+`git diff --check` was clean before the commit.
+
 DONE

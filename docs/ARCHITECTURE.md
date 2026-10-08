@@ -19,7 +19,7 @@ appears to conflict with the product contract, implementation stops and raises
 the conflict rather than silently choosing one.
 
 The product owner approved this architecture on 2026-09-10. The accepted
-decision records in section 18 preserve the eight consequential decisions and
+decision records in section 18 preserve the nine consequential decisions and
 their trade-offs. Future changes to an accepted decision require a new ADR that
 supersedes the old one; accepted ADRs are not edited into a different decision.
 
@@ -1010,6 +1010,12 @@ ADR-009 was accepted on 2026-10-08:
 | ADR | Accepted decision |
 |---|---|
 | [ADR-009](decisions/ADR-009-back-office-username-and-password.md) | Back-office sign-in by username and password |
+
+ADR-010 was accepted on 2026-10-08:
+
+| ADR | Accepted decision |
+|---|---|
+| [ADR-010](decisions/ADR-010-http-boundary.md) | The HTTP boundary |
 
 ## 19. Open product dependencies
 
