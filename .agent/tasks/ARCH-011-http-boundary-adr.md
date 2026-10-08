@@ -109,6 +109,23 @@ of:
     herdr agent prompt lead "architect11: ARCH-011 done — <one line>"
     herdr agent prompt lead "architect11: BLOCKED — <question>"
 
+## Acceptance (owner, 2026-10-08)
+
+The owner accepted ADR-010 with its ARCHITECTURE.md amendments in the lead session of 2026-10-08
+("accept ADR-010"; the lead's `.agent/DECISIONS.md` line, on `agent/lead-1008b`). Apply, in the
+form ADR-009's acceptance took:
+
+1. ADR-010's status block: `**Status:** Accepted`, `**Date:** 2026-10-08`, `**Approved by:**
+   Product owner`. The body is unchanged.
+2. ARCHITECTURE.md §18: a dated sentence "ADR-010 was accepted on 2026-10-08:" and a table with the
+   ADR-010 row (*The HTTP boundary*), after the ADR-009 table, leaving the earlier tables as they
+   are. §1: "the eight consequential decisions" becomes "the nine consequential decisions".
+3. The amendments' "(ADR-010)" citations stay. Nothing else changes; the §16 certificate-row wording
+   in your Handoff was **not** ruled on and stays unapplied.
+
+Add an **Acceptance** note at the end of the Handoff saying what was applied, commit on
+`agent/arch-011` after `git diff --check`, and report with the `architect11` lines above.
+
 ## Handoff
 
 Author: `architect11`, 2026-10-08. Two files changed besides this Handoff:
