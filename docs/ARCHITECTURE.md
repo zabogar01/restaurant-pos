@@ -95,7 +95,12 @@ deployment.
   HTTPS origin on localhost.
 - The application listener binds only to a loopback address. A startup guard
   must reject a hostname or address that could accept inbound connections from
-  another device.
+  another device. The bind address is a loopback IP literal: every name is
+  refused, `localhost` included, because a name is resolved by the operating
+  system at the moment of binding. One function is the only caller of
+  `listen`. It requires TLS, checks the configured address before any socket
+  exists and every bound address afterwards, and has no flag that disables it
+  (ADR-010).
 - PostgreSQL is reachable only from the same host or a private local container
   network, never from the LAN.
 - Printers may be reached by outbound LAN connections from the server. A
@@ -108,14 +113,26 @@ because retries, re-entrant requests, and the two clients can still overlap;
 they are not evidence that the MVP supports multiple floor operators.
 
 One origin avoids CORS and gives the application one browser security boundary.
+That origin is exactly `https://localhost:<port>`; `https://127.0.0.1:<port>`
+reaches the same listener and is refused, because it would be a second cookie
+jar. The server sends no `Access-Control-*` header, answers no preflight, and
+has no second trusted origin in development (ADR-010).
 The two session cookies have different names and server-side audiences. The
 shared `ClientInstance` cookie uses the root path because it describes the
-browser profile, not either authenticated session.
+browser profile, not either authenticated session. Every cookie has a
+project-specific name, because browsers share one `localhost` cookie jar
+across ports (section 16).
 
 HTTPS on localhost should be terminated by Fastify for the MVP using a local
 development certificate. Caddy, an internal certificate authority, terminal
 trust installation, certificate renewal operations, a server appliance, a
-UPS, and backup infrastructure are not part of this deployment.
+UPS, and backup infrastructure are not part of this deployment. The
+certificate is created by an explicit command and validated at startup; a
+missing or invalid one stops the server, which never falls back to HTTP and
+never generates one itself. Nothing installs trust: the browser warning is
+clicked through once per browser profile. The server never sends
+`Strict-Transport-Security`, which a browser would apply to every other
+`localhost` port.
 
 Run one application process and one print
 dispatcher in that process. Horizontal scaling would add session and print-job
@@ -145,11 +162,15 @@ deployment gate:
   guessing that a cashier's own login resets, response-time differences in PIN
   and password verification, back-office username discovery, per-account
   lockout, and the unaudited first-manager script;
+- a review of the `localhost` cookie jar accepted for the loopback MVP, which
+  every other local server shares whatever its port, and which ends when the
+  origin becomes a real host name;
 - real-floor concurrency and a dedicated waiter-role validation.
 
 The loopback-only startup guard must fail closed until this gate is deliberately
 implemented. A later developer must not be able to expose the MVP merely by
-changing `HOST=0.0.0.0`.
+changing a bind address such as `HOST=0.0.0.0`, an environment variable, or a
+flag.
 
 ## 4. Frontend and backend boundaries
 
@@ -481,10 +502,13 @@ identifier.
 ### 7.2 Sessions and cookies
 
 Use opaque server-side sessions, not JWTs. Cookies are `Secure`, `HttpOnly`,
-and `SameSite=Strict`; mutating routes also validate origin and an anti-CSRF
-token. Use separate cookie names for POS and back office, and select the
-expected cookie from the route's server-side audience rather than from a
-client-supplied header.
+and `SameSite=Strict`. Every request must name the one origin in its `Host`
+header, and every API request, reads included, passes a same-origin check
+before anything is read or written (ADR-010); mutating routes also validate
+an anti-CSRF token. Passing the origin check grants nothing: it is only ever
+a reason to refuse. Use separate, project-specific cookie names for POS and
+back office, and select the expected cookie from the route's server-side
+audience rather than from a client-supplied header.
 
 - POS sessions have audience `POS`, expire after 90 seconds without
   interactive activity, and support explicit release.
@@ -686,7 +710,11 @@ fail the protected request; it must never allow the business action to run.
 An unauthenticated failed login, at the POS or the back office, has no
 identified actor and therefore cannot satisfy B-13. It is recorded only as a
 SecurityEvent. Audit and telemetry both exclude PIN and password values in
-every form.
+every form. The application log is held to the same exclusion by construction
+rather than by redaction: no request body, header or cookie is handed to a
+logger, a URL is logged without its query string, and an error is logged by
+its type, code, schema-level names and stack frames, never by its message
+(ADR-010).
 
 ## 12. Printing and error recovery
 
@@ -726,7 +754,10 @@ Other recovery rules are:
 - a database outage blocks writes visibly; no client may claim an order,
   approval, fire, tender, or close succeeded;
 - errors use stable machine-readable codes and do not expose SQL, stack traces,
-  secrets, blind indexes, PINs, or passwords;
+  secrets, blind indexes, PINs, or passwords. An error response carries a code
+  and details typed for that code, has no message field, and copies no string
+  from an exception; this holds for every response the server sends, including
+  those the framework writes before a request reaches a route (ADR-010);
 - migrations are forward-tested against representative data before use.
 
 ## 13. API boundary
@@ -762,6 +793,12 @@ Money fields are canonical integer strings. Responses return authoritative
 state plus structured error or warning codes such as `VERSION_CONFLICT`,
 `CATALOG_CHANGED`, `ITEM_UNAVAILABLE`, `LEASE_HELD`, `LEASE_DISPLACED`,
 `PENDING_LINES`, `SETTLEMENT_MISMATCH`, and print-delivery warnings.
+
+Every API response that is not 2xx has the body
+`{ "error": { "code", "details"? } }`, with `details` typed per code in the
+shared contracts and no free-text field. JSON is the only request body type
+the server parses. Every API response carries `Cache-Control: no-store`.
+ADR-010 holds these rules and the reasoning behind them.
 
 ## 14. Testing strategy
 
@@ -882,6 +919,7 @@ That is an architectural change, not a caching enhancement.
 | Installation-wide PIN cooldown can deny all logins or approvals for five minutes | Typing mistakes or abuse cause a bounded local denial of service | Separate LOGIN and MANAGER_APPROVAL buckets, clear UI, durable database-time cooldown; retain because client-reset-resistant throttling is required | Accepted architecture |
 | Back-office usernames can be discovered: a throttled account answers differently from an unknown username, and only a known username costs an Argon2id verification | An attacker learns which accounts to attack | A username is not a secret; the listener is loopback-only; reconsider at the gate in section 3.2 | Accepted for the MVP |
 | Anyone who knows a manager's username can lock that manager out of the back office | A bounded denial of service against one manager, five minutes at a time | Per-account counting, so no other manager, PIN login, or approval is affected; durable database-time cooldown that attempts cannot extend; reconsider at the gate in section 3.2 | Accepted for the MVP |
+| Cookies on `localhost` are shared with every other local server, whatever its port | Another program on the owner's machine can receive or replace this application's cookies | Project-specific cookie names; `HttpOnly`, `Secure`, `SameSite=Strict`; reconsider at the gate in section 3.2 | Accepted for the MVP |
 | A PIN blind index becomes a fast verifier if its secret and database are both stolen | Six-digit PINs can be enumerated after complete-host compromise | Keep the key outside PostgreSQL, retain Argon2id as verifier, restrict host access, rotate credentials after compromise | Accepted architecture |
 | CheckoutLease outlives an abandoned tab | Order mutations are temporarily blocked | Five-minute renewable TTL, explicit release, database time, 15-minute authentication hard stop, audited takeover | Accepted architecture |
 | Takeover races a physical card charge | Customer may have been charged before software settlement | Explicit warning, audited takeover, displaced-token rejection, manager reconciliation | Accepted architecture |
