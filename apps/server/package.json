@@ -4,6 +4,7 @@
   "scripts": {
     "migrate": "tsx --env-file=../../db/dev.env src/db/migrate.ts",
     "provision": "tsx --env-file=../../db/dev.env scripts/provision.ts",
+    "create-manager": "tsx --env-file=../../db/dev.env scripts/create-manager.ts",
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {

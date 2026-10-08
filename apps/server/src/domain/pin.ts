@@ -1,16 +1,13 @@
 import { createHmac } from 'node:crypto';
-import { Algorithm, hash, verify } from '@node-rs/argon2';
+import { hash, verify } from '@node-rs/argon2';
 import type pg from 'pg';
 import { pinPepper } from '../config.js';
 import { query } from '../db/pool.js';
+import { ARGON2 } from './argon2.js';
 
 export type StaffRole = 'CASHIER' | 'MANAGER';
 
 const ROLES: readonly string[] = ['CASHIER', 'MANAGER'];
-
-// OWASP's minimum for Argon2id, stated here so a library upgrade cannot weaken
-// it silently (FR-A3, B-11).
-const ARGON2 = { algorithm: Algorithm.Argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 };
 
 // B-12: nothing that leaves these functions may carry a PIN, a lookup digest or
 // a hash. A PostgreSQL error's `detail` holds the whole failing row, so a
@@ -48,11 +45,14 @@ export function pinLookup(pin: string): string {
   return createHmac('sha256', pinPepper()).update(pin).digest('hex');
 }
 
-export async function createStaffUser(input: {
-  name: string;
-  role: StaffRole;
-  pin: string;
-}): Promise<{ id: string }> {
+export async function createStaffUser(
+  input: {
+    name: string;
+    role: StaffRole;
+    pin: string;
+  },
+  client?: Pick<pg.PoolClient, 'query'>
+): Promise<{ id: string }> {
   assertValidPinFormat(input.pin);
   const name = input.name.trim();
   if (name === '') throw new Error('Name must not be blank');
@@ -63,13 +63,12 @@ export async function createStaffUser(input: {
 
   let rows: { id: string }[];
   try {
-    rows = await query<{ id: string }>(
-      `INSERT INTO staff_user (name, role, pin_hash, pin_lookup)
+    const sql = `INSERT INTO staff_user (name, role, pin_hash, pin_lookup)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (pin_lookup) WHERE is_active DO NOTHING
-       RETURNING id`,
-      [name, input.role, pinHash, lookup]
-    );
+       RETURNING id`;
+    const params = [name, input.role, pinHash, lookup];
+    rows = client ? (await client.query(sql, params)).rows : await query<{ id: string }>(sql, params);
   } catch {
     throw new Error(DATABASE_FAILURE);
   }

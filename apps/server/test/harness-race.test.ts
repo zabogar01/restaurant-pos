@@ -6,6 +6,7 @@ import { ownerQuery, resetDatabase } from './support/database.js';
 const MIGRATED_TABLES = [
   'actor_session',
   'audit_entry',
+  'back_office_credential',
   'client_instance',
   'pin_throttle_bucket',
   'schema_migration',

@@ -23,14 +23,14 @@ export interface AuditInput {
 }
 
 export interface SecurityEventInput {
-  eventType: 'PIN_FAILURE' | 'COOLDOWN_STARTED';
-  throttleClass: 'LOGIN' | 'MANAGER_APPROVAL';
+  eventType: 'PIN_FAILURE' | 'COOLDOWN_STARTED' | 'PASSWORD_FAILURE';
+  throttleClass: 'LOGIN' | 'MANAGER_APPROVAL' | 'BACK_OFFICE_LOGIN';
   clientInstanceId?: string;
 }
 
 const OUTCOMES: readonly string[] = ['SUCCESS', 'APPROVAL_FAILED', 'APPROVAL_CANCELLED'];
-const EVENT_TYPES: readonly string[] = ['PIN_FAILURE', 'COOLDOWN_STARTED'];
-const THROTTLE_CLASSES: readonly string[] = ['LOGIN', 'MANAGER_APPROVAL'];
+const EVENT_TYPES: readonly string[] = ['PIN_FAILURE', 'COOLDOWN_STARTED', 'PASSWORD_FAILURE'];
+const THROTTLE_CLASSES: readonly string[] = ['LOGIN', 'MANAGER_APPROVAL', 'BACK_OFFICE_LOGIN'];
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
