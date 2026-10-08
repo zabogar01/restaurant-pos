@@ -5,7 +5,7 @@ category: ui
 touches: [audit, identity]
 depends_on: [DESIGN-012, DESIGN-013]
 owns: [docs/design/**]
-status: review
+status: complete
 cycles: 1
 ---
 # DESIGN-014 — BO-12 audit viewer (slice I)
@@ -300,6 +300,19 @@ Re-run the DESIGN-014 check and both regression checks (each run is the owner's 
 pane), and `git diff --check`. `npm run verify` is needed only if a token changes. Add a **Round 2**
 section to the Handoff mapping each finding to its change and its evidence; do not rewrite round
 1's sections except where a fix makes a statement in them untrue. Commit on `agent/design-014`.
+
+## Lead ruling on the re-review (2026-10-08): complete, one copy rule carried to the BO-12 build
+
+The re-review (section 5 of the review) closed all five findings and found no regression. The lead
+walked the round 2 states in Chrome (the refused void on T6-0610 with `ORDER_NOT_OPEN`, the refused
+refund at 00:06 against a Mon 5 Oct order, the 00:20 Wed 7 Oct refund in the Tue 6 Oct business
+day, both line voids with their own amounts) and ran `npm run verify` at `3a2a3cd`: 50 files, 2,876
+tests. The task is complete without a third round. One observation is carried, as a binding rule,
+into the BO-12 frontend task when it is written (QUEUE item 10):
+
+- **C1:** a `REFUSED` entry's outcome note reads "Approval succeeded, but the server refused the
+  action. This action did not change the order." It never says "the order was unchanged", which
+  reads as a contradiction beside a refusal caused by another client settling the order.
 
 ## Handoff
 

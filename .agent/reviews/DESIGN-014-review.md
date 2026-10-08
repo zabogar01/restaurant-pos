@@ -228,3 +228,104 @@ reload, detail content and focus.
   Its report that FR-H3 and AC-10 still say an unfired-order void is audited is accurate
   (`docs/PRD.md:266–267`, `:504`) against the ruling at `DECISIONS.md:114`; that contract edit is
   the lead's to draft.
+
+## 5. Re-review — round 2
+
+Re-reviewed 2026-10-08 at head `8b532ac` (fix commit `3a2a3cd`), against the lead's *Round 2*
+rulings in the task file and the designer's *Round 2 — review fixes* Handoff section.
+
+### Verdict
+
+**clean.** All five findings are closed, and I found nothing the fixes broke. One wording
+observation is recorded below for the lead to rule on; I do not count it as a finding.
+
+The same limit as round 1 applies and is not softened by the fixes: **I still did not run a
+browser.** The check scripts need the owner's approval per run and this review ran unattended. The
+designer reports 288/288 across 24 states for `design014.cjs`, 216/216 for `design012.cjs` and
+371/371 for `design013.cjs`, and the lead walked the refused void, the refused refund, the
+after-midnight refund and both line voids in Chrome. Those are their observations. Mine are from
+reading `audit.js`, `audit.html`, `manifest.js` and `design014.cjs` at `8b532ac`.
+
+### Each finding
+
+- **F1 (refused void in a closed day) — closed.** `audit.js:16` now draws T6-0610, an order in the
+  open day, refused with `ORDER_NOT_OPEN` because another client settled it between approval and
+  commit; it has no `orderDay`, so the detail's "Order's business day" fact is absent for it
+  (`audit.js:88`). The list summary is derived from the record's own `refusal` text and code
+  (`audit.js:62`); the literal "Business day closed." is gone. Both codes are labelled
+  illustrative in the list and in the detail. The refused refund (`audit.js:15`) now tells FR-J3's
+  story: it occurs at 00:06 on Tue 6 Oct, in the day that opened a minute earlier, against an
+  order of the day that had just closed. I checked the Handoff's timeline against the fixture: the
+  eight entries of the 5 October day run from 14:15 to 15:23 on 5 October, before the 00:05 close,
+  and every entry of the 6 October day falls at or after 00:06 on 6 October, so no open order
+  survives a close and no entry sits on the wrong side of it (FR-H1, FR-I1, FR-I2).
+- **F2 (occurrence date bound to the business day) — closed.** Every record carries
+  `occurredDate` apart from `day` (`audit.js:32`, `:34`). The list's date and the detail's
+  "Occurred" read the occurrence (`audit.js:81`, `:88`); "Business day" and the filter read the
+  business day (`audit.js:47`). The successful refund occurs at 00:20 on Wed 7 Oct inside the
+  business day of Tue 6 Oct, so both places show the two dates differing. Records sort by
+  occurrence (`audit.js:35`). The business-day select is still authored in `audit.html` with two
+  days, so adding Wed 7 Oct to the label map did not create a business day that never opened.
+- **F3 (literal line-void summary) — closed.** `audit.js:63` selects the line snapshot and the
+  reduction from the record's own `amounts` by label. A second fired-line void, T11-0610, is
+  registered as `entry-line-second` in both `audit.html` and `manifest.js`. I recomputed it:
+  80.000 less 10% plus 5% service is 75.600; 60.000 gives 56.700; reduction 18.900 against a
+  20.000 line. The fixture still holds 48 entries, 40 and 8 by business day (18 core plus 30
+  generated, 22 and 8).
+- **F4 (shared 155.925) — closed.** The refund is 184.800 (`audit.js:14`), shared with no other
+  entry and whole rupiah. `design014.cjs:73–74` asserts that the refund and each line-void detail
+  do not contain the others' distinguishing amounts.
+- **F5 (check gaps and density) — closed.** `design014.cjs:16–39` scans the whole `body`, the open
+  dialog included, in every state and once more with both global alerts over an open detail, and
+  compares every button, link, select, input, textarea and summary against an allowed list that
+  defaults to rejecting anything unrecognised. `clear()` no longer resets the density
+  (`audit.js:92`), and the Handoff states the rule a builder needs: BO-12 is built at the standard
+  density at any length, and the tight row is the overflow review fixture only.
+
+### Looked for regressions
+
+- The sort moved the refused refund from the first page to the last entry of the 6 October day.
+  A deep link to `entry-refused-refund` still resolves, because the page is computed from the
+  entry's index in the sorted, filtered list (`audit.js:108–109`), and the `nomatch` fixture
+  (refund by the deactivated actor) is still empty.
+- Non-success entries still render no amounts block; the cooldown entry still has no code; the
+  refund still states that the order's total is unchanged.
+- Only `audit.js`, `audit.html`, `manifest.js`, `design014.cjs` and the task file changed since
+  `82e622d`, apart from this report as the lead committed it. The four product documents,
+  `docs/DESIGN.md`, `SITEMAP.md`, the tokens, `office.css`, `design012.cjs`, `design013.cjs`,
+  `apps`, `packages` and `db` have empty diffs against `development`.
+- The Handoff's round 1 sections were corrected where the fixes made them untrue (state count,
+  refund total, refusal subjects, entry counts) and left alone elsewhere.
+
+### Observation, not a finding
+
+`audit.js:10` gives both refusals one sentence: "Approval succeeded, but the server refused the
+action. The order was unchanged." For the refund this is PRD wording (`docs/PRD.md:452–453`). For
+the void it sits above the note "Another client settled the order after approval", so the detail
+says the order was unchanged and that it was settled. Both are true, since the void changed
+nothing, but a manager may read them as contradicting each other. "This action did not change the
+order" would serve both states. This is copy, it breaks no requirement, and it is the lead's call
+whether it is worth a change.
+
+### What I ran and what I did not
+
+**Ran and observed:**
+
+- `npm run verify`: typecheck clean; **50 test files passed, 2,876 tests passed**. As in round 1
+  this is regression evidence only, because nothing under `apps`, `packages`, `db` or the tokens
+  changed.
+- Tree stability: `git status --short` was empty before and after the verify run, and
+  `git rev-parse HEAD` gave `8b532ac` after it.
+- `git diff --check development...HEAD`: no output.
+- `git diff --stat 82e622d..HEAD` and the restricted `--stat` over the protected paths, as
+  described above.
+
+**Did not run:** any browser check, any mutation in memory or otherwise, and any contrast
+measurement. The statements above about rendering, focus, ordering on screen and the check
+script's pass count are inferred from the source or reported by the designer and the lead.
+
+**On the instruction to update the Handoff:** the re-review request asked both that I write only
+this report and that I update the Handoff. The Handoff belongs to the builder and the task file to
+the lead, so I changed neither; this section is my whole output.
+
+DONE
