@@ -51,13 +51,13 @@ ADR) are running. `development` at `93c6f2c`. Narrative: [journal/2026-10-07.md]
 
 ## Running tasks and agents
 
-- **DESIGN-014 in review:** built at `619dd8f` (23 states; checks 237/237, slice A 216/216, C 371/371);
-  lead verify 50/2876, Chrome walk clean. Opus review: 5 findings (F1 medium: refused void in a closed
-  day is impossible), all ruled into round 2 (`b1d00aa`, cycle 1 of 2); `design014` working on it. Lead amount rulings (void, line void, discount) owner's to overturn.
+- **DESIGN-014 complete** at `53f663e` on `agent/design-014` (worktree `../restaurant-pos-wt/DESIGN-014`),
+  not pushed: two rounds, Opus re-review clean; 24 states, checks 288/216/371; lead verify 50/2876.
+  BO-12 build carries rule C1. Lead amount rulings (void, line void, discount) owner's to overturn.
 - **ARCH-009 complete, waiting on the owner:** `cbf3aef` on `agent/arch-009` (worktree
   `../restaurant-pos-wt/ARCH-009`, pane `w2:p4F` kept open for a possible round). ADR-009 Proposed plus
   ARCHITECTURE §2.1/5.1/7.2/7.3/13/16. Handoff: FR-B3 vs own-password ruling, follow-up wording.
-- **Live agents:** lead `w2:p1`, `design014`, `architect9`, DESIGN-014 reviewer. Not ours: `w2:pE`, keen-chebyshev.
+- **Live agents:** lead `w2:p1`, `architect9` (idle). Not ours: `w2:pE`, keen-chebyshev.
 - **Next backend:** the **back-office credential** task, written from ARCH-008 §5 and ADR-009 once
   the owner accepts it; **ARCH-010, the consult for plan Task 8** (HTTPS server, loopback guard,
   client instance), not blocked. Task 9 (auth routes) needs 007 and the credential; Task 10 needs a
@@ -112,7 +112,7 @@ ADR) are running. `development` at `93c6f2c`. Narrative: [journal/2026-10-07.md]
 
 Nothing here is decided. Detail is where each line points.
 
-- **Push `agent/lead-1007c`?** It holds the wrap-up and the owner-approved contract commit `408f707`
+- **Push `agent/lead-1007c`, `agent/arch-009`, `agent/design-014`?** lead-1007c holds contract `408f707`
   (PRD FR-A1/A2b/A3/A5b/B3, AC-32/35, §6; B-11/B-12; DECISIONS 2026-10-07 evening).
 - **ADR-009 acceptance** (ARCH-009 Handoff): accept with amendments? FR-B3 own-password exception;
   cooldown-end reset for passwords (FR-A5/A5b text); AC-35 unknown username; stale §1/3.2/5.1/11/12/

@@ -67,8 +67,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    - **B (BO-01, 02)** carries DESIGN-012's three low findings N1-N3 as its first items — waits on Q2, Q4.
    - *(Done: C, DESIGN-013, BO-13 print incidents, merged 2026-10-06 as PR #57.)*
      The BO-13 frontend task must carry its re-review rules N1 and N2 (task file, end).
-   - **I, DESIGN-014 (BO-12 audit viewer)** — started 2026-10-07 (owner: "you can start the design
-     now") — running.
+   - **I, DESIGN-014 (BO-12 audit viewer)** — complete 2026-10-08, re-review clean — waits on the
+     owner's look and merge. The BO-12 frontend task must carry its rule C1 (task file, end).
    - **Ready now (Q2, Q4, Q7 ruled 2026-10-06):** B (BO-01, 02; also BO-01 and SITEMAP `:248` still
      name a PIN at the back office) · D (BO-03, 04) · E (BO-05, 06) · F (BO-07, 08; Q5 ruled out of
      scope by the lead) · G (BO-09) · H (BO-10, 11).
@@ -92,7 +92,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-006b, PIN unique among active staff, merged 2026-10-07 as PR #63.)*
     - *(Done: PHASE0-007, sessions, merged 2026-10-07 as PR #64.)*
     - **ARCH-009** — ADR-009 (Proposed), the back-office credential, with its ARCHITECTURE.md
-      amendments — commissioned by the owner 2026-10-07 — running.
+      amendments — complete 2026-10-07 — waits on the owner's acceptance.
     - **ARCH-010 / PHASE0-008** — consult, then HTTPS server, loopback guard, client instance (plan
       Task 8) — not blocked — not written.
     - **Back-office credential (no ID yet)** — `back_office_credential`, per-account throttle (ARCH-008 §5)
