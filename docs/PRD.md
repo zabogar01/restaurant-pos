@@ -60,16 +60,23 @@ enums and do not acquire redundant booleans.
 ### A. Identity and access
 
 - **FR-A1** The MVP has two authenticating roles: cashier and manager. Each
-  authenticating user has a unique six-digit numeric PIN. Kitchen remains a
-  non-authenticating staff classification with no PIN and no application
-  permissions. The waiter role is deferred beyond the MVP.
+  authenticating user has a six-digit numeric PIN, unique among active users
+  (FR-A4). A manager also has a username and a password, used only to sign in
+  to the back office (FR-A2b). Kitchen remains a non-authenticating staff
+  classification with no PIN and no application permissions. The waiter role
+  is deferred beyond the MVP.
 - **FR-A2** On the POS client, cashiers and managers authenticate by PIN. A
   correct PIN identifies the staff member and establishes a server-side actor
   context that expires after 90 seconds of inactivity or on explicit release.
-- **FR-A2b** On the back-office client, managers authenticate into a
-  conventional session with a 30-minute idle timeout, an eight-hour absolute
-  lifetime, and explicit logout. Unsaved form state is preserved behind
-  re-authentication. Background polling does not count as user activity.
+- **FR-A2b** On the back-office client, managers sign in with a username and a
+  password into a conventional session with a 30-minute idle timeout, an
+  eight-hour absolute lifetime, and explicit logout. A PIN is never accepted at
+  the back office. After an idle timeout the same manager re-authenticates with
+  their password, and unsaved form state is preserved behind that
+  re-authentication. Another manager may sign in instead with their own
+  username and password, and never receives that state. After the absolute
+  lifetime the manager signs in again from the login screen. Background polling
+  does not count as user activity.
 - **FR-A2c** Every server-side session records an audience of `POS` or
   `BACK_OFFICE`, and each client presents its own cookie. POS routes accept
   POS sessions; back-office routes accept back-office sessions; shared read
@@ -77,8 +84,8 @@ enums and do not acquire redundant booleans.
   actor context and never satisfies an inline POS approval. Audience decides
   client context and timeout policy only — role still decides what an actor
   may do, and a client-supplied header alone is never sufficient.
-- **FR-A3** PINs are stored using Argon2id, never in plaintext, and never
-  written to any log.
+- **FR-A3** PINs and back-office passwords are stored using Argon2id, never in
+  plaintext, and never written to any log.
 - **FR-A4** PINs are unique among active users, so an audit actor is
   unambiguous. A deactivated user's PIN may be given to another user.
 - **FR-A5** PIN verification has two installation-wide throttle classes:
@@ -86,10 +93,20 @@ enums and do not acquire redundant booleans.
   class, the server rejects further verification in that class for five
   minutes. Only a successful verification **in the same class** resets its
   counter — a successful cashier login must not reset failed manager-approval
-  guesses. Throttle state is server-side and survives browser, application,
-  and database restart. Unauthenticated login failures are security
-  telemetry; failed and cancelled manager approvals remain actor-attributed
-  audit entries. No PIN value is recorded in either store.
+  guesses. The count also returns to zero when a cooldown ends. Throttle
+  state is server-side and survives browser, application, and database
+  restart. Unauthenticated login failures are security telemetry; failed and
+  cancelled manager approvals remain actor-attributed audit entries. No PIN
+  value is recorded in either store.
+- **FR-A5b** Back-office password verification is throttled per account.
+  After five consecutive failures for one username, the server rejects further
+  verification for that username for five minutes. Only a successful
+  verification of that account resets its counter. The count also returns to
+  zero when a cooldown ends. A password failure never
+  counts in a PIN class, and no PIN verification resets a password counter.
+  The state is server-side and survives browser, application, and database
+  restart. Failed back-office sign-ins are security telemetry. No password
+  value is recorded anywhere.
 - **FR-A6** Manager approval is an inline prompt requiring a manager PIN at
   that moment. It authorises one specific action and does not persist.
 - **FR-A7** On first contact the server issues the browser profile an opaque
@@ -108,9 +125,13 @@ All of section B lives in the back-office client. None of it ships to the POS.
   or service-charge rates create a new settings version and affect only
   orders opened afterwards.
 - **FR-B2** Manage tables: create, edit, and deactivate.
-- **FR-B3** Manage users: create, assign role, set and reset PIN, deactivate.
-  Deactivating a user or resetting their PIN from the back office invalidates
-  that user's POS session on its next authenticated request.
+- **FR-B3** Manage users: create, assign role, set and reset PIN, set and
+  reset a manager's back-office username and password, deactivate.
+  Deactivating a user, or resetting their PIN or password, from the back office
+  invalidates every session of that user, POS and back office, on its next
+  authenticated request. The one exception is a manager who changes their own
+  password: the back-office session the change was made from continues, and
+  every other session of theirs is invalidated.
 - **FR-B4** Manage menu: categories, items, variants, modifiers, prices.
 - **FR-B5** Manage discount presets: create, edit, deactivate.
 - **FR-B7** Manage tender types: create, rename, and deactivate custom named
@@ -460,8 +481,8 @@ Receipt shows subtotal 16.50, discount −1.65, service charge 0.74, total
   same tab, re-authentication required before close.
 - Back office 86's an item on a leased quick-sale order — rejected while the
   lease holds, naming the leased order (FR-G13).
-- Back office deactivates a user or resets a PIN mid-shift — that user's POS
-  session is invalidated on its next authenticated request (FR-B3).
+- Back office deactivates a user or resets a PIN mid-shift — that user's
+  sessions are invalidated on their next authenticated request (FR-B3).
 - POS command built on stale catalog data — rejected with `CATALOG_CHANGED`,
   client refreshes; no line is added at a stale price (FR-C7).
 - Back office attempts to deactivate a table holding an open order — rejected
@@ -523,9 +544,10 @@ the browser is the wrong place to prove it.
 | AC-29 | While a `CheckoutLease` is active, a back-office 86 affecting that leased quick-sale order is rejected and names the order; add-line, discount change, fire, and void are blocked; reads still succeed | FR-G13 |
 | AC-30 | A lease survives application restart with its remaining wall-clock time rather than a fresh interval, and expires within five minutes of the client ceasing to renew. Manager takeover is audited and the displaced client's close is rejected | FR-G14, J3 |
 | AC-31 | A POS command built on a stale catalog version is rejected with `CATALOG_CHANGED` and no line is added at the stale price | FR-C7 |
-| AC-32 | Deactivating a user in the back office invalidates that user's POS session on its next authenticated request. Deactivating a table holding an open order is rejected | FR-B3, C8 |
+| AC-32 | Deactivating a user in the back office invalidates that user's sessions, POS and back office, on their next authenticated request. Deactivating a table holding an open order is rejected | FR-B3, C8 |
 | AC-33 | A failed kitchen ticket raises the emergency incident in **both** clients; a failed receipt appears at lower urgency in both | FR-E3, E6 |
 | AC-34 | A refund allocation to a tender type the order was not paid with is rejected; an allocation above its tender's effective contribution is accepted when the allocations sum to the order total; an allocation of zero is not stored | FR-H5 |
+| AC-35 | A manager signs in to the back office with a username and password; a PIN is refused there. Five consecutive wrong passwords for one username block that username for five minutes (a username that has no account is refused every time and is never blocked), surviving restart, without affecting any other username, PIN login or manager approval; a successful PIN login does not reset it. After a 30-minute idle timeout the same manager resumes with their password alone and finds their unsaved work; a different manager who signs in instead does not | FR-A2b, A5b |
 
 ## 8. Out of scope for MVP
 

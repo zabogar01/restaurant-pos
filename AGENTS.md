@@ -95,7 +95,7 @@ not fix, and what they need but do not have. "Done" is not a Handoff.
 
 ## Architecture and contract
 
-**Architecture.** `docs/ARCHITECTURE.md` and seven accepted ADRs are binding.
+**Architecture.** `docs/ARCHITECTURE.md` and eight accepted ADRs are binding.
 `docs/ARCHITECTURE_PROPOSAL.md` is kept under a superseded banner as history.
 A new ADR starts as `Proposed`; only the owner accepts it. Never edit an
 accepted ADR; supersede it with a new one.
