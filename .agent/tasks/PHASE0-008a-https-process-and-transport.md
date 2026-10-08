@@ -710,7 +710,7 @@ counts. Do not rewrite round 1's sections except where the fix makes a statement
 
 Built the HTTPS process and transport on branch `agent/phase0-008a`, from the task file alone. New
 code: `packages/contracts` (`ErrorCode` with exactly the six codes, `ErrorBody`, `ErrorDetails`
-as an empty interface because no code carries details yet; `package.json`, `tsconfig.json`);
+as an empty interface because no code carries details yet (superseded in Round 2: details are now typed per code); `package.json`, `tsconfig.json`);
 `apps/server/src/http/` (`errors.ts`, `log.ts`, `loopback.ts`, `tls.ts`, `server.ts`,
 `routes/health.ts`); `apps/server/src/index.ts`; `apps/server/scripts/make-cert.ts`. Changed:
 `config.ts` (the four functions, plus an exported `defaultTlsDirectory()` the script uses),
@@ -830,9 +830,7 @@ before TLS and the database, as the consult orders. I did not use a browser.
 
 ### Found and not fixed
 
-- `docs/ARCHITECTURE.md` and the consult leave `ErrorDetails` open; it is an empty interface
-  now, and a probe test passes `{ retryAfterSeconds: 240 }` through a cast. Task 9 gives it
-  its first real member.
+- (Resolved in Round 2: details are now typed per code in `@pos/contracts`.)
 - The idle-client `'error'` listener on the pool is not exercised by any test.
 - `index.ts` calls `process.exit(0)` after shutdown without waiting for stdout to flush; a log
   line written just before exit could be lost on a pipe. Low risk; not addressed.
@@ -853,5 +851,86 @@ Playwright uses `ignoreHTTPSErrors: true`; no `PIN_PEPPER` literal in a configur
 fails the `tls` and `loopback` files rather than skipping them.
 The items about `request.clientInstanceId`, the origin guard and the Host check belong to
 PHASE0-008b's Handoff, by lead ruling 6.
+
+## Round 2 (fix cycle 1 of 2)
+
+### Finding 1 (high): early framework responses
+
+`buildServer` now passes `frameworkErrors: frameworkErrorHandler` (new, in `src/http/errors.ts`). It
+logs `{ err }` at info with a fixed message (so the line carries the code, e.g. `FST_ERR_BAD_URL`,
+and the stack frames, never the message), and sends the envelope with `Cache-Control: no-store`
+set by that path itself, since it runs before `onRequest`. A malformed URL and an over-long
+parameter are 400 `VALIDATION_FAILED`; a failed async constraint is 500 `INTERNAL`. It applies to
+every path, not only `/api`: nothing from the framework error is copied either way, and failing
+closed is simpler than a second shape.
+
+Every path in the installed Fastify 5.12.5 on which the framework writes a response itself, found
+by reading `fastify.js` and `lib/route.js` for `writeHead`, `res.end` and `clientError`:
+
+| Path | Handling |
+|---|---|
+| `onBadUrl` (`fastify.js:645`), body quotes the URL | routed through `frameworkErrors` (400 envelope). Case 26 |
+| `onMaxParamLength` (`:670`), 414, body quotes the path | routed (400 envelope). Case 27, a probe route `/probe-param/:id` with a 200-character id and a query marker |
+| `onAsyncConstraintError` (`:695`), fixed 500 text | routed (500 envelope). Case 27, a bare Fastify instance with a custom async constraint whose derivation fails, using the exported handler; `buildServer` registers no async constraint, so this path is unreachable in the product today |
+| `return503OnClosing` (`lib/route.js:492`), a request arriving while the server closes | left as is. The body is the fixed 80-byte string `{"error":"Service Unavailable","message":"Service Unavailable","statusCode":503}`; it carries no request value, and it is Fastify's deliberate load-shedding fast path. It is not the envelope and has no `Cache-Control`. Turning it off would run the full handler chain during drain, which is worse. A client sees 503 either way |
+| `defaultClientErrorHandler` (`fastify.js:963`), raw 400, 408 or 431 on the socket | left as is. It fires on a connection-level parse error, before any request object exists; the bodies are three fixed strings ("Client Error", "Client Timeout", "Exceeded maximum allowed HTTP header size"); it logs `{ err }` at trace with a fixed message, through our serializer |
+| `lib/error-handler.js:37`, Fastify's last-resort default if our own error handler throws | cannot be reached by input: `errorHandler` only reads a status, a code and calls `request.log` and `reply.send`. Not tested |
+
+### Finding 2 (medium): `ErrorDetails`
+
+`@pos/contracts` now has `ErrorDetailsByCode` (an interface that declares nothing yet),
+`ErrorDetailsOf<C>` (`never` for a code that declares none), and `ErrorBody` as a union over the
+codes, each with `details?: never` unless declared. `ErrorDetails` is gone. `AppError<C>` takes its
+details as a rest argument that is `[]` when `ErrorDetailsOf<C>` is `never`, so a third argument
+does not compile. The handler's `send` takes `unknown` and casts once to `ErrorBody` (the pair was
+checked by `AppError`'s type). A later code that carries details declares its fields in
+`ErrorDetailsByCode`.
+
+### Tests
+
+- Case 26 (`log-scan.test.ts`): `/api/%zz?pin=…`, `?password=…`, a percent-broken path segment with
+  a query marker, and `/nowhere/%zz?pin=…` are each 400, body exactly
+  `{"error":{"code":"VALIDATION_FAILED"}}`, `no-store`; the query markers are in neither a response
+  nor the trace log, and the four log lines carry `FST_ERR_BAD_URL` and no `message`. Markers inside
+  a *path* (the segment and the long parameter) are checked against responses only: the request
+  line logs the path by design (rule 8), so they would be a false alarm in the log.
+- Case 27 (`log-scan.test.ts` and `server.test.ts`): the over-long parameter, and the async constraint,
+  as in the table.
+- Case 28: `apps/server/test/error-details.types.ts` (no `.test.ts`, so vitest skips it;
+  `tsc -p apps/server` covers it): for each of the six codes, `// @ts-expect-error` on a string, an
+  exception's message, an `Error`, an undeclared object, and an `ErrorBody` with a string and with
+  an object as details (36 directives), plus the two forms that must compile.
+- Case 18 now keeps only the status and code half; its probe is `new AppError(NOT_FOUND, 409)`
+  with no cast.
+- Case 29 (`server.test.ts`): no current code declares details, so the details half of the handler
+  **cannot be exercised without a cast**, and a cast is what the contract forbids. Case 29 shows what
+  can be shown: an `AppError` for a code with no details sends exactly `{ code }` with no `details`
+  key, and its `details` is `undefined`. **The details path is first exercised by Task 9's first
+  details-bearing code** (carry-forward below).
+- Existing tests changed: only case 18's probe and its details assertions, as the ruling says.
+
+### Red proofs
+
+(a) `frameworkErrors` commented out of `server.ts`: 26, 27 and 22 failed: `channels that leaked
+into a response: [ 'badUrlPin', 'badUrlPassword' ]`, the body was `{"error":"Bad Request","code":"FST_ER…`
+and the long parameter was `expected 414 to be 400`. Reverted.
+(b) `ErrorDetailsOf` made to return `{}` for every code (the empty interface's behavior): `npm run
+typecheck` failed with 36 `TS2578: Unused '@ts-expect-error' directive` errors in
+`error-details.types.ts` (all 36 of the details lines). Reverted.
+
+### Counts
+
+`npm run verify`: typecheck clean; **56 files, 2994 tests** passed (round 1: 2990; the difference is
+cases 26 (one test), 27 (two), 29 (one); case 28 is a typecheck, not a test). `log-scan.test.ts`
+three runs in a row: 9 passed each time. `grep console\.` in `apps/server/src`: no hit; `grep
+\.listen(`: one hit, `loopback.ts:46`. A Fastify deprecation warning about top-level
+`constraints` showed in my first draft of the case-27 test; it uses `routerOptions` now and the run
+prints no warning from this task.
+
+### Carry forward (added)
+
+For Task 9: the first code that carries details declares it in `ErrorDetailsByCode`, and that task
+must add the test that exercises the handler's details path (case 29 could not). No other change to
+round 1's carry-forward.
 
 DONE

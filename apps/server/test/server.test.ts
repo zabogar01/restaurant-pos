@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { ErrorCode } from '@pos/contracts';
 import { closePool, getPool, query } from '../src/db/pool.js';
-import { AppError } from '../src/http/errors.js';
+import Fastify from 'fastify';
+import { AppError, frameworkErrorHandler } from '../src/http/errors.js';
 import { buildServer } from '../src/http/server.js';
 import { ownerQuery, resetDatabase } from './support/database.js';
 
@@ -15,7 +16,7 @@ async function build(): Promise<FastifyInstance> {
     apiRoutes: [
       async (api) => {
         api.get('/probe-app-error', async () => {
-          throw new AppError(ErrorCode.NOT_FOUND, 409, { retryAfterSeconds: 240 } as never);
+          throw new AppError(ErrorCode.NOT_FOUND, 409);
         });
         api.get('/probe-plain-error', async () => {
           throw new Error('a message that must not be sent: secret-marker');
@@ -120,18 +121,57 @@ describe('server', () => {
     expect(big.json()).toEqual({ error: { code: 'PAYLOAD_TOO_LARGE' } });
   });
 
-  it('18. an AppError sends its status, code and details; any other error is 500 INTERNAL and nothing more', async () => {
+  it('18. an AppError sends its status and code; any other error is 500 INTERNAL and nothing more', async () => {
     const known = await app.inject({ method: 'GET', url: '/api/probe-app-error' });
     expect(known.statusCode).toBe(409);
-    expect(known.json()).toEqual({
-      error: { code: 'NOT_FOUND', details: { retryAfterSeconds: 240 } },
-    });
+    expect(known.json()).toEqual({ error: { code: 'NOT_FOUND' } });
 
     const plain = await app.inject({ method: 'GET', url: '/api/probe-plain-error' });
     expect(plain.statusCode).toBe(500);
     expect(plain.json()).toEqual({ error: { code: 'INTERNAL' } });
     expect(ENVELOPE_KEYS(plain.json())).toEqual(['code']);
     expect(plain.body).not.toContain('secret-marker');
+  });
+
+  // No current code declares details, so the details half of the handler cannot
+  // be exercised without a cast, and a cast is what the contract forbids. What
+  // can be shown is that a typed AppError sends exactly the code, with no
+  // `details` key at all. The first details-bearing code (PHASE0-009) is the
+  // first to exercise the other half.
+  it('29. an AppError for a code that declares no details sends no details key', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/probe-app-error' });
+    expect(Object.keys(res.json().error)).toEqual(['code']);
+    expect(new AppError(ErrorCode.INTERNAL, 500).details).toBeUndefined();
+  });
+
+  it('27. a failed async constraint is the INTERNAL envelope with no-store, and echoes nothing', async () => {
+    const bare = Fastify({
+      frameworkErrors: frameworkErrorHandler,
+      routerOptions: {
+        constraints: {
+          probe: {
+            name: 'probe',
+            storage() {
+              const routes = new Map<string, unknown>();
+              return { get: (v: string) => routes.get(v) ?? null, set: (v: string, h: unknown) => routes.set(v, h) };
+            },
+            deriveConstraint(_req: unknown, _ctx: unknown, done: (err: Error | null, v?: string) => void) {
+              done(new Error('constraint failed: secret-marker'));
+            },
+            validate() {},
+          },
+        },
+      },
+    } as never);
+    bare.get('/api/x', { constraints: { probe: 'a' } } as never, async () => ({ ok: true }));
+    try {
+      const res = await bare.inject({ method: 'GET', url: '/api/x?pin=secret-marker' });
+      expect(res.statusCode).toBe(500);
+      expect(res.body).toBe('{"error":{"code":"INTERNAL"}}');
+      expect(res.headers['cache-control']).toBe('no-store');
+    } finally {
+      await bare.close();
+    }
   });
 
   it('19. no response carries an Access-Control-* or Strict-Transport-Security header', async () => {

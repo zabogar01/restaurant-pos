@@ -14,19 +14,27 @@ export const ErrorCode = {
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 /**
- * Typed `details` per code. No code carries one yet; a code that does adds its
- * shape here. Details never hold text taken from an exception.
+ * The details a code carries, by code. None of the six codes that exist declares
+ * any, so a details argument for one does not compile. A code that carries
+ * details declares its fields here, as numbers, enums or ids the server chose:
+ * never a string taken from an exception.
  */
-export interface ErrorDetails {}
+export interface ErrorDetailsByCode {}
+
+/** The details type of one code, or `never` when the code declares none. */
+export type ErrorDetailsOf<C extends ErrorCode> = C extends keyof ErrorDetailsByCode
+  ? ErrorDetailsByCode[C]
+  : never;
 
 /**
  * Every non-2xx API response is exactly this. There is no `message` field: the
  * wording a person reads is the client's copy, chosen by code, and a free-text
- * field is where a leak would go.
+ * field is where a leak would go. `details` is typed by the code beside it.
  */
-export interface ErrorBody {
-  error: {
-    code: ErrorCode;
-    details?: ErrorDetails;
+export type ErrorBody = {
+  [C in ErrorCode]: {
+    error: { code: C } & ([ErrorDetailsOf<C>] extends [never]
+      ? { details?: never }
+      : { details?: ErrorDetailsOf<C> });
   };
-}
+}[ErrorCode];

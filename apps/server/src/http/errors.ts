@@ -1,22 +1,27 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ErrorCode } from '@pos/contracts';
-import type { ErrorBody, ErrorDetails } from '@pos/contracts';
+import type { ErrorBody, ErrorDetailsOf } from '@pos/contracts';
 
 /**
  * The only way a code reaches a client. The message is the code itself: no
  * string from an exception is ever copied into one of these.
  */
-export class AppError extends Error {
-  readonly code: ErrorCode;
+export class AppError<C extends ErrorCode = ErrorCode> extends Error {
+  readonly code: C;
   readonly status: number;
-  readonly details: ErrorDetails | undefined;
+  readonly details: ErrorDetailsOf<C> | undefined;
 
-  constructor(code: ErrorCode, status: number, details?: ErrorDetails) {
+  // A code that declares no details takes no third argument.
+  constructor(
+    code: C,
+    status: number,
+    ...details: [ErrorDetailsOf<C>] extends [never] ? [] : [details?: ErrorDetailsOf<C>]
+  ) {
     super(code);
     this.name = 'AppError';
     this.code = code;
     this.status = status;
-    this.details = details;
+    this.details = details[0] as ErrorDetailsOf<C> | undefined;
   }
 }
 
@@ -48,8 +53,10 @@ const FRAMEWORK_STATUS: Record<number, ErrorCode> = {
   415: ErrorCode.UNSUPPORTED_MEDIA_TYPE,
 };
 
-function send(reply: FastifyReply, status: number, code: ErrorCode, details?: ErrorDetails) {
-  const body: ErrorBody = { error: details === undefined ? { code } : { code, details } };
+function send(reply: FastifyReply, status: number, code: ErrorCode, details?: unknown) {
+  // The relation between a code and its details is held by AppError's type; by
+  // here the pair is already checked.
+  const body = { error: details === undefined ? { code } : { code, details } } as ErrorBody;
   return reply.code(status).header('cache-control', 'no-store').send(body);
 }
 
@@ -78,4 +85,19 @@ export function notFoundHandler(request: FastifyRequest, reply: FastifyReply) {
     return send(reply, 404, ErrorCode.NOT_FOUND);
   }
   return reply.code(404).type('text/plain').send('Not Found');
+}
+
+/**
+ * Fastify writes a response itself, before routing, for a malformed URL, an
+ * over-long parameter and a failed async constraint. Left alone, the first two
+ * quote the whole URL, query string included, and none sets Cache-Control.
+ * Registered as the `frameworkErrors` option, this sends the envelope instead and
+ * sets no-store itself, because it runs before any hook. Nothing from the
+ * framework error is copied; the log line carries its code and frames only.
+ */
+export function frameworkErrorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply) {
+  request.log.info({ err }, 'request rejected before routing');
+  const code = (err as { code?: unknown } | null)?.code;
+  if (code === 'FST_ERR_ASYNC_CONSTRAINT') return send(reply, 500, ErrorCode.INTERNAL);
+  return send(reply, 400, ErrorCode.VALIDATION_FAILED);
 }

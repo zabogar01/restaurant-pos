@@ -1,7 +1,7 @@
 import type { Writable } from 'node:stream';
 import Fastify from 'fastify';
 import type { FastifyInstance, FastifyPluginAsync, FastifyServerOptions } from 'fastify';
-import { errorHandler, isApiPath, notFoundHandler } from './errors.js';
+import { errorHandler, frameworkErrorHandler, isApiPath, notFoundHandler } from './errors.js';
 import { loggerOptions } from './log.js';
 import { healthRoutes } from './routes/health.js';
 
@@ -33,6 +33,7 @@ export function buildServer({
   const options: FastifyServerOptions & { https?: typeof tls | null } = {
     logger: loggerOptions(logLevel, logStream),
     trustProxy: false,
+    frameworkErrors: frameworkErrorHandler,
     https: tls ?? null,
   };
   const app = Fastify(options as FastifyServerOptions) as unknown as FastifyInstance;

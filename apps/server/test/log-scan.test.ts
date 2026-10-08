@@ -7,6 +7,11 @@ import type { FastifyInstance, InjectOptions } from 'fastify';
 import { closePool, query } from '../src/db/pool.js';
 import { buildServer } from '../src/http/server.js';
 
+// A request's path is logged by design (the method and the path, never the
+// query), so a marker in a path would be a false alarm. These two travel in the
+// path and are checked against the response bodies only.
+const PATH_MARK = { segment: 'MARK-BADURL-SEGMENT-8153', param: 'MARK-LONGPARAM-9264' };
+
 // Each marker travels by one channel. If any appears in the captured log or in
 // any response body, that channel leaked.
 const MARK = {
@@ -23,11 +28,15 @@ const MARK = {
   loggedPin: 'MARK-LOGGED-PIN-1029',
   loggedPassword: 'MARK-LOGGED-PASSWORD-2047',
   loggedDeep: 'MARK-LOGGED-DEEP-3065',
+  badUrlPin: 'MARK-BADURL-PIN-6021',
+  badUrlPassword: 'MARK-BADURL-PASSWORD-7742',
 };
 
 let app: FastifyInstance;
 let lines: string[];
 const bodies: string[] = [];
+const badUrls: Awaited<ReturnType<typeof send>>[] = [];
+let longParam: Awaited<ReturnType<typeof send>>;
 const errorBodies: { status: number; body: string }[] = [];
 
 async function send(options: InjectOptions) {
@@ -65,6 +74,7 @@ beforeAll(async () => {
           await query('SELECT $1::uuid', [MARK.postgres]);
           return { ok: true };
         });
+        api.get('/probe-param/:id', async () => ({ ok: true }));
         api.get('/probe-log', async (request) => {
           request.log.info(
             {
@@ -103,6 +113,21 @@ beforeAll(async () => {
   await send({ method: 'GET', url: '/api/probe-throw' });
   await send({ method: 'GET', url: '/api/probe-postgres' });
   await send({ method: 'GET', url: '/api/probe-log' });
+
+  // Case 26: a URL the router cannot decode is rejected before routing.
+  for (const url of [
+    `/api/%zz?pin=${MARK.badUrlPin}`,
+    `/api/%zz?password=${MARK.badUrlPassword}`,
+    `/api/${PATH_MARK.segment}%zz/x?pin=${MARK.badUrlPin}`,
+    `/nowhere/%zz?pin=${MARK.badUrlPin}`,
+  ]) {
+    badUrls.push(await send({ method: 'GET', url }));
+  }
+  // Case 27: a parameter longer than maxParamLength is the other early rejection.
+  longParam = await send({
+    method: 'GET',
+    url: `/api/probe-param/${PATH_MARK.param}${'x'.repeat(200)}?pin=${MARK.badUrlPin}`,
+  });
 });
 
 afterAll(async () => {
@@ -158,6 +183,37 @@ describe('what leaves the process', () => {
       expect(line.err).not.toHaveProperty('message');
       expect(line.err).not.toHaveProperty('detail');
     }
+  });
+
+  it('26. a malformed URL is the VALIDATION_FAILED envelope with no-store, and echoes nothing', () => {
+    expect(badUrls).toHaveLength(4);
+    for (const res of badUrls) {
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toBe('{"error":{"code":"VALIDATION_FAILED"}}');
+      expect(res.headers['cache-control']).toBe('no-store');
+    }
+    const rejected = lines
+      .map((l) => JSON.parse(l) as Record<string, any>)
+      .filter((l) => l.err?.code === 'FST_ERR_BAD_URL');
+    expect(rejected).toHaveLength(4);
+    for (const line of rejected) {
+      expect(line.msg).toBe('request rejected before routing');
+      expect(line.err).not.toHaveProperty('message');
+    }
+    for (const marker of Object.values(PATH_MARK)) {
+      expect(bodies.join('\n')).not.toContain(marker);
+    }
+  });
+
+  it('27. an over-long parameter is the same envelope, and echoes nothing', () => {
+    expect(longParam.statusCode).toBe(400);
+    expect(longParam.body).toBe('{"error":{"code":"VALIDATION_FAILED"}}');
+    expect(longParam.headers['cache-control']).toBe('no-store');
+    const logged = lines
+      .map((l) => JSON.parse(l) as Record<string, any>)
+      .find((l) => l.err?.code === 'FST_ERR_MAX_PARAM_LENGTH');
+    expect(logged?.msg).toBe('request rejected before routing');
+    expect(logged?.err).not.toHaveProperty('message');
   });
 
   it('24. a probe that logs { pin, password } produces a line without either key', () => {
