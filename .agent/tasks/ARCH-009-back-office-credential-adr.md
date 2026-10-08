@@ -280,4 +280,26 @@ I did not read `pin.ts`, so the ADR says "the same parameter definition as the P
 no Argon2id numbers. I did not read `.agent/STATE.md`, `QUEUE.md` or the journal, and did not
 fetch `agent/lead-1007c`; the new contract text is taken from this task file.
 
+### Acceptance (2026-10-08)
+
+The lead reported that the owner accepted ADR-009 on 2026-10-08 (lead session: "accept
+ADR-009") and instructed these edits. I am recording the owner's acceptance as relayed, not
+accepting anything myself; this worktree's `.agent/DECISIONS.md` has no line for it yet, so the
+lead's line there is the record.
+
+- **ADR-009:** `Status: Accepted`, `Date: 2026-10-08`, `Approved by: Product owner`, in the
+  form of ADR-001 to ADR-007. The body is unchanged. Everything above this note that calls the
+  ADR "Proposed" describes it as it stood on 2026-10-07.
+- **ARCHITECTURE.md**, the post-acceptance wording listed above, applied as written:
+  section 1 ("seven" to "eight"); section 3.2 (the authentication-risk gate bullet, placed
+  before the last bullet so the list's punctuation holds); section 5.1 (the SecurityEvent
+  row); section 11 (last paragraph); section 12 (the errors bullet); section 14.2 (the throttle
+  test line); section 16 (first row); section 18 (a dated sentence and a second table with
+  the ADR-009 row, leaving the 2026-09-10 table as it was).
+- **Not edited, the lead's:** the "seven accepted ADRs" lines in AGENTS.md, CLAUDE.md and
+  `.agent/roles/architect.md`.
+
+`git diff --check` is clean. The contract-wording items and the open product questions above
+are unaffected by the acceptance and still stand.
+
 DONE

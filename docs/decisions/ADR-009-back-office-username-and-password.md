@@ -1,12 +1,10 @@
 # ADR-009: Back-office sign-in by username and password
 
-**Status:** Proposed
+**Status:** Accepted
 
-**Date:** 2026-10-07
+**Date:** 2026-10-08
 
-**Approved by:** — (awaiting the product owner; the amendments to
-`docs/ARCHITECTURE.md` sections 2.1, 5.1, 7.2, 7.3, 13 and 16 on the same
-branch are proposed with this record and are accepted or declined with it)
+**Approved by:** Product owner
 
 ADR-008 is reserved for the deferred database-roles decision and does not yet
 exist. Nothing is superseded by this record: no accepted ADR covers how a

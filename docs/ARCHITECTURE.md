@@ -19,7 +19,7 @@ appears to conflict with the product contract, implementation stops and raises
 the conflict rather than silently choosing one.
 
 The product owner approved this architecture on 2026-09-10. The accepted
-decision records in section 18 preserve the seven consequential decisions and
+decision records in section 18 preserve the eight consequential decisions and
 their trade-offs. Future changes to an accepted decision require a new ADR that
 supersedes the old one; accepted ADRs are not edited into a different decision.
 
@@ -141,6 +141,10 @@ deployment gate:
 - multi-terminal print-incident and catalog propagation;
 - extension and validation of checkout leasing under real terminal
   contention;
+- a review of the authentication risks accepted for the loopback MVP: PIN
+  guessing that a cashier's own login resets, response-time differences in PIN
+  and password verification, back-office username discovery, per-account
+  lockout, and the unaudited first-manager script;
 - real-floor concurrency and a dedicated waiter-role validation.
 
 The loopback-only startup guard must fail closed until this gate is deliberately
@@ -230,7 +234,7 @@ remain enums and do not acquire redundant boolean flags.
 | ClientInstance | Opaque server-issued browser-profile identifier for UI continuity and telemetry; never authorization |
 | ActorSession | Opaque session, actor, audience (`POS` or `BACK_OFFICE`), issue time, last interactive activity, absolute expiry, release, and credential version |
 | PinThrottleBucket | One durable installation-wide counter and cooldown for each of `LOGIN` and `MANAGER_APPROVAL` |
-| SecurityEvent | Operational evidence for unauthenticated failures and cooldowns, containing no PIN and no claimed audit actor |
+| SecurityEvent | Operational evidence for unauthenticated failures and cooldowns, containing no PIN, no password, no username and no claimed audit actor |
 | SettingsVersion | Immutable currency, precision, tax rate, service-charge rate, receipt business details, and calculation-policy version |
 | DiningTable | Physical table label, optional area, and active state |
 | CatalogRevision | Monotonic version of menu, option, price, availability, and preset configuration |
@@ -679,9 +683,10 @@ append-only AuditEntry with `approver = null` and the failed or cancelled
 outcome in their own short transaction. Failure to commit that evidence must
 fail the protected request; it must never allow the business action to run.
 
-An unauthenticated failed login has no identified actor and therefore cannot
-satisfy B-13. It is recorded only as a SecurityEvent. Audit and telemetry both
-exclude the PIN value in every form.
+An unauthenticated failed login, at the POS or the back office, has no
+identified actor and therefore cannot satisfy B-13. It is recorded only as a
+SecurityEvent. Audit and telemetry both exclude PIN and password values in
+every form.
 
 ## 12. Printing and error recovery
 
@@ -721,7 +726,7 @@ Other recovery rules are:
 - a database outage blocks writes visibly; no client may claim an order,
   approval, fire, tender, or close succeeded;
 - errors use stable machine-readable codes and do not expose SQL, stack traces,
-  secrets, blind indexes, or PINs;
+  secrets, blind indexes, PINs, or passwords;
 - migrations are forward-tested against representative data before use.
 
 ## 13. API boundary
@@ -779,7 +784,8 @@ for workflows, client separation, and conflict presentation.
 ### 14.2 PostgreSQL integration tests
 
 - partial unique indexes, check constraints, and immutable-table privileges;
-- throttle bucket races and restart durability;
+- PIN throttle bucket and per-account password throttle races, their isolation
+  from each other, and restart durability;
 - audience-scoped sessions, credential invalidation, and no-PIN scans;
 - command rollback when validation, approval evidence, or audit insertion
   fails;
@@ -870,7 +876,7 @@ That is an architectural change, not a caching enhancement.
 
 | Risk | Impact | Mitigation | Label |
 |---|---|---|---|
-| The MVP is mistaken for production-ready software | Exposure of PINs, data loss, and operational outage | Loopback startup guard plus the explicit pre-production gate | Deferred beyond MVP |
+| The MVP is mistaken for production-ready software | Exposure of PINs and passwords, data loss, and operational outage | Loopback startup guard plus the explicit pre-production gate | Deferred beyond MVP |
 | One local host is a single point of failure | All writes stop if the development machine or PostgreSQL stops | Fail visibly in MVP; appliance, UPS, backup, and recovery are mandatory before production | Deferred beyond MVP |
 | The MVP exercises table service sequentially through a combined cashier | It does not validate waiter/cashier handoff or real floor contention | State this limitation; validate waiter role and multi-terminal service at the pre-production gate | Deferred beyond MVP |
 | Installation-wide PIN cooldown can deny all logins or approvals for five minutes | Typing mistakes or abuse cause a bounded local denial of service | Separate LOGIN and MANAGER_APPROVAL buckets, clear UI, durable database-time cooldown; retain because client-reset-resistant throttling is required | Accepted architecture |
@@ -960,6 +966,12 @@ The following ADRs were accepted with this architecture on 2026-09-10:
 | [ADR-005](decisions/ADR-005-transactional-print-outbox-with-uncertain-delivery.md) | Transactional print outbox with uncertain delivery |
 | [ADR-006](decisions/ADR-006-transactional-immutable-receipt-numbering.md) | Transactional immutable receipt numbering |
 | [ADR-007](decisions/ADR-007-transactional-audit-with-separate-failed-approval-evidence.md) | Transactional audit with separate failed-approval evidence |
+
+ADR-009 was accepted on 2026-10-08:
+
+| ADR | Accepted decision |
+|---|---|
+| [ADR-009](decisions/ADR-009-back-office-username-and-password.md) | Back-office sign-in by username and password |
 
 ## 19. Open product dependencies
 
