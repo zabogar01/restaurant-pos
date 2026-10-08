@@ -632,4 +632,18 @@ terminal run, including Ctrl+U then Ctrl+Y.
 
 **Not done.** I cannot make a real-terminal run; the lead repeats it. Case 32 proves the readline sequence with doubles, not a particular terminal emulator. No Prettier run. The `grep` for `Date|console.|now()` on the credential module still finds nothing (the edit removed code only).
 
+### Round 3 (fix cycle 2 of 2)
+
+**Change.** `apps/server/scripts/create-manager.ts`: `ask` now creates its own readline interface (`historySize: 0`, same muted output) for every question, visible or secret, asks once, and closes it in a `finally` before the next question. The shared interface and its `try/finally` around the four questions are gone, so no line, history or kill-ring state is shared between two questions. Everything round 2 fixed is kept: visible labels through `rl.question(label)`, the muted path with its label written once for secrets, ask-twice with the mismatch error, and `prompt(input, output)` with the process streams as defaults.
+
+**Closing an interface and the input stream.** `rl.close()` pauses the input stream, and creating the next interface resumes it. I saw no lost keystrokes: cases 32 and 35 both type a whole session across five interfaces with the doubles, and both pass with no workaround. I added none. A real terminal sends keys only after each prompt appears, so nothing is typed into the gap. Type-ahead across the gap on a real terminal stays buffered in the stream while it is paused; I could not test that without a terminal.
+
+**Test.** Case 35 (cases 1 to 34 unedited and green), using the stream doubles of case 32: name; at `PIN:` the PIN, Ctrl+U, the PIN again, Enter; the PIN again to confirm; at `Username:` Ctrl+Y, Ctrl+U, then the username, Enter; at `Password:` the password, Ctrl+U, the password again, Enter; the password again to confirm. It asserts the returned answers are exactly the name, PIN, username and password intended, and that the output contains neither the PIN nor the password. The harness removes each label from the captured text as it is reached so that the label's own bytes cannot hide a leak; the labels contain neither secret.
+
+**Red proof.** Back to one shared interface (`historySize: 0` kept, closed only at the end): case 35 failed with `expected '\u001b[1G\u001b[0J\u001b[7GDewi\r\n\n…' not to contain '654321'`. The received output showed `[1G[0J[11G654321[1G[0JUsername: [11Gdewi.owner`: the Ctrl+Y at `Username:` printed the PIN killed at `PIN:`. Reverted; case 35 passes again.
+
+**Counts.** `npm run verify`: typecheck clean; 51 files, 2911 tests passed (round 2: 2910, plus case 35). `back-office-credential.test.ts` alone: 35/35 on three consecutive runs.
+
+**Not done.** The real-terminal run, including Ctrl+U then Ctrl+Y, is the lead's. No Prettier run. Only `create-manager.ts`, the test file and this Handoff changed.
+
 DONE

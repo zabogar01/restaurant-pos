@@ -718,3 +718,49 @@ describe('a verifier that throws', () => {
     expect(await count('security_event')).toBe(1);
   });
 });
+
+describe('the prompt and readline state', () => {
+  it('35: text killed at a hidden question cannot be yanked back at a visible one', async () => {
+    const pin = '654321';
+    const password = 'hunter2-secret-pw';
+    const input = Object.assign(new PassThrough(), { isTTY: true, setRawMode: () => input });
+    let written = '';
+    const output = new Writable({
+      write(chunk, _encoding, callback) {
+        written += chunk.toString();
+        callback();
+      },
+    });
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 30));
+    const answered = prompt(input, output);
+
+    async function atQuestion(label: string): Promise<void> {
+      await until(async () => written.includes(label));
+      await settle();
+      written = written.replace(label, '');
+    }
+    const send = async (keys: string) => {
+      input.write(keys);
+      await settle();
+    };
+    const CTRL_U = '\x15';
+    const CTRL_Y = '\x19';
+
+    await atQuestion('Name: ');
+    await send('Dewi\r');
+    await atQuestion('PIN: ');
+    await send(`${pin}${CTRL_U}${pin}\r`);
+    await atQuestion('PIN (again): ');
+    await send(`${pin}\r`);
+    await atQuestion('Username: ');
+    await send(`${CTRL_Y}${CTRL_U}dewi.owner\r`);
+    await atQuestion('Password: ');
+    await send(`${password}${CTRL_U}${password}\r`);
+    await atQuestion('Password (again): ');
+    await send(`${password}\r`);
+
+    expect(await answered).toEqual({ name: 'Dewi', pin, username: 'dewi.owner', password });
+    expect(written).not.toContain(pin);
+    expect(written).not.toContain(password);
+  }, 30_000);
+});

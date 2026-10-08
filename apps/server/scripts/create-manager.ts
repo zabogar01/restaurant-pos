@@ -51,21 +51,25 @@ export async function prompt(
       callback();
     },
   });
-  // historySize 0: a line is never kept, so Up at a visible question cannot
-  // recall a PIN or a password typed at a hidden one (B-12).
-  const rl = createInterface({ input, output, terminal: true, historySize: 0 });
-
+  // One interface per question, closed before the next is asked, so no line,
+  // history entry or kill-ring text typed at a hidden question can reach a
+  // visible one (B-12). historySize 0 keeps history out as well.
   async function ask(label: string, secret: boolean): Promise<string> {
-    if (!secret) return rl.question(`${label}: `);
-    // Readline redraws its prompt on every key; muted, the redraw shows nothing,
-    // so the label is written once, directly.
-    terminalOutput.write(`${label}: `);
-    muted = true;
+    const rl = createInterface({ input, output, terminal: true, historySize: 0 });
     try {
-      return await rl.question('');
+      if (!secret) return await rl.question(`${label}: `);
+      // Readline redraws its prompt on every key; muted, the redraw shows nothing,
+      // so the label is written once, directly.
+      terminalOutput.write(`${label}: `);
+      muted = true;
+      try {
+        return await rl.question('');
+      } finally {
+        muted = false;
+        terminalOutput.write('\n');
+      }
     } finally {
-      muted = false;
-      terminalOutput.write('\n');
+      rl.close();
     }
   }
 
@@ -76,15 +80,11 @@ export async function prompt(
     return first;
   }
 
-  try {
-    const name = await ask('Name', false);
-    const pin = await askTwice('PIN');
-    const username = await ask('Username', false);
-    const password = await askTwice('Password');
-    return { name, pin, username, password };
-  } finally {
-    rl.close();
-  }
+  const name = await ask('Name', false);
+  const pin = await askTwice('PIN');
+  const username = await ask('Username', false);
+  const password = await askTwice('Password');
+  return { name, pin, username, password };
 }
 
 const invokedDirectly =
