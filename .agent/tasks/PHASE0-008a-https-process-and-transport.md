@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-007b]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-008a — The HTTPS process and transport
@@ -635,6 +635,27 @@ Each mutated, run, read and reverted.
 - Any migration, any write to a table, and a schema-currency check (flagged by the consult for a
   later task).
 - `docs/` of any kind, and ADR-010 (the lead commissions it separately).
+
+## Lead verification and rulings (2026-10-08)
+
+- `npm run verify` at `5f67516`: 56 files, 2990 tests, green. Changed paths are all within `owns:`;
+  no existing test changed.
+- **The builder's two questions, ruled.** (1) `StartupError` is accepted as the reading of rule 9:
+  it carries only sentences written in this repository (a variable name, a path, a bind address),
+  and `index.ts` wraps only the `config.ts` functions, whose messages never hold a value. Any other
+  error stays on the allow-list. (2) The `migrate.ts` change is accepted: same text, same streams,
+  on the migration command line, not the server.
+- **Acceptance runs (the consult's, by the lead):** `npm run cert` made a pair in
+  `~/.config/restaurant-pos/tls/` (directory `0700`, key `0600`) and a second run changed nothing.
+  `npm run dev -w apps/server` listened on `127.0.0.1:8443` only (`lsof`). `curl --cacert` to
+  `https://localhost:8443/api/health` gave 200 `{"status":"ok"}` with `cache-control: no-store`, no
+  cookie, no HSTS, no `Access-Control-*`. `/api/nope?pin=123456` gave 404 `{"error":{"code":
+  "NOT_FOUND"}}` and the server log held the path without the query (the marker never appeared);
+  `/elsewhere` gave a plain 404. Plain HTTP to the port failed. `POS_LISTEN_HOST=0.0.0.0` and
+  `POS_LISTEN_HOST=localhost` each exited 1 with the consult's refusal sentence as a
+  `StartupError`. SIGINT to the server process exited 0 at once; a file save under `tsx watch`
+  restarted cleanly. (Ctrl+C on `tsx watch` itself prints tsx's own "force killing" notice; the
+  server's shutdown is not the cause.)
 
 ## Handoff
 
