@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-007b]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: review
+status: complete
 cycles: 2
 ---
 # PHASE0-008a — The HTTPS process and transport
@@ -752,6 +752,17 @@ to the Handoff with the change, the red proof and the counts.
   `/api%2Fnope` and `/API/nope` stayed plain 404s with no `Cache-Control`. SIGINT exited 0.
 - The probe route the builder added to the test helper's `apiRoutes` list is accepted: it adds a
   route and edits no assertion of cases 1 to 29.
+
+## Owner ruling on the final re-review (2026-10-08)
+
+The final re-review (`.agent/reviews/PHASE0-008a-review.md`, at `7fe85e7`) found one medium defect
+with the two fix cycles spent: an absolute-form request target (`GET https://localhost:8443/api/nope
+HTTP/1.1`) reaches API routes, but an API miss in that form gets the plain 404 without `no-store`,
+because `isApiPath` assumes the target starts with `/`. Nothing leaks. **The owner ruled: merge
+PHASE0-008a with this finding open, and fix it in PHASE0-008b** (`.agent/DECISIONS.md`,
+2026-10-08), which refuses or classifies absolute-form targets at the request boundary. The same
+task carries ADR-010 rule 1's two remaining framework bodies (Fastify's default
+`clientErrorHandler` body and the 503 while closing), now that ADR-010 is accepted.
 
 ## Handoff
 
