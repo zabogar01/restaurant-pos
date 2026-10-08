@@ -5,8 +5,8 @@ category: feature
 touches: [identity, audit]
 depends_on: [PHASE0-007, ARCH-009]
 owns: [db/migrations/**, apps/server/src/**, apps/server/test/**, apps/server/scripts/**, apps/server/package.json]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # PHASE0-007b — The back-office credential
 
@@ -472,6 +472,52 @@ checks.
   and readline in terminal mode redraws the line with the empty prompt, erasing the label. The
   operator sees a blank line and does not know what to type. The secret prompts keep their labels
   only because the redraw is muted. Fix: give a visible prompt its label through `rl.question`.
+
+## Round 2 — the review's three findings (lead ruling, 2026-10-08)
+
+The review is `.agent/reviews/PHASE0-007b-review.md` (Codex, at `f53fd86`). Read it in full. All
+three findings are accepted. This is fix cycle 1 of 2.
+
+1. **P1: readline history shows a hidden PIN at the username prompt** (B-12, ADR-009 §7, rule 13).
+   Pressing Up at `Username:` recalls and prints the PIN. Fix: no secret may ever reach any input
+   history. Create the interface with `historySize: 0`, or read each secret through an interface
+   of its own that is closed before the next question; either way, pressing Up or Down at a
+   visible question must print nothing that was typed at a secret one.
+2. **P2: the visible labels `Name:` and `Username:` are erased** (the lead's finding above, and
+   the review's). Give a visible question its label through `rl.question(label)`; keep the muted
+   path for secrets with its label still shown.
+3. **P2: an Argon2id exception is counted as a wrong password.** Rule 6 says a thrown
+   verification rolls back and propagates; the Handoff's "unreachable" is wrong, because the
+   `CHECK` tests only the `$argon2id$` prefix. Fix: let the verifier's exception leave the
+   transaction callback so the transaction rolls back, and reject outward with the module's
+   fixed, secret-free message (rule 12). No count is written and no event. A wrong password stays
+   a counted failure.
+
+**Tests** (add as cases 32 to 34; keep 1 to 31 green and unedited):
+
+- **32 (prompts, findings 1 and 2):** make the prompting testable without a real terminal: the
+  prompt function takes its input and output streams (the entry point passes `process.stdin` and
+  `process.stdout`), and the test drives it with stream doubles marked as TTYs. Feed a name, a
+  PIN twice, then the Up-arrow sequence `\x1b[A` and Down `\x1b[B` at the username question, then
+  the rest. Assert that nothing written to the output, at any point, contains the PIN or the
+  password typed; and that the output after each visible question was asked ends with that
+  question's label (`Name: `, `Username: `) still on the line, that is, no line-clearing sequence
+  follows the last time the label was written before the input.
+- **33 (finding 3):** through the owner, set an account's `password_hash` to
+  `'$argon2id$broken'`. `verifyPasswordThrottled` rejects with the fixed message (which contains
+  neither the username, the password nor the hash); the row's `consecutive_failures` and
+  `blocked_until` are unchanged; no `security_event` row was written.
+- **34 (finding 3):** with the same broken hash on one account, a wrong password on another
+  account is still `FAILED` and counted, so the change is narrow.
+
+**Red proofs:** (a) remove `historySize: 0` (or the separate interface): case 32 finds the PIN in
+the output; (b) put the label back on stdout with `rl.question('')`: case 32 fails on the label;
+(c) restore the catch that turns a verifier exception into `matches = false`: case 33 fails.
+
+**Then:** re-run `npm run verify` and the credential file three times, and add a **Round 2**
+section to the Handoff with each change, each red proof's failing output, and the counts. Do not
+rewrite round 1's sections except where the fix makes a statement in them untrue (the
+"unreachable" claim and the untested prompting). The lead will repeat the terminal run.
 
 ## Handoff
 
