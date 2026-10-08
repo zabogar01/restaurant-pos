@@ -5,7 +5,7 @@ category: ui
 touches: [audit, identity]
 depends_on: [DESIGN-012, DESIGN-013]
 owns: [docs/design/**]
-status: running
+status: review
 cycles: 1
 ---
 # DESIGN-014 — BO-12 audit viewer (slice I)
