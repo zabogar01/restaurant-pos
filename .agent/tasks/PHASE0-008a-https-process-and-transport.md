@@ -5,8 +5,8 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-007b]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # PHASE0-008a — The HTTPS process and transport
 
@@ -656,6 +656,53 @@ Each mutated, run, read and reverted.
   `StartupError`. SIGINT to the server process exited 0 at once; a file save under `tsx watch`
   restarted cleanly. (Ctrl+C on `tsx watch` itself prints tsx's own "force killing" notice; the
   server's shutdown is not the cause.)
+
+## Round 2 — the review's two findings (lead ruling, 2026-10-08)
+
+The review is `.agent/reviews/PHASE0-008a-review.md` (Codex, at `902d5aa`). Read it in full. Both
+findings are accepted. This is fix cycle 1 of 2.
+
+1. **High: a malformed URL bypasses the envelope and echoes the query string** (B-12, rules 10 and
+   11). `GET /api/%zz?pin=…` gets Fastify's own 400 body, which quotes the whole URL, with no
+   `Cache-Control`. Fix: route Fastify's early framework failures through the same policy, through
+   the `frameworkErrors` option. A malformed URL becomes 400 `VALIDATION_FAILED` in the envelope,
+   with `Cache-Control: no-store` set by that path itself (it runs before `onRequest`), and nothing
+   from the framework error is copied. **Then find every other path in the installed Fastify on
+   which the framework writes a response itself** (for example an async constraint failure, a
+   request arriving while the server is closing, a client-level parse error) and either route it
+   to the envelope or say in the Handoff why it cannot carry a request value. Logging of these
+   paths follows rules 8 and 9: the path without its query, no message.
+2. **Medium: `ErrorDetails` accepts any value, an exception's message included** (question 6,
+   rule 3). Fix: in `@pos/contracts`, map each `ErrorCode` to its details type; the six codes
+   that exist now declare none. `ErrorBody` and `AppError` preserve the relation, so a details
+   argument for a code that declares none does not compile. A later code that carries details
+   declares its fields in that map.
+
+**Tests** (add as cases 26 to 29; keep 1 to 25 green; case 18 is the one exception below):
+
+- **26:** `GET /api/%zz?pin=<marker>` (and the same with `password=` and a percent-broken path
+  segment) is 400, body exactly `{"error":{"code":"VALIDATION_FAILED"}}`, with
+  `Cache-Control: no-store`; the marker appears in neither the response nor the captured log.
+- **27:** one case per further early path the fix routes (item 1), each asserting the envelope
+  and the absence of a marker, or, for a path left as it is, the Handoff's reason.
+- **28 (compile-time):** in a test file covered by `npm run typecheck`, `// @ts-expect-error`
+  lines prove that `new AppError(code, status, <a string>)`, `(…, new Error('x'))`, `(…, { any:
+  'object' })`, and an `ErrorBody` with `details: <a string>` each fail to compile for every
+  current code. The typecheck must fail if any of those lines starts compiling.
+- **29:** case 18's details half, rewritten: because no current code declares details, it shows
+  that the handler sends exactly what a typed `AppError` carries by registering nothing new in
+  the contract. Keep the status and code half of case 18 unchanged; the cast in the old probe
+  (`as never`) goes, and the Handoff says how case 29 exercises the details path without a cast,
+  or, if it cannot, that the details path is first exercised by Task 9's first details-bearing
+  code (add that to the carry-forward).
+
+**Red proofs:** (a) remove the `frameworkErrors` wiring: case 26 sees the marker in the body;
+(b) put `ErrorDetails` back as an empty interface: the typecheck passes the `@ts-expect-error`
+lines as unused, so `npm run typecheck` fails; show both failing outputs and revert.
+
+**Then:** re-run `npm run verify`, `log-scan.test.ts` three times, and add a **Round 2** section to
+the Handoff with each change, the early paths found and how each is handled, the red proofs and the
+counts. Do not rewrite round 1's sections except where the fix makes a statement in them untrue.
 
 ## Handoff
 
