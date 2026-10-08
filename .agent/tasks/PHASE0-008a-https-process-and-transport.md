@@ -5,8 +5,8 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-007b]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: review
-cycles: 1
+status: active
+cycles: 2
 ---
 # PHASE0-008a — The HTTPS process and transport
 
@@ -714,6 +714,35 @@ counts. Do not rewrite round 1's sections except where the fix makes a statement
 - The builder's handling of the two early paths left as they are (`return503OnClosing`'s fixed body
   while closing, and Node's connection-level client errors) is accepted: neither can carry a
   request value. Case 29's limit (no details-bearing code yet) is accepted and carried to Task 9.
+
+## Round 3 — the re-review's one finding (lead ruling, 2026-10-08)
+
+The re-review is `.agent/reviews/PHASE0-008a-review.md` (Codex, at `dbbdf22`; round 1's report stays
+in the history at `d913e1d`). Read it in full. Its finding is accepted. **This is fix cycle 2 of 2,
+the last**: anything a further review finds goes to the owner.
+
+**Medium: an encoded API prefix bypasses `no-store` and the API 404 envelope** (rules 10 and 11).
+`isApiPath()` tests the raw URL for `/api`, while Fastify's router decodes percent-encoded
+characters before matching, so `/%61pi/health` reaches the health handler without `no-store`, and
+`/%61pi/nope` gets the plain 404.
+
+1. **Fix:** decide "is this an API request" the way the router does. A matched route answers under
+   the API policy because it is registered in the `/api` context: set `Cache-Control: no-store`
+   from a hook **inside that encapsulated context**, not from a global hook reading the URL. For a
+   miss, classify the path after the same decoding the router applies (a path that cannot be
+   decoded is already the malformed-URL case), so `/%61pi/nope` is a 404 `NOT_FOUND` envelope with
+   `no-store`. Keep the plain 404 outside `/api`, the malformed-URL handling of round 2, and every
+   other rule. Do not widen this round to anything else.
+2. **Tests, cases 30 and 31** (keep 1 to 29 green and unedited): **30:** `/%61pi/health` and
+   `/a%70i/health` answer exactly as `/api/health`, `no-store` included; a probe route registered
+   through `apiRoutes` reached by an encoded prefix carries `no-store`. **31:** `/%61pi/nope` and
+   `/a%70i/nope` answer exactly as `/api/nope` (404 envelope, `no-store`); `/API/nope` and
+   `/elsewhere` stay plain 404s.
+3. **Red proof:** go back to the raw-prefix test for the success path or the miss: case 30 or 31
+   fails. Show the output; revert.
+
+**Then:** re-run `npm run verify` and `log-scan.test.ts` three times, and add a **Round 3** section
+to the Handoff with the change, the red proof and the counts.
 
 ## Handoff
 

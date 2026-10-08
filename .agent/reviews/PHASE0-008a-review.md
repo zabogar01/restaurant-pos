@@ -1,81 +1,57 @@
-# PHASE0-008a review
+# PHASE0-008a review — round 2
 
 ## Verdict
 
-**findings** — two findings: one high priority and one medium priority.
+**findings** — one medium-priority finding. Both findings from the previous review are resolved.
 
-Reviewed `agent/phase0-008a` at `902d5aa2dd0afab95967e9889238535e3cab0abf` against `development` at `d0865bfdf5f802e8fa4102ad099f5876e333c9a2`, using the task file, its copied binding ARCH-010 consult, its lead rulings, and the cited product and architecture requirements. The two findings concern the promised error boundary; the existing verification suite passes.
+Reviewed branch `agent/phase0-008a` at `dbbdf22da4f43436008dda338b26ec2dc84a41f7` against `development` at `d0865bfdf5f802e8fa4102ad099f5876e333c9a2`. The review covers the branch diff, the task's binding ARCH-010 excerpts and round-2 rulings, the cited requirements and boundaries, and the installed framework paths relevant to the fixes.
 
 ## Findings
 
-### 1. High priority: malformed URLs bypass the error envelope and echo the query string
+### 1. Medium priority: encoded API paths bypass the shared response policy
 
-**Location:** `apps/server/src/http/server.ts:33` and `apps/server/src/http/server.ts:43`.
+**Location:** `apps/server/src/http/errors.ts:43`, used by `apps/server/src/http/server.ts:46` and `apps/server/src/http/errors.ts:84`.
 
-The server installs `setErrorHandler` and an `onRequest` cache-control hook, but neither handles Fastify's early malformed-URL rejection. The Fastify options leave `frameworkErrors` unset. In the installed Fastify implementation, `onBadUrl` then writes its own response directly, before the application's error handler or request hook can run.
+`isApiPath()` compares the raw URL against the literal prefix `/api`, but Fastify's router decodes percent-encoded unreserved characters before matching routes. These two interpretations disagree. A request to `/%61pi/health` reaches the real health handler, yet the global request hook considers it outside the API and does not set `Cache-Control: no-store`. The same classifier makes an encoded API miss return the outside-API plain-text response.
 
-I reproduced this with the unmodified `buildServer` and `app.inject({ url: '/api/%zz?pin=REVIEW_QUERY_SECRET' })`. It returned status 400 with this body:
+I reproduced these results using the unmodified server factory and its production health handler, with only the database pool's query method replaced in memory by a successful response:
 
-```json
-{"error":"Bad Request","code":"FST_ERR_BAD_URL","message":"'/api/%zz?pin=REVIEW_QUERY_SECRET' is not a valid url component","statusCode":400}
-```
+| Request | Status | Body | Cache-Control |
+|---|---|---|---|
+| `/api/health` | 200 | `{"status":"ok"}` | `no-store` |
+| `/%61pi/health` | 200 | `{"status":"ok"}` | absent |
+| `/a%70i/health` | 200 | `{"status":"ok"}` | absent |
+| `/api/nope` | 404 | `{"error":{"code":"NOT_FOUND"}}` | `no-store` |
+| `/%61pi/nope` | 404 | `Not Found` | absent |
 
-The response had no `Cache-Control` header. The query marker appeared in the response, although it did not appear in the captured log. An ordinary `/api/nope?pin=REVIEW_QUERY_SECRET` request returned the correct `NOT_FOUND` envelope and `no-store`, so the existing unknown-route test hides the failing state. This is the shared-control check: the common error handler protects errors after routing begins but is absent from the earlier routing-failure state.
+A separate successful probe registered through `apiRoutes` exhibited the same missing header without any database dependency. This is the shared-control check: the raw-prefix classifier works for literal paths and is reused for both cache control and not-found handling, hiding the states where the router recognizes a decoded API path. Error responses also hide the successful-response defect because `send()` independently adds `no-store`.
 
-**Authority:** B-12 forbids PIN and password values in error messages; `docs/ARCHITECTURE.md` §12 forbids exposing secrets through errors. The task's binding ARCH-010 questions 5 and 6 require that only server-chosen codes reach responses, with no exception message, and require `Cache-Control: no-store` on every API response; task rules 10 and 11 repeat these requirements. The deliberate query-marker protection is part of the task even though later authentication routes must not put credentials in URLs.
+**Authority:** The task's binding ARCH-010 question 5 requires `Cache-Control: no-store` on every API response. Rules 10 and 11 require the API not-found envelope and the same unconditional cache policy. This finding does not claim an observed credential disclosure: the current health body contains no credential, but the shared API response policy is already bypassed.
 
-**Proposed fix:** Connect Fastify's early framework-error path to the same safe response policy, for example through its `frameworkErrors` option. Map malformed URLs to the existing 400 `VALIDATION_FAILED` envelope, discard the framework message, and set `no-store` without depending on `onRequest`. Add regression coverage for a malformed `/api` URL with a distinct query marker, checking the exact body, header, and captured logs. Check the other early framework failures while wiring this path so they cannot restore the default response shape.
-
-### 2. Medium priority: the error-details contract accepts arbitrary exception text
-
-**Location:** `packages/contracts/src/errors.ts:20`; the value is accepted at `apps/server/src/http/errors.ts:14` and sent at `apps/server/src/http/errors.ts:52`.
-
-`export interface ErrorDetails {}` is not an empty payload type. It accepts non-nullish values, including strings and arbitrary objects, and does not associate a details shape with an error code. Consequently, both the `AppError` constructor and `ErrorBody` accept an exception's message without any cast. The handler then sends it unchanged.
-
-I checked an in-memory TypeScript module under the server's compiler options. Both of these expressions compiled with zero diagnostics:
-
-```ts
-new AppError(ErrorCode.INTERNAL, 500, cause.message);
-const response: ErrorBody = {
-  error: { code: ErrorCode.INTERNAL, details: cause.message },
-};
-```
-
-I also registered an in-memory probe through the supported `apiRoutes` option. Throwing the first expression with `cause.message` equal to `REVIEW_DETAILS_SECRET` returned status 500 and this body:
-
-```json
-{"error":{"code":"INTERNAL","details":"REVIEW_DETAILS_SECRET"}}
-```
-
-The shipped health handler does not currently pass details, so this is a defect in the new shared contract and its guard against accidental disclosure, not an observed leak from the health route. The cast in the existing details test is unnecessary with the current type and therefore does not demonstrate a constrained contract.
-
-**Authority:** The task's binding ARCH-010 question 6 explicitly requires details to be typed per code and never to contain text taken from an exception; question 5 requires optional typed details on `AppError`. B-12 and architecture §12 explain why the proposed exception-message scenario must be prevented. The Handoff acknowledges the empty interface, but the task's lead verification section does not grant an exception to the per-code requirement.
-
-**Proposed fix:** Define a code-to-details mapping and make `ErrorBody` and `AppError` preserve that relationship. For the current six codes, which declare no details, reject a details argument rather than permitting arbitrary non-nullish values. Add a compile-time negative check for a string, an exception object, and an undeclared details object. Reconcile the existing probe with that contract; when a later task adds a details-bearing code, test its declared fields then.
+**Proposed fix:** Apply the API response policy according to the route's API context or a pathname interpretation consistent with the router, including API misses. An encapsulated API hook can cover registered routes, but the not-found classification must also handle encoded unreserved characters consistently. Alternatively, reject noncanonical API spellings through the safe envelope. Add successful-health and unknown-route cases for encoded API prefixes, asserting the same headers and response policy as their literal equivalents. Preserve the malformed-URL protections and plain 404 behavior outside the API.
 
 ## What I ran and what I did not
 
-**Observed:** I ran `npm run verify` myself. Typechecking passed for the server, money, contracts, and POS packages. Vitest reported **56 files passed and 2,990 tests passed**, an increase of five files and 79 tests over the task's recorded development baseline. The run exited 0. It printed the existing Vite configuration-loader warning.
+**Observed:** I ran `npm run verify`. Typechecking passed for the server, money, contracts, and POS packages. Vitest reported **56 files passed and 2,994 tests passed**, with exit status 0: five files and 83 tests above the task's recorded development baseline. The run printed the existing Vite configuration-loader warning.
 
-`git diff --stat` was empty immediately before and after that green run, and `git status --short --branch` showed a clean `agent/phase0-008a` tree. After resuming the review, I checked again: both commit IDs were unchanged, the diff stat remained empty, and the tree remained clean. The report is the only file I have added or edited.
+`git diff --stat` was empty before and immediately after verification; `git status --short --branch` showed a clean task branch. Both commit IDs remained unchanged. A further check after the in-memory probes again found an empty diff and the same commits. No source, test, task, or memory file was edited; this report is my only file change.
 
-I ran the malformed-URL injection probe with trace logs captured in memory, using the actual server factory without changing its implementation. I ran the TypeScript compiler probe with a virtual source file supplied by an in-memory compiler host, and the details-response probe through `apiRoutes`. Neither probe wrote a source or test file. These are direct reproductions, not mutation runs.
+I ran the injection probes described above. The health reproduction used the actual registered health route with a temporary successful database-query double; it did not prove live database connectivity. I restored the method and closed the server and pool. The separate probe route used the supported API registration context. I also injected malformed API and non-API URLs containing a query marker: both returned the exact 400 `VALIDATION_FAILED` envelope with `no-store`, and the captured trace log contained no marker.
 
-I attempted to repeat the malformed-URL request over a real HTTPS listener, loading the existing local certificate without altering it. That separate command failed at bind with `listen EPERM: operation not permitted 127.0.0.1`, so it made no HTTPS request. The malformed-URL finding is observed through injection; its applicability to the network path is supported by reading the installed Fastify `onBadUrl` implementation. The existing suite's real-listener tests passed as part of `verify`, but they do not exercise this malformed-URL scenario.
+I independently exercised the details-type red proof using a TypeScript compiler host that changes source only in memory. The unchanged server program produced zero diagnostics. Replacing `ErrorDetailsOf` with `{}` produced **36 TS2578 unused-`@ts-expect-error` diagnostics**, all in `error-details.types.ts`. No file was mutated or emitted.
 
-**Not rerun:** I did not independently repeat each test file alone, the three repeated loopback/log-scan runs, or the builder's eleven mutation proofs. Those remain Handoff evidence. I did not repeat the lead's certificate-generation, watch-mode, curl, or signal acceptance runs. I did not independently exercise the ten-second shutdown timeout, second-signal exit, uncaught-exception handler, unhandled-rejection handler, or idle-pool error event. Their wiring was reviewed in source; it is not additional runtime evidence. No browser or visual screen review applies to this transport task. I did not commit or push.
+`git diff --check development...agent/phase0-008a` passed. Source searches found no `console.` calls, exactly one `.listen(` call at `http/loopback.ts:46`, and no `actor_session`, migration import, or `MIGRATION_DATABASE_URL` reference in the HTTP modules or process entry point.
+
+**Limitations:** A separate real-HTTPS reproduction attempt failed at bind with `listen EPERM: operation not permitted 127.0.0.1`; it sent no request. The encoded-path finding is observed through injection. Its applicability to network routing is supported by the installed `find-my-way` lookup implementation, which decodes paths before matching; it is not an independently observed HTTPS result. The real-listener tests in the verification suite passed, but they do not cover this encoded-path scenario.
+
+I did not repeat the individual test files or their three-run repetitions, the other builder mutation proofs, or the lead's certificate, watch-mode, curl, and signal acceptance runs. I reviewed startup order, shutdown ordering, fatal logging, and the idle-pool listener in source; I did not independently trigger the ten-second shutdown timeout, second signal, uncaught exception, unhandled rejection, or idle-pool error. There is no screen or design artifact to review for this transport task. I did not commit or push.
 
 ## Cleared
 
-- The loopback guard rejects names, wildcard and non-loopback addresses, IPv4-mapped IPv6, and zone identifiers. It checks TLS before listening, checks the actual bound addresses afterwards, and closes on rejection. The passing suite includes the sole-listen-call check and real TLS versus plain-HTTP behavior. These support NFR-1, architecture §§3.1–3.2, and B-11 within this task's scope.
-- Certificate generation uses `execFile` arguments, creates the specified leaf extensions, keeps the default key outside the checkout with restrictive permissions, and does not install trust. Validation rejects the specified missing, invalid, mismatched, expired, premature, CA, wrong-name, and loose-permission cases. Generation, idempotence, and validation tests passed.
-- For requests that reach the normal framework lifecycle, the tests cover the error envelope, JSON-only body parsing, request and response marker scans, PostgreSQL SQLSTATE and stack-frame logging, and redaction as a backstop. Health success and simulated database failure use the correct responses. The health row-count test passed, and the production handler contains only `SELECT 1`.
-- The pool closes under process ownership rather than server-instance ownership; the tests cover pool recreation and closing multiple server instances without ending their shared pool. Source review confirms the prescribed startup order, application-role database access, and shutdown ordering.
-- The contract package exports exactly the six requested codes and participates in root typechecking. No authentication route, client-instance cookie, migration, CORS implementation, HSTS behavior, or frontend change was added. B-13 and B-14 remain outside the behavior implemented here. FR-A7's cookie behavior is explicitly deferred to PHASE0-008b.
-- I treated the task's recorded lead rulings accepting `StartupError` and the migration CLI stream change as part of the review scope. They are not additional findings.
-
-## Handoff
-
-The lead can dispatch the two error-boundary fixes from the reproductions above. The current suite is green on the reviewed, stable commit, but neither failing scenario is covered by it. Re-run verification after fixes and include the malformed-URL response and per-code details checks in the next review. No implementation or task Handoff was changed during this review.
+- The previous malformed-URL finding is resolved. `frameworkErrors` is wired in the production factory, and malformed URLs and over-long parameters receive safe envelopes and `no-store`. The failed-async-constraint test exercises the exported handler on a separate Fastify instance; it is handler evidence, not a currently reachable production route. I read the installed framework's remaining direct responses. The fixed closing-time and connection-parser bodies cannot echo request values; the task's round-2 lead ruling explicitly accepts those exceptions.
+- The previous details-contract finding is resolved. The six codes declare no details, and both `AppError` and `ErrorBody` reject strings and undeclared objects. The negative checks are effective, as the in-memory mutation demonstrates. Testing a real details-bearing code remains explicitly deferred to Task 9.
+- The loopback and TLS checks cover the required address classes, refusal without TLS, post-bind address validation, real HTTPS versus plain HTTP, certificate extensions, permissions, validity, matching keys, and idempotence. These support B-11, NFR-1, and architecture sections 3.1 and 3.2 within this task's scope.
+- The passing logging tests cover body, header, query, exception, and PostgreSQL markers at trace level, retain SQLSTATE and stack-frame evidence, and check redaction as a backstop. Normal JSON, body-limit, health-failure, and error-envelope paths passed. The encoded-prefix gap is the exception identified above.
+- Health performs only `SELECT 1`; the suite checks that it sets no cookie and changes no row counts. Pool shutdown belongs to the process, and the tests prove recreation and continued pool usability across server-instance closures. No client-instance, session, approval, migration, CORS, HSTS, or frontend behavior was added. FR-A7 is deferred to PHASE0-008b; B-13 and B-14 have no new identity or approval behavior here.
 
 DONE
