@@ -5,10 +5,14 @@
     "migrate": "tsx --env-file=../../db/dev.env src/db/migrate.ts",
     "provision": "tsx --env-file=../../db/dev.env scripts/provision.ts",
     "create-manager": "tsx --env-file=../../db/dev.env scripts/create-manager.ts",
-    "dev": "tsx watch src/index.ts"
+    "cert": "tsx scripts/make-cert.ts",
+    "dev": "tsx watch --env-file=../../db/dev.env src/index.ts",
+    "start": "tsx --env-file=../../db/dev.env src/index.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
+    "@pos/contracts": "*",
+    "fastify": "^5.12.5",
     "pg": "^8.13.0"
   },
   "devDependencies": {

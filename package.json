@@ -12,9 +12,10 @@
   "scripts": {
     "db:up": "docker compose --env-file db/dev.env up -d --wait && npm run provision -w apps/server",
     "db:migrate": "npm run migrate -w apps/server",
+    "cert": "npm run cert -w apps/server",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "typecheck": "tsc -p apps/server --noEmit && tsc -p packages/money --noEmit && tsc -p apps/pos",
+    "typecheck": "tsc -p apps/server --noEmit && tsc -p packages/money --noEmit && tsc -p packages/contracts --noEmit && tsc -p apps/pos",
     "verify": "npm run typecheck && npm run test:unit"
   },
   "devDependencies": {
