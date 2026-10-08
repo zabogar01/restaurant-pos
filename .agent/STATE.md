@@ -54,12 +54,11 @@ ADR) are running. `development` at `93c6f2c`. Narrative: [journal/2026-10-07.md]
 - **DESIGN-014 complete** at `53f663e` on `agent/design-014` (worktree `../restaurant-pos-wt/DESIGN-014`),
   not pushed: two rounds, Opus re-review clean; 24 states, checks 288/216/371; lead verify 50/2876.
   BO-12 build carries rule C1. Lead amount rulings (void, line void, discount) owner's to overturn.
-- **ARCH-009 complete, waiting on the owner:** `cbf3aef` on `agent/arch-009` (worktree
-  `../restaurant-pos-wt/ARCH-009`, pane `w2:p4F` kept open for a possible round). ADR-009 Proposed plus
-  ARCHITECTURE §2.1/5.1/7.2/7.3/13/16. Handoff: FR-B3 vs own-password ruling, follow-up wording.
-- **Live agents:** lead `w2:p1`, `architect9` (idle). Not ours: `w2:pE`, keen-chebyshev.
+- **ARCH-009 complete; ADR-009 Accepted** (owner, 2026-10-08) at `ab5114c` on `agent/arch-009`, with
+  ARCHITECTURE §1/2.1/3.2/5.1/7.2/7.3/11/12/13/14.2/16/18. Contract fixes `f0bad21` on lead-1007c.
+- **Live agents:** lead `w2:p1` only. Not ours: `w2:pE`, keen-chebyshev.
 - **Next backend:** the **back-office credential** task, written from ARCH-008 §5 and ADR-009 once
-  the owner accepts it; **ARCH-010, the consult for plan Task 8** (HTTPS server, loopback guard,
+  merged (ADR-009 accepted); **ARCH-010, the consult for plan Task 8** (HTTPS server, loopback guard,
   client instance), not blocked. Task 9 (auth routes) needs 007 and the credential; Task 10 needs a
   consult that adds an audit outcome for a cooldown-refused approval (ARCH-007 §7).
 - **Pattern for identity/audit tasks:** an Opus consult first, then a task file copying its *For the
@@ -112,11 +111,10 @@ ADR) are running. `development` at `93c6f2c`. Narrative: [journal/2026-10-07.md]
 
 Nothing here is decided. Detail is where each line points.
 
-- **Push `agent/lead-1007c`, `agent/arch-009`, `agent/design-014`?** lead-1007c holds contract `408f707`
-  (PRD FR-A1/A2b/A3/A5b/B3, AC-32/35, §6; B-11/B-12; DECISIONS 2026-10-07 evening).
-- **ADR-009 acceptance** (ARCH-009 Handoff): accept with amendments? FR-B3 own-password exception;
-  cooldown-end reset for passwords (FR-A5/A5b text); AC-35 unknown username; stale §1/3.2/5.1/11/12/
-  14.2/16 wording on acceptance. Phase 1: own change needs current password? own PIN reset? role bump?
+- **PRs open for `agent/lead-1007c`, `agent/arch-009`, `agent/design-014`** (owner said push, 2026-10-08):
+  merge, then fast-forward, clean up both worktrees and `.agent/runs/DESIGN-014`.
+- **Phase 1 questions (ADR-009):** own password change needs the current one? own PIN reset keeps
+  the session? does a role change bump the credential version?
 - **PRD wording owed, not yet drafted,** for 2026-10-06 rulings that touch the contract: report-print
   failure placement, void `REFUSED` and abandoned approval as cancelled (FR-J3, AC-18), empty order
   cancelled, no rate range (§9 question 3), post-close corrections by adjustment (§9 question 2),
