@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit]
 depends_on: [PHASE0-007, ARCH-009]
 owns: [db/migrations/**, apps/server/src/**, apps/server/test/**, apps/server/scripts/**, apps/server/package.json]
-status: review
+status: complete
 cycles: 2
 ---
 # PHASE0-007b — The back-office credential
