@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit]
 depends_on: [PHASE0-007, ARCH-009]
 owns: [db/migrations/**, apps/server/src/**, apps/server/test/**, apps/server/scripts/**, apps/server/package.json]
-status: active
+status: review
 cycles: 1
 ---
 # PHASE0-007b — The back-office credential
@@ -518,6 +518,19 @@ the output; (b) put the label back on stdout with `rl.question('')`: case 32 fai
 section to the Handoff with each change, each red proof's failing output, and the counts. Do not
 rewrite round 1's sections except where the fix makes a statement in them untrue (the
 "unreachable" claim and the untested prompting). The lead will repeat the terminal run.
+
+## Lead verification, round 2 (2026-10-08)
+
+- `npm run verify` at `60e6e49`: 51 files, 2910 tests, green. Round 2 changed only the script, the
+  credential module, its test file and this file.
+- **Terminal re-run** in a Herdr pane against `pos_test`: `Name:` and `Username:` now show their
+  labels; Up twice and Down at `Username:`, and Up at each password prompt, recalled nothing; the
+  pane never showed the PIN or the password. The created account verified (`VERIFIED`) with
+  exactly the password typed, so no recalled text was added to it. A password typed differently
+  the second time printed "The two Password entries differ; nothing was written" and left no row.
+- The builder's change to case 32's label assertion (no line-clearing sequence after the label,
+  rather than "ends with the label") is accepted: readline's cursor move after a correct label
+  makes the original wording false for correct code.
 
 ## Handoff
 
