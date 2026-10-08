@@ -5,8 +5,8 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-008a]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # PHASE0-008b — The request boundary
 
