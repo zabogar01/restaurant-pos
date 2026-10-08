@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance, InjectOptions } from 'fastify';
 import { closePool, query } from '../src/db/pool.js';
 import { buildServer } from '../src/http/server.js';
+import { inject } from './support/request.js';
 
 // A request's path is logged by design (the method and the path, never the
 // query), so a marker in a path would be a false alarm. These two travel in the
@@ -40,7 +41,7 @@ let longParam: Awaited<ReturnType<typeof send>>;
 const errorBodies: { status: number; body: string }[] = [];
 
 async function send(options: InjectOptions) {
-  const res = await app.inject(options);
+  const res = await inject(app, options);
   bodies.push(res.body);
   if (res.statusCode >= 400) errorBodies.push({ status: res.statusCode, body: res.body });
   return res;

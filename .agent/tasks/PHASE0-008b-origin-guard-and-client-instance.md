@@ -363,3 +363,142 @@ through `apiRoutes` returns `request.clientInstanceId`.
 - Serving any bundle (Task 11). Any migration. `docs/` of any kind.
 
 ## Handoff
+
+### What I did
+
+Built the request boundary on `agent/phase0-008b`. New source: `apps/server/src/http/origin.ts`
+(`ownOrigin`, `checkHost`, `checkOrigin`) and `apps/server/src/http/client-instance.ts` (the hook, the
+`request.clientInstanceId` and `config.clientInstance` declarations, the `rpos_cid` cookie). Changed:
+`server.ts` (cookie plugin, root hooks, API-context hooks), `errors.ts` (`clientErrorHandler`),
+`routes/health.ts` (`config: { clientInstance: false }`), `packages/contracts/src/errors.ts`
+(`ORIGIN_REFUSED`, nothing else), `apps/server/package.json` and `package-lock.json`
+(`@fastify/cookie@^11.1.3`, current major 11, no signing secret). No migration, no `docs/` edit.
+
+Hook order is: root `onRequest` closing check, root Host check, `@fastify/cookie`'s parser, then in the
+`/api` context the `no-store` header, the origin check, and the client-instance hook. `buildServer`
+now reads the port from `origin` through `ownOrigin`, which throws a `StartupError` for anything but
+`https://localhost:<explicit port>`; the host name `localhost` is a constant.
+
+### Decisions and the evidence for them
+
+- **Absolute-form targets (lead ruling 5a): refused at the root Host check, through the envelope, before
+  any handler.** The check is `request.raw.url` not starting with `/`, and the answer is 400
+  `VALIDATION_FAILED` with `no-store`, not `ORIGIN_REFUSED`, because the request is malformed rather than
+  cross-origin and the task allows no further code. Evidence this was real: with the check disabled, the
+  raw-socket test showed `GET https://localhost:8443/api/health` answered 200, an API miss answered a plain
+  404, and `/api/probe-id` in that form created a client-instance row. The tests cover a matched route, an
+  API miss, an encoded API miss (`/%61pi/nope`), an outside miss, and a foreign origin in the target, all
+  over a real TLS socket to a listening server, and assert no row is made.
+- **`clientErrorHandler` (5b, ADR-010 rule 1).** A parser-rejected request gets 400 with exactly
+  `{"error":{"code":"VALIDATION_FAILED"}}`, `no-store`, `Connection: close`. A request timeout gets 408 and
+  an over-long header block gets 431, each with `Content-Length: 0` and no body (there is no code for
+  either, and the rule allows "envelope or no body"). Nothing from the error is copied; the error goes to the
+  logger at trace through the serializer.
+- **The 503 while closing (5b).** Fastify's built-in 503 has a fixed body in `route.js`, which cannot be
+  replaced, so `return503OnClosing: false` and a root `onRequest` hook, set by a `preClose` hook, throws
+  `AppError(UNAVAILABLE, 503)` with `Connection: close`. The raw-socket test sends a request's headers in two
+  parts so the connection is in flight when `close()` runs; with the option back at `true` it received
+  Fastify's body (red proof 11).
+- **An API miss (ruling 6)** is answered by the root not-found handler, so it passes the Host check but
+  neither the origin guard nor the client-instance hook, and writes nothing. A test pins this.
+- **Refusals outside `/api`** use the same 403 `ORIGIN_REFUSED` envelope, with `no-store`, for a bad Host.
+  The brief said "refused" without a body shape; one envelope is simplest and carries no free text.
+- **The hook's own database failure** surfaces as the ordinary 500 `INTERNAL`, not `UNAVAILABLE`. Health is
+  the only route mapped to `UNAVAILABLE`. If Task 9 wants every database outage to read as 503, that is a
+  one-line decision there.
+- Every `Origin`/`Sec-Fetch-Site` comparison is exact string equality, so a repeated header (Node joins them
+  with ", ") or a trailing slash is refused. An empty `Sec-Fetch-Site` on GET is "present" and refused.
+
+### Tests
+
+New: `apps/server/test/client-instance.test.ts`, `apps/server/test/origin.test.ts`, and the helper
+`apps/server/test/support/request.ts` (`inject(app, options)` adds `Host: localhost:8443` and, for a
+mutating method, `Origin: https://localhost:8443`, with the test's own headers winning).
+
+Existing tests changed, as the task allows: `server.test.ts` (every `app.inject(` became `inject(app, `
+through the helper; no assertion edited), `log-scan.test.ts` (its one `send` helper uses the shared
+helper), `loopback.test.ts` case 4 (the HTTPS `get` sends `Host: localhost:8443`; the plain-HTTP half is
+unchanged), `error-details.types.ts` (the `ORIGIN_REFUSED` block only, same shape as the others). The
+`bare` Fastify instance in `server.test.ts` case 27 is not built by `buildServer` and is untouched. Nothing
+else was changed.
+
+Case map (`client-instance.test.ts` unless noted):
+1 `1. a first API request makes one row and sets rpos_cid with exactly the specified attributes`;
+2 `2. with that cookie a second request sets no cookie, ...`; 3 `3. a well-formed UUID that names no row ...`;
+4 `4. %s is 200 and a new identity, and reaches no query` (six values: empty, `abc`, upper-case UUID, braces,
+ten thousand characters, quote and semicolon; asserts no query param equals the value, case-insensitively);
+5 `5. a last_seen_at an hour ahead is not moved back`; 6 `6. health with no cookie ...` and `6. health with a
+valid cookie does not touch the row either`; 7 `7. an unknown UUID, then a security event ...`; 8 `8. a
+session created with request.clientInstanceId stores it` (typechecks because `createSession` takes
+`clientInstanceId?: string`); 12 `12. client-instance.ts never calls now()`.
+`origin.test.ts`: 9 `9. Sec-Fetch-Site %j is 403 ...` and `9. Sec-Fetch-Site %j passes`; 10 `10. POST with %s is
+refused and creates no row`, `10. POST with the exact origin passes`, and the `Sec-Fetch-Site` pair; 11 `11.
+Host %j on %s is refused ...` (seven Host values across five paths, including `/nope` and `/`) and `11. the
+exact Host passes ...`. The `at the parser boundary` block holds the ruling 5 tests.
+
+Not tested: a real 408 from a stalled client (the default `requestTimeout` is 300 seconds); the handler is
+called directly with a fake socket instead.
+
+### Red proofs (each run, read, reverted)
+
+1. Shape test removed: all six case-4 tests fail, four (empty, `abc`, ten thousand characters, quote) with
+   `expected 500 to be 200` (the `22P02` error) and the upper-case and braces ones on the presented value
+   reaching `query`.
+2. Cookie value assigned instead of the returned id (insert branch: `presented ?? id`): cases 3, 4 (all six)
+   and 7 fail, e.g. the probe saw `E3A64AA0-...` (upper-case) instead of the issued id.
+3. Property set to `null` after the insert: ten tests fail, case 7 with `expected 500 to be 200`
+   (`writeSecurityEvent` throws `invalid security event: clientInstanceId`), cases 1, 3, 4 and 8 on `id: null`.
+4. `sameSite: 'lax'`: case 1 fails, `SameSite=Lax` where `SameSite=Strict` was expected.
+5. Health's opt-out removed: case 6 (both) and `server.test.ts` 14 fail, a `rpos_cid` cookie on health;
+   `server.test.ts` 15 also fails, because the hook ran before the spied-out query.
+6. `GREATEST` dropped: case 5 fails, `last_seen_at` moved from `15:40` back to `14:40`.
+7. Client-instance hook registered before the origin check: eleven tests in `origin.test.ts` fail, each
+   finding a `rpos_cid` cookie on a 403 (cases 9 and 10).
+8. `Origin` compared by host name only: seven case-10 tests fail; `http://localhost:8443`, another port, a
+   trailing slash and an upper-case host answered 200, and `null`/no `Origin` threw a 500.
+9. (extra) Absolute-form check disabled: six `origin.test.ts` tests fail, matched route 200, misses 404 plain,
+   and a client-instance row made.
+10. (extra) `clientErrorHandler` removed: the 400, 431 tests fail on Fastify's `Client Error` and `Exceeded
+    maximum allowed HTTP header size` bodies.
+11. (extra) `return503OnClosing: true`: the closing test fails on Fastify's `Service Unavailable` body.
+
+### Verification output
+
+`npm run verify` after the last revert: typecheck clean; `Test Files 58 passed (58)`, `Tests 3094 passed
+(3094)`. Baseline was 56 files, 3005 tests, so +2 files and +89 tests, all of them the two new files; the
+client's tests are unchanged. `client-instance.test.ts` and `origin.test.ts` alone, three runs in a row:
+`Test Files 2 passed (2)`, `Tests 89 passed (89)` each time.
+`grep -n "now()" apps/server/src/http/client-instance.ts`: no output.
+`grep -rn "clientInstanceId" apps/server/src`: `client-instance.ts` assigns it twice (lines 50, 60) and
+declares it (line 11); `session.ts`, `throttle.ts`, `audit.ts`, `back-office-credential.ts` only pass it on.
+The one condition on it is `audit.ts:87`, which rejects a blank string before writing and is older code:
+it neither grants nor refuses anything by comparing ids. No handler reads the cookie.
+
+### Not done, or for the lead
+
+- **The browser check (acceptance, lead ruling 4) was not made.** No browser was used. Whether Chrome and
+  Safari store a `Secure` `rpos_cid` on a clicked-through self-signed certificate is unverified.
+- No formatter was run. `loopback.test.ts` case 4's edit leaves the response callback's body at its old
+  indentation, one level shallower than the new `.get(` arguments; I left it rather than reindent lines I
+  was told only to change in headers.
+- `npm install` printed a notice that `esbuild` and `fsevents` install scripts are not covered by
+  `allowScripts`; they were there before this task and I did not approve anything.
+- Two cookie-less API requests arriving together still make two rows (the consult accepts this).
+
+### Carried forward
+
+- **Task 9:** register routes inside the API context; hand `request.clientInstanceId` to the domain as it is;
+  the origin guard already covers mutating routes and the anti-CSRF token is still owed; no credential in a
+  URL; an `AppError` is the only way a code reaches a client; session cookie names are project-specific
+  (`rpos_cid` is taken), and `__Host-` against path scoping is the consult's call; `audience` and
+  `interactive` per route, and the check that refuses an undeclared route, are still owed (health gains its
+  declaration then); AC-19 and AC-27 are still open. A route that opts out declares `config: {
+  clientInstance: false }` and is still subject to the Host check and the origin guard.
+- **Task 11:** nothing is served outside `/api`; the not-found handler is plain there; the Host check already
+  covers bundles; no HSTS; Vite gets no proxy.
+- **Task 12:** the certificate is in the developer's directory, not the tree; no `PIN_PEPPER` literal in a
+  configuration file; no `DELETE` in a seeder.
+- Test authors: use `inject(app, ...)` from `test/support/request.ts`, never `app.inject` directly, or the
+  Host check refuses the request.
+
+DONE

@@ -92,6 +92,20 @@ export function neverCalled(cause: Error, text: string): void {
   const unsupported_media_typeObject: ErrorBody = { error: { code: ErrorCode.UNSUPPORTED_MEDIA_TYPE, details: { any: 'object' } } };
   void [unsupported_media_typeText, unsupported_media_typeObject];
 
+  // @ts-expect-error a string
+  new AppError(ErrorCode.ORIGIN_REFUSED, 500, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.ORIGIN_REFUSED, 500, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.ORIGIN_REFUSED, 500, new Error('x'));
+  // @ts-expect-error an undeclared object
+  new AppError(ErrorCode.ORIGIN_REFUSED, 500, { any: 'object' });
+  // @ts-expect-error a string in the body
+  const origin_refusedText: ErrorBody = { error: { code: ErrorCode.ORIGIN_REFUSED, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const origin_refusedObject: ErrorBody = { error: { code: ErrorCode.ORIGIN_REFUSED, details: { any: 'object' } } };
+  void [origin_refusedText, origin_refusedObject];
+
   // What is allowed: a code alone, and a body without details.
   new AppError(ErrorCode.INTERNAL, 500);
   const fine: ErrorBody = { error: { code: ErrorCode.INTERNAL } };

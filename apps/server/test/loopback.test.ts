@@ -12,6 +12,7 @@ import { assertLoopbackAddress, listenLoopback } from '../src/http/loopback.js';
 import { buildServer } from '../src/http/server.js';
 import { loadTls } from '../src/http/tls.js';
 import { makeCert } from '../scripts/make-cert.js';
+import { TEST_HOST } from './support/request.js';
 
 const ACCEPTED = [
   '127.0.0.1',
@@ -125,7 +126,15 @@ describe('listenLoopback', () => {
 
     const secure = await new Promise<{ status: number; body: string }>((resolve, reject) => {
       https
-        .get({ host: '127.0.0.1', port, path: '/api/health', ca: tls.cert }, (res) => {
+        .get(
+          {
+            host: '127.0.0.1',
+            port,
+            path: '/api/health',
+            ca: tls.cert,
+            headers: { host: TEST_HOST },
+          },
+          (res) => {
           let body = '';
           res.on('data', (chunk) => (body += chunk));
           res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
