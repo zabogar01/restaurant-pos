@@ -69,11 +69,12 @@ if (invokedDirectly) {
     : fileURLToPath(new URL('../../../../db/migrations', import.meta.url));
   runMigrations(dir)
     .then((a) => {
-      console.log(a.length ? `applied: ${a.join(', ')}` : 'no pending migrations');
+      process.stdout.write(`${a.length ? `applied: ${a.join(', ')}` : 'no pending migrations'}\n`);
       process.exit(0);
     })
     .catch((e) => {
-      console.error(e);
+      // The command line, not the server: the operator needs the full error.
+      process.stderr.write(`${e instanceof Error ? (e.stack ?? e.message) : String(e)}\n`);
       process.exit(1);
     });
 }

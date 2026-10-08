@@ -1,0 +1,5 @@
+{
+  "name": "@pos/contracts",
+  "type": "module",
+  "main": "src/index.ts"
+}

@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { logLine } from '../http/log.js';
 
 const { Pool } = pg;
 
@@ -22,8 +23,18 @@ let pool: pg.Pool | undefined;
 export function getPool(): pg.Pool {
   if (!pool) {
     pool = new Pool({ connectionString: requireEnv('DATABASE_URL') });
+    // PostgreSQL closing an idle connection is an 'error' event on the pool;
+    // unhandled, it ends the process with a raw dump.
+    pool.on('error', (err) => logLine('error', 'idle database client failed', err));
   }
   return pool;
+}
+
+/** Ends the pool and forgets it, so the next getPool() opens a new one. */
+export async function closePool(): Promise<void> {
+  const closing = pool;
+  pool = undefined;
+  await closing?.end();
 }
 
 export async function query<T>(sql: string, params: unknown[] = []): Promise<T[]> {

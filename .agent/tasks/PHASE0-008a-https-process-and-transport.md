@@ -637,3 +637,153 @@ Each mutated, run, read and reverted.
 - `docs/` of any kind, and ADR-010 (the lead commissions it separately).
 
 ## Handoff
+
+### What I did
+
+Built the HTTPS process and transport on branch `agent/phase0-008a`, from the task file alone. New
+code: `packages/contracts` (`ErrorCode` with exactly the six codes, `ErrorBody`, `ErrorDetails`
+as an empty interface because no code carries details yet; `package.json`, `tsconfig.json`);
+`apps/server/src/http/` (`errors.ts`, `log.ts`, `loopback.ts`, `tls.ts`, `server.ts`,
+`routes/health.ts`); `apps/server/src/index.ts`; `apps/server/scripts/make-cert.ts`. Changed:
+`config.ts` (the four functions, plus an exported `defaultTlsDirectory()` the script uses),
+`db/pool.ts` (`closePool()` and the `'error'` listener, nothing else), the root `package.json`
+(`cert` script; `tsc -p packages/contracts --noEmit` in `typecheck`), `apps/server/package.json`
+(`cert`, `dev` as `tsx watch --env-file=../../db/dev.env src/index.ts`, `start`, and the
+dependencies `fastify` and `@pos/contracts`), and `package-lock.json`. Five new test files:
+`config`, `tls`, `loopback`, `server`, `log-scan`. Nothing else was touched; no migration, no
+write to a table, nothing names `actor_session`.
+
+Installed versions: `fastify` 5.12.5 (declared `^5.12.5`), which pulled in `pino` 10.4.0,
+`find-my-way` 9.9.0, `avvio` 9.3.0 and `@fastify/error` 4.2.0. I import none of them directly
+except `fastify`. No `@fastify/cookie`, `@fastify/static`, `@fastify/cors`, `zod` or certificate
+package. `npm install` reports one high-severity advisory; `npm audit --omit=dev` reports none,
+so it is in a dev dependency and I did not chase it.
+
+### Decisions, and on what evidence
+
+1. **`StartupError`.** Rule 9 says an error's message is never logged unless it is an `AppError`,
+   but question 3 requires the refusal line to print the refused bind address, "through the safe
+   serializer". Both cannot hold literally: the serializer drops messages. I added `StartupError`
+   in `errors.ts`: its message is a fixed sentence written in this repository (a variable name,
+   a file path, a bind address), and the serializer prints it as `msg`. It is thrown by the
+   loopback guard, `loadTls`, and by `index.ts`, which wraps what the `config.ts` functions
+   throw (those already name a variable and never its value). Any other error is still the
+   allow-list. **Lead: please confirm this reading of rule 9**; the alternative is that the
+   refusal line carries only a code.
+2. **`migrate.ts` had two `console.` calls** (its command-line entry block, lines 72 and 76). The
+   rule and acceptance criterion 4 say no `console.` anywhere in `apps/server/src`, and case 25
+   greps for it, so I replaced them with `process.stdout.write` and `process.stderr.write` of
+   the same text (the error's stack, as `console.error` printed it). The `migrate` tests that
+   run `npm run db:migrate` still pass unedited. This is outside the strict list of things the
+   task names but inside `apps/server/**`; say if you would rather exempt the file.
+3. **Pino puts `err.message` in the line's `msg` when the call gives no message,** before any
+   serializer runs. A Fastify internal that logs `{ err }` bare would leak it. `log.ts` adds a
+   pino `hooks.logMethod` that supplies `'error'` as the message in that case, and turns a bare
+   `Error` argument into `{ err }`. No test reaches a Fastify-internal bare call today; the hook
+   is a backstop and is not red-proven.
+4. **`make-cert` and `POS_TLS_*_PATH`.** The command writes only to the default directory. If
+   either override is set it refuses with a sentence, because otherwise it would write where the
+   server does not look. This is my addition; it is three lines in the entry point.
+5. **`buildServer` takes `origin` and `logLevel` as required options.** `origin` is unused until
+   PHASE0-008b (the interface lists it); `logLevel` is required so there is one owner of the
+   value (`index.ts` passes `logLevel()`), rather than an option that falls back to the config.
+6. **`Cache-Control: no-store`** is set by a global `onRequest` hook for any `/api` path and again
+   by the error and not-found handlers, so a 404, a 415 and a 413 carry it as well as a 200.
+7. **Case 20 as the consult words it passed against the mutation, so I tightened it.** With the
+   pool closed in an `onClose` hook, `closePool()` clears the singleton, so a later `query()`
+   quietly opens a new pool and the first version of the test stayed green. The test now holds
+   the pool reference across building and closing two servers and expects the same live pool
+   after. Red proof 11 below is against that version.
+8. **Case 4 asserts health 200** over real TLS, which needs the test database to be reachable
+   (it is, in `verify`).
+9. **The tls test hand-makes a CA, a cert for `example.com` and a mismatched pair** with
+   `openssl` directly. One extra test (`7. states CA:FALSE explicitly`) reads the certificate
+   with `openssl x509 -text`: with OpenSSL 3.6.4 an `req -x509` certificate without the
+   `basicConstraints` line is not a CA anyway, so my first red proof 5 stayed green on the
+   `ca === false` check alone. The new test pins the explicit critical `CA:FALSE`, key usage,
+   extended key usage and SAN, and that is what proof 5 trips.
+
+### Test cases to test names
+
+| Case | File | Test name starts with |
+|---|---|---|
+| 1 | loopback | `1. accepts …` (six accepted values) |
+| 2 | loopback | `2. refuses …` (21 refused values) and `2. the refusal is the sentence ARCH-010 gives` |
+| 3 | loopback | `3. rejects an instance built without TLS` |
+| 4 | loopback | `4. listens on 127.0.0.1; HTTPS trusting exactly that certificate…` |
+| 5 | loopback | `5. closes the server and rejects when a bound address is not loopback` |
+| 6 | loopback | `6. exactly one .listen( call exists…` |
+| 7 | tls | `7. makes a pair loadTls accepts…`, `7. states CA:FALSE explicitly…` |
+| 8 | tls | `8. run again on a valid pair, changes neither file` |
+| 9 | tls | `9. refuses …` (eight sentences plus group-readable key), `9. every refusal has its own sentence` |
+| 10 | tls | `10. no refusal message contains a line of either file` |
+| 11, 12, 13 | config | `11. …`, `12. POS_LISTEN_PORT … throws` (11 values) and `12. a port in range…`, `13. …` (two) |
+| 14–20 | server | `14.` to `20.` |
+| 21–25 | log-scan | `21.` to `25.`, plus two unnumbered: "has something to scan" and "request lines carry the method and the path without its query string" |
+
+### Existing tests changed
+
+None. The seven pool-using test files still end the pool with `getPool().end()` and are green
+unedited.
+
+### Red proofs (each mutated, run, read, reverted)
+
+1. `if (host === 'localhost') return;` in `assertLoopbackAddress`: `2. refuses "localhost"` failed (1 failed, 32 passed).
+2. `loopbackV6.addSubnet('127.0.0.0', 8, 'ipv4')`, which makes the IPv6 list also answer IPv4-mapped addresses: `2. refuses "::ffff:127.0.0.1"` and `"::ffff:7f00:1"` failed.
+3. HTTPS check replaced by `false`: `3. rejects an instance built without TLS` failed.
+4. Post-listen loop removed: `5. closes the server and rejects…` failed.
+5. `basicConstraints` line dropped from `make-cert.ts`: first run stayed green (see decision 9); after adding the explicit-extension test, `7. states CA:FALSE explicitly` failed on the Basic Constraints match.
+6. Key-match replaced by "the key parses": `9. refuses a key from another pair`, `9. every refusal has its own sentence` and `10. no refusal message…` failed (3 failed).
+7. `setErrorHandler` removed: cases 15, 17, 18, 21, 22 and 23 failed (6 failed, 8 passed).
+8. The error serializer replaced with `{ type, message, stack, ...err }`: 21 failed with `[ 'thrown', 'detail', 'postgres' ]` leaked, and 23 failed.
+9. `path: req.url` instead of the stripped path: 21 failed with `[ 'query' ]` leaked, and the unnumbered request-line test failed.
+10. `removeContentTypeParser('text/plain')` removed: 17 failed with `expected 200 to be 415`.
+11. `closePool()` in an `onClose` hook: 20 failed on `expect(getPool()).toBe(held)` (after tightening, decision 7).
+
+Everything is reverted; the final verify below is on the reverted tree.
+
+### `npm run verify`
+
+Typecheck clean for `apps/server`, `packages/money`, `packages/contracts` and `apps/pos`.
+Tests: **56 files passed, 2990 tests passed** (development: 51 files, 2911 tests; the difference
+is five files and 79 tests). The client's tests are unchanged. `loopback.test.ts` and
+`log-scan.test.ts` together: 40 passed, three runs in a row. `server`, `tls` and `config`
+passed alone. `grep -rn "console\." apps/server/src`: no hit. `grep -rn "\.listen(" apps/server/src`:
+exactly one, `apps/server/src/http/loopback.ts:46`. `grep -rn actor_session apps/server/src/http
+apps/server/src/index.ts`: no hit. `openssl` here is 3.6.4. No formatter was run.
+
+### Not run, and why
+
+`npm run cert`, `npm run dev`, `curl --cacert … https://localhost:8443/api/health`, and the
+`POS_LISTEN_HOST=0.0.0.0` refused start are the lead's runs. `index.ts` is therefore not
+executed by any test; its startup order, signal handling and ten-second timeout have been
+typechecked and read, not run. The refusal when `POS_LISTEN_HOST=0.0.0.0` happens at step 1,
+before TLS and the database, as the consult orders. I did not use a browser.
+
+### Found and not fixed
+
+- `docs/ARCHITECTURE.md` and the consult leave `ErrorDetails` open; it is an empty interface
+  now, and a probe test passes `{ retryAfterSeconds: 240 }` through a cast. Task 9 gives it
+  its first real member.
+- The idle-client `'error'` listener on the pool is not exercised by any test.
+- `index.ts` calls `process.exit(0)` after shutdown without waiting for stdout to flush; a log
+  line written just before exit could be lost on a pipe. Low risk; not addressed.
+
+### Carry forward (ARCH-010, true after this task)
+
+For Task 9: its routes register inside the `/api` context (pass them to `buildServer({ apiRoutes })`);
+no credential in a URL (the request log strips the query anyway, but responses and redirects do
+not); an `AppError` is the only way a code reaches a client, and `ErrorCode` grows only in the
+task that emits the code; session cookie names are project-specific; AC-19 and AC-27 are
+still open; `zod` arrives with its request schemas; a route's `audience` and `interactive`
+declaration, and health's one-line addition to it, are Task 9's.
+For Task 11: nothing is served outside `/api`; the not-found handler there is a plain-text 404;
+never send HSTS; Vite gets no proxy; `@fastify/static` is installed when a bundle is served.
+For Task 12: the certificate lives in `~/.config/restaurant-pos/tls/`, not the tree;
+Playwright uses `ignoreHTTPSErrors: true`; no `PIN_PEPPER` literal in a configuration file; no
+`DELETE` in a seeder. Verify now requires `openssl` on `PATH` (tier 2); a missing `openssl`
+fails the `tls` and `loopback` files rather than skipping them.
+The items about `request.clientInstanceId`, the origin guard and the Host check belong to
+PHASE0-008b's Handoff, by lead ruling 6.
+
+DONE
