@@ -94,9 +94,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: ARCH-009, ADR-009 accepted 2026-10-08, merged as PR #66.)*
     - **ARCH-010 / PHASE0-008** — consult, then HTTPS server, loopback guard, client instance (plan
       Task 8) — not blocked — not written.
-    - **Back-office credential (no ID yet)** — `back_office_credential`, per-account throttle (ARCH-008 §5)
-      — after 007, before the routes — contract ruled, ADR-009 accepted — ready to write from ARCH-008
-      §5 and ADR-009 (its Handoff lists four additions).
+    - **PHASE0-007b, the back-office credential** — `back_office_credential` (migration `0007`),
+      per-account password throttle, first-manager script — ARCH-008 §5, ADR-009 — complete
+      2026-10-08 at `92bc420`, final re-review clean — waits on the owner's look and merge.
     - **Before Task 10:** an architect consult (ARCH-006 §8), which must add an audit outcome for a
       cooldown-refused approval (ARCH-007 §7). Tasks 6 and 7 had theirs (ARCH-007, ARCH-008).
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred

@@ -9,9 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-08 (wrap-up): the owner merged ADR-009 (PR #66), DESIGN-014 (PR #67) and the lead's contract
-and record (PR #68); `development` at `ed80773`. The lead fast-forwarded, removed both worktrees and
-the run directory, verified, and cut `agent/lead-1008` for this wrap-up. Nothing is running.
+2026-10-08, later: PHASE0-007b (the back-office credential) written, built in three rounds, final
+Codex re-review clean; complete at `92bc420`, not pushed. `development` at `ed80773`.
 Narrative: [journal/2026-10-08.md](journal/2026-10-08.md) (the evening before is in 2026-10-07.md).
 
 ## Phase and gates
@@ -32,7 +31,8 @@ Narrative: [journal/2026-10-08.md](journal/2026-10-08.md) (the evening before is
 - **Kit rollout done** (owner, 2026-09-29): KIT-001 to KIT-005 and the pilot FE-029 accepted.
 - **Last verify by the lead:** `npm run verify` green at **2876 tests / 50 files** on 2026-10-08 on
   `development` at `ed80773`, main checkout. Server tests need `npm run db:up` (compose from
-  `db/dev.env`, then provision `pos_app` and `pos_test`). The dev database `pos` holds 0001-0006.
+  `db/dev.env`, then provision `pos_app` and `pos_test`). The dev database `pos` holds 0001-0007
+  (0007 applied from the unmerged PHASE0-007b branch).
 
 ## Integration branch
 
@@ -53,16 +53,15 @@ Narrative: [journal/2026-10-08.md](journal/2026-10-08.md) (the evening before is
 
 ## Running tasks and agents
 
-- **Nothing is running.** No task worktree under `../restaurant-pos-wt/`; `.agent/runs/` is empty.
+- **PHASE0-007b complete** at `92bc420` on `agent/phase0-007b` (worktree `../restaurant-pos-wt/PHASE0-007b`),
+  not pushed: migration `0007`, credential module, `create-manager` script; three rounds, final Codex
+  re-review clean; lead verify 51/2911 and real-terminal runs. Waits on the owner's look and merge.
+  After merge: add `npm run create-manager -w apps/server` to AGENTS.md's commands; remove the worktree
+  and `.agent/runs/PHASE0-007b`.
 - **Live agents:** the lead (`w2:p1`) only. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
-- **Next, the lead proposes any of:**
-  1. **The back-office credential task** (no ID yet): write from ARCH-008 §5 and ADR-009; ARCH-009's
-     Handoff (*What the credential build task needs*) gives the line ranges and four additions. Cite
-     the 2026-10-06 M-6 refinement and FR-A5b, never the superseded "LOGIN failure" line.
-  2. **ARCH-010, the consult for plan Task 8** (HTTPS server, loopback guard, client instance).
-  3. **The next design slice** (B, D, E, F, G or H) on Codex.
-  Task 9 (auth routes) needs 007 and the credential; Task 10 needs a consult that adds an audit
-  outcome for a cooldown-refused approval (ARCH-007 §7).
+- **Next after 007b:** ARCH-010 (Task 8 consult: HTTPS server, loopback guard, client instance), or a
+  design slice (B, D-H) on Codex. Task 9 needs 007b and Task 8; Task 10 needs a consult adding an
+  audit outcome for a cooldown-refused approval (ARCH-007 §7).
 - **Pattern for identity/audit tasks:** an Opus consult first, then a task file copying its *For the
   task file* sections verbatim.
 - **Carry-forwards for Tasks 8 to 10** are in the Handoffs of PHASE0-005 to 007 (six-digit rule at the
@@ -116,6 +115,8 @@ Narrative: [journal/2026-10-08.md](journal/2026-10-08.md) (the evening before is
 
 Nothing here is decided. Detail is where each line points.
 
+- **PHASE0-007b ready:** the owner's look (identity, audit) and the three lead rulings in its task
+  file; push `agent/phase0-007b` and `agent/lead-1008` for PRs? (The lead pushes only on the owner's word.)
 - **Phase 1 questions (ADR-009, "Not decided here"):** must a manager changing their own password give
   the current one (architect: yes)? Does a manager who resets their own PIN stay signed in? Does a
   role change bump the credential version? Needed before the users screen.
@@ -144,5 +145,4 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Ask the owner which of the three under *Running tasks* comes first: the back-office credential task
-(the lead's pick, since Task 9 needs it), ARCH-010, or a design slice.
+Owner's look at PHASE0-007b and the push. Then ARCH-010 (Task 8 consult), or a design slice on Codex.
