@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit]
 depends_on: [PHASE0-007, ARCH-009]
 owns: [db/migrations/**, apps/server/src/**, apps/server/test/**, apps/server/scripts/**, apps/server/package.json]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-007b — The back-office credential
@@ -457,6 +457,21 @@ checks.
 - The designer's documents (SCREEN-INVENTORY BO-01, SITEMAP `:248`) and any client code.
 - `docs/` of any kind. A problem with the contract or the ADR is raised in the Handoff, not
   fixed.
+
+## Lead verification (2026-10-08)
+
+- `npm run verify` in this worktree at `550c6f3`: 51 files, 2907 tests, green. Changed paths are all
+  within `owns:`; the only existing tests changed are the two listed.
+- **Interactive run of the script**, in a real terminal (a Herdr pane) against `pos_test`, not the
+  dev database: the two secrets are not echoed; a full run created an active `MANAGER` and a
+  credential row (`leadcheck`, `$argon2id$` hash, count 0) and wrote no `security_event` and no
+  `audit_entry`; a PIN typed differently the second time printed "The two PIN entries differ;
+  nothing was written", exited 1, and wrote nothing.
+- **Defect found (for the fix round):** the labels of the two visible prompts, `Name:` and
+  `Username:`, never appear. `ask` writes the label to stdout and then calls `rl.question('')`,
+  and readline in terminal mode redraws the line with the empty prompt, erasing the label. The
+  operator sees a blank line and does not know what to type. The secret prompts keep their labels
+  only because the redraw is muted. Fix: give a visible prompt its label through `rl.question`.
 
 ## Handoff
 
