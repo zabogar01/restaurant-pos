@@ -39,9 +39,18 @@ export class StartupError extends Error {
   }
 }
 
-/** True for `/api` and everything under it. The query string is not part of the path. */
+// The router matches on the path after it has decoded the escapes of unreserved
+// characters (%61 is "a"), so a miss is classified the same way. Reserved
+// escapes such as %2F stay as they are, as in the router.
+const UNRESERVED = /^[A-Za-z0-9\-._~]$/;
+
+/** True for `/api` and everything under it, as the router would read the path. */
 export function isApiPath(url: string): boolean {
-  const path = url.split(/[?#]/, 1)[0] ?? '';
+  const raw = url.split(/[?#]/, 1)[0] ?? '';
+  const path = raw.replace(/%([0-9A-Fa-f]{2})/g, (escape, hex: string) => {
+    const char = String.fromCharCode(parseInt(hex, 16));
+    return UNRESERVED.test(char) ? char : escape;
+  });
   return path === '/api' || path.startsWith('/api/');
 }
 

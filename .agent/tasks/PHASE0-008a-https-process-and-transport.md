@@ -973,4 +973,47 @@ For Task 9: the first code that carries details declares it in `ErrorDetailsByCo
 must add the test that exercises the handler's details path (case 29 could not). No other change to
 round 1's carry-forward.
 
+## Round 3 (fix cycle 2 of 2)
+
+### The change
+
+`no-store` for a matched route no longer comes from a global hook reading the URL. `server.ts`
+adds an `onRequest` hook inside the encapsulated `/api` context, so every route registered there
+(health and anything passed through `apiRoutes`) is answered under the API policy however its path
+was spelled. The global hook and the `isApiPath` import are gone from `server.ts`.
+
+For a miss, `isApiPath` in `errors.ts` now classifies the path the way the router reads it: it
+normalizes percent-escapes of unreserved characters (`A-Z a-z 0-9 - . _ ~`, so `%61` is `a`) and
+leaves reserved escapes alone (`%2F` stays `%2F`, as in the router), then tests for `/api` or
+`/api/…`. Case matters, as in the router. A path that cannot be decoded never gets here: it is the
+round 2 malformed-URL case. The 404 envelope still sets its own `no-store`; the plain 404 outside
+`/api` is unchanged. Nothing else was touched.
+
+### Tests
+
+Cases 30 and 31 are in `server.test.ts`; 1 to 29 are unedited (I added one probe route,
+`/probe-ok`, to the existing `apiRoutes` list in `build()`; nothing else in that list changed).
+30: `/%61pi/health`, `/a%70i/health` and `/%61%70%69/health` equal `/api/health` in status, body,
+`Cache-Control: no-store` and content type; `/%61pi/probe-ok`, a probe through `apiRoutes`,
+carries `no-store`. 31: `/%61pi/nope`, `/a%70i/nope` and `/%61pi/nope?x=1` equal `/api/nope` (404,
+`{"error":{"code":"NOT_FOUND"}}`, `no-store`); `/API/nope`, `/elsewhere`, `/%41PI/nope` and
+`/api%2Fnope` are plain-text 404s with no `Cache-Control`. The last two are my additions: `%41PI`
+checks that case still matters after decoding, and `%2F` checks that a reserved escape is not
+decoded into a slash.
+
+### Red proof
+
+I restored the raw-prefix behavior on both paths at once: `isApiPath` tested the raw path, and a
+global `onRequest` hook set `no-store` on `request.url.startsWith('/api')` in place of the hook in
+the `/api` context. Eight tests failed (12 passed): all three `30. /…/health` cases, `30. a probe
+registered through apiRoutes…`, all three `31. /…/nope` cases, and `31. /api%2Fnope stays a plain
+404`. Reverted by restoring the files; `git diff` afterwards shows only the fix.
+
+### Counts
+
+`npm run verify`: typecheck clean; **56 files, 3005 tests** passed (round 2: 2994; the difference
+is the 11 tests of cases 30 and 31 as parameterized). `log-scan.test.ts` three runs in a row: 9
+passed each time. `grep console\.` in `apps/server/src`: no hit; `grep \.listen(`: one hit,
+`loopback.ts:46`.
+
 DONE

@@ -1,7 +1,7 @@
 import type { Writable } from 'node:stream';
 import Fastify from 'fastify';
 import type { FastifyInstance, FastifyPluginAsync, FastifyServerOptions } from 'fastify';
-import { errorHandler, frameworkErrorHandler, isApiPath, notFoundHandler } from './errors.js';
+import { errorHandler, frameworkErrorHandler, notFoundHandler } from './errors.js';
 import { loggerOptions } from './log.js';
 import { healthRoutes } from './routes/health.js';
 
@@ -42,12 +42,14 @@ export function buildServer({
   app.removeContentTypeParser('text/plain');
   app.setErrorHandler(errorHandler);
   app.setNotFoundHandler(notFoundHandler);
-  app.addHook('onRequest', async (request, reply) => {
-    if (isApiPath(request.url)) reply.header('cache-control', 'no-store');
-  });
-
   app.register(
     async (api) => {
+      // A matched route is answered under the API policy because it is registered
+      // here, however its path was spelled. Misses and errors set the header
+      // themselves (errors.ts).
+      api.addHook('onRequest', async (_request, reply) => {
+        reply.header('cache-control', 'no-store');
+      });
       await api.register(healthRoutes);
       for (const routes of apiRoutes) await api.register(routes);
     },

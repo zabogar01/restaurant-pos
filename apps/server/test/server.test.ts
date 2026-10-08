@@ -18,6 +18,7 @@ async function build(): Promise<FastifyInstance> {
         api.get('/probe-app-error', async () => {
           throw new AppError(ErrorCode.NOT_FOUND, 409);
         });
+        api.get('/probe-ok', async () => ({ ok: true }));
         api.get('/probe-plain-error', async () => {
           throw new Error('a message that must not be sent: secret-marker');
         });
@@ -173,6 +174,52 @@ describe('server', () => {
       await bare.close();
     }
   });
+
+  const SAME = (res: { statusCode: number; body: string; headers: Record<string, unknown> }) => ({
+    status: res.statusCode,
+    body: res.body,
+    cacheControl: res.headers['cache-control'],
+    contentType: res.headers['content-type'],
+  });
+
+  it.each(['/%61pi/health', '/a%70i/health', '/%61%70%69/health'])(
+    '30. %s is answered exactly as /api/health, no-store included',
+    async (url) => {
+      const plain = SAME(await app.inject({ method: 'GET', url: '/api/health' }));
+      const encoded = SAME(await app.inject({ method: 'GET', url }));
+      expect(encoded).toEqual(plain);
+      expect(encoded.cacheControl).toBe('no-store');
+    }
+  );
+
+  it('30. a probe registered through apiRoutes carries no-store when reached by an encoded prefix', async () => {
+    const res = await app.inject({ method: 'GET', url: '/%61pi/probe-ok' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ ok: true });
+    expect(res.headers['cache-control']).toBe('no-store');
+  });
+
+  it.each(['/%61pi/nope', '/a%70i/nope', '/%61pi/nope?x=1'])(
+    '31. %s is answered exactly as /api/nope: the 404 envelope with no-store',
+    async (url) => {
+      const plain = SAME(await app.inject({ method: 'GET', url: '/api/nope' }));
+      const encoded = SAME(await app.inject({ method: 'GET', url }));
+      expect(encoded).toEqual(plain);
+      expect(encoded.status).toBe(404);
+      expect(encoded.body).toBe('{"error":{"code":"NOT_FOUND"}}');
+      expect(encoded.cacheControl).toBe('no-store');
+    }
+  );
+
+  it.each(['/API/nope', '/elsewhere', '/%41PI/nope', '/api%2Fnope'])(
+    '31. %s stays a plain 404',
+    async (url) => {
+      const res = await app.inject({ method: 'GET', url });
+      expect(res.statusCode).toBe(404);
+      expect(res.body).toBe('Not Found');
+      expect(res.headers['cache-control']).toBeUndefined();
+    }
+  );
 
   it('19. no response carries an Access-Control-* or Strict-Transport-Security header', async () => {
     const responses = [
