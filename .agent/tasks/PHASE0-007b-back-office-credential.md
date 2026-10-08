@@ -5,8 +5,8 @@ category: feature
 touches: [identity, audit]
 depends_on: [PHASE0-007, ARCH-009]
 owns: [db/migrations/**, apps/server/src/**, apps/server/test/**, apps/server/scripts/**, apps/server/package.json]
-status: review
-cycles: 1
+status: active
+cycles: 2
 ---
 # PHASE0-007b — The back-office credential
 
@@ -531,6 +531,39 @@ rewrite round 1's sections except where the fix makes a statement in them untrue
 - The builder's change to case 32's label assertion (no line-clearing sequence after the label,
   rather than "ends with the label") is accepted: readline's cursor move after a correct label
   makes the original wording false for correct code.
+
+## Round 3 — the re-review's one finding (lead ruling, 2026-10-08)
+
+The re-review is `.agent/reviews/PHASE0-007b-review.md` (Codex, at `9335d57`; it replaces the
+round-1 report, which stays in the branch history at `e11e208`). Read it in full. Its finding is
+accepted. **This is fix cycle 2 of 2, the last**: anything a further review finds goes to the owner.
+
+**P1: readline's kill ring carries a hidden PIN to the visible `Username:` prompt.** Ctrl+U at
+`PIN:` deletes the text into the interface's kill ring; Ctrl+Y at `Username:` yanks it back and
+prints it. `historySize: 0` covers only history. The lead checked that the kill ring is held on
+each `Interface` instance (`Symbol(_killRing)`), so state does not cross interfaces.
+
+1. **Fix: one fresh readline interface per question.** Each question, visible or secret, creates
+   its own interface (with `historySize: 0`), asks once, and closes it before the next question
+   is asked. No interface, buffer or line state is shared between two questions. Keep everything
+   round 2 fixed: visible labels through `rl.question(label)`, the muted path for secrets, the
+   ask-twice and mismatch behaviour, `prompt(input, output)` with the process streams as
+   defaults. If closing an interface ends or pauses the input stream so that the next question
+   cannot read, say so in the Handoff and show how it was handled; do not switch to a different
+   mechanism without saying why.
+2. **Test, case 35** (keep 1 to 34 green and unedited): with the stream doubles of case 32, type
+   a name; at `PIN:` type the PIN, send Ctrl+U (`\x15`), type the PIN again, Enter; confirm it;
+   at `Username:` send Ctrl+Y (`\x19`), then Ctrl+U to clear whatever is there, then type the
+   username, Enter; at `Password:` type the password, Ctrl+U, type it again, Enter; confirm it
+   the same way. Assert that nothing
+   written to the output contains the PIN or the password, and that the returned answers are
+   exactly the name, PIN, username and password intended.
+3. **Red proof:** go back to one shared interface (round 2's shape, `historySize: 0` kept): case
+   35 finds the PIN in the output. Show the failing output; revert.
+
+**Then:** re-run `npm run verify` and the credential file three times, and add a **Round 3**
+section to the Handoff with the change, the red proof and the counts. The lead repeats the
+terminal run, including Ctrl+U then Ctrl+Y.
 
 ## Handoff
 

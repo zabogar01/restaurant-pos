@@ -2,58 +2,36 @@
 
 ## Verdict: findings
 
-Reviewed `agent/phase0-007b` at `f53fd86874bd63be1b94c7c44bc835efb18b1ca8` against `development` at `ed80773e5ebfffcf8c6f08ace5673a8cfeaeaa11`. There are three findings: one P1 and two P2s. The full verification suite passes, but it does not exercise the terminal prompting or a thrown password verification.
+Reviewed `agent/phase0-007b` at `9335d57faa098da4b76689d3d481886362d2e43b` against `development` at `ed80773e5ebfffcf8c6f08ace5673a8cfeaeaa11`, including the Round 2 fixes. There is one P1 finding: the shared readline interface still allows a hidden PIN to be printed through its editing buffer. The full verification suite passes.
 
 ## Findings
 
-### 1. P1 — Readline history reveals a hidden PIN at the username prompt
+### 1. P1 — A deleted hidden PIN can still be pasted into the visible username prompt
 
-**Location:** `apps/server/scripts/create-manager.ts:47` and `apps/server/scripts/create-manager.ts:52`.
+**Location:** `apps/server/scripts/create-manager.ts:56` and `apps/server/scripts/create-manager.ts:59`. Regression coverage: `apps/server/test/back-office-credential.test.ts:635`.
 
-One readline interface serves both visible and secret questions with its default input history enabled. Muting its output hides the PIN while it is entered, but does not keep that PIN out of history. Once `ask('Username', false)` unmutes the output, pressing Up recalls and displays the PIN in plaintext.
+`historySize: 0` disables Up/Down input history, but the same readline interface also retains text removed with editing commands in its kill buffer. That buffer survives the transition from the hidden PIN questions to the visible username question. Ctrl+Y then restores and prints the removed PIN. Muting output while the PIN is entered does not protect this later visible state. Case 32 covers history navigation only, so it passes despite this remaining disclosure.
 
-**Authority:** ADR-009 §7 and task rule 13 require the secrets not to be echoed and the script to print nothing secret. This defeats the secret-handling protection required by B-12.
+**Authority:** ADR-009 §7 and task rule 13 explicitly require the two secrets not to be echoed and the script to print nothing secret. The Round 2 ruling requires secret input not to become recoverable at a later visible question. This remains the secret-disclosure problem underlying the prior B-12 finding; the direct terminal-output rule is ADR-009 §7.
 
-**Observed failing scenario:** In a real PTY, I entered the synthetic name `Review Probe`, then the synthetic PIN `123456` twice. Neither PIN entry echoed. At the username question, I pressed Up. The script emitted `\u001b[1G\u001b[0J123456\u001b[7G`, visibly displaying the PIN. I aborted with Ctrl+C before completing the prompts, so `createManager` was never called.
+**Observed failing scenario:** I ran the unchanged script entry point in a real PTY using `node --import tsx --env-file=db/dev.env apps/server/scripts/create-manager.ts`. I entered the synthetic name `Review Probe`. At `PIN:`, I typed the synthetic PIN `654321`, pressed Ctrl+U to clear it, typed `654321` again, and pressed Enter. I confirmed the PIN with `654321` and Enter. Neither hidden entry echoed. At the visible `Username:` prompt, I pressed Ctrl+Y. The script immediately emitted `654321` in plaintext. I then aborted with Ctrl+C, before entering a username or either password, so `createManager` was never called. No source mutation was needed.
 
-**Proposed fix:** Disable readline history for this prompt interface, for example with `historySize: 0`, and ensure secret input cannot be recalled in a later visible question. Add terminal-level coverage for the transition from the hidden PIN questions to the visible username question, including Up/Down history navigation. Testing `createManager(answers)` alone cannot detect this failure.
-
-### 2. P2 — The visible question labels are erased immediately
-
-**Location:** `apps/server/scripts/create-manager.ts:50`–`54`.
-
-`ask` writes a label directly to stdout and then starts `rl.question('')`. For a visible question, readline redraws the line using that empty question and clears the label. The owner sees an unlabeled input line for both the name and username. The same helper happens to retain the secret labels because their redraw is muted, hiding the visible-state defect.
-
-**Authority:** Task rule 13 requires the terminal workflow to collect the name, PIN, username and password; the task's explicit **Lead verification (2026-10-08)** section also identifies this defect and prescribes passing visible labels through `rl.question`. That fix is absent from the reviewed commit.
-
-**Observed failing scenario:** Starting the script in a PTY emitted `Name: \u001b[1G\u001b[0J \u001b[1G`. After the two PIN entries, it emitted the same line-clearing sequence after `Username:`. The escape sequences erase each label before the operator enters a value.
-
-**Proposed fix:** Give visible questions their label through `rl.question(label)` and retain a separate muted-output path for secret questions. Check the rendered terminal at every question rather than inferring prompting behavior from the exported creation function's tests.
-
-### 3. P2 — A verifier exception is committed as an incorrect-password attempt
-
-**Location:** `apps/server/src/domain/back-office-credential.ts:136`–`140`.
-
-The inner catch converts every Argon2 verification exception into `matches = false`. The function then increments the account's failure count, commits, and writes `PASSWORD_FAILURE`. After five such errors it can lock the account out, even though verification never completed.
-
-**Authority:** Task rule 6 explicitly says, “A thrown verification rolls back and propagates.” The Handoff's decision to count these exceptions as non-matches contradicts that rule. Its claim that the hash constraint makes malformed hashes unreachable is also incorrect: the constraint only checks the `$argon2id$` prefix.
-
-**Concrete failing scenario:** A stored value of `$argon2id$broken` satisfies the migration's prefix check but makes the real Argon2 verifier reject. I ran the unchanged credential module, transpiled in memory, with the real Argon2 implementation and stubbed transaction/query/event adapters returning that row. It returned `{ outcome: 'FAILED', retryAfterSeconds: null }`; the adapter trace was `failure UPDATE`, `COMMIT`, `PASSWORD_FAILURE`, with no rollback. This is a control-flow reproduction, not a database corruption test.
-
-**Proposed fix:** Let verifier exceptions escape the transaction callback so it rolls back. Preserve a fixed, secret-free outward error as required by rule 12. Add a test that forces a verifier exception and checks rejection, unchanged throttle state, and no security event; a normal wrong password must remain a counted failure.
+**Proposed fix:** Isolate secret editing state from visible questions, for example by using a fresh readline interface for each question and closing it before the next question. Keep history disabled and ensure neither input history nor deleted-text buffers can carry secrets across questions. Extend the prompt regression test with Ctrl+U at a PIN question followed by Ctrl+Y at `Username:`, assert that the PIN never reaches output, and repeat that sequence in a real terminal. Cover other supported delete/yank commands as appropriate to the chosen implementation.
 
 ## What I ran and what I did not
 
-- I ran `npm run verify`: typechecking passed, and **51 test files / 2,907 tests passed**. This is one file and 31 tests above the task's stated development baseline. The run includes the credential, PIN, throttle, session, migration and privilege tests.
-- Before and after that green run, `git diff --stat` was empty and the branch hashes above were unchanged. The tree was still clean after the probes, before this report was written. No source or test file was edited.
-- I checked the branch diff, the task and Handoff, the cited PRD requirements and boundaries, ADR-009, the cited architecture sections, and the inherited throttle protocol and clock correction. The only existing test edits are the two permitted table/grant additions. Client code is unchanged.
-- I attempted the package's interactive command, `npm run create-manager -w apps/server`. The sandbox rejected the tsx CLI's IPC listener with `EPERM` before the script ran. I then used `node --import tsx --env-file=db/dev.env apps/server/scripts/create-manager.ts` in a PTY to exercise the same entry point. Both terminal probes were aborted before any creation call.
-- I independently confirmed that the real Argon2 library rejects the malformed encoded hash, then ran the in-memory control-flow probe described in finding 3. The query, transaction and event adapters were stubs; I did not change a stored hash or claim a real database rollback test. An initial attempt in the node REPL could not load the native binding or evaluate generated code; the successful probe ran through the shell's Node runtime.
-- `rg -n 'Date|console\.|now\(\)' apps/server/src/domain/back-office-credential.ts` returned no matches.
-- I did not repeat the credential file three times, rerun the builder's ten mutations, apply migrations to the development database, or complete a successful manager creation through the terminal. Those Handoff claims remain the builder's evidence. In particular, red proof 3 is documented as failing on the error-code assertion before reaching the count assertion; I did not independently re-prove that mutation. No routes or client authentication screens are included in this task, so AC-35 remains domain-level evidence only.
+- I ran `npm run verify` myself. Typechecking passed; **51 test files and 2,910 tests passed**, including all 34 credential cases. This is one file and 34 tests above the task's development baseline of 50 files and 2,876 tests. The run includes the real PostgreSQL concurrency, grants, malformed-hash, PIN, throttle and session tests.
+- Immediately before and after that green run, `git diff --stat` was empty and the branch and development hashes above were unchanged. The worktree was still clean after the terminal probes and before writing this report. No source or test file was edited.
+- I reviewed the branch diff, task and Handoff, the cited PRD requirements and boundaries, accepted ADR-009, the cited architecture sections and credential consultation, and the inherited throttle protocol and clock correction. The only existing test edits are the two permitted table/grant additions. No client code changed.
+- The first real-PTY run reproduced the Ctrl+U/Ctrl+Y disclosure described above. A second real-PTY run confirmed that `Name:` and `Username:` remain visible, that Up twice and Down at `Username:` recall no PIN, and that ordinary PIN and password entry does not echo. Deliberately different password confirmations produced `The two Password entries differ; nothing was written` and exit status 1. Both probes ended before the creation function could run; I did not query the database to count rows after them.
+- Running the same Node entry point without a PTY produced `create-manager needs a terminal; refusing to read from a pipe` and exit status 1. I used the Node/tsx import entry point for these probes, not the npm package command.
+- `git diff --check development...agent/phase0-007b` passed. `rg -n 'Date|console\.|now\(\)' apps/server/src/domain/back-office-credential.ts` returned no matches.
+- I did not rerun the credential file three times, rerun the builder's mutations, apply migrations to the development database, or complete manager creation through a terminal. The Handoff and lead's successful creation run remain their evidence. I made no in-memory mutation in this review. Routes and client authentication are outside this task, so AC-35 remains proved here only at the domain level.
 
 ## Cleared
 
-The migration matches the prescribed table, uniqueness, column grants and widened security-event checks. Username normalization and permanent reservation, Unicode code-point password lengths, active-manager eligibility, shared username/id account counting, cooldown expiry, and separation from both PIN buckets are implemented and covered by the passing suite. Lock acquisition precedes the database-clock decision; statements under the lock use the transaction client; normal failure evidence is written after commit. The existing concurrency tests exercise actual PostgreSQL lock waits and pool saturation.
+The prior erased-label finding is fixed: visible questions now give their labels to readline itself, and the real terminal retained them. The specific Up/Down disclosure is fixed by disabling history, but the broader requirement that secrets cannot reappear in visible output remains open under finding 1. The prior verifier-exception finding is fixed: the inner catch is removed, and passing case 33 exercises a malformed stored hash against the real verifier and database, checking rejection, unchanged throttle state and no event. Case 34 confirms an ordinary wrong password on another account still counts.
 
-The Argon2 parameters are shared without changing the PIN assertions. Credential creation sanitizes database errors, and the exported manager-creation function creates both rows in one transaction with rollback on the tested refusals. Failure telemetry carries neither username nor staff identity and writes no audit entry. The terminal history and error-path findings above limit the otherwise sound secret-handling and transaction coverage.
+The migration matches the prescribed table, permanent username uniqueness, column grants and widened security-event checks. Normalization, Unicode code-point password lengths, active-manager eligibility, shared username/id account counting, cooldown expiry, and isolation from both PIN buckets match the task. Lock acquisition precedes the database-clock decision, all work under the lock uses its transaction client, and failure evidence follows commit. The concurrency tests exercise PostgreSQL lock waits and more attempts than the pool can serve simultaneously.
+
+The shared Argon2 definition preserves the PIN parameters and existing PIN assertions. Credential database errors are replaced with fixed messages, and failure telemetry carries neither username nor staff identity and writes no audit entry. The exported creation function writes the manager and credential in one transaction, with passing rollback tests for a duplicate username and PIN. I found no additional actionable defect in those paths.
