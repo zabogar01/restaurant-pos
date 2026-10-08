@@ -92,8 +92,13 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-006b, PIN unique among active staff, merged 2026-10-07 as PR #63.)*
     - *(Done: PHASE0-007, sessions, merged 2026-10-07 as PR #64.)*
     - *(Done: ARCH-009, ADR-009 accepted 2026-10-08, merged as PR #66.)*
-    - **ARCH-010 / PHASE0-008** — consult, then HTTPS server, loopback guard, client instance (plan
-      Task 8) — not blocked — not written.
+    - *(Done: ARCH-010, the Task 8 consult, 2026-10-08; report on lead-1008b.)*
+    - *(Done: PHASE0-008a, the HTTPS process, complete 2026-10-08; PR pending.)*
+    - **PHASE0-008b** — Host and origin guard, client-instance cookie — after 008a merges — drafted
+      (untracked in the kit; recheck its test-change list against 008a as merged).
+    - *(Done: ARCH-011, ADR-010 accepted by the owner 2026-10-08; PR pending.)*
+    - **Task 9 consult (ARCH-012)** — session cookies, CSRF, route declarations, auth codes (ARCH-010
+      §10) — after ADR-010, beside 008b — not written.
     - **PHASE0-007b, the back-office credential** — `back_office_credential` (migration `0007`),
       per-account password throttle, first-manager script — ARCH-008 §5, ADR-009 — complete
       2026-10-08 at `92bc420`, final re-review clean — waits on the owner's look and merge.

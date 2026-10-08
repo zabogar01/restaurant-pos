@@ -6,8 +6,8 @@ is specific to architecture work.
 
 ## Standing facts
 
-- `docs/ARCHITECTURE.md` and eight ADRs (`ADR-001` to `ADR-007` and
-  `ADR-009`, all `Status: Accepted`) are binding. ADR-008 is reserved for the
+- `docs/ARCHITECTURE.md` and nine ADRs (`ADR-001` to `ADR-007`, `ADR-009`
+  and `ADR-010`, all `Status: Accepted`) are binding. ADR-008 is reserved for the
   deferred database-roles decision and does not exist yet. `docs/ARCHITECTURE_PROPOSAL.md` is kept under
   a superseded banner as history; do not cite it as current.
 - An accepted ADR is never edited. Changing an accepted decision means a new
