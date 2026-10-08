@@ -362,6 +362,28 @@ through `apiRoutes` returns `request.clientInstanceId`.
   authentication routes (Task 9 and its consult).
 - Serving any bundle (Task 11). Any migration. `docs/` of any kind.
 
+## Round 2: lead ruling (2026-10-08)
+
+The review (`.agent/reviews/PHASE0-008b-review.md`) has one medium finding, accepted: the timeout
+response is tested by calling `clientErrorHandler` with a fabricated error and socket, but ruling 5(b)
+requires each response below the framework to be proved over a raw socket.
+
+8. **Add a raw-TLS timeout test.** Use the existing raw TLS helper in `origin.test.ts`: open a TLS
+   connection to a listening server, send an incomplete header block, stall, and let Node itself time
+   the request out. Assert the status, that the body is empty or exactly the envelope, that nothing from
+   the error is echoed, and that the connection closes. Shorten the timeout **on the test's server
+   only**; production timeouts stay as they are. If shortening it needs a new `buildServer` option (Node
+   applies `headersTimeout`/`requestTimeout` on a `connectionsCheckingInterval` fixed at server
+   creation), add it as optional, defaulting to today's behavior, and say so in the Handoff. Keep the
+   direct-call test if it still adds something; otherwise replace it.
+9. **Red proof:** remove `clientErrorHandler` and show the new test fail on Fastify's default body;
+   revert.
+10. **Correct the Handoff:** the installed Fastify sets `requestTimeout` to 0, not 300 seconds (review,
+    finding 1). Say which Node timeout actually fires for a stalled header block, with its value in the
+    test and in production.
+
+Append a *Round 2* section to the Handoff with the new counts; the last line stays DONE or BLOCKED.
+
 ## Handoff
 
 ### What I did
