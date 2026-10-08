@@ -459,3 +459,52 @@ checks.
   fixed.
 
 ## Handoff
+
+**What I did.** Migration `db/migrations/0007_back_office_credential.sql` creates `back_office_credential` exactly as written in rule 1 (table, the unique index, grants) and widens `security_event_type_check` and `security_event_throttle_class_check` by drop and re-add under the same names. `apps/server/src/domain/argon2.ts` now holds the one exported `ARGON2` object; `pin.ts` imports it, and `createStaffUser` takes an optional second `client` parameter on the pattern of `findUserByPin`. Nothing else in `pin.ts` changed. `audit.ts` changed only in its two type unions and its two arrays. `apps/server/src/domain/back-office-credential.ts` exports exactly the five names in rule 4. `apps/server/scripts/create-manager.ts` exports `createManager(answers)` (one `withTransaction`, `createStaffUser(…, client)` then `createBackOfficeCredential(…, client)`); only the entry point, behind the same `invokedDirectly` guard as `provision.ts`, touches `process.stdin`, and it closes the pool. `apps/server/package.json` gained the `create-manager` script. Tests: new `apps/server/test/back-office-credential.test.ts`; the two expected edits in `harness-race.test.ts` (`MIGRATED_TABLES`) and `schema.test.ts` (`EXPECTED`). Commit hash is on the branch `agent/phase0-007b` (see `git log -1`).
+
+**Decisions and evidence.**
+- `normaliseUsername` lower-cases ASCII letters only (`/[A-Z]/g`), not `toLowerCase()`. `'K'` (Kelvin sign) lower-cases to ASCII `k` under `toLowerCase()` and would have been accepted as a username, which the owner's alphabet forbids. Case 1 asserts it is refused.
+- The verification wraps only the `withTransaction` call in a catch that throws the fixed message "The back-office credential store failed" (rule 12). The two `writeSecurityEvent` calls sit outside that catch, so case 24 still sees the raw foreign-key error (`code` 23503), as `verifyPinThrottled` does.
+- A thrown Argon2 `verify` (malformed hash) is treated as a non-match and counted, as `verifyPin` does. The `CHECK` on `password_hash` makes that unreachable in practice.
+- Creation refusals map on the PostgreSQL error's `code` and `constraint` name: `back_office_credential_username_key` is "taken", `back_office_credential_pkey` is "already has a credential", `23503` is "does not exist", anything else is the fixed store-failure message. When `createBackOfficeCredential` runs on a caller's client, a refusal aborts that transaction; the script rolls back, which is the intent.
+- A password outside 8 to 128 code points skips Argon2 and is a counted failure for an existing row (rule 9).
+
+**Existing tests changed.** Only the two the task lists: `harness-race.test.ts` (added `'back_office_credential'` to `MIGRATED_TABLES`, sorted between `audit_entry` and `client_instance`) and `schema.test.ts` (added the `back_office_credential` entry to `EXPECTED`). No assertion in `pin.test.ts`, `throttle.test.ts`, `audit.test.ts` or `session.test.ts` was touched.
+
+**Case map** (test names in `back-office-credential.test.ts` begin with the number): 1 `normaliseUsername`; 2 username taken; 3 password length; 4 second credential and unknown user; 5 stored row; 6 four wrong then correct; 7 fifth wrong; 8 correct during cooldown; 9 owner-set 30 s; 10 and 11 ended cooldown; 12 deactivated and cashier; 13 id and username share a row; 14 no row (24 events: 4 shapes plus 20 repeats); 15, 16, 17 isolation from the PIN throttle; 18 to 22 concurrency; 23 evidence and no audit entry; 24 unknown client instance; 25 no secret in errors or events; 26 durability; 27 grants; 28 exports and audit values; 29, 30, 31 the script's function.
+
+**Red proofs** (each mutation made, run, read, reverted; the file is green again after each revert):
+1. Removed `FOR UPDATE OF c`: cases 18, 19 and 20 failed. Case 19: "expected … to have a length of 5 but got 12"; case 18: got 23; case 20: "expected 'VERIFIED' to be 'THROTTLED'".
+2. Sent the failure `UPDATE` through `getPool()`: cases 6, 16 and 26 ran to their timeouts ("Test timed out in 15000ms", "Hook timed out in 10000ms"); the leaked row lock hung the following `beforeEach` hooks. This run took 45 s.
+3. Wrote a `PASSWORD_FAILURE` row inside the transaction on its client: case 24 failed ("expected Error: The back-office credential store f… to match object { code: '23503' }"). The assertion that fails first is the error `code`, because the module masks the database error; the transaction had rolled back, so the count assertion after it would also have failed. I did not make that second assertion run first.
+4. Replaced `ELSE 1` with `ELSE consecutive_failures + 1`: case 10 failed (`retryAfterSeconds` 300 where `null` expected: a cooldown started at once).
+5. Dropped `&& row.role === 'MANAGER'`: case 12 failed (the cashier's credential returned `VERIFIED`).
+6. Added the decision query before the locking statement and used its result: case 20 returned `VERIFIED` instead of `THROTTLED`; cases 21 and 22 failed too.
+7. `now()` in the decision statement: case 21 failed ("expected 303 to be less than or equal to 300") and case 22 failed (`THROTTLED` instead of `VERIFIED`); case 20 passed, as expected.
+8. Added an `UPDATE pin_throttle_bucket … 'LOGIN'` on each password failure: case 15 failed (LOGIN `consecutive_failures` 5 where 0 expected).
+9. Removed the ASCII lower-casing from `normaliseUsername`: cases 1, 2, 5, 13 and 31 failed. Case 2 fails because `'Budi'` is then refused as malformed rather than reported as taken, so it fails on the wrong message; case 13 fails with 5th attempt `null` instead of 300.
+10. In `createManager`, called `createStaffUser` without the client: case 30 failed (`staff_user` count 3, expected 2), the orphan manager left behind.
+
+**`npm run verify`** (after the final revert): typecheck clean; 51 test files, 2907 tests passed. `development` was 50 files and 2876 tests; the difference is one new file and 31 tests (the 31 cases). The client's tests are unchanged. `back-office-credential.test.ts` alone passed three times in a row (31/31 each time); `throttle.test.ts` and `session.test.ts` together passed once (55 tests).
+
+**Acceptance 4.** `grep -n "Date\|console\.\|now()" apps/server/src/domain/back-office-credential.ts` printed nothing.
+
+**Acceptance 5.** `npm run db:migrate` printed `applied: 0007_back_office_credential.sql` against the dev database.
+
+**Acceptance 6.** I could not run the literal `echo | npm run create-manager -w apps/server` because my shell allows no pipes. `npm run create-manager -w apps/server < /dev/null` is the same condition (standard input is not a TTY): it printed "create-manager needs a terminal; refusing to read from a pipe", exited 1 before any database connection, and so wrote nothing. **The interactive run was not made**: I have no terminal. The lead should run it once, with hidden input and the two mismatch cases, before the owner trusts it. The script's prompting code (muted `Writable` for secrets, `readline/promises`) is therefore untested; only `createManager` is covered by cases 29 to 31.
+
+**Found and not fixed.**
+- `docs/BOUNDARIES.md` B-24 and the task say the script holds no PIN; true. But the muted-output technique writes the prompt label directly to `process.stdout` and then mutes `readline`'s echo; on a terminal that does not honour that, a secret could echo. Needs the lead's interactive check.
+- A password longer than 128 code points at verification is a counted failure that skips hashing, so it is faster than a normal failure. This is a timing difference only for lengths no account can hold; I judged it harmless, and the contract asks for it.
+- No Prettier was run.
+
+**Carry forward.**
+- *Task 8:* the request logger redacts a body's `password` field exactly as `pin`.
+- *Task 9:* the back-office login calls `verifyPasswordThrottled({ username }, …)`, never a PIN function, and the POS login and approval never call it. M-6: `resolveSession(token, 'BACK_OFFICE', false)` returns `IDLE`; verify `{ staffUserId }` from that session, never a username from the request; then `reauthenticateSession`. Another manager at M-6 is an ordinary sign-in after `releaseSession` on the idled session. The response must not tell an unknown username from a wrong password; `THROTTLED` does reveal that a username exists, accepted by the owner for the MVP (ADR-009, *Risks accepted*). The back-office guard requires role `MANAGER` on every request.
+- *Phase 1 users screen:* setting or resetting a password bumps `credential_version` in the same transaction and must not touch `consecutive_failures` or `blocked_until`, which the column grant permits, so it needs its own test then. The own-password re-stamp of the acting session (ADR-009 §5) wants an architect consult first.
+- *AC-35* is proved at the domain level only (cases 15 to 17); it closes when Task 9 proves it through the routes and the client.
+- *Command for the lead's commands list:* `npm run create-manager -w apps/server` (run at the host's terminal; it asks for name, PIN, username and password, the secrets twice and hidden).
+
+**What the next agent lacks.** An interactive terminal run of the script (above). Nothing else.
+
+DONE

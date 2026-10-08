@@ -115,6 +115,14 @@ describe('privileges', () => {
       table: ['SELECT'],
       columns: { consecutive_failures: ['UPDATE'], blocked_until: ['UPDATE'] },
     },
+    back_office_credential: {
+      table: ['INSERT', 'SELECT'],
+      columns: {
+        password_hash: ['UPDATE'],
+        consecutive_failures: ['UPDATE'],
+        blocked_until: ['UPDATE'],
+      },
+    },
   };
 
   const TABLE_PRIVILEGES = ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE'];
