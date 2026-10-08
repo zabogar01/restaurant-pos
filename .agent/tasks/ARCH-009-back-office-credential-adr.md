@@ -5,7 +5,7 @@ category: arch
 touches: [identity, audit]
 depends_on: []
 owns: [docs/decisions/**, docs/ARCHITECTURE.md]
-status: running
+status: complete
 cycles: 0
 ---
 # ARCH-009 — The back-office credential ADR
