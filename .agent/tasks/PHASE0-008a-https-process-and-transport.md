@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-007b]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: active
+status: review
 cycles: 2
 ---
 # PHASE0-008a — The HTTPS process and transport
@@ -743,6 +743,15 @@ characters before matching, so `/%61pi/health` reaches the health handler withou
 
 **Then:** re-run `npm run verify` and `log-scan.test.ts` three times, and add a **Round 3** section
 to the Handoff with the change, the red proof and the counts.
+
+## Lead verification, round 3 (2026-10-08)
+
+- `npm run verify` at `7bf56ff`: 56 files, 3005 tests, green.
+- **On a real HTTPS server:** `/api/health`, `/%61pi/health` and `/a%70i/health` each answered 200
+  `{"status":"ok"}` with `no-store`; `/%61pi/nope` answered the 404 envelope with `no-store`;
+  `/api%2Fnope` and `/API/nope` stayed plain 404s with no `Cache-Control`. SIGINT exited 0.
+- The probe route the builder added to the test helper's `apiRoutes` list is accepted: it adds a
+  route and edits no assertion of cases 1 to 29.
 
 ## Handoff
 
