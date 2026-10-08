@@ -93,14 +93,16 @@ enums and do not acquire redundant booleans.
   class, the server rejects further verification in that class for five
   minutes. Only a successful verification **in the same class** resets its
   counter — a successful cashier login must not reset failed manager-approval
-  guesses. Throttle state is server-side and survives browser, application,
-  and database restart. Unauthenticated login failures are security
-  telemetry; failed and cancelled manager approvals remain actor-attributed
-  audit entries. No PIN value is recorded in either store.
+  guesses. The count also returns to zero when a cooldown ends. Throttle
+  state is server-side and survives browser, application, and database
+  restart. Unauthenticated login failures are security telemetry; failed and
+  cancelled manager approvals remain actor-attributed audit entries. No PIN
+  value is recorded in either store.
 - **FR-A5b** Back-office password verification is throttled per account.
   After five consecutive failures for one username, the server rejects further
   verification for that username for five minutes. Only a successful
-  verification of that account resets its counter. A password failure never
+  verification of that account resets its counter. The count also returns to
+  zero when a cooldown ends. A password failure never
   counts in a PIN class, and no PIN verification resets a password counter.
   The state is server-side and survives browser, application, and database
   restart. Failed back-office sign-ins are security telemetry. No password
@@ -127,7 +129,9 @@ All of section B lives in the back-office client. None of it ships to the POS.
   reset a manager's back-office username and password, deactivate.
   Deactivating a user, or resetting their PIN or password, from the back office
   invalidates every session of that user, POS and back office, on its next
-  authenticated request.
+  authenticated request. The one exception is a manager who changes their own
+  password: the back-office session the change was made from continues, and
+  every other session of theirs is invalidated.
 - **FR-B4** Manage menu: categories, items, variants, modifiers, prices.
 - **FR-B5** Manage discount presets: create, edit, deactivate.
 - **FR-B7** Manage tender types: create, rename, and deactivate custom named
@@ -543,7 +547,7 @@ the browser is the wrong place to prove it.
 | AC-32 | Deactivating a user in the back office invalidates that user's sessions, POS and back office, on their next authenticated request. Deactivating a table holding an open order is rejected | FR-B3, C8 |
 | AC-33 | A failed kitchen ticket raises the emergency incident in **both** clients; a failed receipt appears at lower urgency in both | FR-E3, E6 |
 | AC-34 | A refund allocation to a tender type the order was not paid with is rejected; an allocation above its tender's effective contribution is accepted when the allocations sum to the order total; an allocation of zero is not stored | FR-H5 |
-| AC-35 | A manager signs in to the back office with a username and password; a PIN is refused there. Five consecutive wrong passwords for one username block that username for five minutes, surviving restart, without affecting any other username, PIN login or manager approval; a successful PIN login does not reset it. After a 30-minute idle timeout the same manager resumes with their password alone and finds their unsaved work; a different manager who signs in instead does not | FR-A2b, A5b |
+| AC-35 | A manager signs in to the back office with a username and password; a PIN is refused there. Five consecutive wrong passwords for one username block that username for five minutes (a username that has no account is refused every time and is never blocked), surviving restart, without affecting any other username, PIN login or manager approval; a successful PIN login does not reset it. After a 30-minute idle timeout the same manager resumes with their password alone and finds their unsaved work; a different manager who signs in instead does not | FR-A2b, A5b |
 
 ## 8. Out of scope for MVP
 
