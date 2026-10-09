@@ -25,8 +25,10 @@ beforeAll(async () => {
     logLevel: 'silent',
     apiRoutes: [
       async (api) => {
-        api.get('/probe-id', async (request) => ({ id: request.clientInstanceId }));
-        api.get('/probe-event', async (request) => {
+        api.get('/probe-id', { config: { access: { session: 'NONE' } } }, async (request) => ({
+          id: request.clientInstanceId,
+        }));
+        api.get('/probe-event', { config: { access: { session: 'NONE' } } }, async (request) => {
           await writeSecurityEvent({
             eventType: 'PIN_FAILURE',
             throttleClass: 'LOGIN',
@@ -34,7 +36,7 @@ beforeAll(async () => {
           });
           return { id: request.clientInstanceId };
         });
-        api.get('/probe-session', async (request) => {
+        api.get('/probe-session', { config: { access: { session: 'NONE' } } }, async (request) => {
           const issued = await createSession({
             audience: 'POS',
             user: cashier,

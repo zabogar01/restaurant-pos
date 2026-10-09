@@ -16,14 +16,15 @@ async function build(): Promise<FastifyInstance> {
     logLevel: 'silent',
     apiRoutes: [
       async (api) => {
-        api.get('/probe-app-error', async () => {
+        const config = { access: { session: 'NONE' } } as const;
+        api.get('/probe-app-error', { config }, async () => {
           throw new AppError(ErrorCode.NOT_FOUND, 409);
         });
-        api.get('/probe-ok', async () => ({ ok: true }));
-        api.get('/probe-plain-error', async () => {
+        api.get('/probe-ok', { config }, async () => ({ ok: true }));
+        api.get('/probe-plain-error', { config }, async () => {
           throw new Error('a message that must not be sent: secret-marker');
         });
-        api.post('/probe-echo', async (request) => ({ got: request.body }));
+        api.post('/probe-echo', { config }, async (request) => ({ got: request.body }));
       },
     ],
   });

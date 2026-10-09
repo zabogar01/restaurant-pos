@@ -10,12 +10,16 @@ export const ErrorCode = {
   PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
   UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
   ORIGIN_REFUSED: 'ORIGIN_REFUSED',
+  UNAUTHENTICATED: 'UNAUTHENTICATED',
+  SESSION_IDLE: 'SESSION_IDLE',
+  FORBIDDEN: 'FORBIDDEN',
+  CSRF_REFUSED: 'CSRF_REFUSED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 /**
- * The details a code carries, by code. None of the seven codes that exist declares
+ * The details a code carries, by code. None of the eleven codes that exist declares
  * any, so a details argument for one does not compile. A code that carries
  * details declares its fields here, as numbers, enums or ids the server chose:
  * never a string taken from an exception.

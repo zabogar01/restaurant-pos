@@ -28,9 +28,10 @@ function build(): FastifyInstance {
     tls,
     apiRoutes: [
       async (api) => {
-        api.get('/probe-id', async (request) => ({ id: request.clientInstanceId }));
-        api.post('/probe-post', async (request) => ({ id: request.clientInstanceId }));
-        api.delete('/probe-post', async () => ({ ok: true }));
+        const config = { access: { session: 'NONE' } } as const;
+        api.get('/probe-id', { config }, async (request) => ({ id: request.clientInstanceId }));
+        api.post('/probe-post', { config }, async (request) => ({ id: request.clientInstanceId }));
+        api.delete('/probe-post', { config }, async () => ({ ok: true }));
       },
     ],
   });

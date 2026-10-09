@@ -106,6 +106,62 @@ export function neverCalled(cause: Error, text: string): void {
   const origin_refusedObject: ErrorBody = { error: { code: ErrorCode.ORIGIN_REFUSED, details: { any: 'object' } } };
   void [origin_refusedText, origin_refusedObject];
 
+  // @ts-expect-error a string
+  new AppError(ErrorCode.UNAUTHENTICATED, 401, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.UNAUTHENTICATED, 401, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.UNAUTHENTICATED, 401, new Error('x'));
+  // @ts-expect-error an undeclared object
+  new AppError(ErrorCode.UNAUTHENTICATED, 401, { any: 'object' });
+  // @ts-expect-error a string in the body
+  const unauthenticatedText: ErrorBody = { error: { code: ErrorCode.UNAUTHENTICATED, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const unauthenticatedObject: ErrorBody = { error: { code: ErrorCode.UNAUTHENTICATED, details: { any: 'object' } } };
+  void [unauthenticatedText, unauthenticatedObject];
+
+  // @ts-expect-error a string
+  new AppError(ErrorCode.SESSION_IDLE, 401, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.SESSION_IDLE, 401, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.SESSION_IDLE, 401, new Error('x'));
+  // @ts-expect-error an undeclared object
+  new AppError(ErrorCode.SESSION_IDLE, 401, { any: 'object' });
+  // @ts-expect-error a string in the body
+  const session_idleText: ErrorBody = { error: { code: ErrorCode.SESSION_IDLE, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const session_idleObject: ErrorBody = { error: { code: ErrorCode.SESSION_IDLE, details: { any: 'object' } } };
+  void [session_idleText, session_idleObject];
+
+  // @ts-expect-error a string
+  new AppError(ErrorCode.FORBIDDEN, 403, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.FORBIDDEN, 403, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.FORBIDDEN, 403, new Error('x'));
+  // @ts-expect-error an undeclared object
+  new AppError(ErrorCode.FORBIDDEN, 403, { any: 'object' });
+  // @ts-expect-error a string in the body
+  const forbiddenText: ErrorBody = { error: { code: ErrorCode.FORBIDDEN, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const forbiddenObject: ErrorBody = { error: { code: ErrorCode.FORBIDDEN, details: { any: 'object' } } };
+  void [forbiddenText, forbiddenObject];
+
+  // @ts-expect-error a string
+  new AppError(ErrorCode.CSRF_REFUSED, 403, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.CSRF_REFUSED, 403, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.CSRF_REFUSED, 403, new Error('x'));
+  // @ts-expect-error an undeclared object
+  new AppError(ErrorCode.CSRF_REFUSED, 403, { any: 'object' });
+  // @ts-expect-error a string in the body
+  const csrf_refusedText: ErrorBody = { error: { code: ErrorCode.CSRF_REFUSED, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const csrf_refusedObject: ErrorBody = { error: { code: ErrorCode.CSRF_REFUSED, details: { any: 'object' } } };
+  void [csrf_refusedText, csrf_refusedObject];
+
   // What is allowed: a code alone, and a body without details.
   new AppError(ErrorCode.INTERNAL, 500);
   const fine: ErrorBody = { error: { code: ErrorCode.INTERNAL } };
