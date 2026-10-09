@@ -4,9 +4,11 @@ The owner asked the lead on 2026-10-08 to research the usual content of an Indon
 and beverage receipt and to propose it, one step at a time. This file collects the steps. It is
 evidence for a proposal, not a decision: nothing here changes the PRD until the owner rules.
 
-- **Step 1** — the fiscal and legal baseline (this section). Done 2026-10-08.
-- **Step 2** — what receipts carry in common practice, narrowed to the owner's region. Not started.
-- **Step 3** — refund documents, reprint markings, numbering, retention in the system. Not started.
+- **Step 1** — the fiscal and legal baseline. Done 2026-10-08.
+- **Step 2** — what receipts carry in common practice in Jakarta. Done 2026-10-09.
+- **Proposal** — the lead's proposed receipt, from steps 1 and 2, with the owner's choices. 2026-10-09.
+- **Step 3** — refund documents, reprint markings, numbering. The research found no rule or settled
+  practice, so these are owner choices inside the proposal, not a further search.
 
 ## Step 1: the fiscal and legal baseline
 
@@ -74,3 +76,67 @@ librarian's reading of the linked sources and has not been checked by the lead.
 2. **No service charge for now, but the rate stays adjustable.** At rate 0 the conflict with PRD §4
    does not arise. It is latent, not resolved: before anyone sets a non-zero rate, the owner must
    rule on Pasal 8, and PRD §4 would need replacement wording the lead drafts and the owner approves.
+
+## Step 2: common practice in Jakarta
+
+Source: the librarian (`.agent/bin/ask.sh librarian`, Codex, web search; Context7 returned only
+Moka's payment API), 2026-10-09. The practice sources are **POS vendors' documentation**, not a survey
+of Jakarta restaurants. Not checked by the lead.
+
+1. **Fields.** Vendor examples (Moka's receipt settings and cashier guide,
+   https://help.mokapos.com/cara-mengatur-tampilan-struk-penjualan,
+   https://help.mokapos.com/materi-8-menggunakan-aplikasi-moka) carry the outlet name and contact
+   details, a receipt or bill number with date and time, the table or sales type, the cashier, the
+   items with quantity and price, subtotal, discount, total, payment and change. Near-universal:
+   outlet identity, a transaction identifier and time, the items, the total. Optional: address,
+   phone, tax ID, table or order type, cashier, discount, tax breakdown, payment method, change,
+   footer.
+2. **Nett pricing on the receipt.** Pergub 35/2024 Pasal 9 means a separate tax line is not
+   required; a receipt may carry a tax-included note or none. Labels such as "termasuk PB1 10%" are
+   vendor practice, not prescribed wording (template example: https://sobatkasir.com/tools/generator-struk).
+3. **Bapenda.** Pergub 35/2024 defines a sales bill as proof of payment and of tax collection, and
+   requires no NPWPD, Bapenda logo, QR code or e-tax identifier on it. DKI's monthly PBJT reporting
+   runs through Pajak Online (SPPD filing, https://bapenda.jakarta.go.id/berita/tata-cara-pelaporan-pbjt-makanan-dan-minuman-di-website-pajakonline);
+   that is a monthly return, not a live link from the POS. A sequential-number rule was found only in
+   another locality's regulation and does not apply to DKI.
+4. **Reprints and refunds.** Vendors support reprinting and refunding; no required "COPY" marking
+   and no settled refund-document practice was found.
+5. **Language.** Indonesian is the natural default; bilingual is plausible for tourist-facing venues.
+   Unconfirmed as a measured practice.
+
+## Proposal (lead, 2026-10-09; nothing here is decided)
+
+What follows fits PRD §4 (nett, tax derived for display), FR-G7 (reprint with identical figures),
+ARCHITECTURE's immutable `Receipt` (receipt number, closed-order facts, tender summary, business
+fields, render-policy version) and `SettingsVersion` (receipt business details). Indonesian labels.
+
+**Content, top to bottom (80 mm and 58 mm):**
+
+1. Outlet name; address; phone — from the settings version the order opened under.
+2. NPWPD — an optional settings field, printed only when set. Not required in DKI.
+3. Receipt number and the close time (WIB, `DD/MM/YYYY HH:MM`, 24-hour).
+4. Order type: *Dine-in · Meja <name>* or *Take-away* (quick sale); cashier's display name.
+5. Lines: quantity, item name, line total; variants and modifiers indented beneath; voided lines
+   omitted.
+6. *Subtotal*; *Diskon <preset name or "Manual">* as a negative amount when present; *Biaya layanan*
+   only when the rate is non-zero (today it is 0); **Total**.
+7. *Termasuk PBJT <rate>%: Rp <tax_included>* — the display-only figure PRD §4 already derives.
+8. Payments: one line per tender with its amount; for cash, *Tunai* and *Kembalian*.
+9. A footer line from settings (default *Terima kasih*).
+
+**Owner choices (step 3):**
+
+- **A. Receipt number.** Recommended: one plain sequence for the installation, allocated at close
+  (`No. 000123`), never reused and never reset. Alternative: per business day (`20261009-0042`),
+  easier to read aloud but it restarts daily. DKI sets no rule.
+- **B. Reprint marking.** Recommended: a *SALINAN* (copy) line at the top of a reprint, with every
+  figure identical (FR-G7). Alternative: no marking.
+- **C. Refund document.** Recommended: a refund slip (*PENGEMBALIAN DANA*) naming the original
+  receipt number, the amounts returned per tender, the manager who approved, and the time.
+  Alternative: no slip; the refund lives only in the back office.
+- **D. Language.** Recommended: Indonesian only. Alternative: Indonesian and English.
+- **E. Tax label.** Recommended: *PBJT* (the current name). Alternative: *PB1*, which customers still
+  recognise.
+
+Settling these closes PRD §9 question 1 for the MVP; the lead then drafts the exact PRD wording for
+the owner to approve.

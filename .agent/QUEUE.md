@@ -98,7 +98,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       waits on the owner's look and merge.)*
     - *(Done: ARCH-011, ADR-010 accepted 2026-10-08, merged as PR #72.)*
     - **ARCH-012, the Task 9 consult** — session cookies, CSRF, route declarations, auth codes (ARCH-010
-      §10, ARCH-011 Handoff) — beside 008b — not written.
+      §10, ARCH-011 Handoff) — running since 2026-10-09 (`architect12`).
+    - **PHASE0-009, the authentication routes** — written from ARCH-012 once the lead has ruled on it — next.
     - **PHASE0-007b, the back-office credential** — `back_office_credential` (migration `0007`),
       per-account password throttle, first-manager script — ARCH-008 §5, ADR-009 — complete
       2026-10-08 at `92bc420`, final re-review clean — waits on the owner's look and merge.
