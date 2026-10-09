@@ -13,16 +13,19 @@ MVP runs on the owner's local machine only.
 - `apps/pos` — the POS client (React, Vite). POS-01 to POS-07 are built
   against fixtures and a client order store. The back office is not built yet.
 - `apps/server` — the Phase 0 domain modules in `src/domain` (PIN, audit,
-  throttle, sessions, back-office credential) on migrations `0001` onwards. No
-  HTTP server, routes or API yet (plan Tasks 8 to 12).
-- `packages/money` (exact monetary arithmetic) and `packages/tokens` (Frost
-  design tokens). `db/migrations`.
+  throttle, sessions, back-office credential) on migrations `0001` onwards, and
+  the HTTPS server in `src/http` (TLS on loopback, Host and origin guard, error
+  envelope, the `rpos_cid` client instance). The only route is `GET /api/health`
+  (plan Tasks 9 to 12 add the rest).
+- `packages/money` (exact monetary arithmetic), `packages/tokens` (Frost
+  design tokens) and `packages/contracts` (the API error codes). `db/migrations`.
 - Stack: TypeScript, Node ≥ 22, Fastify, React, Vite, PostgreSQL 16 (Docker,
   `127.0.0.1:5433`). Currency IDR at minor-unit precision 0.
 
 **Commands:** `npm install` · `npm run db:up` · `npm run db:migrate` ·
-`npm run dev -w apps/pos` · `npm run verify` (typecheck + unit tests; the
-server's migration tests need `db:up` first) · `npm run create-manager -w
+`npm run dev -w apps/pos` · `npm run cert` once, then `npm run dev -w
+apps/server` (`https://localhost:8443`) · `npm run verify` (typecheck + unit
+tests; the server's tests need `db:up` first) · `npm run create-manager -w
 apps/server` creates a manager and their back-office login; it reads only from
 a real terminal, so the owner runs it at the host.
 
