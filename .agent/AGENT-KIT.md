@@ -63,8 +63,8 @@ The roster has seven roles on three runners. Expensive models do the judgment wo
 | Designer | Codex · gpt-6-astra | Interactive | herdr pane (on demand) | `docs/design/*` (+ design tokens/CSS if assigned) | Docs only: none. Tokens/CSS/components: `npm run verify` + browser walk |
 | Builder (fixer) | Claude Code · Sonnet (profiles below) | One-shot | herdr pane + own worktree, max 1 | Source, tests, its task's Handoff | `npm run verify` |
 | Reviewer | Opposite family to whoever built it | One-shot | herdr pane | `.agent/reviews/<task>-review.md` | Re-runs verify |
-| Explorer | Codex · gpt-6-luna one-shot (default); Claude Haiku subagent as fallback | One-shot / subagent | Inside the lead, or `ask.sh` | Nothing (returns a summary) | — |
-| Librarian | Codex · gpt-6-luna one-shot (default); Claude Sonnet subagent as fallback | One-shot / subagent | Inside the lead, or `ask.sh` | Nothing (returns a summary) | — |
+| Explorer | Claude Haiku 5.5 subagent (default); Codex · gpt-6-luna one-shot as fallback | One-shot / subagent | Inside the lead, or `ask.sh` | Nothing (returns a summary) | — |
+| Librarian | Claude Haiku 5.5 subagent (default); Codex · gpt-6-luna one-shot as fallback | One-shot / subagent | Inside the lead, or `ask.sh` | Nothing (returns a summary) | — |
 
 **Interactive vs one-shot.** Interactive is the normal chat screen (`claude`, `codex`, `opencode`). One-shot runs a single prompt and exits: `claude -p`, `codex exec`, `opencode run`. When the process exits, the job is done, so one-shot suits workers that start from a complete task file. A worker that hits a question writes `BLOCKED: <question>` in its Handoff and exits. The lead then resumes that same session with the answer.
 
@@ -125,18 +125,18 @@ Each role has a default model plus named profiles, like OmO-slim's presets and `
 
 The CLIs don't reliably expose remaining quota. "Nearly at limit" is therefore your call: flip the global preset. Automatic fallback covers the case where the limit is actually hit.
 
-### Explorer and librarian on gpt-6-luna
+### Explorer and librarian on Claude Haiku 5.5
 
-**Decided: explorer and librarian run on Codex gpt-6-luna by default.** Claude Code subagents can only run Claude models, so luna runs through a one-shot helper: `.agent/bin/ask.sh explorer "<question>"`. It runs `codex exec -m gpt-6-luna --sandbox read-only` in the repo and prints a short answer back to the lead. The librarian uses the same helper with web search enabled.
+**Decided (owner, 2026-10-09): explorer and librarian run on Claude Haiku 5.5 (`claude-haiku-5-5`) by default; Codex gpt-6-luna is the fallback.** This replaces the 2026-09-29 choice of luna first. Every role reaches them the same way: `.agent/bin/ask.sh explorer "<question>"`. It runs `roles.<role>.runner` first (`subagent`: `claude -p --agent <role>` on the agent file in `.claude/agents/`, its `tools:` list allowed, caveman off) and, if that exits non-zero, the other route (`oneshot`: `codex exec -m gpt-6-luna --sandbox read-only`, web search on for the librarian). The fallback is announced on stderr. The lead may also call the subagents directly through the Agent tool.
 
-|  | `ask.sh` on Codex gpt-6-luna (default) | Claude subagent (fallback) |
+|  | Claude subagent, Haiku 5.5 (default) | `ask.sh` on Codex gpt-6-luna (fallback) |
 | --- | --- | --- |
-| Quota used | Codex account A | Claude |
-| Startup | A few seconds; Codex reloads AGENTS.md each call | Near-instant, shares the lead session |
-| Read-only guarantee | `--sandbox read-only` | `tools:` list in the agent file |
-| Used when | Normally | Codex account A is rate-limited |
+| Quota used | Claude | Codex account A |
+| Startup | About 10 s (explorer) to 30 s (librarian) through `claude -p`, measured 2026-10-09 | A few seconds; Codex reloads AGENTS.md each call |
+| Read-only guarantee | `tools:` list in the agent file | `--sandbox read-only` |
+| Used when | Normally | The Claude route exits non-zero |
 
-Running on account A keeps exploration off OpenAI account B, which stays free for the builder's `economy`/`heavy` profiles. It does share account A with the designer (gpt-6-astra). If that account hits its limit, set `runner: subagent` to fall back to Claude.
+Running on Claude keeps exploration off both Codex accounts. Context7 reaches the librarian subagent through the claude.ai connector (`mcp__claude_ai_Context7__*`); the plugin route needs authentication and stays listed in case it is set up. To put luna first again, set `runner: oneshot`. On 2026-10-09 a forced fallback showed luna answering a `path:line` question without running a command, and wrongly, so a fallback answer needs checking.
 
 ### Skills and the base prompt
 

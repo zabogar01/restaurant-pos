@@ -65,7 +65,7 @@ launch:
       - Bash(.agent/bin/ask.sh:*)
       - Bash(herdr agent prompt lead:*)
     disallowed_tools: ["Bash(git push:*)"]
-    mcp_off:                      # tools to disallow, by gated MCP; the plugin stays installed for the fallback librarian
+    mcp_off:                      # tools to disallow, by gated MCP; the plugin stays installed for the librarian subagent
       context7: [mcp__plugin_context7_context7, mcp__claude_ai_Context7]   # the plugin and the claude.ai connector
     session_id_from: session_id   # field of the stream-json init and result events
   codex:
@@ -179,15 +179,16 @@ roles:
     mode: oneshot
     caveman: off
     owns: []                      # set per task
+  # ask.sh runs `runner` first and the other route when it fails (owner, 2026-10-09).
   explorer:
-    runner: oneshot               # default; fallback: subagent (.claude/agents/explorer.md)
+    runner: subagent              # default: claude -p --agent explorer (.claude/agents/explorer.md); fallback: oneshot
+    subagent: { model: claude-haiku-5-5 }
     oneshot:  { cli: codex, model: gpt-6-luna, sandbox: read-only }
-    subagent: { model: haiku }
     owns: []
   librarian:
-    runner: oneshot               # fallback: subagent (.claude/agents/librarian.md)
+    runner: subagent              # default: claude -p --agent librarian (.claude/agents/librarian.md); fallback: oneshot
+    subagent: { model: claude-haiku-5-5 }   # its tools list in .claude/agents/librarian.md grants the Context7 plugin
     oneshot:  { cli: codex, model: gpt-6-luna, sandbox: read-only, web: true }
-    subagent: { model: sonnet }   # its tools list in .claude/agents/librarian.md grants the Context7 plugin
     mcps: [context7]              # the only role with MCPs, whichever CLI runs it
     owns: []
 
