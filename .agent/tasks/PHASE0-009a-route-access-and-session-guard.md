@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-008b]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-009a — Route access declarations and the session guard
@@ -796,6 +796,34 @@ Checked by the lead in this worktree at `9ac36c2`, before review. `npm run verif
   lists three routes until 009b adds its three.
 - **For the reviewer:** the task touches identity and boundaries. Check the guard's order against
   ARCH-012 section 4, the clearing attributes against section 2, and that no handler reads a cookie.
+
+## Round 2: lead ruling (2026-10-09)
+
+The review (`.agent/reviews/PHASE0-009a-review.md`) has one medium finding, **accepted**: startup check 3
+identifies a registration by its method and path (`describe()`, `access.ts:62`, `:105`, `:109`, `:122`).
+Fastify accepts two registrations with the same method and path when their constraints differ, so a
+constrained registration on the root or in a sibling plugin under `/api` is taken as inside the API
+context because its namesake is. The reviewer reproduced it through `buildServer`: `ready()` succeeded,
+and a cross-site request with no session reached the handler with 200 and no `Cache-Control`. That
+breaks rule 2 and ARCH-012 section 4, check 3.
+
+9. **Prove membership by registration, not by name.** The check must decide, for each API registration
+   the root hook sees, whether the hook inside the API context saw *that same registration*. The
+   expected approach is object identity: the root hook records each API registration's `routeOptions`
+   object, the in-context hook records the object it receives (a `WeakSet`, or a symbol set on the
+   object), and the `onReady` check refuses any recorded registration the context never saw. Keep the
+   method and path in the `StartupError` message; they are the diagnostic, not the identity. First
+   confirm, with a test or a probe, that both hooks receive the same object for one registration,
+   including the generated `HEAD`; say in the Handoff what you observed. If they do not, find another
+   identity that is per registration and say why it holds; if none exists, stop with `BLOCKED:`.
+10. **Regression, as case 4b in `access.test.ts`:** a fully declared route inside the API context plus a
+    registration with the same method and path and a route constraint (for example `constraints:
+    { version: '1.0.0' }`), once on the root instance and once in a sibling plugin under `/api`:
+    `ready()` rejects with a `StartupError` each time. A constrained registration *inside* the API
+    context still starts (no false refusal). Case 8 (generated `HEAD`) stays green unedited.
+11. **Red proof:** restore the method-and-path key; case 4b fails. Revert.
+12. Nothing else changes in this round. Append a *Round 2* section to the Handoff with the new counts;
+    the last line stays DONE or BLOCKED.
 
 ## Handoff
 
