@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-09: PRs #74, #75 merged, `development` at `dfc96c3`. ARCH-012 and the receipt proposal done; explorer
-and librarian on Claude Haiku 5.5 first. All on `agent/lead-1009`, PR #76. Nothing is running. Narrative: [journal/2026-10-09.md](journal/2026-10-09.md).
+2026-10-09: PRs #74-76 merged, `development` at `3e46f7b`: ARCH-012 and the receipt proposal. Explorer and
+librarian on Claude Haiku 5.5 first: `agent/lead-1009` (`7891275`), PR #77. Nothing is running. Narrative: [journal/2026-10-09.md](journal/2026-10-09.md).
 
 ## Phase and gates
 
@@ -33,7 +33,7 @@ and librarian on Claude Haiku 5.5 first. All on `agent/lead-1009`, PR #76. Nothi
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `dfc96c3` (PR #74) on GitHub;
+- **`development` is the integration branch** (owner, 2026-09-29), at `3e46f7b` (PR #76) on GitHub;
   the local `development` matches it. `main` and `development` are protected: PR required, 0
   approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch` and
@@ -41,8 +41,8 @@ and librarian on Claude Haiku 5.5 first. All on `agent/lead-1009`, PR #76. Nothi
   dispatching**, then `npm ci` if the lockfile changed, and `npm run db:migrate` if a migration landed.
 - **Guard hooks** in the shared `.git/hooks` with an `agents.yaml` snapshot, current (reinstalled
   2026-10-09 with this branch's agents.yaml). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1009`** (from `dfc96c3`), pushed, PR #76: STATE,
-  QUEUE, AGENTS.md, the explorer/librarian routing, the 2026-10-09 journal, the receipt research and ARCH-012's task and report.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1009`** (from `dfc96c3`): PR #76 merged; PR #77 adds
+  the explorer/librarian routing. Before #76: STATE, QUEUE, AGENTS.md, the 2026-10-09 journal, the receipt research and ARCH-012's task and report.
   **This branch's STATE is the current one** until it merges (the main checkout's copy lags).
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
@@ -145,5 +145,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Owner: merge PR #76. Write PHASE0-009a from
+Owner: merge PR #77. Write PHASE0-009a from
 ARCH-012 *For the task file*, dry-run and dispatch on the owner's go. The owner's ARCH-012 and receipt answers.
