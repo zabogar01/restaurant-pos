@@ -61,22 +61,23 @@ beforeAll(async () => {
     logStream,
     apiRoutes: [
       async (api) => {
-        api.post('/probe-body', async () => ({ ok: true }));
-        api.get('/probe-set-cookie', async (_request, reply) => {
+        const config = { access: { session: 'NONE' } } as const;
+        api.post('/probe-body', { config }, async () => ({ ok: true }));
+        api.get('/probe-set-cookie', { config }, async (_request, reply) => {
           reply.header('set-cookie', `sid=${MARK.setCookie}; HttpOnly`);
           return { ok: true };
         });
-        api.get('/probe-throw', async () => {
+        api.get('/probe-throw', { config }, async () => {
           const err = new Error(`failed with ${MARK.thrown}`) as Error & { detail: string };
           err.detail = MARK.detail;
           throw err;
         });
-        api.get('/probe-postgres', async () => {
+        api.get('/probe-postgres', { config }, async () => {
           await query('SELECT $1::uuid', [MARK.postgres]);
           return { ok: true };
         });
-        api.get('/probe-param/:id', async () => ({ ok: true }));
-        api.get('/probe-log', async (request) => {
+        api.get('/probe-param/:id', { config }, async () => ({ ok: true }));
+        api.get('/probe-log', { config }, async (request) => {
           request.log.info(
             {
               pin: MARK.loggedPin,
