@@ -1,6 +1,8 @@
 # PHASE0-009a review
 
-## Verdict
+Current verdict: **clean** after the focused Round 2 review below. Finding 1 is resolved.
+
+## Round 1 verdict
 
 **findings** — one finding in the startup check. The existing suite passes, but a distinct route registered outside the API context can borrow an in-context route's identity and escape the required startup refusal.
 
@@ -55,3 +57,27 @@ The existing case 4 uses unique paths, so it cannot expose the collision. This i
 - Idle POS cookies are cleared; idle back-office cookies are retained for renewal. Dead and repeated session cookies use the surface's exact clearing attributes. Role demotion refuses back-office access while leaving the POS role current, and restoration works. Release/logout isolate the two audiences and release idle sessions.
 - Cookie handling stays in the guard module, the four new error codes have no details, and the log and header scans pass. The accepted `Date.now()` exception is JavaScript logging code, not new SQL clock usage. Existing tests gained the authorized declarations and type assertions without weakened assertions.
 - The jar keeps separate CSRF values and path-scoped cookies for the two surfaces. The tests cover independent profiles and one profile holding both sessions. Credential verification, client activity dispatch and browser timeout presentation remain outside this task as specified.
+
+## Round 2
+
+### Verdict
+
+**clean** — finding 1 is resolved; no new findings within this round's scope. Reviewed fix commit `9c59a84e9b0a33ac6b8b11bf9c057fea2b0668f4` against finding 1 and lead rulings 9–13. Verification ran at HEAD `c6d1c2c5aac15dbff4c2c44daad095a1781164f4`; its only difference from the fix commit is the task's lead-check text. Development remained `ca33123e58db8f4e888367d6309fda9e3d4646cf`.
+
+### Findings
+
+None. `access.ts` records each root registration's options object and checks that exact object against the API context's `WeakSet`. Method and path are retained only for the diagnostic. A protected registration can no longer conceal a distinct registration with the same method and path. This meets ruling 9 and ARCH-012 section 4, startup check 3.
+
+### What I ran and what I did not
+
+- I reran `npm run verify`: typechecking passed, **61 files passed and 3,169 tests passed**, exit status 0. That is three additional tests since Round 1 and 74 above the task's original 3,095-test baseline.
+- Before and after verification, `git diff --stat` and `git status --short` were empty, and HEAD and development retained the hashes above. The branch diff against development remained **20 files changed, 2,902 insertions, 19 deletions**. Report and Handoff updates were made only after this stability check.
+- I reran the original production-factory probe: a constrained root `GET /api/pos/auth/me` declared `ACTIVE`. `ready()` now rejects with a `StartupError` naming `GET /api/pos/auth/me` and its registration outside the API context. No request can reach that probe handler.
+- I ran a separate in-memory registration harness against the fixed `installAccessChecks`. Constrained registrations on the root and in a sibling plugin were both refused with `StartupError`; the equivalent registration inside the API context started successfully. The probe directly compared the objects received by the root and API hooks: they were identical for each GET and generated HEAD registration, including the constrained routes. This independently verifies the identity assumption in ruling 9.
+- In that harness, I transpiled an in-memory copy of `access.ts` whose membership comparison again accepted a registration when an API registration shared its method and path. Both outside-context cases incorrectly started; the inside-context control still started. This independently reproduces the defect under the old comparison. It is a probe mutation, not a claim that I reran the builder's mutation of the Vitest case 4b suite. No source file was changed by the probe.
+- `git diff --check 9c59a84^ HEAD` passed. I reviewed the fix's complete diff: production changes are confined to `access.ts`, test changes add the three case 4b regressions, and the Handoff records the fix and red proof. Case 8 is unedited. The user's explicit request to update the Handoff is the scope for the reviewer verification note added there.
+- I did not repeat Round 1's broader review, its other mutation proofs, or a browser run. This verdict addresses finding 1 and rulings 9–13 only.
+
+### Cleared
+
+Rulings 9 and 10 are proved by the identity probe and passing root, sibling and inside-context cases. The generated HEAD behavior remains green. Ruling 11 has the builder's recorded case 4b red proof plus the independently observed in-memory reproduction above. Ruling 12's narrow implementation scope and Handoff evidence hold. Ruling 13's production-factory refusal is independently confirmed. No remaining information is needed for this focused review.

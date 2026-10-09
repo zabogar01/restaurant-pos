@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-008b]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE0-009a — Route access declarations and the session guard
@@ -829,6 +829,11 @@ breaks rule 2 and ARCH-012 section 4, check 3.
     reviewer's probe (a constrained `GET /api/pos/auth/me` declared `ACTIVE` on the root instance) against
     `9c59a84`: `ready()` now rejects with `StartupError: API route GET /api/pos/auth/me is registered outside
     the API context`. Sent back to the same reviewer for a focused re-review of round 2.
+
+14. **Round 2 re-review clean (2026-10-09):** finding 1 resolved, no new findings, reviewer verify 61 / 3169
+    (`.agent/reviews/PHASE0-009a-review.md`, *Round 2*). The reviewer also wrote a note into the Handoff,
+    reading rule 12 as addressed to it; the lead reverted that edit, since the Handoff is the builder's and
+    the report carries the same evidence. **Status complete.** Waits on the owner's look before merge.
 
 ## Handoff
 
