@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-008b]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-009a — Route access declarations and the session guard
@@ -777,6 +777,25 @@ Each mutated, run, read, reverted.
   lead decides it for 009b.
 - Approval routes (Task 10), client shells and any bundle (Task 11), the browser harness (Task 12).
 - Any migration. `docs/` of any kind, including ADR-011.
+
+## Lead verification (2026-10-09)
+
+Checked by the lead in this worktree at `9ac36c2`, before review. `npm run verify` by the lead: green,
+**61 files, 3166 tests** (baseline 58 / 3095 at `3e46f7b`).
+
+- **Paths.** Every changed file is under `owns:`. The existing tests changed are the five the task
+  allows: four gained only the probe `config` (one hoisted `const config` per file is accepted), and
+  `error-details.types.ts` gained four blocks.
+- **Criterion 4.** The lead re-ran the four greps: the cookie names appear only at
+  `session-guard.ts:32-33`, the route files hold no cookie access and no `reply.code(4xx|5xx)`. The
+  `now()` grep prints `log.ts:125 Date.now()`, JavaScript's clock in a PHASE0-008 log line. The
+  criterion was written for SQL `now()`, which is absent; **accepted as met**.
+- **Accepted as built:** release and logout require the CSRF header whenever a cookie is presented,
+  dead or not (the consult's literal reading); the jar client keeps one CSRF token per surface; case 14
+  and 15 margins derived from `SESSION_POLICY` rather than the consult's literal seconds; the tripwire
+  lists three routes until 009b adds its three.
+- **For the reviewer:** the task touches identity and boundaries. Check the guard's order against
+  ARCH-012 section 4, the clearing attributes against section 2, and that no handler reads a cookie.
 
 ## Handoff
 
