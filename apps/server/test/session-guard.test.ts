@@ -218,7 +218,15 @@ describe('the session guard', () => {
     const res = await get(surface, 'me', token);
     expect(res.statusCode).toBe(200);
     const body = res.json() as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(['csrfToken', 'role', 'staffUserId']);
+    // Who is signed in (009b): the POS view carries a name, the back-office view also
+    // the manager's stored username.
+    expect(Object.keys(body).sort()).toEqual(
+      surface.audience === 'POS'
+        ? ['csrfToken', 'name', 'role', 'staffUserId']
+        : ['csrfToken', 'name', 'role', 'staffUserId', 'username']
+    );
+    expect(body.name).toMatch(/^User \d+$/);
+    if (surface.audience === 'BACK_OFFICE') expect(body.username).toMatch(/^manager-\d+$/);
     expect(body.staffUserId).toBe(user.id);
     expect(body.role).toBe(surface.role);
     expect(typeof body.csrfToken).toBe('string');

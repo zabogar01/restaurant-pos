@@ -92,6 +92,29 @@ export class JarClient {
     return this.request({ method: 'POST', url, ...(headers ? { headers } : {}) });
   }
 
+  /** A POS sign-in. A 200 keeps the returned `csrfToken` for later mutating calls. */
+  signInPos(pin: unknown) {
+    return this.request({ method: 'POST', url: '/api/pos/auth/login', payload: { pin } });
+  }
+
+  /** A back-office sign-in. A 200 keeps the returned `csrfToken`. */
+  signInBackOffice(username: unknown, password: unknown) {
+    return this.request({
+      method: 'POST',
+      url: '/api/back-office/auth/login',
+      payload: { username, password },
+    });
+  }
+
+  /** M-6: the password alone, for the session this profile's cookie names. */
+  reauthenticate(password: unknown) {
+    return this.request({
+      method: 'POST',
+      url: '/api/back-office/auth/reauthenticate',
+      payload: { password },
+    });
+  }
+
   private absorb(res: Response, url: string): void {
     const header = res.headers['set-cookie'];
     const lines = Array.isArray(header) ? header : header === undefined ? [] : [String(header)];

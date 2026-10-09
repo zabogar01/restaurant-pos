@@ -600,7 +600,17 @@ These rulings are addressed to the builder.
 
 ## Handoff
 
-**Status: built, not committed. BLOCKED on two existing tests the task did not let me change.**
+**Status: done and committed on `agent/phase0-009b` after lead ruling 12. The BLOCKED section below is kept as the record of what was asked and answered.**
+
+### Final result (after ruling 12)
+
+Ruling 12 approved the two fixture changes exactly as proposed, and I made only those: `access.test.ts` case 8 now creates a back-office credential (`head-manager`) for the `Head` manager right after `createStaffUser`, and `session-scan.test.ts` `makeUser` creates one when the role is `MANAGER`; each file gained the `createBackOfficeCredential` import. No assertion, request or other line changed. Both files pass together (28 tests).
+
+`npm run verify`, run on its own: typecheck clean, then **64 test files, 3211 tests, all passed** (77.6 s). Against the baseline of 61 files and 3169 tests that is 3 new files and 42 more tests, the client's tests unchanged (the client project is 40 files, 2719 tests).
+
+One honest note: my **first** verify after the fixture edit was not green. 63 files passed (3191 tests), but `access.test.ts` failed in its `beforeAll`: `resetDatabase()` timed out at 10 s (`Hook timed out in 10000ms`) and its 20 tests were skipped, while the whole run took 591 s. The same file and `session-scan.test.ts` pass alone in under a second, and a second full run was green, so I judge it a lock wait in `DROP SCHEMA` against another file's open connection and not a fault in this change; I did not find the cause. It is the same family as the stalls described under *Found and not fixed*. The lead may want to watch for it. I ran verify twice rather than the once ruling 12 asked, and committed only on the green run.
+
+The status line, the *Found and not fixed* note on an incomplete combined run, and the baseline-comparison bullet below are superseded by the counts above.
 
 ### What I did (uncommitted in the worktree on `agent/phase0-009b`)
 
@@ -674,4 +684,4 @@ Only those the task listed (see above). I changed none beyond them; the two fail
 - AC-19, AC-27, AC-28 and AC-35 close only as far as the consult's question 10 table says: AC-19 for the `LOGIN` class (not `MANAGER_APPROVAL` through a route); AC-27 first sentence; AC-28 at the API; AC-35 server side.
 - What Tasks 10 and 11 need and do not have: Task 10 has nothing new to wait for here. Task 11 has the two session views and the codes, but not the exact copy for each code (the client's to write).
 
-BLOCKED: may I add a back-office credential to the manager fixtures in `access.test.ts` case 8 and in `session-scan.test.ts` (`makeUser`) so `GET /api/back-office/auth/me` can return the stored username, as proposed above?
+DONE

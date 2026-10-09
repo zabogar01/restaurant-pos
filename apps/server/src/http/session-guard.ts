@@ -2,8 +2,13 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ErrorCode } from '@pos/contracts';
 import type { StaffRole } from '../domain/pin.js';
-import { releaseSession, resolveSession } from '../domain/session.js';
-import type { Audience } from '../domain/session.js';
+import {
+  createSession,
+  reauthenticateSession,
+  releaseSession,
+  resolveSession,
+} from '../domain/session.js';
+import type { Audience, VerifiedUser } from '../domain/session.js';
 import { AppError } from './errors.js';
 
 /**
@@ -154,6 +159,107 @@ export function csrfTokenOf(request: FastifyRequest): string {
   const presented = presentedToken(request, actorOf(request).audience);
   if (presented.kind !== 'ONE') throw new Error('No session cookie to derive a token from');
   return csrfOf(presented.token);
+}
+
+// The audience of a route declared OPTIONAL, from its declaration alone.
+function optionalAudience(request: FastifyRequest, who: string): Audience {
+  const access = request.routeOptions.config.access;
+  if (access === undefined || access.session !== 'OPTIONAL') {
+    throw new Error(`${who} is for a route declared OPTIONAL`);
+  }
+  return access.audience;
+}
+
+// Always a token the server generated in this request, never one that was
+// presented. No Max-Age or Expires: the cookie ends with the browser session and
+// the server's clock decides the rest.
+function setSessionCookie(reply: FastifyReply, audience: Audience, token: string): void {
+  reply.setCookie(COOKIE[audience].name, token, {
+    path: COOKIE[audience].path,
+    httpOnly: true,
+    secure: true,
+    sameSite: 'strict',
+  });
+}
+
+/**
+ * A sign-in that verified, for a route declared OPTIONAL. Whatever session the
+ * surface's cookie presents is released first (idle included; no resolution is
+ * needed), then a session is created for the verified user and its cookie is set.
+ * Call it only after `VERIFIED`: a failed or throttled sign-in changes no session
+ * and no cookie. If the release fails no session is created; if the creation
+ * fails the old one is already gone.
+ */
+export async function signIn(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  user: VerifiedUser
+): Promise<{ csrfToken: string }> {
+  const audience = optionalAudience(request, 'signIn');
+  const presented = presentedToken(request, audience);
+  if (presented.kind === 'ONE') await releaseSession(presented.token, audience);
+  const issued = await createSession({
+    audience,
+    user,
+    clientInstanceId: request.clientInstanceId,
+  });
+  setSessionCookie(reply, audience, issued.token);
+  return { csrfToken: csrfOf(issued.token) };
+}
+
+/**
+ * Steps 2 and 3 of M-6, for a route declared OPTIONAL on the back office: the one
+ * session cookie, and the anti-CSRF token derived from it. Returns the presented
+ * token. Nothing has been verified or counted when this throws.
+ */
+export function presentedForRenewal(request: FastifyRequest, reply: FastifyReply): string {
+  const audience = optionalAudience(request, 'presentedForRenewal');
+  const presented = presentedToken(request, audience);
+  if (presented.kind !== 'ONE') {
+    if (presented.kind === 'REPEATED') clearSessionCookie(reply, audience);
+    throw new AppError(ErrorCode.UNAUTHENTICATED, 401);
+  }
+  checkCsrf(request, presented.token);
+  return presented.token;
+}
+
+/**
+ * Step 5 of M-6: the account the presented session names, if it can still be
+ * renewed. An idle session and an active one both can; anything else clears the
+ * cookie and is UNAUTHENTICATED, with no password verified and nothing counted.
+ * This resolution does not count as activity.
+ */
+export async function renewableAccount(
+  reply: FastifyReply,
+  token: string,
+  audience: 'BACK_OFFICE'
+): Promise<string> {
+  const resolved = await resolveSession(token, audience, false);
+  if (resolved.status === 'NONE') {
+    clearSessionCookie(reply, audience);
+    throw new AppError(ErrorCode.UNAUTHENTICATED, 401);
+  }
+  return resolved.staffUserId;
+}
+
+/**
+ * Step 7 of M-6: the same session under a new token. If the row was released,
+ * expired or re-versioned since step 5 there is nothing to renew, and the answer
+ * is UNAUTHENTICATED: this never falls through to a fresh session.
+ */
+export async function renewSession(
+  reply: FastifyReply,
+  token: string,
+  audience: 'BACK_OFFICE',
+  user: VerifiedUser
+): Promise<{ csrfToken: string }> {
+  const issued = await reauthenticateSession(token, audience, user);
+  if (issued === null) {
+    clearSessionCookie(reply, audience);
+    throw new AppError(ErrorCode.UNAUTHENTICATED, 401);
+  }
+  setSessionCookie(reply, audience, issued.token);
+  return { csrfToken: csrfOf(issued.token) };
 }
 
 /**

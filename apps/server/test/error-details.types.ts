@@ -162,6 +162,53 @@ export function neverCalled(cause: Error, text: string): void {
   const csrf_refusedObject: ErrorBody = { error: { code: ErrorCode.CSRF_REFUSED, details: { any: 'object' } } };
   void [csrf_refusedText, csrf_refusedObject];
 
+  // The two codes that carry details (009b): a number PostgreSQL computed, and
+  // nothing else. A string, an exception's message, an exception and an object of
+  // another shape (a parse error's issues among them) do not compile.
+  // @ts-expect-error a string
+  new AppError(ErrorCode.INVALID_CREDENTIALS, 401, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.INVALID_CREDENTIALS, 401, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.INVALID_CREDENTIALS, 401, new Error('x'));
+  // @ts-expect-error an object of another shape
+  new AppError(ErrorCode.INVALID_CREDENTIALS, 401, { any: 'object' });
+  // @ts-expect-error the right key with a string
+  new AppError(ErrorCode.INVALID_CREDENTIALS, 401, { retryAfterSeconds: text });
+  // @ts-expect-error an issue list in the place of the number
+  new AppError(ErrorCode.INVALID_CREDENTIALS, 401, { issues: [{ path: ['pin'], message: text }] });
+  // @ts-expect-error a string in the body
+  const invalid_credentialsText: ErrorBody = { error: { code: ErrorCode.INVALID_CREDENTIALS, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const invalid_credentialsObject: ErrorBody = { error: { code: ErrorCode.INVALID_CREDENTIALS, details: { any: 'object' } } };
+  void [invalid_credentialsText, invalid_credentialsObject];
+  new AppError(ErrorCode.INVALID_CREDENTIALS, 401, { retryAfterSeconds: 1 });
+  const invalidWithDetails: ErrorBody = {
+    error: { code: ErrorCode.INVALID_CREDENTIALS, details: { retryAfterSeconds: 1 } },
+  };
+  void invalidWithDetails;
+
+  // @ts-expect-error a string
+  new AppError(ErrorCode.THROTTLED, 429, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.THROTTLED, 429, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.THROTTLED, 429, new Error('x'));
+  // @ts-expect-error an object of another shape
+  new AppError(ErrorCode.THROTTLED, 429, { any: 'object' });
+  // @ts-expect-error the right key with a string
+  new AppError(ErrorCode.THROTTLED, 429, { retryAfterSeconds: text });
+  // @ts-expect-error a string in the body
+  const throttledText: ErrorBody = { error: { code: ErrorCode.THROTTLED, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const throttledObject: ErrorBody = { error: { code: ErrorCode.THROTTLED, details: { any: 'object' } } };
+  void [throttledText, throttledObject];
+  new AppError(ErrorCode.THROTTLED, 429, { retryAfterSeconds: 1 });
+  const throttledWithDetails: ErrorBody = {
+    error: { code: ErrorCode.THROTTLED, details: { retryAfterSeconds: 1 } },
+  };
+  void throttledWithDetails;
+
   // What is allowed: a code alone, and a body without details.
   new AppError(ErrorCode.INTERNAL, 500);
   const fine: ErrorBody = { error: { code: ErrorCode.INTERNAL } };
