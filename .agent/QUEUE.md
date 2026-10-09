@@ -94,15 +94,14 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: ARCH-009, ADR-009 accepted 2026-10-08, merged as PR #66.)*
     - *(Done: ARCH-010, the Task 8 consult, 2026-10-08, merged with PR #73.)*
     - *(Done: PHASE0-008a, the HTTPS process, merged 2026-10-08 as PR #71.)*
-    - *(Done: PHASE0-008b, Host and origin guard and `rpos_cid`, complete 2026-10-09 at `038db53`;
-      waits on the owner's look and merge.)*
+    - *(Done: PHASE0-008b, Host and origin guard and `rpos_cid`, merged 2026-10-09 as PR #74.)*
     - *(Done: ARCH-011, ADR-010 accepted 2026-10-08, merged as PR #72.)*
-    - **ARCH-012, the Task 9 consult** — session cookies, CSRF, route declarations, auth codes (ARCH-010
-      §10, ARCH-011 Handoff) — running since 2026-10-09 (`architect12`).
-    - **PHASE0-009, the authentication routes** — written from ARCH-012 once the lead has ruled on it — next.
-    - **PHASE0-007b, the back-office credential** — `back_office_credential` (migration `0007`),
-      per-account password throttle, first-manager script — ARCH-008 §5, ADR-009 — complete
-      2026-10-08 at `92bc420`, final re-review clean — waits on the owner's look and merge.
+    - *(Done: ARCH-012, the Task 9 consult, 2026-10-09, merged with PR #76.)*
+    - *(Done: PHASE0-007b, the back-office credential, merged 2026-10-08 as PR #69.)*
+    - **PHASE0-009a, route declarations, the session guard and the six session routes** — complete 2026-10-09
+      at `c6286b9` (review clean after round 2) — PR #78, waits on the owner's look and merge.
+    - **PHASE0-009b, the credential routes** (POS and back-office sign-in, M-6 re-authentication, zod) —
+      depends on 009a — not written.
     - **Before Task 10:** an architect consult (ARCH-006 §8), which must add an audit outcome for a
       cooldown-refused approval (ARCH-007 §7). Tasks 6 and 7 had theirs (ARCH-007, ARCH-008).
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
