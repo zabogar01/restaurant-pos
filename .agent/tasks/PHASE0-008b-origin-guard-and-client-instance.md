@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-008a]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: active
+status: complete
 cycles: 1
 ---
 # PHASE0-008b — The request boundary
@@ -361,6 +361,29 @@ through `apiRoutes` returns `request.clientInstanceId`.
 - Session cookies, the anti-CSRF token, route declarations (`audience`, `interactive`) and the
   authentication routes (Task 9 and its consult).
 - Serving any bundle (Task 11). Any migration. `docs/` of any kind.
+
+## Lead acceptance: the browser check (2026-10-09)
+
+Made by the lead with the owner, at `2ca5340`. No real route issues `rpos_cid` yet (health opts
+out, an API miss never reaches the hook), so the check ran against a throwaway harness outside the
+repository: the branch's own `buildServer` and the real local certificate, plus one probe route
+`GET /api/probe-cid` returning `request.clientInstanceId`. The harness was deleted afterwards.
+
+- **Header** (curl): `rpos_cid=<uuid>; Max-Age=34560000; Path=/; HttpOnly; Secure; SameSite=Strict`,
+  no `Domain`.
+- **Chrome:** three same-origin `fetch` calls from the page saw one id; `document.cookie` was empty
+  (HttpOnly holds). The owner then typed the URL into the address bar and saw the same id, so the
+  cookie also survived across navigations. The row's `last_seen_at` moved ten minutes past
+  `first_seen_at`.
+- **Safari:** the owner opened the URL, clicked through the certificate warning, and reloaded; the
+  row's `last_seen_at` moved 31 seconds past `first_seen_at`, so Safari stored the `Secure` cookie on
+  a clicked-through self-signed certificate and returned it.
+- **Observed, by design:** a navigation started by the Chrome extension the lead drives got 403
+  `ORIGIN_REFUSED` (its `Sec-Fetch-Site` was neither `same-origin` nor `none`); the owner's typed URL
+  passed. Only a top-level `GET` of an `/api` URL started from elsewhere is affected.
+
+Accepted. With the review's one finding closed in round 2 (test-only, no re-review), the task is
+complete and waits on the owner's look before merge (`touches: identity, boundaries`).
 
 ## Round 2: lead ruling (2026-10-08)
 
