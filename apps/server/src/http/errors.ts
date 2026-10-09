@@ -1,4 +1,5 @@
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { Duplex } from 'node:stream';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ErrorCode } from '@pos/contracts';
 import type { ErrorBody, ErrorDetailsOf } from '@pos/contracts';
 
@@ -94,6 +95,40 @@ export function notFoundHandler(request: FastifyRequest, reply: FastifyReply) {
     return send(reply, 404, ErrorCode.NOT_FOUND);
   }
   return reply.code(404).type('text/plain').send('Not Found');
+}
+
+const ENVELOPE_400 = JSON.stringify({ error: { code: ErrorCode.VALIDATION_FAILED } });
+
+/**
+ * Node's HTTP parser rejects a request it cannot read before Fastify sees it, and
+ * Fastify's default handler then writes a body quoting the failure. This writes the
+ * envelope for a malformed request and no body at all for a timeout or an
+ * over-long header block, and closes the connection. The error is logged at trace
+ * through the serializer (code and frames only).
+ */
+export function clientErrorHandler(
+  this: FastifyInstance,
+  err: Error & { code?: string },
+  socket: Duplex
+): void {
+  if (err.code === 'ECONNRESET' || socket.destroyed) return;
+  this.log.trace({ err }, 'client error');
+  if (socket.writable) {
+    let head: string;
+    let body = '';
+    if (err.code === 'ERR_HTTP_REQUEST_TIMEOUT') head = 'HTTP/1.1 408 Request Timeout';
+    else if (err.code === 'HPE_HEADER_OVERFLOW') head = 'HTTP/1.1 431 Request Header Fields Too Large';
+    else {
+      head = 'HTTP/1.1 400 Bad Request';
+      body = ENVELOPE_400;
+    }
+    const type = body === '' ? '' : 'Content-Type: application/json\r\n';
+    socket.write(
+      `${head}\r\nContent-Length: ${Buffer.byteLength(body)}\r\n${type}` +
+        `Cache-Control: no-store\r\nConnection: close\r\n\r\n${body}`
+    );
+  }
+  socket.destroy();
 }
 
 /**

@@ -8,7 +8,7 @@ import { AppError } from '../errors.js';
  * nothing. An "ok" with the database down would contradict ARCHITECTURE 12.
  */
 export const healthRoutes: FastifyPluginAsync = async (api) => {
-  api.get('/health', async (request) => {
+  api.get('/health', { config: { clientInstance: false } }, async (request) => {
     try {
       await query('SELECT 1');
     } catch (err) {

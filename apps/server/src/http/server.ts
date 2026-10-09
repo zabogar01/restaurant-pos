@@ -1,8 +1,18 @@
 import type { Writable } from 'node:stream';
+import cookie from '@fastify/cookie';
 import Fastify from 'fastify';
 import type { FastifyInstance, FastifyPluginAsync, FastifyServerOptions } from 'fastify';
-import { errorHandler, frameworkErrorHandler, notFoundHandler } from './errors.js';
+import { ErrorCode } from '@pos/contracts';
+import { clientInstanceHook } from './client-instance.js';
+import {
+  AppError,
+  clientErrorHandler,
+  errorHandler,
+  frameworkErrorHandler,
+  notFoundHandler,
+} from './errors.js';
 import { loggerOptions } from './log.js';
+import { checkHost, checkOrigin, ownOrigin } from './origin.js';
 import { healthRoutes } from './routes/health.js';
 
 export interface BuildServerOptions {
@@ -23,17 +33,23 @@ export interface BuildServerOptions {
  * (there is no proxy), no HTTP/2, and JSON as the only body type.
  */
 export function buildServer({
+  origin,
   logLevel,
   tls,
   logStream,
   apiRoutes = [],
 }: BuildServerOptions): FastifyInstance {
+  const own = ownOrigin(origin);
   // The https option changes the instance's generic type; the one type the rest of
   // the code uses is the plain FastifyInstance.
   const options: FastifyServerOptions & { https?: typeof tls | null } = {
     logger: loggerOptions(logLevel, logStream),
     trustProxy: false,
     frameworkErrors: frameworkErrorHandler,
+    clientErrorHandler,
+    // Fastify's own 503 while closing has a fixed body outside the envelope; the
+    // hook below sends the envelope instead.
+    return503OnClosing: false,
     https: tls ?? null,
   };
   const app = Fastify(options as FastifyServerOptions) as unknown as FastifyInstance;
@@ -42,6 +58,20 @@ export function buildServer({
   app.removeContentTypeParser('text/plain');
   app.setErrorHandler(errorHandler);
   app.setNotFoundHandler(notFoundHandler);
+
+  let closing = false;
+  app.addHook('preClose', async () => {
+    closing = true;
+  });
+  app.addHook('onRequest', async (_request, reply) => {
+    if (!closing) return;
+    reply.header('connection', 'close');
+    throw new AppError(ErrorCode.UNAVAILABLE, 503);
+  });
+  // Every request, before routing reaches a handler, bundles included.
+  app.addHook('onRequest', checkHost(own));
+
+  app.register(cookie);
   app.register(
     async (api) => {
       // A matched route is answered under the API policy because it is registered
@@ -50,6 +80,9 @@ export function buildServer({
       api.addHook('onRequest', async (_request, reply) => {
         reply.header('cache-control', 'no-store');
       });
+      // Origin first, then the client instance: a refused request writes nothing.
+      api.addHook('onRequest', checkOrigin(own));
+      api.addHook('onRequest', clientInstanceHook);
       await api.register(healthRoutes);
       for (const routes of apiRoutes) await api.register(routes);
     },
