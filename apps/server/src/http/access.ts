@@ -66,17 +66,20 @@ function describe(options: RouteOptions): string {
  * Installs the startup refusals (ARCH-012 section 4). Call it on the root
  * instance before anything is registered, and call `.api()` first thing inside
  * the API context. A root `onRoute` hook sees every route in every descendant
- * context with its full path; the hook inside the context records the routes
- * that really sit under the API policy. A route in the first set and not the
- * second was registered on the root or in a sibling plugin and has neither the
+ * context with its full path; the hook inside the context records the
+ * registrations that really sit under the API policy. A registration in the
+ * first set and not the second was registered on the root or in a sibling plugin and has neither the
  * origin guard, `no-store` nor the session guard.
  *
  * Every refusal is a StartupError: `ready()` and `listen()` reject and the
  * process never listens. No flag disables any of them.
  */
 export function installAccessChecks(app: FastifyInstance): { api(api: FastifyInstance): void } {
-  const seenOnRoot = new Set<string>();
-  const seenInApi = new Set<string>();
+  // A registration is identified by its options object, which Fastify hands to
+  // every onRoute hook of that one registration. Method and path are only the
+  // diagnostic: two registrations may share both when their constraints differ.
+  const seenOnRoot: { options: RouteOptions; where: string }[] = [];
+  const seenInApi = new WeakSet<RouteOptions>();
 
   app.addHook('onRoute', (options) => {
     const where = describe(options);
@@ -103,14 +106,14 @@ export function installAccessChecks(app: FastifyInstance): { api(api: FastifyIns
         `route ${where} declares audience ${access.audience} but is not under ${SURFACE[access.audience]}`
       );
     }
-    seenOnRoot.add(where);
+    seenOnRoot.push({ options, where });
   });
 
   app.addHook('onReady', async () => {
-    const outside = [...seenOnRoot].filter((key) => !seenInApi.has(key));
-    if (outside.length > 0) {
+    const outside = seenOnRoot.filter(({ options }) => !seenInApi.has(options));
+    if (outside[0] !== undefined) {
       throw new StartupError(
-        `API route ${outside[0]} is registered outside the API context, ` +
+        `API route ${outside[0].where} is registered outside the API context, ` +
           `so it has no origin guard, no-store or session guard`
       );
     }
@@ -119,7 +122,7 @@ export function installAccessChecks(app: FastifyInstance): { api(api: FastifyIns
   return {
     api(api) {
       api.addHook('onRoute', (options) => {
-        seenInApi.add(describe(options));
+        seenInApi.add(options);
       });
     },
   };

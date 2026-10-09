@@ -107,6 +107,47 @@ describe('declaration and startup', () => {
     expect((beside as Error).message).toContain('GET /api/second');
   });
 
+  describe('4b. a constrained namesake is a different registration', () => {
+    const declared: FastifyPluginAsync = async (api) => {
+      api.get('/dup', { config: { access: { session: 'NONE' } } }, ok);
+    };
+    const config = { access: { session: 'NONE' } } as const;
+    const constraints = { version: '1.0.0' };
+
+    it('on the root instance beside a declared route in the context: refused', async () => {
+      const err = await refusal(build([declared]), (app) => {
+        app.get('/api/dup', { constraints, config }, ok);
+      });
+      expect(err).toBeInstanceOf(StartupError);
+      expect((err as Error).message).toContain('GET /api/dup');
+    });
+
+    it('in a sibling plugin under /api beside a declared route in the context: refused', async () => {
+      const err = await refusal(build([declared]), (app) => {
+        app.register(
+          async (second) => {
+            second.get('/dup', { constraints, config }, ok);
+          },
+          { prefix: '/api' }
+        );
+      });
+      expect(err).toBeInstanceOf(StartupError);
+      expect((err as Error).message).toContain('GET /api/dup');
+    });
+
+    it('a constrained registration inside the context still starts', async () => {
+      const err = await refusal(
+        build([
+          declared,
+          async (api) => {
+            api.get('/dup', { constraints, config }, ok);
+          },
+        ])
+      );
+      expect(err).toBeUndefined();
+    });
+  });
+
   it('5. a route outside /api that carries access is refused', async () => {
     const err = await refusal(build(), (app) => {
       app.get('/outside', { config: { access: { session: 'NONE' } } }, ok);

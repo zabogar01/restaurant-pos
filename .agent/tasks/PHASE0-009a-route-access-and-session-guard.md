@@ -1003,4 +1003,33 @@ and username (the consult's question 8, item 1; the lead's call for 009b).
 
 Committed on `agent/phase0-009a` after verify was green; the hash is in `git log`.
 
+### Round 2 (review's medium finding, lead rulings 9 to 12)
+
+**What changed.** `apps/server/src/http/access.ts` only, plus one new group in `access.test.ts`. Startup
+check 3 no longer identifies a registration by its method and path. The root `onRoute` hook now records
+each API registration's `routeOptions` object (with its method and path kept as the diagnostic), the
+hook inside the API context adds the object it receives to a `WeakSet`, and the `onReady` check refuses
+any recorded object the context never saw. The `StartupError` message still names the method and path.
+
+**What I observed about identity (ruling 9).** Both hooks receive the same object for one registration.
+Evidence: with identity as the key, case 7 (every route of the real server, where the context hook must
+have seen each) and case 8 (the generated `HEAD`, which is its own registration with its own options
+object) still pass unedited, and the new no-false-refusal test below starts a server with a constrained
+registration inside the context. Had the objects differed, every real route would have been refused at
+startup. No other identity was needed.
+
+**New tests (ruling 10), group "4b. a constrained namesake is a different registration"** in
+`access.test.ts`: a declared `GET /dup` inside the context plus a registration of the same method and
+path with `constraints: { version: '1.0.0' }` (a) on the root instance and (b) in a sibling plugin under
+`/api`: each makes `ready()` reject with a `StartupError` naming `GET /api/dup`; (c) the same constrained
+registration inside the context still starts. Case 8 is unedited.
+
+**Red proof (ruling 11).** I replaced the identity filter with a name-based one (a registration counts as
+inside the context if any registration of the same method and path was seen there). Cases 4b(a) and
+4b(b) failed (2 of 20); 4b(c) and everything else stayed green. Reverted by restoring a copy of the fixed
+file, then re-ran: 20 of 20.
+
+**Verify.** `npm run verify`: typecheck clean; `Test Files 61 passed (61)`, `Tests 3169 passed (3169)`
+(round 1 was 3166; three tests added, no file added). No other file or test changed in this round.
+
 DONE
