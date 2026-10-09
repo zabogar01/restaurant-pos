@@ -310,6 +310,28 @@ describe('at the parser boundary', () => {
     expect(destroyed).toBe(true);
   });
 
+  it('a stalled header block is timed out by Node itself: 408, no body, nothing echoed, connection closed', async () => {
+    const stalled = build();
+    // Node applies headersTimeout on a connectionsCheckingInterval read when the
+    // server starts listening. Both are shortened on this test's server only.
+    stalled.server.headersTimeout = 200;
+    (stalled.server as { connectionsCheckingInterval?: number }).connectionsCheckingInterval = 50;
+    await listenLoopback(stalled, { host: '127.0.0.1', port: 0 });
+    const stalledPort = stalled.addresses()[0]!.port;
+
+    // Never completes the header block, so only the timeout can end the request.
+    const res = await rawRequest(
+      stalledPort,
+      `GET /api/health?pin=MARK-TIMEOUT-7741 HTTP/1.1\r\nHost: ${TEST_HOST}\r\nX-Slow: yes\r\n`
+    );
+    expect(res.status).toBe(408);
+    expect(res.body).toBe('');
+    expect(res.head).toMatch(/Content-Length: 0\r\n/);
+    expect(res.head.toLowerCase()).toContain('connection: close');
+    expect(res.head).not.toContain('Client Timeout');
+    expect(res.head + res.body).not.toContain('MARK-TIMEOUT-7741');
+  });
+
   it('a request that arrives while the server is closing gets the UNAVAILABLE envelope, not Fastify\'s 503 body', async () => {
     const closing = build();
     await listenLoopback(closing, { host: '127.0.0.1', port: 0 });

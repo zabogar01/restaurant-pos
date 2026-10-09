@@ -458,8 +458,9 @@ refused and creates no row`, `10. POST with the exact origin passes`, and the `S
 Host %j on %s is refused ...` (seven Host values across five paths, including `/nope` and `/`) and `11. the
 exact Host passes ...`. The `at the parser boundary` block holds the ruling 5 tests.
 
-Not tested: a real 408 from a stalled client (the default `requestTimeout` is 300 seconds); the handler is
-called directly with a fake socket instead.
+Correction (Round 2): the original claim here, that a real 408 was not tested because the default
+`requestTimeout` is 300 seconds, was wrong on two counts. Fastify sets `requestTimeout` to 0, and the timer
+that fires for a stalled header block is `headersTimeout`. A raw-TLS test for it now exists (see Round 2).
 
 ### Red proofs (each run, read, reverted)
 
@@ -522,5 +523,36 @@ it neither grants nor refuses anything by comparing ids. No handler reads the co
   configuration file; no `DELETE` in a seeder.
 - Test authors: use `inject(app, ...)` from `test/support/request.ts`, never `app.inject` directly, or the
   Host check refuses the request.
+
+## Round 2
+
+Rulings 8 to 10, from review finding 1.
+
+- **Which timeout fires (ruling 10).** Fastify's `requestTimeout` option defaults to 0 (`fastify.js` uses
+  `options.requestTimeout || defaultInitOptions.requestTimeout`, which is 0), so Node's 300-second default is
+  overwritten and the request timeout is off. For a client that sends a partial header block and stalls, the
+  timer that ends it is Node's `headersTimeout`, which Fastify does not touch: 60,000 ms in production (read
+  from a bare `http.createServer()` on the installed Node v26.10.0), checked every
+  `connectionsCheckingInterval`, 30,000 ms. Node reports it as `ERR_HTTP_REQUEST_TIMEOUT`, which
+  `clientErrorHandler` answers with 408. In the test the values are 200 ms and 50 ms.
+- **New test (ruling 8):** `origin.test.ts`, `a stalled header block is timed out by Node itself: 408, no
+  body, nothing echoed, connection closed`. It opens a raw TLS connection to a listening server, sends an
+  incomplete header block (with `?pin=MARK-TIMEOUT-7741` in the target) and never finishes it, and lets Node
+  time it out. It asserts status 408, an empty body, `Content-Length: 0`, `Connection: close`, that
+  Fastify's `Client Timeout` text is absent, that the marker is absent from the response, and, because the
+  helper resolves only on socket close, that the connection closed.
+- **No new `buildServer` option was needed.** Node reads `connectionsCheckingInterval` when the server starts
+  listening, not at construction, so the test sets `headersTimeout` and `connectionsCheckingInterval` on
+  `app.server` after `buildServer` and before `listenLoopback`, on its own instance only. Production code is
+  unchanged. `@types/node` does not declare `connectionsCheckingInterval`, so the test casts for that one
+  property.
+- **The direct-call test is kept.** It still covers the `socket.writable`/`destroyed` handling with a fake
+  socket and is cheap; the raw test is now the proof of the response itself.
+- **Red proof (ruling 9):** with `clientErrorHandler` removed from the server options, the new test fails with
+  `expected '{"error":"Request Timeout","message":"Client Timeout","statusCode":408}' to be ''`, Fastify's
+  default body. Reverted.
+- **Verification:** `npm run verify` after the revert: typecheck clean; `Test Files 58 passed (58)`, `Tests
+  3095 passed (3095)`, one more than Round 1 (3094) and +90 over the 3005 baseline. `origin.test.ts` alone: 75
+  passed.
 
 DONE
