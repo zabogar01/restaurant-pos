@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-008b]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: active
+status: review
 cycles: 0
 ---
 # PHASE0-009a — Route access declarations and the session guard
@@ -824,6 +824,11 @@ breaks rule 2 and ARCH-012 section 4, check 3.
 11. **Red proof:** restore the method-and-path key; case 4b fails. Revert.
 12. Nothing else changes in this round. Append a *Round 2* section to the Handoff with the new counts;
     the last line stays DONE or BLOCKED.
+
+13. **Lead check of round 2 (2026-10-09).** The fix is `access.ts` only, as ruled. The lead re-ran the
+    reviewer's probe (a constrained `GET /api/pos/auth/me` declared `ACTIVE` on the root instance) against
+    `9c59a84`: `ready()` now rejects with `StartupError: API route GET /api/pos/auth/me is registered outside
+    the API context`. Sent back to the same reviewer for a focused re-review of round 2.
 
 ## Handoff
 
