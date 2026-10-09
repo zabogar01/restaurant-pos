@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-09: PRs #74-76 merged, `development` at `3e46f7b`: ARCH-012 and the receipt proposal. Explorer and
-librarian on Claude Haiku 5.5 first: `agent/lead-1009` (`7891275`), PR #77. Nothing is running. Narrative: [journal/2026-10-09.md](journal/2026-10-09.md).
+2026-10-09: PRs #74-77 merged, `development` at `ca33123` (ARCH-012, receipt proposal, explorer and
+librarian on Claude Haiku 5.5 first). **PHASE0-009a complete** (`c6286b9`, 61/3169, review clean after round 2), PR #78; owner's look. Narrative: [journal/2026-10-09.md](journal/2026-10-09.md).
 
 ## Phase and gates
 
@@ -27,7 +27,7 @@ librarian on Claude Haiku 5.5 first: `agent/lead-1009` (`7891275`), PR #77. Noth
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
 - **Last verify by the lead:** `npm run verify` green at **3095 tests / 58 files** on 2026-10-09 on
-  `development` at `dfc96c3`, main checkout, after `npm ci`. Server tests need `npm run db:up` and
+  `development` at `3e46f7b`, main checkout, after `npm ci`. Server tests need `npm run db:up` and
   **`openssl` on `PATH`**. The dev database `pos` holds 0001-0007. Local certificate made (`npm run
   cert`, `~/.config/restaurant-pos/tls/`); the server is `npm run dev -w apps/server` on `:8443`.
 
@@ -40,10 +40,9 @@ librarian on Claude Haiku 5.5 first: `agent/lead-1009` (`7891275`), PR #77. Noth
   fast-forward the main checkout (`git merge --ff-only origin/development`) **before reporting or
   dispatching**, then `npm ci` if the lockfile changed, and `npm run db:migrate` if a migration landed.
 - **Guard hooks** in the shared `.git/hooks` with an `agents.yaml` snapshot, current (reinstalled
-  2026-10-09 with this branch's agents.yaml). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1009`** (from `dfc96c3`): PR #76 merged; PR #77 adds
-  the explorer/librarian routing. Before #76: STATE, QUEUE, AGENTS.md, the 2026-10-09 journal, the receipt research and ARCH-012's task and report.
-  **This branch's STATE is the current one** until it merges (the main checkout's copy lags).
+  2026-10-09; matches `development` at `ca33123`). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1009b`** (from `ca33123`), PR #79;
+  `agent/lead-1009` is merged (PRs #76, #77). **This branch's STATE is the current one** until it merges.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations`. Merged, still existing: `agent/design-direction` (worktree
@@ -52,12 +51,14 @@ librarian on Claude Haiku 5.5 first: `agent/lead-1009` (`7891275`), PR #77. Noth
 
 ## Running tasks and agents
 
-- **Nothing is running.** No task worktree under `../restaurant-pos-wt/`; `.agent/runs/` is empty.
-- **Live agents:** the lead only. Not the lead's: `.claude/worktrees/keen-chebyshev-ccf255`.
+- **PHASE0-009a complete** at `c6286b9` on `agent/phase0-009a` (`../restaurant-pos-wt/PHASE0-009a`), PR #78. Lead
+  verify **61 / 3169**; Codex review's one medium (startup check keyed by method+path) fixed in round 2, re-review
+  clean. Owner's look before merge (identity, boundaries). Detail: task file, lead rulings 9-14.
+- **Live agents:** the lead only. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 - **ARCH-012 done** (report `.agent/reviews/ARCH-012-auth-routes.md`; summary in the journal): Task 9
   splits into **009a** (route declaration, guard, session routes) and **009b** (credential routes).
-- **PHASE0-009a: next, not written**, from ARCH-012 *For the task file*; not blocked by the owner's
-  items. `zod` is not installed. Task 10 needs its own consult (ARCH-007 §7).
+- **PHASE0-009b: next, not written**, from 009a's Handoff *For 009b* (zod 4 is 009b's; name/username on `SessionView` is the
+  lead's call there). 009a's lead ruling 2 added probe-route declarations ARCH-012 missed. Task 10 needs its own consult (ARCH-007 §7).
 - **Carry-forwards for Tasks 9 to 12:** Handoffs of PHASE0-005 to 008b; ARCH-011's Handoff lists plan
   lines in Tasks 9 to 12 not to copy; ARCH-012 §*The Handoffs must carry forward*, and its *For the
   lead* item 4 (client CSRF handling, idle countdown) for Task 11's consult.
@@ -145,5 +146,4 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Owner: merge PR #77. Write PHASE0-009a from
-ARCH-012 *For the task file*, dry-run and dispatch on the owner's go. The owner's ARCH-012 and receipt answers.
+Owner: look at and merge PR #78 (009a), and PR #79 (this record). Lead: write PHASE0-009b (decide name/username on `SessionView`). The owner's ARCH-012 and receipt answers.
