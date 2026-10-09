@@ -562,6 +562,8 @@ These rulings are addressed to the builder.
 - `apps/server/test/session-scan.test.ts`: case 23 gains the credential markers (case 27); additions only.
 - `apps/server/test/error-details.types.ts`: the two new blocks (lead ruling 5); additions only.
 - `apps/server/test/support/client.ts`: additions (lead ruling 8).
+- `apps/server/test/access.test.ts` case 8 and `session-scan.test.ts` `makeUser`: a back-office credential for
+  manager fixtures only (lead ruling 12).
 - Any other change to an existing test: stop and raise it.
 
 ## Acceptance criteria
@@ -586,4 +588,90 @@ These rulings are addressed to the builder.
 - Client shells, any bundle, the browser harness (Tasks 11, 12).
 - Any migration. `docs/` of any kind, including ADR-011.
 
+12. **Lead ruling on the builder's BLOCKED (2026-10-09), addressed to the builder.** Approved as proposed.
+    A back-office session can only be issued through a password sign-in, so every manager who holds one
+    has a `back_office_credential` row; 009a's two fixtures that mint one without it describe a state
+    production cannot reach. Ruling 2 stands: a missing username on a back-office response is a 500.
+    You may change exactly two fixtures, and nothing else in those files: in `access.test.ts` case 8,
+    create a back-office credential for the `Head` manager right after `createStaffUser` (and import
+    `createBackOfficeCredential`); in `session-scan.test.ts`, `makeUser` creates a credential when the
+    role is `MANAGER` (and the same import). No assertion, request or other line changes. Then run
+    `npm run verify` once, on its own (no parallel runs against the test database), and commit.
+
 ## Handoff
+
+**Status: built, not committed. BLOCKED on two existing tests the task did not let me change.**
+
+### What I did (uncommitted in the worktree on `agent/phase0-009b`)
+
+- `packages/contracts`: `zod@^4.6.5` added as a dependency of `@pos/contracts` only (`package.json`, root `package-lock.json`). New `src/auth.ts` holds the three strict schemas exactly as the consult gives them. `errors.ts` gains `INVALID_CREDENTIALS` and `THROTTLED` with `{ retryAfterSeconds: number }` details. `session.ts` gains `name` on `SessionView` and a `BackOfficeSessionView` that adds `username`.
+- `apps/server/src/domain/staff.ts` (new): `readStaffIdentity(id)`, one SELECT of `staff_user.name` and `back_office_credential.username` by id, no clock, a fixed-message error with no cause. A missing row returns null and the routes turn that into 500.
+- `apps/server/src/http/validate.ts` (new): `parseBody`, the one `safeParse` helper. It drops the result and throws `AppError(VALIDATION_FAILED, 400)` with no details. It takes a structural `Parser<T>` type so the server does not import zod.
+- `apps/server/src/http/verification.ts` (new): `verifiedUser`, the one mapping from `ThrottledVerification` to the user or to `INVALID_CREDENTIALS` (details only when the domain supplied `retryAfterSeconds`) or `THROTTLED`.
+- `apps/server/src/http/session-guard.ts`: `signIn` (release the presented session, create, set the cookie), `presentedForRenewal` (M-6 steps 2 and 3), `renewableAccount` (step 5), `renewSession` (step 7, never falls through to a new session). The audience comes from `request.routeOptions.config.access`. The cookie name stays only in this file.
+- Routes: `POST /pos/auth/login`, `POST /back-office/auth/login`, `POST /back-office/auth/reauthenticate`; both `me` routes now return `name` (and `username` at the back office).
+- Tests: `test/pos-sign-in.test.ts`, `test/back-office-sign-in.test.ts`, `test/reauthenticate.test.ts`, and a shared fixture file `test/support/people.ts` (users made through `createStaffUser` and `createBackOfficeCredential`; limits imported from the domain constants). Existing tests changed as the task listed: `access.test.ts` case 7 (three routes), `session-guard.test.ts` case 9 (`name`, `username`), `session-scan.test.ts` (markers and requests for case 27, additions only), `error-details.types.ts` (two blocks, additions only), `test/support/client.ts` (`signInPos`, `signInBackOffice`, `reauthenticate`).
+
+### Decisions
+
+- The staff identity is read after `VERIFIED` and **before** the session is created, so a missing row is a 500 that leaves no orphan session. The task says "after VERIFIED"; this still satisfies it.
+- A back-office route treats a manager with no `back_office_credential` row as a fault (500), per lead ruling 2 ("never a partial body"). This is what triggers the block below.
+- zod: I asked the librarian for the current zod 4 API (`strictObject`, `string().regex/min/max`, `safeParse` result, behaviour on non-string input, packaging, latest version). Answer: 4.6.5; `strictObject` rejects unknown keys; a non-string fails with one `invalid_type` issue and does not throw; ESM-first with its own types. I confirmed the behaviour in tests (the number `123456` is refused). A trailing-newline PIN is refused because JavaScript `$` without the `m` flag does not match before a final newline.
+
+### BLOCKED: two existing tests fail, and I may not change them
+
+Both build a **manager with a back-office session but no `back_office_credential` row**, then call `GET /api/back-office/auth/me`, which now needs the stored username (lead ruling 2) and answers 500.
+
+1. `apps/server/test/access.test.ts`, case 8 (`a generated HEAD route carries…`), lines 234 to 241: `createStaffUser({ name: 'Head', role: 'MANAGER', pin: '123456' })`, then `createSession`, then a HEAD on `/api/back-office/auth/me` expecting 200.
+2. `apps/server/test/session-scan.test.ts`, case 27 (`one client with a POS and a back-office session…`), `profile(...)` at lines about 266 to 272: `makeUser('MANAGER')` creates a staff user with no credential, and the test then expects 200 from `/api/back-office/auth/me`.
+
+The task lists neither for change (access.test.ts only case 7; session-scan.test.ts only case 23 additions). No other test fails: the server project is 490 passed, 2 failed (492), and these are the two.
+
+**Proposed resolution (recommended):** give each fixture manager a login, as real managers always have one.
+- `access.test.ts` after line 234 (`const user = await createStaffUser(...)`): add `await createBackOfficeCredential({ staffUserId: user.id, username: 'head-manager', password: 'head has a long password' });` and import `createBackOfficeCredential` from `../src/domain/back-office-credential.js`.
+- `session-scan.test.ts`, in `makeUser`, when `role === 'MANAGER'`: add `await createBackOfficeCredential({ staffUserId: id, username: \`scan-manager-${counter}\`, password: \`scan long password ${counter}\` });` and the same import.
+
+The alternative, having the back-office `me` omit `username` when there is no credential row, would break ruling 2 and the "no partial body" rule, so I did not do it. Once the lead approves the fixture change (or rules otherwise), the remaining work is: apply it, run `npm run verify`, commit with path-scoped `git add`, and notify the lead.
+
+### Red proofs (all reverted; `git diff` of `apps/server/src` and `packages/contracts/src` was read afterwards and holds no mutation)
+
+My API connection dropped (the machine slept) during proof 6; the mutation was left in `back-office-auth.ts` and I restored it, checked `git diff`, and then did proofs 7 to 9. Completed **before** the drop: 1 to 5 and 6 (6 had run and failed 7 of 7 tests; the revert was what the drop interrupted).
+
+1. Schema bypassed (`request.body as { pin }`): 12 tests fail, cases 4, 7 and 10 (the malformed PINs get 401, 429 or 500 instead of 400).
+2. Presented session released before verification: case 8 fails (`released_at` is not null after a wrong PIN).
+3. M-6 account from a body `username` (schema loosened and route reading it): case 20 fails (`expected 401 to be 400`).
+4. `createSession` in place of `reauthenticateSession`: cases 18, 23 and 25b fail (a second session row exists).
+5. Verification moved before the resolution: case 21 fails twice (released session and past eight hours answer `INVALID_CREDENTIALS`, not `UNAUTHENTICATED`).
+6. Back-office route given `verifyPinThrottled`: all 7 tests of `back-office-sign-in.test.ts` fail, including 13, 14 and 15.
+7. `sameSite: 'lax'`: case 1 fails (`SameSite=Lax`). Then `maxAge: 3600` added: case 1 fails (`Max-Age=3600`).
+8. A distinct code (404) for one unknown username: case 13 fails (`Set {404, 401}` against `Set {401}`).
+9. The parse error passed as details to `AppError(VALIDATION_FAILED, 400, error)`: **does not compile** (`TS2554: Expected 2 arguments, but got 3`), as it must.
+
+### Case to test map
+
+1 `1. a correct PIN: 200 SessionView, the exact cookie…`; 2 `2. a wrong PIN…`; 3 `3. a deactivated user's PIN…`; 4 `4. a PIN that is not six ASCII digits…` (nine `it.each` rows plus the missing-field and extra-key test); 5 `5. AC-19: five wrong PINs…`; 6 `6. AC-19: failures planted in MANAGER_APPROVAL…`; 7 `7. a malformed PIN during a cooldown…`; 8 `8. …already holds a session` (two tests); 9 `9. a cookie the server never issued…`; 10 `10. a cross-site Origin…`; 11 `11. ten wrong PINs…` (all in `pos-sign-in.test.ts`).
+12 to 17 in `back-office-sign-in.test.ts`, each title starting with its number (17 has two tests).
+18 to 26 in `reauthenticate.test.ts` (21 has four tests; 25b is an extra for the step 7 `null` path, made by releasing the row between the resolution and the renewal; a last test checks the CSRF token follows the renewed cookie).
+27: `session-scan.test.ts` case 23 gained nine markers (PIN well formed, malformed and in the query string; username, long and extra-key; password, malformed and renewal) sent through all three routes. 28: the whole-body assertions are in cases 5, 15 and 19/24 (key lists at every level).
+
+### Existing tests changed, and why
+
+Only those the task listed (see above). I changed none beyond them; the two failing ones are untouched.
+
+### Found and not fixed
+
+- **The full `npm run verify` did not complete cleanly here.** Run on its own, the client project is 40 files, 2719 tests, all passing; the server project is 24 files, 490 passed and 2 failed (the two above). The combined run twice stalled for 600 seconds or more on the **client** tests (`menu-region`, `off-actions`, `menu-categories`), which pass in 1 second on their own, and once on `back-office-credential.test.ts` case 24, which passes alone in 11 seconds and in the full server project. The clock jumped from 18:26 to 20:44 in this session, so the machine slept; I think the stalls are from that, but I did not prove it. I ran a few runs in parallel by mistake against the one test database; treat any hang that includes those runs as mine. The lead should rerun `npm run verify` once on an idle machine.
+- Baseline comparison (61 files, 3169 tests): I cannot give a clean combined count. The pieces are server 24 files and 492 tests, client 40 files and 2719 tests; the baseline's remaining files (money, tokens and the like) I did not run separately.
+- The three new files alone: 3 files, 42 tests, green on three consecutive runs.
+- The four required greps: `verifyPasswordThrottled` in `pos-auth.ts`: nothing. `verifyPinThrottled` in `back-office-auth.ts`: nothing. `reportInput` in `apps packages --include="*.ts" --exclude-dir=node_modules`: nothing. `rpos_pos_sid|rpos_bo_sid` in `apps/server/src`: only `session-guard.ts` lines 37 and 38. `reply\.code\((4|5)` in `src/http/routes`: nothing.
+- No formatter was run. No browser was involved.
+
+### Carried forward
+
+- **For Task 10:** an approval route is `ACTIVE`, `POS`, interactive, and takes its actor from `actorOf(request)`; the approver is a PIN in that request's body, never a session of either audience; the approval codes and the cooldown-refused audit outcome are that consult's. This task writes no audit entry and no security event itself (B-13); no session satisfies an approval and nothing on the request or the instance carries one to the next request (B-14).
+- **For Task 11:** the sign-in, `me` and re-authentication responses carry `name` (and `username` at the back office); the client calls `activity` only on real input; a 401 `INVALID_CREDENTIALS` may carry `retryAfterSeconds` on a fifth failure, so the screen can show a cooldown without a second request; clients switch on the code, never the status (three codes share 401); `SESSION_IDLE` at the POS leads to POS-01, at the back office to M-6; after a reload M-6 is impossible and Login releases the idle session. A back-office login with the jar's idle session releases it only on success.
+- **For Task 12:** the two harness shapes (two clients, or one profile with both surfaces); `baseURL` on `localhost`; mutating calls made by the page.
+- AC-19, AC-27, AC-28 and AC-35 close only as far as the consult's question 10 table says: AC-19 for the `LOGIN` class (not `MANAGER_APPROVAL` through a route); AC-27 first sentence; AC-28 at the API; AC-35 server side.
+- What Tasks 10 and 11 need and do not have: Task 10 has nothing new to wait for here. Task 11 has the two session views and the codes, but not the exact copy for each code (the client's to write).
+
+BLOCKED: may I add a back-office credential to the manager fixtures in `access.test.ts` case 8 and in `session-scan.test.ts` (`makeUser`) so `GET /api/back-office/auth/me` can return the stored username, as proposed above?
