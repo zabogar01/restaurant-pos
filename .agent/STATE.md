@@ -9,9 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-09 (wrap-up): PHASE0-008b and the lead's record merged (PRs #74, #75); `development` at
-`dfc96c3`. ARCH-012 (the Task 9 consult) done; receipt research steps 1-2 and a proposal written.
-Nothing is running. The lead's record is committed and pushed on `agent/lead-1009`; no PR yet. Narrative: [journal/2026-10-09.md](journal/2026-10-09.md).
+2026-10-09: PRs #74, #75 merged, `development` at `dfc96c3`. ARCH-012 and the receipt proposal done; explorer
+and librarian on Claude Haiku 5.5 first. All on `agent/lead-1009`, PR #76. Nothing is running. Narrative: [journal/2026-10-09.md](journal/2026-10-09.md).
 
 ## Phase and gates
 
@@ -40,10 +39,10 @@ Nothing is running. The lead's record is committed and pushed on `agent/lead-100
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch` and
   fast-forward the main checkout (`git merge --ff-only origin/development`) **before reporting or
   dispatching**, then `npm ci` if the lockfile changed, and `npm run db:migrate` if a migration landed.
-- **Guard hooks** in the shared `.git/hooks` with an `agents.yaml` snapshot, current (checked
-  2026-10-08; unchanged since). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1009`** (from `dfc96c3`), pushed, no PR: STATE,
-  QUEUE, AGENTS.md, the 2026-10-09 journal, the receipt research and ARCH-012's task and report.
+- **Guard hooks** in the shared `.git/hooks` with an `agents.yaml` snapshot, current (reinstalled
+  2026-10-09 with this branch's agents.yaml). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1009`** (from `dfc96c3`), pushed, PR #76: STATE,
+  QUEUE, AGENTS.md, the explorer/librarian routing, the 2026-10-09 journal, the receipt research and ARCH-012's task and report.
   **This branch's STATE is the current one** until it merges (the main checkout's copy lags).
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
@@ -54,7 +53,7 @@ Nothing is running. The lead's record is committed and pushed on `agent/lead-100
 ## Running tasks and agents
 
 - **Nothing is running.** No task worktree under `../restaurant-pos-wt/`; `.agent/runs/` is empty.
-- **Live agents:** the lead only. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Live agents:** the lead only. Not the lead's: `.claude/worktrees/keen-chebyshev-ccf255`.
 - **ARCH-012 done** (report `.agent/reviews/ARCH-012-auth-routes.md`; summary in the journal): Task 9
   splits into **009a** (route declaration, guard, session routes) and **009b** (credential routes).
 - **PHASE0-009a: next, not written**, from ARCH-012 *For the task file*; not blocked by the owner's
@@ -88,6 +87,8 @@ Nothing is running. The lead's record is committed and pushed on `agent/lead-100
   then journal 2026-10-01's launch line as `architect<N>`, then `herdr agent prompt`; close when done.
 - **Designers are opened by hand** (journal 2026-10-06, *Designer how-to*); a fresh worktree needs
   `npm ci`; write `.agent/runs/<ID>/builder/meta.json` (`cli: codex`) in the main checkout before review.
+- **`ask.sh`** runs Claude Haiku 5.5 first, Codex luna on failure (luna once answered unread and wrong). Inside a
+  Codex sandbox both routes fail, as before: Codex reviewers have no librarian (owner: later, if it bites).
 - **Browser checks:** the Chrome extension cannot pass the cert page and its navigations get `ORIGIN_REFUSED`.
 - **Real-terminal checks are the lead's** (builders have no TTY): drive a Herdr pane with `send-text`
   and literal control bytes, waiting for each prompt (LESSONS); run servers on `pos`, scripts on `pos_test`.
@@ -144,5 +145,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Open a PR for `agent/lead-1009` on the owner's word. Write PHASE0-009a from
+Owner: merge PR #76. Write PHASE0-009a from
 ARCH-012 *For the task file*, dry-run and dispatch on the owner's go. The owner's ARCH-012 and receipt answers.

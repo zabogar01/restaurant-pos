@@ -22,7 +22,7 @@ table is the summary; agents.yaml wins where they differ.
 | **Designer** | Codex `gpt-6-astra` (high effort), interactive, on demand | `docs/design/`, `docs/DESIGN.md` |
 | **Builder** | Claude Sonnet one-shot, own worktree, at most one at a time. Profiles `economy` / `heavy` on OpenCode | Source, tests, root build files, its task's Handoff |
 | **Reviewer** | One-shot, always the other model family from the builder | `reviews/<ID>-review.md` only |
-| **Explorer / librarian** | Codex `gpt-6-luna` read-only via `bin/ask.sh`; Claude subagents as fallback | Nothing; they return a summary |
+| **Explorer / librarian** | Claude Haiku 5.5 subagents via `bin/ask.sh` (owner, 2026-10-09); Codex `gpt-6-luna` read-only as fallback | Nothing; they return a summary |
 
 Panes are named after the role or the task (`lead`, `FE-029`), never
 referred to by pane ID in documents: IDs are not reused and go stale.
