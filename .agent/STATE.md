@@ -9,17 +9,16 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-08 (wrap-up): the owner merged PHASE0-008a (PR #71), ADR-010 (PR #72) and the lead's record
-(PR #73); `development` at `4a69826`. The lead fast-forwarded, ran `npm ci`, verified, removed both
-worktrees and the run directory, and cut `agent/lead-1008c` for this wrap-up. Nothing is running.
-Narrative: [journal/2026-10-08.md](journal/2026-10-08.md).
+2026-10-09: PHASE0-008b complete at `038db53` (browser check made with the owner), not pushed; waits
+on the owner's look. Receipt research step 1 written. `development` still at `4a69826`. Nothing is
+running. Narrative: [journal/2026-10-08.md](journal/2026-10-08.md).
 
 ## Phase and gates
 
 - **Phase 0**, started 2026-09-14. Done: tasks 1 to 7, plus 006b, 007b (back-office credential,
   `0007`, `create-manager`) and **008a** (HTTPS process: TLS, loopback guard, safe logging, error
-  envelope, health, `@pos/contracts`). Left: **008b**, then Tasks 9 to 12 (auth routes, approval,
-  client shells, acceptance tests). No route beyond `GET /api/health` yet.
+  envelope, health, `@pos/contracts`); **008b complete, unmerged**. Left: Tasks 9 to 12 (auth routes,
+  approval, client shells, acceptance tests). No route beyond `GET /api/health` yet.
 - **Architecture:** nine accepted ADRs (001-007, 009, 010); ADR-008 stays reserved (deferred).
   **ADR-010, the HTTP boundary**, accepted 2026-10-08 with ARCHITECTURE §3.1/3.2/7.2/11/12/13/16/18.
 - **Frontend built** (fixtures plus a client order store): POS-01 to POS-07, every designed POS
@@ -52,12 +51,12 @@ Narrative: [journal/2026-10-08.md](journal/2026-10-08.md).
 
 ## Running tasks and agents
 
-- **Nothing is running.** No task worktree under `../restaurant-pos-wt/`; `.agent/runs/` is empty.
+- **PHASE0-008b complete** at `038db53` on `agent/phase0-008b` (`../restaurant-pos-wt/PHASE0-008b`),
+  not pushed: lead verify 58/3095; Codex review's one medium closed in round 2 (test-only); Chrome and
+  Safari store and return `rpos_cid` (task file, *Lead acceptance*). Owner's look before merge; the
+  builder's three choices to overturn are in its Handoff (absolute form 400, Host envelope, hook 500).
+- **Receipt research** (PRD §9 q1, `reviews/RESEARCH-receipt.md`): step 1 done; step 2 (Jakarta practice) next.
 - **Live agents:** the lead only. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
-- **PHASE0-008b drafted, untracked** in the kit's `.agent/tasks/` (Host/origin guard, `rpos_cid`, from
-  ARCH-010 verbatim; lead ruling 5 adds the absolute-form 404 and ADR-010's two framework bodies). Before
-  dispatch: recheck inputs and *Tests expected to change* against 008a as merged; AC 1 baseline 56/3005.
-  Acceptance includes the lead's Chrome and Safari check that `rpos_cid` is stored and returned.
 - **Beside 008b: ARCH-012, the Task 9 consult** (session cookies, CSRF incl. login, route declarations,
   auth codes); scope in ARCH-010 §10 and ARCH-011's Handoff. Task 10 needs a consult adding an audit
   outcome for a cooldown-refused approval (ARCH-007 §7).
@@ -126,8 +125,8 @@ Nothing here is decided. Detail is where each line points.
 - **PRD wording owed, not drafted:** report-print failure placement; void `REFUSED` and abandoned
   approval (FR-J3, AC-18) and empty-order cancel unaudited (FR-H3, AC-10), wording in DESIGN-014's
   Handoff; cooldown-refused approval; §9 questions 2 and 3; reactivation keeps the PIN (FR-B3).
-- **PRD §9 question 1, receipt content:** the owner asked the lead to research the usual content of an
-  Indonesian F&B receipt and propose it. Not started; a librarian task, one step at a time.
+- **Service charge, latent:** rate 0 for now, adjustable (DECISIONS 2026-10-09). Before a non-zero rate,
+  rule on DKI Pergub 35/2024 Pasal 8 (taxes it) against PRD §4 (not taxed); the lead drafts wording.
 - **Kit:** builder `Bash(grep:*)`? dispatcher ping on `BLOCKED ON APPROVAL`? `/lead` fetch first? builders'
   `python3`/`sed`? dispatcher support for hand-opened designers/architects and a reviewer CLI override?
 - **Pre-production gate, owner-accepted risks:** the same-class PIN reset (2026-10-07), username discovery
@@ -145,5 +144,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Recheck PHASE0-008b's task file against 008a as merged, then dry-run and dispatch it. Beside it,
-write and start ARCH-012 (the Task 9 consult) for a hand-opened Opus architect.
+Owner: look at and merge PHASE0-008b (push on the owner's word). Lead: write and start ARCH-012 (the
+Task 9 consult). Receipt research step 2: common Jakarta F&B receipt content, via the librarian.

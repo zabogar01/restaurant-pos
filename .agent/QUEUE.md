@@ -94,8 +94,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: ARCH-009, ADR-009 accepted 2026-10-08, merged as PR #66.)*
     - *(Done: ARCH-010, the Task 8 consult, 2026-10-08, merged with PR #73.)*
     - *(Done: PHASE0-008a, the HTTPS process, merged 2026-10-08 as PR #71.)*
-    - **PHASE0-008b** — Host and origin guard, client-instance cookie, plus 008a's absolute-form
-      finding and ADR-010's two framework bodies — drafted, untracked in the kit — next.
+    - *(Done: PHASE0-008b, Host and origin guard and `rpos_cid`, complete 2026-10-09 at `038db53`;
+      waits on the owner's look and merge.)*
     - *(Done: ARCH-011, ADR-010 accepted 2026-10-08, merged as PR #72.)*
     - **ARCH-012, the Task 9 consult** — session cookies, CSRF, route declarations, auth codes (ARCH-010
       §10, ARCH-011 Handoff) — beside 008b — not written.
