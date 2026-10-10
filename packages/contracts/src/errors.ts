@@ -14,17 +14,22 @@ export const ErrorCode = {
   SESSION_IDLE: 'SESSION_IDLE',
   FORBIDDEN: 'FORBIDDEN',
   CSRF_REFUSED: 'CSRF_REFUSED',
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+  THROTTLED: 'THROTTLED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 /**
- * The details a code carries, by code. None of the eleven codes that exist declares
- * any, so a details argument for one does not compile. A code that carries
- * details declares its fields here, as numbers, enums or ids the server chose:
- * never a string taken from an exception.
+ * The details a code carries, by code. Only the two below declare any; for the other
+ * eleven a details argument does not compile. A code that carries details declares
+ * its fields here, as numbers, enums or ids the server chose: never a string taken
+ * from an exception. `retryAfterSeconds` is a number PostgreSQL computed.
  */
-export interface ErrorDetailsByCode {}
+export interface ErrorDetailsByCode {
+  INVALID_CREDENTIALS: { retryAfterSeconds: number };
+  THROTTLED: { retryAfterSeconds: number };
+}
 
 /** The details type of one code, or `never` when the code declares none. */
 export type ErrorDetailsOf<C extends ErrorCode> = C extends keyof ErrorDetailsByCode

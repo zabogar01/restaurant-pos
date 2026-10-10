@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { closePool } from '../src/db/pool.js';
+import { createBackOfficeCredential } from '../src/domain/back-office-credential.js';
 import { createStaffUser, findUserByPin } from '../src/domain/pin.js';
 import { createSession } from '../src/domain/session.js';
 import type { RouteAccess } from '../src/http/access.js';
@@ -215,6 +216,9 @@ describe('what the real server declares', () => {
         'GET /api/health {"session":"NONE"}',
         'POST /api/pos/auth/release {"session":"OPTIONAL","audience":"POS"}',
         'POST /api/back-office/auth/logout {"session":"OPTIONAL","audience":"BACK_OFFICE"}',
+        'POST /api/pos/auth/login {"session":"OPTIONAL","audience":"POS"}',
+        'POST /api/back-office/auth/login {"session":"OPTIONAL","audience":"BACK_OFFICE"}',
+        'POST /api/back-office/auth/reauthenticate {"session":"OPTIONAL","audience":"BACK_OFFICE"}',
       ].sort()
     );
   });
@@ -232,6 +236,11 @@ describe('what the real server declares', () => {
     await app.ready();
     try {
       const user = await createStaffUser({ name: 'Head', role: 'MANAGER', pin: '123456' });
+      await createBackOfficeCredential({
+        staffUserId: user.id,
+        username: 'head-manager',
+        password: 'head has a long password',
+      });
       const found = await findUserByPin('123456');
       const issued = await createSession({
         audience: 'BACK_OFFICE',

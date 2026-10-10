@@ -1,5 +1,8 @@
 {
   "name": "@pos/contracts",
   "type": "module",
-  "main": "src/index.ts"
+  "main": "src/index.ts",
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
 }

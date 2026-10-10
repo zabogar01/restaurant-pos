@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance, InjectOptions } from 'fastify';
 import { ErrorCode } from '@pos/contracts';
 import { closePool } from '../src/db/pool.js';
+import { createBackOfficeCredential } from '../src/domain/back-office-credential.js';
 import { createStaffUser, findUserByPin } from '../src/domain/pin.js';
 import { createSession } from '../src/domain/session.js';
 import type { Audience, VerifiedUser } from '../src/domain/session.js';
@@ -32,6 +33,13 @@ async function makeUser(role: 'CASHIER' | 'MANAGER'): Promise<VerifiedUser> {
   counter += 1;
   const pin = String(500000 + counter);
   const { id } = await createStaffUser({ name: `Scan ${counter}`, role, pin });
+  if (role === 'MANAGER') {
+    await createBackOfficeCredential({
+      staffUserId: id,
+      username: `scan-manager-${counter}`,
+      password: `scan long password ${counter}`,
+    });
+  }
   const found = await findUserByPin(pin);
   return { id, credentialVersion: found!.credentialVersion };
 }
@@ -43,6 +51,16 @@ async function session(audience: Audience, user: VerifiedUser) {
 const MARK = {
   badCsrf: 'MARK-BAD-CSRF-HEADER-5521',
   badCookie: 'MARK-BAD-SESSION-COOKIE-6632',
+  // 009b: a PIN, a username and a password through each credential route.
+  pinWellFormed: '918273',
+  pinMalformed: 'MARK-PIN-MALFORMED-7741',
+  pinQuery: 'MARK-PIN-QUERY-5509',
+  username: 'mark-username-8852',
+  usernameLong: `MARK-USERNAME-LONG-9917-${'x'.repeat(300)}`,
+  usernameExtra: 'MARK-USERNAME-EXTRA-3306',
+  password: 'MARK-PASSWORD-9963-ok',
+  passwordMalformed: 'MARK-PASSWORD-MALFORMED-2271',
+  passwordRenew: 'MARK-PASSWORD-RENEW-4418',
 };
 
 describe('what a session leaves behind', () => {
@@ -113,6 +131,48 @@ describe('what a session leaves behind', () => {
       headers: { cookie: `${posCookie}; ${posCookie}` },
     });
     await send({ method: 'GET', url: '/api/pos/nope', headers: posHeaders });
+    // The credential routes (009b, case 27): each channel, well formed and malformed.
+    await send({ method: 'POST', url: '/api/pos/auth/login', payload: { pin: MARK.pinWellFormed } });
+    await send({ method: 'POST', url: '/api/pos/auth/login', payload: { pin: MARK.pinMalformed } });
+    await send({
+      method: 'POST',
+      url: '/api/pos/auth/login',
+      payload: { pin: MARK.pinWellFormed, username: MARK.usernameExtra },
+    });
+    await send({
+      method: 'POST',
+      url: '/api/back-office/auth/login',
+      payload: { username: MARK.username, password: MARK.password },
+    });
+    await send({
+      method: 'POST',
+      url: '/api/back-office/auth/login',
+      payload: { username: MARK.usernameLong, password: MARK.passwordMalformed },
+    });
+    await send({
+      method: 'POST',
+      url: '/api/back-office/auth/login',
+      payload: { username: 12, password: MARK.passwordMalformed },
+    });
+    await send({
+      method: 'POST',
+      url: '/api/back-office/auth/reauthenticate',
+      headers: officeHeaders,
+      payload: { password: MARK.passwordRenew },
+    });
+    await send({
+      method: 'POST',
+      url: '/api/back-office/auth/reauthenticate',
+      headers: officeHeaders,
+      payload: { username: MARK.usernameExtra, password: MARK.passwordRenew },
+    });
+    await send({
+      method: 'POST',
+      url: '/api/back-office/auth/reauthenticate',
+      headers: { cookie: officeCookie },
+      payload: { password: MARK.passwordRenew },
+    });
+    await send({ method: 'POST', url: '/api/pos/auth/login?pin=MARK-PIN-QUERY-5509' });
     // The routes that end a session come last, so the earlier requests had one.
     await send({ method: 'POST', url: '/api/pos/auth/release', headers: posHeaders });
     await send({ method: 'POST', url: '/api/pos/auth/release' });
