@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-009a]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-009b — The credential routes
@@ -597,6 +597,25 @@ These rulings are addressed to the builder.
     `createBackOfficeCredential`); in `session-scan.test.ts`, `makeUser` creates a credential when the
     role is `MANAGER` (and the same import). No assertion, request or other line changes. Then run
     `npm run verify` once, on its own (no parallel runs against the test database), and commit.
+
+## Round 2: lead ruling (2026-10-10)
+
+These rulings are addressed to the builder. The review (`.agent/reviews/PHASE0-009b-review.md`) has one
+low finding, **accepted**: case 19 in `reauthenticate.test.ts` (lines 139 to 150) assumes the password
+limit is five. It makes three Login attempts and two M-6 attempts, asserts the counts 3 and 4, and
+asserts `expect(PASSWORD_MAX_FAILURES).toBe(5)`. That breaks lead ruling 6. The lead found no other
+restated limit in the three new test files.
+
+13. **Derive case 19 from the constant.** Make the Login failures `PASSWORD_MAX_FAILURES - 2`, assert
+    the count after them as that value, then the first M-6 failure as `PASSWORD_MAX_FAILURES - 1`, and
+    the second M-6 failure as the one that reaches `PASSWORD_MAX_FAILURES` and returns the cooldown
+    response. Delete `expect(PASSWORD_MAX_FAILURES).toBe(5)`. Keep every other assertion in the case:
+    Login and M-6 share one count on the account's row, the session stays idle and unreleased, and it
+    renews once the cooldown is over. The test name does not change.
+14. **Nothing else changes in this round.** Run the three new test files once, then `npm run verify` once
+    on its own (no parallel runs against the test database), and commit. Append a *Round 2* section to the
+    Handoff with the new counts (expected unchanged: 64 files, 3211 tests); the last line stays DONE or
+    BLOCKED.
 
 ## Handoff
 
