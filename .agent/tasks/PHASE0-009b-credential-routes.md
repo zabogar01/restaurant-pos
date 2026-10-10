@@ -703,4 +703,12 @@ Only those the task listed (see above). I changed none beyond them; the two fail
 - AC-19, AC-27, AC-28 and AC-35 close only as far as the consult's question 10 table says: AC-19 for the `LOGIN` class (not `MANAGER_APPROVAL` through a route); AC-27 first sentence; AC-28 at the API; AC-35 server side.
 - What Tasks 10 and 11 need and do not have: Task 10 has nothing new to wait for here. Task 11 has the two session views and the codes, but not the exact copy for each code (the client's to write).
 
+### Round 2 (2026-10-10, rulings 13 and 14)
+
+The review's one finding was right: case 19 in `apps/server/test/reauthenticate.test.ts` assumed the password limit was five (three Login failures, two at M-6, the counts 3 and 4, and `expect(PASSWORD_MAX_FAILURES).toBe(5)`), which breaks lead ruling 6.
+
+What I changed, in that one test only (its name is unchanged): the Login failures are now `PASSWORD_MAX_FAILURES - 2`, and the count after them is asserted as that value. The first M-6 failure is asserted at `PASSWORD_MAX_FAILURES - 1`. The second M-6 failure is asserted at `PASSWORD_MAX_FAILURES`, and it is the one that returns the cooldown response (`retryAfterSeconds` between 1 and the cooldown in seconds, the single-key `details` object, no cookie set). I deleted `expect(PASSWORD_MAX_FAILURES).toBe(5)` and renamed two local variables (`fourth`, `fifth` became `nextToLast`, `last`) because the old names restated the number. Every other assertion in the case is kept: Login and M-6 share one count on the account's row, the session is still idle (`SESSION_IDLE`) and unreleased, and it renews once the cooldown is aged out. Nothing else in the repository changed, and no source file was touched.
+
+Results: the three new test files alone, 3 files and 42 tests, green. `npm run verify` on its own: typecheck clean, then **64 test files, 3211 tests, all passed**, unchanged from round 1. I did not make a red proof for this change, since the ruling asked only for the constant to replace the literal; the case still fails if the limit and the attempts disagree, because the cooldown response is asserted at the last M-6 attempt.
+
 DONE

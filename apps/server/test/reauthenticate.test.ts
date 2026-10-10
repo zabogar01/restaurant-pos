@@ -136,23 +136,25 @@ describe('M-6: re-authentication', () => {
     const { who, client, sessionId } = await signedIn();
     await idle(sessionId);
 
-    // Three failures at Login and two at M-6 are five on one row.
-    for (let i = 0; i < 3; i += 1) {
+    // Failures at Login and at M-6 share one count: all but two at Login, the last
+    // two at M-6, the second of which reaches the limit.
+    const atLogin = PASSWORD_MAX_FAILURES - 2;
+    for (let i = 0; i < atLogin; i += 1) {
       expect((await new JarClient(app).signInBackOffice(who.username, WRONG)).statusCode).toBe(401);
     }
-    expect(await failuresOf(who.id)).toBe(3);
-    const fourth = await client.reauthenticate(WRONG);
-    expect(fourth.statusCode).toBe(401);
-    expect(fourth.body).toBe(INVALID);
-    expect(await failuresOf(who.id)).toBe(4);
-    const fifth = await client.reauthenticate(WRONG);
-    expect(fifth.statusCode).toBe(401);
-    expect(PASSWORD_MAX_FAILURES).toBe(5);
-    const detail = (fifth.json() as { error: { details: { retryAfterSeconds: number } } }).error.details;
+    expect(await failuresOf(who.id)).toBe(atLogin);
+    const nextToLast = await client.reauthenticate(WRONG);
+    expect(nextToLast.statusCode).toBe(401);
+    expect(nextToLast.body).toBe(INVALID);
+    expect(await failuresOf(who.id)).toBe(PASSWORD_MAX_FAILURES - 1);
+    const last = await client.reauthenticate(WRONG);
+    expect(last.statusCode).toBe(401);
+    expect(await failuresOf(who.id)).toBe(PASSWORD_MAX_FAILURES);
+    const detail = (last.json() as { error: { details: { retryAfterSeconds: number } } }).error.details;
     expect(Object.keys(detail)).toEqual(['retryAfterSeconds']);
     expect(detail.retryAfterSeconds).toBeGreaterThanOrEqual(1);
     expect(detail.retryAfterSeconds).toBeLessThanOrEqual(MAX_RETRY_SECONDS);
-    expect(setCookiesNamed(fifth, 'rpos_bo_sid')).toEqual([]);
+    expect(setCookiesNamed(last, 'rpos_bo_sid')).toEqual([]);
 
     // Still idle, still the same session, and renewable once the cooldown is over.
     expect((await client.get('/api/back-office/auth/me')).body).toBe(SESSION_IDLE);
