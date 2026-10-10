@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-009a]
 owns: [apps/server/**, packages/contracts/**, package.json, package-lock.json]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-009b — The credential routes
