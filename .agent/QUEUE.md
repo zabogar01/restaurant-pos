@@ -98,10 +98,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: ARCH-011, ADR-010 accepted 2026-10-08, merged as PR #72.)*
     - *(Done: ARCH-012, the Task 9 consult, 2026-10-09, merged with PR #76.)*
     - *(Done: PHASE0-007b, the back-office credential, merged 2026-10-08 as PR #69.)*
-    - **PHASE0-009a, route declarations, the session guard and the six session routes** — complete 2026-10-09
-      at `c6286b9` (review clean after round 2) — PR #78, waits on the owner's look and merge.
-    - **PHASE0-009b, the credential routes** (POS and back-office sign-in, M-6 re-authentication, zod) —
-      depends on 009a — not written.
+    - *(Done: PHASE0-009a, route declarations, the session guard and six session routes, merged 2026-10-09 as PR #78.)*
+    - **PHASE0-009b, the credential routes** (POS and back-office sign-in, M-6 re-authentication, zod, `name`/`username`
+      on `SessionView`) — complete 2026-10-10, Codex review clean after one round — touches identity, boundaries: the owner looks before merge.
     - **Before Task 10:** an architect consult (ARCH-006 §8), which must add an audit outcome for a
       cooldown-refused approval (ARCH-007 §7). Tasks 6 and 7 had theirs (ARCH-007, ARCH-008).
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred

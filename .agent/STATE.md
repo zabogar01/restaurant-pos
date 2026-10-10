@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-09: PRs #74-77 merged, `development` at `ca33123` (ARCH-012, receipt proposal, explorer and
-librarian on Claude Haiku 5.5 first). **PHASE0-009a complete** (`c6286b9`, 61/3169, review clean after round 2), PR #78; owner's look. Narrative: [journal/2026-10-09.md](journal/2026-10-09.md).
+2026-10-10: PRs #74-79 merged, `development` at `662ccf9` (ARCH-012, Haiku explorer/librarian, **PHASE0-009a**).
+**PHASE0-009b complete** (review clean after round 2); pushed as **PR #80**, waits for the owner's look. Narrative: [journal/2026-10-10.md](journal/2026-10-10.md).
 
 ## Phase and gates
 
@@ -26,23 +26,23 @@ librarian on Claude Haiku 5.5 first). **PHASE0-009a complete** (`c6286b9`, 61/31
   BO-12). BO-03, BO-11 in older Frost; nine are greyscale.
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
-- **Last verify by the lead:** `npm run verify` green at **3095 tests / 58 files** on 2026-10-09 on
-  `development` at `3e46f7b`, main checkout, after `npm ci`. Server tests need `npm run db:up` and
+- **Last verify by the lead:** `npm run verify` green at **3169 tests / 61 files** on 2026-10-10 on
+  `development` at `662ccf9`, main checkout. Server tests need `npm run db:up` and
   **`openssl` on `PATH`**. The dev database `pos` holds 0001-0007. Local certificate made (`npm run
   cert`, `~/.config/restaurant-pos/tls/`); the server is `npm run dev -w apps/server` on `:8443`.
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `3e46f7b` (PR #76) on GitHub;
+- **`development` is the integration branch** (owner, 2026-09-29), at `662ccf9` (PR #79) on GitHub;
   the local `development` matches it. `main` and `development` are protected: PR required, 0
   approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch` and
   fast-forward the main checkout (`git merge --ff-only origin/development`) **before reporting or
   dispatching**, then `npm ci` if the lockfile changed, and `npm run db:migrate` if a migration landed.
 - **Guard hooks** in the shared `.git/hooks` with an `agents.yaml` snapshot, current (reinstalled
-  2026-10-09; matches `development` at `ca33123`). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1009b`** (from `ca33123`), PR #79;
-  `agent/lead-1009` is merged (PRs #76, #77). **This branch's STATE is the current one** until it merges.
+  2026-10-09; matches `development` at `662ccf9`). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1009c`** (from `662ccf9`), pushed with the 2026-10-10 record;
+  `agent/lead-1009` and `-1009b` are merged (PRs #76, #77, #79). **This branch's STATE is the current one** until it merges.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations`. Merged, still existing: `agent/design-direction` (worktree
@@ -51,14 +51,14 @@ librarian on Claude Haiku 5.5 first). **PHASE0-009a complete** (`c6286b9`, 61/31
 
 ## Running tasks and agents
 
-- **PHASE0-009a complete** at `c6286b9` on `agent/phase0-009a` (`../restaurant-pos-wt/PHASE0-009a`), PR #78. Lead
-  verify **61 / 3169**; Codex review's one medium (startup check keyed by method+path) fixed in round 2, re-review
-  clean. Owner's look before merge (identity, boundaries). Detail: task file, lead rulings 9-14.
-- **Live agents:** the lead only. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
+- **PHASE0-009b complete, PR #80 open:** `agent/phase0-009b` at `2023129` (`../restaurant-pos-wt/PHASE0-009b`), status complete.
+  Lead verify green twice on 2026-10-10 (64 / 3211, about 45 s; `development` 61 / 3169 the same hour). Codex review round 1: one low
+  finding (case 19 restated the limit 5), fixed in `c8eb727` under rulings 13-14; re-review clean. The 2026-10-09 failures were host
+  memory (full swap), gone after the owner restarted Docker. The Handoff's note that verify did not complete is superseded by this.
+- **Live agents:** the lead, and no worker (both 009b panes closed). Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 - **ARCH-012 done** (report `.agent/reviews/ARCH-012-auth-routes.md`; summary in the journal): Task 9
   splits into **009a** (route declaration, guard, session routes) and **009b** (credential routes).
-- **PHASE0-009b: next, not written**, from 009a's Handoff *For 009b* (zod 4 is 009b's; name/username on `SessionView` is the
-  lead's call there). 009a's lead ruling 2 added probe-route declarations ARCH-012 missed. Task 10 needs its own consult (ARCH-007 §7).
+- **009b's rulings:** `SessionView` gains `name`, plus `username` at the back office (lead ruling 2). 009a's lead ruling 2 added probe-route declarations ARCH-012 missed. Task 10 needs its own consult (ARCH-007 §7).
 - **Carry-forwards for Tasks 9 to 12:** Handoffs of PHASE0-005 to 008b; ARCH-011's Handoff lists plan
   lines in Tasks 9 to 12 not to copy; ARCH-012 §*The Handoffs must carry forward*, and its *For the
   lead* item 4 (client CSRF handling, idle countdown) for Task 11's consult.
@@ -79,7 +79,8 @@ librarian on Claude Haiku 5.5 first). **PHASE0-009a complete** (`c6286b9`, 61/31
   **Preflight refuses when STATE.md is over its cap**: check before every dispatch or resume.
 - **Background commands die at two hours;** the worker runs on and pings; verify and close by hand.
 - **Prompts do not wake the lead:** a background loop polls `herdr agent get <id>` every 15 s and stops
-  on the first `blocked` (`agent wait --until blocked` missed one). Re-arm after each; the owner answers.
+  on the first `blocked`, and on 20 minutes of unchanged pane text (a dropped API connection stays `working`; LESSONS).
+  Re-arm after each; the owner answers prompts.
 - **`max_fix_cycles` is 2.** A lead ruling for a round goes in the worktree's task file above the
   Handoff, committed there, then `--resume --message`. A test-only fix may skip the re-review (008b).
 - **Codex reviews Claude-built work** (one five-hour allowance with the designer; at the limit wait and
@@ -146,4 +147,4 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Owner: look at and merge PR #78 (009a), and PR #79 (this record). Lead: write PHASE0-009b (decide name/username on `SessionView`). The owner's ARCH-012 and receipt answers.
+Owner: look at and merge PR #80 (PHASE0-009b, touches identity) and this branch's PR. Lead: then the Task 10 consult. The owner's ARCH-012 and receipt answers.
