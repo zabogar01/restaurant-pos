@@ -9,15 +9,15 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-10: PRs #74-79 merged, `development` at `662ccf9` (ARCH-012, Haiku explorer/librarian, **PHASE0-009a**).
-**PHASE0-009b complete** (review clean after round 2); pushed as **PR #80**, waits for the owner's look. Narrative: [journal/2026-10-10.md](journal/2026-10-10.md).
+2026-10-12: PRs #80-81 merged, `development` at `cb23a29` (**PHASE0-009b**: Task 9 done). **ARCH-013** done (Task 10 splits
+into 010a and 010b); **PHASE0-010a** complete as **PR #82**, awaiting your look. Narrative: [journal/2026-10-12.md](journal/2026-10-12.md).
 
 ## Phase and gates
 
 - **Phase 0**, started 2026-09-14. Done: tasks 1 to 7, plus 006b, 007b (back-office credential,
-  `0007`, `create-manager`), **008a** (HTTPS process: TLS, loopback guard, safe logging, error
-  envelope, health, `@pos/contracts`) and **008b** (Host/origin guard, `rpos_cid`). Left: Task 9
-  (as 009a and 009b, ARCH-012), Tasks 10 to 12. No route beyond `GET /api/health` yet.
+  `0007`, `create-manager`), **008a** (HTTPS process, error envelope, `@pos/contracts`), **008b** (Host/origin
+  guard, `rpos_cid`), **009a** (route access declarations, session guard, session routes) and **009b** (POS and
+  back-office sign-in, M-6 re-authentication, zod 4). Left: Tasks 10 to 12.
 - **Architecture:** nine accepted ADRs (001-007, 009, 010); ADR-008 stays reserved (deferred).
   ADR-011 (sessions over HTTP) is recommended by ARCH-012 and not commissioned.
 - **Frontend built** (fixtures plus a client order store): POS-01 to POS-07, every designed POS
@@ -26,23 +26,23 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   BO-12). BO-03, BO-11 in older Frost; nine are greyscale.
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
-- **Last verify by the lead:** `npm run verify` green at **3169 tests / 61 files** on 2026-10-10 on
-  `development` at `662ccf9`, main checkout. Server tests need `npm run db:up` and
+- **Last verify by the lead:** `npm run verify` green at **3211 tests / 64 files** on 2026-10-12 on
+  `development` at `cb23a29`, main checkout, after `npm ci`. Server tests need `npm run db:up` and
   **`openssl` on `PATH`**. The dev database `pos` holds 0001-0007. Local certificate made (`npm run
   cert`, `~/.config/restaurant-pos/tls/`); the server is `npm run dev -w apps/server` on `:8443`.
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `662ccf9` (PR #79) on GitHub;
+- **`development` is the integration branch** (owner, 2026-09-29), at `cb23a29` (PR #80) on GitHub;
   the local `development` matches it. `main` and `development` are protected: PR required, 0
   approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch` and
   fast-forward the main checkout (`git merge --ff-only origin/development`) **before reporting or
   dispatching**, then `npm ci` if the lockfile changed, and `npm run db:migrate` if a migration landed.
 - **Guard hooks** in the shared `.git/hooks` with an `agents.yaml` snapshot, current (reinstalled
-  2026-10-09; matches `development` at `662ccf9`). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1009c`** (from `662ccf9`), pushed with the 2026-10-10 record;
-  `agent/lead-1009` and `-1009b` are merged (PRs #76, #77, #79). **This branch's STATE is the current one** until it merges.
+  2026-10-09; `--check` current on 2026-10-10). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1012`** (from `cb23a29`), pushed: the ARCH-013 brief and
+  report, STATE, QUEUE, journal. `agent/lead-1009c` merged as PR #81. **This branch's STATE is the current one** until it merges.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations`. Merged, still existing: `agent/design-direction` (worktree
@@ -51,14 +51,11 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE0-009b complete, PR #80 open:** `agent/phase0-009b` at `2023129` (`../restaurant-pos-wt/PHASE0-009b`), status complete.
-  Lead verify green twice on 2026-10-10 (64 / 3211, about 45 s; `development` 61 / 3169 the same hour). Codex review round 1: one low
-  finding (case 19 restated the limit 5), fixed in `c8eb727` under rulings 13-14; re-review clean. The 2026-10-09 failures were host
-  memory (full swap), gone after the owner restarted Docker. The Handoff's note that verify did not complete is superseded by this.
-- **Live agents:** the lead, and no worker (both 009b panes closed). Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
-- **ARCH-012 done** (report `.agent/reviews/ARCH-012-auth-routes.md`; summary in the journal): Task 9
-  splits into **009a** (route declaration, guard, session routes) and **009b** (credential routes).
-- **009b's rulings:** `SessionView` gains `name`, plus `username` at the back office (lead ruling 2). 009a's lead ruling 2 added probe-route declarations ARCH-012 missed. Task 10 needs its own consult (ARCH-007 §7).
+- **ARCH-013 done** (`.agent/reviews/ARCH-013-manager-approval.md`, accepted). Task 10 splits: **010a** (`0008`, `APPROVAL_THROTTLED`,
+  `clock_timestamp()` default, `withManagerApproval` union, no approval value) and **010b** (codes `APPROVAL_FAILED` 403,
+  `APPROVAL_THROTTLED` 429, `http/approval.ts`, test-only probe, no production route; cancel route in Phase 2).
+- **PHASE0-010a complete, PR #82 open:** `agent/phase0-010a` at `449c99c`. Verify 65 / 3235; review P2 fixed (`0b50b8f`), re-review clean. Dev DB has `0008`.
+- **Live agents:** the lead only (010a panes closed). Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 - **Carry-forwards for Tasks 9 to 12:** Handoffs of PHASE0-005 to 008b; ARCH-011's Handoff lists plan
   lines in Tasks 9 to 12 not to copy; ARCH-012 §*The Handoffs must carry forward*, and its *For the
   lead* item 4 (client CSRF handling, idle countdown) for Task 11's consult.
@@ -119,6 +116,9 @@ Nothing here is decided. Detail is where each line points.
   Proposed (lead: yes)? (2) the FR-A2c reading: "may accept either" unused, a shared read is one
   handler under both paths, no route takes either cookie (lead: confirm)? (3) accept sign-in without a
   pre-session CSRF token until the pre-production gate, recorded in ARCHITECTURE §3.2 (lead: accept)?
+- **ARCH-013, *For the owner*** (none blocks 010a): (1) FR-J3/AC-18/FR-A5 wording for cooldown-refused approvals, exact text
+  there; (2) best-effort cancel reports, no inferred abandonment; (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept
+  the approval-entry flood and the PIN timing leak (Argon2id only on a digest hit) for §3.2; (5) commission an approval ADR.
 - **Receipt, PRD §9 q1** (`reviews/RESEARCH-receipt.md`, *Proposal*): choices A (one never-reset
   sequence, or daily), B (*SALINAN* on reprints), C (refund slip), D (Indonesian only), E (*PBJT* or
   *PB1*); lead recommends the first of each. Then the lead drafts the PRD wording.
@@ -132,7 +132,7 @@ Nothing here is decided. Detail is where each line points.
   the current one (architect: yes)? Does a manager who resets their own PIN stay signed in? Does a
   role change bump the credential version? Needed before the users screen.
 - **PRD wording owed, not drafted:** report-print failure placement; FR-J3/AC-18 and FR-H3/AC-10 (DESIGN-014
-  Handoff); cooldown-refused approval; §9 questions 2 and 3; reactivation keeps the PIN (FR-B3).
+  Handoff); §9 questions 2 and 3; reactivation keeps the PIN (FR-B3).
 - **Kit:** builder `Bash(grep:*)`? dispatcher ping on `BLOCKED ON APPROVAL`? builders' `python3`/`sed`?
   dispatcher support for hand-opened designers/architects and a reviewer CLI override?
 - **Pre-production gate, owner-accepted risks:** the same-class PIN reset (2026-10-07), username discovery
@@ -147,4 +147,4 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Owner: look at and merge PR #80 (PHASE0-009b, touches identity) and this branch's PR. Lead: then the Task 10 consult. The owner's ARCH-012 and receipt answers.
+Owner: look at and merge PR #82 (PHASE0-010a) and this branch's PR. Lead: then write PHASE0-010b. Owner: ARCH-013 items (PRD wording, abandonment, Cancel in flight, flood and timing risks, ADR). The owner's ARCH-012 and receipt answers.

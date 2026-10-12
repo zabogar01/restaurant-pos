@@ -99,10 +99,10 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: ARCH-012, the Task 9 consult, 2026-10-09, merged with PR #76.)*
     - *(Done: PHASE0-007b, the back-office credential, merged 2026-10-08 as PR #69.)*
     - *(Done: PHASE0-009a, route declarations, the session guard and six session routes, merged 2026-10-09 as PR #78.)*
-    - **PHASE0-009b, the credential routes** (POS and back-office sign-in, M-6 re-authentication, zod, `name`/`username`
-      on `SessionView`) — complete 2026-10-10, Codex review clean after one round — touches identity, boundaries: the owner looks before merge.
-    - **Before Task 10:** an architect consult (ARCH-006 §8), which must add an audit outcome for a
-      cooldown-refused approval (ARCH-007 §7). Tasks 6 and 7 had theirs (ARCH-007, ARCH-008).
+    - *(Done: PHASE0-009b, the credential routes, merged 2026-10-12 as PR #80.)*
+    - *(Done: ARCH-013, the Task 10 consult, 2026-10-12: split into 010a and 010b.)*
+    - **PHASE0-010a, the approval primitive** (`0008`, `withManagerApproval`) — complete 2026-10-12, review clean after one round; the owner looks before merge.
+    - **PHASE0-010b, the approval HTTP adapter** (two codes, `ManagerPin`, `http/approval.ts`, test-only probe) — after 010a merges; not written.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
       by the owner 2026-10-06, possibly to after the MVP — not written.
 12. **PRD wording proposal** — replace "half-up" in FR-M3 and B-2 with the half-away-from-zero
