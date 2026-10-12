@@ -579,7 +579,7 @@ describe('source', () => {
   it('23: only approval.ts, audit.ts and throttle.ts name the approver, the class or the outcomes', () => {
     expect(namedIn(/approverId/).filter((f) => !allowed.includes(f))).toEqual([]);
     expect(namedIn(/MANAGER_APPROVAL/).filter((f) => !allowed.includes(f))).toEqual([]);
-    expect(namedIn(/APPROVAL_(FAILED|CANCELLED|THROTTLED)/).filter((f) => !allowed.includes(f))).toEqual([]);
+    expect(namedIn(/['"]APPROVAL_(FAILED|CANCELLED|THROTTLED)['"]/).filter((f) => !allowed.includes(f))).toEqual([]);
     // The one writer that names an approver is the approval module.
     expect(namedIn(/approverId:/).filter((f) => f !== 'domain/approval.ts')).toEqual([]);
   });

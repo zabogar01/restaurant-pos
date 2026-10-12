@@ -386,3 +386,76 @@ These rulings are addressed to the builder.
   any kind.
 
 ## Handoff
+
+**Builder, 2026-10-12.** Built to the consult and the lead rulings; no rule had to be bent, nothing is blocked.
+
+### What I did
+
+- `packages/contracts/src/errors.ts`: `APPROVAL_FAILED` and `APPROVAL_THROTTLED` in `ErrorCode`, each with `{ retryAfterSeconds: number }` in `ErrorDetailsByCode`.
+- `packages/contracts/src/auth.ts` and `index.ts`: `ManagerPin`. It shares one non-exported `SixAsciiDigits` definition (`z.string().regex(/^[0-9]{6}$/)`) with `PosLoginRequest.pin`, so the two cannot drift; `PosLoginRequest` behaves as before (its tests are unchanged and green). Only `z.string().regex` and `z.strictObject` are used, both already in `auth.ts`; I asked the librarian (`ask.sh librarian`) whether one field schema can sit in two strict objects and whether strict objects reject unknown keys in 4.6.5: yes to both, no v3-to-v4 change that touches this.
+- `apps/server/src/http/approval.ts` (new): `approvalRequest(request, { managerPin, action, subject?, reason? })` builds an `ApprovalRequest` from `actorOf(request).staffUserId` and `request.clientInstanceId`, naming fields one by one so nothing else can ride along; `approved(outcome)` returns the result or throws `AppError` (`FAILED` is 403 `APPROVAL_FAILED`, with `retryAfterSeconds` only when non-null; `THROTTLED` is 429 `APPROVAL_THROTTLED`, always with it). It names the codes only as `ErrorCode.X`, and not `approverId` or `MANAGER_APPROVAL`.
+- `apps/server/test/approval-route.test.ts` (new, 17 tests): the probe, registered through `buildServer({ apiRoutes })`, and cases 1 to 12. `src/http/server.ts` is untouched; no route was added.
+- Changed existing tests: `approval.test.ts` case 23's third pattern only, to `/['"]APPROVAL_(FAILED|CANCELLED|THROTTLED)['"]/` (lead ruling 3; allow-list, other assertions and name unchanged). `error-details.types.ts`: two blocks added, mirroring `THROTTLED`'s (additions only). `support/client.ts` and `support/people.ts` unchanged.
+
+No commit hash is quoted here because the file is committed together with the work; `git log -1` on `agent/phase0-010b` is the commit.
+
+### Case map (test names start with the consult's case number)
+
+1. `1. approved through the probe: 200 with the work's result, one SUCCESS entry naming the actor and the approver`
+2. `2. a body that does not fit the schema is 400 and counts nowhere > before any failure, and again while the class is cooling down` (eleven bodies, run before any failure and again during a cooldown)
+3. `3. a wrong PIN: 403 APPROVAL_FAILED with no details, the session stays, every kind of failed PIN answers identically` (unknown PIN, another cashier's, the actor's own, a deactivated manager's; status, body and headers minus `date` compared)
+4. `4. the failure that starts the cooldown reports it; the next request is 429 APPROVAL_THROTTLED and audited`; and `4b.` the security event is written only by the failure that starts the cooldown
+5. `5. AC-27: a back-office session approves nothing` (two tests: both sessions in one jar; back-office only)
+6. `6. a manager signed in at the POS: no PIN is 400; their own PIN approves with approver = actor`
+7. `7. the guard runs before any PIN is looked at` (no session, idle, missing token; each with a wrong PIN, so a reached handler would spend a strike)
+8. `8. AC-19: five failed approvals leave sign-in alone; a sign-in, a replaced client instance and a rebuilt server leave the cooldown alone`
+9. `9. a work that throws: 500 INTERNAL, nothing of the error in the body or the log, no entry`
+10. `10. B-14 at the wire: straight after an approved request, the same request without the PIN is 400`
+11. `11. a marker PIN appears in no log line at trace, no response body and neither evidence table`
+12. `12. the probe adds no production surface` (two tests)
+
+### Decisions
+
+- **The probe's body parser is hand-written in the test.** `zod` is a dependency of `@pos/contracts` alone (`validate.ts` says so) and `apps/server` does not list it. The probe composes the exported `ManagerPin` with a strict one-key check. Phase 2's commands should instead compose `ManagerPin` into a `z.strictObject` in `@pos/contracts`, as `PosLoginRequest` does. If the lead would rather the probe use zod directly, that needs `zod` added to `apps/server/package.json` and the lockfile, which are not in my slice.
+- **Case 12 reads the same list as `access.test.ts` case 7 from that file's source** (a regex over its quoted route strings, asserting six found), so there is one list. Nothing in `access.test.ts` changed. It also asserts the only routes a probe-registered server adds are `POST /api/pos/approval-probe` and `...-throws`, and that `server.ts` and the three shipped route files do not mention approval.
+- The probe has a second route, `approval-probe-throws`, because case 9 needs a work that throws and the body is strict.
+- Case 1 as written cannot tell an actor taken from the body from one taken from the session, because strictness already refuses a body that carries an `actorId` (see red proof 2). The check that matters is case 2.
+
+### Red proofs (each made, run, read, reverted)
+
+1. `FAILED` mapped to `INVALID_CREDENTIALS` / 401 in `approval.ts`: case 3, case 4 and case 2's cooldown leg fail ("expected 401 to be 403").
+2. Actor read from the body in `approvalRequest` (`request.body.actorId ?? actor`) and the probe parser relaxed to ignore extra keys: case 2 fails ("an extra actorId: expected 200 to be 400"). Case 1 does not fail, for the reason under Decisions.
+3. `managerPin` optional, the probe approving on the session's role when it is absent: case 6 fails ("expected 200 to be 400"); case 10 failed too, but incidentally (a 500 from a body-less request in the mutated probe).
+4. Probe declared `OPTIONAL`: 14 of 17 fail, among them case 7 (all three legs, a 500 where the guard should have refused: the handler found no actor) and case 12's tripwire (the open-route list gains both probe routes).
+5. Parse-failure echo (`request.log.info({ echo: request.body })` before parsing): case 11 fails on the extra-key marker `MARK-EXTRA-KEY-9013` appearing in a log line. The `managerPin` marker itself did not leak: `log.ts`'s redaction backstop printed it as redacted, which is what that backstop is for.
+6. `'APPROVAL_FAILED'` as a string literal in `approval.ts` (lead ruling 3): `approval.test.ts` case 23 fails (`['http/approval.ts']`).
+
+### Acceptance criterion 4 (real output)
+
+- `grep -rn "apiRoutes\|approval" apps/server/src/http/server.ts`: only the three `apiRoutes` lines already there (`:30`, `:44`, `:100`); no `approval`.
+- `grep -rnE "['\"]APPROVAL_" apps/server/src`: only `domain/approval.ts` (`:76`, `:80`, `:116`) and `domain/audit.ts` (`:11-13`, `:37-39`).
+- `grep -rn "managerPin" apps/server/src`: `http/approval.ts` (`:9` comment, `:24`, `:33`), `http/log.ts:91`, `domain/approval.ts` (`:16`, `:57`, `:74`).
+- `grep -rnE "reply\.code\((4|5)" apps/server/src/http`: one hit that this task did not add, `http/errors.ts:97`, `reply.code(404).type('text/plain')` in the pre-existing `notFoundHandler`. The criterion says "nothing"; the literal check is not empty because of that line, and nothing under `routes/` or `approval.ts` writes a status.
+
+### `npm run verify`
+
+Typecheck clean for all four projects. `vitest run`: 66 test files and 3252 tests passed (baseline 65 and 3235, plus this file and its 17 tests), 53 seconds. The client's tests are unchanged. The new file alone passed three times in a row (17 of 17 each). No formatter ran; I wrote and edited by hand.
+
+### Found, not fixed
+
+- ARCH-013 section 7's timing note stands and is not mine: a failed approval answers faster for a PIN that belongs to nobody than for one that belongs to an active user, because `findUserByPin` runs Argon2id only on a digest hit. The probe's four failure kinds are byte-identical in status, body and headers, which is what the contract asks; timing was not measured.
+- Case 4b is an addition beyond the twelve cases (the cooldown event through the route); it is cheap and I kept it.
+
+### Carried forward (from the task)
+
+- For every gated command (Phase 2 on): one call to `withManagerApproval` with a literal action; the work uses only the client it is given; `managerPin` in the body, never a session; one new row in the AC-27 table; the command's own test asserts the entry's action.
+- For Phase 2: the cancel route's design (ARCH-013 question 5), the action vocabulary, `APPROVAL_REQUIRED`, `REFUSED`, the idempotency question (question 10).
+- AC-18, AC-19 and AC-27 close only as far as the table in question 9 says; AC-19 is now proven through the routes for Phase 0.
+
+### What Task 11 (client shells and the M-1 prompt) needs and does not have
+
+- The wire contract is final: 400 `VALIDATION_FAILED` (no details), 403 `APPROVAL_FAILED` (details `{ retryAfterSeconds }` only on the failure that started the cooldown), 429 `APPROVAL_THROTTLED` (details always), and the guard's 401 `UNAUTHENTICATED`/`SESSION_IDLE` and 403 `CSRF_REFUSED`. A cashier's PIN is indistinguishable from an unknown one by design (the M-1 *error* state).
+- It has no real route to call: there is no production gated command yet, so the M-1 prompt can only be built against these codes and the probe's shape, not against a live endpoint.
+- Nothing in `@pos/contracts` yet exports a composed request schema with `managerPin`; each Phase 2 command defines its own from `ManagerPin`.
+
+DONE

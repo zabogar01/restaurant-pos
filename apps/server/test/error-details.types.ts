@@ -209,6 +209,49 @@ export function neverCalled(cause: Error, text: string): void {
   };
   void throttledWithDetails;
 
+  // The two approval codes (010b) carry the same single number and nothing else.
+  // @ts-expect-error a string
+  new AppError(ErrorCode.APPROVAL_FAILED, 403, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.APPROVAL_FAILED, 403, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.APPROVAL_FAILED, 403, new Error('x'));
+  // @ts-expect-error an object of another shape
+  new AppError(ErrorCode.APPROVAL_FAILED, 403, { any: 'object' });
+  // @ts-expect-error the right key with a string
+  new AppError(ErrorCode.APPROVAL_FAILED, 403, { retryAfterSeconds: text });
+  // @ts-expect-error a string in the body
+  const approval_failedText: ErrorBody = { error: { code: ErrorCode.APPROVAL_FAILED, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const approval_failedObject: ErrorBody = { error: { code: ErrorCode.APPROVAL_FAILED, details: { any: 'object' } } };
+  void [approval_failedText, approval_failedObject];
+  new AppError(ErrorCode.APPROVAL_FAILED, 403, { retryAfterSeconds: 1 });
+  const approvalFailedWithDetails: ErrorBody = {
+    error: { code: ErrorCode.APPROVAL_FAILED, details: { retryAfterSeconds: 1 } },
+  };
+  void approvalFailedWithDetails;
+
+  // @ts-expect-error a string
+  new AppError(ErrorCode.APPROVAL_THROTTLED, 429, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.APPROVAL_THROTTLED, 429, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.APPROVAL_THROTTLED, 429, new Error('x'));
+  // @ts-expect-error an object of another shape
+  new AppError(ErrorCode.APPROVAL_THROTTLED, 429, { any: 'object' });
+  // @ts-expect-error the right key with a string
+  new AppError(ErrorCode.APPROVAL_THROTTLED, 429, { retryAfterSeconds: text });
+  // @ts-expect-error a string in the body
+  const approval_throttledText: ErrorBody = { error: { code: ErrorCode.APPROVAL_THROTTLED, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const approval_throttledObject: ErrorBody = { error: { code: ErrorCode.APPROVAL_THROTTLED, details: { any: 'object' } } };
+  void [approval_throttledText, approval_throttledObject];
+  new AppError(ErrorCode.APPROVAL_THROTTLED, 429, { retryAfterSeconds: 1 });
+  const approvalThrottledWithDetails: ErrorBody = {
+    error: { code: ErrorCode.APPROVAL_THROTTLED, details: { retryAfterSeconds: 1 } },
+  };
+  void approvalThrottledWithDetails;
+
   // What is allowed: a code alone, and a body without details.
   new AppError(ErrorCode.INTERNAL, 500);
   const fine: ErrorBody = { error: { code: ErrorCode.INTERNAL } };
