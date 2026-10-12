@@ -322,11 +322,11 @@ describe('audit entry and security event', () => {
     expect(failure.message).toContain('actor_id');
   });
 
-  it('rejects an approver on a failed or cancelled approval and accepts SUCCESS with or without one (case 10)', async () => {
+  it('rejects an approver on a failed, cancelled or throttled approval and accepts SUCCESS with or without one (case 10)', async () => {
     const actor = await insertStaff();
     const approver = await insertStaff({ role: 'MANAGER' });
 
-    for (const outcome of ['APPROVAL_FAILED', 'APPROVAL_CANCELLED']) {
+    for (const outcome of ['APPROVAL_FAILED', 'APPROVAL_CANCELLED', 'APPROVAL_THROTTLED']) {
       const failure = await refusal(auditInsert(actor, approver, outcome));
       expect(failure.code, outcome).toBe(CHECK_VIOLATION);
       expect(failure.constraint, outcome).toBe('audit_entry_unapproved_outcome_check');
@@ -337,10 +337,10 @@ describe('audit entry and security event', () => {
     await auditInsert(actor, approver, 'SUCCESS');
     await auditInsert(actor, null, 'SUCCESS');
     const stored = await ownerQuery<{ n: string }>('SELECT count(*) AS n FROM audit_entry');
-    expect(only(stored).n).toBe('4');
+    expect(only(stored).n).toBe('5');
   });
 
-  it('rejects an outcome outside the three (case 11)', async () => {
+  it('rejects an outcome outside the four (case 11)', async () => {
     const actor = await insertStaff();
     for (const outcome of ['REFUSED', 'SUCCEEDED', '']) {
       const failure = await refusal(auditInsert(actor, null, outcome));
