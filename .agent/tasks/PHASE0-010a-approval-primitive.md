@@ -5,7 +5,7 @@ category: feature
 touches: [audit, identity, boundaries]
 depends_on: [PHASE0-009b]
 owns: [apps/server/**, db/migrations/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-010a — Inline manager approval: the evidence and the primitive
@@ -737,6 +737,37 @@ These rulings are addressed to the builder.
 - The cancel route, the action vocabulary, `APPROVAL_REQUIRED`, `REFUSED` and idempotency (Phase 2).
 - Client changes, the designer's M-1 and BO-12 edits, the PRD wording, the recommended ADR.
 - Editing migration `0004` or any migration before `0008`. `docs/` of any kind.
+
+## Round 2: lead ruling (2026-10-12)
+
+These rulings are addressed to the builder. The review (`.agent/reviews/PHASE0-010a-review.md`) has one
+P2 finding, **accepted**: `withManagerApproval` hands the work the same `approver` object it later
+reads `approver.id` from for the `SUCCESS` entry (`approval.ts:79`, `:83`), and it keeps the caller's
+`subject` object by reference (`:48`). A work callback can therefore assign `approver.id` or the
+request's `subject.id` and change who and what the combined entry names, after the PIN was verified.
+That breaks the consult's question 3 ("the action and subject are fixed in `ApprovalRequest` before
+the PIN is verified … The work cannot change what the entry says was approved") and FR-J2/FR-J3.
+
+10. **Snapshot what the entries say, before the first `await`.** Copy `subject` into a new object
+    of two strings (its `type` and `id`) at the top of `withManagerApproval`, before the dry-run
+    validation, and use only that copy for validation and for every entry this call writes. Keep the
+    verified manager's id in a private `const` string, and write the `SUCCESS` entry's `approverId`
+    from that string. Give the work its own object (`{ id }`, frozen with `Object.freeze`), never the
+    one the entry reads. Do the same subject copy in `recordApprovalCancelled`. A subject that is not
+    an object, or whose parts are not strings, must still be refused before verification exactly as
+    the dry run refuses it today (case 16 stays green unedited).
+11. **Regression, as case 4b in `approval.test.ts`:** a work that assigns a different existing staff
+    id to the approver argument (catch the `TypeError` a frozen object throws in strict mode, or assert
+    the assignment did not take) and replaces the original request's `subject.type` and `subject.id`:
+    the result is `APPROVED`, and the `SUCCESS` entry names the verified manager and the original
+    subject. The test name starts with "4b".
+12. **Red proofs:** (a) write `approverId` from the object handed to the work and drop the freeze:
+    case 4b fails; (b) use the caller's `subject` object instead of the copy: case 4b fails. Revert
+    each and show the failure text in the Handoff.
+13. **Nothing else changes in this round.** The dry-run validation stays as it is. Run `approval.test.ts`
+    once, then `npm run verify` once on its own (no parallel runs against the test database), and
+    commit. Append a *Round 2* section to the Handoff with the new counts (expected: 65 files, 3235
+    tests); the last line stays DONE or BLOCKED.
 
 ## Handoff
 
