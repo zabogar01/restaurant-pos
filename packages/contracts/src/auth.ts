@@ -11,7 +11,17 @@ import { z } from 'zod';
  * valid credential is, and 256 and 1024 UTF-16 units are no tighter than its rule
  * (a password of 128 code points can be 256 units long).
  */
-export const PosLoginRequest = z.strictObject({ pin: z.string().regex(/^[0-9]{6}$/) });
+const SixAsciiDigits = z.string().regex(/^[0-9]{6}$/);
+
+export const PosLoginRequest = z.strictObject({ pin: SixAsciiDigits });
+
+/**
+ * The `managerPin` field of a gated command's body (ARCH-013 section 6): the same
+ * rule as a sign-in PIN, so a malformed one is a 400 and is never counted. It is a
+ * field, not a request: each command composes it into its own strict object, and
+ * the PIN travels in that command's body, never in a session (B-14).
+ */
+export const ManagerPin = SixAsciiDigits;
 
 export const BackOfficeLoginRequest = z.strictObject({
   username: z.string().min(1).max(256),

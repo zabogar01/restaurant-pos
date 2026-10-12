@@ -16,12 +16,14 @@ export const ErrorCode = {
   CSRF_REFUSED: 'CSRF_REFUSED',
   INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
   THROTTLED: 'THROTTLED',
+  APPROVAL_FAILED: 'APPROVAL_FAILED',
+  APPROVAL_THROTTLED: 'APPROVAL_THROTTLED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 /**
- * The details a code carries, by code. Only the two below declare any; for the other
+ * The details a code carries, by code. Only the four below declare any; for the other
  * eleven a details argument does not compile. A code that carries details declares
  * its fields here, as numbers, enums or ids the server chose: never a string taken
  * from an exception. `retryAfterSeconds` is a number PostgreSQL computed.
@@ -29,6 +31,8 @@ export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 export interface ErrorDetailsByCode {
   INVALID_CREDENTIALS: { retryAfterSeconds: number };
   THROTTLED: { retryAfterSeconds: number };
+  APPROVAL_FAILED: { retryAfterSeconds: number };
+  APPROVAL_THROTTLED: { retryAfterSeconds: number };
 }
 
 /** The details type of one code, or `never` when the code declares none. */
