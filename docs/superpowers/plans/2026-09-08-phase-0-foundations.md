@@ -1,6 +1,23 @@
 # Phase 0 Foundations Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Status, 2026-10-12: superseded as a build script.** This plan was written on 2026-09-08, before
+> `docs/ARCHITECTURE.md`, the accepted ADRs (001 to 007, 009, 010) and the architect consults
+> ARCH-006 to ARCH-014 in `.agent/reviews/`. Tasks 1 to 10 have been built, each from its own task
+> file in `.agent/tasks/`, named under each task heading below; Tasks 11 and 12 will be written the
+> same way. Where a task file or a consult differs from the code, SQL or steps here, the task file
+> wins, and the built source is the reference for what exists. Do not copy a step from this plan
+> into new work without checking it against both. The plan is kept for its reasoning and history.
+>
+> The *Global Constraints* below were copied from the PRD on 2026-09-08 and are **no longer
+> verbatim**. `docs/PRD.md` and `docs/BOUNDARIES.md` as they now stand are the authority. Among the
+> changes: a manager signs in to the back office with a username and a password, never a PIN
+> (FR-A1, AC-35, ADR-009); a PIN is unique among *active* users (FR-A1, FR-A4); and the half-up
+> wording of B-2 is an open question for the owner (`.agent/STATE.md`).
+>
+> Superseded instruction kept for history: *For agentic workers: REQUIRED SUB-SKILL: Use
+> superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement
+> this plan task-by-task.* Work in this repository is dispatched from task files instead
+> (`.agent/WORKFLOW.md`).
 
 **Goal:** Build the money, identity, session, and audit foundations that every later phase depends on, served as two separate clients from one HTTPS-on-localhost server.
 
@@ -104,6 +121,8 @@ Files that change together live together: each domain concern owns its module an
 ---
 
 ## Task 1: Monorepo scaffold, PostgreSQL, migration runner
+
+> **Superseded (2026-10-12).** Built as PHASE0-001. See the task file in `.agent/tasks/`.
 
 **Files:**
 - Create: `package.json`, `tsconfig.base.json`, `docker-compose.yml`, `.gitignore`
@@ -380,6 +399,8 @@ git commit -m "feat: monorepo scaffold, postgres, and migration runner"
 ---
 
 ## Task 2: Money module
+
+> **Superseded (2026-10-12).** Built as PHASE0-002, with `Rate` branded in PHASE0-003a. See the task file in `.agent/tasks/`.
 
 **Files:**
 - Create: `packages/money/package.json`, `packages/money/tsconfig.json`
@@ -766,6 +787,8 @@ git commit -m "feat: integer money module with half-up rounding and canonical co
 
 ## Task 3: Core schema and append-only grants
 
+> **Superseded (2026-10-12).** Built as PHASE0-003b (test database, `pos_app`) and PHASE0-003c (schema); the SQL here is superseded wherever ARCH-006 differs. See the task file in `.agent/tasks/`.
+
 **Files:**
 - Create: `db/migrations/0002_settings.sql`, `0003_staff_user.sql`, `0004_audit_and_telemetry.sql`, `0005_auth_throttle.sql`, `0006_session_and_client.sql`, `0007_roles_and_grants.sql`
 - Test: `apps/server/test/schema.test.ts`
@@ -1053,6 +1076,8 @@ git commit -m "feat: core schema with append-only audit enforced by db grants"
 
 ## Task 4: PIN hashing and lookup
 
+> **Superseded (2026-10-12).** Built as PHASE0-004, with uniqueness among active staff in PHASE0-006b. See the task file in `.agent/tasks/`.
+
 **Files:**
 - Create: `apps/server/src/config.ts`, `apps/server/src/domain/pin.ts`
 - Modify: `apps/server/package.json` (add `@node-rs/argon2`, `zod`)
@@ -1307,6 +1332,8 @@ git commit -m "feat: argon2id pin hashing with peppered lookup digest"
 
 ## Task 5: Audit and telemetry writers
 
+> **Superseded (2026-10-12).** Built as PHASE0-005. See the task file in `.agent/tasks/`.
+
 **Files:**
 - Create: `apps/server/src/domain/audit.ts`
 - Test: `apps/server/test/audit.test.ts`
@@ -1531,6 +1558,8 @@ git commit -m "feat: transactional audit writer and separate security telemetry"
 
 ## Task 6: Throttle buckets
 
+> **Superseded (2026-10-12).** Built as PHASE0-006, after ARCH-007; there is no exported reset and no `auth_throttle` table. See the task file in `.agent/tasks/`.
+
 **Files:**
 - Create: `apps/server/src/domain/throttle.ts`
 - Test: `apps/server/test/throttle.test.ts`
@@ -1720,6 +1749,8 @@ git commit -m "feat: installation-wide login and approval throttle buckets"
 ---
 
 ## Task 7: Sessions with audience policy
+
+> **Superseded (2026-10-12).** Built as PHASE0-007 after ARCH-008, and the back-office credential as PHASE0-007b (ADR-009). See the task file in `.agent/tasks/`.
 
 **Files:**
 - Create: `apps/server/src/domain/session.ts`
@@ -1973,6 +2004,8 @@ git commit -m "feat: audience-scoped sessions with divergent timeout policies"
 ---
 
 ## Task 8: HTTPS server, loopback guard, client instance
+
+> **Superseded (2026-10-12).** Built as PHASE0-008a and PHASE0-008b, after ARCH-010 and ADR-010; serving the bundles stays with Task 11. See the task file in `.agent/tasks/`.
 
 **Files:**
 - Create: `scripts/gen-local-cert.sh`
@@ -2314,6 +2347,8 @@ git commit -m "feat: https localhost server with loopback guard and client insta
 ---
 
 ## Task 9: Authentication routes and audience enforcement
+
+> **Superseded (2026-10-12).** Built as PHASE0-009a and PHASE0-009b, after ARCH-012. See the task file in `.agent/tasks/`.
 
 **Files:**
 - Create: `apps/server/src/http/audience.ts`, `src/http/routes/posAuth.ts`, `src/http/routes/boAuth.ts`
@@ -2729,6 +2764,8 @@ git commit -m "feat: pos and back-office auth routes with audience enforcement"
 
 ## Task 10: Inline manager approval
 
+> **Superseded (2026-10-12).** Built as PHASE0-010a and PHASE0-010b, after ARCH-013; the cancel route moved to Phase 2. See the task file in `.agent/tasks/`.
+
 **Files:**
 - Create: `apps/server/src/domain/approval.ts`
 - Test: `apps/server/test/approval.test.ts`
@@ -2979,6 +3016,8 @@ git commit -m "feat: inline manager approval with combined audit evidence"
 ---
 
 ## Task 11: Two client shells
+
+> **Superseded (2026-10-12).** Not built. The POS client and `@pos/tokens` already exist and the back office signs in with a username and password, so most of this task is out of date; PHASE0-011 will be written from the ARCH-014 consult. See the task file in `.agent/tasks/`.
 
 **Files:**
 - Create: `packages/tokens/package.json`, `packages/tokens/src/index.ts`
@@ -3465,6 +3504,8 @@ git commit -m "feat: separate pos and back-office client shells"
 ---
 
 ## Task 12: Two-client acceptance tests
+
+> **Superseded (2026-10-12).** Not built. Its task file will be written after Task 11, from what Task 11 builds. See the task file in `.agent/tasks/`.
 
 **Files:**
 - Create: `e2e/package.json`, `e2e/playwright.config.ts`, `e2e/tests/two-client.spec.ts`

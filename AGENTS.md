@@ -13,12 +13,17 @@ MVP runs on the owner's local machine only.
 - `apps/pos` — the POS client (React, Vite). POS-01 to POS-07 are built
   against fixtures and a client order store. The back office is not built yet.
 - `apps/server` — the Phase 0 domain modules in `src/domain` (PIN, audit,
-  throttle, sessions, back-office credential) on migrations `0001` onwards, and
-  the HTTPS server in `src/http` (TLS on loopback, Host and origin guard, error
-  envelope, the `rpos_cid` client instance). The only route is `GET /api/health`
-  (plan Tasks 9 to 12 add the rest).
+  throttle, sessions, back-office credential, inline manager approval) on
+  migrations `0001` to `0008`, and the HTTPS server in `src/http` (TLS on
+  loopback, Host and origin guard, error envelope, the `rpos_cid` client
+  instance, route access declarations and the session guard, the approval
+  adapter). Routes: `GET /api/health`, and the POS and back-office sign-in
+  routes under `/api/pos/auth/` and `/api/back-office/auth/`. No production
+  route takes a manager approval yet (Phase 2). Plan Tasks 11 and 12 serve the
+  bundles, build the back-office shell and add the browser harness.
 - `packages/money` (exact monetary arithmetic), `packages/tokens` (Frost
-  design tokens) and `packages/contracts` (the API error codes). `db/migrations`.
+  design tokens) and `packages/contracts` (the API error codes, the session
+  views and the request schemas). `db/migrations`.
 - Stack: TypeScript, Node ≥ 22, Fastify, React, Vite, PostgreSQL 16 (Docker,
   `127.0.0.1:5433`). Currency IDR at minor-unit precision 0.
 
