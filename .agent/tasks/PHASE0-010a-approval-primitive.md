@@ -739,3 +739,171 @@ These rulings are addressed to the builder.
 - Editing migration `0004` or any migration before `0008`. `docs/` of any kind.
 
 ## Handoff
+
+### What I did
+
+Built the evidence and the primitive for inline manager approval, to ARCH-013 and the lead rulings, on
+branch `agent/phase0-010a`. No route, code, schema or contracts change.
+
+- `db/migrations/0008_audit_entry_approval_throttled.sql`: widens `audit_entry_outcome_check` to admit
+  `APPROVAL_THROTTLED`, and sets `audit_entry.occurred_at`'s default to `clock_timestamp()` (lead ruling 3).
+  `0004` is untouched. The comments avoid the literal `now()` so acceptance grep 4 is empty.
+- `apps/server/src/domain/audit.ts`: `AuditOutcome` and `OUTCOMES` gain `'APPROVAL_THROTTLED'`. Nothing else.
+- `apps/server/src/domain/approval.ts` (new): exactly the exports of question 3 (`ApprovalRequest`,
+  `ApprovedWork`, `ApprovalOutcome`, `withManagerApproval`, `recordApprovalCancelled`). Imports only
+  `pg` (type), `withTransaction`, `writeAudit`, `writeAuditOwnTransaction`, `verifyPinThrottled`. No
+  module state, no SQL of its own, no `pin.ts`.
+- `apps/server/test/approval.test.ts` (new): 23 tests, one per case 4 to 23 (case 14 and case 18 have two
+  tests each, see below).
+- `apps/server/test/schema.test.ts`: cases 10 and 11 only.
+
+The work is one commit on the branch; see the Commit note at the end of this Handoff.
+
+### Decisions and the evidence for them
+
+1. **Early validation without a new export.** The consult (rule 2) allows exporting what the primitive
+   needs to validate early. I first exported `validateAudit`, and `audit.test.ts` case 12 ("exports only
+   the three writers", `Object.keys(auditModule)` compared whole) failed. That test is not in *Tests
+   expected to change*, so I did not edit it. Instead `withManagerApproval` does a dry run through
+   `writeAudit` with a stub client whose `query` returns nothing: `validateAudit` runs, no database is
+   touched, and there is still exactly one copy of the audit rules. If the lead prefers the plain export,
+   the exact change is: export `validateAudit` in `audit.ts`, call it directly in `approval.ts`, and add
+   `'validateAudit'` (sorted first) to the expected list at `audit.test.ts:303-307`. Say so and I will make it.
+2. **The role assertion.** `VERIFIED` with a role other than `MANAGER` throws a plain error whose message
+   names no PIN; it never becomes `APPROVAL_FAILED`. In the red proof for "verify in LOGIN" this is the
+   assertion that fires in cases 8 and 21.
+3. **`clientInstanceId` is also checked before verification** (non-string or blank throws). It is only
+   validated by `writeSecurityEvent` after a strike is counted, so a blank value would otherwise have
+   counted a strike and then thrown.
+4. **Test probe table.** `approval_probe` (one `note` column, `INSERT` granted to `pos_app`) is created
+   through the owner connection in `beforeEach`, after `resetDatabase()`, so a rolled-back work is
+   observable. It is dropped with the schema on the next reset.
+5. **Secrets scan (case 21)** matches a PIN as a whole token (not flanked by alphanumerics, `.`, `:`, `+`
+   or `-`), because a bare six-digit substring would sometimes hit a timestamp's microseconds or a uuid.
+   The test asserts the matcher both catches a bare PIN and ignores a timestamp.
+6. **Case 14 has a second test**, "a commit that fails leaves no SUCCESS entry". My first red proof
+   (write `SUCCESS` through `writeAuditOwnTransaction`) left cases 13 and 14 green: the entry is the last
+   statement, so if it fails the outer transaction fails as well. The mutation only shows when something
+   fails *at COMMIT*, after the entry was written. The new test adds a `DEFERRABLE INITIALLY DEFERRED`
+   unique constraint on the probe table and inserts the same note twice. Under the mutation it fails
+   (a `SUCCESS` entry survives a rolled-back action); with the real code it passes.
+7. **Case 18 has two tests** (the two directions the case lists).
+
+### Case to test-name map (`apps/server/test/approval.test.ts`)
+
+- 4: "4: another manager approves; the work runs once inside a transaction and one SUCCESS entry carries everything"
+- 5: "5: an approval resets MANAGER_APPROVAL after two failures and leaves the LOGIN row identical"
+- 6: "6: a manager approves their own action with their own PIN, approver equal to actor"
+- 7: "7: a PIN that matches nobody fails, runs nothing, counts one strike and writes one APPROVAL_FAILED"
+- 8: "8: an active cashier's PIN, the actor's own included, answers exactly as a PIN that matches nobody"
+- 9: "9: a deactivated manager's PIN fails like any other"
+- 10: "10: the failure that reaches MAX_FAILURES reports the cooldown and starts exactly one COOLDOWN_STARTED"
+- 11: "11: during the cooldown the right manager PIN is THROTTLED, runs nothing and leaves the bucket alone"
+- 12: "12: once the cooldown has passed the right PIN approves"
+- 13: "13: a work that throws surfaces the same error, writes no entry, rolls back its row and keeps the reset"
+- 14: "14: a SUCCESS entry that cannot be written fails the request and rolls back the work" and
+  "14: a commit that fails leaves no SUCCESS entry, because the entry shares the work's transaction"
+- 15: "15: an APPROVAL_FAILED entry that cannot be written makes the primitive throw, with the strike standing"
+- 16: "16: an invalid request throws before any verification and changes nothing"
+- 17: "17: the transaction is committed before the function resolves"
+- 18: "18: failed approvals and a successful login do not touch each other's count" and
+  "18: failed logins do not move the LOGIN row when an action is approved"
+- 19: "19: concurrent wrong approvals split into MAX_FAILURES failures and the rest throttled, one entry each"
+- 20: "20: a cancelled approval is one APPROVAL_CANCELLED entry and touches no bucket or event"
+- 21: "21: no PIN used in this file appears in either evidence table, a returned value or an error"
+- 22: "22: the entry's occurred_at is not earlier than a clock reading the work took after a sleep"
+- 23: "23: only approval.ts, audit.ts and throttle.ts name the approver, the class or the outcomes" and
+  "23: approval.ts does not import pin.ts"
+
+`approval.test.ts` alone was run three times in a row: 23 passed each time (3.80 s to 4.07 s).
+
+### Existing tests changed
+
+`apps/server/test/schema.test.ts` only. Case 10: the outcome loop gains `APPROVAL_THROTTLED`, the title
+says so, **and the final stored-row count goes from `'4'` to `'5'`**, which the task did not list but
+which the extra accepted row makes unavoidable (the loop inserts one more row without an approver).
+Case 11: the title says "four"; the refused values are unchanged. Cases 1 and 12 passed unedited.
+
+### Red proofs (each made, run, reverted; `approval.test.ts` against a green tree otherwise)
+
+1. `SUCCESS` written through `writeAuditOwnTransaction` instead of on the work's client: cases 13 and 14
+   (the original ones) stayed green, see decision 6. After adding the deferred-constraint test:
+   `× 14: a commit that fails leaves no SUCCESS entry ...` with `expected [ { …(9) } ] to deeply equal []`,
+   the received row being the `SUCCESS` entry for the cashier with the manager as approver.
+2. `THROTTLED` written as `APPROVAL_FAILED`: `× 11 ... "outcome": "APPROVAL_THROTTLED"` expected,
+   `"APPROVAL_FAILED"` received; and `× 19 ... expected [...] to have a length of 5 but got 8`. Writing
+   nothing on `THROTTLED`: `× 11 expected [ ... ] to have a length of 6 but got 5` and `× 19 expected [] to
+   have a length of 3 but got +0`.
+3. Work called on `FAILED`: `× 7`, `× 9`, `× 15`, `× 19`, each `expected 1 to be +0` (or `5 to be +0`) on
+   the call count. Case 8 did not fail at first because it never asserted the call count; I added
+   `expect(calls.n).toBe(0)` to it.
+4. Verify in `LOGIN`: 12 failures, including case 8 (`Error: manager approval verified a user who is not
+   a manager`), case 18 (`expected '{"blocked_until": null, "throttle_class": "LOGIN",
+   "consecutive_failures": 4}' to be ...0}`), and cases 5, 7, 9, 10, 12, 13, 15, 19, 21.
+5. Evidence failure caught and `FAILED` returned: `× 15 ... promise resolved "{ outcome: 'FAILED', …(1) }"
+   instead of rejecting`.
+6. Validation moved after verification: `× 16 ... "consecutive_failures": 0` expected, `4` received (four
+   invalid requests, each counted a strike). This was run against the `validateAudit` export form; I then
+   switched to the dry-run form (decision 1), which is the same call moved, and did not repeat this mutation.
+7. Migration `0008` removed: `× 11`, `× 19`, `× 21` with `new row for relation "audit_entry" violates check
+   constraint "audit_entry_outcome_check"`; `× 22 expected [ { ok: false } ] to deeply equal [ { ok: true }
+   ]` (the default change); and `schema.test.ts` case 10: `APPROVAL_THROTTLED: expected
+   'audit_entry_outcome_check' to be 'audit_entry_unapproved_outcome_check'`.
+
+### `npm run verify`
+
+Typecheck clean. `Test Files 65 passed (65)`, `Tests 3234 passed (3234)`, 54 s. Baseline in the task:
+64 files and 3211 tests; the difference is the one new file and its 23 tests. The client project's
+tests are unchanged.
+
+### Acceptance greps
+
+- `grep -rn "pin.js\|pin'" apps/server/src/domain/approval.ts`: no output.
+- `grep -rn "approverId" apps/server/src`: `approval.ts:83` and `audit.ts` (lines 19, 67, 69, 70, 119).
+- `grep -rn "MANAGER_APPROVAL\|APPROVAL_" apps/server/src`: `approval.ts` (62, 64, 68, 102), `audit.ts`
+  (11-13, 31, 37-39, 42), `throttle.ts:5`.
+- `grep -rnE "now\(\)" apps/server/src/domain/approval.ts db/migrations/0008_*.sql`: no output.
+
+### Migration against the dev database
+
+`npm run db:migrate`: `applied: 0008_audit_entry_approval_throttled.sql`. Second run:
+`no pending migrations`. Note that this dev database is the one in the main checkout's running
+container (`restaurant-pos-db-1`, port 5433), which this worktree shares.
+
+### What I found and did not fix
+
+- **A stray container.** `npm run db:up` in this worktree failed at `docker compose up` (`Bind for
+  127.0.0.1:5433 failed: port is already allocated`, because the main checkout's container holds the
+  port). It left a created-but-not-started container `phase0-010a-db-1`, a network and a volume
+  `phase0-010a_pgdata`. I tried `docker compose down -v` and the environment refused it, so they are
+  still there. They are harmless; the lead or owner can remove them. Tests ran against the main
+  checkout's database via the harness's global setup.
+- **Test-name caveat.** `approval.test.ts` cases 21 and 23 are named after the consult's numbers but
+  hold one or two `it`s; see the map.
+- Nothing was run in a browser, none was needed.
+
+### Carried forward
+
+- For every gated command (Phase 2 on): one call to `withManagerApproval`, with a literal action; the
+  work uses only the client it is given; `managerPin` in the body, never a session; one new row in the
+  AC-27 table; the entry's action asserted by the command's own test.
+- For Phase 2: the cancel route's design (question 5), the closed action vocabulary, `APPROVAL_REQUIRED`,
+  `REFUSED` (a work that throws still writes nothing, and the test at case 13 will be narrowed, not
+  removed), and the idempotency question of question 10.
+- AC-18, AC-19 and AC-27 close only as far as the table in question 9 says: AC-18 and AC-19 at the
+  domain; the route-level proofs and AC-27 are 010b and later.
+
+### What PHASE0-010b needs and does not have
+
+010b can import `withManagerApproval`, `ApprovalOutcome` and `recordApprovalCancelled` from
+`apps/server/src/domain/approval.ts`. It does not have a gated command to call it, so its probe route
+must supply a literal action and a work that writes a probe row. The `approval_probe` table in
+`approval.test.ts` is a test-local construction, not a migration; 010b must not assume it exists. The
+domain returns `FAILED` for four different causes by design, and the HTTP mapping must not distinguish
+them either. `retryAfterSeconds` is the only data in the `FAILED` and `THROTTLED` outcomes.
+
+### Commit
+
+Committed on `agent/phase0-010a` after the verify above; the hash is in `git log`.
+
+DONE

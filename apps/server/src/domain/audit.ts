@@ -6,7 +6,11 @@ import { query, withTransaction } from '../db/pool.js';
 // Later commands call these from HTTP handlers, so every check is a runtime
 // check; a message names the field and never its value.
 
-export type AuditOutcome = 'SUCCESS' | 'APPROVAL_FAILED' | 'APPROVAL_CANCELLED';
+export type AuditOutcome =
+  | 'SUCCESS'
+  | 'APPROVAL_FAILED'
+  | 'APPROVAL_CANCELLED'
+  | 'APPROVAL_THROTTLED';
 
 export interface AuditInput {
   /** B-13: always a person. An event with no identified actor is a security event. */
@@ -28,7 +32,12 @@ export interface SecurityEventInput {
   clientInstanceId?: string;
 }
 
-const OUTCOMES: readonly string[] = ['SUCCESS', 'APPROVAL_FAILED', 'APPROVAL_CANCELLED'];
+const OUTCOMES: readonly string[] = [
+  'SUCCESS',
+  'APPROVAL_FAILED',
+  'APPROVAL_CANCELLED',
+  'APPROVAL_THROTTLED',
+];
 const EVENT_TYPES: readonly string[] = ['PIN_FAILURE', 'COOLDOWN_STARTED', 'PASSWORD_FAILURE'];
 const THROTTLE_CLASSES: readonly string[] = ['LOGIN', 'MANAGER_APPROVAL', 'BACK_OFFICE_LOGIN'];
 
