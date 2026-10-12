@@ -102,7 +102,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-009b, the credential routes, merged 2026-10-12 as PR #80.)*
     - *(Done: ARCH-013, the Task 10 consult, 2026-10-12: split into 010a and 010b.)*
     - *(Done: PHASE0-010a, the approval primitive and `0008`, merged 2026-10-12 as PR #82.)*
-    - **PHASE0-010b, the approval HTTP adapter** (two codes, `ManagerPin`, `http/approval.ts`, test-only probe) — complete 2026-10-12, review clean — touches identity, audit, boundaries: the owner looks before merge.
+    - *(Done: PHASE0-010b, the approval HTTP adapter, merged 2026-10-12 as PR #84.)*
+    - **ARCH-014, the Task 11 consult** (two client shells: client CSRF handling, idle countdown, M-1) — inputs in STATE.md — brief being written by the lead.
+    - **PHASE0-011, the two client shells** — after ARCH-014 — not written.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
       by the owner 2026-10-06, possibly to after the MVP — not written.
 12. **PRD wording proposal** — replace "half-up" in FR-M3 and B-2 with the half-away-from-zero

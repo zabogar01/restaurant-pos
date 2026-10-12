@@ -28,10 +28,10 @@ depends on it.
 
 - Money primitives: integer minor units, half-up rounding, configured
   precision, exact rate arithmetic behind one calculation module (FR-M1–M3)
-- Settings: currency, tax rate, service charge rate, business details (FR-B1)
 - Cashier and manager roles; kitchen as a non-authenticating classification
   (FR-A1)
-- Six-digit unique PINs, Argon2id hashing (FR-A3, A4)
+- Six-digit PINs unique among active users, and a manager's back-office
+  username and password, both hashed with Argon2id (FR-A1, A3, A4)
 - Installation-wide `LOGIN` and `MANAGER_APPROVAL` throttle buckets, durable
   across restart (FR-A5)
 - `ClientInstance` issuance for UI continuity and telemetry (FR-A7)
@@ -49,10 +49,11 @@ depends on it.
   (FR-J1, J2)
 - Failed and cancelled approval evidence (FR-J3)
 
-**Demonstrable:** a manager sets rates in the back office and staff
-authenticate at the POS, each with its own session behaviour. Failed PINs trip
-the correct throttle bucket and appear in telemetry, not the audit log. A
-session from one client is refused by the other.
+**Demonstrable:** a manager signs in to the back office with a username and
+password and staff authenticate at the POS with a PIN, each with its own
+session behaviour. Failed PINs trip the correct throttle bucket and appear in
+telemetry, not the audit log. A session from one client is refused by the
+other.
 
 **Depends on nothing. Everything depends on it.**
 
@@ -62,11 +63,16 @@ Everything a manager sets up before a single order exists. All of it lives in
 the back-office client.
 
 - Desktop back-office navigation and dense management layouts
+- Settings: currency and minor-unit precision, tax rate, service charge rate,
+  and business details, versioned so a rate change affects only orders opened
+  afterwards (FR-B1)
 - Categories, items, variants, modifiers, prices (FR-B4, C1–C4)
 - 86 toggle (FR-B6, C5)
 - Tables, with deactivation blocked while an order is open (FR-B2, C8)
 - Discount presets (FR-B5)
-- Users, with deactivation and PIN reset invalidating POS sessions (FR-B3)
+- Users, including a manager's back-office username and password;
+  deactivation, or a PIN or password reset, invalidates every session of that
+  user (FR-B3)
 - Catalog-revision propagation into the POS client, two-second poll (FR-C6)
 - Catalog-version handling and `CATALOG_CHANGED` rejection (FR-C7)
 

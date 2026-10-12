@@ -9,15 +9,15 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-12 (wrap-up): PRs #80-83 merged, `development` at `2b8db33` (**PHASE0-009b**, ARCH-013, **PHASE0-010a**).
-**PHASE0-010b** complete and open as **PR #84**, waiting for the owner's look. Narrative: [journal/2026-10-12.md](journal/2026-10-12.md).
+2026-10-12: PRs #80-85 merged, `development` at `e52d0a4` (**PHASE0-010b** and the lead wrap-up). Verify green,
+010b cleaned up. ARCH-014 brief written; document scan done; settings moved to Phase 1 (owner). Narrative: [journal/2026-10-12.md](journal/2026-10-12.md).
 
 ## Phase and gates
 
 - **Phase 0**, started 2026-09-14. Done: tasks 1 to 7, plus 006b, 007b (back-office credential,
   `0007`, `create-manager`), **008a** (HTTPS process, error envelope, `@pos/contracts`), **008b** (Host/origin
   guard, `rpos_cid`), **009a** (route access declarations, session guard, session routes), **009b** (POS and
-  back-office sign-in, M-6, zod 4), **010a** (`0008`, `withManagerApproval`). **010b** in PR #84. Left: Tasks 11, 12.
+  back-office sign-in, M-6, zod 4), **010a** (`0008`, `withManagerApproval`), **010b** (approval HTTP adapter). Left: Tasks 11, 12.
 - **Architecture:** nine accepted ADRs (001-007, 009, 010); ADR-008 stays reserved (deferred).
   Recommended, not commissioned: ADR-011 (sessions over HTTP, ARCH-012) and an inline-approval ADR (ARCH-013).
 - **Frontend built** (fixtures plus a client order store): POS-01 to POS-07, every designed POS
@@ -26,13 +26,13 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   BO-12). BO-03, BO-11 in older Frost; nine are greyscale.
 - **Implementation gate: OPEN since 2026-09-14**; its five conditions are in the roadmap
   archive L135-180. It does not approve anything open in PRD §9: an implementer that needs one stops.
-- **Last verify by the lead:** green at **3235 tests / 65 files** on 2026-10-12, `development` `2b8db33`. Server tests
+- **Last verify by the lead:** green at **3252 tests / 66 files** on 2026-10-12, `development` `e52d0a4`. Server tests
   need `npm run db:up` and **`openssl` on `PATH`**. Dev database `pos` holds 0001-0008. Certificate made (`npm run cert`).
 - **Host memory:** full swap failed every verify on 2026-10-09 (LESSONS); Docker's 8 GB VM still runs. Runs take ~55 s.
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `2b8db33` (PR #82) on GitHub;
+- **`development` is the integration branch** (owner, 2026-09-29), at `e52d0a4` (PR #84) on GitHub;
   the local `development` matches it. `main` and `development` are protected: PR required, 0
   approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch` and
@@ -40,8 +40,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   dispatching**, then `npm ci` if the lockfile changed, and `npm run db:migrate` if a migration landed.
 - **Guard hooks** in the shared `.git/hooks` with an `agents.yaml` snapshot, current (reinstalled
   2026-10-09; `--check` current on 2026-10-12). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1012b`** (from `2b8db33`), pushed with this wrap-up
-  as its own PR. `agent/lead-1012` merged (PR #83). **This branch's STATE is the current one** until it merges.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1012c`** (from `e52d0a4`), pushed as its own PR. `agent/lead-1012b`
+  merged (PR #85). **This branch's STATE is the current one** until it merges.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations`. Merged, still existing: `agent/design-direction` (worktree
@@ -50,8 +50,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE0-010b complete, PR #84 open:** `agent/phase0-010b` at `eff7919`; verify 66 / 3252; Codex review clean. After
-  the merge: fast-forward, verify, `git worktree remove ../restaurant-pos-wt/PHASE0-010b`, delete `.agent/runs/PHASE0-010b/`.
+- **PHASE0-010b merged** (PR #84); worktree and `.agent/runs/PHASE0-010b/` removed 2026-10-12.
 - **Live agents:** the lead only. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
 - **Next: Task 11 (two client shells) needs an architect consult first** (ARCH-014, not written). Inputs: ARCH-012
   *For the lead* 4 (client CSRF, idle countdown); 009b's and 010b's Handoffs *For Task 11*; ARCH-013 *For the lead* 5 (M-1).
@@ -113,10 +112,10 @@ Nothing here is decided. Detail is where each line points.
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording, exact text there; (2) best-effort
   cancel reports; (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN
   timing leak for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
-- **ARCH-012, *For the owner***: (1) commission ADR-011, sessions over HTTP, as Proposed (lead: yes)?
-  (2) the FR-A2c reading: "may accept either" unused, a shared read is one handler under both paths, no
-  route takes either cookie (lead: confirm)? (3) accept sign-in without a pre-session CSRF token until the
-  pre-production gate, recorded in ARCHITECTURE §3.2 (lead: accept)?
+- **ROADMAP, left after the 2026-10-12 ruling** (journal 2026-10-12 *Evening* items 4 and 5): `:50`'s cancelled-approval
+  line waits on ARCH-013 item 2; `:29`'s "half-up" follows the FR-M3/B-2 wording below.
+- **ARCH-012, *For the owner***: (1) commission ADR-011 as Proposed (lead: yes)? (2) the FR-A2c reading, no route
+  takes either cookie (lead: confirm)? (3) sign-in without a pre-session CSRF token until §3.2 (lead: accept)?
 - **Receipt, PRD §9 q1** (`reviews/RESEARCH-receipt.md`, *Proposal*): choices A (one never-reset
   sequence, or daily), B (*SALINAN* on reprints), C (refund slip), D (Indonesian only), E (*PBJT* or
   *PB1*); lead recommends the first of each. Then the lead drafts the PRD wording.
@@ -146,5 +145,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Owner: look at and merge PR #84 (PHASE0-010b) and this branch's PR. Lead, after the merge: fast-forward, verify,
-clean up 010b, then write the Task 11 consult (ARCH-014) from the inputs above. Owner: ARCH-013 and ARCH-012 items, receipt.
+Owner: read the ARCH-014 brief (`tasks/ARCH-014-client-shells.md`, written, untracked); on the owner's go the lead opens `architect14`.
+Owner: ARCH-013 and ARCH-012 items, receipt.
