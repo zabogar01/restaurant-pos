@@ -35,6 +35,15 @@ export type ApprovalOutcome<T> =
   | { outcome: 'FAILED'; retryAfterSeconds: number | null }
   | { outcome: 'THROTTLED'; retryAfterSeconds: number };
 
+// A copy of two fields, so a caller (or its work callback) holding the original
+// object cannot change what an entry says. Anything that is not an object is
+// passed through unchanged and refused by the audit validation, as before.
+function snapshotSubject(subject: unknown): { type: string; id: string } | undefined {
+  if (typeof subject !== 'object' || subject === null) return subject as undefined;
+  const { type, id } = subject as { type: string; id: string };
+  return { type, id };
+}
+
 // Two transactions, in this order, by decision (ARCH-007 section 5): the
 // verification commits inside verifyPinThrottled before the business
 // transaction opens, so a strike can never be undone by the work's failure or
@@ -45,7 +54,10 @@ export async function withManagerApproval<T>(
   request: ApprovalRequest,
   work: (client: pg.PoolClient, approver: { id: string }) => Promise<ApprovedWork<T>>
 ): Promise<ApprovalOutcome<T>> {
-  const { actorId, managerPin, action, subject, reason, clientInstanceId } = request;
+  const { actorId, managerPin, action, reason, clientInstanceId } = request;
+  // What every entry of this call says was approved, fixed before the first await
+  // and before the work can see anything: the work gets no reference to it.
+  const subject = snapshotSubject(request.subject);
 
   // Before any PIN is looked at: otherwise a strike could be counted and its
   // evidence then refused. A dry run through the one writer that owns the audit
@@ -74,13 +86,14 @@ export async function withManagerApproval<T>(
   if (verified.user.role !== 'MANAGER') {
     throw new Error('manager approval verified a user who is not a manager');
   }
-  const approver = { id: verified.user.id };
+  // The entry reads this string; the work gets a frozen object of its own.
+  const approverId: string = verified.user.id;
 
   return withTransaction(async (client) => {
-    const done = await work(client, approver);
+    const done = await work(client, Object.freeze({ id: approverId }));
     await writeAudit(client, {
       actorId,
-      approverId: approver.id,
+      approverId,
       action,
       subject,
       reason,
@@ -98,6 +111,7 @@ export async function recordApprovalCancelled(input: {
   action: string;
   subject?: { type: string; id: string };
 }): Promise<void> {
-  const { actorId, action, subject } = input;
+  const { actorId, action } = input;
+  const subject = snapshotSubject(input.subject);
   await writeAuditOwnTransaction({ actorId, action, subject, outcome: 'APPROVAL_CANCELLED' });
 }

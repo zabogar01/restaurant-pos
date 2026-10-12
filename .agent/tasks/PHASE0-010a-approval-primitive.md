@@ -937,4 +937,35 @@ them either. `retryAfterSeconds` is the only data in the `FAILED` and `THROTTLED
 
 Committed on `agent/phase0-010a` after the verify above; the hash is in `git log`.
 
+## Round 2
+
+Fixed the review's P2 (rulings 10 to 13); nothing else changed.
+
+- `apps/server/src/domain/approval.ts`: a private `snapshotSubject` copies a subject's `type` and `id` into
+  a new object. `withManagerApproval` takes that copy as its first statement after destructuring the
+  request, before the dry-run validation and the first `await`, and uses only the copy for validation and
+  for the `THROTTLED`, `FAILED` and `SUCCESS` entries. The verified manager's id is a private `const
+  approverId: string`; the `SUCCESS` entry's `approverId` is written from that string, and the work gets
+  `Object.freeze({ id: approverId })`, an object nothing else reads. `recordApprovalCancelled` takes the
+  same copy. A subject that is not an object (`null`, a string) is passed through unchanged and refused by
+  the dry run as before; non-string parts are copied as they are and refused the same way. Case 16 is
+  green and unedited. The dry-run validation is unchanged.
+- `apps/server/test/approval.test.ts`: new "4b: a work that rewrites the approver argument and the request
+  subject cannot change what the entry says". The work assigns `otherManager.id` to `approver.id`
+  (asserted to throw a `TypeError`, since modules are strict), then overwrites the original request's
+  `subject.type` and `subject.id`. The result is `APPROVED`; the entry names the verified manager and
+  `probe` / `p-1`.
+
+Red proofs, each reverted:
+
+- (a) Entry written from a plain object handed to the work, no freeze:
+  `× 4b ... AssertionError: expected false to be true` at `expect(rewriteRefused).toBe(true)` (the
+  assignment took, so the entry would have named `otherManager`; the freeze assertion comes first).
+- (b) The caller's `subject` object used instead of the copy:
+  `× 4b ... AssertionError: expected 'order' to be 'probe'` at `expect(entry?.subject_type)`.
+
+`approval.test.ts` run once after the revert: 24 passed. `npm run verify` run once on its own:
+`Test Files 65 passed (65)`, `Tests 3235 passed (3235)`, typecheck clean. Committed as a second commit on
+the branch (see `git log`).
+
 DONE

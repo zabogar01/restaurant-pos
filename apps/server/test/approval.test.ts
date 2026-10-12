@@ -140,6 +140,31 @@ describe('approved', () => {
     ]);
   });
 
+  it('4b: a work that rewrites the approver argument and the request subject cannot change what the entry says', async () => {
+    const subject = { type: 'probe', id: 'p-1' };
+    let rewriteRefused = false;
+    const outcome = await withManagerApproval(
+      { actorId: cashier.id, managerPin: manager.pin, action: 'VOID_ITEM', subject },
+      async (_client, approver) => {
+        try {
+          approver.id = otherManager.id;
+        } catch (err) {
+          rewriteRefused = err instanceof TypeError;
+        }
+        subject.type = 'order';
+        subject.id = 'o-9';
+        return { result: 'ran' };
+      }
+    );
+
+    expect(outcome).toEqual({ outcome: 'APPROVED', result: 'ran' });
+    expect(rewriteRefused).toBe(true);
+    const [entry] = await entriesOf(cashier.id);
+    expect(entry?.approver_id).toBe(manager.id);
+    expect(entry?.subject_type).toBe('probe');
+    expect(entry?.subject_id).toBe('p-1');
+  });
+
   it('5: an approval resets MANAGER_APPROVAL after two failures and leaves the LOGIN row identical', async () => {
     await failedLogins(1);
     await fail(cashier.id, NOBODY_PIN, 2);
