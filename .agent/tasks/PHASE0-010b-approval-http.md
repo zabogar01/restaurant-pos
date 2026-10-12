@@ -5,7 +5,7 @@ category: feature
 touches: [audit, identity, boundaries]
 depends_on: [PHASE0-010a]
 owns: [apps/server/**, packages/contracts/**]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE0-010b — Inline manager approval: the HTTP adapter
