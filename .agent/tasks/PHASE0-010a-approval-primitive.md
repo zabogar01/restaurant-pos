@@ -5,8 +5,8 @@ category: feature
 touches: [audit, identity, boundaries]
 depends_on: [PHASE0-009b]
 owns: [apps/server/**, db/migrations/**]
-status: review
-cycles: 0
+status: complete
+cycles: 1
 ---
 # PHASE0-010a — Inline manager approval: the evidence and the primitive
 
