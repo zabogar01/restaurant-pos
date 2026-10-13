@@ -1,8 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { ErrorCode } from '@pos/contracts';
+import { CSRF_HEADER, ErrorCode } from '@pos/contracts';
 import type { StaffRole } from '../domain/pin.js';
 import {
+  SESSION_POLICY,
   createSession,
   reauthenticateSession,
   releaseSession,
@@ -30,6 +31,8 @@ declare module 'fastify' {
   interface FastifyRequest {
     /** Null unless the session guard set it. Read it through `actorOf`. */
     actor: Actor | null;
+    /** Null unless the guard accepted a session. Read it through `idleClockOf`. */
+    idleRemainingSeconds: number | null;
   }
 }
 
@@ -38,13 +41,15 @@ const COOKIE: Record<Audience, { name: string; path: string }> = {
   BACK_OFFICE: { name: 'rpos_bo_sid', path: '/api/back-office' },
 };
 
-const CSRF_HEADER = 'x-rpos-csrf';
+// Node lower-cases header names on arrival.
+const CSRF_HEADER_KEY = CSRF_HEADER.toLowerCase();
 const CSRF_MESSAGE = 'rpos-csrf-v1';
 const CSRF_LENGTH = 43; // 32 bytes, base64url without padding
 
 /** Decorates the request with a null actor. Call once on the root instance. */
 export function decorateActor(app: FastifyInstance): void {
   app.decorateRequest('actor', null);
+  app.decorateRequest('idleRemainingSeconds', null);
 }
 
 type Presented = { kind: 'NONE' } | { kind: 'REPEATED' } | { kind: 'ONE'; token: string };
@@ -87,7 +92,7 @@ function csrfOf(token: string): string {
 // Exactly one header, equal to the token derived from the presented cookie. A
 // repeated header arrives joined or as an array and is never 43 characters.
 function checkCsrf(request: FastifyRequest, token: string): void {
-  const sent = request.headers[CSRF_HEADER];
+  const sent = request.headers[CSRF_HEADER_KEY];
   const expected = Buffer.from(csrfOf(token));
   if (typeof sent === 'string' && sent.length === CSRF_LENGTH) {
     const given = Buffer.from(sent);
@@ -146,6 +151,23 @@ export async function sessionGuard(request: FastifyRequest, reply: FastifyReply)
     sessionId: resolved.sessionId,
     audience,
   };
+  request.idleRemainingSeconds = resolved.idleRemainingSeconds;
+}
+
+/**
+ * The session's idle clock for a session view: the audience's limit from the policy
+ * and what the resolution that judged this request left of it. Durations only.
+ */
+export function idleClockOf(request: FastifyRequest): {
+  idleSeconds: number;
+  idleRemainingSeconds: number;
+} {
+  const { audience } = actorOf(request);
+  if (request.idleRemainingSeconds === null) throw new Error('No resolution to read the clock from');
+  return {
+    idleSeconds: SESSION_POLICY[audience].idleSeconds,
+    idleRemainingSeconds: request.idleRemainingSeconds,
+  };
 }
 
 /** The actor of a route declared ACTIVE. Throws where the guard did not set one. */
@@ -194,7 +216,7 @@ export async function signIn(
   request: FastifyRequest,
   reply: FastifyReply,
   user: VerifiedUser
-): Promise<{ csrfToken: string }> {
+): Promise<{ csrfToken: string; idleSeconds: number; idleRemainingSeconds: number }> {
   const audience = optionalAudience(request, 'signIn');
   const presented = presentedToken(request, audience);
   if (presented.kind === 'ONE') await releaseSession(presented.token, audience);
@@ -204,7 +226,13 @@ export async function signIn(
     clientInstanceId: request.clientInstanceId,
   });
   setSessionCookie(reply, audience, issued.token);
-  return { csrfToken: csrfOf(issued.token) };
+  return { csrfToken: csrfOf(issued.token), ...freshClock(audience) };
+}
+
+// A session made or renewed in this request has its whole limit left.
+function freshClock(audience: Audience): { idleSeconds: number; idleRemainingSeconds: number } {
+  const { idleSeconds } = SESSION_POLICY[audience];
+  return { idleSeconds, idleRemainingSeconds: idleSeconds };
 }
 
 /**
@@ -252,14 +280,14 @@ export async function renewSession(
   token: string,
   audience: 'BACK_OFFICE',
   user: VerifiedUser
-): Promise<{ csrfToken: string }> {
+): Promise<{ csrfToken: string; idleSeconds: number; idleRemainingSeconds: number }> {
   const issued = await reauthenticateSession(token, audience, user);
   if (issued === null) {
     clearSessionCookie(reply, audience);
     throw new AppError(ErrorCode.UNAUTHENTICATED, 401);
   }
   setSessionCookie(reply, audience, issued.token);
-  return { csrfToken: csrfOf(issued.token) };
+  return { csrfToken: csrfOf(issued.token), ...freshClock(audience) };
 }
 
 /**

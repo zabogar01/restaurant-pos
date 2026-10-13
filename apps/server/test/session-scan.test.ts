@@ -248,6 +248,12 @@ describe('the rules of the source', () => {
     }
   });
 
+  it('11b. domain/session.ts reads no JavaScript clock: the idle clock is PostgreSQL\'s', () => {
+    const text = readFileSync(join(SRC, 'domain', 'session.ts'), 'utf8');
+    // SQL now() is not matched: createSession's absolute expiry uses it, out of scope.
+    expect(text).not.toMatch(/Date\.now|new Date\(|performance\.now/);
+  });
+
   it('25. error-details.types.ts has a block for every code', () => {
     const text = readFileSync(fileURLToPath(new URL('./error-details.types.ts', import.meta.url)), 'utf8');
     for (const code of Object.values(ErrorCode)) {

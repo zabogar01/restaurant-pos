@@ -259,11 +259,10 @@ Addressed to the builder.
 
 ## Handoff
 
-**Status: built, not committed, BLOCKED on one existing test the task does not list.** The change is in the
-working tree of `agent/phase0-011b`. I did not commit because `npm run verify` is red on exactly one
-test, and the task forbids changing a test it does not list.
+**Status: done and committed on `agent/phase0-011b`.** The first round stopped on one unlisted test; the
+lead ruled yes (see *Lead ruling on the BLOCKED*), I applied it, and verify is green.
 
-### The blocker
+### The blocker (resolved by the ruling above)
 
 `apps/server/test/session.test.ts:159` (case 5, "a fresh session resolves ACTIVE with the user and
 role") does `expect(await resolveSession(token, 'POS', false)).toEqual({ status, sessionId,
@@ -344,8 +343,10 @@ and commit; nothing else is outstanding except the Handoff counts.
 Exact-key assertions, each gaining `idleRemainingSeconds` and `idleSeconds` and nothing else:
 `pos-sign-in.test.ts:78`, `back-office-sign-in.test.ts:62`, `reauthenticate.test.ts:103`,
 `session-guard.test.ts:223` (both audiences); and the additions to `session-scan.test.ts`. No other
-existing test was changed. `session.test.ts:159` is the one that needs a ruling (above). I did not
-touch `error-details.types.ts`; it passes.
+existing test was changed except `session.test.ts` case 5 (lines 159 onwards), changed under the lead's
+ruling: the whole-object `toEqual` now also lists `idleRemainingSeconds: expect.any(Number)`, followed by
+required assertions that the value is an integer, at least 0 and at most `SESSION_POLICY.POS.idleSeconds`;
+nothing else in that file changed. I did not touch `error-details.types.ts`; it passes.
 
 ### Red proofs (each made, run, reverted)
 
@@ -376,8 +377,8 @@ After `ageSession(id, 40)`: the same with `"idleRemainingSeconds":49`.
 
 ### verify
 
-`npm run verify`: typecheck clean; `vitest run`: 68 test files, 3269 tests, **3268 passed, 1 failed**
-(`session.test.ts` case 5, above). Baseline was 66 files and 3252 tests, green; the difference is 17
+`npm run verify` after the lead's ruling: typecheck clean; `vitest run`: 68 test files, **3269 tests, all
+passed**. (Before the ruling it was 3268 passed and 1 failed, `session.test.ts` case 5.) Baseline was 66 files and 3252 tests, green; the difference is 17
 new tests: 13 in `session-clock.test.ts`, 3 in `route-table.test.ts` and 1 scan case (3252 + 17 = 3269). `session-clock.test.ts` and `route-table.test.ts` run together
 were green three times in a row (16 tests each time).
 
@@ -395,4 +396,14 @@ were green three times in a row (16 tests each time).
   name, the precise mapped type is.
 - No formatter was run. No browser was used.
 
-BLOCKED: may I change `apps/server/test/session.test.ts:159-164` so the ACTIVE resolution's `toEqual` also lists `idleRemainingSeconds: expect.any(Number)`, since the resolution must now carry the number the session view needs?
+### Case map (acceptance 2)
+
+In `session-clock.test.ts`, each test runs on both audiences: 1 `1. a sign-in returns idleSeconds equal
+to the policy ...`; 2 `2. me, after the session is aged by n seconds ...`; 3 `3. me does not move it
+...`; 4 `4. activity, then me, returns it to the policy within one`; 5 `5. one second short of the limit is
+0 or 1 ...`; 7 `7. both numbers are integers and the response has exactly the expected keys`; 6 `6. a
+re-authentication returns the policy for both numbers`. Case 8 in `route-table.test.ts`: three tests
+named `8. ...`. Case 9: the existing suite, green (68 files). The JavaScript-clock scan is `11b.` in
+`session-scan.test.ts`.
+
+DONE

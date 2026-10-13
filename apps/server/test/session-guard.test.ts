@@ -222,8 +222,16 @@ describe('the session guard', () => {
     // the manager's stored username.
     expect(Object.keys(body).sort()).toEqual(
       surface.audience === 'POS'
-        ? ['csrfToken', 'name', 'role', 'staffUserId']
-        : ['csrfToken', 'name', 'role', 'staffUserId', 'username']
+        ? ['csrfToken', 'idleRemainingSeconds', 'idleSeconds', 'name', 'role', 'staffUserId']
+        : [
+            'csrfToken',
+            'idleRemainingSeconds',
+            'idleSeconds',
+            'name',
+            'role',
+            'staffUserId',
+            'username',
+          ]
     );
     expect(body.name).toMatch(/^User \d+$/);
     if (surface.audience === 'BACK_OFFICE') expect(body.username).toMatch(/^manager-\d+$/);

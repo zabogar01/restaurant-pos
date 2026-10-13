@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 /**
  * The codes an API response can carry. A code enters this list in the task that
  * first emits it and tests it; a code with no emitter is an untested promise.
@@ -52,3 +54,32 @@ export type ErrorBody = {
       : { details?: ErrorDetailsOf<C> });
   };
 }[ErrorCode];
+
+// A client validates what it receives at its boundary. The details are a number the
+// server computed, on exactly the four codes that declare any; the `satisfies` makes
+// this list equal to ErrorDetailsByCode in both directions. The schema is for
+// validation: the precise ErrorBody type above stays the type clients use.
+const DETAIL_CODES = {
+  INVALID_CREDENTIALS: true,
+  THROTTLED: true,
+  APPROVAL_FAILED: true,
+  APPROVAL_THROTTLED: true,
+} as const satisfies Record<keyof ErrorDetailsByCode, true>;
+
+const RetryAfter = z.strictObject({ retryAfterSeconds: z.number().int().nonnegative() });
+
+const envelope = (code: ErrorCode) =>
+  z.strictObject({
+    error:
+      code in DETAIL_CODES
+        ? z.strictObject({ code: z.literal(code), details: RetryAfter.optional() })
+        : z.strictObject({ code: z.literal(code) }),
+  });
+
+export const ErrorBody = z.union(
+  Object.values(ErrorCode).map(envelope) as unknown as [
+    ReturnType<typeof envelope>,
+    ReturnType<typeof envelope>,
+    ...ReturnType<typeof envelope>[],
+  ]
+);
