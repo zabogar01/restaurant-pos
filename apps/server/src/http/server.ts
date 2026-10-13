@@ -4,11 +4,13 @@ import Fastify from 'fastify';
 import type { FastifyInstance, FastifyPluginAsync, FastifyServerOptions } from 'fastify';
 import { ErrorCode } from '@pos/contracts';
 import { installAccessChecks } from './access.js';
+import { bundleRoutes } from './bundles.js';
+import type { BundleRoots } from './bundles.js';
 import { clientInstanceHook } from './client-instance.js';
 import {
   AppError,
   clientErrorHandler,
-  errorHandler,
+  errorHandlerFor,
   frameworkErrorHandler,
   notFoundHandler,
 } from './errors.js';
@@ -28,6 +30,12 @@ export interface BuildServerOptions {
   logStream?: Writable;
   /** Further API route plugins, registered inside the /api context. */
   apiRoutes?: FastifyPluginAsync[];
+  /**
+   * Where the two built clients are. Omitted, nothing is served outside /api, as
+   * an omitted `tls` means the instance cannot listen: a test never depends on
+   * whether someone ran a build.
+   */
+  bundles?: BundleRoots;
 }
 
 /**
@@ -42,6 +50,7 @@ export function buildServer({
   tls,
   logStream,
   apiRoutes = [],
+  bundles,
 }: BuildServerOptions): FastifyInstance {
   const own = ownOrigin(origin);
   // The https option changes the instance's generic type; the one type the rest of
@@ -60,7 +69,7 @@ export function buildServer({
 
   // A cross-site HTML form can send text/plain; no parser means it gets a 415.
   app.removeContentTypeParser('text/plain');
-  app.setErrorHandler(errorHandler);
+  app.setErrorHandler(errorHandlerFor(own.origin));
   app.setNotFoundHandler(notFoundHandler);
 
   let closing = false;
@@ -101,6 +110,11 @@ export function buildServer({
     },
     { prefix: '/api' }
   );
+
+  // On the root, outside the API context: no origin check (a navigation often
+  // carries Sec-Fetch-Site: none or cross-site), no client instance, no session,
+  // no database. The Host check above still covers it.
+  if (bundles) app.register(bundleRoutes(bundles));
 
   return app;
 }

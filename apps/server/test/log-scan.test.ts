@@ -1,4 +1,5 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Writable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
@@ -31,9 +32,11 @@ const MARK = {
   loggedDeep: 'MARK-LOGGED-DEEP-3065',
   badUrlPin: 'MARK-BADURL-PIN-6021',
   badUrlPassword: 'MARK-BADURL-PASSWORD-7742',
+  bundleQuery: 'MARK-BUNDLE-QUERY-8815',
 };
 
 let app: FastifyInstance;
+let bundleDir: string;
 let lines: string[];
 const bodies: string[] = [];
 const badUrls: Awaited<ReturnType<typeof send>>[] = [];
@@ -43,7 +46,10 @@ const errorBodies: { status: number; body: string }[] = [];
 async function send(options: InjectOptions) {
   const res = await inject(app, options);
   bodies.push(res.body);
-  if (res.statusCode >= 400) errorBodies.push({ status: res.statusCode, body: res.body });
+  // Outside /api an error is plain text (ADR-010 rule 1); the envelope rule is the API's.
+  if (res.statusCode >= 400 && String(options.url).startsWith('/api/')) {
+    errorBodies.push({ status: res.statusCode, body: res.body });
+  }
   return res;
 }
 
@@ -55,10 +61,15 @@ beforeAll(async () => {
       done();
     },
   });
+  bundleDir = mkdtempSync(join(tmpdir(), 'pos-logscan-bundle-'));
+  mkdirSync(join(bundleDir, 'assets'));
+  writeFileSync(join(bundleDir, 'index.html'), '<!doctype html>');
+  writeFileSync(join(bundleDir, 'assets', 'a-1.js'), '');
   app = buildServer({
     origin: 'https://localhost:8443',
     logLevel: 'trace',
     logStream,
+    bundles: { pos: bundleDir, backOffice: join(bundleDir, 'not-built') },
     apiRoutes: [
       async (api) => {
         const config = { access: { session: 'NONE' } } as const;
@@ -116,6 +127,19 @@ beforeAll(async () => {
   await send({ method: 'GET', url: '/api/probe-postgres' });
   await send({ method: 'GET', url: '/api/probe-log' });
 
+  // Case 17: a marker in a bundle URL's query string, on a hit, the fallback, an
+  // asset, a miss and the not-built 503.
+  for (const url of [
+    `/pos/?token=${MARK.bundleQuery}`,
+    `/pos/floor?token=${MARK.bundleQuery}`,
+    `/pos/assets/a-1.js?token=${MARK.bundleQuery}`,
+    `/pos/assets/none.js?token=${MARK.bundleQuery}`,
+    `/pos?token=${MARK.bundleQuery}`,
+    `/back-office/?token=${MARK.bundleQuery}`,
+  ]) {
+    await send({ method: 'GET', url });
+  }
+
   // Case 26: a URL the router cannot decode is rejected before routing.
   for (const url of [
     `/api/%zz?pin=${MARK.badUrlPin}`,
@@ -134,6 +158,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await app.close();
+  rmSync(bundleDir, { recursive: true, force: true });
   await closePool();
 });
 
@@ -151,7 +176,7 @@ describe('what leaves the process', () => {
     expect(leaked, 'channels that leaked into the log').toEqual([]);
   });
 
-  it('22. no marker appears in any response body, and every error body is exactly the envelope', () => {
+  it('22. no marker appears in any response body, and every error body under /api is exactly the envelope', () => {
     const everything = bodies.join('\n');
     const leaked = Object.entries(MARK)
       .filter(([, marker]) => everything.includes(marker))
