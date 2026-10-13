@@ -385,3 +385,93 @@ These rulings are addressed to the builder.
 - `docs/` of any kind, the ADR, ARCHITECTURE §3.2.
 
 ## Handoff
+
+### What I did
+
+The server now serves the POS bundle at `/pos/` and the back-office bundle at `/back-office/`, each from its own client package's `dist/`, as ARCH-014 question 2 specifies. The work is one commit on `agent/phase0-011a` (hash in `git log`; it is the commit that contains this Handoff).
+
+New: `apps/server/src/http/bundles.ts` (`BundleRoots`, `defaultBundleRoots()`, `bundleRoutes(roots)`, and the exported `CONTENT_SECURITY_POLICY` constant), `apps/server/test/bundles.test.ts`, `apps/pos/test/built-bundle.test.ts`.
+
+Changed: `apps/server/src/http/server.ts` (optional `bundles`, registered on the root outside the API context, no `config.access`), `apps/server/src/http/errors.ts` (see below), `apps/server/src/index.ts` (passes `defaultBundleRoots()`), `apps/server/package.json` and `package-lock.json` (`@fastify/static` ^10, installed 10.1.6), `apps/pos/vite.config.ts` (`build.assetsInlineLimit: 0`, stale comment replaced by one line, no `outDir`), `apps/pos/package.json` (`build:watch`), root `package.json` (`build:clients`, the POS only for now).
+
+### How it is built, and what I decided
+
+- **One registration of `@fastify/static`, with `serve: false`.** It is used only for its `reply.sendFile(file, root)` decorator; every route is my own, because the plugin's own routes cannot check existence per request, cannot choose `Cache-Control` per path class, and would answer an unbuilt bundle with a bare 404. This settles the consult's first unverified point: with a single registration there is no second one, so `decorateReply: false` never arises. `cacheControl: false`, `dotfiles: 'deny'`, `redirect: false`.
+- **Each prefix is an encapsulated child plugin** (`prefix: '/pos'`, `'/back-office'`) holding one `GET /*` route, its own `setNotFoundHandler` and its own `setErrorHandler`. A route `GET /pos` (the 302, constant `Location`) sits beside it. There is no route on the root that is not under one of the two prefixes. Settles the second unverified point: a not-found handler set inside a prefixed child *is* used for misses and other methods under that prefix (test 12 "wrong method", test 7), and the root handler keeps answering everything else.
+- **Third unverified point:** a `POST` with no `Content-Type` and no body under a prefix is routed and answered with the plain-text 404 (test 7). A POST with a body and a content type is not special-cased by me; it falls to the same not-found handler or to the error handler (plain text outside `/api`).
+- **Classification is by shape** (`classify` in `bundles.ts`): `''` or `index.html` is the index; anything whose first segment is `assets` or whose last segment contains a dot is a file lookup (miss is a 404); any segment starting with a dot, a NUL or a backslash is a 404 before the file system is touched; everything else is the fallback index. Existence of the file and of `index.html` is checked with `stat` on each request.
+- **The bundle's error handler wraps the root's:** it sets the policy headers and then calls the inherited handler, so a refused Host under `/pos/` is plain text *with* the policy headers.
+- **Startup:** one fixed `warn` line per bundle whose `index.html` is missing (`the POS bundle is not built`), via `app.log.warn`. Verified in the real server's output: `the back-office bundle is not built`.
+
+`errors.ts`: the old `errorHandler` is now `errorHandlerFor(origin)`, a factory, because the refused-Host sentence must name the server's own origin and the handler had no access to it. `server.ts` passes `own.origin`. Under `/api` nothing changes. Outside `/api` it sends `text/plain`, `Cache-Control: no-store`, wording fixed by status. `isApiPath` now also strips an absolute-form target's scheme and authority before classifying, because Fastify keeps the whole `https://host/path` as `request.url` and, without this, an absolute-form request to `/api/health` would have been classified as outside `/api` and lost its envelope, which the unchanged `/api` rows of `origin.test.ts` would have caught. `frameworkErrorHandler` is unchanged.
+
+### The fixed sentences (ruling 4), quoted
+
+- Not-built 503, POS: `The POS client has not been built. Run: npm run build -w apps/pos`
+- Not-built 503, back office: `The back-office client has not been built. Run: npm run build -w apps/back-office`
+- Refused Host, 403 outside `/api`: `This application answers only at https://localhost:8443.` (the origin is the configured one; test uses `TEST_ORIGIN`)
+- Other statuses outside `/api`: 400 `Bad Request`, 404 `Not Found`, 413 `Payload Too Large`, 415 `Unsupported Media Type`, 500 `Internal Server Error`, 503 `Service Unavailable`; any other 4xx `Request failed`, any other 5xx `Internal Server Error`.
+- Bundle miss: `Not Found`.
+
+### Tests
+
+Counts: `npm run verify` is green, **68 test files, 3335 tests**, against the baseline of 66 files and 3252 tests (+2 files, +83 tests). Typecheck is clean. `built-bundle.test.ts` makes a real Vite build in about 0.1 s (Vite 8 is fast), so it adds well under a second to `verify`; its `beforeAll` allows 180 s. It builds with `process.execPath` running Vite's own `bin/vite.js` with `--outDir <tmp> --emptyOutDir` and `NODE_ENV=production`, so no `dist/` is read. The POS client test project already runs in the node environment by default (jsdom is selected per file), so no environment override was needed.
+
+Each new file alone, three runs in a row: 83 passed each time (`bundles.test.ts` 80 and `built-bundle.test.ts` 3, run together).
+
+**Case map** (names begin with the case number): 1 `where the bundles are` (two tests: default roots independent of the working directory; no `process.cwd()` under `src/http`) and `what each path answers` (GET and HEAD of `/pos/` and `/pos/index.html`); 2 asset immutable and root file no-cache; 3 fallback (`/pos/floor`, `/pos/closed-orders`, a deep path, a trailing slash); 4 misses (`/pos/assets/missing.js`, `/pos/missing.js`, `/pos/favicon.ico`, `/pos/assets`, `/pos/assets/`); 5 back office (index, its own asset, its own miss); 6 redirect for both prefixes, with a hostile query string; 7 POST/PUT/DELETE/PATCH and a body-less POST; 8 `/`, `/other` and others, and `/api/missing` still the envelope; 9 missing directory, directory without `index.html`, the back-office 503; 10 built after the server; 11 traversal (ten spellings) plus a raw TLS request line; 12 ten response kinds, plus the constant equals the spec string; 13 four wrong Hosts times three URLs; 14 five `Sec-Fetch-Site` values; 15 row count unchanged, and DB unreachable; 16 `bundles` omitted; 17 in `log-scan.test.ts` (marker `bundleQuery`, six bundle URLs); 18 three tests in `apps/pos/test/built-bundle.test.ts` (no inline script/style/handler; every `src`/`href` begins `/pos/assets/`; no `data:` URI in any emitted file).
+
+**Existing tests changed** (only those ruling 6 named):
+- `origin.test.ts` case 11: the refused Host's body expectation now branches on the URL: the envelope for `/api/…`, the origin sentence outside `/api`. Status and `no-store` unchanged. The absolute-form "outside miss" row was moved out of its `it.each` into its own test expecting 400, `Bad Request`, `text/plain`, `no-store`; its `/api` rows are unchanged.
+- `log-scan.test.ts`: case 17's marker and six bundle requests added (the test server now has a temporary bundle directory); case 22's envelope check is narrowed to error responses whose URL starts `/api/`, and its title says so. Nothing else.
+- `server.test.ts` cases 16 and 31 are untouched and green.
+
+### Red proofs (each made, run, reverted)
+
+1. `defaultBundleRoots().pos` changed to `join(process.cwd(), '../pos/dist/')`: case 1 failed twice (roots equal the expected paths; no `process.cwd` under `src/http`). Received `/private/var/folders/…/T/pos/dist/` after the test's `chdir`. Reverted.
+   *Note:* the consult's wording ("run the tests from another directory: case 1 fails") assumes a test that uses the default roots. Tests pass explicit roots, so I added the two case-1 tests above, which exercise `defaultBundleRoots()` directly and change directory themselves; the proof needs no outside action.
+2. Fallback answers every miss (a wrapper that turned every `file` into `index`): 9 failures in cases 2, 4, 5 and 9 (misses answered 200; the root `robots.txt` answered HTML). Reverted.
+3. Fallback registered as a catch-all `GET /*` serving the POS index: 10 failures, cases 8 (six paths and `/api/missing` answered 200) and 11 (the dot-segment URLs answered 200). Reverted.
+4. `errorHandlerFor` with `const api = true`: 12 failures, all case 13 (`application/json` instead of `text/plain`). Reverted.
+5. A response header `strict-transport-security: max-age=15552000; includeSubDomains` added on every bundle response (standing in for a security-header plugin on defaults; `helmet` is not installed): 12 failures, case 12 for all ten response kinds and case 9's 503. Reverted.
+
+The three greps (criterion 4), run at the end:
+- `grep -rn "process.cwd" apps/server/src` prints only `apps/server/src/db/migrate.ts:68` (`process.env.INIT_CWD ?? process.cwd()`, the migration CLI, not `src/http`).
+- `grep -rniE "strict-transport|helmet|access-control" apps/server/src`: nothing (a comment of mine matched at first and I reworded it).
+- `grep -n "setCookie\|Set-Cookie" apps/server/src/http/bundles.ts`: nothing.
+
+### By hand: `npm run build:clients`, `npm run start -w apps/server`, `curl -k` (criterion 5)
+
+I used `start` rather than `dev` (the same program without `tsx watch`). Startup logged `the back-office bundle is not built` once. Common to every response below except `/`: `content-security-policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`, `x-content-type-options: nosniff`, `referrer-policy: no-referrer`, `cross-origin-resource-policy: same-origin`.
+
+| Request | Status | Cache-Control | Content-Type |
+|---|---|---|---|
+| `/pos/` | 200 | `no-cache` | `text/html; charset=utf-8` |
+| `/pos/floor` | 200 | `no-cache` | `text/html; charset=utf-8`, the same `etag` and length as `/pos/` |
+| `/pos/assets/index-CoLhYheF.js` | 200 | `public, max-age=31536000, immutable` | `application/javascript; charset=utf-8` |
+| `/pos/missing.js` | 404, body `Not Found` | `no-store` | `text/plain` |
+| `/back-office/` | 503, body `The back-office client has not been built. Run: npm run build -w apps/back-office` | `no-store` | `text/plain` |
+| `/` | 404, body `Not Found` | none (the not-found handler is unchanged and never set one) | `text/plain`, no policy headers |
+| `Host: 127.0.0.1:8443` on `/pos/` | 403, body `This application answers only at https://localhost:8443.` | `no-store` | `text/plain` |
+
+The server was stopped afterwards.
+
+### Found and not fixed
+
+- **`/` and other outside-prefix 404s carry no `Cache-Control`**, because `notFoundHandler` (unchanged, `server.test.ts` 16 and 31 pin it) never set one. The consult only requires `no-store` on the bundle routes' 404s, which they have. If a `no-store` on the root's 404 is wanted, it is a one-line change in `notFoundHandler` and a test change for those two cases; I did not make it.
+- **`classify` treats any path under `assets/` as a file lookup**, so a directory (`/pos/assets/`) is a 404. A client route that began with the segment `assets` could never be a client route. NFR-5 gives the client its own route manifest, so this is a reserved word, worth saying in the ADR the owner commissioned.
+- **A case-insensitive file system** (macOS default) will serve `/pos/Index.html` or `/pos/ASSETS/x.js`-style spellings from the same file: `stat` succeeds, and the file is inside the root, so nothing leaks. Only the cache class could differ. I did not add a case check.
+- `@fastify/static` 10.1.6 pulls 19 packages into the lockfile (`package-lock.json` +243 lines). `npm install` warned about two packages' install scripts (`esbuild`, `fsevents`) not being covered by `allowScripts`; both were already present before this task.
+- Fastify's `reply.sendFile` and an `ERR_STREAM_PREMATURE_CLOSE` (a client aborting a download) go to the child's error handler, which then calls the inherited root handler; I did not exercise that path.
+
+### Carried forward
+
+- **For 011c (the POS signs in) from this task:** the bundle is at `/pos/` with `base: '/pos/'`, so the client's API calls are same-origin `/api/...` and satisfy `connect-src 'self'`. The policy forbids any inline script or style, any `data:` URI, any other origin, and any form submit (`form-action 'none'`): the sign-in form must be handled by a JS handler, never a native submit. `build:clients` builds the POS only; 011d appends the back office. `build:watch` exists in the POS package. A bundle built while the server is running is picked up on the next request, so no restart is needed. `rpos_cid` is not issued or read by a bundle request, so the first `/api` request issues it (FR-A7). `errorHandlerFor` is outside-`/api` plain text, so any client that fetches a non-`/api` URL must not expect JSON. The `/back-office/` prefix answers the 503 until 011d.
+- **For Task 12 (the browser harness):** `build:clients`, the exact policy string (exported as `CONTENT_SECURITY_POLICY`), the fact that the browser check under *acceptance beyond verify* is **not done**: I did not drive a browser. The lead or the owner must open `https://localhost:8443/pos/` in Chrome and Safari and confirm (a) no `securitypolicyviolation`, (b) `GET /api/health` 200, (c) `rpos_cid` stored `Secure; HttpOnly; SameSite=Strict` and resent on reload, before 011c is dispatched.
+- **For the ADR the owner commissioned:** the choices above are what it should record: per-request existence check, the 503, the reserved `assets/` segment, the refused-Host sentence, and that `errorHandler` became a factory taking the origin.
+
+### What the next agent needs and does not have
+
+A real browser's verdict on the policy and on `rpos_cid` (the acceptance check above). The designer's wording for the three server sentences, if they are to become screen copy.
+
+DONE

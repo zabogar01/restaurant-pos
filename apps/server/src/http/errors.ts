@@ -45,9 +45,12 @@ export class StartupError extends Error {
 // escapes such as %2F stay as they are, as in the router.
 const UNRESERVED = /^[A-Za-z0-9\-._~]$/;
 
+// An absolute-form target (https://host/path); the router reads the path out of it.
+const ABSOLUTE_FORM = /^[A-Za-z][A-Za-z0-9+.-]*:\/\/[^/?#]*/;
+
 /** True for `/api` and everything under it, as the router would read the path. */
 export function isApiPath(url: string): boolean {
-  const raw = url.split(/[?#]/, 1)[0] ?? '';
+  const raw = (url.replace(ABSOLUTE_FORM, '').split(/[?#]/, 1)[0] ?? '');
   const path = raw.replace(/%([0-9A-Fa-f]{2})/g, (escape, hex: string) => {
     const char = String.fromCharCode(parseInt(hex, 16));
     return UNRESERVED.test(char) ? char : escape;
@@ -70,23 +73,58 @@ function send(reply: FastifyReply, status: number, code: ErrorCode, details?: un
   return reply.code(status).header('cache-control', 'no-store').send(body);
 }
 
-/** Only a code the server chose reaches a response (ARCHITECTURE 12). */
-export function errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply) {
-  if (err instanceof AppError) {
-    request.log.info({ err }, 'request refused');
-    return send(reply, err.status, err.code, err.details);
-  }
-  const status =
-    typeof err === 'object' && err !== null && 'statusCode' in err
-      ? (err as { statusCode: unknown }).statusCode
-      : undefined;
-  const code = typeof status === 'number' ? FRAMEWORK_STATUS[status] : undefined;
-  if (code !== undefined && typeof status === 'number') {
-    request.log.info({ err }, 'request rejected');
-    return send(reply, status, code);
-  }
-  request.log.error({ err }, 'request failed');
-  return send(reply, 500, ErrorCode.INTERNAL);
+// Outside /api an error is plain text (ADR-010 rule 1): a sentence fixed by status.
+const PLAIN_TEXT: Record<number, string> = {
+  400: 'Bad Request',
+  404: 'Not Found',
+  413: 'Payload Too Large',
+  415: 'Unsupported Media Type',
+  500: 'Internal Server Error',
+  503: 'Service Unavailable',
+};
+
+/**
+ * A refused Host is the one error a person causes by typing the wrong address, so
+ * its sentence names the one address that works (ADR-010 consequences). The value
+ * is the server's own configured origin, never anything from the request.
+ */
+function plainText(status: number, origin: string): string {
+  if (status === 403) return `This application answers only at ${origin}.`;
+  return PLAIN_TEXT[status] ?? (status >= 500 ? PLAIN_TEXT[500]! : 'Request failed');
+}
+
+function sendPlain(reply: FastifyReply, status: number, origin: string) {
+  return reply
+    .code(status)
+    .header('cache-control', 'no-store')
+    .type('text/plain')
+    .send(plainText(status, origin));
+}
+
+/**
+ * Only a code the server chose reaches a response (ARCHITECTURE 12). Under /api it
+ * is the envelope; elsewhere it is plain text and obeys the same prohibition:
+ * nothing from the request or the exception.
+ */
+export function errorHandlerFor(origin: string) {
+  return (err: unknown, request: FastifyRequest, reply: FastifyReply) => {
+    const api = isApiPath(request.url);
+    if (err instanceof AppError) {
+      request.log.info({ err }, 'request refused');
+      return api ? send(reply, err.status, err.code, err.details) : sendPlain(reply, err.status, origin);
+    }
+    const status =
+      typeof err === 'object' && err !== null && 'statusCode' in err
+        ? (err as { statusCode: unknown }).statusCode
+        : undefined;
+    const code = typeof status === 'number' ? FRAMEWORK_STATUS[status] : undefined;
+    if (code !== undefined && typeof status === 'number') {
+      request.log.info({ err }, 'request rejected');
+      return api ? send(reply, status, code) : sendPlain(reply, status, origin);
+    }
+    request.log.error({ err }, 'request failed');
+    return api ? send(reply, 500, ErrorCode.INTERNAL) : sendPlain(reply, 500, origin);
+  };
 }
 
 /** Under /api a miss is the envelope; elsewhere it is a plain 404. */

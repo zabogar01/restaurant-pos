@@ -1,5 +1,6 @@
 import { listenHost, listenPort, logLevel, pinPepper, tlsPaths } from './config.js';
 import { closePool, query } from './db/pool.js';
+import { defaultBundleRoots } from './http/bundles.js';
 import { StartupError } from './http/errors.js';
 import { logLine } from './http/log.js';
 import { assertLoopbackAddress, listenLoopback } from './http/loopback.js';
@@ -37,7 +38,7 @@ async function main(): Promise<void> {
   }
   // 5. The server.
   const origin = `https://localhost:${port}`;
-  const app = buildServer({ origin, logLevel: level, tls });
+  const app = buildServer({ origin, logLevel: level, tls, bundles: defaultBundleRoots() });
   await listenLoopback(app, { host, port });
   logLine('info', `listening on ${origin}`);
 
