@@ -111,9 +111,19 @@ export function bundleRoutes(roots: BundleRoots): FastifyPluginAsync {
     for (const bundle of BUNDLES) {
       const root = roots[bundle.key];
 
-      app.get(bundle.prefix, async (_request, reply) => {
-        setBundleHeaders(reply);
-        return reply.code(302).header('location', bundle.slash).header('cache-control', NO_STORE).send();
+      // The bare prefix is outside the prefixed scope below, so it has a scope of
+      // its own: a refusal on it (the Host check) carries the bundle's headers too,
+      // and no response outside the two prefixes does.
+      await app.register(async (bare) => {
+        const inherited = bare.errorHandler;
+        bare.setErrorHandler((err, request, reply) => {
+          setBundleHeaders(reply);
+          return inherited.call(bare, err as Error, request, reply);
+        });
+        bare.get(bundle.prefix, async (_request, reply) => {
+          setBundleHeaders(reply);
+          return reply.code(302).header('location', bundle.slash).header('cache-control', NO_STORE).send();
+        });
       });
 
       await app.register(

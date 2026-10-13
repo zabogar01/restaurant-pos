@@ -362,6 +362,34 @@ describe('the guards', () => {
     }
   );
 
+  it.each(
+    ['GET', 'HEAD'].flatMap((m) =>
+      ['/pos', '/pos/', '/back-office', '/back-office/'].map((u) => [m, u] as const)
+    )
+  )('13. a refused Host on %s %s carries the bundle headers and no-store', async (method, url) => {
+    const res = await inject(app, {
+      method: method as 'GET' | 'HEAD',
+      url,
+      headers: { host: `127.0.0.1:${TEST_PORT}` },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(String(res.headers['content-type'])).toMatch(/^text\/plain/);
+    expect(res.headers['cache-control']).toBe('no-store');
+    expectPolicy(res.headers);
+  });
+
+  it.each(['/', '/other', '/posx', '/api/health', '/api/missing'])(
+    '13. a refused Host outside both prefixes and under /api carries no bundle headers: %s',
+    async (url) => {
+      const res = await inject(app, { method: 'GET', url, headers: { host: `127.0.0.1:${TEST_PORT}` } });
+      expect(res.statusCode).toBe(403);
+      expect(res.headers['content-security-policy']).toBeUndefined();
+      expect(res.headers['x-content-type-options']).toBeUndefined();
+      expect(res.headers['referrer-policy']).toBeUndefined();
+      expect(res.headers['cross-origin-resource-policy']).toBeUndefined();
+    }
+  );
+
   it.each(['cross-site', 'same-site', 'none', 'same-origin', 'bogus'])(
     '14. a bundle request with Sec-Fetch-Site %j is served',
     async (site) => {

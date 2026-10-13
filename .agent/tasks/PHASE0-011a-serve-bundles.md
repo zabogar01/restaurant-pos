@@ -499,4 +499,20 @@ The server was stopped afterwards.
 
 A real browser's verdict on the policy and on `rpos_cid` (the acceptance check above). The designer's wording for the three server sentences, if they are to become screen copy.
 
+### Round 2
+
+**Finding 1 (fixed).** A refused request on the bare prefixes (`/pos`, `/back-office`) went through the root error handler, because the redirect route sat on the bundle plugin's own scope and only the prefixed scope wrapped the handler. The redirect route now lives in a child scope of its own in `apps/server/src/http/bundles.ts`, whose error handler sets the bundle headers and then calls the inherited one, exactly as the prefixed scope does. Nothing is registered on the root, so nothing outside the two prefixes or under `/api` gains those headers.
+
+New tests, in `apps/server/test/bundles.test.ts`, case 13: a refused Host (`127.0.0.1:8443`) on `GET` and `HEAD` of `/pos`, `/pos/`, `/back-office` and `/back-office/` is 403 plain text, `no-store`, and carries the exact policy, `nosniff`, `no-referrer`, `same-origin`, no HSTS, no `Access-Control-*`, no cookie (eight rows). A second group asserts a refused Host on `/`, `/other`, `/posx`, `/api/health` and `/api/missing` carries none of the four bundle headers (five rows).
+
+Red proof: with the bare-prefix `setErrorHandler` removed, exactly four rows failed: `GET /pos`, `GET /back-office`, `HEAD /pos`, `HEAD /back-office` ("expected undefined to be `default-src 'none'; …`"); the slash forms and the outside rows passed, as they should. Restored, all green.
+
+**Finding 2.** No logging change and no path marker added to the log scan, as ruled.
+
+**Acceptance criterion 2, run alone, three times each:** `apps/server/test/bundles.test.ts` 93 passed, 93 passed, 93 passed. `apps/pos/test/built-bundle.test.ts` 3 passed, 3 passed, 3 passed.
+
+**`npm run verify`:** typecheck clean; 68 test files, 3348 tests passed (round 1 was 3335; +13 are the new case 13 rows). Baseline `development`: 66 files, 3252 tests.
+
+No existing test changed in round 2. No file outside `apps/server/src/http/bundles.ts`, `apps/server/test/bundles.test.ts` and this Handoff was touched.
+
 DONE
