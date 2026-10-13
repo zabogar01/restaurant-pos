@@ -242,4 +242,157 @@ The explorer found the exact-key assertions on a session view; each gains `idleS
 - The back office's eight-hour absolute limit on the wire (the consult says it is not sent).
 - Any migration, any new error code, `docs/` of any kind, the ADR.
 
+## Lead ruling on the BLOCKED (2026-10-13)
+
+Addressed to the builder.
+
+1. **Yes, change `apps/server/test/session.test.ts` case 5 (lines 159 to 164), and nothing else in that
+   file.** The ACTIVE resolution carrying `idleRemainingSeconds` is what the consult requires, so the
+   whole-object `toEqual` must include it. Use your proposed `idleRemainingSeconds: expect.any(Number)`,
+   and follow it with assertions that are **required**, not optional: the value is an integer, at least 0,
+   and at most `SESSION_POLICY.POS.idleSeconds`. Do not pin 89 or 90.
+2. Add `apps/server/test/session.test.ts` (case 5 only) to the list under *Tests expected to change* in
+   your Handoff's account of changed tests.
+3. Keeping `Actor` unchanged and carrying the number on a separate request decoration is accepted.
+4. Then run `npm run verify`, commit on this branch with path-scoped `git add` (your Handoff edits
+   included), and finish the Handoff with the counts and DONE.
+
 ## Handoff
+
+**Status: built, not committed, BLOCKED on one existing test the task does not list.** The change is in the
+working tree of `agent/phase0-011b`. I did not commit because `npm run verify` is red on exactly one
+test, and the task forbids changing a test it does not list.
+
+### The blocker
+
+`apps/server/test/session.test.ts:159` (case 5, "a fresh session resolves ACTIVE with the user and
+role") does `expect(await resolveSession(token, 'POS', false)).toEqual({ status, sessionId,
+staffUserId, role })`. The task requires the statement that judges the session to return the remaining
+seconds, so the ACTIVE resolution gains `idleRemainingSeconds` and a strict `toEqual` fails. Real output:
+`+ "idleRemainingSeconds": 89` is the only difference. (A fresh `createSession` followed by a
+`resolveSession` a few milliseconds later reads 89, not 90: the value is rounded down, as the task says.
+The sign-in response itself returns 90, which is what case 1 holds.)
+
+I looked for a way to keep that test untouched and found none that is not a hack: carrying the number
+out of `resolveSession` needs either a new field on the ACTIVE resolution (this test fails) or a second
+exported function (case 31 of the same file, "the module exports exactly the specified names", then
+fails). I chose the first and kept `Actor` unchanged, so `session-guard.test.ts` case 9's whole-actor
+`toEqual` still passes; the number travels on a separate request decoration, `idleRemainingSeconds`.
+
+**Proposed resolution (exact line).** In `apps/server/test/session.test.ts`, replace lines 159 to 164 with:
+
+```ts
+    expect(await resolveSession(issued.token, 'POS', false)).toEqual({
+      status: 'ACTIVE',
+      sessionId: issued.sessionId,
+      staffUserId: cashierId,
+      role: 'CASHIER',
+      idleRemainingSeconds: expect.any(Number),
+    });
+```
+
+Optionally also assert the range in a following line (`<= SESSION_POLICY.POS.idleSeconds`, `>= 0`); the
+exact value is 89 or 90 depending on timing, so it must not be pinned. Once ruled, I apply it, run verify,
+and commit; nothing else is outstanding except the Handoff counts.
+
+### What I did (all uncommitted)
+
+- `packages/contracts/src/session.ts`: `SessionView` and `BackOfficeSessionView` become zod strict
+  objects with `idleSeconds` and `idleRemainingSeconds` (non-negative integers); the TypeScript types
+  keep their names, inferred.
+- `packages/contracts/src/errors.ts`: a zod `ErrorBody` schema beside the existing `ErrorBody` type
+  (same name, value and type). One strict envelope per code; `details` allowed only on the four codes
+  of `ErrorDetailsByCode`, held equal to it by a `satisfies Record<keyof ErrorDetailsByCode, true>`.
+- `packages/contracts/src/headers.ts` (new): `CSRF_HEADER = 'X-RPOS-CSRF'`.
+- `packages/contracts/src/routes.ts` (new): `ROUTE_TABLE` of ten entries (method, path, `interactive`),
+  health plus both surfaces; `RouteEntry` and `RouteMethod` types. The probe route is not in it.
+- `packages/contracts/src/index.ts`: exports the above.
+- `apps/server/src/domain/session.ts`: `IDLE_REMAINING` SQL fragment
+  (`LEAST($3, GREATEST(0, FLOOR(EXTRACT(EPOCH FROM last_interactive_at + limit - clock_timestamp()))))`),
+  returned by the active statements (SELECT, and the UPDATE's RETURNING, where `s` is the new row so an
+  interactive resolution reads the full limit). `SESSION_POLICY` untouched and still the only place the
+  limits live; `createSession` untouched.
+- `apps/server/src/http/session-guard.ts`: imports `CSRF_HEADER` (no literal left); the guard stores the
+  number on `request.idleRemainingSeconds`; new `idleClockOf(request)` returns `{ idleSeconds (from
+  SESSION_POLICY), idleRemainingSeconds }`; `signIn` and `renewSession` also return both numbers, equal to
+  the policy, which is what the consult says a sign-in and a re-authentication return.
+- `apps/server/src/http/routes/pos-auth.ts`, `back-office-auth.ts`: the four views that build a session
+  view carry the two numbers. `activity`, `release`, `logout` and every error answer are unchanged.
+- Tests: new `apps/server/test/session-clock.test.ts` (cases 1 to 7, both audiences, 13 tests) and
+  `apps/server/test/route-table.test.ts` (case 8, 3 tests); one added case in
+  `apps/server/test/session-scan.test.ts` (`11b.`, the JavaScript-clock scan).
+
+### Decisions and evidence
+
+- **How the test reads the registered routes:** an `onRoute` hook added to the app returned by
+  `buildServer` before `ready()`. Fastify registers the `/api` context at `ready()`, so the root hook sees
+  every route with its full path and `config.access`. HEAD twins that Fastify adds for GET are skipped.
+  The server is built without `apiRoutes`, so no probe is registered. I did not need the librarian.
+- **The table has no `surface` field**, only method, path and `interactive` as the consult says. A client
+  maps by `"METHOD path"`.
+- **Case 5 and case 2 are tighter than the consult** so the round-down is provable: aged by *n*, the value
+  must be strictly below `policy - n` (within one still holds); aged to one second short of the limit, it
+  must be exactly 0. Both are sound because the test's own latency is far under a second, and a latency
+  over a second fails earlier as `SESSION_IDLE`. Without this, "round up" passes case 5, because 0.99
+  rounds to 1 and `{0, 1}` accepts it.
+- **Case 6** (re-authentication returns the policy) is in `session-clock.test.ts`; its remaining value is
+  the constant from `SESSION_POLICY`, not a SQL result, since the same statement just set
+  `last_interactive_at` to the clock.
+
+### Existing tests changed
+
+Exact-key assertions, each gaining `idleRemainingSeconds` and `idleSeconds` and nothing else:
+`pos-sign-in.test.ts:78`, `back-office-sign-in.test.ts:62`, `reauthenticate.test.ts:103`,
+`session-guard.test.ts:223` (both audiences); and the additions to `session-scan.test.ts`. No other
+existing test was changed. `session.test.ts:159` is the one that needs a ruling (above). I did not
+touch `error-details.types.ts`; it passes.
+
+### Red proofs (each made, run, reverted)
+
+1. **JavaScript clock:** added `const PROOF = Date.now();` to `domain/session.ts`; `session-scan.test.ts`
+   case `11b.` failed with `expected '...' not to match /Date\.now|new Date\(|performance\.now/`.
+   Reverted. (Note on my own edit: the revert initially left `TOKEN_SHAPE =/^`; I restored the space and
+   the file now reads as in `development` apart from the intended change.)
+2. **Round up** (`FLOOR` to `CEIL`): `session-clock.test.ts` failed 4 tests, case 2 (`aged 1: expected 89
+   to be less than 89`, and `1799 ... 1799` at the back office) and case 5 (`expected 1 to be +0`), on both
+   audiences. Reverted.
+3. **`me` interactive in the table:** `route-table.test.ts` failed with `GET /api/pos/auth/me: expected
+   true to be false`. Reverted. Also removed the `release` entry: both-directions test failed with
+   `registered but not in the table: [ 'POST /api/pos/auth/release' ]`. Restored.
+
+### Grep output
+
+- `grep -rnE "Date\.now|new Date\(|performance\.now" apps/server/src/domain/session.ts`: no output.
+- `grep -rniE "x-rpos-csrf|CSRF_HEADER" apps/server/src`: only `session-guard.ts:3` (the import), `:45`
+  (`CSRF_HEADER.toLowerCase()`) and `:95` (the read). No string literal.
+- `grep -rnE "\b(90|1800|28800)\b" apps/server/src`: only `domain/session.ts:11` and `:12`
+  (`SESSION_POLICY`).
+
+### A real `me` body, POS, from the jar client
+
+Before: `{"staffUserId":"65d839c4-dd99-40e5-8aff-29013c82f4c9","name":"Person 670001","role":"CASHIER","csrfToken":"tiPtt75xTnGc7wG7JI0QLHfdhjCQfju0jEf6vup7ygk","idleSeconds":90,"idleRemainingSeconds":89}`
+After `ageSession(id, 40)`: the same with `"idleRemainingSeconds":49`.
+(Produced by a throwaway test, deleted; the csrfToken is a test value.)
+
+### verify
+
+`npm run verify`: typecheck clean; `vitest run`: 68 test files, 3269 tests, **3268 passed, 1 failed**
+(`session.test.ts` case 5, above). Baseline was 66 files and 3252 tests, green; the difference is 17
+new tests: 13 in `session-clock.test.ts`, 3 in `route-table.test.ts` and 1 scan case (3252 + 17 = 3269). `session-clock.test.ts` and `route-table.test.ts` run together
+were green three times in a row (16 tests each time).
+
+### For the next agent
+
+- 011c needs from this task: `SessionView` with the two numbers, `ROUTE_TABLE`, `CSRF_HEADER`, and the
+  `ErrorBody` and view zod schemas, all from `@pos/contracts`. It does not have a client-side clock rule:
+  the countdown must start from `idleRemainingSeconds` of the latest view and count down locally in
+  durations only; a `me` read after a reload is the only way to resynchronise, and `activity` is a 204 with
+  no body (the client resets to `idleSeconds`, then a `me` read confirms).
+- The back office's eight hours are not on the wire, as the consult says.
+- For Phase 2's first command: add it to `ROUTE_TABLE` with `interactive: true`; the route-table test
+  fails until you do.
+- The `ErrorBody` schema is for validation; its inferred type is deliberately not exported under that
+  name, the precise mapped type is.
+- No formatter was run. No browser was used.
+
+BLOCKED: may I change `apps/server/test/session.test.ts:159-164` so the ACTIVE resolution's `toEqual` also lists `idleRemainingSeconds: expect.any(Number)`, since the resolution must now carry the number the session view needs?
