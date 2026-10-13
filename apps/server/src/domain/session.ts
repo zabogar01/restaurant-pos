@@ -25,7 +25,14 @@ export interface IssuedSession {
 }
 
 export type SessionResolution =
-  | { status: 'ACTIVE'; sessionId: string; staffUserId: string; role: StaffRole }
+  | {
+      status: 'ACTIVE';
+      sessionId: string;
+      staffUserId: string;
+      role: StaffRole;
+      /** Whole seconds until idle, rounded down, within 0..the audience's limit. */
+      idleRemainingSeconds: number;
+    }
   // Valid in every respect except idle time. Grants nothing.
   | { status: 'IDLE'; sessionId: string; staffUserId: string }
   | { status: 'NONE' };
@@ -69,6 +76,12 @@ const VALID = `s.token_hash = $1
    AND u.credential_version = s.credential_version
    AND (s.absolute_expires_at IS NULL OR s.absolute_expires_at > clock_timestamp())`;
 const NOT_IDLE = `AND s.last_interactive_at > clock_timestamp() - make_interval(secs => $3::int)`;
+// What is left of the idle limit, in the statement that judged the session so the
+// limit and the answer cannot disagree. Rounded down, so a client never shows more
+// than the server will give; clamped, so a last_interactive_at ahead of the clock
+// never reads as more than the limit. In an UPDATE's RETURNING, s is the new row.
+const IDLE_REMAINING = `LEAST($3::int, GREATEST(0, FLOOR(EXTRACT(EPOCH FROM
+         (s.last_interactive_at + make_interval(secs => $3::int) - clock_timestamp())))))::int`;
 
 export async function createSession(input: {
   audience: Audience;
@@ -110,18 +123,19 @@ export async function resolveSession(
   const idleSeconds = SESSION_POLICY[audience].idleSeconds;
 
   // GREATEST so a last_interactive_at ahead of the clock is never moved back.
+  type ActiveRow = { id: string; staff_user_id: string; role: StaffRole; remaining: number };
   const active = interactive
-    ? await run<{ id: string; staff_user_id: string; role: StaffRole }>(
+    ? await run<ActiveRow>(
         `UPDATE actor_session s
             SET last_interactive_at = GREATEST(s.last_interactive_at, clock_timestamp())
            FROM staff_user u
           WHERE ${VALID}
             ${NOT_IDLE}
-      RETURNING s.id, s.staff_user_id, u.role`,
+      RETURNING s.id, s.staff_user_id, u.role, ${IDLE_REMAINING} AS remaining`,
         [digest, audience, idleSeconds]
       )
-    : await run<{ id: string; staff_user_id: string; role: StaffRole }>(
-        `SELECT s.id, s.staff_user_id, u.role
+    : await run<ActiveRow>(
+        `SELECT s.id, s.staff_user_id, u.role, ${IDLE_REMAINING} AS remaining
            FROM actor_session s
            JOIN staff_user u ON u.id = s.staff_user_id
           WHERE ${VALID}
@@ -130,7 +144,13 @@ export async function resolveSession(
       );
   const hit = active[0];
   if (hit) {
-    return { status: 'ACTIVE', sessionId: hit.id, staffUserId: hit.staff_user_id, role: hit.role };
+    return {
+      status: 'ACTIVE',
+      sessionId: hit.id,
+      staffUserId: hit.staff_user_id,
+      role: hit.role,
+      idleRemainingSeconds: hit.remaining,
+    };
   }
 
   const idle = await run<{ id: string; staff_user_id: string }>(

@@ -156,12 +156,19 @@ describe('policy and creation', () => {
 describe('resolution', () => {
   it('5. a fresh session resolves ACTIVE with the user and role', async () => {
     const issued = await createSession({ audience: 'POS', user: cashier });
-    expect(await resolveSession(issued.token, 'POS', false)).toEqual({
+    const resolved = await resolveSession(issued.token, 'POS', false);
+    expect(resolved).toEqual({
       status: 'ACTIVE',
       sessionId: issued.sessionId,
       staffUserId: cashierId,
       role: 'CASHIER',
+      idleRemainingSeconds: expect.any(Number),
     });
+    // 89 or 90 depending on timing, so it is a range and never a pinned value.
+    const remaining = (resolved as { idleRemainingSeconds: number }).idleRemainingSeconds;
+    expect(Number.isInteger(remaining)).toBe(true);
+    expect(remaining).toBeGreaterThanOrEqual(0);
+    expect(remaining).toBeLessThanOrEqual(SESSION_POLICY.POS.idleSeconds);
   });
 
   it('6. a token of one audience is NONE as the other (FR-A2c, AC-27)', async () => {

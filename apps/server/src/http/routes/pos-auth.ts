@@ -3,7 +3,7 @@ import { PosLoginRequest } from '@pos/contracts';
 import type { SessionView } from '@pos/contracts';
 import { readStaffIdentity } from '../../domain/staff.js';
 import { verifyPinThrottled } from '../../domain/throttle.js';
-import { actorOf, csrfTokenOf, signIn, signOut } from '../session-guard.js';
+import { actorOf, csrfTokenOf, idleClockOf, signIn, signOut } from '../session-guard.js';
 import { parseBody } from '../validate.js';
 import { verifiedUser } from '../verification.js';
 
@@ -28,8 +28,15 @@ export const posAuthRoutes: FastifyPluginAsync = async (api) => {
       // leave a session the client was never told about.
       const who = await readStaffIdentity(user.id);
       if (who === null) throw new Error('A verified user has no staff row');
-      const { csrfToken } = await signIn(request, reply, user);
-      return { staffUserId: user.id, name: who.name, role: user.role, csrfToken };
+      const { csrfToken, idleSeconds, idleRemainingSeconds } = await signIn(request, reply, user);
+      return {
+        staffUserId: user.id,
+        name: who.name,
+        role: user.role,
+        csrfToken,
+        idleSeconds,
+        idleRemainingSeconds,
+      };
     }
   );
 
@@ -46,6 +53,7 @@ export const posAuthRoutes: FastifyPluginAsync = async (api) => {
         name: who.name,
         role: actor.role,
         csrfToken: csrfTokenOf(request),
+        ...idleClockOf(request),
       };
     }
   );

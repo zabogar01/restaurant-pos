@@ -100,7 +100,15 @@ describe('M-6: re-authentication', () => {
     const res = await client.reauthenticate(who.password);
     expect(res.statusCode).toBe(200);
     const body = res.json() as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(['csrfToken', 'name', 'role', 'staffUserId', 'username']);
+    expect(Object.keys(body).sort()).toEqual([
+      'csrfToken',
+      'idleRemainingSeconds',
+      'idleSeconds',
+      'name',
+      'role',
+      'staffUserId',
+      'username',
+    ]);
     expect(body.staffUserId).toBe(who.id);
     expect(body.username).toBe(who.username);
     expect(body.csrfToken).toMatch(/^[A-Za-z0-9_-]{43}$/);

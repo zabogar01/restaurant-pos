@@ -6,6 +6,7 @@ import { readStaffIdentity } from '../../domain/staff.js';
 import {
   actorOf,
   csrfTokenOf,
+  idleClockOf,
   presentedForRenewal,
   renewSession,
   renewableAccount,
@@ -40,8 +41,16 @@ export const backOfficeAuthRoutes: FastifyPluginAsync = async (api) => {
         })
       );
       const who = await identityOf(user.id);
-      const { csrfToken } = await signIn(request, reply, user);
-      return { staffUserId: user.id, name: who.name, username: who.username, role: user.role, csrfToken };
+      const { csrfToken, idleSeconds, idleRemainingSeconds } = await signIn(request, reply, user);
+      return {
+        staffUserId: user.id,
+        name: who.name,
+        username: who.username,
+        role: user.role,
+        csrfToken,
+        idleSeconds,
+        idleRemainingSeconds,
+      };
     }
   );
 
@@ -57,6 +66,7 @@ export const backOfficeAuthRoutes: FastifyPluginAsync = async (api) => {
         username: who.username,
         role: actor.role,
         csrfToken: csrfTokenOf(request),
+        ...idleClockOf(request),
       };
     }
   );
@@ -94,8 +104,21 @@ export const backOfficeAuthRoutes: FastifyPluginAsync = async (api) => {
         })
       );
       const who = await identityOf(user.id);
-      const { csrfToken } = await renewSession(reply, token, 'BACK_OFFICE', user);
-      return { staffUserId: user.id, name: who.name, username: who.username, role: user.role, csrfToken };
+      const { csrfToken, idleSeconds, idleRemainingSeconds } = await renewSession(
+        reply,
+        token,
+        'BACK_OFFICE',
+        user
+      );
+      return {
+        staffUserId: user.id,
+        name: who.name,
+        username: who.username,
+        role: user.role,
+        csrfToken,
+        idleSeconds,
+        idleRemainingSeconds,
+      };
     }
   );
 };
