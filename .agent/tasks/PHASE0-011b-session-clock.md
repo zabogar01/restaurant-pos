@@ -5,8 +5,8 @@ category: feature
 touches: [identity]
 depends_on: [PHASE0-010b]
 owns: [apps/server/**, packages/contracts/**]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # PHASE0-011b — The session clock and the route table on the wire
 
@@ -256,6 +256,27 @@ Addressed to the builder.
 3. Keeping `Actor` unchanged and carrying the number on a separate request decoration is accepted.
 4. Then run `npm run verify`, commit on this branch with path-scoped `git add` (your Handoff edits
    included), and finish the Handoff with the counts and DONE.
+
+## Round 2 — the review's finding (lead rulings, 2026-10-13)
+
+The review is `.agent/reviews/PHASE0-011b-review.md` (Codex, one P2). Addressed to the builder.
+
+1. **The finding is accepted: fix it.** The exported `ErrorBody` schema must parse to the existing
+   discriminated `ErrorBody` type: each envelope keeps its own code literal and its own details shape, so
+   a parsed result is assignable to `ErrorBody`, and narrowing on a detail-bearing code (`THROTTLED`,
+   `INVALID_CREDENTIALS`, `APPROVAL_FAILED`, `APPROVAL_THROTTLED`) exposes `details.retryAfterSeconds`,
+   while a code without details exposes no `details`. Keep the strict runtime rejection of unexpected
+   fields and the `satisfies` link to `ErrorDetailsByCode`. 011c's client depends on this.
+2. **Prove it at compile time.** Add the reviewer's two scenarios to
+   `apps/server/test/error-details.types.ts` (additions only), or to a new types-only test file in
+   `packages/contracts` if that is where the contracts package is typechecked; one assertion that the
+   parse result is assignable to `ErrorBody`, one that narrowing exposes `details` for a detail-bearing
+   code, and a `@ts-expect-error` that a code without details has none. Show them failing on the current
+   code before the fix.
+3. **Acceptance criterion 2, as written:** run `session-clock.test.ts` alone three times in a row and
+   `route-table.test.ts` alone three times in a row, and show each result.
+4. Everything else in round 1 stands. Append a *Round 2* section to the Handoff, commit after
+   `npm run verify` is green, and end with DONE or BLOCKED as before.
 
 ## Handoff
 
