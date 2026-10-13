@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-12: PRs #80-85 merged, `development` at `e52d0a4` (**PHASE0-010b** and the lead wrap-up). Verify green,
-010b cleaned up. ARCH-014 brief written; document scan done; settings moved to Phase 1 (owner). Narrative: [journal/2026-10-12.md](journal/2026-10-12.md).
+2026-10-12: PRs #80-86 merged, `development` at `91f79bc` (010b; doc scan, settings to Phase 1 by the owner).
+**ARCH-014 done** (split 011a-d). Narrative: [journal/2026-10-12.md](journal/2026-10-12.md).
 
 ## Phase and gates
 
@@ -32,7 +32,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Integration branch
 
-- **`development` is the integration branch** (owner, 2026-09-29), at `e52d0a4` (PR #84) on GitHub;
+- **`development` is the integration branch** (owner, 2026-09-29), at `91f79bc` (PR #86) on GitHub;
   the local `development` matches it. `main` and `development` are protected: PR required, 0
   approvals, admins too.
 - **The owner merges and pulls elsewhere.** At every `/lead` and after every merge, `git fetch` and
@@ -40,8 +40,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   dispatching**, then `npm ci` if the lockfile changed, and `npm run db:migrate` if a migration landed.
 - **Guard hooks** in the shared `.git/hooks` with an `agents.yaml` snapshot, current (reinstalled
   2026-10-09; `--check` current on 2026-10-12). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1012c`** (from `e52d0a4`), pushed as its own PR. `agent/lead-1012b`
-  merged (PR #85). **This branch's STATE is the current one** until it merges.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1012d`** (from `91f79bc`, no upstream), not pushed. `agent/lead-1012c`
+  merged (PR #86). **This branch's STATE is the current one** until it merges.
 - Work goes on `agent/<topic>` cut from `development`. Only the owner merges; the lead commits
   when asked and pushes only when the owner says so.
 - Stale: `agent/phase-0-foundations`. Merged, still existing: `agent/design-direction` (worktree
@@ -50,18 +50,18 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE0-010b merged** (PR #84); worktree and `.agent/runs/PHASE0-010b/` removed 2026-10-12.
-- **Live agents:** the lead only. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
-- **Next: Task 11 (two client shells) needs an architect consult first** (ARCH-014, not written). Inputs: ARCH-012
-  *For the lead* 4 (client CSRF, idle countdown); 009b's and 010b's Handoffs *For Task 11*; ARCH-013 *For the lead* 5 (M-1).
-- **Carry-forwards:** Handoffs of PHASE0-005 to 010b; ARCH-011's plan lines not to copy; ARCH-012 and ARCH-013
-  *The Handoffs must carry forward* (gated commands, and Phase 2's cancel route, `APPROVAL_REQUIRED`, `REFUSED`).
+- **ARCH-014 done** (`.agent/reviews/ARCH-014-client-shells.md`, lead spot-checked 4 claims, true): Task 11 splits **011a** serve bundles
+  (+ envelope only under `/api`, first browser cookie check), **011b** `SessionView` idle seconds + route table, **011c** POS sign-in
+  (`@pos/api-client`; waits 011a, 011b, browser check, designer POS-01 copy), **011d** back office (waits 011c, designer M-6/BO-01).
+- **PHASE0-011a dispatched** 2026-10-13 (`phase0-011a`, Sonnet); 011b next (`max_builders 1`); DESIGN-015 written, untracked.
+- **Live agents:** the lead, `phase0-011a`. Not the lead's: pane `w2:pE`, `.claude/worktrees/keen-chebyshev-ccf255`.
+- **Carry-forwards:** Handoffs of PHASE0-005 to 010b; ARCH-012, 013, 014 *The Handoffs must carry forward* (gated commands, and Phase 2's cancel route, `APPROVAL_REQUIRED`, `REFUSED`).
+- **Design owed before 011c/011d:** ARCH-014 *For the lead* 2-6 (POS-01 copy, no attempt count, BO-01, M-6 stale).
 - **Design slices left: B, D, E, F, G, H.** B takes DESIGN-012's N1-N3, M-6 password-only plus "another
   manager", BO-01 `:548–550`/SITEMAP `:248`, and ARCH-012 *For the lead* 1-3 (BO-01, POS-01 wording).
   The users screen warns that a PIN or password reset ends all that manager's sessions (ADR-009).
   M-1 and BO-12 owe ARCH-013 *For the lead* 3-4 (no *permission-denied*, no attempt count; `APPROVAL_THROTTLED`).
-- **Frontend tasks carry design rules** from each design task's last lead ruling: BO-13 DESIGN-013's
-  N1, N2, async focus; BO-12 DESIGN-014's C1 and standard density at any length.
+- **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, standard density.
 - **Open ACs (stand-ins, server owes them):** FE-032 refund AC-11/14/18/25/34; FE-035 discount
   AC-8/9/18/21; FE-036 void AC-3/10/11/18/21/22.
 
@@ -109,12 +109,13 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
+- **ADR to commission** (owner 2026-10-13, DECISIONS): browser clients + sessions over HTTP; the architect also adds the §3.2 password item.
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording, exact text there; (2) best-effort
   cancel reports; (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN
   timing leak for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
 - **ROADMAP, left after the 2026-10-12 ruling** (journal 2026-10-12 *Evening* items 4 and 5): `:50`'s cancelled-approval
   line waits on ARCH-013 item 2; `:29`'s "half-up" follows the FR-M3/B-2 wording below.
-- **ARCH-012, *For the owner***: (1) commission ADR-011 as Proposed (lead: yes)? (2) the FR-A2c reading, no route
+- **ARCH-012, *For the owner***: (1) ruled 2026-10-13 (one ADR). (2) the FR-A2c reading, no route
   takes either cookie (lead: confirm)? (3) sign-in without a pre-session CSRF token until §3.2 (lead: accept)?
 - **Receipt, PRD §9 q1** (`reviews/RESEARCH-receipt.md`, *Proposal*): choices A (one never-reset
   sequence, or daily), B (*SALINAN* on reprints), C (refund slip), D (Indonesian only), E (*PBJT* or
@@ -145,5 +146,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-Owner: read the ARCH-014 brief (`tasks/ARCH-014-client-shells.md`, written, untracked); on the owner's go the lead opens `architect14`.
+Lead: verify and review 011a, then dispatch 011b; open the DESIGN-015 designer when Codex reviews leave room. Owner: answer builder prompts.
 Owner: ARCH-013 and ARCH-012 items, receipt.
