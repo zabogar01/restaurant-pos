@@ -427,4 +427,48 @@ re-authentication returns the policy for both numbers`. Case 8 in `route-table.t
 named `8. ...`. Case 9: the existing suite, green (68 files). The JavaScript-clock scan is `11b.` in
 `session-scan.test.ts`.
 
+### Round 2 — the review's P2 finding
+
+**What was wrong.** My `envelope(code: ErrorCode)` took the whole union, so each `z.literal(code)` was typed
+as `ErrorCode` and the exported `ErrorBody` schema parsed to `{ error: { code: ErrorCode } }`: not
+assignable to the `ErrorBody` type, and narrowing on `THROTTLED` exposed no `details`. The reviewer was right.
+
+**The fix** (`packages/contracts/src/errors.ts` only). The schema is now a `z.union` of fifteen envelopes
+written out, one per code. Eleven use `bare(code)` (generic `C extends ErrorCode`, so the literal keeps its
+own type); four use `withRetry(code)` (`C extends keyof ErrorDetailsByCode`, `details` optional
+`{ retryAfterSeconds }`). The four are collected in a `WITH_DETAILS` object held to `ErrorDetailsByCode` by
+`satisfies Record<keyof ErrorDetailsByCode, z.ZodType>`; the former `DETAIL_CODES` list and the
+`as unknown as` cast are gone. Every envelope is still a strict object, so unexpected fields are still
+rejected at runtime. A type-level `Mutual<z.infer<typeof ErrorBody>, ErrorBody>` must be `true`, so the
+schema's output and the type are mutually assignable and a code missing from the union fails to compile.
+
+**Compile-time proofs** (additions only to `apps/server/test/error-details.types.ts`, which `npm run
+typecheck` compiles; one added import, `ErrorBody as ErrorBodySchema`, and one function at the end):
+`parsedErrorBodyKeepsItsCodes` assigns `ErrorBodySchema.parse(input)` to a `const parsed: ErrorBody`
+(assignability); narrows on `ErrorCode.THROTTLED` and returns `parsed.error.details?.retryAfterSeconds`
+(details exposed for a detail-bearing code); and has a `@ts-expect-error` on the same read after narrowing
+to `ErrorCode.INTERNAL` (no details on a code that declares none).
+
+**Failing before the fix** (the new proofs added, `errors.ts` still the round-1 version):
+`npx tsc -p apps/server --noEmit` exited 2 with
+`apps/server/test/error-details.types.ts(265,9): error TS2322: Type '{ error: { code: ErrorCode; }; }' is
+not assignable to type 'ErrorBody'.` Only that error was reported: after the assignment the narrowing was
+already unsound, so it is the same defect.
+
+**Red proof for the completeness assertion.** Removed `bare(ErrorCode.FORBIDDEN)` from the union:
+`npx tsc -p packages/contracts --noEmit` failed with
+`packages/contracts/src/errors.ts(101,53): error TS2344: Type 'false' does not satisfy the constraint
+'true'.` Restored.
+
+**After the fix:** `npm run typecheck` clean (the `@ts-expect-error` is used, so the no-details proof holds);
+`npm run verify`: 68 test files, 3269 tests, all passed (round 1 counts; no runtime test was added, the
+proofs are compile-time).
+
+**Acceptance criterion 2, each new file alone, three runs in a row**, all green:
+`session-clock.test.ts`: 13 passed, 13 passed, 13 passed (3.62 s, 3.56 s, 3.53 s);
+`route-table.test.ts`: 3 passed, 3 passed, 3 passed (257 ms, 247 ms, 291 ms).
+
+**For 011c:** `ErrorBody.parse(x)` now returns the `ErrorBody` type; switch on `error.code` and read
+`error.details?.retryAfterSeconds` for the four detail-bearing codes.
+
 DONE
