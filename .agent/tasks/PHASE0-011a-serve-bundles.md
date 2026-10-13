@@ -5,7 +5,7 @@ category: feature
 touches: [boundaries]
 depends_on: [PHASE0-010b]
 owns: [apps/server/**, apps/pos/vite.config.ts, apps/pos/package.json, apps/pos/test/**, package.json, package-lock.json]
-status: active
+status: review
 cycles: 1
 ---
 # PHASE0-011a — The server serves the two client bundles
