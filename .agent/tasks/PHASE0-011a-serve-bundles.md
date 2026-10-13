@@ -5,8 +5,8 @@ category: feature
 touches: [boundaries]
 depends_on: [PHASE0-010b]
 owns: [apps/server/**, apps/pos/vite.config.ts, apps/pos/package.json, apps/pos/test/**, package.json, package-lock.json]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # PHASE0-011a — The server serves the two client bundles
 
@@ -347,7 +347,9 @@ These rulings are addressed to the builder.
 
 - ADR-010: no `Strict-Transport-Security` (rule 6), no `Access-Control-*` (rule 4), the Host check
   unchanged, the same-origin check not applied to bundles, `frameworkErrorHandler` unchanged.
-- B-12 and the log rules: nothing from a bundle request's URL or query reaches a log line.
+- B-12 and the log rules: nothing from a bundle request's query string reaches a log line. The path may be
+  logged, as ADR-010 rule 2 allows and as `/api` paths already are (corrected by the lead in round 2; the
+  first wording said "URL or query", which went beyond the consult's case 17).
 - FR-A7 (owner, 2026-10-08): a bundle request neither issues nor reads `rpos_cid`.
 - NFR-5: no route list of client paths on the server; each prefix falls back only to its own bundle.
 - No security-header plugin; no catch-all route on the root.
@@ -383,6 +385,29 @@ These rulings are addressed to the builder.
 - `@pos/api-client`, any change under `apps/pos/src`, the fixture switch (011c).
 - `apps/back-office` (011d). The browser check. The browser harness (Task 12).
 - `docs/` of any kind, the ADR, ARCHITECTURE §3.2.
+
+## Round 2 — the review's two findings (lead rulings, 2026-10-13)
+
+The review is `.agent/reviews/PHASE0-011a-review.md` (Codex, two medium findings). These rulings are
+addressed to the builder.
+
+1. **Finding 1 is accepted: fix it.** A refused request on the bare prefixes (`GET` and `HEAD` of
+   `/pos` and `/back-office`, refused by the inherited Host check) must carry the same policy headers
+   as every other bundle response: `Content-Security-Policy`, `X-Content-Type-Options`,
+   `Referrer-Policy`, `Cross-Origin-Resource-Policy`, with `no-store`. Do it without adding those headers
+   to any response outside the two prefixes or under `/api`. Extend case 12 or 13 to refused `GET` and
+   `HEAD` on both bare prefixes and both slash forms, and show the new assertions failing before the fix.
+2. **Finding 2 is not a defect in the code; the task's wording was wrong.** The constraint said nothing
+   from a bundle request's "URL or query" may reach a log line. The consult's case 17 asks only for the
+   query, and ADR-010 rule 2 allows path-only logging, which is how `/api` paths are already logged. The
+   lead has corrected the constraint above. Make no logging change. Do not add a path marker to the log
+   scan.
+3. **Acceptance criterion 2, as written:** run `apps/server/test/bundles.test.ts` alone three times in a
+   row and `apps/pos/test/built-bundle.test.ts` alone three times in a row, and show each result. The
+   first round ran them together.
+4. Everything else in the first round stands. Append a *Round 2* section to the Handoff (do not rewrite
+   round 1), commit on this branch after `npm run verify` is green, and end the Handoff with DONE or
+   BLOCKED as before.
 
 ## Handoff
 
