@@ -5,7 +5,7 @@ category: feature
 touches: [identity]
 depends_on: [PHASE0-010b]
 owns: [apps/server/**, packages/contracts/**]
-status: active
+status: review
 cycles: 1
 ---
 # PHASE0-011b — The session clock and the route table on the wire
