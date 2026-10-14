@@ -5,8 +5,8 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-012]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # DESIGN-015 — Sign-in copy and states (POS-01, BO-01, M-6, M-1)
 
@@ -275,6 +275,40 @@ owner's words "there is an option if its another manager then he can choose to i
 username". The lead's *Required inputs* summarised that day's rulings as "M-6 is password-only", which
 left the choice out; the misreading started there, not with the designer. Reviewer: judge the delivery
 against the ruling as recorded, not against the lead's summary, and say what M-6 must show.
+
+## Round 2 — the review's eight findings (lead rulings, 2026-10-14)
+
+The review is `.agent/reviews/DESIGN-015-review.md` (Claude, eight findings). All eight are accepted.
+Addressed to designer15. Each finding's *Proposed fix* in the review is the instruction unless a ruling
+below says otherwise.
+
+1. **F1: restore the other-manager choice on M-6**, following the review's list *What M-6 must show*,
+   items 1 to 8, and replace both passages that attribute the Log-out-only route to the 2026-10-06
+   ruling. Note for the builders, not for you: that choice sends the ordinary back-office sign-in, not
+   the re-authentication request; ARCH-014 question 5's table already says so.
+2. **F1's open question and F4's are with the owner** (asked 2026-10-14): when a different manager signs
+   in from M-6, is the idled manager's draft destroyed, or kept for the idled manager? And after the
+   eight hours, does the same manager signing in again get the draft back? Draw around both: no
+   sentence may promise either answer. If the owner answers before you finish, the lead writes the
+   answer here and you follow it. List them under *Questions* in your round-2 Handoff either way.
+3. **F2:** delete the BO-01 username-format row and the password-length rows on BO-01 and M-6, and the
+   "shared-schema check" attribution. Keep "Enter your username." and "Enter your password.". Give one
+   sentence, or reuse *error*, for a value over the schema's bounds (256 username units, 1024 password
+   units), sent with no request.
+4. **F3:** add the three rows: the initial session lookup failing (which screen; *Try again* repeats the
+   lookup), back-office Log out failing (stay in the frame; where the notice sits; *Try again* repeats the
+   logout; BO-01 never shown until the server confirms), and POS Release failing. **For Release, the
+   architect's rule binds:** "the screen goes to POS-01 whatever the answer" (ARCH-014 question 5, the
+   POS table), because a cashier who pressed Release must never stay signed in on screen; draw that, with
+   no notice, rather than a retry. The back-office logout keeps the review's safer rule.
+5. **F4:** mark the retained-draft sentence on BO-01 as not placed in Phase 0, and reword it so it does
+   not address whoever is at the desk as the draft's owner.
+6. **F5 to F8** as proposed: the incident confirmation goes to `incidents.html` (and the dead lines in
+   `mockup.js` go); under sixty seconds the duration drops the minutes part and zero means the cooldown
+   has ended; BO-01's throttled title names the username's scope, with one sentence on editing the
+   username; SITEMAP `:108` reads "Session ended — sign in again".
+7. Update the Handoff's copy table for every changed row, append a *Round 2* section (do not rewrite
+   round 1), commit on this branch, and report with the same two lines as before.
 
 ## Handoff
 
