@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011a, PHASE0-011b]
 owns: [packages/api-client/**, package.json, package-lock.json]
-status: active
+status: review
 cycles: 1
 ---
 # PHASE0-011c1 — The browser transport core (`@pos/api-client`)
