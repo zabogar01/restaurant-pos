@@ -1275,8 +1275,10 @@ wherever they appear.
    `field-small`) through the shared `.field` rules — inherited, and the
    modal was not a reviewed screen. The back-office 86 switch is a row-level
    pill button plus a tag; the item editor and settings screens are absent.
-   The login form (Phase 0) exists only in the greyscale wireframe, which
-   loads `wireframe.css`, not `visual.css`: two 40px `field-small` boxes and
+   The complete login composition remains a slice B gap. DESIGN-015 supplies
+   BO-01’s exact copy and states for the provisional Phase 0 Frost form using
+   DESIGN-012 controls. The existing drawing is a greyscale wireframe, which
+   loads `wireframe.css`, not `visual.css`: two 40px field boxes and
    a full-width primary button, in greyscale. Its invalid state is
    specified (`field-small-invalid`: the 56px treatment at 40px) and shown
    in the office category modal's `category-invalid` state — a BO-03 state
@@ -1355,8 +1357,8 @@ Table 1 at 20:14. Neither clears an incident. Both open BO-13. The `alerts`
 query parameter carries the fixture identity between Frost pages; the remaining
 prototype destinations have not adopted the new frame and await their slices.
 
-M-6 is a native modal dialog, 640px wide, with the manager’s name read-only and
-one secret field provisionally labelled Password. It cannot be dismissed with
+M-6 is a native modal dialog, 640px wide, with the idled manager’s username
+read-only and one field labelled Password (ADR-009). It cannot be dismissed with
 Escape or a click outside: `closedby="none"`, Escape keydown prevention and a
 close-event guard retain the dialog while re-authentication is required.
 Tab and Shift+Tab remain inside; the underlying form
@@ -1365,15 +1367,45 @@ choice, validation, focused field and text selection remain in the same DOM
 form. Success restores them without submitting. A different manager cannot
 resume the draft. Explicit logout requires discard confirmation, with keeping
 the draft as the initial focus. Both credential refusals use “Incorrect password.
-Try again.”; no response identifies another credential's owner. Whether the
-`reauth-other` fixture affects LOGIN counting remains an owner question with Q4;
-it does not change the counter in this fixture. Five wrong-secret responses show the LOGIN
-five-minute cooldown; Continue is disabled and Log out remains available. During
-cooldown, logout confirmation states the remaining installation-wide wait and
-that waiting keeps the draft. Timeout captures the actual active element and
-text selection, including focus outside the draft, and success restores them.
-These are local demonstrations, not implemented authentication or persisted
-server throttling. Absolute expiry belongs to BO-01 and is not drawn here.
+Try again.”; no response identifies another credential's owner. The
+`reauth-other` fixture is a review alias of the same wrong-password response
+and counts on the fixed idled account, exactly as `reauth-error` does. The
+owner's 2026-10-06 ruling is settled: changing manager goes through Log out,
+explicit draft discard and BO-01 with that other manager's own username and
+password. Failures there count on that other account; the draft never transfers.
+M-6 and BO-01 share one per-account password cooldown under FR-A5b and ADR-009 §4,
+independent of the POS PIN classes. Continue is disabled during the wait and
+Log out remains available. Both the modal and logout confirmation show the
+remaining duration from `retryAfterSeconds`; the latter explains that logging
+out does not end this account's cooldown and other managers can still sign in.
+Timeout captures the actual active element and text selection, including focus
+outside the draft, and success restores them. These are local demonstrations,
+not implemented authentication or persisted server throttling; the artifact's
+five-failure transition and five-minute timer are sample responses only, not
+client rules. Production clients neither count failures nor invent a duration.
+
+**DESIGN-015 copy update (awaiting review).** The exact code-to-state mappings
+for POS-01, BO-01, M-1 and M-6 are in
+[SCREEN-INVENTORY.md](design/SCREEN-INVENTORY.md). They supersede older copy in
+historical drawings, including the rejected Paper direction. The POS requires
+six digits before confirmation; a short entry never reaches the server. It
+shows no credential permission distinction or failure count. M-1's
+`approval-denied` remains only as a review alias of the generic approval failure.
+Session-loss copy claims only that the session ended. Both clients use the
+shared unavailable and unexpected-failure sentences. For an `UNAUTHENTICATED`
+response at M-6, including absolute expiry, close the modal and show BO-01's
+session-ended notice; the draft stays local, isolated and is never resent.
+`FORBIDDEN` removes the protected office work and shows BO-01's manager-access
+notice. Neither response opens a different editable version of the old draft.
+
+BO-01's Frost composition remains provisional: PHASE0-011d places the inventory's
+copy table using these native fields, stacked form pattern, primary button and
+amber notice. No new value or token is introduced. **The Phase 0 empty rail and
+empty content pane are accepted.** Keep the 220px rail and 64px top bar; show
+“Back office”, the real manager name and Log out, with no navigation, business
+day or incident UI until the corresponding destinations and routes exist.
+The empty pane is not a no-data result and needs no message. Slice B still owns
+the full BO-01 and BO-02 compositions; I-2 is unchanged.
 
 When a kitchen failure arrives during M-6, a solid red emergency section lives
 inside the modal, above its scrolling body and therefore above the scrim. It

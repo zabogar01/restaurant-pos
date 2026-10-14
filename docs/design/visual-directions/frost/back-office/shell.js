@@ -1,4 +1,4 @@
-/* M-6 local fixture. All credential-dependent copy is collected here for Q4. */
+/* M-6 local fixture. No credential is checked; response and duration values are illustrative. */
 (() => {
   const credentialCopy = {
     label: 'Password',
@@ -28,14 +28,15 @@
     if(!reauthRequired)remember();
     reauthRequired=true; render(state); O.open(dialog, secret.disabled ? $('#reauth-logout') : secret);
   }
+  const wait=seconds=>Math.floor(seconds/60)+' min '+seconds%60+' s';
   function logoutCooldown() {
     const left=Math.max(0,Math.ceil((expires-Date.now())/1000));
     $('#logout-cooldown').hidden=!left;
-    $('#logout-cooldown').textContent='Sign-in is unavailable installation-wide for '+Math.floor(left/60)+':'+String(left%60).padStart(2,'0')+'. Logging out does not end this cooldown. Waiting here keeps your draft.';
+    $('#logout-cooldown').textContent='This username is locked for '+wait(left)+'. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.';
   }
   function cooldown() {
     const left=Math.max(0,Math.ceil((expires-Date.now())/1000));
-    $('#cooldown').textContent='Five attempts failed. Try again in '+Math.floor(left/60)+':'+String(left%60).padStart(2,'0')+'. Log out is still available.';
+    $('#cooldown').textContent='This username is cooling down. Try again in '+wait(left)+'. Log out is still available.';
     logoutCooldown();
     if(!left) { clearInterval(timer); if(dialog.open){render('reauth');secret.focus();} }
   }
@@ -91,7 +92,7 @@
     verifyingTimer=setTimeout(()=>{
       if(!dialog.open)return;
       if(result==='resumed')resume();
-      else { if(result==='reauth-error')failures++;render(failures>=5?'reauth-throttled':result); if(!secret.disabled)secret.focus(); }
+      else { if(result==='reauth-error'||result==='reauth-other')failures++;render(failures>=5?'reauth-throttled':result); if(!secret.disabled)secret.focus(); }
     },650);
   };
   $('#reauth-logout').onclick=()=>{clearTimeout(verifyingTimer);askLogoutOrLeave();};

@@ -48,23 +48,53 @@ device that is shared and unattended between uses.
 explicit release; session invalidation from the back office (FR-B3). It is the
 POS's default state, not an exception.
 
-**States.**
-- *empty* — the resting state. No actor, no order context leaked on screen.
-- *loading* — PIN submitted, verification in flight. Keypad must not accept a
-  second submission.
-- *error* — wrong PIN, with attempts remaining before cooldown.
-- *permission-denied* — a PIN belonging to a deactivated user (FR-B3).
-- *overflow* — none; fixed-size keypad.
-- *throttled* — LOGIN class cooldown, 5 minutes, installation-wide, survives
-  restart (FR-A5). Must state that it is a cooldown, not a broken device.
-- *session invalidated* — distinct from ordinary idle expiry. The back office
-  deactivated the user or reset the PIN mid-shift (FR-B3, AC-32).
-- *tender draft waiting* — a draft survived expiry in this tab and is waiting
-  behind re-authentication (FR-G9, AC-20). Must be visible here, or the
-  cashier believes the payment was lost.
-- *emergency print incident present* — **ruling C-6**: presence is shown before
-  authentication, detail requires a PIN. The indicator names the printer, never
-  the order.
+**States and exact copy — DESIGN-015 (awaiting review).** Title and body are
+separate strings. `{wait}` is the remaining server cooldown, formatted as
+`{minutes} min {seconds} s` (for example, `4 min 12 s`), never an attempt count.
+Use `retryAfterSeconds` from the response to establish the deadline; count down
+to zero without restarting it on render. A later server response replaces that
+deadline. Zero enables entry again but does not submit anything. A cooldown
+response without valid `retryAfterSeconds` uses the general failure state;
+never invent a duration.
+
+| State | Trigger | Exact copy / presentation |
+|---|---|---|
+| Empty / resting | Cold start, explicit release, or `SESSION_IDLE` | “Enter PIN” / “Six digits”. No idle notice. |
+| Short PIN | Locally, zero to five digits | Same resting copy. Confirm is disabled (`requireFull`); Enter does nothing and sends no request. Digits and backspace remain usable. Six digits enable Confirm; a seventh is ignored. |
+| Loading | Sign-in request in flight | “VERIFYING”. Disable entry and repeat submission. |
+| Error | `INVALID_CREDENTIALS` without cooldown details | “PIN not recognised” / “Enter your six-digit PIN again. Ask a manager if you need help.” |
+| Throttled | `INVALID_CREDENTIALS` with `retryAfterSeconds`, or `THROTTLED` | “Sign-in locked for {wait}” / “Sign-in is cooling down. Wait for the countdown to finish, then enter your PIN.” Disable the whole pad until zero. |
+| Session invalidated | `UNAUTHENTICATED` on a held session | “Your session has ended” / “Sign in again. Ask a manager for help if your PIN no longer works.” Do not infer the cause. |
+| Unavailable | `UNAVAILABLE`, or no response | Shared general-state copy below, on the lock screen. |
+| Something went wrong | General failure group below | Shared general-state copy below, on the lock screen. |
+| Tender draft waiting | A payment draft exists in this tab, not an error code | “Payment in progress on this tab” / “{order label} — {outstanding} outstanding, {tender count} tenders drafted. Sign in to continue. Nothing has been recorded yet.” Use “1 tender drafted” for one. Figures come from the tab's draft store; the artifact is illustrative. |
+| Emergency print incident present | Future incident presence signal | “Kitchen printer needs attention” / “Tap to sign in and view. No order details are shown before sign-in.” No Phase 0 state: no incident route exists. Keep the future fixture for C-6. |
+| Overflow | None at the target size | No separate state; the pad and notice fit 1280×800. |
+
+A fresh `UNAUTHENTICATED` response to the initial session lookup means resting,
+not “Your session has ended”. There is no separate permission refusal at PIN
+sign-in: the server provides only the same credential failure. Clear the PIN
+after every response, including success; error notices remain until editing or
+a new submission. Session notices and a local draft notice may coexist.
+
+### Shared general failures — both clients, including POS-01, BO-01 and M-6
+
+| State | Trigger | Exact title | Exact body | Action |
+|---|---|---|---|---|
+| Unavailable | `UNAVAILABLE`, or no response at all | “The system is unavailable” | “Wait a moment, then try again.” | “Try again” |
+| Something went wrong | `INTERNAL`, unparseable failure, `VALIDATION_FAILED`, `CSRF_REFUSED` after the single permitted retry, `ORIGIN_REFUSED`, `NOT_FOUND`, `PAYLOAD_TOO_LARGE`, `UNSUPPORTED_MEDIA_TYPE`, or an unexpected code on this surface | “Something went wrong” | “Try again. If the problem continues, ask a manager for help.” | “Try again” |
+
+Use the existing notice above the form or pad (grouping blue at the POS,
+amber at the office), with `role="alert"` on arrival. Do not use the kitchen-emergency treatment, expose raw codes, or claim
+that a request had no effect. At sign-in and M-6, clear the secret; **Try again**
+returns focus to PIN entry (POS) or the password (office), preserves the username
+and any protected draft, and permits fresh entry. It never resends the secret.
+An active cooldown still disables verification. Elsewhere, this same copy is
+shared, but retry must use that screen's existing reconciliation/read path,
+never automatically repeat a command with an unknown outcome. `CSRF_REFUSED`
+during the one recovery attempt has no separate visible error; only a failed
+recovery uses the general state. Local field validation has its own copy below;
+a server `VALIDATION_FAILED` is still unexpected and uses the general state.
 
 **Requirements.** FR-A2, FR-A5, FR-A7, FR-B3, FR-G9.
 
@@ -75,7 +105,7 @@ POS's default state, not an exception.
   (FR-A2, AC-28).
 - No PIN value is ever echoed, logged, or partially revealed (FR-J4, B-12).
   Masked entry only; no "show PIN" toggle.
-- Throttle is per class and installation-wide. A successful cashier login here
+- PIN throttling is per class across the installation (FR-A5). A successful cashier login here
   does **not** clear a manager-approval cooldown (FR-A5, AC-19).
 - Background polling does not extend the session (FR-A2b, AC-28) — an idle POS
   that is quietly polling the catalog still expires.
@@ -544,12 +574,39 @@ Reporting and audit are read surfaces; everything else operates.
 Idle expiry uses the re-authentication modal instead, so unsaved form state is
 preserved (FR-A2b).
 
-**States.** *empty* (resting) · *loading* · *error* (wrong credentials) ·
-*permission-denied* (a cashier PIN — the back office is manager only) ·
-*overflow* (none) · *throttled* (LOGIN class, 5 minutes, shared
-installation-wide with the POS, FR-A5).
+**States and exact copy — DESIGN-015 (awaiting review).** This table is the
+copy specification for PHASE0-011d's provisional Frost form; a complete BO-01
+visual composition remains slice B. Use DESIGN-012's stacked 40px native
+fields, persistent labels, primary office button and amber notice. The page
+heading is “Back office”; helper text is “Sign in with your manager username
+and password.” Labels are “Username” and “Password”; the primary action is
+“Sign in”. No password reveal, remember-me or recovery control.
 
-**Requirements.** FR-A2b, FR-A2c, FR-A5, FR-A7, FR-B preamble.
+| State | Trigger | Exact copy / presentation |
+|---|---|---|
+| Empty / resting | Cold start, explicit logout, or initial `me` returns `UNAUTHENTICATED` | Heading, helper and labels above; no error. |
+| Local invalid input | Missing username / missing password | “Enter your username.” / “Enter your password.” Place beside its field and focus the first invalid field. Send no request. |
+| Local invalid format | Username outside the shared schema after trim/lowercase, or password outside its length bounds | “Use 3–32 letters, numbers, dots, underscores or hyphens for your username.” / “Use 8–128 characters for your password.” Send no request; do not trim or transform the password. |
+| Loading | Sign-in request in flight | Primary action “Signing in…”; disable fields and duplicate submission. |
+| Error | `INVALID_CREDENTIALS` without cooldown details | “Sign-in failed” / “Check your username and password, then try again.” Do not identify which credential failed. |
+| Throttled | `INVALID_CREDENTIALS` with `retryAfterSeconds`, or `THROTTLED` | “Sign-in locked for {wait}” / “This username is cooling down. Other managers can sign in with their own usernames.” Use POS-01's duration format. Disable password and Sign in for the submitted username; keep Username editable. Another username uses its own server count; switching back retains any known remaining wait. |
+| Session ended | `UNAUTHENTICATED` on a held session, including M-6 after eight hours | “Your session has ended” / “Sign in again to continue.” No claim about the cause. If a draft was retained locally, append “Your unsaved changes are kept on this tab and will not be submitted automatically.” |
+| Access refused | `FORBIDDEN` on an authenticated back-office request, including M-6 | “Manager access required” / “This account cannot use the back office. Sign in with a manager account.” Remove the protected working area; show this notice on BO-01 with the ordinary form. Do not claim that the account was disabled or explain why its role changed. |
+| Unavailable / something went wrong | Shared general-failure triggers | Use the exact shared title, body and “Try again” action above. |
+| Success | Successful sign-in | No success sentence; enter the Phase 0 frame described at BO-02. |
+| Idle | `SESSION_IDLE` on a held session | No BO-01 state; open M-6 over the preserved work. |
+| Overflow | Content or text exceeds the available height | Let the form page scroll; never clip the error or Sign in action. No extra sentence. |
+
+There is no credential-level permission-denied state: sign-in returns the same
+`INVALID_CREDENTIALS` for all refused credentials. `APPROVAL_FAILED` and
+`APPROVAL_THROTTLED` are POS approval signals, not office states; if received
+unexpectedly here, use the general failure. Clear the password after every
+response, including success. Keep the username after a failure. On `FORBIDDEN`
+or session loss, do not leave the old work editable or reveal it to a different
+manager. At absolute expiry the local draft stays isolated and is never resent;
+this task adds no draft-recovery or cross-session restore workflow.
+
+**Requirements.** FR-A2b, FR-A2c, FR-A5b, FR-A7, FR-B preamble, AC-35.
 
 **Must not invent.**
 - Manager only (FR-B preamble, PRODUCT). No cashier back-office view.
@@ -573,6 +630,16 @@ outstanding print incidents, and the route to end-of-day.
 *emergency incident present* (FR-E3).
 
 **Requirements.** FR-I1, FR-I2, FR-E3, FR-E6.
+
+**Phase 0 frame — accepted for PHASE0-011d (DESIGN-015).** Keep the Frost
+220px rail and 64px top bar, with an empty navigation rail and empty scrolling
+content pane. The top bar says “Back office”, shows the real session's manager
+name and offers “Log out”. No loading skeleton or empty-data message: this is
+a shell with no landing content yet. No navigation entries, business-day
+indicator, incident banner or receipt chip until their destinations and routes
+exist. This is a Phase 0 exception to the populated DESIGN-012 fixture, not a
+replacement for I-2 or the eventual BO-02 design. No new drawing or token is
+needed; slice B still owns the complete sign-in and landing screens.
 
 **Must not invent.** The back office observes orders; it never operates them
 (FR-G12). No settle, void, fire or refund control appears here.
@@ -903,12 +970,23 @@ replacement under the whole-transition gate (FR-F8), fired-line void (FR-H4),
 fired-order void (FR-H4), refund (FR-H5), lease takeover (FR-G14). It appears
 over POS-03, POS-04, and POS-06 — over whatever screen triggered it.
 
-**States.** *empty* (awaiting PIN) · *loading* · *error* (wrong PIN, attempts
-remaining) · *permission-denied* (a cashier PIN entered where a manager PIN is
-required) · *overflow* (n/a) · *throttled* (MANAGER_APPROVAL class, 5 minutes,
-installation-wide, survives restart, FR-A5, AC-19) · *cancelled — the
-triggering action does not happen and no partial state is written* (B-20) ·
-*no manager available — blocked, nothing written* (PRD §6).
+**States.** *empty* (awaiting PIN) · *loading* · *error* (approval failed) ·
+*overflow* (n/a) · *throttled* (MANAGER_APPROVAL class across the installation,
+survives restart, FR-A5, AC-19) · *cancelled — the triggering action does not
+happen and no partial state is written* (B-20) · *no manager available —
+blocked, nothing written* (PRD §6).
+
+| State | Trigger | Exact title | Exact body |
+|---|---|---|---|
+| Error (`approval-error`; `approval-denied` retained only as a review alias of this same state) | `APPROVAL_FAILED` without cooldown details | “Manager PIN not recognised” | “Ask a manager to enter their PIN again.” |
+| Throttled (`approval-throttled`) | `APPROVAL_FAILED` with `retryAfterSeconds`, or `APPROVAL_THROTTLED` | “Manager approvals locked for {wait}” | “Wait for the countdown to finish. Signing in at the POS does not end this cooldown.” |
+
+Use POS-01's duration format. Clear the PIN after each response; disable the
+pad and confirmation until the cooldown reaches zero. Cancel remains available.
+There is no distinct cashier-versus-unknown-PIN refusal and no displayed failure
+count. No production M-1 state is wired in Phase 0: no command takes approval yet.
+`APPROVAL_FAILED` and `APPROVAL_THROTTLED` at POS-01 are likewise unexpected,
+not sign-in states, and use the general failure if ever received there.
 
 **Requirements.** FR-A6, FR-A2c, FR-A5, FR-F3, FR-F8, FR-H4, FR-H5, FR-G14,
 FR-J3, B-14, B-20.
@@ -972,9 +1050,33 @@ manager PIN plus reason (FR-H5).
 
 ## M-6 — Back-office re-authentication `[MODAL]`
 
-Idle timeout at 30 minutes preserves unsaved form state behind
-re-authentication (FR-A2b). It is an overlay over the work in progress, never
-a bounce to BO-01.
+Idle timeout at 30 minutes (`SESSION_IDLE`) preserves unsaved form state
+behind this modal (FR-A2b). Keep the username fixed and read-only; ask only for
+the password. Same-manager success restores focus, selection, validation and
+values without submitting the draft. Escape and an outside click cannot
+close M-6; the underlying work is inert.
+
+| State | Trigger | Exact copy / presentation |
+|---|---|---|
+| Re-authenticate | `SESSION_IDLE` | “Your session timed out” / “Your unsaved changes are kept. Continue as {username} to resume them. To sign in as someone else, log out.” Labels “Username”, “Password”; actions “Log out”, “Continue”. |
+| Local invalid input | Empty password / invalid length | “Enter your password.” / “Use 8–128 characters for your password.” No request. |
+| Verifying | Re-authentication in flight | “Verifying…” on Continue; prevent duplicate submission. |
+| Error (`reauth-error`; `reauth-other` is only a review alias) | `INVALID_CREDENTIALS` without cooldown details | “Incorrect password. Try again.” The password is cleared; focus returns there. |
+| Throttled | `INVALID_CREDENTIALS` with `retryAfterSeconds`, or `THROTTLED` | “This username is cooling down. Try again in {wait}. Log out is still available.” Disable password and Continue; Log out remains available. |
+| Logout during cooldown | Local Log out action while the server wait remains | Append to the discard confirmation: “This username is locked for {wait}. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.” |
+| Session ended | `UNAUTHENTICATED`, including eight-hour expiry | Close M-6 and use BO-01's Session ended state and its retained-draft sentence. Keep the draft locally, isolated and never resent; do not claim the timer is the known cause. |
+| Access refused | `FORBIDDEN` | Close M-6, remove the protected work and show BO-01's Access refused state. |
+| Unavailable / something went wrong | Shared general-failure triggers | Keep M-6 open over inert work; use the shared title, body and Try again action. Preserve the draft; clear the password. |
+| Resumed | Successful same-manager re-authentication | “Your session has resumed.” / “Your changes are still here. Nothing has been submitted.” |
+
+M-6 and BO-01 share **one per-account password cooldown** (FR-A5b, ADR-009 §4),
+independent of PIN classes. A wrong password typed into M-6 counts on the fixed
+idled account. To change manager, use Log out, the existing explicit discard
+confirmation, then BO-01 with the other manager's own username and password.
+Those failures count on that other account; that manager never receives the
+idled manager's draft (owner ruling, 2026-10-06). `reauth-other` must not simulate
+identifying the owner of an entered password or a separate throttle decision.
+
 
 ---
 

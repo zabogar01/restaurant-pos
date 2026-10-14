@@ -263,3 +263,179 @@ When done, run exactly one of:
     herdr agent prompt lead "designer15: BLOCKED — <question>"
 
 ## Handoff
+
+### Delivered by designer15 — 2026-10-14
+
+Completed the code-to-state copy specification in SCREEN-INVENTORY and aligned
+Frost and the behavioral wireframes with it. POS-01 has no separate credential
+permission refusal, no count, and no claim that a manager ended the session.
+Its confirmation requires all six digits; the drawing counts masked positions
+only and neither stores a PIN nor makes a request. The two general failure
+states have their exact sentences and recovery actions. BO-01 is delivered as
+the permitted provisional-form table, including access refusal and M-6's
+return after session loss. The full Frost BO-01/BO-02 compositions remain slice B.
+
+M-6 now fixes the username, labels Password without a provisional qualifier,
+and describes a per-account cooldown. Its old `reauth-other` picture is a
+review alias of the same password failure and increments the same local fixture
+counter. A different manager uses Log out, explicit draft discard, and BO-01;
+that manager's failures belong to their own account. This follows the recorded
+2026-10-06 refinement and ADR-009, rather than creating a new owner ruling.
+M-1's two refusal pictures use identical copy and no count; the cooldown picture
+has an inert confirmation and cleared dots. Its old `approval-denied` URL is
+only an alias, not a client state that distinguishes PIN owners.
+
+The Phase 0 office frame with an empty rail and empty content pane is accepted,
+with only “Back office”, the real manager name and Log out in the top bar.
+No new token, full screen composition, business-day value, incident or
+navigation destination was invented. The populated shell remains a review
+fixture for later phases. DESIGN.md and BO-02 explicitly document this exception.
+
+The branch was clean at `3f4585c`, the task-file commit directly above the stated
+base `2dfc26d`. Only owned design paths and this Handoff were edited. No product
+contract, ADR, application, package or database file was changed. The task's
+2026-10-13 served-POS ruling was not present under that date in DECISIONS.md in
+this checkout; this task did not change served-client behavior or decide it.
+
+### Exact product copy for the builders
+
+This is one placement table for PHASE0-011c and PHASE0-011d, also carrying M-1's
+future copy. Quotation marks delimit strings and are not rendered. `{wait}` is
+`{minutes} min {seconds} s`, derived solely from `retryAfterSeconds` and the
+remaining deadline. The fixture durations are examples. A missing/invalid
+server duration uses the general failure; there is no guessed duration.
+
+“General failure” below means `INTERNAL`, an unparseable failure,
+`VALIDATION_FAILED`, `CSRF_REFUSED` after the one permitted recovery/retry,
+`ORIGIN_REFUSED`, `NOT_FOUND`, `PAYLOAD_TOO_LARGE`, `UNSUPPORTED_MEDIA_TYPE`, or
+an unexpected code for that surface. Before that single CSRF recovery fails,
+there is no new visible error. No raw code or server text becomes product copy.
+
+| Screen | State | Trigger | Exact title, body, labels and action |
+|---|---|---|---|
+| POS-01 | Resting | Cold start, release, initial unauthenticated lookup, or `SESSION_IDLE` | Heading “Enter PIN”; helper “Six digits”; confirmation accessible name “Continue”; backspace accessible name “Delete last digit”. No idle sentence. |
+| POS-01 | Short PIN | Local entry of zero to five digits | Same resting copy. Confirm disabled and Enter ignored; no request. Six digits enable Confirm and a seventh is ignored. Drawing's masked-position description is “{count} of 6 digits entered”, which counts local entry, never failures. |
+| POS-01 | Loading | Verification in flight | “VERIFYING”. Entry and duplicate submission disabled. |
+| POS-01 | Error | `INVALID_CREDENTIALS` without cooldown details | “PIN not recognised” / “Enter your six-digit PIN again. Ask a manager if you need help.” |
+| POS-01 | Throttled | `INVALID_CREDENTIALS` with details, or `THROTTLED` | “Sign-in locked for {wait}” / “Sign-in is cooling down. Wait for the countdown to finish, then enter your PIN.” Whole pad disabled until zero. |
+| POS-01 | Session invalidated | `UNAUTHENTICATED` on a held session | “Your session has ended” / “Sign in again. Ask a manager for help if your PIN no longer works.” |
+| POS-01 | Tender draft waiting | Draft in this tab's store | “Payment in progress on this tab” / “{order label} — {outstanding} outstanding, {tender count} tenders drafted. Sign in to continue. Nothing has been recorded yet.” Use “1 tender drafted” for one. |
+| POS-01 | Future emergency presence | Future incident route; no Phase 0 state | “Kitchen printer needs attention” / “Tap to sign in and view. No order details are shown before sign-in.” Existing “Sign in to view” action. The future fixture is retained, not a Phase 0 data claim. |
+| POS-01, BO-01, M-6; shared by both clients | Unavailable | `UNAVAILABLE`, or no response | “The system is unavailable” / “Wait a moment, then try again.” Action “Try again”. |
+| POS-01, BO-01, M-6; shared by both clients | Something went wrong | General failure group above | “Something went wrong” / “Try again. If the problem continues, ask a manager for help.” Action “Try again”. |
+| BO-01 | Resting and common form | Cold start, explicit logout, or initial `me` returns `UNAUTHENTICATED` | “Back office” / “Sign in with your manager username and password.” Labels “Username”, “Password”; action “Sign in”. |
+| BO-01 | Missing username | Local validation | “Enter your username.” |
+| BO-01, M-6 | Missing password | Local validation | “Enter your password.” |
+| BO-01 | Invalid username format | Local shared-schema check, after trim/lowercase | “Use 3–32 letters, numbers, dots, underscores or hyphens for your username.” |
+| BO-01, M-6 | Invalid password length | Local shared-schema check; never trim the password | “Use 8–128 characters for your password.” |
+| BO-01 | Loading | Sign-in in flight | Action “Signing in…”. Fields and repeat submission disabled. |
+| BO-01 | Error | `INVALID_CREDENTIALS` without cooldown details | “Sign-in failed” / “Check your username and password, then try again.” |
+| BO-01 | Throttled | `INVALID_CREDENTIALS` with details, or `THROTTLED` | “Sign-in locked for {wait}” / “This username is cooling down. Other managers can sign in with their own usernames.” Keep Username editable; retain known wait when switching back. |
+| BO-01, from M-6 or other protected office work | Session ended | `UNAUTHENTICATED` on a held session, including absolute expiry | “Your session has ended” / “Sign in again to continue.” If a draft was retained locally, append “Your unsaved changes are kept on this tab and will not be submitted automatically.” |
+| BO-01, from M-6 or other protected office work | Access refused | `FORBIDDEN` | “Manager access required” / “This account cannot use the back office. Sign in with a manager account.” Remove protected work and show the ordinary sign-in form. |
+| BO-01 / BO-02 | Successful sign-in | Success | No success sentence. Phase 0 top bar “Back office”, real manager name, “Log out”. Empty rail and pane; no empty-data claim. |
+| BO-01 | Idle | `SESSION_IDLE` on a held session | No BO-01 sentence or navigation; open M-6. |
+| M-6 | Re-authenticate | `SESSION_IDLE` | “Your session timed out” / “Your unsaved changes are kept. Continue as {username} to resume them. To sign in as someone else, log out.” Labels “Username”, “Password”; actions “Log out”, “Continue”. |
+| M-6 | Verifying | Re-authentication in flight | Action “Verifying…”. |
+| M-6 | Error; `reauth-other` review alias | `INVALID_CREDENTIALS` without cooldown details | “Incorrect password. Try again.” |
+| M-6 | Throttled | `INVALID_CREDENTIALS` with details, or `THROTTLED` | “This username is cooling down. Try again in {wait}. Log out is still available.” |
+| M-6 | Logout during cooldown | Local Log out while a wait remains | Append to existing discard confirmation: “This username is locked for {wait}. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.” |
+| M-6 | Discard confirmation, retained existing copy | Local Log out | “Log out and discard your changes?” / “The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session.” Actions “Keep this draft”, “Discard changes and log out”. |
+| M-6 | Resumed, retained existing copy | Successful same-manager re-authentication | “Your session has resumed.” / “Your changes are still here. Nothing has been submitted.” |
+| M-1 | Error; `approval-denied` review alias | `APPROVAL_FAILED` without cooldown details | “Manager PIN not recognised” / “Ask a manager to enter their PIN again.” |
+| M-1 | Throttled | `APPROVAL_FAILED` with details, or `APPROVAL_THROTTLED` | “Manager approvals locked for {wait}” / “Wait for the countdown to finish. Signing in at the POS does not end this cooldown.” Cancel stays available. |
+
+Clear secrets after every response, including success. General-failure retry at
+sign-in/M-6 asks for fresh secret entry, preserves username and protected draft,
+and never automatically resends a credential. Elsewhere it uses the screen's
+existing reconciliation/read path, not repetition of an uncertain command.
+At absolute expiry keep the draft local and isolated; no automatic submission
+or invented cross-session restore workflow. A new manager never receives it.
+There is no separate credential permission refusal on either sign-in and no
+M-1 production route in Phase 0. Approval codes on a sign-in are unexpected and
+use the general failure group. Overflow adds no sentence: POS-01 fits its target;
+the office form scrolls if necessary.
+
+### Artifacts and states changed
+
+| File | Changed states / supporting change |
+|---|---|
+| `docs/design/visual-directions/frost/pos/lock.html` | `default`, `error`, `throttled`, `invalidated`; added `short-pin`, `ready`, `unavailable`, `unexpected`; existing draft/incident paths inherit six-digit confirmation. |
+| `docs/design/prototype/pos/lock.html` | Same copy and states, so the behavioral authority agrees with Frost. |
+| `docs/design/prototype/pos/lock.js` | Shared, local-only masked-position drawing behavior for both lock artifacts; disables the entire cooldown pad and prevents short confirmation. |
+| `docs/design/visual-directions/frost/pos/order.html`, `docs/design/prototype/pos/order.html` | `approval-error`, `approval-denied`, `approval-throttled`; identical refusal, no count, empty dots, disabled cooldown picture. |
+| `docs/design/visual-directions/frost/back-office/shell.html`, `shell.js` | `reauth`, `reauth-error`, `reauth-other`, `reauth-throttled`, and logout during cooldown; fixed username, per-account wording, alias counted on the fixed account. |
+| `docs/design/prototype/back-office/login.html` | `default`, `loading`, `error`, `throttled`; removed unsupported `denied`; username/password and FR-A5b replace the old credential drawing. This remains greyscale, not the full slice B screen. |
+| `docs/design/prototype/index.html`, `docs/design/visual-directions/manifest.js` | State selectors match the changed pictures and aliases. |
+| `docs/design/checks/design012.cjs` | The logout check now expects the per-account sentence and `min`/`s` duration; its old global-cooldown/colon-duration assertion would have failed intentionally. |
+
+### Verification and limits
+
+- `npm run verify` passed: 70 test files, 3,365 tests, including typecheck.
+  The first sandboxed run could not reach PostgreSQL (`EPERM 127.0.0.1:5433`);
+  the approved rerun passed. Vite emitted its existing native-config warning.
+- Browser inspection used Chrome through CUA with a loopback-only preview of
+  `docs/design`. Direct `file:` navigation was blocked by browser policy, and
+  the preview port required sandbox approval. No repository files were served
+  outside the design subtree.
+- Opened every changed HTML artifact and both galleries. Inspected all eleven
+  Frost POS-01 states, the three changed M-1 states in both directions, all four
+  BO-01 wireframe states, and M-6's re-authenticate, verifying, error, alias,
+  cooldown, logout and resumed states. Console error/warning reads were empty.
+- At 1280×800, POS keys measured 88×88 and the longest new notice left the pad
+  bottom at 723px. M-1's longest changed modal stayed between approximately
+  42px and 758px. At 1440×900, the M-6 dialogs measured 640px wide and remained
+  within the viewport. Screenshots were inspected in the browser tool.
+- Exercised five-digit Enter (no navigation), sixth-digit enablement, backspace
+  disabling confirmation, Try again focus restoration, six-digit navigation to
+  Floor, draft navigation to the existing settlement re-authentication fixture,
+  M-1 Cancel, M-6 Escape resistance, keep-draft cooldown preservation, five alias
+  failures reaching cooldown, empty password after refusal, and confirmed
+  logout reaching BO-01. The final confirmation pass checked neutral disabled
+  styling and cleared approval dots. These are fixture checks, not real auth.
+- `node --check` passed for the new lock runtime, changed shell runtime,
+  manifest and DESIGN-012 check. `git diff --check` passed.
+- The full legacy headless `design012.cjs` suite was not run; its relevant
+  changed assertion and alias behavior were exercised in the CUA browser.
+  BO-01/M-6 general failures, `FORBIDDEN` and absolute expiry are supplied in the
+  permitted copy tables; they are not claimed as newly drawn Frost screens.
+- BO-12 was checked only: DESIGN-014's `audit.js` retains the distinct
+  “Approval request refused · cooldown” outcome with null approver. No BO-12 or
+  BO-13 change was made.
+
+### Required stale-claim scan
+
+Command: `grep -rniE "attempts? remaining|deactivated|installation-wide" docs/design docs/DESIGN.md`.
+Output at handoff:
+
+```text
+docs/design/checks/design014.cjs:60:  long:['CATER-0610','Ratna Ayu Kartikasari Prameswari','Deactivated','999.999.999']
+docs/design/checks/design014.cjs:107: await p.locator('#filter-person').selectOption('former');check((await rowIds()).join(',')==='long','deactivated actor remains searchable');
+docs/design/visual-directions/paper/pos/order.html:623:          <div>3 attempts remaining before manager approvals are locked for five minutes.</div>
+docs/design/visual-directions/paper/pos/lock.html:46:        <div>2 attempts remaining before a five-minute cooldown.</div>
+docs/design/visual-directions/frost/back-office/audit.js:38:    Object.entries(labels).forEach(([value,label])=>filters[key].add(new Option(label+(value==='former'?' · Deactivated':''),value)));
+docs/design/visual-directions/frost/back-office/audit.js:58:  function person(key){return escape(people[key])+(key==='former'?'<small>Deactivated</small>':'');}
+docs/design/prototype/pos/floor.html:160:      <li>A deactivated table disappears here, but cannot be deactivated at all while
+docs/design/prototype/back-office/tables.html:39:        <div class="banner__t">Table 1 was not deactivated</div>
+docs/design/prototype/back-office/tables.html:97:    <li>A table holding an open order cannot be deactivated, and the rejection names
+docs/design/prototype/back-office/tables.html:105:  refresh. A deactivated table is kept, not deleted, so history still resolves. <span class="req">B-8</span></p></div>
+docs/design/SCREEN-INVENTORY.md:134:- *table deactivated* — a table deactivated in the back office is gone from
+docs/design/SCREEN-INVENTORY.md:718:table holds an OPEN order* (FR-C8, AC-32) · *deactivated table retained for
+docs/design/SCREEN-INVENTORY.md:723:**Must not invent.** A table holding an OPEN order cannot be deactivated
+docs/design/SCREEN-INVENTORY.md:763:*overflow* · *deactivated preset — hidden from the POS picker but still
+docs/design/SCREEN-INVENTORY.md:1022:Deactivated presets are absent from the picker but readable on orders holding
+```
+
+The two remaining attempt-count hits are in the rejected Paper direction,
+which the designer role explicitly leaves untouched. They are historical, not
+current POS-01/M-1 instructions; DESIGN.md makes the new inventory authoritative.
+All other hits concern deactivated tables, presets or historical audit actors,
+including DESIGN-014 checks. None is a POS-01, BO-01, M-1 or M-6 credential claim.
+There is no surviving `installation-wide` wording in the scanned current design
+files. POS PIN throttling still correctly applies across the installation;
+only back-office password throttling is per account.
+
+No owner question remains for this delivery. The copy and provisional frame
+exception await the task’s planned design review.
+
+DONE

@@ -211,7 +211,7 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 [MODAL] Manager approval — global to the POS client ........... FR-A6, A2c, A5
     Appears above POS-03, POS-04, and POS-06 wherever a gated action fires.
     Never a route. Never a mode. Never satisfied by a back-office session.
-    ├── [INLINE] Wrong PIN — attempts remaining
+    ├── [INLINE] Approval failed — ask a manager to retry
     ├── [INLINE] MANAGER_APPROVAL throttle cooldown (5 min) .... FR-A5
     └── [INLINE] Cancelled — no partial state written .......... B-20, FR-J3
 ```
@@ -244,8 +244,8 @@ reports and audit.
 │   ├── [GLOBAL] Business-day indicator ................... FR-I1
 │   └── [MODAL]  Re-authenticate — idle timeout, form state kept  FR-A2b
 │
-├── BO-01 [SCREEN] Login .................................. FR-A2b, A5, A7
-│   └── [INLINE] LOGIN throttle cooldown (5 min) .......... FR-A5
+├── BO-01 [SCREEN] Login .................................. FR-A2b, A5b, A7
+│   └── [INLINE] Per-account password cooldown ........... FR-A5b
 │
 ├── BO-02 [SCREEN] Today ......................... [MY CALL] FR-I1, E3, I2
 │

@@ -117,7 +117,7 @@ window.MOCKUPS = [
       ],
       [
         "approval-denied",
-        "Modal — cashier PIN refused"
+        "Modal — approval failure (alias)"
       ]
     ],
     "width": 1280,
@@ -219,6 +219,10 @@ window.MOCKUPS = [
         "default",
         "Resting"
       ],
+      ["short-pin", "Short PIN"],
+      ["ready", "Six digits entered"],
+      ["unavailable", "System unavailable"],
+      ["unexpected", "Something went wrong"],
       [
         "loading",
         "Verifying"
@@ -620,11 +624,11 @@ window.MOCKUPS = [
       ],
       [
         "reauth-other",
-        "Different manager refused"
+        "Wrong password (alias)"
       ],
       [
         "reauth-throttled",
-        "LOGIN cooldown"
+        "Account cooldown"
       ],
       [
         "reauth-logout",
