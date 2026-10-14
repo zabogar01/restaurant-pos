@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011c1, DESIGN-015]
 owns: [apps/pos/**, package.json, package-lock.json]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-011c2 — The POS signs in for real
