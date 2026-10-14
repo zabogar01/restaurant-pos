@@ -16,9 +16,9 @@
   let departure=O.logout.href;
   let resumeFocus=$('#draft-limit'), selection=[0,6], timer, verifyingTimer, returnToReauth=false, queued=false;
   const accounts=new Map(), idled='m.iqbal', manager=$('#manager');
-  let other=false, otherUsername='', priorState='reauth', separate=false;
-  const account=()=>{const key=manager.value.trim().toLowerCase();if(!accounts.has(key))accounts.set(key,{failures:0,expires:0});const value=accounts.get(key);if(value.expires&&value.expires<=Date.now()){value.expires=0;value.failures=0;}return value;};
-  const remaining=()=>Math.max(0,Math.ceil((account().expires-Date.now())/1000));
+  let other=false, priorState='reauth', separate=false;
+  const account=(username=manager.value)=>{const key=username.trim().toLowerCase();if(!accounts.has(key))accounts.set(key,{failures:0,expires:0});const value=accounts.get(key);if(value.expires&&value.expires<=Date.now()){value.expires=0;value.failures=0;}return value;};
+  const remaining=username=>Math.max(0,Math.ceil((account(username).expires-Date.now())/1000));
   let reauthRequired=false, departureState='none', departureFocus;
   $('#credential-label').textContent=credentialCopy.label;
   $('#reauth-alert strong').textContent=O.kitchenIncident.title;
@@ -39,9 +39,9 @@
     node.replaceChildren(heading,document.createElement('br'),document.createTextNode(body));
   }
   function logoutCooldown() {
-    const left=remaining();
+    const left=reauthRequired&&!other?remaining(idled):0;
     $('#logout-cooldown').hidden=!left;
-    $('#logout-cooldown').textContent='This username is locked for '+wait(left)+'. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.';
+    $('#logout-cooldown').textContent=left?'This username is locked for '+wait(left)+'. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.':'';
   }
   function cooldown() {
     const left=remaining();
@@ -54,8 +54,7 @@
     O.setState(state); clearInterval(timer);
     const confirmation=state==='reauth-other-confirm';
     const wasOther=other;other=state.startsWith('reauth-other')&&!confirmation;
-    if(wasOther&&!other)otherUsername=manager.value;
-    manager.value=other?(wasOther?manager.value:otherUsername||'r.ayu'):idled;
+    manager.value=other?(wasOther?manager.value:''):idled;
     manager.readOnly=!other;
     const pending=state.endsWith('-verifying'), locked=state.endsWith('-throttled');
     manager.disabled=pending;
@@ -136,7 +135,7 @@
   $('#other-manager').onclick=()=>{priorState=document.documentElement.dataset.state;secret.value='';render('reauth-other-confirm');$('#stay-manager').focus();};
   $('#stay-manager').onclick=()=>{render(remaining()?'reauth-throttled':priorState==='reauth-throttled'?'reauth':priorState);$('#other-manager').focus();};
   $('#choose-manager').onclick=()=>{render('reauth-other');if(remaining())render('reauth-other-throttled');manager.focus();};
-  $('#back-manager').onclick=()=>{secret.value='';render('reauth');if(remaining())render('reauth-throttled');(secret.disabled?$('#other-manager'):secret).focus();};
+  $('#back-manager').onclick=()=>{manager.value='';secret.value='';render('reauth');if(remaining())render('reauth-throttled');(secret.disabled?$('#other-manager'):secret).focus();};
   manager.oninput=()=>{if(!other)return;secret.value='';render(remaining()?'reauth-other-throttled':'reauth-other');};
   $('#reauth-logout').onclick=()=>{clearTimeout(verifyingTimer);askLogoutOrLeave();};
   O.logout.addEventListener('click',e=>{if(separate)return;e.preventDefault();askLogoutOrLeave();});
@@ -148,7 +147,10 @@
   if(initial.endsWith('-throttled'))accounts.set(initial==='reauth-other-throttled'?'r.ayu':idled,{failures:0,expires:Date.now()+300000});
   if(initial.startsWith('reauth')) {
     resumeFocus.focus();resumeFocus.setSelectionRange(...selection);
-    start(initial==='reauth-logout'?'reauth':initial);
+    const sampleOther=['reauth-other-error','reauth-other-throttled','reauth-other-verifying'].includes(initial);
+    start(sampleOther?'reauth-other':initial==='reauth-logout'?'reauth':initial);
+    // Response-state deep links simulate a typed sample, never a form-opening default.
+    if(sampleOther){manager.value='r.ayu';render(initial);manager.focus();}
     if(initial==='reauth-logout')askLogoutOrLeave();
   }else if(initial==='other-signed-in')separateArea();
   else if(initial==='resumed'){resumeFocus.focus();resumeFocus.setSelectionRange(...selection);$('#resume-status').hidden=false;}

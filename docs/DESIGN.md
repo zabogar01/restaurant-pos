@@ -1373,8 +1373,9 @@ the idled account's cooldown. It first acknowledges that the current manager's
 unsaved changes will not be available to the manager signing in; initial focus
 stays with the current manager. Continuing opens editable Username and Password
 inside M-6 (`reauth-other`), with BO-01's ordinary sign-in failure and cooldown
-copy. Failures count on the submitted account. Back returns to the fixed idled
-username without changing its draft or remaining wait. Log out remains a
+copy. Username starts empty each time this choice opens the form; Back clears
+both username and secret. Failures count on the submitted account. Back returns
+to the fixed idled username without changing its draft or remaining wait. Log out remains a
 separate path. Neither the acknowledgement nor the separate working area
 promises that the old draft is destroyed or recoverable: both that retention
 question and restoration after absolute expiry are with the owner.
@@ -1382,8 +1383,11 @@ M-6 and BO-01 share one per-account password cooldown under FR-A5b and ADR-009 Â
 independent of the POS PIN classes. Continue is disabled during the wait and
 Log out and the other-manager choice remain available. Both the modal and
 logout confirmation show the remaining duration from `retryAfterSeconds`,
-omitting zero minute/second parts and removing the cooldown at zero; the latter explains that logging
-out does not end this account's cooldown and other managers can still sign in.
+omitting zero minute/second parts and removing the cooldown at zero. Only logout
+from the fixed-username form appends the idled account's wait, explaining that
+logging out does not end that cooldown and other managers can still sign in.
+Logout from the other-manager form uses the plain discard confirmation with
+no cooldown sentence, even if either account has a wait.
 Timeout captures the actual active element and text selection, including focus
 outside the draft, and success restores them. These are local demonstrations,
 not implemented authentication or persisted server throttling; the artifact's

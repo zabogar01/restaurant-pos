@@ -414,12 +414,12 @@ there is no new visible error. No raw code or server text becomes product copy.
 | BO-01 | Idle | `SESSION_IDLE` on a held session | No BO-01 sentence or navigation; open M-6. |
 | M-6 | Re-authenticate | `SESSION_IDLE` | “Your session timed out” / “Your unsaved changes are kept. Continue as {username} to resume them.” Labels “Username”, “Password”; actions “Sign in as a different manager”, “Log out”, “Continue”. Username is read-only. |
 | M-6 | Choose another manager | Local choice, including during cooldown | “Sign in as a different manager?” / “The current manager’s unsaved changes will not be available to the manager signing in.” Initial focus “Stay with current manager”; second action “Continue to sign-in”. Stay preserves draft and wait. |
-| M-6 | Other manager (`reauth-other`) | Continue to sign-in after acknowledgement | “Sign in as a different manager” / “Enter your own username and password. The current manager’s unsaved changes will not be available to you.” Editable “Username”, “Password”; actions “Back to {idled username}”, “Log out”, “Sign in”. Back clears the secret and preserves the draft, focus/selection snapshot and account waits. |
+| M-6 | Other manager (`reauth-other`) | Continue to sign-in after acknowledgement | “Sign in as a different manager” / “Enter your own username and password. The current manager’s unsaved changes will not be available to you.” Editable “Username”, “Password”; actions “Back to {idled username}”, “Log out”, “Sign in”. Username starts empty each time the form opens from this choice. Back clears username and secret and preserves the draft, focus/selection snapshot and account waits. `r.ayu` is only a typed fixture sample for response states, not a starting value. |
 | M-6 | Verifying | Credential request in flight | Default action “Verifying…”; other-manager action “Signing in…”. Disable duplicate requests and switching while pending. |
 | M-6 | Same-manager error | `INVALID_CREDENTIALS` without cooldown details | “Incorrect password. Try again.” |
 | M-6 | Other-manager error | Ordinary sign-in returns `INVALID_CREDENTIALS` without cooldown details | “Sign-in failed” / “Check your username and password, then try again.” Preserve Username; clear Password. Failures count on the submitted account. |
 | M-6 | Same-manager throttled | `INVALID_CREDENTIALS` with details, or `THROTTLED` | “This username is cooling down. Try again in {wait}. You can sign in as a different manager or log out.” Disable Password and Continue, not the other-manager choice or Log out. |
-| M-6 | Logout during cooldown | Local Log out while a wait remains | Append to existing discard confirmation: “This username is locked for {wait}. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.” |
+| M-6 | Logout during cooldown | Local Log out from the fixed-username form while the idled manager's account has a wait | Append to existing discard confirmation: “This username is locked for {wait}. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.” Key the wait to the idled account. From the other-manager form append nothing, regardless of either account's wait; use the plain discard confirmation. |
 | M-6 | Discard confirmation, retained existing copy | Local Log out | “Log out and discard your changes?” / “The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session.” Actions “Keep this draft”, “Discard changes and log out”. |
 | M-6 | Resumed, retained existing copy | Successful same-manager re-authentication | “Your session has resumed.” / “Your changes are still here. Nothing has been submitted.” |
 | M-6 | Other manager signed in | Successful ordinary sign-in from other form | No success sentence. Enter a separate working area with no old draft visible, editable or submitted. No disposal or recovery promise. |
@@ -660,5 +660,57 @@ Both are drawn around as instructed. They do not block this copy correction;
 the next draft/recovery design needs their recorded answers. The other-manager
 choice uses ordinary back-office sign-in, not the password-only reauthentication
 request. PHASE0-011c/011d should use the updated table above and the inventory.
+
+DONE
+
+### Round 3 — designer15b, 2026-10-14
+
+Completed the two accepted re-review findings from the clean branch at
+`e40ef43`. Updated the inventory, DESIGN.md, the builder copy table above,
+`shell.js` and its browser checks. Earlier round narratives remain historical.
+
+- **R2-1:** the appended logout cooldown sentence is now limited to logout
+  from M-6's fixed-username form and explicitly reads the idled account's
+  deadline. Logout from the other-manager form appends nothing, whether the
+  idled account or the submitted account is cooling down. The hidden note's
+  text is cleared as well. Kept the plain discard confirmation, as the
+  re-review's proposed fix permits; no additional product sentence or draft
+  retention/recovery promise was introduced.
+- **R2-2:** opening the other-manager choice starts with an empty Username.
+  Back clears both username and password, and no previous typed username is
+  cached for the next opening. Account deadlines remain keyed separately, so
+  typing that username again still restores its known wait. Response-state
+  deep links open the blank form first and then simulate typing `r.ayu`;
+  that sample is no longer a form default. Browser interactions likewise
+  type their sample username explicitly.
+
+**Verification:** the requested browser rerun passed on its first round-3 run:
+
+```text
+PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright DESIGN_EVIDENCE_DIR=/var/folders/9t/h45qdf813kn45qysmz8nw0qc0000gn/T/opencode/design015-round3 node docs/design/checks/design012.cjs
+states: 52
+checks: 272
+errors: []
+failures: []
+```
+
+The suite also opens every registered state of both POS locks and BO-01.
+New assertions exercise logout from the other-manager form with the idled
+account cooling down and with the submitted account cooling down; both omit
+the note. They check a blank initial username, blank fields after Back and
+reopening, preserved waits after declining logout, and the original account's
+wait after its username is typed again. Existing fixed-manager cooldown,
+draft-preservation, focus, navigation and isolation checks still pass.
+
+Inspected Chrome screenshots at 1440×900 of the empty other-manager form and
+logout from its throttled state. Evidence stays in the external directory
+above; no screenshot or measurement is committed. Page exceptions and console
+errors were captured by the suite and both were empty.
+
+`npm run verify` passed: typecheck, **70 test files and 3,365 tests**. The
+existing Vite native-config warning remains. `node --check` passed for
+`shell.js` and `design012.cjs`; `git diff --check` passed. No check required
+for this round was skipped. The two owner questions recorded under round 2
+remain unanswered and are not decided by these fixes.
 
 DONE
