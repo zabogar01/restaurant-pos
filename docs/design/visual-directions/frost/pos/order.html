@@ -18,7 +18,7 @@
 ['sheet-voidline','Sheet — void fired line'],['sheet-voidorder','Sheet — void order (unfired)'],
 ['sheet-voidorder-fired','Sheet — void order (holds fired)'],
 ['approval','Modal — manager approval'],['approval-error','Modal — wrong PIN'],
-['approval-throttled','Modal — approval cooldown'],['approval-denied','Modal — cashier PIN refused'],
+['approval-throttled','Modal — approval cooldown'],['approval-denied','Modal — approval failure (alias)'],
 ['pressed','Pressed — tap in progress (DESIGN-005)'],["sheet-item-burger", "Item — Burger"],["sheet-item-wings", "Item — Chicken Wings"],["sheet-item-steak", "Item — Steak"],["sheet-item-fish", "Item — Fish & Chips"],["sheet-item-salad", "Item — Caesar Salad"],["sheet-item-soup", "Item — Soup of the Day"],["sheet-item-fries", "Item — Fries"],["sheet-item-rings", "Item — Onion Rings"],["sheet-item-soda", "Item — Soda"],["sheet-item-coffee", "Item — Coffee"],["sheet-item-beer", "Item — Beer"],["sheet-item-wine", "Item — House Wine"],["sheet-item-two", "Add — Burger × 2"],["sheet-item-max", "Add — quantity 99"],["sheet-line-changed", "Steak — draft 1 → 3"],["sheet-line-max", "Steak — draft 99"],["quick-line-changed", "Counter Burger — draft 1 → 3"],["quick-line-max", "Counter Burger — draft 99"],["fire-ready", "Fire — ready, 2 pending lines"],["fire-queued", "Fire — sending, unconfirmed"],["fire-printed", "Fire — printed"],["fire-failed", "Fire — FAILED"],["fire-unknown", "Fire — UNKNOWN"],["fire-then-add", "Fire — next pending group"],["fire-heading-width", "Fire — Round 12, UNKNOWN"]] };</script>
 <script defer src="../../mockup.js"></script>
 <link rel="stylesheet" href="../../visual.css">
@@ -618,22 +618,22 @@ if (!['open-t7','open-t9','open-t12','quick-new'].includes(new URLSearchParams(l
       </div>
       <div class="modal__body">
         <div class="pindots">
-          <span class="pindot pindot--on"></span><span class="pindot pindot--on"></span>
-          <span class="pindot pindot--on"></span><span class="pindot pindot--on"></span>
+          <span class="pindot"></span><span class="pindot"></span>
+          <span class="pindot"></span><span class="pindot"></span>
           <span class="pindot"></span><span class="pindot"></span>
         </div>
 
         <div class="notice" data-when="approval-error" style="margin:0 0 16px">
-          <div class="notice__t">PIN not recognised</div>
-          <div>3 attempts remaining before manager approvals are locked for five minutes.</div>
+          <div class="notice__t">Manager PIN not recognised</div>
+          <div>Ask a manager to enter their PIN again.</div>
         </div>
         <div class="notice" data-when="approval-throttled" style="margin:0 0 16px">
           <div class="notice__t">Manager approvals locked for 4 min 38 s</div>
-          <div>Five failed approval attempts. Signing in as a cashier does not clear this.</div>
+          <div>Wait for the countdown to finish. Signing in at the POS does not end this cooldown.</div>
         </div>
         <div class="notice" data-when="approval-denied" style="margin:0 0 16px">
-          <div class="notice__t">That PIN is not a manager</div>
-          <div>This action needs a manager. The attempt has been recorded.</div>
+          <div class="notice__t">Manager PIN not recognised</div>
+          <div>Ask a manager to enter their PIN again.</div>
         </div>
 
         <div class="keypad" style="grid-template-columns:repeat(3,72px)">
@@ -641,7 +641,8 @@ if (!['open-t7','open-t9','open-t12','quick-new'].includes(new URLSearchParams(l
           <div class="key" style="height:72px">4</div><div class="key" style="height:72px">5</div><div class="key" style="height:72px">6</div>
           <div class="key" style="height:72px">7</div><div class="key" style="height:72px">8</div><div class="key" style="height:72px">9</div>
           <div class="key" style="height:72px">&larr;</div><div class="key" style="height:72px">0</div>
-          <a class="key" style="height:72px;text-decoration:none" href="order.html?state=default">&#9654;</a>
+          <a class="key" data-unless="approval-throttled" style="height:72px;text-decoration:none" href="order.html?state=default">&#9654;</a>
+          <button class="key" type="button" data-when="approval-throttled" disabled style="height:72px;border-style:dashed;color:var(--ink4)">&#9654;</button>
         </div>
       </div>
       <div class="modal__foot">
@@ -654,4 +655,15 @@ if (!['open-t7','open-t9','open-t12','quick-new'].includes(new URLSearchParams(l
 </div><div class="device__caption">POS &mdash; 1280 &times; 800</div></div></div>
 
 
-</main></body></html>
+</main><script>
+// The approval cooldown is a disabled picture, including its confirm key.
+if (new URLSearchParams(location.search).get('state') === 'approval-throttled') {
+  document.querySelectorAll('.modal .key').forEach(key => {
+    key.setAttribute('aria-disabled', 'true');
+    key.style.color = 'var(--ink4)';
+    key.style.background = 'var(--unavailable, var(--bg3))';
+    key.style.borderStyle = 'dashed';
+  });
+}
+</script>
+</body></html>

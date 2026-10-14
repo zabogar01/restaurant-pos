@@ -3,7 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Back-office shell and preserved draft</title>
 <link rel="stylesheet" href="office.css">
-<script>window.WF={id:'BO-shell',client:'bo',nav:'',name:'Office shell and M-6',reqs:'FR-A2b, A2c, A5, E3, E6, I1',states:[['none','No alerts'],['kitchen','Kitchen emergency'],['receipt','Receipt warning'],['both','Both alerts'],['reauth','Re-authenticate'],['reauth-verifying','Verification pending'],['reauth-error','Wrong credential'],['reauth-other','Different manager refused'],['reauth-throttled','LOGIN cooldown'],['reauth-logout','Discard before logout'],['reauth-kitchen','Kitchen failure during re-authentication'],['resumed','Draft resumed'],['unsaved','Leave the draft']]};</script>
+<script>window.WF={id:'BO-shell',client:'bo',nav:'',name:'Office shell and M-6',reqs:'FR-A2b, A2c, A5b, E3, E6, I1',states:[['none','No alerts'],['kitchen','Kitchen emergency'],['receipt','Receipt warning'],['both','Both alerts'],['reauth','Re-authenticate'],['reauth-verifying','Verification pending'],['reauth-error','Wrong credential'],['reauth-other-confirm','Choose another manager'],['reauth-other','Other manager sign-in'],['reauth-other-error','Other manager refusal'],['reauth-other-throttled','Other account cooldown'],['reauth-other-verifying','Other sign-in pending'],['other-signed-in','Separate working area'],['reauth-throttled','Account cooldown'],['reauth-logout','Discard before logout'],['reauth-kitchen','Kitchen failure during re-authentication'],['resumed','Draft resumed'],['unsaved','Leave the draft']]};</script>
 <script defer src="../../mockup.js"></script><script defer src="office.js"></script><script defer src="shell.js"></script>
 </head><body>
 <header class="wfbar"></header>
@@ -34,15 +34,17 @@
 <header class="office-dialog__head"><h2 id="reauth-title">Your session timed out</h2></header>
 <section class="office-emergency" id="reauth-alert" role="alert" hidden><div><strong></strong><p data-incident-identity></p><p>Continue your session to open print incidents.</p></div><button class="office-button" id="queue-incidents">Open print incidents after sign-in</button></section>
 <form id="verify-form" class="office-dialog__body" novalidate>
-  <p id="reauth-description">Your unsaved changes are kept. Continue as M. Iqbal to resume them. To sign in as someone else, log out.</p>
-  <label for="manager">Manager</label><input id="manager" class="office-field" value="M. Iqbal" readonly>
+  <p id="reauth-description">Your unsaved changes are kept. Continue as m.iqbal to resume them.</p>
+  <div id="credential-fields">
+  <label for="manager">Username</label><input id="manager" class="office-field" value="m.iqbal" readonly>
   <label for="credential" id="credential-label"></label><input id="credential" class="office-field" type="password" autocomplete="current-password" aria-describedby="credential-message">
   <span id="credential-message" class="office-error" role="status"></span>
-  <p id="other-note" class="office-fixture" hidden>Review fixture: reauth-other deliberately uses the same refusal as reauth-error. LOGIN counting awaits the owner's credential decision.</p>
   <p id="cooldown" role="status" hidden></p>
-  <details class="office-fixture"><summary>Review fixture · simulated response</summary><label for="verify-result">Next local verification result</label><select class="office-field" id="verify-result"><option value="resumed">Same manager</option><option value="reauth-error">Wrong secret</option><option value="reauth-other">Different manager</option></select><p>No credential is checked or stored. Enter any sample text, then Continue.</p></details>
+  <details class="office-fixture"><summary>Review fixture · simulated response</summary><label for="verify-result">Next local verification result</label><select class="office-field" id="verify-result"><option value="resumed">Success</option><option value="reauth-error">Wrong credential</option></select><p>No credential is checked or stored. Enter sample text to inspect a response. Five local refusals simulate a server cooldown for the displayed account; production never counts failures.</p></details>
+  </div>
+  <div class="office-actions"><button class="office-button" type="button" id="other-manager">Sign in as a different manager</button><button class="office-button" type="button" id="back-manager" hidden>Back to m.iqbal</button></div>
 </form>
-<footer class="office-dialog__foot"><button class="office-button" id="reauth-logout">Log out</button><button class="office-button primary" type="submit" form="verify-form" id="continue">Continue</button></footer>
+<footer class="office-dialog__foot"><button class="office-button" id="stay-manager" hidden>Stay with current manager</button><button class="office-button primary" id="choose-manager" hidden>Continue to sign-in</button><button class="office-button" id="reauth-logout">Log out</button><button class="office-button primary" type="submit" form="verify-form" id="continue">Continue</button></footer>
 </dialog>
 <dialog class="office-dialog" id="logout-dialog" aria-labelledby="logout-title" aria-describedby="logout-description">
 <header class="office-dialog__head"><h2 id="logout-title">Log out and discard your changes?</h2></header>
