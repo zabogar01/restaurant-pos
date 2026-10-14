@@ -310,6 +310,17 @@ below says otherwise.
 7. Update the Handoff's copy table for every changed row, append a *Round 2* section (do not rewrite
    round 1), commit on this branch, and report with the same two lines as before.
 
+## Handover (lead, 2026-10-14): round 2 continues on OpenCode
+
+designer15 (Codex) reached its usage limit early in round 2, after reading the review and starting edits.
+The owner asked for OpenCode on `openai/gpt-6-astra` (a separate account) to carry on, as on 2026-10-06.
+**Finish the inherited work; do not restart.** Uncommitted in this worktree when Codex stopped: `docs/DESIGN.md`, `docs/design/SCREEN-INVENTORY.md`, `docs/design/SITEMAP.md`, `docs/design/prototype/back-office/login.html`, `docs/design/prototype/pos/lock.js`, `docs/design/visual-directions/mockup.js`.
+Read `git diff` first: those edits are designer15's partial round 2, made against the round-2 rulings above.
+Keep what is right, finish what is missing, and say in your round-2 Handoff section what you inherited and
+what you changed. Codex also wrote a helper at `/private/tmp/design015-round2-docs.py`, outside this
+worktree; do not rely on it. Do not commit screenshots or measurements (run output). Each browser run and
+each command outside the allowed list is the owner's to approve.
+
 ## Handoff
 
 ### Delivered by designer15 — 2026-10-14
