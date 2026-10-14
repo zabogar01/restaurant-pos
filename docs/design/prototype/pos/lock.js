@@ -23,7 +23,7 @@
     paint();
   };
   keys.forEach(key=>{key.onclick=()=>{
-    if(key===confirm){if(!confirm.disabled)location.href=state==='draft'?'settlement.html?state=reauth':'floor.html';}
+    if(key===confirm){if(!confirm.disabled)location.href=state==='draft'?'settlement.html?state=reauth':state==='incident'?'incidents.html':'floor.html';}
     else change(key.hasAttribute('data-delete')?-1:1);
   };});
   document.addEventListener('keydown',event=>{

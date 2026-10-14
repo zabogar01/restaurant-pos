@@ -105,7 +105,7 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │
 ├── POS-01 [SCREEN] Lock / PIN entry ........................... FR-A2, A5, A7
 │   ├── [INLINE] Throttle cooldown (LOGIN class, 5 min) ........ FR-A5
-│   ├── [INLINE] Session invalidated by back office ............ FR-B3
+│   ├── [INLINE] Session ended — sign in again .................. FR-B3
 │   └── [INLINE] Resume interrupted tender draft ............... FR-G9
 │
 ├── POS-02 [SCREEN] Floor — tables and quick sale ............... FR-D1, D2, C8

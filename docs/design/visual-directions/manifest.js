@@ -622,10 +622,12 @@ window.MOCKUPS = [
         "reauth-error",
         "Wrong credential"
       ],
-      [
-        "reauth-other",
-        "Wrong password (alias)"
-      ],
+      ["reauth-other-confirm", "Choose another manager"],
+      ["reauth-other", "Other manager sign-in"],
+      ["reauth-other-error", "Other manager refusal"],
+      ["reauth-other-throttled", "Other account cooldown"],
+      ["reauth-other-verifying", "Other sign-in pending"],
+      ["other-signed-in", "Separate working area"],
       [
         "reauth-throttled",
         "Account cooldown"

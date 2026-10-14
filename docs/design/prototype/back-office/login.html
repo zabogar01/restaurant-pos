@@ -21,7 +21,7 @@
       <div>Check your username and password, then try again.</div>
     </div>
     <div class="banner" data-when="throttled" style="margin-bottom:16px">
-      <div class="banner__t">Sign-in locked for 4 min 41 s</div>
+      <div class="banner__t">This username is locked for 4 min 41 s</div>
       <div>This username is cooling down. Other managers can sign in with their own usernames.</div>
     </div>
     <div data-when="loading" style="margin-bottom:16px">
@@ -55,6 +55,9 @@
   <h2>Not visible in a still</h2>
   <div class="ann"><p>Password cooldown is per account and survives restart. It is separate from
   both POS PIN classes. The same username shares its cooldown with M-6.
+  Username stays editable during a wait. Editing it to a different account removes
+  the notice and enables Password and Sign in unless that account has its own known
+  wait; returning to the locked username restores its remaining wait without resetting it.
   <span class="req">FR-A5b, AC-35</span></p></div>
 </aside>
 </main></body></html>

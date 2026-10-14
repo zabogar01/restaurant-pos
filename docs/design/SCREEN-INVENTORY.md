@@ -50,10 +50,13 @@ POS's default state, not an exception.
 
 **States and exact copy — DESIGN-015 (awaiting review).** Title and body are
 separate strings. `{wait}` is the remaining server cooldown, formatted as
-`{minutes} min {seconds} s` (for example, `4 min 12 s`), never an attempt count.
+`{minutes} min {seconds} s` when both parts are nonzero (for example,
+`4 min 12 s`), `{minutes} min` at exact minutes, and `{seconds} s` below one
+minute. Never show a zero part or an attempt count.
 Use `retryAfterSeconds` from the response to establish the deadline; count down
 to zero without restarting it on render. A later server response replaces that
-deadline. Zero enables entry again but does not submit anything. A cooldown
+deadline. A supplied zero, or a countdown reaching zero, means the cooldown
+has ended: remove its notice and enable entry, without submitting anything. A cooldown
 response without valid `retryAfterSeconds` uses the general failure state;
 never invent a duration.
 
@@ -85,16 +88,23 @@ a new submission. Session notices and a local draft notice may coexist.
 | Something went wrong | `INTERNAL`, unparseable failure, `VALIDATION_FAILED`, `CSRF_REFUSED` after the single permitted retry, `ORIGIN_REFUSED`, `NOT_FOUND`, `PAYLOAD_TOO_LARGE`, `UNSUPPORTED_MEDIA_TYPE`, or an unexpected code on this surface | “Something went wrong” | “Try again. If the problem continues, ask a manager for help.” | “Try again” |
 
 Use the existing notice above the form or pad (grouping blue at the POS,
-amber at the office), with `role="alert"` on arrival. Do not use the kitchen-emergency treatment, expose raw codes, or claim
-that a request had no effect. At sign-in and M-6, clear the secret; **Try again**
-returns focus to PIN entry (POS) or the password (office), preserves the username
-and any protected draft, and permits fresh entry. It never resends the secret.
-An active cooldown still disables verification. Elsewhere, this same copy is
-shared, but retry must use that screen's existing reconciliation/read path,
-never automatically repeat a command with an unknown outcome. `CSRF_REFUSED`
-during the one recovery attempt has no separate visible error; only a failed
-recovery uses the general state. Local field validation has its own copy below;
-a server `VALIDATION_FAILED` is still unexpected and uses the general state.
+amber at the office), with `role="alert"` on arrival. Do not use the kitchen
+emergency treatment, expose raw codes, or claim that a request had no effect.
+The same sentences serve different requests; choose recovery by the operation,
+not only by the error code:
+
+| Operation | Failure placement | Exact copy and recovery |
+|---|---|---|
+| Initial session lookup, either client | POS-01 or BO-01, with the credential controls disabled until the lookup resolves. Never reveal the protected screen on a failed lookup. | The applicable shared title/body above and “Try again”. The action repeats the session lookup, not a credential request. On `UNAUTHENTICATED`, enable the resting sign-in; on an active session, enter its working area; on `SESSION_IDLE`, use that client's idle behavior. |
+| Credential submission, POS-01 / BO-01 / either M-6 form | Above the pad or inside the current form; retain M-6 over inert work. | The applicable shared title/body and “Try again”. Clear the secret, preserve username and protected draft, then return focus to PIN entry or Password for fresh entry. Never resend a secret automatically. An active account cooldown still disables verification. |
+| Back-office Log out | Stay in the existing frame. In Phase 0 put an amber notice as the first item in the empty scrolling content pane, below the top bar; keep the manager identity visible. If M-6 was open, keep the notice inside its logout confirmation, above the actions, with work inert. | The applicable shared title/body, followed by “Sign-out has not been confirmed.” Action “Try again” repeats Log out. Disable duplicate requests while in flight. Do not show BO-01 until the server confirms sign-out; an unconfirmed attempt must not look signed out. |
+| POS Release | Always go to POS-01, regardless of success, error or no response (ARCH-014 question 5, lead ruling for round 2). Remove the on-screen actor immediately. | No notice and no retry action. The cashier who pressed Release must never remain signed in on screen. |
+
+For other commands use the screen's existing reconciliation/read path, never
+automatically repeat a command with an unknown outcome. `CSRF_REFUSED` during
+the one recovery attempt has no separate visible error; only a failed recovery
+uses the general state. Local empty/oversize checks use the copy below; a server
+`VALIDATION_FAILED` is unexpected and uses the general state.
 
 **Requirements.** FR-A2, FR-A5, FR-A7, FR-B3, FR-G9.
 
@@ -586,11 +596,11 @@ and password.” Labels are “Username” and “Password”; the primary actio
 |---|---|---|
 | Empty / resting | Cold start, explicit logout, or initial `me` returns `UNAUTHENTICATED` | Heading, helper and labels above; no error. |
 | Local invalid input | Missing username / missing password | “Enter your username.” / “Enter your password.” Place beside its field and focus the first invalid field. Send no request. |
-| Local invalid format | Username outside the shared schema after trim/lowercase, or password outside its length bounds | “Use 3–32 letters, numbers, dots, underscores or hyphens for your username.” / “Use 8–128 characters for your password.” Send no request; do not trim or transform the password. |
+| Local oversize input | Username exceeds 256 UTF-16 units or password exceeds 1024 UTF-16 units | Reuse Error: “Sign-in failed” / “Check your username and password, then try again.” Send no request; clear the password and focus the oversized field. Do not truncate either value. |
 | Loading | Sign-in request in flight | Primary action “Signing in…”; disable fields and duplicate submission. |
 | Error | `INVALID_CREDENTIALS` without cooldown details | “Sign-in failed” / “Check your username and password, then try again.” Do not identify which credential failed. |
-| Throttled | `INVALID_CREDENTIALS` with `retryAfterSeconds`, or `THROTTLED` | “Sign-in locked for {wait}” / “This username is cooling down. Other managers can sign in with their own usernames.” Use POS-01's duration format. Disable password and Sign in for the submitted username; keep Username editable. Another username uses its own server count; switching back retains any known remaining wait. |
-| Session ended | `UNAUTHENTICATED` on a held session, including M-6 after eight hours | “Your session has ended” / “Sign in again to continue.” No claim about the cause. If a draft was retained locally, append “Your unsaved changes are kept on this tab and will not be submitted automatically.” |
+| Throttled | `INVALID_CREDENTIALS` with `retryAfterSeconds`, or `THROTTLED` | “This username is locked for {wait}” / “This username is cooling down. Other managers can sign in with their own usernames.” Use POS-01's duration format. Disable password and Sign in for the submitted username; keep Username editable. As soon as the edited username no longer matches the locked account (compare trimmed, lower-case usernames), remove that notice and enable Password and Sign in unless the new account has its own known wait. Switching back restores the original remaining wait; editing never resets it. |
+| Session ended | `UNAUTHENTICATED` on a held session, including M-6 after eight hours | “Your session has ended” / “Sign in again to continue.” No claim about the cause. Do not place a retained-draft sentence in Phase 0; see the deferred copy below. |
 | Access refused | `FORBIDDEN` on an authenticated back-office request, including M-6 | “Manager access required” / “This account cannot use the back office. Sign in with a manager account.” Remove the protected working area; show this notice on BO-01 with the ordinary form. Do not claim that the account was disabled or explain why its role changed. |
 | Unavailable / something went wrong | Shared general-failure triggers | Use the exact shared title, body and “Try again” action above. |
 | Success | Successful sign-in | No success sentence; enter the Phase 0 frame described at BO-02. |
@@ -604,7 +614,21 @@ unexpectedly here, use the general failure. Clear the password after every
 response, including success. Keep the username after a failure. On `FORBIDDEN`
 or session loss, do not leave the old work editable or reveal it to a different
 manager. At absolute expiry the local draft stays isolated and is never resent;
-this task adds no draft-recovery or cross-session restore workflow.
+whether the same manager gets it back after a new sign-in is an owner question,
+not a client choice. **Do not place a retained-draft sentence in Phase 0** (its
+pane has no draft). Deferred wording, for review with the owner’s recovery
+answer: “The previous session’s unsaved changes are stored on this tab and are
+not submitted automatically.” This identifies the prior session, not the
+unknown reader; it promises neither restoration nor disposal. Do not implement
+a recovery flow from this sentence.
+
+The office sign-in and both M-6 forms validate only the shared request shape:
+nonempty strings with upper bounds of 256 username / 1024 password UTF-16 units.
+A nonempty credential within those bounds goes to the server even if it fails
+the domain's creation policy. Do not duplicate the 3–32 username rule or 8–128
+password rule in the client; a seven-character password must reach verification.
+Do not trim or transform a password. Server `INVALID_CREDENTIALS` follows the
+ordinary error/cooldown mapping, including counted failures.
 
 **Requirements.** FR-A2b, FR-A2c, FR-A5b, FR-A7, FR-B preamble, AC-35.
 
@@ -639,7 +663,9 @@ a shell with no landing content yet. No navigation entries, business-day
 indicator, incident banner or receipt chip until their destinations and routes
 exist. This is a Phase 0 exception to the populated DESIGN-012 fixture, not a
 replacement for I-2 or the eventual BO-02 design. No new drawing or token is
-needed; slice B still owns the complete sign-in and landing screens.
+needed; slice B still owns the complete sign-in and landing screens. This
+empty-content allowance does not suppress errors: a failed Log out uses the
+notice placement and repeat-logout action in the shared failures table above.
 
 **Must not invent.** The back office observes orders; it never operates them
 (FR-G12). No settle, void, fire or refund control appears here.
@@ -1051,31 +1077,47 @@ manager PIN plus reason (FR-H5).
 ## M-6 — Back-office re-authentication `[MODAL]`
 
 Idle timeout at 30 minutes (`SESSION_IDLE`) preserves unsaved form state
-behind this modal (FR-A2b). Keep the username fixed and read-only; ask only for
-the password. Same-manager success restores focus, selection, validation and
-values without submitting the draft. Escape and an outside click cannot
-close M-6; the underlying work is inert.
+behind this modal (FR-A2b). The default form fixes the idled manager's username
+and asks only for Password. Same-manager re-authentication restores focus,
+selection, validation and values without submitting the draft. Escape and an
+outside click cannot close M-6; the work stays inert. The keyboard-reachable
+“Sign in as a different manager” choice is inside M-6 in every interactive
+same-manager state, including cooldown; Log out remains a separate choice.
+While a verification is pending, disable form switching and duplicate submission.
 
 | State | Trigger | Exact copy / presentation |
 |---|---|---|
-| Re-authenticate | `SESSION_IDLE` | “Your session timed out” / “Your unsaved changes are kept. Continue as {username} to resume them. To sign in as someone else, log out.” Labels “Username”, “Password”; actions “Log out”, “Continue”. |
-| Local invalid input | Empty password / invalid length | “Enter your password.” / “Use 8–128 characters for your password.” No request. |
-| Verifying | Re-authentication in flight | “Verifying…” on Continue; prevent duplicate submission. |
-| Error (`reauth-error`; `reauth-other` is only a review alias) | `INVALID_CREDENTIALS` without cooldown details | “Incorrect password. Try again.” The password is cleared; focus returns there. |
-| Throttled | `INVALID_CREDENTIALS` with `retryAfterSeconds`, or `THROTTLED` | “This username is cooling down. Try again in {wait}. Log out is still available.” Disable password and Continue; Log out remains available. |
-| Logout during cooldown | Local Log out action while the server wait remains | Append to the discard confirmation: “This username is locked for {wait}. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.” |
-| Session ended | `UNAUTHENTICATED`, including eight-hour expiry | Close M-6 and use BO-01's Session ended state and its retained-draft sentence. Keep the draft locally, isolated and never resent; do not claim the timer is the known cause. |
-| Access refused | `FORBIDDEN` | Close M-6, remove the protected work and show BO-01's Access refused state. |
-| Unavailable / something went wrong | Shared general-failure triggers | Keep M-6 open over inert work; use the shared title, body and Try again action. Preserve the draft; clear the password. |
+| Re-authenticate | `SESSION_IDLE` | “Your session timed out” / “Your unsaved changes are kept. Continue as {username} to resume them.” Labels “Username”, “Password”; actions “Sign in as a different manager”, “Log out”, “Continue”. |
+| Choose another manager (`reauth-other-confirm`) | Local choice inside M-6 | “Sign in as a different manager?” / “The current manager’s unsaved changes will not be available to the manager signing in.” Initial focus “Stay with current manager”; second action “Continue to sign-in”. The first returns to the prior form with its draft and remaining cooldown untouched. This acknowledgement promises neither draft disposal nor later restoration. |
+| Other manager (`reauth-other`) | Continue to sign-in after the acknowledgement | “Sign in as a different manager” / “Enter your own username and password. The current manager’s unsaved changes will not be available to you.” Editable “Username” and “Password”; actions “Back to {idled username}”, “Log out”, “Sign in”. Back clears the secret and returns to the fixed-username form without changing its draft, focus/selection snapshot or cooldown. |
+| Local empty input, either form | Empty username (other form) / empty password | “Enter your username.” / “Enter your password.” No request; focus the empty field. |
+| Local oversize input | Username over 256 UTF-16 units (other form) or password over 1024 UTF-16 units | No request. Default form: “Incorrect password. Try again.” Other form: “Sign-in failed” / “Check your username and password, then try again.” Clear the password; focus the oversized field. No other local credential-policy check. |
+| Verifying | Credential request in flight | Default Continue: “Verifying…”. Other-manager Sign in: “Signing in…”. Disable repeat submission and switching while pending. |
+| Same-manager error (`reauth-error`) | `INVALID_CREDENTIALS` without cooldown details | “Incorrect password. Try again.” Clear Password and return focus there. |
+| Other-manager error (`reauth-other-error`) | Ordinary sign-in returns `INVALID_CREDENTIALS` without cooldown details | BO-01 copy: “Sign-in failed” / “Check your username and password, then try again.” Preserve Username; clear Password. |
+| Same-manager throttled | `INVALID_CREDENTIALS` with details, or `THROTTLED` | “This username is cooling down. Try again in {wait}. You can sign in as a different manager or log out.” Disable Password and Continue, not the different-manager choice or Log out. |
+| Other-manager throttled (`reauth-other-throttled`) | Ordinary sign-in returns `INVALID_CREDENTIALS` with details, or `THROTTLED` | BO-01 copy: “This username is locked for {wait}” / “This username is cooling down. Other managers can sign in with their own usernames.” Username stays editable; apply BO-01's username-editing rule. Back and Log out remain available. |
+| Logout during cooldown | Local Log out while the displayed account has a wait | Append to the existing discard confirmation: “This username is locked for {wait}. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.” |
+| Session ended | `UNAUTHENTICATED`, including eight-hour expiry | Close M-6 and use BO-01's Session ended state, with no retained-draft sentence in Phase 0. Keep the draft locally, isolated and never resent under the existing ruling; restoration after a new sign-in remains an owner question. |
+| Access refused | `FORBIDDEN` | Close M-6, remove protected work and show BO-01's Access refused state. |
+| Unavailable / something went wrong | Shared general-failure triggers | Keep the current M-6 form over inert work; use the shared title/body and credential retry rule. Preserve the draft; clear the password. |
 | Resumed | Successful same-manager re-authentication | “Your session has resumed.” / “Your changes are still here. Nothing has been submitted.” |
+| Other manager signed in (`other-signed-in`) | Successful ordinary sign-in from the other form | No success sentence. Enter that manager's separate working area; the old draft is not visible, editable or submitted. The fixture shows an empty office frame and does not simulate whether old draft storage is destroyed or retained. |
 
 M-6 and BO-01 share **one per-account password cooldown** (FR-A5b, ADR-009 §4),
-independent of PIN classes. A wrong password typed into M-6 counts on the fixed
-idled account. To change manager, use Log out, the existing explicit discard
-confirmation, then BO-01 with the other manager's own username and password.
-Those failures count on that other account; that manager never receives the
-idled manager's draft (owner ruling, 2026-10-06). `reauth-other` must not simulate
-identifying the owner of an entered password or a separate throttle decision.
+independent of PIN classes. The fixed-username form counts on the idled account.
+The editable form is ordinary sign-in and counts on the submitted account,
+never automatically on the idled account. Returning between forms or changing
+usernames resets neither account's wait. `reauth-other` is the other-manager
+choice, not an error alias. The owner's 2026-10-06 refinement grants that choice
+inside M-6; the Log out/discard/BO-01 path remains available alongside it.
+
+**Owner questions (lead raised both on 2026-10-14).** Is the old draft destroyed
+or retained for its manager after a different manager signs in? Does the same
+manager get the draft back after signing in again beyond eight hours? Neither
+answer is implied by the acknowledgement, the separate working area or the
+deferred BO-01 sentence. Await the recorded answers before designing retention,
+disposal or recovery behavior.
 
 
 ---

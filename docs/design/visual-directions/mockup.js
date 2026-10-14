@@ -106,8 +106,6 @@
     pin.id='pin-entry';pin.setAttribute('tabindex','-1');
     const signIn=document.querySelector('.emg a');
     signIn.href='#pin-entry';signIn.addEventListener('click',()=>pin.focus());
-    const next=document.querySelector('.keypad a.key:not([hidden])');
-    if(next)next.href='incidents.html';
   }
   $('.modal').forEach((e,i)=>{
     e.setAttribute('role','dialog'); e.setAttribute('aria-modal','true');

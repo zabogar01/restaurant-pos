@@ -359,9 +359,12 @@ this checkout; this task did not change served-client behavior or decide it.
 ### Exact product copy for the builders
 
 This is one placement table for PHASE0-011c and PHASE0-011d, also carrying M-1's
-future copy. Quotation marks delimit strings and are not rendered. `{wait}` is
-`{minutes} min {seconds} s`, derived solely from `retryAfterSeconds` and the
-remaining deadline. The fixture durations are examples. A missing/invalid
+future copy, updated by designer15b in round 2. Quotation marks delimit strings
+and are not rendered. `{wait}` is `{minutes} min {seconds} s` when both parts
+are nonzero, `{minutes} min` at exact minutes, and `{seconds} s` below a minute,
+derived solely from `retryAfterSeconds` and the remaining deadline. Zero removes
+the cooldown notice and enables entry, without submission. The fixture durations
+are examples. A missing/invalid
 server duration uses the general failure; there is no guessed duration.
 
 “General failure” below means `INTERNAL`, an unparseable failure,
@@ -385,29 +388,37 @@ there is no new visible error. No raw code or server text becomes product copy.
 | BO-01 | Resting and common form | Cold start, explicit logout, or initial `me` returns `UNAUTHENTICATED` | “Back office” / “Sign in with your manager username and password.” Labels “Username”, “Password”; action “Sign in”. |
 | BO-01 | Missing username | Local validation | “Enter your username.” |
 | BO-01, M-6 | Missing password | Local validation | “Enter your password.” |
-| BO-01 | Invalid username format | Local shared-schema check, after trim/lowercase | “Use 3–32 letters, numbers, dots, underscores or hyphens for your username.” |
-| BO-01, M-6 | Invalid password length | Local shared-schema check; never trim the password | “Use 8–128 characters for your password.” |
+| BO-01, M-6 other-manager form | Oversize input | Username over 256 UTF-16 units or password over 1024 units | “Sign-in failed” / “Check your username and password, then try again.” No request; clear Password and focus the oversized field. Do not truncate. |
+| M-6 fixed-username form | Oversize input | Password over 1024 UTF-16 units | “Incorrect password. Try again.” No request; clear and focus Password. Nonempty credentials within the shared bounds go to the server; do not duplicate creation-policy checks or transform a password. |
 | BO-01 | Loading | Sign-in in flight | Action “Signing in…”. Fields and repeat submission disabled. |
 | BO-01 | Error | `INVALID_CREDENTIALS` without cooldown details | “Sign-in failed” / “Check your username and password, then try again.” |
-| BO-01 | Throttled | `INVALID_CREDENTIALS` with details, or `THROTTLED` | “Sign-in locked for {wait}” / “This username is cooling down. Other managers can sign in with their own usernames.” Keep Username editable; retain known wait when switching back. |
-| BO-01, from M-6 or other protected office work | Session ended | `UNAUTHENTICATED` on a held session, including absolute expiry | “Your session has ended” / “Sign in again to continue.” If a draft was retained locally, append “Your unsaved changes are kept on this tab and will not be submitted automatically.” |
+| BO-01, M-6 other-manager form | Throttled | `INVALID_CREDENTIALS` with details, or `THROTTLED` | “This username is locked for {wait}” / “This username is cooling down. Other managers can sign in with their own usernames.” Keep Username editable. Compare trimmed, lower-case usernames: editing away removes this notice and enables Password and Sign in unless the new account has its own known wait. Returning restores the original remaining wait; editing never resets it. |
+| BO-01, from M-6 or other protected office work | Session ended | `UNAUTHENTICATED` on a held session, including absolute expiry | “Your session has ended” / “Sign in again to continue.” No retained-draft sentence in Phase 0. Deferred, pending the owner's recovery answer: “The previous session’s unsaved changes are stored on this tab and are not submitted automatically.” |
 | BO-01, from M-6 or other protected office work | Access refused | `FORBIDDEN` | “Manager access required” / “This account cannot use the back office. Sign in with a manager account.” Remove protected work and show the ordinary sign-in form. |
 | BO-01 / BO-02 | Successful sign-in | Success | No success sentence. Phase 0 top bar “Back office”, real manager name, “Log out”. Empty rail and pane; no empty-data claim. |
 | BO-01 | Idle | `SESSION_IDLE` on a held session | No BO-01 sentence or navigation; open M-6. |
-| M-6 | Re-authenticate | `SESSION_IDLE` | “Your session timed out” / “Your unsaved changes are kept. Continue as {username} to resume them. To sign in as someone else, log out.” Labels “Username”, “Password”; actions “Log out”, “Continue”. |
-| M-6 | Verifying | Re-authentication in flight | Action “Verifying…”. |
-| M-6 | Error; `reauth-other` review alias | `INVALID_CREDENTIALS` without cooldown details | “Incorrect password. Try again.” |
-| M-6 | Throttled | `INVALID_CREDENTIALS` with details, or `THROTTLED` | “This username is cooling down. Try again in {wait}. Log out is still available.” |
+| M-6 | Re-authenticate | `SESSION_IDLE` | “Your session timed out” / “Your unsaved changes are kept. Continue as {username} to resume them.” Labels “Username”, “Password”; actions “Sign in as a different manager”, “Log out”, “Continue”. Username is read-only. |
+| M-6 | Choose another manager | Local choice, including during cooldown | “Sign in as a different manager?” / “The current manager’s unsaved changes will not be available to the manager signing in.” Initial focus “Stay with current manager”; second action “Continue to sign-in”. Stay preserves draft and wait. |
+| M-6 | Other manager (`reauth-other`) | Continue to sign-in after acknowledgement | “Sign in as a different manager” / “Enter your own username and password. The current manager’s unsaved changes will not be available to you.” Editable “Username”, “Password”; actions “Back to {idled username}”, “Log out”, “Sign in”. Back clears the secret and preserves the draft, focus/selection snapshot and account waits. |
+| M-6 | Verifying | Credential request in flight | Default action “Verifying…”; other-manager action “Signing in…”. Disable duplicate requests and switching while pending. |
+| M-6 | Same-manager error | `INVALID_CREDENTIALS` without cooldown details | “Incorrect password. Try again.” |
+| M-6 | Other-manager error | Ordinary sign-in returns `INVALID_CREDENTIALS` without cooldown details | “Sign-in failed” / “Check your username and password, then try again.” Preserve Username; clear Password. Failures count on the submitted account. |
+| M-6 | Same-manager throttled | `INVALID_CREDENTIALS` with details, or `THROTTLED` | “This username is cooling down. Try again in {wait}. You can sign in as a different manager or log out.” Disable Password and Continue, not the other-manager choice or Log out. |
 | M-6 | Logout during cooldown | Local Log out while a wait remains | Append to existing discard confirmation: “This username is locked for {wait}. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.” |
 | M-6 | Discard confirmation, retained existing copy | Local Log out | “Log out and discard your changes?” / “The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session.” Actions “Keep this draft”, “Discard changes and log out”. |
 | M-6 | Resumed, retained existing copy | Successful same-manager re-authentication | “Your session has resumed.” / “Your changes are still here. Nothing has been submitted.” |
+| M-6 | Other manager signed in | Successful ordinary sign-in from other form | No success sentence. Enter a separate working area with no old draft visible, editable or submitted. No disposal or recovery promise. |
+| POS-01, BO-01 | Initial lookup failed | `UNAVAILABLE` / no response, or the general failure group | Applicable shared title/body and “Try again”. Show the sign-in shell with credential controls disabled. Try again repeats the session lookup; a resolved result routes normally. Never reveal protected work on a failed lookup. |
+| Back-office frame; M-6 logout confirmation | Logout failed | `UNAVAILABLE` / no response, or the general failure group | Applicable shared title/body plus “Sign-out has not been confirmed.” Action “Try again” repeats Log out. Stay in the frame, identity visible, with the amber notice first in its scrolling content pane; if M-6 was open, keep the notice above the confirmation actions and work inert. Disable duplicate requests. BO-01 appears only after confirmed sign-out. |
+| POS-01 after Release | Release, whatever the response | Success, error or no response | No notice or retry. Remove the on-screen actor and always return to resting POS-01. |
 | M-1 | Error; `approval-denied` review alias | `APPROVAL_FAILED` without cooldown details | “Manager PIN not recognised” / “Ask a manager to enter their PIN again.” |
 | M-1 | Throttled | `APPROVAL_FAILED` with details, or `APPROVAL_THROTTLED` | “Manager approvals locked for {wait}” / “Wait for the countdown to finish. Signing in at the POS does not end this cooldown.” Cancel stays available. |
 
 Clear secrets after every response, including success. General-failure retry at
 sign-in/M-6 asks for fresh secret entry, preserves username and protected draft,
-and never automatically resends a credential. Elsewhere it uses the screen's
-existing reconciliation/read path, not repetition of an uncertain command.
+and never automatically resends a credential. Lookup, logout and Release use
+the explicit operation rows above. Other commands use their existing
+reconciliation/read path, not repetition of an uncertain command.
 At absolute expiry keep the draft local and isolated; no automatic submission
 or invented cross-session restore workflow. A new manager never receives it.
 There is no separate credential permission refusal on either sign-in and no
@@ -496,5 +507,143 @@ only back-office password throttling is per account.
 
 No owner question remains for this delivery. The copy and provisional frame
 exception await the task’s planned design review.
+
+DONE
+
+### Round 2 — designer15b, 2026-10-14
+
+Continued designer15's partial work at `e230483` on `agent/design-015`; did not
+restart it. The round-1 narrative above is historical. In particular, its
+Log-out-only interpretation of the owner ruling and “No owner question remains”
+statement are superseded by this section. The single builder copy table above
+has been updated in place as the lead requested.
+
+**Inherited:** the uncommitted edits to DESIGN.md, SCREEN-INVENTORY, SITEMAP,
+the BO-01 wireframe title, POS lock runtime and shared mockup runtime. These
+already contained the specification fixes for all eight findings and the
+incident destination correction. Kept them, aligned SITEMAP spacing, and added
+the username-editing rule to the wireframe's annotation.
+
+**Completed:** the M-6 interaction and state pictures in `shell.html` and
+`shell.js`; the manifest; the obsolete alias assertions in `design012.cjs`;
+and the builder copy table. The other-manager choice acknowledges draft
+isolation before opening an editable Username/Password form inside M-6.
+It remains available during the idled account's cooldown. Back preserves the
+draft snapshot and waits; ordinary sign-in failures belong to the submitted
+account. The fixture's separate working area hides the old work without
+simulating its storage disposition. Log out retains its separate discard path.
+Pending verification disables switching and duplicate submission.
+
+Local validation now checks only empty strings and the shared request-size
+bounds. The sample counter remains explicitly a simulated server response,
+not a production client rule. Cooldown expiry resets that local sample count;
+changing forms or usernames cannot restart the deadline. Durations omit zero
+parts, and zero ends the cooldown without submitting. The title/body structure
+of the other-manager refusal and cooldown now matches BO-01's exact strings.
+
+F3's operation-specific lookup, logout and Release recovery is specified in
+the inventory and the updated builder table. F4's neutral retained-draft
+sentence is explicitly deferred, not placed in Phase 0. F5's incident
+confirmation reaches `incidents.html` in both lock artifacts. F7 names the
+username's scope and defines editing behavior. F8 uses the cause-neutral
+session-ended label. No new token or production route was introduced.
+
+#### Round-2 artifact coverage
+
+| File | States changed or exercised for its changed runtime |
+|---|---|
+| `docs/design/visual-directions/frost/back-office/shell.html`, `shell.js` | Changed `reauth`, `reauth-error`, `reauth-verifying`, `reauth-throttled`, `reauth-logout`; replaced the `reauth-other` alias with the editable form; added `reauth-other-confirm`, `reauth-other-error`, `reauth-other-throttled`, `reauth-other-verifying`, `other-signed-in`. Exercised every registered shell state, including incident queueing, resume and unsaved navigation. |
+| `docs/design/visual-directions/manifest.js` | All new M-6 states registered and checked against the shell's state selector; gallery navigation exercised. |
+| `docs/design/prototype/back-office/login.html` | Changed `throttled` title and annotated username editing; all four states opened. Still a greyscale picture, not a new Frost sign-in composition. |
+| `docs/design/prototype/pos/lock.js` | Changed `incident` destination; all registered states opened in both Frost and prototype POS-01 at 1280×800; five-digit Enter stays put, sixth digit permits navigation to incidents. |
+| `docs/design/visual-directions/mockup.js` | Removed dead anchor retargeting; exercised with Frost locks, shell, patterns, menu, report detail and the comparison gallery. |
+| `docs/design/checks/design012.cjs` | Replaced alias checks with choice, acknowledgement, per-account cooldown, username editing, isolation and duration checks; added lock/login state coverage and console-error capture. Optional `DESIGN_EVIDENCE_DIR` keeps run output outside the repository. |
+
+#### Verification
+
+The owner approved the context loader, local browser runs and verification
+commands in this session before they ran.
+
+- `npm run verify`: passed, typecheck and **70 test files / 3,365 tests**.
+  The existing Vite native-config warning remains. No application or package
+  file was changed after this run; subsequent changes were artifact checks,
+  fixture presentation and this Handoff.
+- Browser command:
+  `PLAYWRIGHT_MODULE=/Users/fajars/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright DESIGN_EVIDENCE_DIR=/var/folders/9t/h45qdf813kn45qysmz8nw0qc0000gn/T/opencode/design015-round2 node docs/design/checks/design012.cjs`.
+  Final result: **266 checks passed**, 52 desktop pattern/shell states plus
+  every registered state of both POS locks and BO-01; `errors: []`,
+  `failures: []`. This run captured page exceptions and console errors.
+  Installed headless Chrome opened local files; no preview server was needed.
+- The first browser pass failed only the two newly added duration assertions:
+  the test installed its virtual clock after the artifact had created its
+  interval. Installed it before navigation and reran successfully. Screenshot
+  inspection then caught a run-together cooldown heading/body; separate DOM
+  heading and body fixed it, and the final run above confirmed the result.
+  Final diff inspection also found the old fixture's Alt+I shortcut could
+  reopen M-6 after the separate working area appeared; it now stops at that
+  boundary, with a regression check.
+- Browser evidence includes keyboard focus trapping, repeated Escape,
+  initial acknowledgement focus, same-manager draft/focus/selection
+  preservation, idled-account wait surviving Back, short passwords reaching
+  simulated verification, other-account failures leaving the idled account
+  available, normalized username matching, subminute duration and expiry,
+  and separate working-area isolation.
+- Geometry measured in Chrome at 1440×900: rail 220px, top bar 64px, fields
+  40px; dialogs 640px. The long shared-pattern dialog stayed at y=24–876.
+  Inspected screenshots of the new M-6 choice, form, cooldown and BO-01 title,
+  and the Frost POS incident state at 1280×800. Evidence remains in the
+  external directory above; no screenshot or measurement is committed.
+- `node --check` passed for shell, lock, mockup, manifest and artifact check;
+  `git diff --check` passed.
+- Ran the Impeccable detector once. Its shell padding warnings concern
+  containers whose child sections supply the existing Frost padding; browser
+  inspection confirmed those insets. Other warnings concern the unchanged
+  greyscale BO-01 wireframe's fonts, palette and disabled/annotation contrast.
+  The loader selected the historical visual-direction DESIGN.md; no historical
+  palette or rejected Paper direction was adopted or rewritten.
+- General network failures, lookup recovery, failed logout, `FORBIDDEN` and
+  absolute expiry remain the task-permitted specification rows; no claim is
+  made that these are implemented production calls or new Frost screens.
+
+#### Required stale-claim scan — round 2
+
+Ran `grep -rniE "attempts? remaining|deactivated|installation-wide" docs/design docs/DESIGN.md`:
+
+```text
+docs/design/checks/design014.cjs:60:  long:['CATER-0610','Ratna Ayu Kartikasari Prameswari','Deactivated','999.999.999']
+docs/design/checks/design014.cjs:107: await p.locator('#filter-person').selectOption('former');check((await rowIds()).join(',')==='long','deactivated actor remains searchable');
+docs/design/visual-directions/paper/pos/order.html:623:          <div>3 attempts remaining before manager approvals are locked for five minutes.</div>
+docs/design/visual-directions/paper/pos/lock.html:46:        <div>2 attempts remaining before a five-minute cooldown.</div>
+docs/design/visual-directions/frost/back-office/audit.js:38:    Object.entries(labels).forEach(([value,label])=>filters[key].add(new Option(label+(value==='former'?' · Deactivated':''),value)));
+docs/design/visual-directions/frost/back-office/audit.js:58:  function person(key){return escape(people[key])+(key==='former'?'<small>Deactivated</small>':'');}
+docs/design/prototype/pos/floor.html:160:      <li>A deactivated table disappears here, but cannot be deactivated at all while
+docs/design/prototype/back-office/tables.html:39:        <div class="banner__t">Table 1 was not deactivated</div>
+docs/design/prototype/back-office/tables.html:97:    <li>A table holding an open order cannot be deactivated, and the rejection names
+docs/design/prototype/back-office/tables.html:105:  refresh. A deactivated table is kept, not deleted, so history still resolves. <span class="req">B-8</span></p></div>
+docs/design/SCREEN-INVENTORY.md:144:- *table deactivated* — a table deactivated in the back office is gone from
+docs/design/SCREEN-INVENTORY.md:744:table holds an OPEN order* (FR-C8, AC-32) · *deactivated table retained for
+docs/design/SCREEN-INVENTORY.md:749:**Must not invent.** A table holding an OPEN order cannot be deactivated
+docs/design/SCREEN-INVENTORY.md:789:*overflow* · *deactivated preset — hidden from the POS picker but still
+docs/design/SCREEN-INVENTORY.md:1048:Deactivated presets are absent from the picker but readable on orders holding
+```
+
+These are the same fifteen historical Paper, table, preset and audit-actor
+hits as round 1. None is a current POS-01, BO-01, M-1 or M-6 credential claim.
+There is no `installation-wide` hit.
+
+#### Questions
+
+The lead's two questions remain with the owner; no answer was added to the
+round-2 rulings in this worktree during this continuation:
+
+1. When another manager signs in from M-6, is the idled manager's draft
+   destroyed, or retained for that manager?
+2. After eight-hour expiry, does the same manager regain the locally kept
+   draft after signing in again?
+
+Both are drawn around as instructed. They do not block this copy correction;
+the next draft/recovery design needs their recorded answers. The other-manager
+choice uses ordinary back-office sign-in, not the password-only reauthentication
+request. PHASE0-011c/011d should use the updated table above and the inventory.
 
 DONE

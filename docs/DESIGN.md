@@ -1366,17 +1366,23 @@ is inert through the native modal top layer. Values, selected options, radio
 choice, validation, focused field and text selection remain in the same DOM
 form. Success restores them without submitting. A different manager cannot
 resume the draft. Explicit logout requires discard confirmation, with keeping
-the draft as the initial focus. Both credential refusals use “Incorrect password.
-Try again.”; no response identifies another credential's owner. The
-`reauth-other` fixture is a review alias of the same wrong-password response
-and counts on the fixed idled account, exactly as `reauth-error` does. The
-owner's 2026-10-06 ruling is settled: changing manager goes through Log out,
-explicit draft discard and BO-01 with that other manager's own username and
-password. Failures there count on that other account; the draft never transfers.
+the draft as the initial focus. The default form uses “Incorrect password.
+Try again.” The owner's 2026-10-06 refinement also grants a visible, keyboard
+reachable “Sign in as a different manager” choice inside M-6, including during
+the idled account's cooldown. It first acknowledges that the current manager's
+unsaved changes will not be available to the manager signing in; initial focus
+stays with the current manager. Continuing opens editable Username and Password
+inside M-6 (`reauth-other`), with BO-01's ordinary sign-in failure and cooldown
+copy. Failures count on the submitted account. Back returns to the fixed idled
+username without changing its draft or remaining wait. Log out remains a
+separate path. Neither the acknowledgement nor the separate working area
+promises that the old draft is destroyed or recoverable: both that retention
+question and restoration after absolute expiry are with the owner.
 M-6 and BO-01 share one per-account password cooldown under FR-A5b and ADR-009 §4,
 independent of the POS PIN classes. Continue is disabled during the wait and
-Log out remains available. Both the modal and logout confirmation show the
-remaining duration from `retryAfterSeconds`; the latter explains that logging
+Log out and the other-manager choice remain available. Both the modal and
+logout confirmation show the remaining duration from `retryAfterSeconds`,
+omitting zero minute/second parts and removing the cooldown at zero; the latter explains that logging
 out does not end this account's cooldown and other managers can still sign in.
 Timeout captures the actual active element and text selection, including focus
 outside the draft, and success restores them. These are local demonstrations,
@@ -1396,7 +1402,9 @@ shared unavailable and unexpected-failure sentences. For an `UNAUTHENTICATED`
 response at M-6, including absolute expiry, close the modal and show BO-01's
 session-ended notice; the draft stays local, isolated and is never resent.
 `FORBIDDEN` removes the protected office work and shows BO-01's manager-access
-notice. Neither response opens a different editable version of the old draft.
+notice. No other manager receives the old draft. Whether its original manager can
+restore it after a new sign-in is unresolved; BO-01’s retained-draft sentence
+is deferred and is not placed in Phase 0.
 
 BO-01's Frost composition remains provisional: PHASE0-011d places the inventory's
 copy table using these native fields, stacked form pattern, primary button and
@@ -1404,7 +1412,12 @@ amber notice. No new value or token is introduced. **The Phase 0 empty rail and
 empty content pane are accepted.** Keep the 220px rail and 64px top bar; show
 “Back office”, the real manager name and Log out, with no navigation, business
 day or incident UI until the corresponding destinations and routes exist.
-The empty pane is not a no-data result and needs no message. Slice B still owns
+The empty pane is not a no-data result and needs no resting message. A failed
+Log out stays in the frame and places its notice first in the content pane,
+with “Sign-out has not been confirmed.” and a Try again action that repeats
+logout. Initial session-lookup failures use the sign-in shell with disabled
+credential controls and a Try again that repeats lookup. POS Release always
+returns to POS-01 without a notice, whatever the response. Slice B still owns
 the full BO-01 and BO-02 compositions; I-2 is unchanged.
 
 When a kitchen failure arrives during M-6, a solid red emergency section lives
