@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-012]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: review
 cycles: 1
 ---
 # DESIGN-015 — Sign-in copy and states (POS-01, BO-01, M-6, M-1)
