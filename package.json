@@ -16,7 +16,7 @@
     "build:clients": "npm run build -w apps/pos",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "typecheck": "tsc -p apps/server --noEmit && tsc -p packages/money --noEmit && tsc -p packages/contracts --noEmit && tsc -p apps/pos",
+    "typecheck": "tsc -p apps/server --noEmit && tsc -p packages/money --noEmit && tsc -p packages/contracts --noEmit && tsc -p packages/api-client --noEmit && tsc -p apps/pos",
     "verify": "npm run typecheck && npm run test:unit"
   },
   "devDependencies": {

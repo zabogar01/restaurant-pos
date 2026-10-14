@@ -1,0 +1,8 @@
+{
+  "name": "@pos/api-client",
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@pos/contracts": "*"
+  }
+}

@@ -334,3 +334,126 @@ lockfile. Any change to an existing test: stop and raise it.
 - Copy of any kind. Any server change. `docs/` of any kind. The ADR.
 
 ## Handoff
+
+### What I did
+
+Added `packages/api-client` (`@pos/api-client`): `package.json`, `tsconfig.json`, `src/specs.ts`
+(per-route body and response schemas, held to the route table by `satisfies Record<RoutePath, Spec>`),
+`src/client.ts` (the core), `src/index.ts`; `test/support.ts`, `test/core.test.ts` and
+`test/pure.test.ts`. The root `typecheck` script gains `tsc -p packages/api-client --noEmit`;
+`package-lock.json` gains only the workspace link. Nothing under `apps/` changed and no existing test
+changed. The commit is on `agent/phase0-011c1`, made after verify was green (hash in `git log`).
+No formatter was run.
+
+### The interface (for 011c2 and 011d)
+
+```ts
+createApiClient(options: {
+  surface: 'POS' | 'BACK_OFFICE';
+  fetch: FetchLike;          // (url, init) => Promise<{ status: number; text(): Promise<string> }>; the platform fetch fits
+  now: () => number;         // monotonic ms, e.g. () => performance.now()
+  setTimer?: (fire, ms) => cancel;   // defaults to setTimeout/clearTimeout
+  timeoutMs?: number;        // default 10_000
+}): ApiClient
+
+ROUTES  // by name, from ROUTE_TABLE: health, posLogin, posMe, posActivity, posRelease,
+        // backOfficeLogin, backOfficeMe, backOfficeActivity, backOfficeLogout, backOfficeReauthenticate
+
+ApiClient {
+  surface
+  request(route, ...body): Promise<ApiResult<value>>   // body argument exists only for routes with a request schema
+  deadline(): number | null          // idle deadline on the injected clock
+  staffUserId(): string | null       // who the core holds; the token is never exposed
+  subscribe(listener): unsubscribe   // listeners must not throw
+}
+
+ApiResult<T> =
+  | { kind: 'ok'; value: T }                       // value checked against its schema; void for 204 routes
+  | { kind: 'refused'; body: ErrorBody }           // narrow on body.error.code; details are typed per code
+  | { kind: 'failed' } | { kind: 'unavailable' }   // decided by one GET /api/health
+  | { kind: 'invalid-request' }                    // body failed its schema; never sent
+  | { kind: 'session-gone' }                       // CSRF refusal whose retry would have changed the actor
+
+ApiEvent =
+  | { type: 'deadline'; deadline: number | null }
+  | { type: 'session-ended'; reason: 'SESSION_IDLE' | 'UNAUTHENTICATED' | 'SIGNED_OUT' | 'ACTOR_CHANGED' }
+  | { type: 'actor-changed'; staffUserId: string }
+```
+
+Calling a route of the other surface throws (a programming error); health is open to both.
+
+### What I decided, and on what evidence
+
+- **Fault codes.** Rule 6 says switch on the code, and case 9 says a 500 with an envelope is *failed*. I
+  resolved it by code: an envelope carrying `INTERNAL` or `UNAVAILABLE` is a fault (health decides); every
+  other envelope is *refused* whatever its status. The status is read for 2xx versus not, and for nothing
+  else.
+- **`me` in the CSRF path adopts nothing until the identity is compared.** If it names someone else the core
+  drops its own session (`session-ended`, reason `ACTOR_CHANGED`), holds no token, sends no release, and
+  returns `session-gone`. A core that held nobody returns `session-gone` without reading `me`. If `me`
+  itself is refused (e.g. `SESSION_IDLE`) or faults, that result is returned.
+- **Retry identity is the actor held at the moment the request was sent**, not at refusal time, so a request
+  made before another sign-in in the same tab is never carried out as the new person.
+- **Release and logout end the session in the core whatever the server answers** (`SIGNED_OUT`), after any
+  CSRF retry has run. The client's own screen rule is 011c2's.
+- **A session view naming a different person than the one held** (a later `me`, a sign-in over another
+  session) is adopted and announced with `actor-changed`; the core cannot know what the client wants.
+- **`session-ended` is emitted only if a token or deadline was held**, so a first-load `me` answering
+  `UNAUTHENTICATED` emits nothing.
+- **At the back office `SESSION_IDLE` keeps token and actor but clears the deadline**; `UNAUTHENTICATED`
+  drops everything at both surfaces.
+- No separate zod import: schemas are taken structurally (`Schema<T>`), so the package's only runtime
+  dependency is `@pos/contracts`. Health's `{status:'ok'}` is checked by a small hand-written guard.
+
+### Case map (all in `packages/api-client/test/core.test.ts`)
+
+1: four tests named `1. …` (GET, POST no body, POST with body, relative path). 2: `2. a sign-in view
+replaces the token…`. 3: two `3.` tests. 4: two `4.` tests. 5, 6 (two), 7, 8: `5-8. CSRF_REFUSED`. 9: five
+`9.` tests (500 envelope, 502 HTML, rejected fetch, 503 health, timeout). 10: one. 11: five. 12: three.
+`pure.test.ts` is rule 5 of the lead rulings (no react, DOM, console, storage, cookie, beacon, wall clock,
+`http:`, `127.0.0.1` or `import.meta` in `src`, comments stripped).
+
+### Red proofs (each made, run, reverted)
+
+1. Retry without comparing identities (`if (false && me.view.staffUserId !== actorAtSend)`): case 6
+   `someone else on me` failed (`expected {kind:'unavailable'} to equal {kind:'session-gone'}`: the second
+   request was actually sent, so the unscripted fetch faulted). 1 failed, 33 passed.
+2. Switch on the status (envelope accepted only when `status === 401`): case 4's 401/403/429 test failed,
+   and five CSRF tests failed with it (they use 403). 6 failed.
+3. Deadline from the limit rather than the remaining seconds (`idleSeconds` in `adopt`): case 11's two
+   `me` tests failed (`expected 301000 to be 121000`; `401000` vs `301000`). 2 failed.
+
+All three were reverted; the final run is green.
+
+### Existing tests changed
+
+None.
+
+### Found and not fixed
+
+- `vitest.config.ts` prints a Vite warning about ESM syntax loaded as CommonJS on every run. Existing,
+  not mine.
+- The consult's rule 5 talks of the first tab's token no longer matching the cookie; the core cannot tell
+  a stale token from a refused one other than by `me`, which is as specified.
+- Case 11's "not moved by `me`" can only mean "not moved to the limit": a `me` is a session view and
+  re-bases the deadline on its `idleRemainingSeconds`, as question 6 says. The test shows that.
+
+### Verification
+
+- `npm run verify`: typecheck clean; **72 test files, 3399 tests passed** (baseline 70 files, 3365; the
+  difference is my 2 files and 34 tests).
+- The new files alone, three runs in a row: 2 files, 34 tests, green each time.
+- `grep -rnE "react|document|window|console\.|localStorage|sessionStorage|navigator\.sendBeacon|Date\.now|new Date\(" packages/api-client/src`: no output.
+- `grep -rn "http:" packages/api-client/src`: no output.
+
+### What 011c2 and 011d need that the core does not provide
+
+- The countdown tick, the input listener, the visibility read and the deadline read are theirs: the core
+  only holds `deadline()` and announces it. When the deadline passes, the client calls
+  `request(ROUTES.posMe)` (or the back-office `me`).
+- The exhaustive `switch` over `ErrorCode` with a `never` check, per client.
+- The session view itself is returned in `ok` results; the core does not keep `name` or `role`.
+- Nothing yet constructs the core in `apps/`; `console-free.test.ts` is not tightened (011c2).
+- There is no idempotency key and no resend: a Phase 2 command needs its own design (ARCH-012 §5).
+
+DONE
