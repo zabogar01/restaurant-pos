@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011c1, DESIGN-015]
 owns: [apps/pos/**, package.json, package-lock.json]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-011c2 — The POS signs in for real
@@ -570,6 +570,41 @@ Addressed to the builder; answers Handoff finding 1 and settles the decisions yo
    cooldown disabling the whole pad; case 24 as you tested it. Findings 2 to 4 are recorded, not for you.
 4. Then commit after `npm run verify` is green (path-scoped, never the run directory), finish the Handoff,
    and end with DONE.
+
+## Round 2 — the review's three findings (lead rulings, 2026-10-14)
+
+The review is `.agent/reviews/PHASE0-011c2-review.md` (Codex; one high, two medium, each reproduced). All
+three are accepted. Addressed to the builder. **This is the last fix round:** anything you cannot settle
+from these rulings and the documents, write as `BLOCKED: <question>` rather than choosing.
+
+1. **F1 (high): a session read must never sign this tab in after Release or invalidation.** Give the store a
+   local session revision (or an equivalent guard) that advances on Release, on `actor-changed`, and on every
+   `session-ended`. A `me` read records the revision it was sent under; its result is applied only if the
+   revision is unchanged. Beyond that: a read that names a person other than the one this tab holds never
+   signs in; it leaves POS-01 *session invalidated* (lead ruling 3). Only the first lookup, in `starting`, may
+   recover a session from nothing; after that, only a sign-in in this tab enters `signed-in`. Release goes to
+   POS-01 and stays there until a sign-in, whatever a read answers meanwhile. Prove both of the reviewer's
+   sequences with tests that fail on `90cb743` first: (a) signed in as A, a visibility `me` answers B's view:
+   POS-01 *session invalidated*, the protected route absent, and a pointer event afterwards sends no
+   `activity`; (b) signed in as A, a visibility `me` is held, Release is pressed and held, then `me`'s A view
+   is delivered: POS-01 resting, the route absent, no `activity` on input, before and after Release settles.
+2. **F2 (medium): the tender-draft notice's outstanding amount comes from `settlementPosition`.** Use
+   `settlementPosition(total, tenderAmounts).balance` (`tender.ts:49`), as settlement does, so excess cash shows
+   zero outstanding, never a negative amount. The DESIGN-015 wording is unchanged. Add a regression that locks
+   at `/pos/settlement?state=change` (or with excess cash entered through the controls) and expects zero
+   outstanding, and that the cash draft and its change are intact on re-entry. Red first.
+3. **F3 (medium): the POS's API module maps every POS route through an exhaustive mapped type** (ARCH-014
+   question 3, mechanism 3, copied above). One POS-owned module types a record keyed by every route path of
+   the POS surface (and health) in the route table, each to the function that sends it, so that a POS route
+   added to the table without a POS function is a compile error in `apps/pos`. The store and `activity.ts`
+   send through it; the single core instance and the input-only activity rule stay as they are. Prove it with
+   a red run: add a POS route to `packages/contracts/src/routes.ts` and its spec in
+   `packages/api-client/src/specs.ts` **in the working tree only**, show `npm run typecheck` failing in
+   `apps/pos`, then revert both (they are outside your paths; never commit them). Correct the Handoff's
+   *For 011d and Task 12* claim to match what is now true.
+4. Round 1 and the Release ruling stand where not changed here. Append a *Round 3* section to the Handoff
+   (what changed, the tests, the red runs, verify counts), commit after `npm run verify` is green
+   (path-scoped), and end with DONE or BLOCKED.
 
 ## Handoff
 
