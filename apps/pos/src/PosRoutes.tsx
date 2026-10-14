@@ -5,6 +5,7 @@ import { closedStateFrom } from './closedOrders.js';
 import { FloorScreen } from './FloorScreen.js';
 import { floorStateFrom } from './floorFixtures.js';
 import { formatAmount } from './money.js';
+import { settlementPosition } from './tender.js';
 import { LockRoute, type TenderDraft } from './LockRoute.js';
 import { FixtureLockPictures } from './session/source.js';
 import { useSession, useSessionStore } from './session/useSession.js';
@@ -127,10 +128,14 @@ export function PosRoutes() {
     let draft: TenderDraft | undefined;
     if (drafted) {
       const tenders = sessions.draftsOf(drafted.id) ?? [];
-      const sum = tenders.reduce((total, d) => total + d.amount, 0n);
+      // The balance as settlement derives it: excess cash is zero outstanding, never negative.
+      const { balance } = settlementPosition(
+        drafted.order.totals.total,
+        tenders.map((d) => d.amount)
+      );
       draft = {
         label: drafted.order.title,
-        outstanding: formatAmount(drafted.order.totals.total - sum),
+        outstanding: formatAmount(balance),
         tenders: tenders.length,
       };
     }

@@ -211,6 +211,52 @@ describe('19. a held session ends', () => {
   });
 });
 
+describe('19b. a session read never signs this tab in again (review F1)', () => {
+  const becomeVisible = () => {
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    act(() => document.dispatchEvent(new Event('visibilitychange')));
+  };
+
+  it('(a) a read that names another person: POS-01 session invalidated, the route gone, no activity', async () => {
+    const host = await open('/pos/floor');
+    h.reply(ME, ok({ ...VIEW, staffUserId: 'u-2', name: 'Other P.' }));
+    becomeVisible();
+    await h.settle();
+    expect(lockState(host)).toBe('invalidated');
+    expect(host.querySelector('.floor-actor')).toBeNull();
+    press();
+    await h.settle();
+    expect(h.count(ACTIVITY)).toBe(0);
+    expect(h.count(RELEASE)).toBe(0);
+  });
+
+  it('(b) a read in flight when Release is pressed lands on POS-01 resting, before and after Release settles', async () => {
+    const host = await open('/pos/floor');
+    const read = h.hold(ME);
+    const release = h.hold(RELEASE);
+    becomeVisible();
+    await h.settle();
+    act(() => h.store.release());
+    expect(lockState(host)).toBe('resting');
+
+    read.deliver(ok(VIEW));
+    await h.settle();
+    expect(lockState(host)).toBe('resting');
+    expect(host.querySelector('.floor-actor')).toBeNull();
+    press();
+    await h.settle();
+    expect(h.count(ACTIVITY)).toBe(0);
+
+    release.deliver(noContent);
+    await h.settle();
+    expect(lockState(host)).toBe('resting');
+    expect(host.querySelector('.floor-actor')).toBeNull();
+    press();
+    await h.settle();
+    expect(h.count(ACTIVITY)).toBe(0);
+  });
+});
+
 describe('20. Release', () => {
   it.each([
     ['204', noContent],
@@ -271,11 +317,16 @@ describe('21. activity is sent only from real input', () => {
     expect(h.keyed(ACTIVITY)[0]!.body).toBeUndefined();
   });
 
-  it('only the input listener’s module names the activity route', () => {
+  it('only the input listener’s module calls the activity function', () => {
     const src = resolve(dirname(fileURLToPath(import.meta.url)), '../src');
     const files = readdirSync(src, { recursive: true, encoding: 'utf8' }).filter((f) => /\.tsx?$/.test(f));
-    const naming = files.filter((f) => /posActivity|sendActivity/.test(readFileSync(join(src, f), 'utf8')));
-    expect(naming).toEqual([join('session', 'activity.ts')]);
+    const reading = (f: string) => readFileSync(join(src, f), 'utf8');
+    // The call, by the POS API module's key, and the sender's name.
+    const calling = files.filter((f) => /\['\/api\/pos\/auth\/activity'\]\(|sendActivity|posActivity/.test(reading(f)));
+    expect(calling.sort()).toEqual([join('session', 'activity.ts'), join('session', 'api.ts')]);
+    // api.ts only declares it; the one caller is the listener's module.
+    const callers = files.filter((f) => /api\['\/api\/pos\/auth\/activity'\]\(/.test(reading(f)));
+    expect(callers).toEqual([join('session', 'activity.ts')]);
   });
 });
 
@@ -333,6 +384,25 @@ describe('23. the tender draft survives the lock', () => {
     h.reply(LOGIN, ok(VIEW));
     await signInWith(host);
     expect(lockState(host)).toBeUndefined();
+    expect(text(host)).toBe(before);
+  });
+});
+
+describe('23b. excess cash is zero outstanding, as settlement shows it (review F2)', () => {
+  it('a cash draft above the total locks at "0 outstanding", never negative, and re-entry finds it intact', async () => {
+    const host = await open('/pos/settlement?state=change');
+    const before = text(host);
+    expect(before).toContain('Cash');
+
+    act(() => h.store.release());
+    await h.settle();
+    expect(lockState(host)).toBe('draft');
+    expect(text(noticeOf(host)!)).toMatch(/ — 0 outstanding, 1 tender drafted\./);
+    expect(text(noticeOf(host)!)).not.toContain('-');
+    expect(text(noticeOf(host)!)).not.toContain('−');
+
+    h.reply(LOGIN, ok(VIEW));
+    await signInWith(host);
     expect(text(host)).toBe(before);
   });
 });

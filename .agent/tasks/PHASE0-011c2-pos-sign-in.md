@@ -756,8 +756,9 @@ the real path" · 27 `built-session.test.ts` and `built-session-development.test
 - `npm run build:clients` serves `/pos/`; a manager's PIN is the only sign-in Phase 0 can demonstrate.
 - 011d: reuse `meaningOf`'s shape, not the module; the POS store is POS-specific. `console-free` now
   scans recursively and is the template to copy. The core's back-office `SESSION_IDLE` keeps the token.
-- Phase 2: a new interactive route fails the POS compile until declared in the route table; `activity.ts`
-  is the only file that names a route for activity.
+- Phase 2: **corrected in Round 3 below.** In rounds 1 and 2 this line claimed that a new POS route
+  fails the POS compile; that was not true until Round 3 added `session/api.ts` (it was only the
+  api-client's `SPECS` that failed). It is true now: see Round 3.
 
 ### Round 2 (after the lead's ruling)
 
@@ -793,5 +794,57 @@ the real path" · 27 `built-session.test.ts` and `built-session-development.test
   on round 1's code and are unaffected by this change; the Release proof's test is the same one.
 - Commit: one path-scoped commit on `agent/phase0-011c2`, "feat(pos): sign in for real through
   @pos/api-client…" (`git log -1`; the hash cannot be written into the file it contains).
+
+### Round 3 (the review's three findings, lead rulings 2026-10-14)
+
+**F1 (high): a session read can no longer sign this tab in after Release or invalidation.**
+`realSession.ts` holds a local `revision` that advances on every change of phase (Release, a sign-in,
+every end, `actor-changed`, an invalidation). `readSession` records the revision it was sent under and
+returns without applying anything if it has moved. Only the first lookup (origin `load`, from `starting`)
+may sign in from nothing; a deadline or visibility read applies only while the tab is still signed in,
+re-arms the chip if it names the person this tab holds (`personId`), and if it names anyone else the tab
+goes to POS-01 *session invalidated* with nothing sent (ruling 3). The held `me` of the reviewer's
+sequence (b) arrives after Release and is dropped; the store's activity predicate is phase-based, so
+nothing is sent before or after the release settles.
+Tests (`session-store.test.tsx`, "19b"), both red on `90cb743`'s code (each failed with `expected
+undefined to be 'invalidated'` and `expected undefined to be 'resting'`: the tab was signed in again,
+`lock-state` absent) and green now: (a) a visibility `me` naming B: POS-01 *invalidated*, no `.floor-actor`,
+a pointer event sends no `activity`, no release; (b) a held `me`, a held Release, then the A view
+delivered: POS-01 resting, route absent, no `activity` before or after Release settles. The harness
+gained `hold(key)` (one request held until `deliver`).
+
+**F2 (medium): the draft notice's outstanding amount is `settlementPosition(...).balance`.**
+`PosRoutes.tsx` imports `settlementPosition` from `tender.ts` and uses its `balance`, so excess cash is
+`0` outstanding and never negative. The wording is unchanged. Test "23b" at
+`/pos/settlement?state=change`: release, the notice reads `… — 0 outstanding, 1 tender drafted.` with no
+minus sign, and after sign-in the screen text equals what it was before (cash draft and change intact).
+Red first: with the old subtraction put back, it failed (`expected 'Payment in progress on this tabOrder …'
+to match / — 0 outstanding, 1 tender drafted\./`); reverted to the fix, it passes.
+
+**F3 (medium): the POS's API module maps every POS route through an exhaustive mapped type.**
+New `session/api.ts`: `PosPath` is `Extract<RoutePath, '/api/health' | \`/api/pos/${string}\`>` and
+`PosApi` maps every key of it to `(...ArgsOf<P>) => Promise<ApiResult<ValueOf<P>>>`; `posApi(client)`
+returns the object literal, so a missing key is a compile error. `realSession.ts` (the one
+`createApiClient` call) and `activity.ts` now send only through `api[...]`; neither imports `ROUTES`. The
+core instance and the input-only activity rule are unchanged. The source scan was updated: the activity
+route's key appears in `activity.ts` (the one caller) and `api.ts` (the declaration), and the call only in
+`activity.ts`.
+Red run, working tree only: I added `{ method: 'POST', path: '/api/pos/orders', interactive: true }` to
+`packages/contracts/src/routes.ts` and `'/api/pos/orders': { response: null }` to
+`packages/api-client/src/specs.ts`. `npm run typecheck` failed in `apps/pos` and nowhere earlier:
+`apps/pos/src/session/api.ts(19,3): error TS2741: Property '"/api/pos/orders"' is missing in type … but
+required in type 'PosApi'.` I then ran `git checkout --` on both files; `git status` shows neither
+modified, and neither is in the commit.
+
+**Corrected claim for 011d and Task 12 / Phase 2.** A POS route added to the route table now fails
+`tsc -p apps/pos` until `session/api.ts` maps it (the red run above), as ARCH-014 question 3 mechanism 3
+asks, and the builder then wires the call and deletes the stand-in in the same task. A route of the back
+office cannot be named there (`PosPath` excludes it). It still cannot prove a declared function is used by
+a screen; review does that. The back-office client must write its own such module over its own core
+instance; this one is POS-specific.
+
+**Verify.** `npm run verify`: typecheck clean; **78 test files, 3494 tests, all passed** (Round 2: 3490;
++4: two for F1, one for F2, and the source scan is the same test, reworded). No existing test was
+changed in this round; the harness file is mine.
 
 DONE

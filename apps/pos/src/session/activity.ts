@@ -1,9 +1,9 @@
-import { ROUTES, type ApiClient } from '@pos/api-client';
+import type { PosApi } from './api.js';
 
-// FR-A2b: `activity` is sent only from a person's input. This module is the only
-// place that names the route, and its listener is the only caller: a countdown, a
-// poll or a deadline read cannot reach it (the source scan in the session tests
-// holds the route to this file).
+// FR-A2b: `activity` is sent only from a person's input. The input listener below
+// is the only caller of the POS API's activity function: a countdown, a poll or a
+// deadline read cannot reach it (the source scan in the session tests holds
+// `sendActivity` and the call to this file; the route is named once more, in api.ts).
 
 /**
  * Leading edge only: an input sends `activity` when none has been sent within this
@@ -13,15 +13,15 @@ import { ROUTES, type ApiClient } from '@pos/api-client';
 export const ACTIVITY_WINDOW_MS = 5000;
 
 type ActivityOptions = {
-  client: ApiClient;
+  api: PosApi;
   /** The monotonic clock, in milliseconds. */
   now: () => number;
   /** Whether this tab is signed in. Nothing is sent otherwise. */
   signedIn: () => boolean;
 };
 
-function sendActivity({ client }: ActivityOptions): void {
-  void client.request(ROUTES.posActivity);
+function sendActivity({ api }: ActivityOptions): void {
+  void api['/api/pos/auth/activity']();
 }
 
 /**

@@ -9,7 +9,7 @@ import type { SessionStore } from '../src/session/types.js';
 // A stubbed `fetch`, a manual monotonic clock and manual timers for the real
 // session. Nothing here touches the network; time moves only when `advance` says.
 
-export type Reply = { status: number; body?: unknown } | 'hang' | 'reject';
+export type Reply = { status: number; body?: unknown } | 'hang' | 'reject' | { held: Promise<Reply> };
 export type Call = { method: string; url: string; body: string | undefined; headers: Record<string, string> };
 
 export const VIEW = {
@@ -47,9 +47,21 @@ export function makeHarness() {
     calls.push({ method: init.method, url, body: init.body, headers: init.headers });
     const queue = queues.get(key) ?? (key === HEALTH ? [ok({ status: 'ok' })] : [refusal('INTERNAL', undefined, 500)]);
     const next = queue.length > 1 ? queue.shift()! : queue[0]!;
-    if (next === 'hang') return new Promise(() => {});
-    if (next === 'reject') throw new Error('network');
-    return { status: next.status, text: async () => (next.body === undefined ? '' : JSON.stringify(next.body)) };
+    const settled = typeof next === 'object' && 'held' in next ? await next.held : next;
+    if (settled === 'hang') return new Promise(() => {});
+    if (settled === 'reject') throw new Error('network');
+    if ('held' in settled) throw new Error('a held reply resolves to a reply, not another hold');
+    return { status: settled.status, text: async () => (settled.body === undefined ? '' : JSON.stringify(settled.body)) };
+  };
+
+  /** The next request to `key` is held until `deliver` is called with its answer; later ones follow the queue. */
+  const hold = (key: string): { deliver: (answer: Reply) => void } => {
+    let deliver!: (answer: Reply) => void;
+    const held = new Promise<Reply>((resolve) => {
+      deliver = resolve;
+    });
+    queues.set(key, [{ held }, ...(queues.get(key) ?? [refusal('INTERNAL', undefined, 500)])]);
+    return { deliver };
   };
 
   const store: SessionStore = createRealSession({
@@ -86,7 +98,7 @@ export function makeHarness() {
   const count = (key: string) => calls.filter((c) => `${c.method} ${c.url}` === key).length;
   const keyed = (key: string) => calls.filter((c) => `${c.method} ${c.url}` === key);
 
-  return { store, reply, calls, advance, settle, count, keyed };
+  return { store, reply, hold, calls, advance, settle, count, keyed };
 }
 
 export function mount(store: SessionStore, path: string) {

@@ -1,6 +1,7 @@
-import { createApiClient, ROUTES, type ApiClient, type FetchLike } from '@pos/api-client';
+import { createApiClient, type ApiClient, type FetchLike } from '@pos/api-client';
 import { ErrorCode, type ErrorBody } from '@pos/contracts';
 import { listenForActivity } from './activity.js';
+import { posApi } from './api.js';
 import type { Attempt, Person, SessionSnapshot, SessionStore } from './types.js';
 
 // The one module that constructs the POS's `@pos/api-client` instance (ARCH-014
@@ -88,9 +89,16 @@ export function createRealSession(deps: Deps = {}): SessionStore {
   // The page's own `fetch`, bound so it keeps its receiver; tests substitute theirs.
   const transport: FetchLike = deps.fetch ?? window.fetch.bind(window);
   const client: ApiClient = createApiClient({ surface: 'POS', fetch: transport, now, setTimer });
+  const api = posApi(client);
 
   let snapshot: SessionSnapshot = { phase: 'starting' };
   let person: Person | null = null;
+  // The staff user this tab is signed in as. A read naming anyone else never signs in.
+  let personId: string | null = null;
+  // Advances on every change of phase: Release, a sign-in, an end, an actor change. A
+  // read is applied only if the revision it was sent under is still the current one,
+  // so a late answer can never sign this tab in again (review F1).
+  let revision = 0;
   // The cooldown's end, on the monotonic clock. Not remembered across a reload.
   let cooldownEnd: number | null = null;
   // One cookie-changing request at a time (owner, 2026-10-14): a sign-in or a release.
@@ -153,14 +161,18 @@ export function createRealSession(deps: Deps = {}): SessionStore {
   };
 
   const toSignedOut = (why: 'resting' | 'invalidated', attempt: Attempt = { kind: 'none' }): void => {
+    revision += 1;
     person = null;
+    personId = null;
     cooldownEnd = null;
     commit({ phase: 'signed-out', why, attempt, busy: cookieChanging });
     refresh();
   };
 
-  const toSignedIn = (who: Person): void => {
+  const toSignedIn = (who: Person, id: string): void => {
+    revision += 1;
     person = who;
+    personId = id;
     cooldownEnd = null;
     commit(signedInSnapshot());
     refresh();
@@ -203,12 +215,25 @@ export function createRealSession(deps: Deps = {}): SessionStore {
   async function readSession(origin: 'load' | 'deadline'): Promise<void> {
     if (reading) return;
     reading = true;
+    const sentUnder = revision;
     try {
-      const result = await client.request(ROUTES.posMe);
+      const result = await api['/api/pos/auth/me']();
+      // Only the first lookup, from `starting`, may sign this tab in from nothing, and
+      // only if nothing has changed since it was sent. Every other answer is about a
+      // session this tab no longer holds, or is a re-arm of the one it does.
+      if (revision !== sentUnder) return;
+      if (origin === 'deadline' && snapshot.phase !== 'signed-in') return;
       switch (result.kind) {
         case 'ok':
-          // The core adopted the view and moved the deadline.
-          toSignedIn({ name: result.value.name, role: result.value.role });
+          if (origin === 'load') {
+            toSignedIn({ name: result.value.name, role: result.value.role }, result.value.staffUserId);
+          } else if (result.value.staffUserId !== personId) {
+            // Someone else's session is now in this browser's cookie: lead ruling 3.
+            toSignedOut('invalidated');
+          } else {
+            // The core moved the deadline; the chip follows it.
+            refresh();
+          }
           return;
         case 'refused': {
           // A read that ended the session has already told the core's listeners.
@@ -276,7 +301,7 @@ export function createRealSession(deps: Deps = {}): SessionStore {
     start() {
       stops = [
         client.subscribe(onCoreEvent),
-        listenForActivity({ client, now, signedIn: () => snapshot.phase === 'signed-in' }),
+        listenForActivity({ api, now, signedIn: () => snapshot.phase === 'signed-in' }),
         (() => {
           document.addEventListener('visibilitychange', onVisible);
           return () => document.removeEventListener('visibilitychange', onVisible);
@@ -299,11 +324,11 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       commit({ ...snapshot, attempt: { kind: 'verifying' }, busy: true });
       void (async () => {
         try {
-          const result = await client.request(ROUTES.posLogin, { pin });
+          const result = await api['/api/pos/auth/login']({ pin });
           switch (result.kind) {
             case 'ok':
               cookieChanging = false;
-              toSignedIn({ name: result.value.name, role: result.value.role });
+              toSignedIn({ name: result.value.name, role: result.value.role }, result.value.staffUserId);
               return;
             case 'refused':
               cookieChanging = false;
@@ -336,8 +361,7 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       // must never stay signed in on screen because a request failed.
       cookieChanging = true;
       toSignedOut('resting');
-      void client
-        .request(ROUTES.posRelease)
+      void api['/api/pos/auth/release']()
         .catch(() => undefined)
         .finally(() => {
           cookieChanging = false;
