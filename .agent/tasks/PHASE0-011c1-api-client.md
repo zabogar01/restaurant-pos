@@ -632,4 +632,77 @@ This note was appended at the re-review dispatch's explicit request. Review work
 implementation still has the findings above. No source or test was edited, and no commit or push was
 made.
 
+## Round 3
+
+Addresses the re-review's three findings (lead rulings under *Round 3* above). Rounds 1 and 2 stand
+except where stated. All three changes are in `packages/api-client/src/client.ts`.
+
+### What changed
+
+1. **A back-office `SESSION_IDLE` is not a session end.** It no longer advances the generation. It still
+   sets the deadline to null and keeps the token and the actor, and it now also forgets the idle limit
+   (`idleSeconds = null`), which is what stops a 2xx sent before the idle from starting a countdown again:
+   only an adopted session view sets `idleSeconds` and a deadline. **The event rule changed, as the ruling
+   allowed:** `session-ended` was emitted at every back-office `SESSION_IDLE` because the token is kept and
+   so always counted as held; it is now emitted only when the idle clears a deadline that was held, so a
+   repeat while already idled is silent. The POS is untouched: its `SESSION_IDLE` still ends the session
+   and advances the generation.
+2. **A session recovered by `me` into an empty core advances the generation** (adopting a view while no
+   actor is held), and does not advance `installs` and emits no `actor-changed`. A sign-in already in
+   flight therefore still installs when it settles; a `me` that settles after it is obsolete. I looked for
+   a sequence that leaves the token and the cookie naming different people and found none under this rule:
+   a sign-in judged by `installs` installs exactly when no other *install* happened since it was sent, and
+   the only non-install that moves the generation is this recovery, which by construction took place with
+   nobody held.
+   One consequence to know: two `me` reads in flight together on an empty core are both sent under the
+   same generation, so the first to settle recovers and the second settles `session-gone` (state is
+   unchanged and correct). A client that fires a load read and a visibility read at once will see one
+   `session-gone` it should ignore.
+3. **An obsolete release or logout returns `session-gone`.** When an `ends` request's success settles
+   under a different generation from the one it was sent under it returns `{ kind: 'session-gone' }` and
+   changes nothing; under its own generation it is `ok` and ends the session. A failure or refusal of
+   such a request is returned as it was.
+
+### Tests (`packages/api-client/test/round3.test.ts`, 12 tests; one assertion added to `generations.test.ts`)
+
+`15a` (three): a back-office re-authentication sent before the idle, and after two `SESSION_IDLE` reads,
+is `ok` with the public view, installs its deadline from the moment it was sent plus the remaining
+seconds, and the next mutation sends the new token; an interactive 2xx sent before the idle leaves the
+deadline null; a repeated idle is reported once; at the POS the same idle ends the session. `16b`
+(five): on both surfaces an empty core sends X, `me` recovers A, then X's `UNAUTHENTICATED` (and at the
+POS `SESSION_IDLE`) is `session-gone`, A and A's deadline are kept, A's token goes on the next mutation
+and no event is emitted; a sign-in to B sent before the recovery and settling after it installs B, and a
+`me` settling after a later sign-in is `session-gone`. `17c` (two, plus two for the own-session case):
+both terminal routes, sign in as A, start release or logout, sign in as B, deliver the 204: `session-gone`,
+no event, B's actor, deadline and token kept. The existing `13f` test now also asserts the release's
+result is `session-gone`.
+
+**Red first, on `25abfdf`'s source** (restored from a copy afterwards; the round-3 source was copied
+aside before and put back): seven failed. `13f` release: `expected {kind:'ok'} to equal {kind:'session-gone'}`;
+`16b` POS and back-office `UNAUTHENTICATED`, and POS `SESSION_IDLE`: received `refused` where
+`session-gone` was expected (the recovery had not advanced the generation, so X's refusal was applied);
+`17c` POS and back office: received `ok`; `15a`: the repeated idle emitted two `session-ended` and, once
+split from that assertion, the re-authentication returned `session-gone` where `ok` was expected. I ran
+the 2xx-before-idle assertion by mutation as well (removed `idleSeconds = null` from the back-office idle
+branch): `expected 301000 to be null`. Reverted; all green.
+
+### Interface changes (for 011c2 and 011d)
+
+- Back-office `SESSION_IDLE` no longer makes earlier in-flight requests obsolete. A re-authentication
+  that was sent before the idle settles `ok`.
+- `session-ended` with reason `SESSION_IDLE` at the back office is emitted once per idle, when a deadline
+  was held; do not rely on a second one for a second idle read.
+- `deadline()` is null from a back-office idle until an adopted session view sets it again.
+- `session-gone` also now answers an obsolete release or logout, and a `me` that lost a race to a
+  recovery. A client does nothing about the session on account of it.
+- Nothing else in the interface changed.
+
+### Verification
+
+- `npm run verify`: typecheck clean; **74 test files, 3425 tests passed** (baseline 70 and 3365; round 2
+  was 73 and 3413).
+- `grep -rnE "react|document|window|console\.|localStorage|sessionStorage|navigator\.sendBeacon|Date\.now|new Date\(" packages/api-client/src`: no output.
+- `grep -rn "http:" packages/api-client/src`: no output.
+- Only `packages/api-client` and this file changed; no formatter was run.
+
 DONE

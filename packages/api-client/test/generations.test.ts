@@ -164,7 +164,7 @@ describe('13f. sign-ins', () => {
     const signing = await world.client.request(ROUTES.posLogin, { pin: '654321' });
     expect(signing.kind).toBe('ok');
     release.deliver(empty());
-    await releasing;
+    expect(await releasing).toEqual({ kind: 'session-gone' });
     // The release was sent under the earlier session and settled under B's: it ends nothing.
     expect(world.client.staffUserId()).toBe('staff-B');
   });

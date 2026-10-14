@@ -174,9 +174,16 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   };
 
   const endSession = (reason: SessionEndReason, keepToken: boolean): void => {
-    const held = token !== null || deadline !== null;
-    generation += 1;
-    if (!keepToken) {
+    // `keepToken` is the back office's SESSION_IDLE: the same manager renews that
+    // session with their password, so it is not an end. It advances no generation,
+    // so a re-authentication sent earlier still installs; it forgets the limit, so a
+    // 2xx sent earlier cannot start a countdown again; and it reports only the loss
+    // of a deadline that was held.
+    const held = keepToken ? deadline !== null : token !== null || deadline !== null;
+    if (keepToken) {
+      idleSeconds = null;
+    } else {
+      generation += 1;
       token = null;
       actor = null;
       idleSeconds = null;
@@ -189,10 +196,11 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   // naming a different person than the one held installs one too.
   const adopt = (view: View, sentAt: number, install: boolean): void => {
     const changed = actor !== null && actor !== view.staffUserId;
-    if (install || changed) {
-      generation += 1;
-      installs += 1;
-    }
+    // A session recovered into an empty core advances the generation, so everything
+    // sent before it is obsolete, but it is not an install: a sign-in already in
+    // flight has set the cookie to someone else and must still be able to install.
+    if (install || changed || actor === null) generation += 1;
+    if (install || changed) installs += 1;
     token = view.csrfToken;
     actor = view.staffUserId;
     idleSeconds = view.idleSeconds;
@@ -381,7 +389,13 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       const startedUnder = generation;
       const result = await run(entry, spec, bodyText, false);
       // A release that settles under another session ends nothing of it.
-      if (spec.ends === true && generation === startedUnder) endSession('SIGNED_OUT', false);
+      if (spec.ends === true) {
+        // Settled under another session: it ends nothing of that one, and says so.
+        if (generation !== startedUnder) {
+          return result.kind === 'ok' ? { kind: 'session-gone' } : result;
+        }
+        endSession('SIGNED_OUT', false);
+      }
       return result;
     }) as ApiClient['request'],
     deadline: () => deadline,
