@@ -103,8 +103,13 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: ARCH-013, the Task 10 consult, 2026-10-12: split into 010a and 010b.)*
     - *(Done: PHASE0-010a, the approval primitive and `0008`, merged 2026-10-12 as PR #82.)*
     - *(Done: PHASE0-010b, the approval HTTP adapter, merged 2026-10-12 as PR #84.)*
-    - **ARCH-014, the Task 11 consult** (two client shells: client CSRF handling, idle countdown, M-1) — inputs in STATE.md — brief being written by the lead.
-    - **PHASE0-011, the two client shells** — after ARCH-014 — not written.
+    - *(Done: ARCH-014, the Task 11 consult, 2026-10-13: split into 011a to 011d.)*
+    - *(Done: PHASE0-011a, serve the bundles, merged 2026-10-13 as PR #87.)*
+    - *(Done: PHASE0-011b, the session clock and route table, merged 2026-10-13 as PR #88.)*
+    - **DESIGN-015, POS-01, BO-01, M-6 and M-1 copy and states** — complete 2026-10-14 after three rounds (`agent/design-015` `eba71ee`), not pushed.
+    - **PHASE0-011c1, the transport core** (`@pos/api-client`, cases 1 to 12) — 011a, 011b — round 2 built; Codex re-review after the reset.
+    - **PHASE0-011c2, the POS signs in** (session store, POS-01, activity, countdown, fixture switch; cases 13 to 29) — 011c1, DESIGN-015 merged — written, untracked in the kit.
+    - **PHASE0-011d, the back-office client** — 011c, the BO-01 and M-6 design — not written.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
       by the owner 2026-10-06, possibly to after the MVP — not written.
 12. **PRD wording proposal** — replace "half-up" in FR-M3 and B-2 with the half-away-from-zero
