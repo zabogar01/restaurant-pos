@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-012]
 owns: [docs/design/**, docs/DESIGN.md]
-status: not-started
+status: review
 cycles: 0
 ---
 # DESIGN-015 — Sign-in copy and states (POS-01, BO-01, M-6, M-1)
@@ -261,6 +261,20 @@ When done, run exactly one of:
 
     herdr agent prompt lead "designer15: DESIGN-015 done — <one line>"
     herdr agent prompt lead "designer15: BLOCKED — <question>"
+
+## Lead check before review (2026-10-14)
+
+Addressed to the reviewer, and to the designer for any round 2.
+
+The Handoff removes M-6's choice for a different manager and routes that manager through Log out and
+BO-01 ("To sign in as someone else, log out"). The owner's ruling of 2026-10-06 (DECISIONS.md, the line
+that *refines the lead's delegated M-6 line*) says M-6 "offers a choice for a different manager to enter
+their own username and password instead; that is an ordinary sign-in as the other manager, whose
+failures count against their own account, and the idled manager's draft is not carried over", in the
+owner's words "there is an option if its another manager then he can choose to input their own
+username". The lead's *Required inputs* summarised that day's rulings as "M-6 is password-only", which
+left the choice out; the misreading started there, not with the designer. Reviewer: judge the delivery
+against the ruling as recorded, not against the lead's summary, and say what M-6 must show.
 
 ## Handoff
 
