@@ -5,8 +5,8 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011a, PHASE0-011b]
 owns: [packages/api-client/**, package.json, package-lock.json]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # PHASE0-011c1 — The browser transport core (`@pos/api-client`)
 
@@ -332,6 +332,39 @@ lockfile. Any change to an existing test: stop and raise it.
 - Any change under `apps/`. The POS session store, POS-01, the activity listener, the visible countdown,
   the fixture switch, the built-bundle marker test (011c2). The back office (011d).
 - Copy of any kind. Any server change. `docs/` of any kind. The ADR.
+
+## Round 2 — the review's two findings (lead rulings, 2026-10-14)
+
+The review is `.agent/reviews/PHASE0-011c1-review.md` (Codex, two P2). Both are accepted. Addressed to
+the builder.
+
+1. **Finding 1: an obsolete response must not change the current session.** Give the core a session
+   generation: it advances whenever a session is installed (a sign-in, a re-authentication, a session view
+   naming a different person) or ends (release, logout, `SESSION_IDLE` at the POS, `UNAUTHENTICATED`,
+   `FORBIDDEN`, `ACTOR_CHANGED`). Every request, and every `me` read on the CSRF path, records the
+   generation it was sent under. When it settles under a different generation, it changes nothing: no
+   token, actor or deadline is adopted, dropped or moved, and no event is emitted for it. Its result is
+   `{ kind: 'session-gone' }` if it would otherwise have returned or applied a session view or a session
+   end; any other result (health, a refusal that ends nothing) is returned unchanged. A sign-in is the one
+   request whose success installs a new generation; two sign-ins in flight at once are resolved by the
+   later-settling one only if no other session was installed in between, and you say in the Handoff how
+   you handled it.
+2. **Prove it with controlled out-of-order tests**, both of the reviewer's sequences: (a) sign in as A,
+   start `me`, release (204), then deliver `me`'s 200: the actor and deadline stay null, the result is
+   `session-gone`, and the next mutation carries no token; (b) sign in as B while an older request is in
+   flight, then deliver that request's `UNAUTHENTICATED`: B is still held, with B's token on the next
+   mutation. Add the same for an interactive 2xx arriving after release (the deadline is not moved) and
+   for the CSRF path's `me` arriving after release. Show the new tests failing on the current code first.
+3. **Finding 2: no result exposes the token.** The validated wire view stays inside the core. A session
+   view in a result is a public value with every field except `csrfToken` (`staffUserId`, `name`, `role`,
+   `idleSeconds`, `idleRemainingSeconds`, and `username` at the back office). `ValueOf` reflects that at
+   compile time. Prove, for every session-view route on both surfaces (both sign-ins, both `me`,
+   re-authentication), that the result has no `csrfToken` property at runtime, that a type-level
+   `@ts-expect-error` refuses `result.value.csrfToken`, and that the next mutation still sends the token
+   the core adopted.
+4. **Interface.** Update the interface in the Handoff for whatever changes. 011c2 will read it.
+5. Everything else in round 1 stands. Append a *Round 2* section to the Handoff, commit after
+   `npm run verify` is green, and end with DONE or BLOCKED as before.
 
 ## Handoff
 
