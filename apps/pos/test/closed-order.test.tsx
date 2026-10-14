@@ -61,7 +61,8 @@ function draw() {
     left: [...s.querySelectorAll('.closed-content > .closed-group, .closed-content > .closed-line')].map(text),
     totals: [...s.querySelectorAll('.closed-summary dl > div')].map((d) => `${d.querySelector('dt')!.textContent} ${d.querySelector('dd')!.textContent}`),
     stored: s.querySelector('.closed-figures > p') ? text(s.querySelector('.closed-figures > p')!) : '',
-    buttons: [...s.querySelectorAll('button')].map(text),
+    // The actor group's Release is the header's (PHASE0-011c2), not one of this screen's actions.
+    buttons: [...s.querySelectorAll('button')].filter((b) => !b.closest('.floor-actor')).map(text),
     why: [...s.querySelectorAll('.closed-actions p')].map(text),
     message: s.querySelector('.closed-empty') ? text(s.querySelector('.closed-empty')!) : '',
   };
@@ -704,11 +705,16 @@ describe('criterion 10: the Refund control only where the order is refundable, a
         expect([...refund[0]!.parentElement!.querySelectorAll('button')].map(text), id).toEqual(['Reprint receipt', 'Refund this order']);
       }
       expect(s.querySelectorAll('[data-action="void"]'), id).toHaveLength(0);
-      expect(text(s), id).not.toMatch(/void|release|manager|approval pin/i);
+      // Release lives in the actor group only (PHASE0-011c2); anywhere else it would be a stray action.
+      expect(text(s), id).not.toMatch(/void|manager|approval pin/i);
+      expect([...s.querySelectorAll('button')].filter((b) => !b.closest('.floor-actor') && /release/i.test(text(b))), id).toEqual([]);
       // Nothing opens by itself: no sheet and no approval in a state that is not a refund state.
       expect(s.querySelectorAll('[role="dialog"]'), id).toHaveLength(0);
       // The only buttons are Reprint receipt, Refund this order and Retry; the only anchors the way back and the incidents link.
-      for (const b of s.querySelectorAll('button')) expect(['Reprint receipt', 'Refund this order', 'Retry'], id).toContain(text(b));
+      for (const b of s.querySelectorAll('button')) {
+        if (b.closest('.floor-actor')) continue;
+        expect(['Reprint receipt', 'Refund this order', 'Retry'], id).toContain(text(b));
+      }
       for (const a of s.querySelectorAll('a')) expect(['← Closed orders', 'View receipt incidents'], id).toContain(text(a));
       expect(s.querySelectorAll('[hidden], [aria-hidden="true"]'), id).toHaveLength(0);
     }
@@ -734,9 +740,16 @@ describe('criterion 10: the Refund control only where the order is refundable, a
     }
   });
 
-  it('Release is not drawn', () => {
+  it('Release is a button in the actor group, and pressing it leaves for POS-01', () => {
     load('/pos/closed-order');
-    expect(text(screen())).not.toMatch(/Release/);
+    const release = [...host.querySelectorAll<HTMLButtonElement>('.floor-actor button')].filter((b) => text(b) === 'Release');
+    expect(release).toHaveLength(1);
+    act(() => release[0]!.click());
+    expect(host.querySelector('[data-lock-state]')!.getAttribute('data-lock-state')).toBe('resting');
+    // The module's fixture session is shared by this file: sign back in.
+    for (const d of '123456') act(() => [...host.querySelectorAll<HTMLButtonElement>('button.key')].find((b) => b.textContent === d)!.click());
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Continue"]')!.click());
+    expect(host.querySelector('.floor-actor')).not.toBeNull();
   });
 });
 

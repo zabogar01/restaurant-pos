@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ActorChip } from './ActorChip.js';
 import { Icon } from './icons.js';
 import {
   INCIDENT_FIXTURES,
@@ -189,8 +190,7 @@ export function IncidentsScreen({
           </a>
           <h1>Printing</h1>
           <div className="settlement-actor">
-            <span>Ana R. · Cashier</span>
-            <span className="settlement-idle">90s</span>
+            <ActorChip idleClassName="settlement-idle" />
           </div>
         </header>
 

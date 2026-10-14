@@ -263,7 +263,7 @@ describe('criterion 1: the thirteen refund states draw what the artifact draws',
     load('/pos/closed-order?state=day-refusal');
     expect(page().notices).toEqual([DAY_CLOSED, DAY_REFUSED]);
     expect(refundButton()).toBeNull();
-    expect([...screen().querySelectorAll('button')].map(text)).toEqual(['Return to order', 'Reprint receipt']);
+    expect([...screen().querySelectorAll('button')].filter((b) => !b.closest('.floor-actor')).map(text)).toEqual(['Return to order', 'Reprint receipt']);
     expect(page().why).toEqual(['Refund unavailable · business day closed.']);
     expect(screen().querySelector('.closed-head a')!.getAttribute('href')).toBe('/pos/closed-orders?state=dayclosed');
     press(action('return-to-order'));

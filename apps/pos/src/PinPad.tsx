@@ -41,6 +41,12 @@ type PinPadProps = {
    * character, counted but never a value anyone typed.
    */
   seed?: number;
+  /**
+   * Every key is off and a press does nothing: the cooldown (DESIGN-015: the
+   * whole pad is disabled until zero) and a failed first session read. An off
+   * action is `aria-disabled`, never `disabled`.
+   */
+  disabled?: boolean;
 };
 
 /**
@@ -58,6 +64,7 @@ export function PinPad({
   children,
   geometry = 'lock',
   seed = 0,
+  disabled = false,
 }: PinPadProps) {
   const seeded = Math.min(seed, PIN_LENGTH);
   // The seed is drawn, never entered: `digits` starts empty, so a seeded pad
@@ -75,20 +82,21 @@ export function PinPad({
   );
 
   function press(digit: string) {
-    if (digits.current.length >= PIN_LENGTH) return;
+    if (disabled || digits.current.length >= PIN_LENGTH) return;
     digits.current += digit;
     setCount(digits.current.length);
     setKeyedAny(true);
   }
 
   function deleteLast() {
+    if (disabled) return;
     digits.current = digits.current.slice(0, -1);
     setCount(digits.current.length);
     setKeyedAny(true);
   }
 
   const incomplete = requireFull && count < PIN_LENGTH;
-  const off = continueDisabled || incomplete;
+  const off = continueDisabled || incomplete || disabled;
 
   function submit() {
     if (off) return;
@@ -118,14 +126,20 @@ export function PinPad({
       {!verifying && (
         <div className={geometry === 'approval' ? 'keypad keypad--approval' : 'keypad'}>
           {DIGIT_ROWS.flat().map((d) => (
-            <button key={d} type="button" className="key" onClick={() => press(d)}>
+            <button key={d} type="button" className="key" aria-disabled={disabled || undefined} onClick={() => press(d)}>
               {d}
             </button>
           ))}
-          <button type="button" className="key" aria-label="Delete last digit" onClick={deleteLast}>
+          <button
+            type="button"
+            className="key"
+            aria-label="Delete last digit"
+            aria-disabled={disabled || undefined}
+            onClick={deleteLast}
+          >
             <Icon name="back" />
           </button>
-          <button type="button" className="key" onClick={() => press('0')}>
+          <button type="button" className="key" aria-disabled={disabled || undefined} onClick={() => press('0')}>
             0
           </button>
           <button

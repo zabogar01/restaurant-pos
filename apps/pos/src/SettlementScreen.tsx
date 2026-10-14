@@ -1,5 +1,6 @@
 import type { Money } from '@pos/money';
 import { useEffect, useRef, useState } from 'react';
+import { ActorChip } from './ActorChip.js';
 import { closeRefusal, type CloseRefusal } from './close.js';
 import { formatAmount } from './money.js';
 import { TotalsView } from './OrderPanel.js';
@@ -776,10 +777,7 @@ export function ControlledSettlementScreen({
             {state === 'reauth' ? (
               <span className="settlement-tag">SIGNED OUT</span>
             ) : (
-              <>
-                <span>Ana R. · Cashier</span>
-                <span className="settlement-idle">90s</span>
-              </>
+              <ActorChip idleClassName="settlement-idle" />
             )}
           </div>
         </header>

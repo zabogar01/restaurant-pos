@@ -198,6 +198,20 @@ describe.each(PADS)('B-12 on $name: the PIN never leaves the pad', ({ mount, aft
     expect(window.location.hash).toBe('');
     expect(document.title).not.toMatch(/\d/);
   });
+
+  it('sends no request that carries a digit, from either pad (ARCH-014 question 8)', () => {
+    // The pad hands digits to its caller and to nobody else: neither the fixture
+    // lock screen nor M-1 has a route to send them, and the activity listener
+    // reads nothing from the keys. Any request any pad made would be seen here.
+    const sent = vi.fn();
+    vi.stubGlobal('fetch', sent);
+    mount();
+    type('531264');
+    act(() => key('Continue').click());
+    if (host.querySelector('.keypad')) type('9');
+    expect(sent).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
 });
 
 function attributeValues(): string[] {

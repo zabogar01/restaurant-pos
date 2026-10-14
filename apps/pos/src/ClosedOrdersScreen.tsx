@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { ActorChip } from './ActorChip.js';
 import {
   CLOSED_COPY as COPY,
   CLOSED_STATES,
@@ -106,8 +107,7 @@ export function ClosedOrdersScreen({ state: initial, book }: { state: ClosedStat
           <h1>{COPY.title}</h1>
           <span className="closed-tag">{COPY.tag}</span>
           <div className="floor-actor">
-            <span>{FLOOR_COPY.actor}</span>
-            <span className="floor-idle">{FLOOR_COPY.idle}</span>
+            <ActorChip idleClassName="floor-idle" release />
           </div>
         </header>
         {closedDay ? (

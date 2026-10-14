@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react';
+import { ActorChip } from './ActorChip.js';
 import { EmergencyBanner } from './EmergencyBanner.js';
 import {
   FLOOR_COPY,
@@ -35,8 +36,8 @@ import type { ShownOrder } from './voidFixtures.js';
 // which is why the order store above the route survives the trip. A modified
 // click is left to the browser.
 //
-// **Release is not drawn.** The artifact draws it, but it ends the actor's
-// session, which is POS-01 and FR-A territory this slice does not own.
+// Release is drawn in the actor group (ActorChip; FR-A, PHASE0-011c2): it leaves
+// for POS-01 whatever the server answers.
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
@@ -203,8 +204,7 @@ export function FloorScreen({
           <h1>{FLOOR_COPY.title}</h1>
           <span className="floor-sub">{fixture.dayClosed ? FLOOR_COPY.dayClosed : FLOOR_COPY.dayOpen}</span>
           <div className="floor-actor">
-            <span>{FLOOR_COPY.actor}</span>
-            <span className="floor-idle">{FLOOR_COPY.idle}</span>
+            <ActorChip idleClassName="floor-idle" release />
           </div>
         </header>
         {fixture.dayClosed && (

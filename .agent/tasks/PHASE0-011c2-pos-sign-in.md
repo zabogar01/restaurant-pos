@@ -549,4 +549,214 @@ These rulings are addressed to the builder.
 - The back office (011d). M-1 and `Approval.tsx` (Phase 2). Any server change. `docs/` of any kind.
 - A warning before the idle lock (not designed). The closed-day banner's clearing (queued separately).
 
+## Ruling on the BLOCKED question (lead, 2026-10-14)
+
+Addressed to the builder; answers Handoff finding 1 and settles the decisions you listed.
+
+1. **Release: yes, replace the three assertions as you proposed, and turn `release` on.** The three tests
+   (`floor.test.tsx:131-132`, `closed-orders.test.tsx:147-150`, `closed-order.test.tsx:737-739`) pinned the
+   owner's 2026-09-30 deferral, which was "for FR-A"; this task is FR-A, and the consult's sentence above
+   ("011c builds it wherever the artifact draws the actor") is the instruction. Each becomes: a button named
+   Release is in the actor group, and pressing it leaves for POS-01 (the `closed-orders` header string gains
+   `Release` at its end, nothing else in it changes). Change only those assertions; list them under
+   *Existing tests changed* with this ruling as the reason. Release counts under ruling 12 (one
+   cookie-changing request at a time); since it goes to POS-01 at once, say how a second press is impossible.
+2. **POS-03 does not gain an actor group in this task.** It draws no actor today, and adding the group is
+   new layout, not wiring. Release stays where the built screens already draw the actor (floor, POS-05,
+   POS-06). Name the gap in the Handoff; the lead queues it.
+3. **Your other decisions stand** (the lead's, the owner's to overturn): fixture mode when
+   `__FIXTURE_SESSION__` is undefined under Vitest (no root config change); the bound `window.fetch` reference;
+   *session invalidated* before the draft notice on POS-01; the fixture sign-in after a Release; the real
+   cooldown disabling the whole pad; case 24 as you tested it. Findings 2 to 4 are recorded, not for you.
+4. Then commit after `npm run verify` is green (path-scoped, never the run directory), finish the Handoff,
+   and end with DONE.
+
 ## Handoff
+
+**Result: done, after the lead's ruling of 2026-10-14 on Release (section above).** Release is drawn in
+the actor group on POS-02 (floor), POS-05 (closed orders) and POS-06 (a closed order), and `npm run
+verify` is green: 78 test files, 3490 tests (baseline 74 and 3425). The earlier text below is the first
+round's, kept as written; where it says Release is not drawn, the ruling section and the *Round 2* block
+at the end of this Handoff supersede it.
+
+### What I did
+
+The POS now signs in for real through `@pos/api-client`, and the fixture session is chosen by a
+compile-time constant and proved absent from a build.
+
+- `apps/pos/vite.config.ts` (now a function of the command) defines `__FIXTURE_SESSION__` as `true` for
+  `serve` and `false` for `build`; `src/env.d.ts` declares it. `import.meta.env.DEV` is not the switch.
+- `src/session/source.ts` is the one module that chooses: `createSessionStore()` and
+  `FixtureLockPictures` (POS-01's `?state=` pictures, `App`). In a build the unused branch is dropped.
+- `src/session/realSession.ts` is the one module that calls `createApiClient`. It holds ARCH-014 question
+  5's table: `starting`, `signed-out` (with why, and the attempt: none, verifying, error, cooldown,
+  unavailable, failed, lookup-failed, lookup-unavailable) and `signed-in`. One exhaustive `switch` over
+  `ErrorCode` with a `never` check places every code (`meaningOf`). One cookie-changing request at a time
+  (ruling 12). `actor-changed`, and `session-ended` for `FORBIDDEN` or `ACTOR_CHANGED`, show *session
+  invalidated* and send nothing. `session-gone` is ignored; a sign-in that gets it leaves POS-01 with no
+  notice. The first read, the deadline read and the visibility read share one `reading` flag, so two never
+  fly together (ruling 13).
+- `src/session/activity.ts` is the only file that names the activity route: one capture-phase listener for
+  `pointerdown` and `keydown`, leading edge only, window 5000 ms (a client constant), reads nothing from
+  the event, no body.
+- `src/session/fixtureSession.ts` holds the fixture cashier, the literal 90 and the bundle marker
+  `fixture-session:rpos-8f3a1c`. It never imports the request module.
+- `src/LockScreen.tsx` is the one lock screen, fed by a `LockView`. `App.tsx` is now only the fixture
+  view producer (its copy and `NOTICES` are unchanged); `src/LockRoute.tsx` produces views from the
+  session with DESIGN-015's copy, placed row by row, and `waitText` for `{wait}`.
+- `src/ActorChip.tsx` draws the name and role, the live whole seconds, and (when asked) Release. The five
+  screens that printed the literals (`FloorScreen`, `ClosedOrdersScreen`, `ClosedOrderScreen`,
+  `IncidentsScreen`, `SettlementScreen`) use it. `actor` and `idle` are removed from `FLOOR_COPY`, so the
+  literal cashier is only in the fixture session module.
+- `PosRoutes.tsx` gates the routes and not the stores; renders the empty frame while *starting*; renders
+  POS-01 in place of the route when signed out, URL unchanged, with the tender-draft figures taken from
+  the payment sessions and the book; replaces `/pos/` and any unknown path with `/pos/floor` in real mode
+  only; sets `data-session` on `#root`. `data-lock-state` is on POS-01's `<main>`.
+- `PinPad.tsx` gained an additive `disabled` prop (every key `aria-disabled`, presses ignored). The real
+  cooldown and a failed first read use it. `pos.css` gained `.notice__retry`, marked PROVISIONAL.
+- `apps/pos/package.json` and `package-lock.json` list `@pos/api-client` and `@pos/contracts`.
+
+### Decisions, and on what evidence
+
+- **Vitest does not load `apps/pos/vite.config.ts`** (the root `vitest.config.ts` is its own and is not in
+  my owned paths), so under test `__FIXTURE_SESSION__` is undefined. `source.ts` reads
+  `typeof __FIXTURE_SESSION__ === 'undefined' || __FIXTURE_SESSION__`: a test run is a `serve`; every build
+  defines it, and the bundle tests prove the build's value. The task said vitest loads the same config; it
+  does not. If the lead would rather the root config define it, that is a one-line change outside my paths.
+- **`fetch`**: the client is given `window.fetch.bind(window)` (a reference, not a call), because the core
+  requires a `fetch` at construction. `console-free.test.ts` flags `fetch(` calls and holds
+  `createApiClient(` to exactly one file. Rule 2 read literally ("`fetch` appears nowhere") cannot be met
+  by any code that gives the core a fetch; this is the narrowest form.
+- **Draft against invalidated**: when both apply, POS-01 shows *session invalidated* and not the draft
+  notice (one notice slot; DESIGN-015's rows are exclusive). The draft is untouched either way. Rule if the
+  lead prefers the other order: swap two blocks in `LockRoute.tsx`.
+- **Fixture sign-in**: in fixture mode the lock screen shown after a Release signs in as the fixture
+  cashier on any six digits and makes no request (case 25). `/pos/` still walks the pictures.
+- **Case 17 / DESIGN-015 "whole pad disabled"**: the real cooldown disables the whole pad (digits too), as
+  DESIGN-015 says; the fixture picture keeps its old behaviour because `pin-pad.test.tsx` holds it.
+- **Case 24**: the fixture prompt is URL-driven (`?state=approval`), so after sign-in at the same URL the
+  picture is redrawn. The test asserts it is gone while signed out and a *fresh* one (zero filled dots,
+  typed digits gone) after.
+- A shell heredoc was used once to patch `PosRoutes.tsx` (against the one-simple-command rule); no
+  Prettier or formatter was run.
+
+### Existing tests changed
+
+- `apps/pos/test/console-free.test.ts`: recursive, and extended (storage, cookie, beacon, `fetch(`,
+  `XMLHttpRequest`, sockets); one new test that one module constructs the client. Ruling 7.
+- `apps/pos/test/pin-pad.test.tsx`: one added test, inside the existing B-12 block: with `fetch` stubbed,
+  digits typed on either pad send nothing. Additions only.
+- No other existing test changed. `closed-orders.test.tsx:148` and `incidents.test.tsx:127-128` did not
+  need their expected values changed: the header text is unchanged in fixture mode.
+
+### Findings
+
+1. **BLOCKED: Release is built but not drawn anywhere.** The task says Release goes wherever the
+   artifact draws the actor (floor.html:48, order.html:77, closed.js:21). Three existing tests assert the
+   opposite behaviour and I may not change them: `floor.test.tsx:131-132` (`body` does not contain
+   `'Release'`), `closed-orders.test.tsx:147-150` (header "No Release", `text(host)` does not contain
+   `'Release'`), `closed-order.test.tsx:737-739` ("Release is not drawn"). `ActorChip` takes
+   `release` (a `<button type="button">Release</button>` calling `store.release()`), so enabling it is
+   `release` on the three `<ActorChip>` calls in `FloorScreen`, `ClosedOrdersScreen`, `ClosedOrderScreen`.
+   **Proposed resolution:** replace those three assertions with "a button named Release is in the actor
+   group and pressing it leaves for POS-01" (and the `closed-orders` header string gains `Release` at its
+   end), then I turn `release` on. POS-03 (OrderPanel) draws no actor today, so there is nothing to put
+   Release beside; the artifact draws it there (order.html:77). Say whether POS-03 is to gain its actor
+   group in this task or a later one. Settlement's artifact draws no Release.
+2. Other screens still guard their own fixture-state navs with `import.meta.env.DEV`
+   (`FloorScreen`, `OrderPanel`, `SettlementScreen`, `ClosedOrdersScreen`, `ClosedOrderScreen`): not the
+   session switch, but those navs, and the `?state=` pictures of those screens, are in a served build.
+   Question 3 says only POS-01's `?state=` is fixture-only; the rest is the owner's 2026-10-13 ruling.
+3. A failed deadline read leaves the person signed in with the chip at `0s` and draws nothing (ARCH-014
+   question 9: no state is designed). Nothing is retried; the next visibility read or `me` tries again.
+4. One server test (`approval.test.ts` test 5) timed out once at 124 s in a full run and passed alone and
+   in the second full run. I changed no server code.
+
+### Case map (tests in `apps/pos/test/`)
+
+13 `session-store.test.tsx` › "13. load with me 200" (3 tests) · 14 › "14. load with me refused" ·
+15 › "15. a sign-in" · 16 to 18 › "16–18. refusals and a short entry" · 19 › "19. a held session ends"
+(incl. `actor-changed`) · 20 › "20. Release" (via `store.release()`; the button waits on finding 1) ·
+21 › "21. activity is sent only from real input" (incl. the source scan) · 22 › "22. the chip and the
+deadline read" · 23 › "23. the tender draft survives the lock" · 24 › "24. nothing of an approval
+prompt survives the session" · 25 `session-fixture.test.tsx` · 26 `session-store.test.tsx` › "26. B-12 on
+the real path" · 27 `built-session.test.ts` and `built-session-development.test.ts` (shared
+`built-session-support.ts`; two files because two bundles cannot share one jsdom) · 28
+`console-free.test.ts` · 29 below. Each new file ran green three times in a row alone (5 files, 37 tests).
+
+### Red proofs (each made, run, reverted)
+
+- Send `activity` from the countdown's deadline tick: case 21 failed (`expected 10 to be +0`), and the
+  source scan failed.
+- Start the countdown at the limit after `me`: case 22 failed (`expected '90s' to be '3s'`).
+- Switch the source on `import.meta.env.DEV`: case 27 failed in the `NODE_ENV=development` build only
+  (`Sign-in locked for 4 min 12 s` found in the bundle; `?state=throttled` drew `throttled`).
+- Cancel the payment session when signed out (the draft dies with the actor session): case 23 failed
+  (`expected 'resting' to be 'draft'`).
+- Keep Release on screen until the server answers: case 20 failed in all three answers, and the
+  one-at-a-time test.
+
+### Acceptance output
+
+- `npm run verify`: typecheck clean; **78 test files, 3489 tests, all passed** (baseline `development`
+  at `69f289b`: 74 files, 3425 tests; +4 files, +64 tests).
+- `grep -rnE "\bfetch\(|localStorage|sessionStorage|document\.cookie|sendBeacon|console\." apps/pos/src`:
+  nothing.
+- `grep -rn "import.meta.env.DEV" apps/pos/src apps/pos/vite.config.ts`: five fixture-nav guards in
+  `ClosedOrderScreen:207`, `SettlementScreen:1010`, `OrderPanel:357`, `FloorScreen:309`,
+  `ClosedOrdersScreen:167` (none is the session switch), and a comment in `vite.config.ts`.
+- `grep -rnE "Ana R\.|'90s'|\b90\b" apps/pos/src`: `session/fixtureSession.ts` (the fixture cashier and
+  90); `discountFixtures.ts:65,72` (a discount fixture's recorded applier, not the actor); and comment
+  matches on `closed.js:90` in `closedOrderDetail.ts` and `refundDraft.ts`.
+- By hand (criterion 5): **not made.** No browser was available and no person to sign in as exists in
+  the sandbox (`npm run create-manager` is the owner's, at a terminal). The served path is proved by the
+  two built-bundle tests running the real built script in jsdom.
+
+### For 011d and Task 12
+
+- Accessible names the harness may drive on the POS: digits `1`..`9`, `0`, "Delete last digit",
+  "Continue", the notice's "Try again", and (once finding 1 is ruled) "Release". No `data-testid`.
+- State, not copy: `data-session` (`starting`, `signed-out`, `signed-in`) on `#root`; `data-lock-state` on
+  POS-01 (`resting`, `loading`, `error`, `throttled`, `invalidated`, `draft`, `unavailable`, `failed`).
+- `npm run build:clients` serves `/pos/`; a manager's PIN is the only sign-in Phase 0 can demonstrate.
+- 011d: reuse `meaningOf`'s shape, not the module; the POS store is POS-specific. `console-free` now
+  scans recursively and is the template to copy. The core's back-office `SESSION_IDLE` keeps the token.
+- Phase 2: a new interactive route fails the POS compile until declared in the route table; `activity.ts`
+  is the only file that names a route for activity.
+
+### Round 2 (after the lead's ruling)
+
+- `ActorChip` is called with `release` in `FloorScreen`, `ClosedOrdersScreen` and `ClosedOrderScreen`;
+  the stale "Release is not drawn" comment in `FloorScreen.tsx` is rewritten.
+- **Existing tests changed, all under the ruling:**
+  - `floor.test.tsx` (was `:131-132`): the "not drawn" assertion is now "exactly one `button` named
+    Release in `.floor-actor`"; one new test presses it and sees POS-01 `resting`, then signs back in
+    (the file shares one fixture session).
+  - `closed-orders.test.tsx` (was `:147-150`): the exact header string gains `Release` at its end and
+    nothing else; the two "no Release" assertions are replaced by "exactly one Release button in the
+    actor group".
+  - `closed-order.test.tsx` (was `:737-739`): "Release is not drawn" becomes "Release is a button in the
+    actor group, and pressing it leaves for POS-01", then signs back in.
+  - **Beyond the three, because drawing Release in the header changes what they collect:** the
+    `draw().buttons` helper (`closed-order.test.tsx:64`), the criterion-10 text regex and its
+    "only these buttons" loop (`:707`, `:711`), and `refund-screen.test.tsx:266` all read every `button`
+    on the screen. Each now ignores buttons inside `.floor-actor` (Release is the header's, not one of the
+    screen's actions); the criterion-10 `release` word check moved from "anywhere in the text" to "no
+    Release button outside the actor group". No behaviour those tests assert was loosened: a stray
+    Release outside the actor group still fails them. The ruling said "change only those assertions";
+    these were unavoidable consequences, and the lead should say if they want it done differently.
+  - `session-fixture.test.tsx` (mine) now presses the drawn button instead of calling the store.
+- **How a second press is impossible (ruling 12):** the press calls `store.release()`, which returns at
+  once unless the phase is `signed-in`; it flips the phase to `signed-out` synchronously before the
+  request is sent, so POS-01 replaces the screen (and its Release button) in the same render, and
+  `cookieChanging` is true until the answer, which also makes a sign-in inert. Tested in
+  `session-store.test.tsx` ("one cookie-changing request at a time").
+- **The gap, for the lead to queue:** POS-03 (the order screen) draws no actor group, so it has no
+  Release, though the artifact draws one (order.html:77). POS-04 (settlement) and the incidents screen
+  draw the actor and the chip but no Release: the artifact draws none there.
+- `npm run verify`: **78 files, 3490 tests passed**, typecheck clean. The five red proofs above were run
+  on round 1's code and are unaffected by this change; the Release proof's test is the same one.
+- Commit: one path-scoped commit on `agent/phase0-011c2`, "feat(pos): sign in for real through
+  @pos/api-client…" (`git log -1`; the hash cannot be written into the file it contains).
+
+DONE

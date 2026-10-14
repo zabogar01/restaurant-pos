@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { App } from './App.js';
 import { ClosedOrderScreen } from './ClosedOrderScreen.js';
 import { ClosedOrdersScreen } from './ClosedOrdersScreen.js';
 import { closedStateFrom } from './closedOrders.js';
 import { FloorScreen } from './FloorScreen.js';
 import { floorStateFrom } from './floorFixtures.js';
+import { formatAmount } from './money.js';
+import { LockRoute, type TenderDraft } from './LockRoute.js';
+import { FixtureLockPictures } from './session/source.js';
+import { useSession, useSessionStore } from './session/useSession.js';
 import { ControlledOrderScreen } from './OrderPanel.js';
 import { incidentStateFrom } from './incidentFixtures.js';
 import { IncidentsScreen } from './IncidentsScreen.js';
@@ -36,6 +39,17 @@ function settlementSeed(search: string): OrderView {
 
 /** The POS client routes full-screen destinations without adding a router dependency. */
 export function PosRoutes() {
+  // The session store sits above the routes (ARCH-014 question 5). The routes are
+  // gated below; the order book and the payment sessions are not, so a tender
+  // draft survives the lock (ARCHITECTURE section 6.4).
+  const sessionStore = useSessionStore();
+  const sessionNow = useSession();
+  const signedIn = sessionNow.phase === 'signed-in';
+  useEffect(() => sessionStore.start(), [sessionStore]);
+  useEffect(() => {
+    // The harness reads this, not the copy.
+    document.getElementById('root')?.setAttribute('data-session', sessionNow.phase);
+  }, [sessionNow.phase]);
   const [, setLocation] = useState(() => `${window.location.pathname}${window.location.search}`);
   const path = window.location.pathname;
   const onOrder = /\/order\/?$/.test(path);
@@ -69,7 +83,7 @@ export function PosRoutes() {
   // `settle-takeover` are lease/identity fixtures, never this cashier's own
   // payment, so they never open one (rules 3, 9, 10).
   const settlementFixtureState = settlementStateFrom(window.location.search);
-  if (onSettlement && !session.active && beginsSession(settlementFixtureState)) {
+  if (signedIn && onSettlement && !session.active && beginsSession(settlementFixtureState)) {
     session.activate(
       initialDrafts(settlementFixtureState, store.order.totals.total),
       settlementFixtureState === 'error'
@@ -89,12 +103,41 @@ export function PosRoutes() {
   // drawn for it.
   // A refunded order has reached CLOSED too (FE-032), and a voided one (FE-036)
   // is no longer open: `noLongerOpen` counts all three.
-  const closedActive = (onOrder || onSettlement) && book.orders().some((o) => o.id === book.activeId && noLongerOpen(o.status));
+  const closedActive = signedIn && (onOrder || onSettlement) && book.orders().some((o) => o.id === book.activeId && noLongerOpen(o.status));
   useEffect(() => {
     if (!closedActive) return;
     window.history.replaceState(null, '', '/pos/floor');
     readLocation();
   }, [closedActive, readLocation]);
+  const knownRoute = onOrder || onSettlement || onFloor || onIncidents || onClosedOrders || onClosedOrder;
+  // Real mode: `/pos/` itself, and any path no screen answers, is the floor. The URL
+  // is kept for every route a person can be on, and replaced only here.
+  const toFloor = signedIn && !knownRoute && sessionStore.kind === 'real';
+  useEffect(() => {
+    if (!toFloor) return;
+    window.history.replaceState(null, '', '/pos/floor');
+    readLocation();
+  }, [toFloor, readLocation]);
+
+  if (sessionNow.phase === 'starting') return <div className="pos-device" />;
+  if (sessionNow.phase === 'signed-out') {
+    // POS-01 in place of the route, without changing the URL. A payment session in
+    // the tab gives the draft notice its figures from the store.
+    const drafted = book.orders().find((o) => sessions.isActive(o.id));
+    let draft: TenderDraft | undefined;
+    if (drafted) {
+      const tenders = sessions.draftsOf(drafted.id) ?? [];
+      const sum = tenders.reduce((total, d) => total + d.amount, 0n);
+      draft = {
+        label: drafted.order.title,
+        outstanding: formatAmount(drafted.order.totals.total - sum),
+        tenders: tenders.length,
+      };
+    }
+    return <LockRoute snapshot={sessionNow} store={sessionStore} draft={draft} />;
+  }
+  if (toFloor) return <FloorScreen state={floorStateFrom('')} book={book} sessions={sessions} />;
+
   if (closedActive) return <FloorScreen state={floorStateFrom('')} book={book} sessions={sessions} />;
 
   if (onSettlement) return <ControlledSettlementScreen store={store} session={session} />;
@@ -104,5 +147,5 @@ export function PosRoutes() {
   if (onClosedOrders) return <ClosedOrdersScreen key={window.location.search} state={closedStateFrom(window.location.search)} book={book} />;
   if (onClosedOrder) return <ClosedOrderScreen key={window.location.search} search={window.location.search} book={book} />;
   if (onIncidents) return <IncidentsScreen state={incidentStateFrom(window.location.search)} />;
-  return <App />;
+  return FixtureLockPictures ? <FixtureLockPictures /> : <FloorScreen state={floorStateFrom('')} book={book} sessions={sessions} />;
 }
