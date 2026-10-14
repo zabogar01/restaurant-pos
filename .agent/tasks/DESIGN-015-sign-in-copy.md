@@ -5,8 +5,8 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-012]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 1
+status: active
+cycles: 2
 ---
 # DESIGN-015 — Sign-in copy and states (POS-01, BO-01, M-6, M-1)
 
@@ -320,6 +320,21 @@ Keep what is right, finish what is missing, and say in your round-2 Handoff sect
 what you changed. Codex also wrote a helper at `/private/tmp/design015-round2-docs.py`, outside this
 worktree; do not rely on it. Do not commit screenshots or measurements (run output). Each browser run and
 each command outside the allowed list is the owner's to approve.
+
+## Round 3 — the re-review's two findings (lead rulings, 2026-10-14)
+
+The re-review is `.agent/reviews/DESIGN-015-review.md` (round 2: one medium, one low; all eight round-1
+findings closed). Both are accepted. Addressed to designer15b. This is the last fix round the kit allows.
+
+1. **R2-1:** the "Logout during cooldown" sentence is appended only while the fixed-username form is
+   showing, keyed to the idled manager's account. In the other-manager form append nothing. If the
+   discard confirmation opened from the other-manager form should read differently ("your changes" there
+   addresses the person at the desk), give that wording, promising neither disposal nor recovery of the
+   draft. Update the inventory row, the Handoff's copy table and `shell.js`.
+2. **R2-2:** the other-manager Username starts empty every time the form opens, and Back clears it with
+   the secret. `r.ayu` stays only as a value the fixture types in. Say so in the inventory row and the
+   copy table.
+3. Run the browser checks again, append a *Round 3* section to the Handoff, commit, and report as before.
 
 ## Handoff
 
