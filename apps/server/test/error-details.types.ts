@@ -5,6 +5,7 @@
 // typecheck fails: the contract has stopped keeping an exception's text out.
 import { ErrorCode } from '@pos/contracts';
 import type { ErrorBody } from '@pos/contracts';
+import { ErrorBody as ErrorBodySchema } from '@pos/contracts';
 import { AppError } from '../src/http/errors.js';
 
 export function neverCalled(cause: Error, text: string): void {
@@ -256,4 +257,18 @@ export function neverCalled(cause: Error, text: string): void {
   new AppError(ErrorCode.INTERNAL, 500);
   const fine: ErrorBody = { error: { code: ErrorCode.INTERNAL } };
   void fine;
+}
+
+// PHASE0-011b review finding 1: what the exported ErrorBody schema parses to is the
+// ErrorBody type, so a client that validates at its boundary can narrow on a code.
+export function parsedErrorBodyKeepsItsCodes(input: unknown): number | undefined {
+  const parsed: ErrorBody = ErrorBodySchema.parse(input);
+  if (parsed.error.code === ErrorCode.THROTTLED) {
+    return parsed.error.details?.retryAfterSeconds;
+  }
+  if (parsed.error.code === ErrorCode.INTERNAL) {
+    // @ts-expect-error a code that declares no details exposes none
+    return parsed.error.details?.retryAfterSeconds;
+  }
+  return undefined;
 }

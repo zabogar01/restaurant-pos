@@ -59,7 +59,15 @@ describe('the back-office sign-in', () => {
     const res = await client.signInBackOffice(manager.username, manager.password);
     expect(res.statusCode).toBe(200);
     const body = res.json() as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(['csrfToken', 'name', 'role', 'staffUserId', 'username']);
+    expect(Object.keys(body).sort()).toEqual([
+      'csrfToken',
+      'idleRemainingSeconds',
+      'idleSeconds',
+      'name',
+      'role',
+      'staffUserId',
+      'username',
+    ]);
     expect(body.staffUserId).toBe(manager.id);
     expect(body.name).toBe(manager.name);
     expect(body.username).toBe(manager.username);

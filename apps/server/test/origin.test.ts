@@ -77,7 +77,10 @@ describe('the Host check', () => {
       const before = await clients();
       const res = await inject(app, { method: 'GET', url, headers: { host } });
       expect(res.statusCode).toBe(403);
-      expect(res.body).toBe(NOT_ALLOWED);
+      // Outside /api an error is plain text, not the envelope (ADR-010 rule 1).
+      expect(res.body).toBe(
+        url.startsWith('/api/') ? NOT_ALLOWED : `This application answers only at ${TEST_ORIGIN}.`
+      );
       expect(res.headers['cache-control']).toBe('no-store');
       expect(res.headers['set-cookie']).toBeUndefined();
       expect(await clients()).toBe(before);
@@ -251,11 +254,18 @@ describe('at the parser boundary', () => {
     expect(res.body).toContain('"ok"');
   });
 
+  it('an absolute-form target outside /api is refused in plain text with no-store', async () => {
+    const res = await rawRequest(port, request(`https://localhost:${TEST_PORT}/nope`));
+    expect(res.status).toBe(400);
+    expect(res.body).toBe('Bad Request');
+    expect(res.head.toLowerCase()).toContain('content-type: text/plain');
+    expect(res.head.toLowerCase()).toContain('cache-control: no-store');
+  });
+
   it.each([
     ['a matched route', `https://localhost:${TEST_PORT}/api/health`],
     ['an API miss', `https://localhost:${TEST_PORT}/api/nope`],
     ['an encoded API miss', `https://localhost:${TEST_PORT}/%61pi/nope`],
-    ['an outside miss', `https://localhost:${TEST_PORT}/nope`],
     ['another origin in the target', 'https://evil.example/api/health'],
   ])('an absolute-form target for %s is refused through the envelope with no-store', async (_name, target) => {
     const res = await rawRequest(port, request(target));

@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 /**
  * The codes an API response can carry. A code enters this list in the task that
  * first emits it and tests it; a code with no emitter is an untested promise.
@@ -52,3 +54,49 @@ export type ErrorBody = {
       : { details?: ErrorDetailsOf<C> });
   };
 }[ErrorCode];
+
+// A client validates what it receives at its boundary, and what it gets back is an
+// ErrorBody: each envelope keeps its own code literal and its own details shape, so
+// narrowing on a code exposes that code's details and no other code has any. One
+// envelope per code, written out, so no code's literal is widened to the whole union.
+const RetryAfter = z.strictObject({ retryAfterSeconds: z.number().int().nonnegative() });
+
+const bare = <C extends ErrorCode>(code: C) =>
+  z.strictObject({ error: z.strictObject({ code: z.literal(code) }) });
+
+const withRetry = <C extends keyof ErrorDetailsByCode>(code: C) =>
+  z.strictObject({
+    error: z.strictObject({ code: z.literal(code), details: RetryAfter.optional() }),
+  });
+
+// The four codes that declare details; `satisfies` holds this list to ErrorDetailsByCode.
+const WITH_DETAILS = {
+  INVALID_CREDENTIALS: withRetry('INVALID_CREDENTIALS'),
+  THROTTLED: withRetry('THROTTLED'),
+  APPROVAL_FAILED: withRetry('APPROVAL_FAILED'),
+  APPROVAL_THROTTLED: withRetry('APPROVAL_THROTTLED'),
+} as const satisfies Record<keyof ErrorDetailsByCode, z.ZodType>;
+
+export const ErrorBody = z.union([
+  bare(ErrorCode.INTERNAL),
+  bare(ErrorCode.UNAVAILABLE),
+  bare(ErrorCode.NOT_FOUND),
+  bare(ErrorCode.VALIDATION_FAILED),
+  bare(ErrorCode.PAYLOAD_TOO_LARGE),
+  bare(ErrorCode.UNSUPPORTED_MEDIA_TYPE),
+  bare(ErrorCode.ORIGIN_REFUSED),
+  bare(ErrorCode.UNAUTHENTICATED),
+  bare(ErrorCode.SESSION_IDLE),
+  bare(ErrorCode.FORBIDDEN),
+  bare(ErrorCode.CSRF_REFUSED),
+  WITH_DETAILS.INVALID_CREDENTIALS,
+  WITH_DETAILS.THROTTLED,
+  WITH_DETAILS.APPROVAL_FAILED,
+  WITH_DETAILS.APPROVAL_THROTTLED,
+]);
+
+// Both directions at compile time: a code added to ErrorCode and not above, or a
+// shape that drifts from the ErrorBody type, stops this compiling.
+type Mutual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type MustBeTrue<T extends true> = T;
+export type ErrorBodySchemaMatchesType = MustBeTrue<Mutual<z.infer<typeof ErrorBody>, ErrorBody>>;

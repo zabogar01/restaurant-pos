@@ -75,7 +75,14 @@ describe('the POS sign-in', () => {
     const res = await client.signInPos(cashier.pin);
     expect(res.statusCode).toBe(200);
     const body = res.json() as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(['csrfToken', 'name', 'role', 'staffUserId']);
+    expect(Object.keys(body).sort()).toEqual([
+      'csrfToken',
+      'idleRemainingSeconds',
+      'idleSeconds',
+      'name',
+      'role',
+      'staffUserId',
+    ]);
     expect(body.staffUserId).toBe(cashier.id);
     expect(body.name).toBe(cashier.name);
     expect(body.role).toBe('CASHIER');
