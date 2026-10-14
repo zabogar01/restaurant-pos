@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011a, PHASE0-011b]
 owns: [packages/api-client/**, package.json, package-lock.json]
-status: review
+status: complete
 cycles: 1
 ---
 # PHASE0-011c1 — The browser transport core (`@pos/api-client`)
@@ -409,6 +409,17 @@ than choosing.
    update the interface in the Handoff. Everything in rounds 1 and 2 not changed here stands.
 6. The reviewer appended a note to the Handoff at the dispatcher's prompting; leave it. Append a *Round 3*
    section after it, commit after `npm run verify` is green, and end with DONE or BLOCKED as before.
+
+## Round 3 review — owner ruling (2026-10-14)
+
+The re-review of round 3 (`.agent/reviews/PHASE0-011c1-review.md`) cleared all three round 2 findings and
+escalated one P2 under Round 3 ruling 2: a successful sign-in that the core judges obsolete still changes the
+browser's cookie, so the core's token and the cookie can name different people. Every observed sequence fails
+closed (the next mutation is refused, the CSRF path's `me` sees another person, the session ends, nothing is
+replayed). No fix round was left. **The owner ruled: merge as is.** The core supports one cookie-changing
+request at a time per tab (sign-in, re-authentication, release, logout); the screens enforce it (PHASE0-011c2
+and 011d), and the two-tab case stays under the shared-cookie-jar risk accepted with ADR-010, to be revisited
+at the ARCHITECTURE §3.2 gate and taken into the commissioned ADR on the browser clients.
 
 ## Handoff
 
