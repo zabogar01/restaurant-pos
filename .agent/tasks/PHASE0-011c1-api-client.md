@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011a, PHASE0-011b]
 owns: [packages/api-client/**, package.json, package-lock.json]
-status: review
+status: active
 cycles: 1
 ---
 # PHASE0-011c1 — The browser transport core (`@pos/api-client`)
@@ -366,6 +366,50 @@ the builder.
 5. Everything else in round 1 stands. Append a *Round 2* section to the Handoff, commit after
    `npm run verify` is green, and end with DONE or BLOCKED as before.
 
+## Round 3 — the re-review's three findings (lead rulings, 2026-10-14)
+
+The re-review is `.agent/reviews/PHASE0-011c1-review.md` (Codex, three P2, all observed at runtime against
+`25abfdf`). All three are accepted. Addressed to the builder. **This is the last fix round** (`max_fix_cycles`
+is 2): anything you cannot settle from these rulings and the documents, write as `BLOCKED: <question>` rather
+than choosing.
+
+1. **Finding 1: a back-office `SESSION_IDLE` is not a session end.** Round 2 ruling 1 named `SESSION_IDLE`
+   *at the POS*; at the back office the session survives idle expiry so that the same manager can renew it
+   with their password (ARCH-014 question 4, rule 4; FR-A2b). A back-office `SESSION_IDLE` therefore does
+   **not** advance the generation, however many arrive. It still drops the deadline (null) and keeps the token
+   and the actor, as now, and it still emits `session-ended` only when it first clears a held deadline (keep
+   today's event rule; say in the Handoff if it changes). While the back office is idled, a 2xx from an
+   interactive request that was sent earlier must not set a deadline again; only an adopted session view
+   (re-authentication, a sign-in, or `me`) does. The POS keeps Round 2's behaviour: its `SESSION_IDLE` ends the
+   session and advances the generation.
+2. **Finding 2: a session recovered by `me` into an empty core advances the generation.** Adopting a session
+   view while no actor is held advances `generation`, so every request sent before it is obsolete under Round
+   2's rules. It does **not** advance `installs`, and it emits no `actor-changed` (nobody was replaced). The
+   reason for not counting it as an install: a sign-in already in flight when the recovery lands has set the
+   server's cookie to the person signing in; judging that sign-in obsolete would leave the core holding the
+   recovered person's token against the new person's cookie. A sign-in that settles after the recovery
+   therefore still installs its session, by Round 2's rule; a `me` that settles after that sign-in is obsolete
+   and returns `session-gone`. If you find a sequence where this rule leaves the token and the cookie naming
+   different people, stop and report it as BLOCKED with the sequence.
+3. **Finding 3: an obsolete release or logout returns `session-gone`.** A request with `ends: true` (POS
+   release, back-office logout) whose success settles under a different generation from the one it was sent
+   under returns `{ kind: 'session-gone' }` and changes nothing (no event, no token, actor or deadline
+   change). Settled under its own generation, it returns `ok` and ends the session, as now.
+4. **Prove each with controlled out-of-order tests, failing on `25abfdf` first** (record each red run):
+   (a) back office: idle, start re-authentication, settle a `me` returning `SESSION_IDLE`, then deliver the
+   re-authentication's success: the result is `ok` with the public view, the deadline is installed from it,
+   and the next mutation sends the new token; plus an interactive 2xx sent before the idle and settled after
+   it leaves the deadline null. (b) on **both** surfaces: an empty core sends request X, `me` recovers person A,
+   then X's `UNAUTHENTICATED` (and, at the POS, `SESSION_IDLE`) arrives: the result is `session-gone`, A and A's
+   deadline are kept, A's token is on the next mutation, and no event is emitted for X. Also: a sign-in to B
+   sent before that recovery and settling after it installs B. (c) both terminal routes: sign in as A, start
+   release (or logout), sign in as B, deliver the 204: the result is `session-gone`, no event, and B's actor,
+   deadline and token are kept. Keep the existing `13f` test and add the result assertion to it.
+5. **Interface.** If anything 011c2 or 011d reads changes (an event, a result, when the deadline is null),
+   update the interface in the Handoff. Everything in rounds 1 and 2 not changed here stands.
+6. The reviewer appended a note to the Handoff at the dispatcher's prompting; leave it. Append a *Round 3*
+   section after it, commit after `npm run verify` is green, and end with DONE or BLOCKED as before.
+
 ## Handoff
 
 ### What I did
@@ -568,5 +612,24 @@ Round-2 source restored; all green.
 - `grep -rnE "react|document|window|console\.|localStorage|sessionStorage|navigator\.sendBeacon|Date\.now|new Date\(" packages/api-client/src`: no output.
 - `grep -rn "http:" packages/api-client/src`: no output.
 - Only `packages/api-client` and this file changed; no formatter was run.
+
+### Reviewer follow-up — Round 2
+
+The independent re-review is complete at `01e2f770d425a430be975bfa21ff31d5c13248b5`.
+The report is [PHASE0-011c1-review.md](../reviews/PHASE0-011c1-review.md), with verdict
+**findings** and three P2 findings: back-office idle responses invalidate successful renewal; initial
+session recovery through `me` does not advance the generation; and an obsolete release returns
+`ok` instead of `session-gone`. The original public-token finding and the two exact Round 1
+out-of-order sequences are cleared.
+
+The reviewer ran `npm run verify`: typecheck succeeded and 73 test files / 3,413 tests passed.
+The package-only run passed 3 files / 48 tests. The source tree and recorded commits were unchanged
+across the full run. The three remaining failures were observed with in-memory response scheduling
+against unchanged source; no browser outcome or source-mutation run is claimed. The report contains
+the scenarios, authorities, and proposed fixes. The lead decides the next implementation action.
+
+This note was appended at the re-review dispatch's explicit request. Review work is complete; the
+implementation still has the findings above. No source or test was edited, and no commit or push was
+made.
 
 DONE
