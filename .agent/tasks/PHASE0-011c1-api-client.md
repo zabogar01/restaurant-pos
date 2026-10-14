@@ -401,15 +401,17 @@ ApiClient {
 }
 
 ApiResult<T> =
-  | { kind: 'ok'; value: T }                       // value checked against its schema; void for 204 routes
+  | { kind: 'ok'; value: T }                       // value checked against its schema; void for 204 routes;
+                                                   // a session view WITHOUT csrfToken (round 2)
   | { kind: 'refused'; body: ErrorBody }           // narrow on body.error.code; details are typed per code
   | { kind: 'failed' } | { kind: 'unavailable' }   // decided by one GET /api/health
   | { kind: 'invalid-request' }                    // body failed its schema; never sent
-  | { kind: 'session-gone' }                       // CSRF refusal whose retry would have changed the actor
+  | { kind: 'session-gone' }                       // CSRF refusal whose retry would have changed the actor,
+                                                   // or (round 2) an obsolete response that would have applied a view or an end
 
 ApiEvent =
   | { type: 'deadline'; deadline: number | null }
-  | { type: 'session-ended'; reason: 'SESSION_IDLE' | 'UNAUTHENTICATED' | 'SIGNED_OUT' | 'ACTOR_CHANGED' }
+  | { type: 'session-ended'; reason: 'SESSION_IDLE' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'SIGNED_OUT' | 'ACTOR_CHANGED' }
   | { type: 'actor-changed'; staffUserId: string }
 ```
 
@@ -488,5 +490,83 @@ None.
 - The session view itself is returned in `ok` results; the core does not keep `name` or `role`.
 - Nothing yet constructs the core in `apps/`; `console-free.test.ts` is not tightened (011c2).
 - There is no idempotency key and no resend: a Phase 2 command needs its own design (ARCH-012 §5).
+
+## Round 2
+
+Addresses the review's two findings (lead rulings in *Round 2* above). Round 1 stands except where
+stated.
+
+### Finding 1: session generations
+
+- **Mechanism.** The core keeps `generation`, advanced whenever a session is installed (a sign-in, a
+  re-authentication, or a session view naming a different person than the one held) and whenever a session
+  ends (`SESSION_IDLE` at either surface, `UNAUTHENTICATED`, `FORBIDDEN`, `ACTOR_CHANGED`, release and
+  logout). Every request records the generation it was sent under, as does the CSRF path's `me` read. A
+  response that settles under another generation changes nothing: no token, actor or deadline adopted,
+  dropped or moved, and no event emitted. Its result is `session-gone` if it would have applied a session
+  view or an end (a session-view 2xx; `SESSION_IDLE`, `UNAUTHENTICATED` or `FORBIDDEN`); any other result
+  (an interactive 2xx, another refusal, `failed`/`unavailable`) is returned as it was, still without
+  touching the session.
+- **`FORBIDDEN` now ends the session** (it was not ending it in round 1; the ruling lists it). Reason
+  `FORBIDDEN` is added to `SessionEndReason`. My round-1 case 11 test used `FORBIDDEN` as "a refusal that
+  ends nothing"; I changed that one line in `core.test.ts` to `VALIDATION_FAILED`, which is what it meant.
+  No assertion was loosened.
+- **Two sign-ins at once.** A sign-in is judged by an `installs` counter, not by the generation: it is
+  obsolete only if another session was installed since it was sent. So the first to settle installs, and
+  the other settles `session-gone` and is not adopted (the ruling's "later-settling only if nothing was
+  installed in between", read as: it never is, since the first-settling one installed). A release or an
+  idle end in flight does not make a sign-in obsolete (otherwise a person signing in while a release was
+  still travelling would be shown signed out with a live cookie). Test `13f`, both.
+- **Release** ends the session in the core only if the generation is unchanged since it was sent; a
+  release settling under a newer session ends nothing of it.
+- **The CSRF path.** An obsolete first refusal is returned unretried. The single-flight `me` is joined only
+  by a request of the same generation (a request of a newer session starts its own read). After the read,
+  if the generation moved, the result is `session-gone` and nothing is adopted or retried. A `me` that
+  itself answers a refusal under the same generation returns that refusal, as in round 1.
+- Not changed: a `me` naming the same person, on the non-CSRF path, replaces the token without advancing
+  the generation (it installs no new session).
+
+### Finding 2: no result exposes the token
+
+The wire view, with `csrfToken`, stays inside the core; the result carries every other field (`username`
+too at the back office). `ValueOf` strips `csrfToken` at the type level (`WithoutToken`), so
+`result.value.csrfToken` does not compile. Tests `14`, for both sign-ins, both `me` and
+re-authentication: `'csrfToken' in value` is false at runtime, a `@ts-expect-error` refuses
+`result.value.csrfToken` (and `npm run typecheck` includes the tests, so an unused one would fail), the
+whole result serialises without the token, and the next mutation sends the token the core adopted.
+
+### Interface changes (for 011c2 and 011d)
+
+- `ok` session-view values lack `csrfToken`. 011c2's store must not expect it.
+- `SessionEndReason` gains `'FORBIDDEN'`; a client must map it in its exhaustive switch.
+- `session-gone` can now also mean "that response was obsolete"; a client treats it as: do nothing about
+  the session on account of this request; the events already told you the truth.
+- Nothing else in the interface changed.
+
+### Tests (`packages/api-client/test/generations.test.ts`, 14 tests)
+
+`13a` (`me` after release: nothing held, `session-gone`, next mutation has no token), `13b` (older request's
+`UNAUTHENTICATED` after signing in as B: B held, B's token next), `13c` twice (an interactive 2xx after
+release leaves the deadline null; one arriving under a later session B with a 60-second limit leaves B's
+deadline), `13d` (the CSRF path's `me` after release: no retry, nothing adopted), `13e` (a request of a
+newer session does not join the older session's `me`), `13f` twice (two sign-ins; release in flight),
+`14` five times (one per session-view route), and one for `FORBIDDEN`.
+
+**Red first.** I ran the new file against the round-1 source (`git checkout HEAD -- packages/api-client/src`,
+then restored the round-2 source from a copy): 12 of 13 then failed, with the failures shown by
+vitest (`13a` got `{kind:'ok', value:{… csrfToken:'token-A' …}}` where `session-gone` was expected; `13b`
+got `refused UNAUTHENTICATED`; `13d` got `unavailable`; `13e` made one `me` instead of two; `13f` the
+first sign-in was adopted and the release logged B out; all five `14` and `FORBIDDEN` failed). The one
+that passed was `13c` (release first), because round 1 nulls the limit at release; so I added the second
+`13c`, with a later session B, and ran that alone against round-1 source: `expected 61000 to be 66000`.
+Round-2 source restored; all green.
+
+### Verification
+
+- `npm run verify`: typecheck clean (including `@ts-expect-error` lines); **73 test files, 3413 tests
+  passed** (baseline 70 and 3365; round 1 was 72 and 3399).
+- `grep -rnE "react|document|window|console\.|localStorage|sessionStorage|navigator\.sendBeacon|Date\.now|new Date\(" packages/api-client/src`: no output.
+- `grep -rn "http:" packages/api-client/src`: no output.
+- Only `packages/api-client` and this file changed; no formatter was run.
 
 DONE

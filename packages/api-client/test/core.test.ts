@@ -296,7 +296,7 @@ describe('11. the deadline', () => {
     await world.client.request(ROUTES.posActivity);
     expect(world.client.deadline()).toBe(set);
     // A refused interactive request that is not the end of the session.
-    world.script(ACTIVITY, envelope(403, 'FORBIDDEN'));
+    world.script(ACTIVITY, envelope(400, 'VALIDATION_FAILED'));
     await world.client.request(ROUTES.posActivity);
     expect(world.client.deadline()).toBe(set);
     // A non-interactive route with no view.

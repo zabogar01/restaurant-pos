@@ -53,7 +53,12 @@ export type ApiResult<T> =
   | { kind: 'invalid-request' }
   | { kind: 'session-gone' };
 
-export type SessionEndReason = 'SESSION_IDLE' | 'UNAUTHENTICATED' | 'SIGNED_OUT' | 'ACTOR_CHANGED';
+export type SessionEndReason =
+  | 'SESSION_IDLE'
+  | 'UNAUTHENTICATED'
+  | 'FORBIDDEN'
+  | 'SIGNED_OUT'
+  | 'ACTOR_CHANGED';
 
 export type ApiEvent =
   /** The idle deadline moved. `deadline` is on the injected clock, or null when none. */
@@ -105,17 +110,30 @@ type Raw =
   | { kind: 'refused'; body: ErrorBody }
   | { kind: 'fault' };
 
-/** `view` is null unless `me` answered 2xx; `settled` is the result to hand back then. */
+/** `view` is null unless `me` answered 2xx under the current session; `settled` is the result then. */
 interface MeRead {
   view: View | null;
   sentAt: number;
   settled: ApiResult<unknown>;
 }
 
+/** What the core's session state was when a request was sent. */
+interface Sent {
+  generation: number;
+  installs: number;
+}
+
+/** The session view as the world sees it: every field but the anti-CSRF token. */
+function publicView(view: View): Record<string, unknown> {
+  const { csrfToken: _held, ...rest } = view as View & Record<string, unknown>;
+  return rest;
+}
+
 interface Spec {
   body?: Schema<unknown>;
   response: Schema<unknown> | null;
   session?: true;
+  signIn?: true;
   ends?: true;
 }
 
@@ -136,7 +154,13 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   let actor: string | null = null;
   let idleSeconds: number | null = null;
   let deadline: number | null = null;
-  let meFlight: Promise<MeRead> | null = null;
+  // The session generation advances whenever a session is installed or ends. A
+  // response settles against the generation it was sent under: under another, it is
+  // obsolete and changes nothing. `installs` counts sessions installed, and is what a
+  // sign-in is judged by: a release in flight must not make a later sign-in obsolete.
+  let generation = 0;
+  let installs = 0;
+  let meFlight: { generation: number; promise: Promise<MeRead> } | null = null;
 
   const listeners = new Set<(event: ApiEvent) => void>();
   const emit = (event: ApiEvent): void => {
@@ -151,6 +175,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 
   const endSession = (reason: SessionEndReason, keepToken: boolean): void => {
     const held = token !== null || deadline !== null;
+    generation += 1;
     if (!keepToken) {
       token = null;
       actor = null;
@@ -160,8 +185,14 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     if (held) emit({ type: 'session-ended', reason });
   };
 
-  const adopt = (view: View, sentAt: number): void => {
+  // `install`: this view starts a session (a sign-in or a re-authentication). A view
+  // naming a different person than the one held installs one too.
+  const adopt = (view: View, sentAt: number, install: boolean): void => {
     const changed = actor !== null && actor !== view.staffUserId;
+    if (install || changed) {
+      generation += 1;
+      installs += 1;
+    }
     token = view.csrfToken;
     actor = view.staffUserId;
     idleSeconds = view.idleSeconds;
@@ -235,21 +266,38 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     entry: Route,
     spec: Spec,
     raw: Raw,
+    sent: Sent,
     adoptView: boolean
   ): Promise<ApiResult<unknown>> {
     if (raw.kind === 'fault') {
       if (entry.path === ROUTES.health.path) return { kind: 'unavailable' };
       return { kind: await healthDecides() };
     }
+    // Obsolete: the session it was sent under is not the session now. It changes
+    // nothing, and says so only if it would have applied a view or an end.
+    const obsolete =
+      spec.signIn === true ? installs !== sent.installs : generation !== sent.generation;
     if (raw.kind === 'refused') {
       const { code } = raw.body.error;
+      const ends =
+        code === ErrorCode.SESSION_IDLE ||
+        code === ErrorCode.UNAUTHENTICATED ||
+        code === ErrorCode.FORBIDDEN;
+      if (obsolete) return ends ? { kind: 'session-gone' } : raw;
       if (code === ErrorCode.SESSION_IDLE) endSession('SESSION_IDLE', surface === 'BACK_OFFICE');
       else if (code === ErrorCode.UNAUTHENTICATED) endSession('UNAUTHENTICATED', false);
+      else if (code === ErrorCode.FORBIDDEN) endSession('FORBIDDEN', false);
       return raw;
     }
+    if (obsolete) {
+      return spec.session === true ? { kind: 'session-gone' } : { kind: 'ok', value: raw.value };
+    }
     if (spec.session === true) {
-      if (adoptView) adopt(raw.value as View, raw.sentAt);
-    } else if (entry.interactive && idleSeconds !== null) {
+      // The wire view, token included, stays here; the result carries the rest.
+      if (adoptView) adopt(raw.value as View, raw.sentAt, entry.method === 'POST');
+      return { kind: 'ok', value: publicView(raw.value as View) };
+    }
+    if (entry.interactive && idleSeconds !== null) {
       setDeadline(raw.sentAt + idleSeconds * 1000);
     }
     return { kind: 'ok', value: raw.value };
@@ -259,16 +307,24 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   // nothing: each caller decides, because adopting another person's view would make
   // this tab act as them.
   function readMe(): Promise<MeRead> {
-    meFlight ??= (async (): Promise<MeRead> => {
-      const spec = SPECS[meRoute.path] as Spec;
-      const raw = await transmit(meRoute, spec, undefined);
-      const settled = await settle(meRoute, spec, raw, false);
-      if (raw.kind !== 'ok' || settled.kind !== 'ok') return { view: null, sentAt: 0, settled };
-      return { view: raw.value as View, sentAt: raw.sentAt, settled };
-    })().finally(() => {
-      meFlight = null;
-    });
-    return meFlight;
+    // A read sent under another generation is not joined: its answer is about a
+    // session this request was not made under.
+    if (meFlight !== null && meFlight.generation === generation) return meFlight.promise;
+    const sent: Sent = { generation, installs };
+    const flight = {
+      generation,
+      promise: (async (): Promise<MeRead> => {
+        const spec = SPECS[meRoute.path] as Spec;
+        const raw = await transmit(meRoute, spec, undefined);
+        const settled = await settle(meRoute, spec, raw, sent, false);
+        if (raw.kind !== 'ok' || settled.kind !== 'ok') return { view: null, sentAt: 0, settled };
+        return { view: raw.value as View, sentAt: raw.sentAt, settled };
+      })().finally(() => {
+        if (meFlight === flight) meFlight = null;
+      }),
+    };
+    meFlight = flight;
+    return flight.promise;
   }
 
   async function run(
@@ -278,11 +334,14 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     isRetry: boolean
   ): Promise<ApiResult<unknown>> {
     const actorAtSend = actor;
+    const sent: Sent = { generation, installs };
     const raw = await transmit(entry, spec, bodyText);
-    const result = await settle(entry, spec, raw, true);
+    const result = await settle(entry, spec, raw, sent, true);
     const csrfRefused =
       result.kind === 'refused' && result.body.error.code === ErrorCode.CSRF_REFUSED;
     if (!csrfRefused || isRetry || entry.method === 'GET') return result;
+    // Under another session the refusal is about a token this request no longer owns.
+    if (generation !== sent.generation) return result;
 
     // B-13: the retry is the same command, so it is for the same person. If the held
     // actor is not the one the cookie now names, nothing is retried and nothing is
@@ -290,11 +349,12 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     if (actorAtSend === null) return { kind: 'session-gone' };
     const me = await readMe();
     if (me.view === null) return me.settled;
+    if (generation !== sent.generation) return { kind: 'session-gone' };
     if (me.view.staffUserId !== actorAtSend) {
       if (actor !== me.view.staffUserId) endSession('ACTOR_CHANGED', false);
       return { kind: 'session-gone' };
     }
-    adopt(me.view, me.sentAt);
+    adopt(me.view, me.sentAt, false);
     return run(entry, spec, bodyText, true);
   }
 
@@ -318,8 +378,10 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         if (!parsed.success) return { kind: 'invalid-request' };
         bodyText = JSON.stringify(parsed.data);
       }
+      const startedUnder = generation;
       const result = await run(entry, spec, bodyText, false);
-      if (spec.ends === true) endSession('SIGNED_OUT', false);
+      // A release that settles under another session ends nothing of it.
+      if (spec.ends === true && generation === startedUnder) endSession('SIGNED_OUT', false);
       return result;
     }) as ApiClient['request'],
     deadline: () => deadline,

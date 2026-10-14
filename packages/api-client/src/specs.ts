@@ -31,6 +31,8 @@ interface Spec {
   response: Schema<unknown> | null;
   /** The response is a session view: it replaces the token and sets the deadline. */
   session?: true;
+  /** A sign-in: judged obsolete only by another session installed since it was sent. */
+  signIn?: true;
   /** The route ends the session whatever the server answers. */
   ends?: true;
 }
@@ -41,7 +43,12 @@ interface Spec {
  */
 export const SPECS = {
   '/api/health': { response: HealthBody },
-  '/api/pos/auth/login': { body: PosLoginRequest, response: SessionView, session: true },
+  '/api/pos/auth/login': {
+    body: PosLoginRequest,
+    response: SessionView,
+    session: true,
+    signIn: true,
+  },
   '/api/pos/auth/me': { response: SessionView, session: true },
   '/api/pos/auth/activity': { response: null },
   '/api/pos/auth/release': { response: null, ends: true },
@@ -49,6 +56,7 @@ export const SPECS = {
     body: BackOfficeLoginRequest,
     response: BackOfficeSessionView,
     session: true,
+    signIn: true,
   },
   '/api/back-office/auth/me': { response: BackOfficeSessionView, session: true },
   '/api/back-office/auth/activity': { response: null },
@@ -64,10 +72,13 @@ type Specs = typeof SPECS;
 
 type Infer<S> = S extends Schema<infer T> ? T : never;
 
+/** The anti-CSRF token never leaves the core: a session view in a result lacks it. */
+type WithoutToken<T> = T extends { csrfToken: string } ? Omit<T, 'csrfToken'> : T;
+
 /** The value a 2xx from this route carries: `void` for a route with no body. */
 export type ValueOf<P extends RoutePath> = Specs[P]['response'] extends null
   ? void
-  : Infer<Specs[P]['response']>;
+  : WithoutToken<Infer<Specs[P]['response']>>;
 
 /** The body a call to this route must carry, or `undefined` when it has none. */
 export type BodyOf<P extends RoutePath> = Specs[P] extends { body: infer B } ? Infer<B> : undefined;
