@@ -37,9 +37,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-12). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1014`**, committed and pushed for a PR (owner, 2026-10-15):
-  STATE, DECISIONS, journals 2026-10-14 and 2026-10-15. **This branch's STATE is the current one** until it merges;
-  the next lead work goes on a new `agent/lead-<date>` branch from `development` after the merge.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1015`** (lead-1014 merged as PR #93), not pushed: `f6883a6`
+  untracks `.claude/settings.local.json` and ignores it (owner, 2026-10-15). **After it merges,** the main checkout's
+  modified copy blocks the fast-forward: copy it aside, `git checkout` it, fast-forward, copy it back.
 - **Task branches:** none open.
 - Only the owner merges; the lead commits when asked, pushes when told. Merged branches still exist (cleanup later).
 
