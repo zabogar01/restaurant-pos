@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011c2, DESIGN-015]
 owns: [apps/back-office/**, packages/api-client/**, package.json, package-lock.json]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-011d1 — The back office signs in
@@ -782,7 +782,7 @@ can renew the same session). So a `me` read sent before an idle and delivered af
 person's view, and the core does not judge it obsolete. Without `if (revision !== sentUnder) return;`
 (`realSession.ts:241`), the store applies it: today that turns BO-01 *resting* into *Session ended*, and in 011d2,
 with the idle person kept for M-6, it would be a read that re-arms a session the screen has locked behind the
-password. **Ruling for round 2 (not to be acted on before the review):** add ruling 8's **sequence (c)**: signed in as
+password. **Ruling for round 2 (now in force; see Round 2 below):** add ruling 8's **sequence (c)**: signed in as
 A, a visibility `me` is held; a `pointerdown` sends `activity`, answered `SESSION_IDLE` (BO-01 resting, ruling 3);
 then `me`'s A view is delivered. Expected: BO-01 resting with no notice, the frame absent, `data-session` still
 `signed-out`, and no `activity` on a later input. Red proof 6 is then: remove line 241's check; sequence (c) fails.
@@ -792,6 +792,46 @@ Reviewer: judge this ruling as well as the build. Look hardest at the core chang
 back-office-only exception to "an ending route ends the session"), at whether any stale or obsolete answer can
 sign this tab in or move it off BO-01 wrongly, and at the password's B-12 path. Reviewers' sandboxes cannot run
 single server test files; the builder's runs are the evidence there.
+
+## Round 2 — the review's three findings and sequence (c) (lead rulings, 2026-10-15)
+
+The review is `.agent/reviews/PHASE0-011d1-review.md` (Codex; one high, two medium, each reproduced against the
+rendered store). All three are accepted; the lead checked each against `realSession.ts`. The reviewer also confirmed
+sequence (c): with line 241's check removed, the held read turned *resting* into *Session ended*. Addressed to the
+builder. **This is the first of two fix rounds;** anything you cannot settle from these rulings and the documents,
+write as `BLOCKED: <question>` rather than choosing.
+
+1. **F1 (high): a confirmed logout must leave BO-01 usable.** Today the core's `session-ended` `SIGNED_OUT` reaches
+   `onCoreEvent` while `cookieChanging` is still true, so the signed-out snapshot is published with `busy: true`, and
+   the logout's own continuation then returns on the changed revision without publishing again (`realSession.ts:176`,
+   `:409-412`). Whenever a cookie-changing request settles, clear the flag **and publish it into the current
+   snapshot, whatever the phase now is**, keeping the reason, the notice and the working-area decision that the
+   event made. Entry stays inert only while a request is actually in flight. Tests, red first on `3272469`: (a) a
+   rendered Log out answered 204, then the next manager types a username and password and presses Sign in: the
+   fields are enabled, the button reads "Sign in", and exactly one sign-in request is sent; (b) a session-ending
+   answer (`UNAUTHENTICATED` on a read) arriving while a logout is pending: BO-01 per that answer's row, and once the
+   logout settles, the form usable as in (a). Check the sign-in path for the same pattern and say in the Handoff
+   whether it has it.
+2. **F2 (medium): `FORBIDDEN` removes retained work from BO-01 too.** `onCoreEvent` drops every `session-ended`
+   unless the phase is `signed-in` (`:285`). A `FORBIDDEN` the core announces while BO-01 shows retained work (after
+   the interim idle of ruling 3, or after `UNAUTHENTICATED`) must still go to *Access refused* and destroy the working
+   area (rulings 4 and 6; DESIGN-015's *Access refused* row). **Only `FORBIDDEN` acts from BO-01:** any other end
+   announced while BO-01 is already showing changes neither the notice nor the retained work (the area stays for the
+   same manager, ruling 4). Keep the revision guard; it is not the fix. Test, red first: the reviewer's interleaving
+   (A signed in, the child typed into; a visibility `me` held; `activity` answered `SESSION_IDLE`; the held `me`
+   answered `FORBIDDEN`): the child is gone, BO-01 shows *Access refused*, and a later sign-in as A gets a fresh child.
+3. **F3 (medium): every refusal of a logout that does not end the session is a logout failure.** On logout, only
+   `SESSION_IDLE`, `UNAUTHENTICATED` and `FORBIDDEN` are ends (and the core's events already carry them); every other
+   refused code, `INVALID_CREDENTIALS` and `THROTTLED` included, settles as DESIGN-015's *Logout failed* with the
+   general-failure title and body, "Sign-out has not been confirmed." and Try again, as the core's `confirmsLogout`
+   already treats them. Do not reuse the sign-in meanings there. Tests, red first: a logout answered
+   `INVALID_CREDENTIALS`, and one answered `THROTTLED` with a valid duration: the frame stays, the notice and Try
+   again are shown, Log out is not stuck in flight, and Try again sends logout with the token.
+4. **Sequence (c), from the lead check above:** add it as a test, and make red proof 6 against it (remove line 241's
+   check; (c) fails; revert). Correct the Handoff's finding on red proof 6.
+5. Round 1 and its rulings stand where not changed here. Append a *Round 2* section to the Handoff (what changed,
+   the tests, the red runs, verify counts against the baseline); do not rewrite round 1's text. Commit after `npm run
+   verify` is green (path-scoped; never the review report, which the lead commits), and end with DONE or BLOCKED.
 
 ## Handoff
 
