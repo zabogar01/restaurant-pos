@@ -315,3 +315,127 @@ describe('the deadline read', () => {
     expect(childInput(host)).not.toBeNull();
   });
 });
+
+describe('round 2. F1: a confirmed logout leaves BO-01 usable', () => {
+  it('(a) Log out answered 204, then the next manager signs in: fields enabled, "Sign in", one request', async () => {
+    const host = await open();
+    h.reply(LOGOUT, noContent);
+    act(() => button(host, 'Log out').click());
+    await h.settle();
+    expect(sessionState(host)).toBe('signed-out');
+    expect(field(host, 'Username').disabled).toBe(false);
+    expect(field(host, 'Password').disabled).toBe(false);
+    expect(button(host, 'Sign in').getAttribute('aria-disabled')).toBeNull();
+
+    await signInWith(host, ok(OTHER), 'r.ayu');
+    expect(h.count(LOGIN)).toBe(1);
+    expect(sessionState(host)).toBe('signed-in');
+  });
+
+  it('(b) an ending answer arriving while a logout is pending: BO-01 per its row, usable once the logout settles', async () => {
+    const host = await open();
+    const held = h.hold(LOGOUT);
+    act(() => button(host, 'Log out').click());
+    await h.settle();
+    h.reply(ME, refusal('UNAUTHENTICATED'));
+    becomeVisible();
+    await h.settle();
+    expect(sessionState(host)).toBe('signed-out');
+    expect(text(noticeOf(host))).toBe('Your session has endedSign in again to continue.');
+
+    held.deliver(noContent);
+    await h.settle();
+    expect(field(host, 'Username').disabled).toBe(false);
+    expect(button(host, 'Sign in').getAttribute('aria-disabled')).toBeNull();
+    expect(text(noticeOf(host))).toBe('Your session has endedSign in again to continue.');
+    await signInWith(host, ok(VIEW));
+    expect(h.count(LOGIN)).toBe(1);
+    expect(sessionState(host)).toBe('signed-in');
+  });
+});
+
+describe('round 2. F2: FORBIDDEN acts from BO-01', () => {
+  it('a FORBIDDEN answered after an interim idle removes the retained work and shows Access refused', async () => {
+    const host = await open();
+    type(childInput(host)!, 'half-typed note');
+    const read = h.hold(ME);
+    becomeVisible();
+    await h.settle();
+    h.reply(ACTIVITY, refusal('SESSION_IDLE'));
+    press();
+    await h.settle();
+    expect(sessionState(host)).toBe('signed-out');
+    expect(childInput(host)).not.toBeNull();
+
+    read.deliver(refusal('FORBIDDEN', undefined, 403));
+    await h.settle();
+    expect(childInput(host)).toBeNull();
+    expect(text(noticeOf(host))).toBe(
+      'Manager access requiredThis account cannot use the back office. Sign in with a manager account.'
+    );
+    await signInWith(host, ok(VIEW));
+    expect(childInput(host)!.value).toBe('');
+  });
+
+  it('any other end announced while BO-01 shows changes neither the notice nor the retained work', async () => {
+    const host = await open();
+    type(childInput(host)!, 'half-typed note');
+    const read = h.hold(ME);
+    becomeVisible();
+    await h.settle();
+    h.reply(ACTIVITY, refusal('SESSION_IDLE'));
+    press();
+    await h.settle();
+    read.deliver(refusal('UNAUTHENTICATED'));
+    await h.settle();
+    expect(noticeOf(host)).toBeNull();
+    expect(childInput(host)!.value).toBe('half-typed note');
+  });
+});
+
+describe('round 2. F3: a logout refused with a code that does not end the session is a logout failure', () => {
+  it.each([
+    ['INVALID_CREDENTIALS', refusal('INVALID_CREDENTIALS', undefined, 401)],
+    ['THROTTLED', refusal('THROTTLED', { retryAfterSeconds: 30 }, 429)],
+  ])('%s: the frame stays with the notice and Try again, Log out is not stuck, Try again sends the token', async (_n, answer) => {
+    const host = await open();
+    h.reply(LOGOUT, answer, noContent);
+    act(() => button(host, 'Log out').click());
+    await h.settle();
+    expect(sessionState(host)).toBe('signed-in');
+    expect(text(pane(host)!.firstElementChild)).toBe(
+      'Something went wrongTry again. If the problem continues, ask a manager for help.Sign-out has not been confirmed.Try again'
+    );
+    expect(button(host, 'Log out').getAttribute('aria-disabled')).toBeNull();
+    expect(button(host, 'Try again').getAttribute('aria-disabled')).toBeNull();
+
+    act(() => button(host, 'Try again').click());
+    await h.settle();
+    expect(h.keyed(LOGOUT).map((c) => c.headers[CSRF_HEADER])).toEqual(['tok-1', 'tok-1']);
+    expect(sessionState(host)).toBe('signed-out');
+  });
+});
+
+describe('ruling 8, sequence (c)', () => {
+  it('a visibility me is held, activity is answered SESSION_IDLE, then me’s A view arrives: BO-01 resting, no frame, no activity', async () => {
+    const host = await open();
+    const read = h.hold(ME);
+    becomeVisible();
+    await h.settle();
+    h.reply(ACTIVITY, refusal('SESSION_IDLE'));
+    press();
+    await h.settle();
+    expect(sessionState(host)).toBe('signed-out');
+    expect(h.count(ACTIVITY)).toBe(1);
+
+    read.deliver(ok(VIEW));
+    await h.settle();
+    expect(sessionState(host)).toBe('signed-out');
+    expect(noticeOf(host)).toBeNull();
+    expect(frame(host)).toBeNull();
+    await h.advance(120_000);
+    press();
+    await h.settle();
+    expect(h.count(ACTIVITY)).toBe(1);
+  });
+});

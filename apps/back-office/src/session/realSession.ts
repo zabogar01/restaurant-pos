@@ -202,6 +202,15 @@ export function createRealSession(deps: Deps = {}): SessionStore {
     refresh();
   };
 
+  // A cookie-changing request has settled: it is no longer in flight, whatever phase
+  // the screen is in now. An end the core announced meanwhile published its snapshot
+  // while the flag was still set, so the flag is published into the current snapshot
+  // here, keeping its reason, notice and working-area decision.
+  const settled = (): void => {
+    cookieChanging = false;
+    if (snapshot.phase === 'signed-out' && snapshot.busy) commit({ ...snapshot, busy: false });
+  };
+
   const personOf = (view: { staffUserId: string; name: string; username: string }): Person => ({
     staffUserId: view.staffUserId,
     name: view.name,
@@ -282,6 +291,12 @@ export function createRealSession(deps: Deps = {}): SessionStore {
         if (snapshot.phase === 'signed-in') refresh();
         return;
       case 'session-ended':
+        // From BO-01 only FORBIDDEN acts: it removes the retained work (rulings 4 and
+        // 6). Any other end changes neither the notice nor the work.
+        if (snapshot.phase === 'signed-out' && event.reason === 'FORBIDDEN') {
+          toSignedOut('refused', true);
+          return;
+        }
         if (snapshot.phase !== 'signed-in') return;
         switch (event.reason) {
           case 'SESSION_IDLE':
@@ -358,7 +373,7 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       void (async () => {
         try {
           const result = await api['/api/back-office/auth/login']({ username, password });
-          cookieChanging = false;
+          settled();
           switch (result.kind) {
             case 'ok':
               toSignedIn(personOf(result.value));
@@ -391,7 +406,7 @@ export function createRealSession(deps: Deps = {}): SessionStore {
               return;
           }
         } catch {
-          cookieChanging = false;
+          settled();
           setAttempt({ kind: 'failed' });
         }
       })();
@@ -406,7 +421,7 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       };
       void api['/api/back-office/auth/logout']()
         .then((result) => {
-          cookieChanging = false;
+          settled();
           // A change of phase meanwhile (an end the core announced, including the
           // confirmed logout itself) has already put the screen where its row says.
           if (revision !== sentUnder || snapshot.phase !== 'signed-in') return;
@@ -415,9 +430,15 @@ export function createRealSession(deps: Deps = {}): SessionStore {
               toSignedOut('resting', true);
               return;
             case 'refused': {
-              const meaning = meaningOf(result.body, 'signed-in');
-              if (meaning.kind === 'general-failure') settleFailure('failed');
-              else applyEnd(meaning);
+              // Only these three are ends of a logout; every other refusal says nothing
+              // about the session, whatever it means at a sign-in (DESIGN-015, Logout failed).
+              const { code } = result.body.error;
+              const ends =
+                code === ErrorCode.SESSION_IDLE ||
+                code === ErrorCode.UNAUTHENTICATED ||
+                code === ErrorCode.FORBIDDEN;
+              if (ends) applyEnd(meaningOf(result.body, 'signed-in'));
+              else settleFailure('failed');
               return;
             }
             case 'unavailable':
@@ -433,7 +454,7 @@ export function createRealSession(deps: Deps = {}): SessionStore {
           }
         })
         .catch(() => {
-          cookieChanging = false;
+          settled();
           if (revision === sentUnder) settleFailure('failed');
         });
     },

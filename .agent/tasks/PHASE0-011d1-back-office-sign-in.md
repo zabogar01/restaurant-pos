@@ -1033,4 +1033,60 @@ Each new file was green three times in a row (the whole set run three times: 11 
 Files 89 passed (89), Tests 3645 passed (3645), duration 69 s. Baseline `development` at `3a4a252`: 78 files, 3494
 tests.
 
+### Round 2
+
+**Result: all three findings fixed and sequence (c) added; `npm run verify` green: 89 test files, 3652 tests**
+(round 1: 3645; +7 tests, all in `apps/back-office/test/session-lifecycle.test.tsx`; baseline 78 files, 3494 tests).
+No existing test changed. The only source file touched is `apps/back-office/src/session/realSession.ts`.
+
+**Correction to round 1's finding on red proof 6.** Round 1 said the revision guard was redundant. It was not: a
+back-office `SESSION_IDLE` keeps the token and does not advance the core's generation, so a `me` sent before an idle
+and delivered after it is not obsolete to the core, and only the store's `revision` check keeps it from being
+applied. Red proof 6 is now made against sequence (c), below. Round 1's text is left as written.
+
+**What changed**
+
+- **F1 (a confirmed logout left BO-01 inert).** The core's `SIGNED_OUT` event published BO-01 while `cookieChanging`
+  was still set, and the logout's continuation then returned on the changed revision without republishing, so the
+  form stayed `busy`. A `settled()` helper now clears the flag and, if the screen is signed out and `busy`, commits
+  the current snapshot with `busy: false`, keeping its reason, notice, waits and `held`. Both the logout's `then`
+  and `catch` call it before any revision check; so does the sign-in's response and its catch. **The sign-in path
+  had the same latent pattern**: before F2 nothing could publish a signed-out snapshot while a sign-in was in
+  flight (events were ignored off `signed-in`), but F2 now lets `FORBIDDEN` do so, so it uses `settled()` as well.
+- **F2 (`FORBIDDEN` from BO-01).** `onCoreEvent` now acts on `session-ended` `FORBIDDEN` while signed out: *Access
+  refused*, working area destroyed. Every other end announced while BO-01 shows is still ignored, so neither the
+  notice nor the retained work changes. The revision guard in `readSession` is unchanged.
+- **F3 (logout refusals).** On a logout, only `SESSION_IDLE`, `UNAUTHENTICATED` and `FORBIDDEN` are ends and go
+  through `applyEnd`; any other refused code settles as a *Logout failed* (`failed`), so `INVALID_CREDENTIALS` and
+  `THROTTLED` no longer leave Log out stuck in flight. The sign-in meanings are not reused there.
+
+**Tests** (`session-lifecycle.test.tsx`; each red before the fix, five of the seven):
+
+- "round 2. F1 (a)": Log out answered 204, the next manager types and presses Sign in: fields enabled, button
+  "Sign in", exactly one `login` request. Red before the fix.
+- "round 2. F1 (b)": a logout held, a visibility `me` answers `UNAUTHENTICATED` (BO-01 *Session ended*), the logout
+  then settles: form usable, notice unchanged, one sign-in sent. Red before the fix.
+- "round 2. F2": the reviewer's interleaving (child typed into; visibility `me` held; `activity` answered
+  `SESSION_IDLE`; held `me` answered `FORBIDDEN`): child gone, *Access refused*, a later sign-in as A gets a fresh
+  child. Red before the fix. And its counterpart: the same with `UNAUTHENTICATED` leaves no notice and keeps the
+  typed value (green before and after; it pins "only FORBIDDEN acts").
+- "round 2. F3", for `INVALID_CREDENTIALS` and for `THROTTLED` with a valid duration: the frame stays, the notice
+  and Try again show, Log out and Try again are not `aria-disabled`, Try again sends the token and a 204 then
+  gives BO-01. Both red before the fix.
+- "ruling 8, sequence (c)": visibility `me` held, `pointerdown` sends `activity` answered `SESSION_IDLE`, then
+  `me`'s A view is delivered: BO-01 resting, no notice, frame absent, `data-session` `signed-out`, no further
+  `activity` after two minutes and an input. Green with the guard.
+
+**Red proof 6, redone.** I removed `if (revision !== sentUnder) return;` from `readSession` (it was line 241 in
+round 1). Run: `session-lifecycle.test.tsx` 2 failed of 27: sequence (c) ("expected <section …> to be null": the
+read turned BO-01 *resting* into *Session ended*) and the F2 counterpart "any other end announced while BO-01
+shows changes neither the notice nor the retained work", same assertion. Reverted; file restored from a copy and the
+full suite is green.
+
+**Not changed, for the lead:** the interim tests round 1 named for 011d2 now also include the F2 pair
+(they describe BO-01 retaining work after an idle, which M-6 replaces).
+
+**Verify:** `npm run verify`: typecheck clean for all six projects; Test Files 89 passed (89), Tests 3652 passed
+(3652). I made no browser check (none available).
+
 DONE
