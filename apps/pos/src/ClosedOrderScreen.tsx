@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ActorChip } from './ActorChip.js';
 import { cashContribution } from './closedOrders.js';
 import {
   DETAIL_COPY as COPY,
@@ -18,7 +19,6 @@ import {
   type ReprintResult,
   type ScreenState,
 } from './closedOrderDetail.js';
-import { FLOOR_COPY } from './floorFixtures.js';
 import { formatAmount } from './money.js';
 import { followClientSide } from './navigation.js';
 import { modifierText } from './OrderPanel.js';
@@ -158,8 +158,7 @@ export function ClosedOrderScreen({ search, book }: { search: string; book: Orde
           <h1>{detail ? detail.name : COPY.unavailableTitle}</h1>
           {detail && <span className="closed-tag">{detail.refund ? COPY.refundedTag : COPY.closedTag}</span>}
           <div className="floor-actor">
-            <span>{FLOOR_COPY.actor}</span>
-            <span className="floor-idle">{FLOOR_COPY.idle}</span>
+            <ActorChip idleClassName="floor-idle" release />
           </div>
         </header>
         {detail ? (

@@ -128,8 +128,21 @@ describe('criterion 1: the eleven floor states, as the artifact draws them', () 
     for (const copy of want.extras) expect(body).toContain(copy);
     // Present in every state: the two doors out of the toolbar.
     expect([...host.querySelectorAll('.floor-tools a')].map(text)).toEqual(['Closed orders', 'New quick sale']);
-    // Not drawn: Release, which is POS-01's (the omission is named in the handoff).
-    expect(body).not.toContain('Release');
+    // Release is in the actor group (FR-A; lead ruling 2026-10-14 on PHASE0-011c2), a button.
+    const release = [...host.querySelectorAll('.floor-actor button')].filter((b) => text(b) === 'Release');
+    expect(release).toHaveLength(1);
+    expect(release[0]!.getAttribute('type')).toBe('button');
+  });
+
+  it('pressing Release leaves for POS-01', () => {
+    load('/pos/floor');
+    const release = [...host.querySelectorAll<HTMLButtonElement>('.floor-actor button')].find((b) => text(b) === 'Release')!;
+    act(() => release.click());
+    expect(host.querySelector('[data-lock-state]')!.getAttribute('data-lock-state')).toBe('resting');
+    // The module's fixture session is shared by this file: sign back in.
+    for (const d of '123456') act(() => [...host.querySelectorAll<HTMLButtonElement>('button.key')].find((b) => b.textContent === d)!.click());
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Continue"]')!.click());
+    expect(host.querySelector('.floor-actor')).not.toBeNull();
   });
 
   it('unknown and absent states resolve to default', () => {

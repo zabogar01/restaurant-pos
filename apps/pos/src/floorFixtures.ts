@@ -98,8 +98,6 @@ export function floorStateFrom(search: string): FloorState {
 
 export const FLOOR_COPY = {
   title: 'Floor',
-  actor: 'Ana R. · Cashier',
-  idle: '90s',
   dayOpen: 'Business day open · 25 Sep',
   // Lead ruling of 2026-09-30: after the day closed, the header names the day that is open now.
   dayClosed: 'Business day open · 26 Sep',

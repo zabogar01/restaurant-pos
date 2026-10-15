@@ -255,6 +255,18 @@ button {
   margin-bottom: var(--frost-space-1);
 }
 
+/* POS-01's "Try again" (DESIGN-015). A plain control inside the notice; no
+ * reviewed drawing exists for it yet. PROVISIONAL, like the Verifying block. */
+.notice__retry {
+  margin-top: var(--frost-space-2);
+  padding: var(--frost-space-2) var(--frost-space-4);
+  border: var(--frost-control-stroke);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-surface);
+  font: inherit;
+  color: inherit;
+}
+
 /* ---- Verifying ----
  * Inherited, not reviewed: docs/DESIGN.md Open item 8 says the loading label
  * and skeleton were never restyled for Frost. Colours and sizes map onto the

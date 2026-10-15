@@ -144,10 +144,11 @@ describe('criterion 1: every state draws what the artifact draws', () => {
       const screen = host.querySelector('.closed')!;
       expect(screen.getAttribute('data-closed-state')).toBe(id);
 
-      // The header: ← Floor, the h1, the tag, the actor and the idle figure. No Release.
-      expect(text(host.querySelector('.closed-head')!)).toBe('← FloorClosed ordersDAY OPENAna R. · Cashier90s');
-      expect(host.querySelector('a[href="/pos/lock"], [data-action="release"]')).toBeNull();
-      expect(text(host)).not.toContain('Release');
+      // The header: ← Floor, the h1, the tag, the actor, the idle figure, and Release (FR-A;
+      // lead ruling 2026-10-14 on PHASE0-011c2).
+      expect(text(host.querySelector('.closed-head')!)).toBe('← FloorClosed ordersDAY OPENAna R. · Cashier90sRelease');
+      const release = [...host.querySelectorAll('.floor-actor button')].filter((b) => text(b) === 'Release');
+      expect(release).toHaveLength(1);
 
       // The day line, or the amber banner instead of it.
       if (want.banner) {
