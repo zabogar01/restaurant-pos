@@ -28,3 +28,7 @@ test-results/
 # Agent kit: per-run dispatcher state and the local builder preset (KIT-004)
 .agent/runs/
 .agent/profile
+
+# Claude Code's per-machine permission grants: each person's own "always allow"
+# answers, not project policy. Shared settings belong in .claude/settings.json.
+.claude/settings.local.json
