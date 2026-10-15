@@ -833,6 +833,12 @@ write as `BLOCKED: <question>` rather than choosing.
    the tests, the red runs, verify counts against the baseline); do not rewrite round 1's text. Commit after `npm run
    verify` is green (path-scoped; never the review report, which the lead commits), and end with DONE or BLOCKED.
 
+## Acceptance criterion 5, by hand (owner, 2026-10-15)
+
+After the clean re-review, the owner built and served this branch from its worktree (`npm run build:clients`, `npm
+run dev -w apps/server`), signed in at `https://localhost:8443/back-office/` with the manager created on 2026-10-15,
+and logged out: "signed in and out fine". The owner then said to push and open the PR.
+
 ## Handoff
 
 **Result: built and verified, with one finding the lead must rule on (red proof 6, below).** `npm run verify`
