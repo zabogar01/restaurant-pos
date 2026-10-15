@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011c2, DESIGN-015]
 owns: [apps/back-office/**, packages/api-client/**, package.json, package-lock.json]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-011d1 — The back office signs in
@@ -766,6 +766,32 @@ its own package's `src`, and none enumerates `apps/`. New back-office test files
 - Any server change. `docs/` of any kind. `apps/pos` (beyond reading it). Slice B's BO-01 and BO-02 design.
 - Any change to the POS release or to any existing core behaviour other than ruling 5's.
 - A warning before the idle lock, and any countdown at the back office (none is designed).
+
+## Lead check before review (2026-10-15)
+
+Addressed to the reviewer, and to the builder for round 2.
+
+The lead's verify in this worktree is green: 89 test files, 3645 tests, the same counts as the Handoff. Every
+changed path is inside `owns:`, and no existing test file changed. The root `package.json` diff is the two script
+lines only, and the core diff is the back-office `confirmsLogout` branch only.
+
+**On red proof 6 (the Handoff's finding): the revision guard is not redundant, and its red proof is owed.** The
+builder is right that sequence (b) is already made `session-gone` by the core. But a back-office `SESSION_IDLE`
+does **not** advance the core's generation (`client.ts`, `endSession` with `keepToken`: the token is kept so that M-6
+can renew the same session). So a `me` read sent before an idle and delivered after it settles `ok` with the held
+person's view, and the core does not judge it obsolete. Without `if (revision !== sentUnder) return;`
+(`realSession.ts:241`), the store applies it: today that turns BO-01 *resting* into *Session ended*, and in 011d2,
+with the idle person kept for M-6, it would be a read that re-arms a session the screen has locked behind the
+password. **Ruling for round 2 (not to be acted on before the review):** add ruling 8's **sequence (c)**: signed in as
+A, a visibility `me` is held; a `pointerdown` sends `activity`, answered `SESSION_IDLE` (BO-01 resting, ruling 3);
+then `me`'s A view is delivered. Expected: BO-01 resting with no notice, the frame absent, `data-session` still
+`signed-out`, and no `activity` on a later input. Red proof 6 is then: remove line 241's check; sequence (c) fails.
+Show it, revert it, and correct the Handoff's finding.
+
+Reviewer: judge this ruling as well as the build. Look hardest at the core change (`confirmsLogout`, a
+back-office-only exception to "an ending route ends the session"), at whether any stale or obsolete answer can
+sign this tab in or move it off BO-01 wrongly, and at the password's B-12 path. Reviewers' sandboxes cannot run
+single server test files; the builder's runs are the evidence there.
 
 ## Handoff
 
