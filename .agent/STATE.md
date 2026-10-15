@@ -9,16 +9,16 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-14 (wrap-up): `development` at `2dfc26d` (011a, 011b merged). **PHASE0-011c1** built, round 2 green, its
-Codex re-review waits for the reset (14:39). **DESIGN-015 complete**, PR #89. **011c2** written, not dispatched.
-Narrative: [journal/2026-10-14.md](journal/2026-10-14.md) (and 2026-10-13).
+2026-10-15: `development` at `ff34d5c` (PR #92, **011c2 merged**), verify green; its worktree and run dir removed.
+**Next: write PHASE0-011d** (the back office signs in). Narrative: [journal/2026-10-15.md](journal/2026-10-15.md) and [2026-10-14](journal/2026-10-14.md).
 
 ## Phase and gates
 
 - **Phase 0**, started 2026-09-14. Done: tasks 1 to 10 (with 003a-c, 006b, 007b, 008a/b, 009a/b, 010a/b),
   **011a** (the server serves both bundles; errors outside `/api` are plain text) and **011b** (`SessionView`
   carries `idleSeconds`/`idleRemainingSeconds`; the route table and `CSRF_HEADER` in `@pos/contracts`).
-  Left: **011c1**, **011c2**, **011d** (plan Task 11, split by ARCH-014 and the lead), and Task 12.
+  **DESIGN-015** (sign-in copy) and **011c1** (`@pos/api-client`, PR #91; one P2 left open by the owner, DECISIONS).
+  **011c2** (the POS signs in, PR #92). Left: **011d** (plan Task 11, split by ARCH-014 and the lead), and Task 12.
 - **Architecture:** nine accepted ADRs (001-007, 009, 010); ADR-008 reserved (deferred). **Commissioned, not
   written** (owner 2026-10-13): one ADR on the browser clients and what is served to them, taking in
   ARCH-012's sessions-over-HTTP ADR; the architect also adds the browser-saved-password item to §3.2.
@@ -26,50 +26,39 @@ Narrative: [journal/2026-10-14.md](journal/2026-10-14.md) (and 2026-10-13).
 - **Frontend:** POS-01 to POS-07 against fixtures. **Back office:** none built; Frost slices A, C, I and DESIGN-015 copy.
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
 - **Browser check passed** (owner, 2026-10-13, Chrome and Safari; journal 2026-10-13): tell Task 12's consult a person checked it.
-- **Last verify by the lead:** `development` `2dfc26d`, 70 files / 3365 tests, 2026-10-13, after `npm ci`. Server
+- **Last verify by the lead:** `development` `ff34d5c`, 78 files / 3494 tests, 2026-10-15, after `npm ci`. Server
   tests need `npm run db:up` and `openssl` on `PATH`. Dev database `pos` holds 0001-0008. Certificate made.
 
 ## Integration branch
 
-- **`development`** at `2dfc26d` on GitHub; the main checkout matches it (an editor auto-pulls it; the lead's own
-  `git merge --ff-only` was refused by the permission classifier on 2026-10-12, so the owner runs it if needed).
+- **`development`** at `ff34d5c` on GitHub; the main checkout matches it (the lead fast-forwarded it 2026-10-14;
+  if the permission classifier refuses `git merge --ff-only` again, the owner runs it).
   `main` and `development` are protected: PR required, 0 approvals, admins too.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-12). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1012d`**, committed and pushed for a PR (owner,
-  2026-10-14): the ARCH-014 report, the 2026-10-13 and 2026-10-14 rulings, journals. **Untracked and to stay so
-  until dispatch:** `.agent/tasks/PHASE0-011c2-pos-sign-in.md`. **This branch's STATE is the current one** until it merges.
-- **Task branches:**
-  - `agent/design-015` at `eba71ee`, **PR #89**, worktree `../restaurant-pos-wt/DESIGN-015`, status `complete`.
-    Run dir `.agent/runs/DESIGN-015/` (meta.json `cli: opencode`).
-  - `agent/phase0-011c1` at `25abfdf`, worktree `../restaurant-pos-wt/PHASE0-011c1`, status `active`, cycles 1.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1014`**, committed and pushed for a PR (owner, 2026-10-15):
+  STATE, DECISIONS, journals 2026-10-14 and 2026-10-15. **This branch's STATE is the current one** until it merges;
+  the next lead work goes on a new `agent/lead-<date>` branch from `development` after the merge.
+- **Task branches:** none open.
 - Only the owner merges; the lead commits when asked, pushes when told. Merged branches still exist (cleanup later).
 
 ## Running tasks and agents
 
 - **Live agents: the lead only.** Not the lead's: pane `w2:pE`, worktree `.claude/worktrees/keen-chebyshev-ccf255`.
   A fresh session must rename its pane `lead` first (`/lead` does).
-- **PHASE0-011c1, the transport core `@pos/api-client`** (`touches: identity, boundaries`). Round 1 `322000d`; Codex
-  review found two P2 (stale responses changed the current session; `csrfToken` returned in results); round 2
-  `25abfdf` adds session generations and a token-free public session value; lead verify 73 files / 3413 tests.
-  **Next:** after Codex resets (14:39, 2026-10-14; owner chose to wait), set `status: review` in the worktree's
-  task file, commit there, then `dispatch.sh PHASE0-011c1 --role reviewer --resume --message "Re-review round 2:
-  the 'Round 2' rulings above the Handoff and the Handoff's Round 2 section."`. One fix round is left.
-- **DESIGN-015, sign-in copy and states** (POS-01, BO-01, M-6, M-1): complete after three rounds (Codex designer15,
-  then OpenCode designer15b; Claude Opus reviewer, clean). Its Handoff's copy table is the builders' copy.
-- **PHASE0-011c2, the POS signs in** (`depends_on: PHASE0-011c1, DESIGN-015`): task file written, with ARCH-014's POS
-  sections and DESIGN-015's copy table verbatim (at `afd72ff`) and the lead's rulings (`actor-changed` shows POS-01
-  *session invalidated* and sends nothing; `session-gone` changes nothing; M-1 copy not placed). **Dispatch only
-  after 011c1 and DESIGN-015 are merged**, so their task files show `complete` in the kit for preflight; record the
-  verify baseline in its acceptance criterion 1 at dispatch.
-- **PHASE0-011d, the back office:** not written. Waits on 011c2. Must carry: DESIGN-015's BO-01/M-6 rows; ARCH-014
+- **DESIGN-015 merged** (PR #89). Its Handoff's copy table is the builders' copy for 011c2 and 011d.
+- **PHASE0-011c2 merged** (PR #92, 2026-10-15): the POS signs in for real. Codex review three findings fixed,
+  re-review clean; owner signed in by hand. Its Handoff (*For 011d and Task 12*, rounds 2-3) carries forward.
+- **PHASE0-011d, the back office:** not written; next. Must carry: DESIGN-015's BO-01/M-6 rows; ARCH-014
   question 5's back-office table and 011d sections; the owner's 2026-10-14 rulings (another manager signing in
   from M-6 destroys the idled draft; the same manager after eight hours gets it back); M-6's other-manager choice
-  sends the ordinary back-office sign-in, not re-authentication.
+  sends the ordinary back-office sign-in, not re-authentication; one sign-in, re-authentication or logout at a
+  time (owner 2026-10-14, as 011c2 ruling 12).
 - **Carry-forwards:** Handoffs of PHASE0-005 to 011b; ARCH-012, 013, 014 *The Handoffs must carry forward*.
 - **Design slices left: B, D, E, F, G, H.** B takes DESIGN-012's N1-N3 and replaces the provisional BO-01 form.
   The users screen warns that a PIN or password reset ends all that manager's sessions (ADR-009).
+- **Queue (not written):** POS-03's actor group and Release (order.html:77), left out of 011c2 by the lead.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density.
 - **Open ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -97,12 +86,13 @@ Narrative: [journal/2026-10-14.md](journal/2026-10-14.md) (and 2026-10-13).
   `herdr pane split … --env "OPENCODE_CONFIG_CONTENT=<json>"`, then `herdr agent start <name> --kind opencode --pane
   <p> -- --model openai/gpt-6-astra`; the first start may exit, retry once. Use the **widened allow list** the owner
   approved on 2026-10-14 (DECISIONS). A designer handover: note above the Handoff, commit only it, close the pane.
+- **Owner hand checks serve from the task's worktree** (`npm run build:clients`, `npm run dev -w apps/server` there);
+  the main checkout serves `development` (journal 2026-10-15). The certificate is `~/.config/restaurant-pos/tls/`.
 - `ask.sh`: Haiku, then Codex luna. Real-browser checks are the owner's. Contract edits: `ALLOW_CONTRACT=1` + DECISIONS.
 
 ## Live bugs and known defects
 
-- **Owner to see in a browser, then close:** the Burger-tile fix (FE-021 `7268943`, L257-262), and Add from POS-03
-  `eightysix` returning there by design (L353).
+- **Owner to see in a browser, then close:** the Burger-tile fix (FE-021 `7268943`, L257-262); POS-03 Add (L353).
 - **Money, not filed (ARCH-003, 9.6):** `closeOrder` (`close.ts:74–101`) accepts any drafts; only the Add gate
   (`tender.ts:39–41`) keeps a card under the balance (B-5). Unreachable today; own task, architect consult.
 - **Must not become a guarantee:** optional `OrderLine.itemId` (L1787); the in-memory refund and change walk.
@@ -115,7 +105,6 @@ Narrative: [journal/2026-10-14.md](journal/2026-10-14.md) (and 2026-10-13).
 
 Nothing here is decided. Detail is where each line points.
 
-- **Merge:** PR #89 (DESIGN-015) and the lead branch's PR.
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
   for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
@@ -130,7 +119,10 @@ Nothing here is decided. Detail is where each line points.
 - **PRD wording owed, not drafted:** report-print failure placement; FR-J3/AC-18 and FR-H3/AC-10 (DESIGN-014);
   FR-J3/AC-18 for a refused void; §9 questions 2 and 3; reactivation keeps the PIN.
 - **Kit:** builder `grep`/`python3`/`sed`? `BLOCKED ON APPROVAL` ping? dispatching hand-opened roles? reviewer CLI override?
-- **§3.2 gate, owner-accepted risks:** same-class PIN reset, username discovery, lockout, cookie jar, saved passwords.
+  `--resume --message` tells a reviewer to "Update the Handoff", against its role (011c1 re-review did).
+  A `--resume` after a transient API error (529) counts as a fix round (011c2 lost one, 2026-10-14): exempt it?
+- **§3.2 gate, owner-accepted risks:** same-class PIN reset, username discovery, lockout, cookie jar (now also the
+  two-tab sign-in race, 011c1), saved passwords. The commissioned browser-clients ADR takes the race too.
 - **FR-M3 / B-2 wording:** "half-up" below zero; the code rounds half away from zero (L2699-2701).
 - **Confirm or reject the ten `conversation only` lines** in DECISIONS.md.
 
@@ -141,7 +133,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. After 14:39: re-review 011c1 (Codex, `--resume`); on clean, `status: complete` there and ask the owner to push.
-2. Owner merges 011c1 and DESIGN-015; lead fast-forwards, verifies, merges `development` into the lead branch,
-   removes their worktrees and run dirs, then dispatches 011c2.
-3. Then write 011d. Owner, any time: the questions above.
+1. Write PHASE0-011d (explorer for tests expected to change; baseline 78 / 3494); owner reads it; dispatch.
+2. Then Task 12 (the browser harness), after its consult. Owner, any time: the questions above.
