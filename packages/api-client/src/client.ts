@@ -129,6 +129,23 @@ function publicView(view: View): Record<string, unknown> {
   return rest;
 }
 
+/**
+ * Whether the answer to a logout leaves nothing of the session to keep: the server
+ * said 2xx, or refused it with a code that ends the session anyway. A fault, or a
+ * refusal that does not end it (a CSRF refusal that survived its retry), says nothing
+ * about the server's session.
+ */
+function confirmsLogout(result: ApiResult<unknown>): boolean {
+  if (result.kind === 'failed' || result.kind === 'unavailable') return false;
+  if (result.kind !== 'refused') return true;
+  const { code } = result.body.error;
+  return (
+    code === ErrorCode.SESSION_IDLE ||
+    code === ErrorCode.UNAUTHENTICATED ||
+    code === ErrorCode.FORBIDDEN
+  );
+}
+
 interface Spec {
   body?: Schema<unknown>;
   response: Schema<unknown> | null;
@@ -394,6 +411,12 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         if (generation !== startedUnder) {
           return result.kind === 'ok' ? { kind: 'session-gone' } : result;
         }
+        // The back office's logout is confirmed or it is nothing: a manager who pressed
+        // Log out must not be shown a signed-out screen while the server's session
+        // lives on, so a fault or a refusal that does not end the session keeps the
+        // session as it was (token, actor, generation, deadline) and the same call
+        // can be made again. The POS release ends it whatever the server answers.
+        if (surface === 'BACK_OFFICE' && !confirmsLogout(result)) return result;
         endSession('SIGNED_OUT', false);
       }
       return result;
