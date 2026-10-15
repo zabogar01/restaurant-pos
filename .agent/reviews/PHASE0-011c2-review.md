@@ -1,66 +1,37 @@
-# PHASE0-011c2 review
+# PHASE0-011c2 re-review
 
 ## 1. Verdict
 
-**findings** — three findings, including one high-priority session-state defect with two reproduced paths. Reviewed `agent/phase0-011c2` at `4b26f6fea3b216ee34c8ddaa406c304100f7038d` against `development` at `69f289b8f4ea50e7e6db9cae587f504ecc8980fc`, the task specification and its later rulings, the cited contract and architecture, the upstream transport Handoff, and the reviewed POS-01 artifact.
+**clean** — zero open findings. All three findings from the first review are resolved. This re-review covers the task’s Round 2 lead rulings and Round 3 Handoff, including the fix commit `7a00a9a`, on `agent/phase0-011c2` at `3b97b8fa4daf6cedb71cf3544ba282969ed0523a`, against `development` at `69f289b8f4ea50e7e6db9cae587f504ecc8980fc`. The first review remains available in Git history.
 
 ## 2. Findings
 
-### F1 — High: a successful session read can undo invalidation or Release
-
-**Location:** `apps/pos/src/session/realSession.ts:209` (the unconditional `toSignedIn` at line 211), with the actor-change handler at line 253 and Release at line 333.
-
-Every successful `me` response enters the signed-in state, even when the store has become signed out while that read was pending or while the core processed its response. The common success handler is correct for initial recovery and same-person refresh, but hides the states in which adopting its result is forbidden.
-
-I reproduced both of these sequences against the unchanged real session implementation and transport core, using an in-memory loader, stubbed transport and a jsdom document:
-
-1. Start signed in as Cashier A. Another tab signs in as Manager B. Make this tab visible and answer its ordinary `me` with B's view. The core emits `actor-changed`; the store publishes `signed-out / invalidated`, then immediately publishes `signed-in / Manager B` when `readSession` consumes the same successful result. A subsequent pointer event sends `POST /api/pos/auth/activity` and extends B's deadline. No PIN was entered in this tab. The existing test at `apps/pos/test/session-store.test.tsx:198` covers the different CSRF-recovery path, which returns `session-gone`, so it does not exercise this failure.
-2. Start signed in as A, begin a visibility `me`, and hold its response. Press Release and leave the Release request pending. The store initially becomes `signed-out / resting`, with `busy: true`. Deliver the older `me` response naming A. The store becomes signed in again, and a subsequent pointer event sends activity while Release is still pending. The existing Release tests do not overlap Release with a session read. The core advances its release generation when the release settles, so it cannot reject this earlier-settling read on the client's behalf.
-
-**Authority:** Task *Lead rulings* 3 requires an actor change to show POS-01 invalidated and stop activity until a sign-in in this tab. ARCH-014 question 5's Release row and the task's rule 4 require POS-01 whatever Release answers; DESIGN-015's “POS-01 after Release” row requires removal of the on-screen actor even with no response. FR-A2 establishes explicit release as an end of the POS actor context. These are client defects; they do not require changing the merged core's documented interface.
-
-**Proposed fix:** Give reads a local session revision, or an equivalent validity guard, that is invalidated by Release and by core events that end or invalidate the displayed session. Apply a read's result only if it still belongs to the permitted local state. Initial lookup may recover a session, while a refresh must not restore one that has since been released or invalidated. Add regressions for both ordinary `me` actor replacement and a delayed `me` overlapping a pending Release; assert that the protected route remains absent and subsequent input sends no activity.
-
-### F2 — Medium: the lock screen calls cash change a negative outstanding balance
-
-**Location:** `apps/pos/src/PosRoutes.tsx:130`, particularly the subtraction passed to `formatAmount` at line 133.
-
-The tender-draft notice calculates outstanding as order total minus the sum of tender amounts. That works for partial and exact payment, but cash may exceed the balance. The existing `settlementPosition` function already separates zero outstanding from positive change; this new calculation bypasses it.
-
-I mounted `PosRoutes` with a real session at `/pos/settlement?state=change`, then returned `SESSION_IDLE` to activity. Before the lock, settlement showed `Balance 0`, `Change due 44.075`, an order total of `155.925`, and cash tendered of `200.000`. After the lock the actual notice was: “Payment in progress on this tabOrder · T1 — −44.075 outstanding, 1 tender drafted. Sign in to continue. Nothing has been recorded yet.” The same calculation applies to a cash draft entered through the normal settlement controls. The existing draft-retention test covers only the partial-card state.
-
-**Authority:** DESIGN-015's “Tender draft waiting” row requires the actual outstanding amount; ARCH-014 question 5 requires its figures to come from the payment store. FR-G4 distinguishes cash change from the remaining balance. This is a display error, not evidence of incorrect recorded revenue or a corrupted draft.
-
-**Proposed fix:** Derive the notice's outstanding amount from `settlementPosition(total, tenderAmounts).balance`, as settlement does. Keep the approved notice wording. Add a regression that locks with excess cash and expects zero outstanding while preserving the cash draft and its change on re-entry.
-
-### F3 — Medium: adding a POS route does not require a POS client declaration
-
-**Location:** `apps/pos/src/session/realSession.ts:90` and its direct route calls, for example line 207; `apps/pos/src/session/activity.ts:24`.
-
-The POS uses the generic `ApiClient` directly and has no exhaustive mapping of its surface's route paths to client functions. The core's `SPECS` map is exhaustive, but that only requires the transport schema to be declared. It does not require this client to wire the new route or replace its stand-in. The Handoff's claim that a new interactive route fails the POS compile until declared is therefore not established by the implementation.
-
-I checked this with the TypeScript compiler API using `apps/pos/tsconfig.json`. The unchanged program had zero diagnostics. I then overrode two file reads in memory: added an interactive `POST /api/pos/orders` entry to `packages/contracts/src/routes.ts`, and added its response specification to `packages/api-client/src/specs.ts`. With every POS file unchanged, compilation still had zero diagnostics. No file was edited for this experiment.
-
-**Authority:** ARCH-014 question 3, mechanism 3, copied into the task at lines 172–179, explicitly requires each client's API module to map every route of its surface through an exhaustive mapped type. The task's boundary section also requires the client module to expose only its own surface's entries. This is the promised integration check, beyond the core's existing route-table exhaustiveness.
-
-**Proposed fix:** Add the POS-owned, surface-restricted exhaustive route adapter and send this client's calls through it. Preserve the single core instance and input-only activity dispatch. Prove that adding a POS route and its core schema leaves a compile error in the POS adapter until its client declaration is supplied, and correct the Handoff's claim accordingly.
+None. The fixes satisfy the three accepted findings within the task’s scope. The previously disclosed live-browser verification limitation remains; this verdict does not claim a real-cookie multi-tab or visual-browser acceptance run.
 
 ## 3. What I ran and what I did not
 
-I ran `npm run verify` myself. Typechecking completed successfully; **78 test files and 3,490 tests passed**, with exit code 0. Against the task's recorded baseline of 74 files and 3,425 tests, this is four additional files and 65 additional tests. The run printed the existing Vite configuration warning about ESM syntax loaded as CommonJS. I also ran `git diff --check development...agent/phase0-011c2`, which returned no errors.
+I ran `npm run verify` during this re-review and read its completed output: typechecking succeeded, **78 test files and 3,494 tests passed**, and the command exited with code 0. This is four files and 69 tests above the task’s recorded development baseline of 74 files and 3,425 tests. The existing Vite warning about ESM configuration loaded as CommonJS was printed. `git diff --check development...agent/phase0-011c2` also completed without errors.
 
-The tree was stable around the green run: `git diff --stat` was empty before verification and after it, and both `HEAD` and `development` retained the full hashes recorded above. The worktree was initially clean. All additional reproductions operated in memory; the only file written by this review is this report.
+The tree was stable before and after that green run: `git diff --stat` was empty, and HEAD and development retained the full hashes above. After the usage-limit interruption, I checked again: the worktree was still clean and both hashes were unchanged. I therefore retained the completed verification evidence rather than reporting a new run that did not happen. Only this report was subsequently written.
 
-The verification run included the two self-building bundle tests, under production and development `NODE_ENV`, and their execution of the built entry script in jsdom. I inspected the branch diff, the real and fixture entry paths, the changed assertions, and the state/copy mappings. For F1 I observed store transitions and outgoing calls, rather than a browser-rendered race. For F2 I observed the mounted React route and rendered notice in jsdom. For F3 I observed compiler diagnostics with and without the in-memory additions. These experiments used synthetic identities and responses, not real credentials or a live authenticated server.
+I independently exercised the unchanged real session implementation and transport core through an in-memory TypeScript loader, with a jsdom document, synthetic session views and stubbed transport. A visibility read naming another actor left the store signed out and invalidated. A held visibility read overlapping Release left it signed out and resting in both completion orders: Release before the read, and the read before Release. In the latter order it remained resting while Release was pending and after it settled. Subsequent pointer events sent zero activity requests in all three probes. These were observed store transitions and outgoing calls, not real-browser cookie tests.
 
-I did not perform a live-browser HTTPS sign-in, visual screenshot review, or real-cookie multi-tab exercise. I did not rerun each new test file three times alone or repeat the builder's five claimed red-proof mutations. Those remain Handoff evidence, not independently observed review runs. The F3 compiler experiment is the only source mutation I performed, and it existed solely in the compiler host's in-memory reads.
+I also repeated the route-coverage proof using the TypeScript compiler API and the POS tsconfig. The unchanged program had zero diagnostics. Overriding file reads in memory to add an interactive `POST /api/pos/orders` route and its core response specification produced exactly the expected TS2741 diagnostic at `apps/pos/src/session/api.ts:19`: the new route was missing from `PosApi`. No source file was edited for this experiment.
+
+The full suite included the new mounted-route regressions for both session races and excess cash, as well as both self-building bundle tests. The cash regression uses the real session provider and `PosRoutes`, checks zero outstanding after locking, and compares the settlement screen before and after sign-in to establish draft retention. I inspected these paths rather than treating standalone fixture rendering as proof of production session behavior.
+
+I did not repeat the builder’s historical red runs against `90cb743`, its working-tree route mutation, or its cash-subtraction mutation. Those remain Handoff evidence. I independently re-proved the route mutation only in memory. I did not run a live HTTPS sign-in, a real-cookie multi-tab exercise, a screenshot review, or three isolated repetitions of every new test file.
 
 ## 4. Cleared
 
-The compile-time fixture switch is based on the Vite command, and the built-bundle tests pass in both environments. The real lock ignores POS-01's fixture query state. The fixture session's sign-in, input and Release send no requests. The retained business fixtures are permitted by the owner's recorded 2026-10-13 ruling.
+**F1: session reads cannot undo Release or invalidation.** At `apps/pos/src/session/realSession.ts:218`, each read captures the local revision. The checks at lines 224–225 reject obsolete results and prevent refreshes from restoring a signed-out tab. Release and displayed-session invalidation advance that revision through `toSignedOut`; successful refreshes only refresh the existing actor’s countdown. The two new “19b” regressions cover the ordinary visibility-read path that the old CSRF-recovery test missed, including removal of the protected route and suppression of further activity. This satisfies Round 2 ruling 1, original lead ruling 3, and the Release behavior specified by ARCH-014 question 5 and DESIGN-015, consistent with FR-A2. The independent completion-order probes described above also passed.
 
-Ordinary sign-in, initial unauthenticated lookup, invalid credentials, cooldown expiry, failed initial lookup and explicit retry have the specified state and copy mappings. The pad requires six digits on the real path, clears submitted digits, and disables entry during a real cooldown. The recursive source scan and PIN tests pass. Transport remains in one core instance construction module, with the bound fetch reference expressly allowed by the task's later ruling.
+**F2: excess cash shows zero outstanding.** `apps/pos/src/PosRoutes.tsx:132` now obtains the balance from `settlementPosition`, as required by Round 2 ruling 2. The shared outstanding value was checked across partial payment, exact payment and cash change: the helper keeps change separate from the nonnegative balance, consistent with FR-G4 and the DESIGN-015 tender-draft notice. Test “23b” passes with the excess-cash fixture, rejects both minus-sign forms, and confirms that re-entry preserves the draft and change. The approved notice copy is unchanged.
 
-The countdown uses the core's monotonic deadline and does not itself end the session. Activity has no body, reads no event data, and is sent only by capture-phase input listeners with a leading-edge limit. Idle and unauthenticated responses on the tested activity path remove the protected route. The order book and payment sessions remain above the route gate, and the partial tender draft survives the tested lock and sign-in cycle. The approval pad unmounts and clears its digits; the fresh URL-driven fixture prompt after sign-in is explicitly accepted by the later task ruling.
+**F3: the POS route adapter is exhaustive.** `apps/pos/src/session/api.ts:13` maps every POS path and health to a required function with route-specific arguments and results. The store and activity listener use this adapter over the single core instance. The in-memory compile failure now proves the missing-entry behavior required by Round 2 ruling 3 and ARCH-014 question 3, mechanism 3. The Handoff’s earlier claim is explicitly corrected. The adapter exposes no back-office keys; the input listener remains the only activity caller.
 
-Release is present in the floor and closed-order actor groups. The POS-03 actor-group omission and the settlement/incidents Release omissions are identified in the Handoff and covered by the task's scope rulings. The test changes that exclude header buttons are disclosed; they retain checks against a stray Release outside the actor group. No source, tests, task file or repository memory was changed by this review, and nothing was committed or pushed.
+The prior review’s cleared behavior remains covered by the passing suite: fixture isolation in ordinary and development-environment builds, initial lookup and retry, short PIN rejection, cooldown behavior, PIN handling, input-only activity, deadline reads, tender retention, and approval-pad unmounting. The changes add no new product copy, persistence, credential channel or approval state. The documented POS-03 actor-group omission remains outside this task under the lead’s explicit ruling.
+
+I changed only this review report. I did not edit the task file or Handoff, commit, or push.
+
+DONE
