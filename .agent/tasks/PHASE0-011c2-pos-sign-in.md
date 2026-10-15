@@ -606,6 +606,14 @@ from these rulings and the documents, write as `BLOCKED: <question>` rather than
    (what changed, the tests, the red runs, verify counts), commit after `npm run verify` is green
    (path-scoped), and end with DONE or BLOCKED.
 
+## Acceptance criterion 5, by hand (owner, 2026-10-15)
+
+The owner created a manager with `npm run create-manager -w apps/server`, built and served this branch from
+its worktree (`npm run build:clients`, `npm run dev -w apps/server`) and signed in at
+`https://localhost:8443/pos/` with that manager's PIN: "it looks good". An earlier attempt against the main
+checkout's server failed only because that server served `development`'s bundle, which does not contain this
+task. The owner then said to push and open the PR.
+
 ## Handoff
 
 **Result: done, after the lead's ruling of 2026-10-14 on Release (section above).** Release is drawn in
