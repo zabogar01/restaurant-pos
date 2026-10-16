@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011d1]
 owns: [apps/back-office/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-011d2 — M-6, the back-office re-authentication
@@ -710,6 +710,42 @@ dismissed while idle, or leave the frame reachable. Fourth, the builder's findin
 is no longer the only line against a stale read; judge whether the remaining lines are sound. Fifth, the untested
 `session-gone` path of a re-authentication (*What I found*). Reviewers' sandboxes cannot run single server test
 files; this task changes none.
+
+## Round 2 — the review's F1 (lead ruling, 2026-10-16)
+
+The review is `.agent/reviews/PHASE0-011d2-review.md` (Codex; one P1, reproduced against the rendered store with held
+responses). The lead traced it through `client.ts` and `realSession.ts` and accepts it. While an other-manager sign-in
+is in flight, a stale `me` that names a third manager C makes the core adopt C (the actor and the token) and emit
+`actor-changed`. The store ignores that event because `otherSignIn` is set. If the sign-in then fails (a credential
+refusal, a cooldown, a fault or a rejected fetch: the core returns those unchanged even when obsolete), M-6 stays idle
+and names A while the core holds C, and "Back to A" then sends a re-authentication with C's token. Addressed to the
+builder. **This is the first of two fix rounds.** Anything you cannot settle from this ruling and the documents, write
+as `BLOCKED: <question>` rather than choosing.
+
+1. **The rule: in idle, M-6 names the person the core holds, or M-6 is not shown.** The store already holds the core
+   (`client.staffUserId()`).
+   - When an other-manager sign-in settles with anything but `ok`, compare the core's actor with the idled person's
+     `staffUserId`. If they differ, go to BO-01 *Session ended*, with the working area kept, hidden and inert, as for
+     an unrelated `actor-changed` in idle (ruling 6). This covers `session-gone` too, which ruling 7 already sends
+     there.
+   - Before sending a re-authentication from `same`, make the same check. If they differ, send nothing and go to
+     BO-01 *Session ended* the same way.
+   - Do the same before a logout from `confirm-logout`. A discard logout under someone else's token would end their
+     session, which B-13 and the core's rule 5 forbid.
+   - Keep the deferral of ruling 7 for the sign-in's own install. A successful other-manager sign-in is unchanged.
+   This is the reviewer's proposed fix, stated as an invariant, so that it holds whatever event was missed.
+2. **Tests, red first on `104b7a7`.** Extend the existing third-person interleaving test
+   (`reauth.test.tsx:798`) with the variants where B's sign-in is answered `INVALID_CREDENTIALS` without details,
+   `THROTTLED` with a valid duration, a 500 and a rejected fetch. Each must show BO-01 *Session ended* with M-6 closed,
+   the child kept and inert, and no re-authentication or logout request after it. A later sign-in as A must show the
+   child's value, and one as C a fresh child. Add one test where the core's actor differs at the moment Continue is
+   pressed in `same`: nothing is sent, and the screen shows BO-01 *Session ended*.
+3. **Red proof:** remove the comparison after a failed other-manager sign-in, and the new variants fail. Show it and
+   revert it.
+4. Round 1 and its rulings stand where this does not change them. Append a *Round 2* section to the Handoff with what
+   changed, the tests, the red run and the verify counts against the baseline. Do not rewrite round 1's text. Commit
+   after `npm run verify` is green, with a path-scoped `git add`, and never the review report, which the lead commits.
+   End with DONE or BLOCKED.
 
 ## Handoff
 
