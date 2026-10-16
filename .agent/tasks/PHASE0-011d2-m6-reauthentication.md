@@ -827,4 +827,16 @@ jsdom 29 has no `showModal()` or `close()`, so `test/dialog-shim.ts` toggles `op
 
 **One owner question this build does not answer:** after the eight hours, BO-01 *Session ended* keeps the draft hidden and inert for the same manager (the owner's 2026-10-14 ruling). The deferred BO-01 retained-draft sentence is still unplaced, as DESIGN-015's row says.
 
+### Round 2 — F1 (builder, 2026-10-16)
+
+**What changed (`src/session/realSession.ts` only).** One helper, `coreLostIdled()`, states the lead's invariant: in idle, if `client.staffUserId()` is not the idled person's `staffUserId`, it goes to BO-01 *Session ended* with the working area kept (`toSignedOut('ended', false)`) and returns true. It is called in four places. (1) When an other-manager sign-in settles with anything but `ok` (a refusal of any kind, a cooldown, `unavailable`, `failed`, `session-gone`), before the result is interpreted. (2) In the same sign-in's `catch`. (3) At the top of `reauthenticate`, after the wait check and before the request is marked in flight, so nothing is sent. (4) At the top of `logout`, which only reaches it from idle `confirm-logout` or signed-in, so a discard logout cannot go under someone else's token. A successful other-manager sign-in, and the deferral of the sign-in's own `actor-changed`, are untouched. Round 1's text above is unchanged.
+
+**Tests (`test/reauth.test.tsx`, new describe `round 2, F1. M-6 names the person the core holds, or it is not shown`).** The existing third-person interleaving test is untouched. Four variants of it: B's sign-in answered `INVALID_CREDENTIALS` without details, `THROTTLED` with a duration, a 500, and a rejected fetch. Each expects BO-01 *Session ended*, M-6 closed, the child kept and inert, no re-authentication and no logout request, then a sign-in as A showing the child's value with one mount. A fifth test: after the same interleaving, a sign-in as C starts with a fresh child (two mounts). I ran them first against the unfixed code: all five failed (M-6 stayed up).
+
+**The requested "Continue pressed in `same` while the core's actor differs" test is not written, because I could not reach that state through any public sequence.** An `actor-changed` while idle is acted on unless a sign-in of this store is in flight, and with the fix every non-`ok` end of that sign-in lands on BO-01, and an `ok` one signs in. So the only way for M-6 to be up while the core holds someone else was the bug itself. The checks in `reauthenticate` and `logout` are therefore defence in depth, covered by no test of their own, and I have not claimed a red proof for them. If the lead wants them tested, it needs a test-only seam into the core's actor, which I did not add.
+
+**Red proof.** I removed the comparison after a failed other-manager sign-in (both the call in the result path and the one in `catch`) and ran `reauth.test.tsx`: the four variants and the C test fail (5 failed, 70 passed). Reverted; the file was restored from a copy of the fixed version.
+
+**Verify.** `npm run verify`: typecheck clean; 90 test files, 3731 tests, all passing, against the baseline of 89 files and 3652 tests (round 1 ended at 3726; this adds 5). Run again after the revert, same counts.
+
 DONE

@@ -435,6 +435,16 @@ export function createRealSession(deps: Deps = {}): SessionStore {
   const mayExtend = (): boolean =>
     snapshot.phase === 'signed-in' && !snapshot.logout.inFlight && snapshot.logout.failure === 'none';
 
+  // In idle, M-6 names the person the core holds, or it is not shown. If the core holds
+  // someone else (an `actor-changed` was missed or deliberately deferred during an
+  // other-manager sign-in), the token it would send is not the idled manager's: nothing
+  // is sent, and the screen is BO-01 Session ended with the work kept (B-13, rule 5).
+  const coreLostIdled = (): boolean => {
+    if (snapshot.phase !== 'idle' || client.staffUserId() === snapshot.person.staffUserId) return false;
+    toSignedOut('ended', false);
+    return true;
+  };
+
   // The ordinary sign-in from M-6's "different manager" form. It counts on the
   // submitted account, never on the idled one, and that is the server's doing.
   const signInFromIdle = (username: string, password: string): void => {
@@ -453,6 +463,8 @@ export function createRealSession(deps: Deps = {}): SessionStore {
         otherSignIn = false;
         settled();
         if (revision !== sentUnder || snapshot.phase !== 'idle') return;
+        // Only a success may leave the core on someone else; anything else must not leave M-6 up.
+        if (result.kind !== 'ok' && coreLostIdled()) return;
         switch (result.kind) {
           case 'ok':
             toSignedIn(personOf(result.value), 'other-manager');
@@ -485,7 +497,7 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       } catch {
         otherSignIn = false;
         settled();
-        if (revision === sentUnder) setIdleAttempt('failed');
+        if (revision === sentUnder && !coreLostIdled()) setIdleAttempt('failed');
       }
     })();
   };
@@ -579,6 +591,8 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       // else in M-6 sends it, and the top bar's Log out is inert while M-6 is open.
       if (snapshot.phase === 'idle' && snapshot.mode !== 'confirm-logout') return;
       if (snapshot.phase !== 'signed-in' && snapshot.phase !== 'idle') return;
+      // A discard logout under someone else's token would end their session.
+      if (coreLostIdled()) return;
       cookieChanging = true;
       const sentUnder = revision;
       const phaseAtSend = snapshot.phase;
@@ -667,6 +681,7 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       const account = accountKey(snapshot.person.username);
       // A known wait holds the account off: nothing is sent.
       if (currentWaits().some((w) => w.username === account)) return;
+      if (coreLostIdled()) return;
       cookieChanging = true;
       const sentUnder = revision;
       commit({ ...snapshot, attempt: 'verifying', busy: true });

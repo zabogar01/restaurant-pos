@@ -827,6 +827,79 @@ describe('ruling 7 and case 10. another manager signs in from M-6', () => {
     expect(childInput(host)!.value).toBe('half-typed note');
   });
 
+  describe('round 2, F1. M-6 names the person the core holds, or it is not shown', () => {
+    const THIRD = { ...VIEW, staffUserId: 'm-3', name: 'Third', username: 'third', csrfToken: 'tok-3' };
+
+    /** A stale read naming C lands while B's sign-in is in flight; B's sign-in is then answered with `answer`. */
+    async function thirdPersonThenFailure(host: HTMLElement, answer: Parameters<typeof h.reply>[1]) {
+      type(childInput(host)!, 'half-typed note');
+      const read = h.hold(ME);
+      Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      await h.settle();
+      h.reply(ACTIVITY, refusal('SESSION_IDLE'));
+      press();
+      await h.settle();
+      toOtherForm();
+      const login = h.hold(LOGIN);
+      type(field(host, 'Username'), 'r.ayu');
+      type(field(host, 'Password'), PASSWORD);
+      click('Sign in');
+      await h.settle();
+      read.deliver(ok(THIRD));
+      await h.settle();
+      expect(sessionState(host)).toBe('idle');
+      login.deliver(answer);
+      await h.settle();
+    }
+
+    const failures = [
+      ['INVALID_CREDENTIALS without details', refusal('INVALID_CREDENTIALS'), { status: 200, body: { status: 'ok' } }],
+      ['THROTTLED with a duration', refusal('THROTTLED', { retryAfterSeconds: 30 }, 429), { status: 200, body: { status: 'ok' } }],
+      ['a 500', refusal('INTERNAL', undefined, 500), { status: 200, body: { status: 'ok' } }],
+      ['a rejected fetch', 'reject' as const, { status: 503 }],
+    ] as const;
+
+    it.each(failures)(
+      'B’s sign-in answered %s: BO-01 Session ended, M-6 closed, the child kept and inert, nothing sent after',
+      async (_n, answer, health) => {
+        const host = await open();
+        h.reply(HEALTH, health);
+        await thirdPersonThenFailure(host, answer);
+        expect(sessionState(host)).toBe('signed-out');
+        expect(openCount()).toBe(0);
+        expect(text(noticeOf(host))).toBe('Your session has endedSign in again to continue.');
+        expect(childInput(host)!.value).toBe('half-typed note');
+        expect(pane(host).hasAttribute('inert')).toBe(true);
+        expect(h.count(REAUTH)).toBe(0);
+        expect(h.count(LOGOUT)).toBe(0);
+
+        h.reply(LOGIN, ok(VIEW));
+        type(field(host, 'Username'), 'm.iqbal');
+        type(field(host, 'Password'), PASSWORD);
+        act(() => button(host, 'Sign in').click());
+        await h.settle();
+        expect(childInput(host)!.value).toBe('half-typed note');
+        expect(childMounts.count).toBe(1);
+      }
+    );
+
+    it('and C signing in afterwards starts with a fresh child', async () => {
+      const host = await open();
+      await thirdPersonThenFailure(host, refusal('INVALID_CREDENTIALS'));
+      expect(sessionState(host)).toBe('signed-out');
+      h.reply(LOGIN, ok(THIRD));
+      type(field(host, 'Username'), 'third');
+      type(field(host, 'Password'), PASSWORD);
+      act(() => button(host, 'Sign in').click());
+      await h.settle();
+      expect(childInput(host)!.value).toBe('');
+      expect(childMounts.count).toBe(2);
+    });
+  });
+
   it('the actor-changed that the sign-in’s own install emits is not acted on; the result decides', async () => {
     const host = await open();
     await goIdle(host);
