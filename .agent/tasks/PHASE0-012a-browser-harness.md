@@ -5,8 +5,8 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: [PHASE0-011d2]
 owns: [e2e/**, apps/server/test/**, vitest.config.ts, package.json, package-lock.json, db/dev.env, packages/contracts/**, apps/pos/src/main.tsx, apps/back-office/src/main.tsx, apps/pos/test/**, apps/back-office/test/**]
-status: active
-cycles: 1
+status: review
+cycles: 2
 ---
 # PHASE0-012a — The browser harness and its premises
 
@@ -665,6 +665,18 @@ This ruling is addressed to the builder and answers the Handoff's question. It s
 7. **Your slip printing two `db/dev.env` lines is noted** (throwaway values, already tracked in the file); nothing to do.
 8. Append a *Round 2* section to the Handoff (do not rewrite round 1), commit after `npm run verify` is green, and end
    with DONE or BLOCKED as before.
+
+## Lead verify (2026-10-16, after round 2)
+
+At `80b81a2`, in this worktree: `npm run verify` green, 93 test files and 3741 tests; `npm run test:e2e:all` 12 passed
+(8.3 s). **The consult's acceptance item 2, run by the lead:** with `npm run dev -w apps/server` serving `pos` on 8443
+(health 200 before and after), `npm run test:e2e:all` passed 12 of 12, and `pos` was unchanged: the md5 of every
+`pin_throttle_bucket` row and of every `actor_session` row identical before and after, `security_event` 3 rows before and
+after, `audit_entry` 0; the development server's log never named `pos_e2e` or 8543. The greps of acceptance criterion 4 are
+empty over `e2e/`, the three `db/dev.env` credentials have no hit (checked by script, values not printed), and no
+`rpos-e2e-*` temporary directory remains. Changed paths are all within `owns:`; the only existing test changed is
+`server-test-env.test.ts`, as expected. A reviewer cannot run the browser suite or reach the database; this note and the
+Handoff's outputs are the run evidence.
 
 ## Handoff
 
