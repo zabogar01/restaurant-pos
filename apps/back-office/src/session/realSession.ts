@@ -3,14 +3,25 @@ import { ErrorCode, type ErrorBody } from '@pos/contracts';
 import { accountKey } from './account.js';
 import { listenForActivity } from './activity.js';
 import { officeApi } from './api.js';
-import type { Attempt, Person, SessionSnapshot, SessionStore, Wait, WhySignedOut } from './types.js';
+import type {
+  Arrival,
+  Attempt,
+  FocusMemory,
+  IdleAttempt,
+  IdleMode,
+  Person,
+  SessionSnapshot,
+  SessionStore,
+  Wait,
+  WhySignedOut,
+} from './types.js';
 
 // The one module that constructs the back office's `@pos/api-client` instance
 // (ARCH-014 rules 2 and 3). The store below is ARCH-014 question 5's table for the
-// back office, with the lead rulings of PHASE0-011d1: three phases until M-6 adds
-// the fourth (011d2), and one event or answer for each row. It holds no password:
-// the characters arrive as an argument, go into the sign-in request's body, and are
-// not kept (B-12).
+// back office, with the lead rulings of PHASE0-011d1 and PHASE0-011d2: four phases
+// (starting, signed out, signed in, idle), and one event or answer for each row. It
+// holds no password: the characters arrive as an argument, go into the request's
+// body, and are not kept (B-12).
 
 type Deps = {
   /** Defaults to the page's own `fetch`. Tests pass a stub. */
@@ -25,6 +36,8 @@ type Deps = {
 type Meaning =
   /** BO-01 resting, no notice; the working area stays mounted, hidden and inert. */
   | { kind: 'rest' }
+  /** M-6 opens over the frame; the working area stays, visible and inert. */
+  | { kind: 'idle' }
   /** BO-01 *Session ended*; the working area stays. */
   | { kind: 'ended' }
   /** BO-01 *Access refused*; the working area is removed. */
@@ -33,7 +46,7 @@ type Meaning =
   | { kind: 'cooldown'; seconds: number }
   | { kind: 'general-failure' };
 
-type Context = 'load' | 'signed-in' | 'sign-in';
+type Context = 'load' | 'signed-in' | 'sign-in' | 'reauth';
 
 /**
  * Every code of the API is placed here, once. A code added to `ErrorCode` makes the
@@ -55,12 +68,15 @@ function meaningOf(body: ErrorBody, context: Context): Meaning {
         ? { kind: 'general-failure' }
         : { kind: 'cooldown', seconds: error.details.retryAfterSeconds };
     case ErrorCode.SESSION_IDLE:
-      // Until M-6 (011d2) an idle session shows BO-01 resting: the lead's ruling 3.
-      return context === 'sign-in' ? { kind: 'general-failure' } : { kind: 'rest' };
+      // After a reload there is no draft, no token and no name to show: BO-01. A session
+      // this tab holds opens M-6. A credential request is never answered with it (the
+      // server does not send it; only the core's CSRF recovery could surface it).
+      if (context === 'load') return { kind: 'rest' };
+      return context === 'signed-in' ? { kind: 'idle' } : { kind: 'general-failure' };
     case ErrorCode.UNAUTHENTICATED:
       // After a reload the client believed nothing, so nothing ended.
       if (context === 'load') return { kind: 'rest' };
-      return context === 'signed-in' ? { kind: 'ended' } : { kind: 'general-failure' };
+      return context === 'signed-in' || context === 'reauth' ? { kind: 'ended' } : { kind: 'general-failure' };
     case ErrorCode.FORBIDDEN:
       // There is no credential-level permission refusal at sign-in.
       return context === 'sign-in' ? { kind: 'general-failure' } : { kind: 'refused' };
@@ -103,6 +119,11 @@ export function createRealSession(deps: Deps = {}): SessionStore {
   // through every end that is not a removal, cleared by a confirmed logout, by
   // FORBIDDEN, and by a reload (a new store).
   let heldId: string | null = null;
+  // What was focused when the session went idle, taken once when the same manager resumes.
+  let focusMemory: FocusMemory | null = null;
+  // An other-manager sign-in from M-6 is in flight: the `actor-changed` the core emits is
+  // that sign-in's own install (lead ruling 7), not another tab's.
+  let otherSignIn = false;
   // Advances on every change of phase: a sign-in, a confirmed logout, every end, an
   // actor change. A `me` read is applied only if the revision it was sent under is
   // still current, so a late answer can never sign this tab in again (lead ruling 8).
@@ -110,7 +131,8 @@ export function createRealSession(deps: Deps = {}): SessionStore {
   // Known waits, by account, as the end of each on the monotonic clock. Not
   // remembered across a reload.
   const waitEnds = new Map<string, number>();
-  // One cookie-changing request at a time (owner, 2026-10-14): a sign-in or a logout.
+  // One cookie-changing request at a time (owner, 2026-10-14): a sign-in, a
+  // re-authentication or a logout.
   let cookieChanging = false;
   let reading = false;
   let loaded = false;
@@ -140,8 +162,9 @@ export function createRealSession(deps: Deps = {}): SessionStore {
     a.length === b.length && a.every((w, i) => w.username === b[i]!.username && w.remainingSeconds === b[i]!.remainingSeconds);
 
   // Re-derive what the clock moves. The one timer redraws a counting wait while
-  // signed out and, at the deadline, reads `me` while signed in: it never sends
-  // `activity` and never ends a session by itself (FR-A2b, AC-28).
+  // signed out or idle and, at the deadline, reads `me` while signed in: it never
+  // sends `activity` and never ends a session by itself (FR-A2b, AC-28). Idle sends
+  // nothing on this tab's own initiative, so it reads nothing at a deadline.
   const refresh = (): void => {
     cancelTick?.();
     cancelTick = null;
@@ -156,7 +179,7 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       cancelTick = setTimer(refresh, toDeadline);
       return;
     }
-    if (snapshot.phase !== 'signed-out') return;
+    if (snapshot.phase !== 'signed-out' && snapshot.phase !== 'idle') return;
     const waits = currentWaits();
     if (!sameWaits(waits, snapshot.waits)) commit({ ...snapshot, waits });
     let next: number | null = null;
@@ -181,17 +204,68 @@ export function createRealSession(deps: Deps = {}): SessionStore {
   const toSignedOut = (why: WhySignedOut, destroy: boolean, attempt: Attempt = NONE): void => {
     revision += 1;
     person = null;
+    focusMemory = null;
     if (destroy) heldId = null;
     commit(signedOutSnapshot(why, attempt));
     refresh();
   };
 
-  const toSignedIn = (who: Person): void => {
+  const toSignedIn = (who: Person, arrival: Arrival = 'fresh'): void => {
     revision += 1;
     person = who;
+    // Only a resume gives the focus back; every other way in forgets it.
+    if (arrival !== 'resumed') focusMemory = null;
     // A different staff user than the held one changes the key: React destroys the old area.
     heldId = who.staffUserId;
-    commit({ phase: 'signed-in', person: who, logout: { inFlight: false, failure: 'none' } });
+    commit({ phase: 'signed-in', person: who, logout: { inFlight: false, failure: 'none' }, arrival });
+    refresh();
+  };
+
+  // The element that has focus now and its selection. Taken before anything is made
+  // inert and before M-6 takes focus, because inerting the focused element's ancestor
+  // loses it (DESIGN.md, M-6: "including focus outside the draft").
+  const captureFocus = (): FocusMemory | null => {
+    const element = document.activeElement;
+    if (!(element instanceof HTMLElement) || element === document.body) return null;
+    const { selectionStart, selectionEnd } = element as Partial<HTMLInputElement>;
+    return {
+      element,
+      start: typeof selectionStart === 'number' ? selectionStart : null,
+      end: typeof selectionEnd === 'number' ? selectionEnd : null,
+    };
+  };
+
+  /** M-6 opens, only ever from signed in. The token and the cookie are kept; the work stays. */
+  const toIdle = (): void => {
+    if (snapshot.phase !== 'signed-in') return;
+    focusMemory = captureFocus();
+    revision += 1;
+    commit({
+      phase: 'idle',
+      person: snapshot.person,
+      mode: 'same',
+      from: 'same',
+      attempt: 'none',
+      waits: currentWaits(),
+      // A request that was in flight when the idle arrived is published as such, and
+      // `settled()` clears it into this snapshot when it settles (011d1 Round 2, F1).
+      busy: cookieChanging,
+      logout: { inFlight: false, failure: 'none' },
+    });
+    refresh();
+  };
+
+  /** A credential attempt's outcome while staying in M-6: not a change of phase. */
+  const setIdleAttempt = (attempt: IdleAttempt): void => {
+    if (snapshot.phase !== 'idle') return;
+    commit({ ...snapshot, attempt, waits: currentWaits(), busy: cookieChanging });
+    refresh();
+  };
+
+  /** The manager's own moves between M-6's forms: nothing is sent, no revision advances. */
+  const moveMode = (expected: IdleMode, mode: IdleMode, from: 'same' | 'other' = 'same'): void => {
+    if (snapshot.phase !== 'idle' || snapshot.mode !== expected || snapshot.busy) return;
+    commit({ ...snapshot, mode, from, attempt: 'none', logout: { inFlight: false, failure: 'none' }, waits: currentWaits() });
     refresh();
   };
 
@@ -208,7 +282,9 @@ export function createRealSession(deps: Deps = {}): SessionStore {
   // here, keeping its reason, notice and working-area decision.
   const settled = (): void => {
     cookieChanging = false;
-    if (snapshot.phase === 'signed-out' && snapshot.busy) commit({ ...snapshot, busy: false });
+    if ((snapshot.phase === 'signed-out' || snapshot.phase === 'idle') && snapshot.busy) {
+      commit({ ...snapshot, busy: false });
+    }
   };
 
   const personOf = (view: { staffUserId: string; name: string; username: string }): Person => ({
@@ -222,6 +298,10 @@ export function createRealSession(deps: Deps = {}): SessionStore {
     switch (meaning.kind) {
       case 'rest':
         toSignedOut('resting', false);
+        return;
+      case 'idle':
+        // The core announces the idle first, so this only agrees with it.
+        toIdle();
         return;
       case 'ended':
         toSignedOut('ended', false);
@@ -297,10 +377,29 @@ export function createRealSession(deps: Deps = {}): SessionStore {
           toSignedOut('refused', true);
           return;
         }
+        if (snapshot.phase === 'idle') {
+          // Out of M-6 by the core's word. The manager who pressed Discard asked to lose
+          // the draft, so any end then removes it (lead ruling 10).
+          switch (event.reason) {
+            case 'SESSION_IDLE':
+              return;
+            case 'SIGNED_OUT':
+              toSignedOut('resting', true);
+              return;
+            case 'FORBIDDEN':
+              toSignedOut('refused', true);
+              return;
+            case 'UNAUTHENTICATED':
+            case 'ACTOR_CHANGED':
+              toSignedOut('ended', snapshot.logout.inFlight);
+              return;
+          }
+          return;
+        }
         if (snapshot.phase !== 'signed-in') return;
         switch (event.reason) {
           case 'SESSION_IDLE':
-            toSignedOut('resting', false);
+            toIdle();
             return;
           case 'SIGNED_OUT':
             toSignedOut('resting', true);
@@ -318,6 +417,9 @@ export function createRealSession(deps: Deps = {}): SessionStore {
         // Another tab signed in as someone else. This tab sends nothing: that cookie
         // is the other tab's session.
         if (snapshot.phase === 'signed-in') toSignedOut('ended', false);
+        // At M-6 this is either another tab's sign-in or this tab's own other-manager
+        // sign-in installing its view, which the result of that sign-in decides.
+        else if (snapshot.phase === 'idle' && !otherSignIn) toSignedOut('ended', snapshot.logout.inFlight);
         return;
     }
   };
@@ -332,6 +434,73 @@ export function createRealSession(deps: Deps = {}): SessionStore {
   // logout is in flight or unconfirmed (lead ruling 5).
   const mayExtend = (): boolean =>
     snapshot.phase === 'signed-in' && !snapshot.logout.inFlight && snapshot.logout.failure === 'none';
+
+  // In idle, M-6 names the person the core holds, or it is not shown. If the core holds
+  // someone else (an `actor-changed` was missed or deliberately deferred during an
+  // other-manager sign-in), the token it would send is not the idled manager's: nothing
+  // is sent, and the screen is BO-01 Session ended with the work kept (B-13, rule 5).
+  const coreLostIdled = (): boolean => {
+    if (snapshot.phase !== 'idle' || client.staffUserId() === snapshot.person.staffUserId) return false;
+    toSignedOut('ended', false);
+    return true;
+  };
+
+  // The ordinary sign-in from M-6's "different manager" form. It counts on the
+  // submitted account, never on the idled one, and that is the server's doing.
+  const signInFromIdle = (username: string, password: string): void => {
+    if (snapshot.phase !== 'idle' || snapshot.mode !== 'other') return;
+    const account = accountKey(username);
+    if (currentWaits().some((w) => w.username === account)) return;
+    cookieChanging = true;
+    otherSignIn = true;
+    const sentUnder = revision;
+    commit({ ...snapshot, attempt: 'verifying', busy: true });
+    void (async () => {
+      try {
+        const result = await api['/api/back-office/auth/login']({ username, password });
+        // The core emitted `actor-changed` for this sign-in's own install before the
+        // result got here, and the store ignored it; the result decides.
+        otherSignIn = false;
+        settled();
+        if (revision !== sentUnder || snapshot.phase !== 'idle') return;
+        // Only a success may leave the core on someone else; anything else must not leave M-6 up.
+        if (result.kind !== 'ok' && coreLostIdled()) return;
+        switch (result.kind) {
+          case 'ok':
+            toSignedIn(personOf(result.value), 'other-manager');
+            return;
+          case 'refused': {
+            const meaning = meaningOf(result.body, 'sign-in');
+            if (meaning.kind === 'credentials-error') {
+              setIdleAttempt('error');
+            } else if (meaning.kind === 'cooldown') {
+              if (meaning.seconds > 0) waitEnds.set(account, now() + meaning.seconds * 1000);
+              setIdleAttempt('none');
+            } else {
+              setIdleAttempt('failed');
+            }
+            return;
+          }
+          case 'unavailable':
+            setIdleAttempt('unavailable');
+            return;
+          case 'failed':
+          case 'invalid-request':
+            setIdleAttempt('failed');
+            return;
+          case 'session-gone':
+            // Something else changed this browser's session during the sign-in, and this
+            // tab no longer knows whose cookie it holds.
+            toSignedOut('ended', false);
+            return;
+        }
+      } catch {
+        otherSignIn = false;
+        settled();
+        if (revision === sentUnder && !coreLostIdled()) setIdleAttempt('failed');
+      }
+    })();
+  };
 
   return {
     kind: 'real',
@@ -363,7 +532,12 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       };
     },
     signIn(username, password) {
-      if (cookieChanging || snapshot.phase !== 'signed-out') return;
+      if (cookieChanging) return;
+      if (snapshot.phase === 'idle') {
+        signInFromIdle(username, password);
+        return;
+      }
+      if (snapshot.phase !== 'signed-out') return;
       if (snapshot.attempt.kind === 'lookup-failed' || snapshot.attempt.kind === 'lookup-unavailable') return;
       const account = accountKey(username);
       // A known wait holds the account's sign-in off: nothing is sent.
@@ -412,19 +586,32 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       })();
     },
     logout() {
-      if (cookieChanging || snapshot.phase !== 'signed-in') return;
+      if (cookieChanging) return;
+      // From the top bar (signed in), or "Discard changes and log out" at M-6. Nothing
+      // else in M-6 sends it, and the top bar's Log out is inert while M-6 is open.
+      if (snapshot.phase === 'idle' && snapshot.mode !== 'confirm-logout') return;
+      if (snapshot.phase !== 'signed-in' && snapshot.phase !== 'idle') return;
+      // A discard logout under someone else's token would end their session.
+      if (coreLostIdled()) return;
       cookieChanging = true;
       const sentUnder = revision;
-      commit({ ...snapshot, logout: { inFlight: true, failure: snapshot.logout.failure } });
+      const phaseAtSend = snapshot.phase;
+      if (snapshot.phase === 'idle') {
+        commit({ ...snapshot, busy: true, logout: { inFlight: true, failure: snapshot.logout.failure } });
+      } else {
+        commit({ ...snapshot, logout: { inFlight: true, failure: snapshot.logout.failure } });
+      }
       const settleFailure = (failure: 'none' | 'failed' | 'unavailable'): void => {
-        if (snapshot.phase === 'signed-in') commit({ ...snapshot, logout: { inFlight: false, failure } });
+        if (snapshot.phase === 'signed-in' || snapshot.phase === 'idle') {
+          commit({ ...snapshot, logout: { inFlight: false, failure } });
+        }
       };
       void api['/api/back-office/auth/logout']()
         .then((result) => {
           settled();
           // A change of phase meanwhile (an end the core announced, including the
           // confirmed logout itself) has already put the screen where its row says.
-          if (revision !== sentUnder || snapshot.phase !== 'signed-in') return;
+          if (revision !== sentUnder || snapshot.phase !== phaseAtSend) return;
           switch (result.kind) {
             case 'ok':
               toSignedOut('resting', true);
@@ -437,7 +624,12 @@ export function createRealSession(deps: Deps = {}): SessionStore {
                 code === ErrorCode.SESSION_IDLE ||
                 code === ErrorCode.UNAUTHENTICATED ||
                 code === ErrorCode.FORBIDDEN;
-              if (ends) applyEnd(meaningOf(result.body, 'signed-in'));
+              if (ends && phaseAtSend === 'idle') {
+                // The manager asked to discard: whichever end this is, the draft goes.
+                if (code === ErrorCode.UNAUTHENTICATED) toSignedOut('ended', true);
+                else if (code === ErrorCode.FORBIDDEN) toSignedOut('refused', true);
+                else toSignedOut('resting', true);
+              } else if (ends) applyEnd(meaningOf(result.body, 'signed-in'));
               else settleFailure('failed');
               return;
             }
@@ -459,6 +651,11 @@ export function createRealSession(deps: Deps = {}): SessionStore {
         });
     },
     retry() {
+      if (snapshot.phase === 'idle') {
+        // M-6's "Try again" on a general failure sends nothing: fresh entry only.
+        if (snapshot.attempt === 'failed' || snapshot.attempt === 'unavailable') setIdleAttempt('none');
+        return;
+      }
       if (snapshot.phase !== 'signed-out') return;
       const { attempt } = snapshot;
       if (attempt.kind === 'lookup-failed' || attempt.kind === 'lookup-unavailable') {
@@ -470,9 +667,87 @@ export function createRealSession(deps: Deps = {}): SessionStore {
       if (attempt.kind === 'failed' || attempt.kind === 'unavailable') setAttempt(NONE);
     },
     dismiss() {
+      if (snapshot.phase === 'idle') {
+        const { attempt } = snapshot;
+        if (attempt === 'error' || attempt === 'failed' || attempt === 'unavailable') setIdleAttempt('none');
+        return;
+      }
       if (snapshot.phase !== 'signed-out') return;
       const { kind } = snapshot.attempt;
       if (kind === 'error' || kind === 'failed' || kind === 'unavailable') setAttempt(NONE);
+    },
+    reauthenticate(password) {
+      if (cookieChanging || snapshot.phase !== 'idle' || snapshot.mode !== 'same') return;
+      const account = accountKey(snapshot.person.username);
+      // A known wait holds the account off: nothing is sent.
+      if (currentWaits().some((w) => w.username === account)) return;
+      if (coreLostIdled()) return;
+      cookieChanging = true;
+      const sentUnder = revision;
+      commit({ ...snapshot, attempt: 'verifying', busy: true });
+      void (async () => {
+        try {
+          // The body is `{ password }` and nothing else; the core adds the token.
+          const result = await api['/api/back-office/auth/reauthenticate']({ password });
+          settled();
+          // An end the core announced meanwhile has already put the screen where its row says.
+          if (revision !== sentUnder || snapshot.phase !== 'idle') return;
+          switch (result.kind) {
+            case 'ok':
+              toSignedIn(personOf(result.value), 'resumed');
+              return;
+            case 'refused': {
+              const meaning = meaningOf(result.body, 'reauth');
+              if (meaning.kind === 'credentials-error') {
+                setIdleAttempt('error');
+              } else if (meaning.kind === 'cooldown') {
+                // The idled account's own wait, shared with BO-01. Zero removes the notice
+                // and enables entry, without submission.
+                if (meaning.seconds > 0) waitEnds.set(account, now() + meaning.seconds * 1000);
+                setIdleAttempt('none');
+              } else if (meaning.kind === 'ended' || meaning.kind === 'refused') {
+                applyEnd(meaning);
+              } else {
+                setIdleAttempt('failed');
+              }
+              return;
+            }
+            case 'unavailable':
+              setIdleAttempt('unavailable');
+              return;
+            case 'failed':
+            case 'invalid-request':
+              // Empty and oversize values are stopped before this, so the second cannot
+              // happen; if it does it is general.
+              setIdleAttempt('failed');
+              return;
+            case 'session-gone':
+              // M-6 as it was, with no notice; the core's events say what changed.
+              setIdleAttempt('none');
+              return;
+          }
+        } catch {
+          settled();
+          if (revision === sentUnder) setIdleAttempt('failed');
+        }
+      })();
+    },
+    chooseOtherManager: () => moveMode('same', 'confirm-other'),
+    stayWithCurrentManager: () => moveMode('confirm-other', 'same'),
+    continueToOtherSignIn: () => moveMode('confirm-other', 'other'),
+    backToCurrentManager: () => moveMode('other', 'same'),
+    askLogout() {
+      if (snapshot.phase !== 'idle' || (snapshot.mode !== 'same' && snapshot.mode !== 'other')) return;
+      moveMode(snapshot.mode, 'confirm-logout', snapshot.mode);
+    },
+    keepDraft() {
+      if (snapshot.phase !== 'idle' || snapshot.mode !== 'confirm-logout') return;
+      moveMode('confirm-logout', snapshot.from);
+    },
+    takeFocusMemory() {
+      const memory = focusMemory;
+      focusMemory = null;
+      return memory;
     },
   };
 }

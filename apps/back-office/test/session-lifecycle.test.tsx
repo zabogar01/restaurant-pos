@@ -3,7 +3,7 @@ import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { CSRF_HEADER } from '@pos/contracts';
 import {
-  ACTIVITY, HEALTH, LOGIN, LOGOUT, ME, VIEW,
+  ACTIVITY, HEALTH, LOGIN, LOGOUT, ME, REAUTH, VIEW,
   button, childMounts, field, makeHarness, mount, noContent, noticeOf, ok, press, refusal, sessionState, text, type,
 } from './session-harness.js';
 
@@ -60,10 +60,10 @@ function becomeVisible() {
 }
 
 describe('case 9 (reworded). the working area is keyed by the staff user', () => {
+  // The SESSION_IDLE row of 011d1's interim behaviour is gone: an idle session opens
+  // M-6 (reauth.test.tsx, cases 6, 7 and 10).
   describe.each([
     ['UNAUTHENTICATED', refusal('UNAUTHENTICATED'), 'Your session has endedSign in again to continue.'],
-    // Interim, until M-6 (PHASE0-011d2): an idle session shows BO-01 resting.
-    ['SESSION_IDLE (ruling 3, interim)', refusal('SESSION_IDLE'), ''],
   ])('after %s', (_name, answer, notice) => {
     it('BO-01 shows, the child is still in the DOM, hidden and inert, and the same manager gets it as it was', async () => {
       const host = await open();
@@ -311,8 +311,12 @@ describe('the deadline read', () => {
     await h.advance(2);
     expect(h.count(ME)).toBe(2);
     expect(h.count(ACTIVITY)).toBe(0);
-    expect(sessionState(host)).toBe('signed-out');
+    // M-6 opens over the frame; the work stays mounted, visible and inert.
+    expect(sessionState(host)).toBe('idle');
+    expect(host.ownerDocument.querySelectorAll('dialog[open]')).toHaveLength(1);
     expect(childInput(host)).not.toBeNull();
+    expect(pane(host)!.hidden).toBe(false);
+    expect(pane(host)!.hasAttribute('inert')).toBe(true);
   });
 });
 
@@ -354,8 +358,8 @@ describe('round 2. F1: a confirmed logout leaves BO-01 usable', () => {
   });
 });
 
-describe('round 2. F2: FORBIDDEN acts from BO-01', () => {
-  it('a FORBIDDEN answered after an interim idle removes the retained work and shows Access refused', async () => {
+describe('round 2. F2: FORBIDDEN acts while M-6 is open', () => {
+  it('a FORBIDDEN answered after the idle removes the retained work, closes M-6 and shows Access refused', async () => {
     const host = await open();
     type(childInput(host)!, 'half-typed note');
     const read = h.hold(ME);
@@ -364,20 +368,24 @@ describe('round 2. F2: FORBIDDEN acts from BO-01', () => {
     h.reply(ACTIVITY, refusal('SESSION_IDLE'));
     press();
     await h.settle();
-    expect(sessionState(host)).toBe('signed-out');
+    expect(sessionState(host)).toBe('idle');
+    expect(host.ownerDocument.querySelectorAll('dialog[open]')).toHaveLength(1);
     expect(childInput(host)).not.toBeNull();
 
     read.deliver(refusal('FORBIDDEN', undefined, 403));
     await h.settle();
+    expect(sessionState(host)).toBe('signed-out');
+    expect(host.ownerDocument.querySelectorAll('dialog[open]')).toHaveLength(0);
     expect(childInput(host)).toBeNull();
     expect(text(noticeOf(host))).toBe(
       'Manager access requiredThis account cannot use the back office. Sign in with a manager account.'
     );
     await signInWith(host, ok(VIEW));
     expect(childInput(host)!.value).toBe('');
+    expect(childMounts.count).toBe(2);
   });
 
-  it('any other end announced while BO-01 shows changes neither the notice nor the retained work', async () => {
+  it('a me answered UNAUTHENTICATED while M-6 is open closes it to BO-01 Session ended, keeps the child, and the same manager gets it back', async () => {
     const host = await open();
     type(childInput(host)!, 'half-typed note');
     const read = h.hold(ME);
@@ -386,10 +394,19 @@ describe('round 2. F2: FORBIDDEN acts from BO-01', () => {
     h.reply(ACTIVITY, refusal('SESSION_IDLE'));
     press();
     await h.settle();
+    expect(sessionState(host)).toBe('idle');
+
     read.deliver(refusal('UNAUTHENTICATED'));
     await h.settle();
-    expect(noticeOf(host)).toBeNull();
+    expect(sessionState(host)).toBe('signed-out');
+    expect(host.ownerDocument.querySelectorAll('dialog[open]')).toHaveLength(0);
+    expect(text(noticeOf(host))).toBe('Your session has endedSign in again to continue.');
     expect(childInput(host)!.value).toBe('half-typed note');
+    expect(pane(host)!.hasAttribute('inert')).toBe(true);
+
+    await signInWith(host, ok(VIEW));
+    expect(childInput(host)!.value).toBe('half-typed note');
+    expect(childMounts.count).toBe(1);
   });
 });
 
@@ -416,26 +433,89 @@ describe('round 2. F3: a logout refused with a code that does not end the sessio
   });
 });
 
-describe('ruling 8, sequence (c)', () => {
-  it('a visibility me is held, activity is answered SESSION_IDLE, then me’s A view arrives: BO-01 resting, no frame, no activity', async () => {
-    const host = await open();
+describe('ruling 6, sequences (c) and (d): a stale me neither closes M-6 toward signed-in nor re-arms the session', () => {
+  const m6 = (host: HTMLElement) => host.ownerDocument.querySelector<HTMLDialogElement>('dialog[open]');
+  const inert = (host: HTMLElement) =>
+    ['.bonav', '.botop', '.bocontent'].map((s) => host.querySelector(s)?.hasAttribute('inert'));
+
+  /** The child holds a typed value, focus and a selection; a visibility me is held; activity is answered SESSION_IDLE. */
+  async function heldReadThenIdle(host: HTMLElement) {
+    type(childInput(host)!, 'half-typed note');
+    childInput(host)!.focus();
+    childInput(host)!.setSelectionRange(2, 5);
     const read = h.hold(ME);
     becomeVisible();
     await h.settle();
     h.reply(ACTIVITY, refusal('SESSION_IDLE'));
     press();
     await h.settle();
-    expect(sessionState(host)).toBe('signed-out');
+    expect(sessionState(host)).toBe('idle');
     expect(h.count(ACTIVITY)).toBe(1);
+    return read;
+  }
+
+  it('(c) me’s A view arrives: M-6 stays, the frame stays inert, nothing is sent two minutes later, and the password resumes it', async () => {
+    const host = await open();
+    const read = await heldReadThenIdle(host);
 
     read.deliver(ok(VIEW));
     await h.settle();
+    expect(sessionState(host)).toBe('idle');
+    expect(m6(host)).not.toBeNull();
+    expect(inert(host)).toEqual([true, true, true]);
+    expect(field(host, 'Password').value).toBe('');
+
+    await h.advance(120_000);
+    press('keydown');
+    press('pointerdown');
+    press('wheel');
+    becomeVisible();
+    await h.settle();
+    expect(h.count(ACTIVITY)).toBe(1);
+    expect(h.count(ME)).toBe(2);
+    expect(sessionState(host)).toBe('idle');
+
+    h.reply(REAUTH, ok({ ...VIEW, csrfToken: 'tok-1b' }));
+    type(field(host, 'Password'), 'correct horse');
+    act(() => button(m6(host)!, 'Continue').click());
+    await h.settle();
+    expect(sessionState(host)).toBe('signed-in');
+    expect(m6(host)).toBeNull();
+    expect(childInput(host)!.value).toBe('half-typed note');
+    expect(document.activeElement).toBe(childInput(host));
+    expect([childInput(host)!.selectionStart, childInput(host)!.selectionEnd]).toEqual([2, 5]);
+    expect(childMounts.count).toBe(1);
+  });
+
+  it('(d) me delivers B’s view: BO-01 Session ended, M-6 closed, the child kept; A then gets it back', async () => {
+    const host = await open();
+    const read = await heldReadThenIdle(host);
+
+    read.deliver(ok(OTHER));
+    await h.settle();
     expect(sessionState(host)).toBe('signed-out');
-    expect(noticeOf(host)).toBeNull();
-    expect(frame(host)).toBeNull();
+    expect(m6(host)).toBeNull();
+    expect(text(noticeOf(host))).toBe('Your session has endedSign in again to continue.');
+    expect(childInput(host)!.value).toBe('half-typed note');
+    expect(h.count(REAUTH)).toBe(0);
     await h.advance(120_000);
     press();
     await h.settle();
     expect(h.count(ACTIVITY)).toBe(1);
+
+    await signInWith(host, ok(VIEW));
+    expect(childInput(host)!.value).toBe('half-typed note');
+    expect(childMounts.count).toBe(1);
+  });
+
+  it('(d) the same, then B signs in: B starts with a fresh child', async () => {
+    const host = await open();
+    const read = await heldReadThenIdle(host);
+    read.deliver(ok(OTHER));
+    await h.settle();
+    await signInWith(host, ok(OTHER), 'r.ayu');
+    expect(sessionState(host)).toBe('signed-in');
+    expect(childInput(host)!.value).toBe('');
+    expect(childMounts.count).toBe(2);
   });
 });
