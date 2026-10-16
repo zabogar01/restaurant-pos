@@ -111,7 +111,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-011c2, the POS signs in, merged 2026-10-15 as PR #92.)*
     - *(Done: PHASE0-011d1, the back office signs in, merged 2026-10-15 as PR #95.)*
     - **PHASE0-011d2, M-6 over the working area** (re-authentication, the other-manager choice, the logout
-      confirmation; cases 6-8, 10) — 011d1 merged — not written; next (STATE lists what it must carry).
+      confirmation; cases 6-8, 10) — complete 2026-10-16, PR #97 open; the owner merges.
     - **The queued POS gap:** POS-03's actor group and Release (`order.html:77`), left out of 011c2 — not written.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
       by the owner 2026-10-06, possibly to after the MVP — not written.
