@@ -5,8 +5,8 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: [PHASE0-011d2]
 owns: [e2e/**, apps/server/test/**, vitest.config.ts, package.json, package-lock.json, db/dev.env, packages/contracts/**, apps/pos/src/main.tsx, apps/back-office/src/main.tsx, apps/pos/test/**, apps/back-office/test/**]
-status: review
-cycles: 2
+status: active
+cycles: 3
 ---
 # PHASE0-012a — The browser harness and its premises
 
@@ -677,6 +677,49 @@ empty over `e2e/`, the three `db/dev.env` credentials have no hit (checked by sc
 `rpos-e2e-*` temporary directory remains. Changed paths are all within `owns:`; the only existing test changed is
 `server-test-env.test.ts`, as expected. A reviewer cannot run the browser suite or reach the database; this note and the
 Handoff's outputs are the run evidence.
+
+## Round 3 — the review's two findings (lead rulings, 2026-10-16)
+
+The review is `.agent/reviews/PHASE0-012a-review.md` (Codex, two high findings). Both are accepted. These rulings are
+addressed to the builder. **This is the last fix round** (`max_fix_cycles`); if a rule below cannot be met, stop with
+`BLOCKED:` and the evidence rather than shipping part of it.
+
+1. **Finding 1: one guard policy, not a weaker one for workers.** Today `applyE2eEnv()`'s inherited branch builds its
+   forbidden names from `db/dev.env` alone, so a shell that sets `E2E_ENV_APPLIED=1` with `POS_DB_NAME` (or
+   `POS_TEST_DB_NAME`) renamed and `POS_E2E_DB_NAME` equal to it is accepted, and the reset would drop that database's
+   schema. Fix it so that the worker's check refuses at least everything the runner's check refuses: the shell's
+   `POS_DB_NAME` and `POS_TEST_DB_NAME` as well as the file's, `pos` and `pos_test`, and the databases the runner saw named
+   by the original connection URLs (carry them from the runner to the workers if you need to; a value the runner sets is
+   fine, as long as a shell that forges the marker gets no weaker check than the runner applies). Keep one place that
+   decides what is forbidden. Tests in `server-test-env.test.ts`: the reviewer's scenario (marker set, shell
+   `POS_DB_NAME=custom_development`, `POS_E2E_DB_NAME=custom_development`, both URLs naming it) is refused; the same with
+   a shell-renamed server-test database is refused; an ordinary worker re-evaluation after the runner's branch is still
+   accepted. Red proof: revert the worker branch to the file-only set and show the first two fail. In the Handoff, say
+   exactly which shell configurations the worker branch still cannot tell apart from a legitimate worker, if any.
+2. **Finding 2: no credential can reach a Playwright diagnostic or artefact.** The lead confirmed from the installed
+   1.64.1 source (`node_modules/playwright/lib/index.js:705-720`) that Playwright writes `error-context.md` (the error
+   messages, and a page snapshot) for every failing test, whatever `trace`, `video` and `screenshot` say. There is no
+   switch, so the protection has to be at the source:
+   - **People whose names reveal nothing.** `makePeople` names a person `Person <PIN>` and derives the username and
+     password from the same number. The harness's people must have a display name, username, password and PIN that are
+     independent: none can be derived from another or from the name. Do not change what `makePeople` produces for the
+     server tests: either add a harness factory in `e2e/support/` over `createStaffUser` and `createBackOfficeCredential`,
+     or give `makePeople` an optional parameter whose default leaves today's output exactly as it is. PINs stay six digits
+     and unique among active staff in the test's database.
+   - **Credential entry fails with a fixed message.** `signInAtPos` (the whole PIN entry, every digit click and
+     Continue) and `signInAtBackOffice` (both fills and Sign in) catch any error and throw a new `Error` with a fixed
+     message naming the step and the person's display name, with no original message, stack or `cause`. Any other place
+     the harness types or passes a credential to Playwright does the same.
+   - **The proof.** A temporary spec, run in Chromium, with three failing tests: (a) the back office's Password input made
+     disabled by `page.evaluate` before `signInAtBackOffice`, so the fill fails; (b) a deliberately false assertion after a
+     successful POS sign-in; (c) the same after a successful back-office sign-in. Capture the terminal output to a file in
+     your scratchpad, then scan that file and everything under `e2e/test-results/` for each credential those tests used
+     (PINs, usernames, passwords), by a script that prints only hit or no hit per credential, never a value. Paste the
+     script's output and the three failure messages, then delete the spec and its results. **If a page snapshot itself
+     holds a credential** (for example a typed password field's value), stop with `BLOCKED:` and the evidence.
+3. Everything else in rounds 1 and 2 stands. `npm run verify` green and `npm run test:e2e:all` 12 of 12 from the committed
+   source, twice. Append a *Round 3* section to the Handoff (do not rewrite earlier rounds), commit, and end with DONE or
+   BLOCKED as before.
 
 ## Handoff
 
