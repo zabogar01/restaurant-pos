@@ -4,9 +4,9 @@ title: The browser harness and its premises, on a database, port and server of i
 category: feature
 touches: [identity, audit, boundaries]
 depends_on: [PHASE0-011d2]
-owns: [e2e/**, apps/server/test/**, vitest.config.ts, package.json, package-lock.json, db/dev.env]
-status: not-started
-cycles: 0
+owns: [e2e/**, apps/server/test/**, vitest.config.ts, package.json, package-lock.json, db/dev.env, packages/contracts/**, apps/pos/src/main.tsx, apps/back-office/src/main.tsx, apps/pos/test/**, apps/back-office/test/**]
+status: active
+cycles: 1
 ---
 # PHASE0-012a — The browser harness and its premises
 
@@ -635,6 +635,36 @@ These rulings are addressed to the builder.
 - Any change under `apps/server/src`, `apps/server/scripts`, either client's `src`, or `packages/`.
 - The browser-clients ADR, `docs/` of any kind, the plan's Definition of Done wording.
 - A development server, the owner's database `pos`, the owner's manager.
+
+## Round 2 — the zod probe (lead ruling, 2026-10-16)
+
+This ruling is addressed to the builder and answers the Handoff's question. It supersedes *Out of scope*'s
+"any change under ... either client's `src`, or `packages/`" for the files named here, and nothing else.
+
+1. **A3 is right and stays as written.** A test that expects a known violation would hide the very failure the
+   policy check exists to catch (011a carried forward "no `securitypolicyviolation` in either shell"). The fix
+   belongs in this task, because this task's premise test is what found it.
+2. **Where the switch lives: `@pos/contracts`, not the clients.** The clients do not declare `zod` (only
+   `packages/contracts/package.json` does), so a client importing `zod` would be a dependency it does not own. Add
+   `packages/contracts/src/browser.ts`, a side-effect module that calls `z.config({ jitless: true })` with a comment
+   saying why (the content-security policy forbids `eval`; zod's start-up probe would report a violation). Expose it as
+   the subpath `@pos/contracts/browser` by an `exports` map in `packages/contracts/package.json` that keeps `"."` resolving
+   to `src/index.ts` exactly as `main` does today. If anything in the repository imports a deep path of
+   `@pos/contracts` that the `exports` map would break, stop with `BLOCKED:` and name it; do not add more subpaths to
+   make it work.
+3. **Each client's `main.tsx` imports `@pos/contracts/browser` as its first import**, before React, the tokens and
+   anything that reaches a schema. The server never imports it: it has no policy, and its behaviour does not change.
+4. **Tests.** One vitest test per client (in each client's `test/`) that reads `src/main.tsx` and asserts its first
+   `import` is `'@pos/contracts/browser'`; and one in `packages/contracts` (a new `test/` there is allowed) that after
+   importing `../src/browser.js` zod's global configuration has `jitless` true. A3 in both engines is the proof that
+   matters; the unit tests make `verify` catch a reordering without a browser.
+5. **Red proof.** Remove the import from the POS `main.tsx`, rebuild: A3 fails in both engines with `script-src eval`
+   and the POS unit test fails. Show both, revert.
+6. **Acceptance criterion 2 now means 12 of 12**, run twice, from the committed source. Re-run the A3 red proof of
+   round 1 (the inline `<style>`) only if your change touched `premises.spec.ts`.
+7. **Your slip printing two `db/dev.env` lines is noted** (throwaway values, already tracked in the file); nothing to do.
+8. Append a *Round 2* section to the Handoff (do not rewrite round 1), commit after `npm run verify` is green, and end
+   with DONE or BLOCKED as before.
 
 ## Handoff
 
