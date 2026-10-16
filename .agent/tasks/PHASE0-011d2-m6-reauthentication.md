@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011d1]
 owns: [apps/back-office/**]
-status: active
+status: review
 cycles: 0
 ---
 # PHASE0-011d2 — M-6, the back-office re-authentication
