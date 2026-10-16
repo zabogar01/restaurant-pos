@@ -747,6 +747,32 @@ as `BLOCKED: <question>` rather than choosing.
    after `npm run verify` is green, with a path-scoped `git add`, and never the review report, which the lead commits.
    End with DONE or BLOCKED.
 
+## Acceptance criterion 5, by hand (lead in Chrome, with the owner's credential, 2026-10-16)
+
+The owner asked the lead to run the check and gave the manager's credential for it. The lead built and served this
+branch from its worktree (`npm run build:clients`, `npm run dev -w apps/server`). The owner clicked through Chrome's
+warning for the self-signed development certificate; the lead then drove Chrome, reading the DOM after each step.
+
+- **BO-01:** a wrong password showed *Sign-in failed*, kept the username, and cleared and focused Password. The right
+  one showed the frame with the manager's name.
+- **Aged** (`UPDATE actor_session SET last_interactive_at = now() - interval '31 minutes' …`, one row): a click sent
+  `activity`, and M-6 opened over the frame behind the scrim. `data-session` was `idle`, the username was fixed,
+  Password had focus, and `.bonav`, `.botop` and `.bocontent` were all `inert`.
+- **Not dismissed:** Escape, a click on the backdrop, and a click on the top bar's Log out behind the scrim all left M-6
+  open and modal (`:modal`, `closedby="none"`).
+- **Tab loop:** Tab and Shift+Tab stayed inside the dialog in both directions. No input carried a `value` attribute.
+- **Wrong password:** "Incorrect password. Try again.", with Password cleared and focused. **Right password:** M-6
+  closed, the inert attributes were lifted, `signed-in`, and *Resumed* was first in the pane.
+- **Aged again:** the first click fell inside the 60-second activity window and sent nothing (by design: leading edge
+  only). A click after the window opened M-6.
+- **Discard path:** Log out opened the discard confirmation with focus on "Keep this draft". Escape returned to M-6
+  with focus in Password. Log out, then "Discard changes and log out", gave BO-01 resting, with no dialog, no frame,
+  no working area and `signed-out`. The database then showed no live back-office session and one released.
+- **Console:** no errors from the moment the lead attached to it (page-load messages were not captured).
+
+Not checked: the other-manager path (only one manager exists), the cooldown states, a failed logout, and the
+overflow region at a short viewport.
+
 ## Handoff
 
 **Builder's report, 2026-10-16.** Commits on `agent/phase0-011d2`: `c43f5d5` (M-6, the store phase, the tests) and `02e7f82` (a small fix found while writing this, below). The commit after those carries this Handoff. Nothing was pushed. No formatter was run. Nothing outside `apps/back-office/**` and this file changed: `git diff --name-only development` lists exactly the task file and these paths: `src/OfficeApp.tsx`, `src/Reauth.tsx` (new), `src/SignIn.tsx` (two constants exported), `src/copy.ts`, `src/office.css`, `src/session/{fixtureSession,realSession,types}.ts`, `test/dialog-shim.ts` (new), `test/reauth.test.tsx` (new), `test/session-harness.tsx`, `test/session-lifecycle.test.tsx`.
