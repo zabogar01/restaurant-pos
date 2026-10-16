@@ -40,9 +40,19 @@ export function createFixtureSession(): SessionStore {
     },
     start: () => () => {},
     // The credentials are compared against nothing and go nowhere.
-    signIn: () => set({ phase: 'signed-in', person: FIXTURE_MANAGER, logout: { inFlight: false, failure: 'none' } }),
+    signIn: () =>
+      set({ phase: 'signed-in', person: FIXTURE_MANAGER, logout: { inFlight: false, failure: 'none' }, arrival: 'fresh' }),
     logout: () => set(RESTING),
     retry: () => {},
     dismiss: () => {},
+    // The fixture session never goes idle, so nothing of M-6 is drawn in fixture mode.
+    reauthenticate: () => {},
+    chooseOtherManager: () => {},
+    stayWithCurrentManager: () => {},
+    continueToOtherSignIn: () => {},
+    backToCurrentManager: () => {},
+    askLogout: () => {},
+    keepDraft: () => {},
+    takeFocusMemory: () => null,
   };
 }

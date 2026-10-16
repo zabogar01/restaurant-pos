@@ -5,6 +5,7 @@ import { OfficeApp } from '../src/OfficeApp.js';
 import { createRealSession } from '../src/session/realSession.js';
 import { SessionProvider } from '../src/session/useSession.js';
 import type { SessionStore } from '../src/session/types.js';
+import { installDialogShim } from './dialog-shim.js';
 
 // A stubbed `fetch`, a manual monotonic clock and manual timers for the real
 // session. Nothing here touches the network; time moves only when `advance` says.
@@ -33,6 +34,7 @@ export const LOGIN = 'POST /api/back-office/auth/login';
 export const ME = 'GET /api/back-office/auth/me';
 export const ACTIVITY = 'POST /api/back-office/auth/activity';
 export const LOGOUT = 'POST /api/back-office/auth/logout';
+export const REAUTH = 'POST /api/back-office/auth/reauthenticate';
 export const HEALTH = 'GET /api/health';
 
 export function makeHarness() {
@@ -122,6 +124,7 @@ export function TestChild() {
 export const childMounts = { count: 0 };
 
 export function mount(store: SessionStore) {
+  installDialogShim();
   const host = document.createElement('div');
   host.id = 'root';
   document.body.append(host);

@@ -42,6 +42,34 @@ export const lockedFor = (seconds: number): NoticeCopy => ({
   body: 'This username is cooling down. Other managers can sign in with their own usernames.',
 });
 
+// M-6 (PHASE0-011d2), DESIGN-015's rows whose Screen column names M-6.
+export const REAUTH_TITLE = 'Your session timed out';
+export const reauthBody = (username: string): string =>
+  `Your unsaved changes are kept. Continue as ${username} to resume them.`;
+
+export const CHOOSE_OTHER_TITLE = 'Sign in as a different manager?';
+export const CHOOSE_OTHER_BODY =
+  'The current manager’s unsaved changes will not be available to the manager signing in.';
+
+export const OTHER_TITLE = 'Sign in as a different manager';
+export const OTHER_BODY =
+  'Enter your own username and password. The current manager’s unsaved changes will not be available to you.';
+
+export const INCORRECT_PASSWORD = 'Incorrect password. Try again.';
+export const sameManagerLocked = (seconds: number): string =>
+  `This username is cooling down. Try again in ${waitText(seconds)}. You can sign in as a different manager or log out.`;
+
+export const DISCARD_TITLE = 'Log out and discard your changes?';
+export const DISCARD_BODY =
+  'The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session.';
+export const logoutDuringCooldown = (seconds: number): string =>
+  `This username is locked for ${waitText(seconds)}. Logging out does not end its cooldown. Other managers can sign in with their own usernames. Waiting here keeps your draft.`;
+
+export const RESUMED: NoticeCopy = {
+  title: 'Your session has resumed.',
+  body: 'Your changes are still here. Nothing has been submitted.',
+};
+
 export const LOGOUT_UNCONFIRMED = 'Sign-out has not been confirmed.';
 export const MISSING_USERNAME = 'Enter your username.';
 export const MISSING_PASSWORD = 'Enter your password.';

@@ -28,6 +28,26 @@ export type WhySignedOut = 'resting' | 'ended' | 'refused';
 /** A logout the manager asked for: in flight, and what the last unconfirmed answer was. */
 export type LogoutState = { inFlight: boolean; failure: 'none' | 'failed' | 'unavailable' };
 
+/**
+ * M-6's four modes (SCREEN-INVENTORY, M-6): the fixed-username form, the
+ * acknowledgement before another manager's form, that form, and the discard
+ * confirmation of Log out.
+ */
+export type IdleMode = 'same' | 'confirm-other' | 'other' | 'confirm-logout';
+
+/** What the last credential request left in M-6's current form. A cooldown is a wait, not an attempt. */
+export type IdleAttempt = 'none' | 'verifying' | 'error' | 'unavailable' | 'failed';
+
+/**
+ * How a signed-in frame came to be. `fresh` is a sign-in at BO-01. `resumed` is a
+ * same-manager re-authentication: the focus and selection come back and *Resumed* is
+ * shown. `other-manager` is a sign-in from M-6, whose focus goes to Log out.
+ */
+export type Arrival = 'fresh' | 'resumed' | 'other-manager';
+
+/** The element that was focused, and its selection, when the session went idle. */
+export type FocusMemory = { element: HTMLElement; start: number | null; end: number | null };
+
 export type SessionSnapshot =
   /** The first `me` has not answered: nothing is drawn but the empty page. */
   | { phase: 'starting' }
@@ -46,7 +66,20 @@ export type SessionSnapshot =
        */
       held: string | null;
     }
-  | { phase: 'signed-in'; person: Person; logout: LogoutState };
+  | { phase: 'signed-in'; person: Person; logout: LogoutState; arrival: Arrival }
+  | {
+      /** M-6 over the frame: the idled person's work stays mounted and inert behind it. */
+      phase: 'idle';
+      person: Person;
+      mode: IdleMode;
+      /** Which form the discard confirmation was opened from, and where "Keep this draft" returns. */
+      from: 'same' | 'other';
+      attempt: IdleAttempt;
+      waits: readonly Wait[];
+      /** A sign-in, re-authentication or logout is in flight: nothing that would send is live. */
+      busy: boolean;
+      logout: LogoutState;
+    };
 
 export interface SessionStore {
   /** Which source this is. A screen may differ in what it draws, never in what it asks. */
@@ -60,10 +93,35 @@ export interface SessionStore {
    * flight. The password is an argument: it goes into the request body and is not kept.
    */
   signIn(username: string, password: string): void;
-  /** Log out, and "Try again" on a logout that was not confirmed. One at a time. */
+  /**
+   * Log out, and "Try again" on a logout that was not confirmed. One at a time. At M-6
+   * it is the confirmation's "Discard changes and log out"; elsewhere in M-6 it is ignored.
+   */
   logout(): void;
-  /** BO-01's "Try again": repeats a failed first read, or clears a failed attempt. Sends no credential. */
+  /** BO-01's and M-6's "Try again": repeats a failed first read, or clears a failed attempt. Sends no credential. */
   retry(): void;
   /** Clears an error notice once the manager edits a field. */
   dismiss(): void;
+
+  // M-6. Each is ignored unless the phase is idle, the mode is the one named, and
+  // nothing is in flight.
+  /** The idled manager's password alone, to the re-authentication route. */
+  reauthenticate(password: string): void;
+  /** "Sign in as a different manager": same, to the acknowledgement. */
+  chooseOtherManager(): void;
+  /** "Stay with current manager": the acknowledgement, back to the fixed-username form. */
+  stayWithCurrentManager(): void;
+  /** "Continue to sign-in": the acknowledgement, to the other manager's form. */
+  continueToOtherSignIn(): void;
+  /** "Back to {username}": the other manager's form, to the fixed-username form. */
+  backToCurrentManager(): void;
+  /** "Log out": either form, to the discard confirmation. */
+  askLogout(): void;
+  /** "Keep this draft": the confirmation, back to the form it came from. */
+  keepDraft(): void;
+  /**
+   * What was focused before M-6 opened, once. Called when the same manager resumes, after
+   * the work is no longer inert; any other way out of M-6 forgets it.
+   */
+  takeFocusMemory(): FocusMemory | null;
 }

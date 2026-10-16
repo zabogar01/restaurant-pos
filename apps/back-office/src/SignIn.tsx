@@ -26,8 +26,8 @@ import type { SessionSnapshot, SessionStore } from './session/types.js';
 type SignedOut = Extract<SessionSnapshot, { phase: 'signed-out' }>;
 
 // UTF-16 units, as the contracts count them (BackOfficeLoginRequest).
-const USERNAME_LIMIT = 256;
-const PASSWORD_LIMIT = 1024;
+export const USERNAME_LIMIT = 256;
+export const PASSWORD_LIMIT = 1024;
 
 type Local = { username: 'missing' | 'oversize' | null; password: 'missing' | 'oversize' | null };
 const CLEAN: Local = { username: null, password: null };
