@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: [PHASE0-011d2]
 owns: [e2e/**, apps/server/test/**, vitest.config.ts, package.json, package-lock.json, db/dev.env, packages/contracts/**, apps/pos/src/main.tsx, apps/back-office/src/main.tsx, apps/pos/test/**, apps/back-office/test/**]
-status: active
+status: review
 cycles: 3
 ---
 # PHASE0-012a — The browser harness and its premises
@@ -720,6 +720,14 @@ addressed to the builder. **This is the last fix round** (`max_fix_cycles`); if 
 3. Everything else in rounds 1 and 2 stands. `npm run verify` green and `npm run test:e2e:all` 12 of 12 from the committed
    source, twice. Append a *Round 3* section to the Handoff (do not rewrite earlier rounds), commit, and end with DONE or
    BLOCKED as before.
+
+## Lead verify (2026-10-16, after round 3)
+
+At `2255290`, in this worktree: `npm run verify` green, 93 test files and 3744 tests; `npm run test:e2e:all` 12 passed
+twice (10.1 s each); the greps of acceptance criterion 4 empty over `e2e/`; every changed path within `owns:`. The lead read
+`e2e/support/people.ts` and the two sign-in helpers: the helpers throw a fixed message with no original message, stack or
+`cause`; the harness's people are random and independent. The residual the Handoff names under Finding 1 (a shell forging the
+marker, the carried list and all three database names at once) is accepted by the lead as not closable inside a worker.
 
 ## Handoff
 
