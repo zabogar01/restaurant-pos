@@ -20,7 +20,7 @@ export default defineConfig({
       {
         test: {
           name: 'client',
-          exclude: [...configDefaults.exclude, 'apps/server/**'],
+          exclude: [...configDefaults.exclude, 'apps/server/**', 'e2e/**'],
         },
       },
     ],

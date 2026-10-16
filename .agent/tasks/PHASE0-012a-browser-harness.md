@@ -637,3 +637,161 @@ These rulings are addressed to the builder.
 - A development server, the owner's database `pos`, the owner's manager.
 
 ## Handoff
+
+**Result: built, with one finding that blocks A3 (below). Everything else is done and proved.** Five of the six
+premises pass in Chromium and WebKit. A3, "no content-security violation", **fails in both engines on a real defect
+in the built clients**, not in the harness: both bundles call `Function('')`, which the content-security policy
+refuses with a `securitypolicyviolation` of `script-src eval`. I left A3 as the task wrote it and did not weaken it.
+
+### The finding (the question for the lead)
+
+zod 4.6.5, which `@pos/contracts` uses in both clients, probes at start-up whether it may compile validators:
+`allowsEval = cached(() => { try { return Function(''), true } catch { return false } })`
+(`node_modules/zod`, visible in both `dist` bundles as ``try{return Function(``),!0}catch{return!1}``). Under
+`script-src 'self'` the call is refused, the `catch` swallows the exception, and the client works, but the browser
+**fires a `securitypolicyviolation` event** for it. The 011a policy criterion ("no violation in either shell") is
+therefore false today, and nothing before this harness could see it, because the event is not an exception.
+
+Evidence: `npm run test:e2e:all` with the source as committed: A3 fails in both engines with
+`Expected: []  Received: ["script-src eval"]` at `premises.spec.ts:75` (the POS, signed out). Both bundles contain the probe
+(`grep -rl "Function(" apps/pos/dist apps/back-office/dist` lists one file each).
+
+**Proposed resolution, tried and then reverted because it is outside my paths.** zod's documented switch is
+`z.config({ jitless: true })`, which must run **before** `@pos/contracts` builds its first schema. I added
+`apps/pos/src/zod-jitless.ts` and `apps/back-office/src/zod-jitless.ts`, each exactly
+`import { z } from 'zod'; z.config({ jitless: true });`, and imported each as the **first** import of that app's
+`main.tsx` (import order is evaluation order; a call placed after the other imports is too late). With that,
+`npm run test:e2e:all` passed **12 of 12** (output below), twice. I then removed both files and both import lines
+(`git checkout`; nothing of it is committed). The lead decides whether this is a small task of its own, whether
+`jitless` belongs in `packages/contracts` or in each `main.tsx`, and whether the server (which has no policy) should
+differ. A unit test that the built bundle contains no `Function(` probe would be a cheaper guard than a browser run.
+
+### What I did (path: what)
+
+- `e2e/package.json` (`@pos/e2e`, private, `type: module`, `test` runs `playwright test`), `e2e/tsconfig.json`
+  (noEmit, DOM lib for `page.evaluate`), `e2e/playwright.config.ts`, `e2e/support/{env,database,global-setup,clock,fixtures}.ts`,
+  `e2e/tests/premises.spec.ts` (A1 to A6).
+- `@playwright/test` **1.64.1**, exact, in `e2e/package.json`; `package-lock.json` updated by `npm install -D -w e2e`.
+- `package.json`: scripts `test:e2e` and `test:e2e:all` added as keys; `typecheck` gains `&& tsc -p e2e`.
+- `vitest.config.ts`: `client` project `exclude` gains `'e2e/**'`.
+- `db/dev.env`: one line, `POS_E2E_DB_NAME=pos_e2e`, after `POS_TEST_DB_NAME`.
+- `apps/server/test/support/env.ts`: the "never the development database" guard is now one exported function,
+  `databaseEnv(variable, alsoRefuse)`; `serverTestEnv()` is `databaseEnv('POS_TEST_DB_NAME', ['POS_E2E_DB_NAME'])`
+  and `e2eEnv()` is `databaseEnv('POS_E2E_DB_NAME', ['POS_TEST_DB_NAME'])` plus a literal refusal of `pos` and `pos_test`.
+- `apps/server/test/support/database.ts`: new `resetDatabaseFrom(dir)`; `resetDatabase()` keeps its zero-argument
+  signature and calls it with `'db/migrations'`. (See "Decided".)
+- `apps/server/test/server-test-env.test.ts`: extended (see "Tests changed").
+- Nothing under `apps/server/src`, `apps/server/scripts`, either client's `src` or `packages/` is changed in the commit.
+- Commit: one commit on `agent/phase0-012a` (`git log -1`; a hash written here would change with this file). It contains
+  A3 failing, as described.
+
+### What I decided, and on what evidence
+
+1. **Loader question first.** A spec importing `makePeople` (`apps/server/test/support/people.js`), `closePool` from the
+   server's `src` and the harness's own reset ran under Playwright's loader and created a person in `pos_e2e`. Playwright
+   resolves the `.js` specifiers to `.ts` unaided: no loader, build step or alias was added. (The probe first failed
+   with `PIN must be six digits` because I gave `makePeople` a four-digit base; the base is 700000.) The probe is deleted.
+2. **`resetDatabase` stays zero-argument.** My first edit gave it a default parameter. `pool.test.ts` calls
+   `beforeAll(resetDatabase)`, and vitest passes its context as the first argument, so the default was replaced by an
+   object and `verify` failed (`FixtureParseError`) in `pool.test.ts`. I reverted to a sibling function, which is what
+   ruling 3 allowed; `pool.test.ts` was never edited.
+3. **A worker re-evaluates the config.** `applyE2eEnv()` in `playwright.config.ts` assigns the environment once, in the
+   runner, and sets `E2E_ENV_APPLIED=1`. A worker loads the config again with `DATABASE_URL` already pointing at
+   `pos_e2e`; recomputing would take that for "the development database" and refuse. So on the second evaluation it
+   **checks** the values instead (both URLs name `POS_E2E_DB_NAME`, which is a plain identifier and not `pos`, not
+   `pos_test` and not any name in `db/dev.env`), and a shell-set `E2E_ENV_APPLIED` cannot skip that check. Tested in the unit file.
+4. **Readiness needs the server's own line.** A busy port 8543 would let a foreign server answer `/api/health` while my
+   child exits with the listen error. The wait loop therefore requires 200 **and** the child alive **and** the child's
+   log to contain `listening on`. I did not run a busy-port experiment.
+5. **A1 needed a second assertion.** The task's red proof (the back office aimed at another port) did **not** turn A1 red:
+   `connect-src 'self'` refuses the cross-origin `fetch` before any request exists, so every request that *was* made was on
+   the right origin. A mutation that misses the real path proves nothing, so A1 now also requires that each shell's own
+   first read (`GET /api/pos/auth/me`, `GET /api/back-office/auth/me`) was made to the harness origin. With that, the same
+   mutation fails (below). The stronger guard against a second origin is, in fact, the policy plus A3.
+6. **A6's screenshots** are written with `testInfo.outputPath(...)`, so they land in `e2e/test-results/<test>/` and,
+   as everything there, are wiped at the next run.
+7. **Fixtures.** `test` has an auto worker fixture `pool` (closes the application pool once), an auto test fixture `world`
+   (drops and migrates `pos_e2e`, then `people.cashier()` / `people.manager()` from `makePeople(700000)`, and
+   `serverLog()` returning the server log written since the test began), `oneProfile` (`{ context, pos, office }`, one jar)
+   and `twoProfiles` (`{ a: { context, page }, b: { context, page } }`, two jars). Each profile carries in-memory `console` and
+   `requests` (`method`, `url`, `body`) arrays for 012b's scan, and records every `securitypolicyviolation` from an init
+   script installed before any page script (`violationsOn(page)`). Contexts are closed at the end of the test, before the next reset.
+
+### Premises: what each engine did
+
+Chromium (`chromium-1248`) and WebKit (`webkit-2370`) behaved the same on every premise, and **no engine-specific branch exists**.
+Both: `rpos_cid` stored `secure`, `httpOnly`, `sameSite: 'Strict'`, path `/` under `ignoreHTTPSErrors`; the next response
+carried no `Set-Cookie` for it; `isSecureContext` true; bodiless `activity`, `release` and `logout` carried no `content-type` in
+`request.allHeaders()` and were answered 204 (so Fastify accepts a bodiless `POST`); `Origin`/Host checks passed on `localhost`.
+`browser.newContext()` inherits `baseURL` and `ignoreHTTPSErrors` from `use`. The one difference between engines is speed
+(WebKit about 1.5 to 2 times slower per test).
+
+### Existing tests changed
+
+Only `apps/server/test/server-test-env.test.ts`, as the task allows. The four existing cases are untouched. I added one case
+to the existing block (the server tests' guard refuses the harness's database) and a second `describe` of six cases for
+`e2eEnv`/`applyE2eEnv`: refuses `pos`, `pos_test`, a name the URLs give (`devdb`, `ownerdb`), a `%70os` escape; accepts
+`pos_e2e` and retargets both URLs; a worker checks rather than trusts. The new `describe` imports `e2e/support/env.ts`, which
+imports `databaseEnv`; that is the only place the server tests reach into `e2e/`.
+
+### Red proofs (each made, run, read, reverted; A3 to A6 were run with the zod experiment in place, so the base was green)
+
+- **A2**, `sameSite: 'lax'` in `client-instance.ts`: `Expected "sameSite": "Strict"  Received "sameSite": "Lax"` at `premises.spec.ts:43`.
+- **A3**, inline `<style>body { margin: 0; }</style>` in `apps/pos/index.html`, rebuilt: `Received ["style-src-elem inline"]`
+  at the POS violations assertion. (Without the zod fix, A3 is already red for the reason above, so this proof needed the experiment.)
+- **A4**, `headers['Content-Type'] = 'application/json'` always, in `packages/api-client/src/client.ts`, rebuilt:
+  `Expected value: not "content-type"  Received array: [... "content-length", "content-type", ...]` at `premises.spec.ts:91`. It
+  fails on the header before it reaches the status; the task predicted a 400, which I did not need to see.
+- **A5**, the harness server started with `PIN_PEPPER` + `'x'`: `Expected: "signed-in"  Received: "signed-out"` at `premises.spec.ts:112`.
+- **A6**, the two roots swapped in `defaultBundleRoots`: `Expected: "signed-out"  Received: ""` (`<div id="root"></div>`,
+  `data-session` never set), at `premises.spec.ts:127`. It fails earlier than the structural assertions: each bundle is
+  requested under the other's base path and does not start. The digit-button, field and disjoint-asset assertions were not reached in this proof.
+- **A1**, `window.fetch(`https://localhost:8999${url}`)` as the back office transport: **first attempt passed** (see Decided 5);
+  after the strengthening: `Expected length: not 0  Received array: []` at `premises.spec.ts:29`.
+- **Environment guard**, `if (false && development.has(...))` in `databaseEnv`: 4 of 11 fail,
+  `expected [Function] to throw an error` (the two development-database cases of each guard's describe, plus one which reached
+  the literal refusal and threw a different message than the test expects).
+
+### Verify and the runs
+
+- `npm run verify`: typecheck clean (including `tsc -p e2e`); **90 test files, 3738 tests, all passed** (baseline 90 and 3731; +7 are the
+  new cases above). It takes about 60 s.
+- `npm run test:e2e:all`, source as committed: **10 passed, 2 failed (A3 in both engines)**, 8.7 s of test time, about 20 s
+  from the command including the client builds.
+- `npm run test:e2e:all` **with the zod experiment in the tree**: `12 passed (8.8s)`; run again immediately: `12 passed (8.6s)`, so the
+  reset leaves nothing behind. (Timings are the tests' own; each run also provisions, migrates and starts the server, a few seconds.)
+- Temporary directory: after the runs, `ls -d "$TMPDIR"rpos-e2e-* /tmp/rpos-e2e-*` answers `no matches found`; the directory is gone.
+- Greps over `e2e/` (excluding `node_modules`, `test-results`), each empty:
+  `page\.request|context\.request|getByTestId|DELETE|TRUNCATE|psql|--env-file|reuseExistingServer|trace: 'on|webServer`;
+  `devpassword|apppassword`. The three credentials (`POS_OWNER_PASSWORD`, `POS_APP_PASSWORD`, `PIN_PEPPER`) were checked by a
+  script in the scratchpad that reads `db/dev.env` and prints only hit or no hit per name: **no hit** for each.
+- I did not run a development server, did not touch `pos`, and did not run `npx playwright install` (acceptance item 2 is the lead's).
+
+### Found and not fixed
+
+- **The zod probe** (above). Also: `grep -c Function` showed only that probe in the POS bundle, so it is the only source I know of.
+- **My own slip:** while locating the insertion point in `db/dev.env`, I ran `grep -n -B3 -A1` and it printed two lines holding
+  the development owner and application passwords into this session's output. They are the throwaway dev values the file keeps on
+  purpose, and nothing was written anywhere, but ruling 7 said never to print values. Subsequent reads were by line number or by script.
+- `npm install` printed a warning that `esbuild` and `fsevents` have install scripts not covered by `allowScripts`; I did not approve any.
+- The first `npm install -D -w e2e ...` ran before `e2e/package.json` was visible to it and only added the workspace link; the second run added the dependency.
+
+### What 012b needs
+
+- Fixtures and helpers: `test`, `expect`, `signInAtPos(page, pin)`, `signInAtBackOffice(page, username, password)`, `violationsOn(page)`,
+  `ageSession('POS' | 'BACK_OFFICE', person, seconds)` (relative shift, exactly one row; pair it with `page.clock.install()` before `goto` and
+  `fastForward`), `ownerQuery`, `Person`.
+- Accessible names verified in both engines: POS digits by exact name (`'1'` ... `'0'`), `Continue`, `Release`; back office
+  `Username`, `Password`, `Sign in`, `Log out`. After a POS sign-in the cashier's name is visible as text (`<name> · Cashier`).
+  `getByText(name)` was unique on the floor screen.
+- The activity trigger: a click on the cashier's name after sign-in sends `activity` (first input after sign-in is the leading edge).
+- `makePeople(700000)` gives six-digit PINs 700001, 700002, ...; the factory restarts for every test because the database does.
+- The anti-CSRF header is `x-rpos-csrf`; I did not assert on it.
+- `world.serverLog()` returns the log written since the test began, at `trace`; I did not scan it.
+- Carried forward as the consult asks: for every later phase, the fixtures, the schema reset, people through domain functions, both
+  clocks, requests by the page, state and codes, no traces. Phase 1: AC-32's POS half and AC-35's last sentence close in this harness
+  with the first deactivation and the first real form. Phase 2: AC-27's second sentence, AC-19's approval class through a route, and M-1
+  driven for real; the approval stand-ins must not be driven as if they verified.
+- `.agent/bin/ask.sh librarian` was not needed.
+
+BLOCKED: A3 fails in both engines because zod's `Function('')` probe raises a `script-src eval` violation in both built clients; shall the lead make `z.config({ jitless: true })` (first import of each `main.tsx`, tested to give 12 of 12) a task of its own, or rule that A3 should expect the violation until then?
