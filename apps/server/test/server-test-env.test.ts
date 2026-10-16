@@ -109,4 +109,40 @@ describe('e2eEnv refuses every database but its own', () => {
     vi.stubEnv('POS_E2E_DB_NAME', 'pos_test');
     expect(() => applyE2eEnv()).toThrow(/does not name its own database/);
   });
+
+  // A shell that forges the runner's marker gets no weaker a check than the runner applies.
+  function forgedMarker(shell: Record<string, string>, name: string): void {
+    developmentShell();
+    vi.stubEnv('E2E_ENV_APPLIED', '1');
+    vi.stubEnv('E2E_REFUSED_DATABASES', '');
+    for (const [key, value] of Object.entries(shell)) vi.stubEnv(key, value);
+    vi.stubEnv('POS_E2E_DB_NAME', name);
+    vi.stubEnv('DATABASE_URL', `postgres://u:p@127.0.0.1:5433/${name}`);
+    vi.stubEnv('MIGRATION_DATABASE_URL', `postgres://u:p@127.0.0.1:5433/${name}`);
+  }
+
+  it('and a worker refuses a development database the shell renamed, marker or not', () => {
+    forgedMarker({ POS_DB_NAME: 'custom_development' }, 'custom_development');
+    expect(() => applyE2eEnv()).toThrow(/does not name its own database/);
+  });
+
+  it('and a worker refuses a server-test database the shell renamed', () => {
+    forgedMarker({ POS_TEST_DB_NAME: 'custom_test' }, 'custom_test');
+    expect(() => applyE2eEnv()).toThrow(/does not name its own database/);
+  });
+
+  it('and a worker accepts what the runner set, after the runner has run', () => {
+    developmentShell();
+    const written = [
+      'E2E_ENV_APPLIED', 'E2E_REFUSED_DATABASES', 'POS_E2E_DB_NAME', 'POS_APP_PASSWORD', 'PIN_PEPPER',
+      'DATABASE_URL', 'MIGRATION_DATABASE_URL', 'PROVISION_DATABASE_URL',
+    ];
+    // Stub each key the runner writes, so that unstubbing restores the worker's own environment.
+    for (const key of written) vi.stubEnv(key, process.env[key] ?? '[]');
+    vi.stubEnv('E2E_ENV_APPLIED', '');
+    vi.stubEnv('POS_E2E_DB_NAME', 'pos_e2e');
+    applyE2eEnv(); // the runner's branch: sets the marker and the carried names
+    expect(process.env.E2E_ENV_APPLIED).toBe('1');
+    expect(() => applyE2eEnv()).not.toThrow(); // a worker's re-evaluation
+  });
 });

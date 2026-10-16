@@ -15,6 +15,25 @@ function databaseOf(url: string): string {
   return decodeURIComponent(new URL(url).pathname.replace(/^\//, ''));
 }
 
+/**
+ * The names that are the development database in `env`: POS_DB_NAME and the
+ * databases the two connection URLs name. The single place that decides it. A
+ * caller whose URLs have already been retargeted at its own database passes
+ * `urls: false`, and carries the names it saw before retargeting.
+ */
+export function developmentDatabases(
+  env: Record<string, string | undefined>,
+  { urls = true }: { urls?: boolean } = {}
+): Set<string> {
+  const names = [env.POS_DB_NAME];
+  if (urls) {
+    for (const key of ['DATABASE_URL', 'MIGRATION_DATABASE_URL']) {
+      if (env[key]) names.push(databaseOf(env[key]!));
+    }
+  }
+  return new Set(names.filter((name): name is string => !!name));
+}
+
 function retarget(url: string, database: string): string {
   const u = new URL(url);
   u.pathname = `/${database}`;
@@ -48,12 +67,7 @@ export function databaseEnv(
     throw new Error(`${variable} "${testDatabase}" is not a plain database name; refusing to run`);
   }
   // The development database is never a test target, however it is named.
-  const development = new Set(
-    [merged.POS_DB_NAME, databaseOf(developmentUrl), databaseOf(migrationUrl)].filter(
-      (name): name is string => !!name
-    )
-  );
-  if (development.has(testDatabase)) {
+  if (developmentDatabases(merged).has(testDatabase)) {
     throw new Error(
       `${variable} is "${testDatabase}", which is the development database; ` +
         'refusing to run tests against it'

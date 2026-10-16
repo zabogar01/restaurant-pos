@@ -1,15 +1,12 @@
 import { readFileSync, statSync } from 'node:fs';
 import { test as base, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { closePool } from '../../apps/server/src/db/pool.js';
-import { makePeople, type Person } from '../../apps/server/test/support/people.js';
+import type { Person } from '../../apps/server/test/support/people.js';
 import { resetE2eDatabase } from './database.js';
+import { makeHarnessPeople } from './people.js';
 
 export { expect };
 export type { Person };
-
-// Six digits, a base of the harness's own. The database is replaced before every
-// test, so every test may take the same people.
-const PIN_BASE = 700000;
 
 export interface People {
   cashier(): Promise<Person>;
@@ -105,7 +102,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       const logPath = process.env.E2E_SERVER_LOG;
       if (!logPath) throw new Error('E2E_SERVER_LOG is not set; the harness server was not started by globalSetup');
       const start = statSync(logPath).size;
-      const make = makePeople(PIN_BASE);
+      // People whose name, PIN, username and password are independent random values,
+      // so that no failure diagnostic that names one can spell another.
+      const make = makeHarnessPeople();
       await use({
         people: { cashier: () => make.cashier(), manager: () => make.manager() },
         serverLog: () => readFileSync(logPath).subarray(start).toString('utf8'),
@@ -143,17 +142,37 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   },
 });
 
-/** Types a PIN on the POS pad with its digit buttons, then presses Continue. */
-export async function signInAtPos(page: Page, pin: string): Promise<void> {
-  for (const digit of pin) {
-    await page.getByRole('button', { name: digit, exact: true }).click();
+// A step that cannot finish fails here, inside the catch below, rather than at the
+// test's own timeout, which would end the test before the fixed message is thrown.
+const STEP_MS = 10_000;
+
+/**
+ * Types a person's PIN on the POS pad with its digit buttons, then presses Continue.
+ * Playwright's own errors name the locator it was driving, and a digit button's name
+ * is the digit, so any failure here is replaced by a fixed message: no original
+ * message, stack or cause survives into a report, an `error-context.md` or a log.
+ */
+export async function signInAtPos(page: Page, person: Pick<Person, 'name' | 'pin'>): Promise<void> {
+  try {
+    for (const digit of person.pin) {
+      await page.getByRole('button', { name: digit, exact: true }).click({ timeout: STEP_MS });
+    }
+    await page.getByRole('button', { name: 'Continue' }).click({ timeout: STEP_MS });
+  } catch {
+    throw new Error(`entering the PIN at the POS pad failed for ${person.name}`);
   }
-  await page.getByRole('button', { name: 'Continue' }).click();
 }
 
-/** Fills BO-01 and presses Sign in. */
-export async function signInAtBackOffice(page: Page, username: string, password: string): Promise<void> {
-  await page.getByLabel('Username').fill(username);
-  await page.getByLabel('Password').fill(password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+/** Fills BO-01 and presses Sign in, with the same fixed failure message. */
+export async function signInAtBackOffice(
+  page: Page,
+  person: Pick<Person, 'name' | 'username' | 'password'>
+): Promise<void> {
+  try {
+    await page.getByLabel('Username').fill(person.username!, { timeout: STEP_MS });
+    await page.getByLabel('Password').fill(person.password!, { timeout: STEP_MS });
+    await page.getByRole('button', { name: 'Sign in' }).click({ timeout: STEP_MS });
+  } catch {
+    throw new Error(`signing in at the back office failed for ${person.name}`);
+  }
 }

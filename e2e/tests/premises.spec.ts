@@ -75,8 +75,8 @@ test('A3. no content-security violation on either shell, signed out or signed in
   expect(await violationsOn(pos)).toEqual([]);
   expect(await violationsOn(office)).toEqual([]);
 
-  await signInAtPos(pos, cashier.pin);
-  await signInAtBackOffice(office, manager.username!, manager.password!);
+  await signInAtPos(pos, cashier);
+  await signInAtBackOffice(office, manager);
   await expect(rootState(pos)).toHaveAttribute('data-session', 'signed-in');
   await expect(rootState(office)).toHaveAttribute('data-session', 'signed-in');
   expect(await violationsOn(pos)).toEqual([]);
@@ -89,7 +89,7 @@ test('A4. a bodiless POST carries no Content-Type and is answered 204', async ({
   const { pos, office } = oneProfile;
 
   await pos.goto('/pos/');
-  await signInAtPos(pos, cashier.pin);
+  await signInAtPos(pos, cashier);
   await expect(rootState(pos)).toHaveAttribute('data-session', 'signed-in');
 
   async function expectBodiless(page: Page, path: string, act: () => Promise<void>): Promise<void> {
@@ -106,7 +106,7 @@ test('A4. a bodiless POST carries no Content-Type and is answered 204', async ({
   await expectBodiless(pos, '/api/pos/auth/release', () => pos.getByRole('button', { name: 'Release' }).click());
 
   await office.goto('/back-office/');
-  await signInAtBackOffice(office, manager.username!, manager.password!);
+  await signInAtBackOffice(office, manager);
   await expect(rootState(office)).toHaveAttribute('data-session', 'signed-in');
   await expectBodiless(office, '/api/back-office/auth/logout', () =>
     office.getByRole('button', { name: 'Log out' }).click()
@@ -117,7 +117,7 @@ test('A5. a cashier signs in at the real pad', async ({ world, oneProfile }) => 
   const cashier = await world.people.cashier();
   const { pos } = oneProfile;
   await pos.goto('/pos/');
-  await signInAtPos(pos, cashier.pin);
+  await signInAtPos(pos, cashier);
   await expect(rootState(pos)).toHaveAttribute('data-session', 'signed-in');
   await expect(pos.getByText(cashier.name)).toBeVisible();
 });

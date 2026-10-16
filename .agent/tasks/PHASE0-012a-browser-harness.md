@@ -921,4 +921,80 @@ I removed the import from the POS `main.tsx` and ran `npm run test:e2e:all` (whi
 Nothing beyond round 1's *What 012b needs*, which stands. The zod finding is closed; 012b can rely on `violationsOn` returning `[]`
 for both shells as long as `@pos/contracts/browser` stays the first import of each `main.tsx`.
 
+*(Round 2 ended with DONE; the file's last line below is the current state.)*
+
+## Handoff — Round 3 (the review's two findings)
+
+**Result: done. Both findings fixed; `npm run verify` green; `npm run test:e2e:all` 12 of 12, twice.**
+
+### Finding 1: one guard policy
+
+**What I did.** `apps/server/test/support/env.ts` now exports `developmentDatabases(env, { urls })`, the single place that says what
+"the development database" is (`POS_DB_NAME`, plus the databases the two connection URLs name unless `urls: false`); `databaseEnv` uses it.
+`e2e/support/env.ts` has one function, `refusedDatabases(file, shell, carried)`, used by **both** branches. It collects `pos`, `pos_test`,
+the development names and `POS_TEST_DB_NAME` as `db/dev.env` gives them **and** as the shell gives them, and (in a worker) the names the runner carried.
+The runner computes the set before it retargets anything, refuses `POS_E2E_DB_NAME` if it is in it, and writes it to `E2E_REFUSED_DATABASES` (JSON)
+beside the marker. A worker re-evaluates with the carried names, the file's names, the shell's `POS_DB_NAME` and `POS_TEST_DB_NAME`, `pos` and `pos_test`,
+and still demands that both URLs name `POS_E2E_DB_NAME`, a plain identifier. In a worker the shell's own URLs are not read for names, because the runner
+has already pointed them at the harness database; the carried list speaks for them. The runner's literal `pos`/`pos_test` check was replaced by the same set.
+
+**Tests** (`server-test-env.test.ts`, three new cases, all in the `e2eEnv` describe): the reviewer's scenario (marker set, shell `POS_DB_NAME=custom_development`,
+`POS_E2E_DB_NAME=custom_development`, both URLs naming it) is refused; the same with a shell-renamed `POS_TEST_DB_NAME` is refused; and after the real runner
+branch has run, a worker's re-evaluation is accepted (the test stubs every key the runner writes, so nothing leaks between cases).
+
+**Red proof.** I reverted the worker branch to the file-only set (`refusedDatabases(devEnvFile(), {}, [])`): `Tests  2 failed | 12 passed (14)`; the two failures
+are `and a worker refuses a development database the shell renamed, marker or not` and `... a server-test database the shell renamed`, both
+`AssertionError: expected [Function] to throw an error`. Reverted; 14 of 14 pass.
+
+**What the worker branch still cannot tell apart from a legitimate worker.** A shell that forges `E2E_ENV_APPLIED=1` **and** forges an `E2E_REFUSED_DATABASES`
+that omits the real development name **and** sets `DATABASE_URL`, `MIGRATION_DATABASE_URL` and `POS_E2E_DB_NAME` to a database that neither `db/dev.env`
+nor the shell's `POS_DB_NAME`/`POS_TEST_DB_NAME` names, nor is `pos` or `pos_test`. For example, a development database called `custom_development` that
+**only** the shell's connection URLs name. That is byte-for-byte what a legitimate worker's environment looks like after the runner retargeted it, so no check
+inside a worker can refuse it. It requires three deliberate forgeries; an ordinary shell (no marker) gets the runner's full check. Closing it would need a secret
+shared between runner and workers, or workers that never re-evaluate the configuration; I did not add either.
+
+### Finding 2: no credential in a Playwright diagnostic or artefact
+
+**What I did.**
+- `e2e/support/people.ts` (new): `makeHarnessPeople()` over `createStaffUser`, `createBackOfficeCredential` and `findUserByPin`. A display name (eight random letters),
+  a six-digit PIN (`crypto.randomInt`, redrawn if the domain refuses it as taken), a username (twelve random lowercase letters) and a password (18 random bytes, base64url)
+  are drawn independently, so none can be derived from another or from the name. `makePeople` and the server tests are untouched. `fixtures.ts` uses the new factory.
+- `signInAtPos(page, person)` and `signInAtBackOffice(page, person)` now take the person (they need the display name) and catch **any** error, throwing a new
+  `Error` with a fixed message naming the step and the display name: `entering the PIN at the POS pad failed for <name>` and
+  `signing in at the back office failed for <name>`; no original message, stack or cause. Each action has `timeout: 10_000`, so a stuck step fails inside the catch
+  instead of at the test timeout (my first proof run showed a 30 s test timeout that never reached the catch). `premises.spec.ts` calls were updated.
+  Nowhere else does the harness type or pass a credential to Playwright.
+
+**The proof.** A temporary spec with three failing tests, run in Chromium, terminal output captured to a scratchpad file, each test's person written to a scratchpad
+file, then a script that scans the output and everything under `e2e/test-results/` and prints only hit or no hit. The failures:
+(a) Password input disabled by `page.evaluate`: `Error: signing in at the back office failed for Opvsyfdg` (10.5 s);
+(b) after a successful POS sign-in: `Error: expect(locator).toBeVisible() failed  Locator: getByText('no such text')  Expected: visible  Timeout: 1000ms  Error: element(s) not found`;
+(c) the same after a back-office sign-in. The script, over 5 files (the terminal output and the 4 `error-context.md` files and their directories under `e2e/test-results/`):
+
+```
+person 1 pin: no hit        person 1 username: no hit        person 1 password: no hit
+person 2 pin: no hit
+person 3 pin: no hit        person 3 username: no hit        person 3 password: no hit
+```
+
+`error-context.md` for (a) holds the fixed message and the test source, no page snapshot; for (b) and (c) it holds a page snapshot, which contains no credential
+(a typed password field is emptied by the client on submit and is not on the page after sign-in). I did not have to stop with BLOCKED. I then deleted the spec,
+`e2e/test-results/` and the scratchpad credential file. (My first run of this proof used a grep filter that matched no test; "No tests found", re-run by file.)
+
+### Verify and the runs (source as committed)
+
+- `npm run verify`: typecheck clean; **93 test files, 3744 tests, all passed** (round 2: 3741; +3 are the new guard cases).
+- `npm run test:e2e:all`: `12 passed (8.7s)`, and again immediately `12 passed (8.2s)`.
+- Greps over `e2e/` (the list of acceptance criterion 4, plus the `devpassword|apppassword` strings): empty. The three `db/dev.env` credentials: no hit by script.
+
+### Found and not fixed
+
+- Nothing beyond the residual in Finding 1. `sed -i` was used for two mechanical renames in `e2e/` (call sites and `{ timeout: STEP_MS }`); the rest of the edits used the file tools.
+
+### What the next agent needs
+
+Round 1's *What 012b needs* stands with two changes: `signInAtPos(page, person)` and `signInAtBackOffice(page, person)` take the `Person` (not the raw PIN or credentials),
+and `world.people.cashier()` / `manager()` now return people with random, independent name, PIN, username and password. A test that must name a credential in an
+assertion message must not; assert on state and codes as the rules say.
+
 DONE
