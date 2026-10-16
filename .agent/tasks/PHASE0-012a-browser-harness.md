@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: [PHASE0-011d2]
 owns: [e2e/**, apps/server/test/**, vitest.config.ts, package.json, package-lock.json, db/dev.env, packages/contracts/**, apps/pos/src/main.tsx, apps/back-office/src/main.tsx, apps/pos/test/**, apps/back-office/test/**]
-status: review
+status: complete
 cycles: 3
 ---
 # PHASE0-012a — The browser harness and its premises
