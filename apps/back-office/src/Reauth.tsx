@@ -31,8 +31,8 @@ import type { IdleAttempt, IdleMode, SessionSnapshot, SessionStore } from './ses
 //
 // The password field is an uncontrolled native input: read once on submit, emptied at
 // once and at every change of mode, never React state and never an attribute (B-12).
-// The fixed Username takes its value as a property from a ref, because React writes
-// the `value` attribute for a `value` or `defaultValue` prop and no input has one.
+// Both Usernames take their value as a property from a ref, because React writes the
+// `value` attribute for a `value` or `defaultValue` prop and no input has one.
 // Every form is `method="post"` with its submission prevented.
 
 type Idle = Extract<SessionSnapshot, { phase: 'idle' }>;
@@ -50,6 +50,13 @@ export function Reauth({ snapshot, store }: { snapshot: Idle; store: SessionStor
   const { mode, attempt, busy, person } = snapshot;
   const confirming = mode === 'confirm-logout';
   const verifying = attempt === 'verifying' || busy;
+  // What the other manager has typed as Username (never the password). It survives a visit
+  // to the discard confirmation, because "Keep this draft" returns to the form it came
+  // from, and starts empty each time that form opens from the acknowledgement.
+  const typedUsername = useRef('');
+  useLayoutEffect(() => {
+    if (mode === 'same' || mode === 'confirm-other') typedUsername.current = '';
+  }, [mode]);
   const idledAccount = accountKey(person.username);
   const idledWait = snapshot.waits.find((w) => w.username === idledAccount)?.remainingSeconds ?? null;
 
@@ -210,7 +217,9 @@ export function Reauth({ snapshot, store }: { snapshot: Idle; store: SessionStor
             </footer>
           </>
         )}
-        {(mode === 'same' || mode === 'other') && <CredentialForm key={mode} snapshot={snapshot} store={store} />}
+        {(mode === 'same' || mode === 'other') && (
+          <CredentialForm key={mode} snapshot={snapshot} store={store} typed={typedUsername} />
+        )}
       </dialog>
       <dialog
         ref={confirmation}
@@ -235,18 +244,26 @@ function Notice({ copy, children }: { copy: NoticeCopy; children?: ReactNode }) 
   );
 }
 
-function CredentialForm({ snapshot, store }: { snapshot: Idle; store: SessionStore }) {
+function CredentialForm({
+  snapshot,
+  store,
+  typed,
+}: {
+  snapshot: Idle;
+  store: SessionStore;
+  typed: { current: string };
+}) {
   const other = snapshot.mode === 'other';
   const { attempt, busy, person } = snapshot;
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(typed.current);
   const [local, setLocal] = useState<Local>(CLEAN);
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
   // The idled username, as a property: no `value` attribute is ever written (B-12).
   useLayoutEffect(() => {
-    if (!other && usernameRef.current) usernameRef.current.value = person.username;
-  }, [other, person.username]);
+    if (usernameRef.current) usernameRef.current.value = other ? typed.current : person.username;
+  }, [other, person.username, typed]);
 
   const verifying = attempt === 'verifying' || busy;
   const account = accountKey(other ? username : person.username);
@@ -367,7 +384,10 @@ function CredentialForm({ snapshot, store }: { snapshot: Idle; store: SessionSto
             spellCheck={false}
             disabled={verifying}
             {...aria(other && local.username === 'missing', 'reauth-username-error')}
-            onInput={(event) => setUsername(event.currentTarget.value)}
+            onInput={(event) => {
+              if (other) typed.current = event.currentTarget.value;
+              setUsername(event.currentTarget.value);
+            }}
           />
           {other && local.username === 'missing' && (
             <span id="reauth-username-error" className="office-error">

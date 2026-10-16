@@ -602,6 +602,24 @@ describe('ruling 5. the four modes', () => {
     expect(focusedId()).toBe('reauth-username');
   });
 
+  it('Keep returns to the other form with the typed Username and an empty Password; a later visit from the acknowledgement starts empty', async () => {
+    const host = await open();
+    await goIdle(host);
+    toOtherForm();
+    type(field(host, 'Username'), 'r.ayu');
+    type(field(host, 'Password'), 'half');
+    click('Log out');
+    click('Keep this draft');
+    expect(text(dlg()!.querySelector('h2'))).toBe('Sign in as a different manager');
+    expect(field(host, 'Username').value).toBe('r.ayu');
+    expect(field(host, 'Password').value).toBe('');
+    expect(focusedId()).toBe('reauth-username');
+
+    click('Back to m.iqbal');
+    toOtherForm();
+    expect(field(host, 'Username').value).toBe('');
+  });
+
   it('on the confirmation, Escape and a close request are "Keep this draft"', async () => {
     const host = await open();
     await goIdle(host);
