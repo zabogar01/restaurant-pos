@@ -11,7 +11,10 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 2026-10-16 (afternoon): `development` at `66e76e8` (PRs #97, 011d2, and #98 merged), verify green 90 / 3731. The
 011d2 worktree and run dir removed. **ARCH-015 done** (Task 12 consult): split into **012a** (the harness and its
-premises) then **012b** (the acceptance tests). Lead branch committed (owner: after the consult). Narrative: [journal/2026-10-16.md](journal/2026-10-16.md).
+premises) then **012b** (the acceptance tests). Lead branch committed `4cd5db7`. **PHASE0-012a dispatched** (builder
+`phase0-012a`, Sonnet; worktree `../restaurant-pos-wt/PHASE0-012a`). Three rounds (zod eval probe → `@pos/contracts/browser`;
+review's two highs: worker env guard, credentials in Playwright's error-context), all in the task file. Lead verify
+93 / 3744, e2e 12/12, `pos` unchanged beside a dev server. **Re-review clean; complete at `d8eae51`, PR #99.** Narrative: [journal/2026-10-16.md](journal/2026-10-16.md).
 
 ## Phase and gates
 
@@ -37,18 +40,19 @@ premises) then **012b** (the acceptance tests). Lead branch committed (owner: af
   `main` and `development` are protected: PR required, 0 approvals, admins too.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
-- **Guard hooks** current (`--check` 2026-10-16). Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1016`** (from `66e76e8`, no upstream), not yet committed:
-  STATE, QUEUE, journal 2026-10-16, the ARCH-015 brief. **Until it merges, the main checkout's STATE is stale.**
-- **Task branches:** none open. Only the owner merges; the lead commits when asked, pushes when told. Merged
+- **Guard hooks** reinstalled from the kit 2026-10-16 (agents.yaml allow-list); the main checkout reads stale until the lead branch merges. Rerun `install-hooks.sh` after any change to `.githooks/` or agents.yaml.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1016`** (from `66e76e8`), pushed for a PR (owner, 2026-10-16):
+  ARCH-015 brief and report, agents.yaml allow-list, DECISIONS, STATE, QUEUE, journal 2026-10-16. **Until it merges, the main checkout's STATE is stale.**
+- **Task branches:** `agent/phase0-012a` at `d8eae51`, pushed, **PR #99** (worktree `../restaurant-pos-wt/PHASE0-012a`). Only the owner merges; the lead commits when asked, pushes when told. Merged
   branches still exist (cleanup later). Not the lead's: worktrees `../restaurant-pos-design` and `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **Live agents: the lead only.** A fresh session must rename its pane `lead` first (`/lead` does).
+- **Live agents: the lead only.** A fresh session renames its pane `lead` first.
 - **ARCH-015 done** (report in `.agent/reviews/`; journal 2026-10-16 *Evening*): 012a the harness (own `pos_e2e`,
   port 8543, server from `globalSetup`, schema reset, cases A1-A6), 012b B1-B11 and the AC-18 scan; e2e out of
-  `verify`. Its *For the lead* 1-7 bind 012a; **first prove the builder sandbox can run Chromium, bind 8543, reach 5433.**
+  `verify`. **Host ready:** Playwright 1.64.1 browsers installed; a smoke on 8543 passed in both engines; builders
+  are unsandboxed, so only the allow-list gates `build:clients` / `test:e2e` (journal 2026-10-16 *Late*).
 - **011d1 and 011d2 merged** (PRs #95, #97). Not seen in a browser from 011d2: the other-manager path (one manager
   exists), cooldowns, a failed logout, the overflow region; 012b's B9-B10 take them.
 - **Carry-forwards:** Handoffs of PHASE0-005 to 011d2 (*For Task 12*, *For Phase 1's first form*); ARCH-012, 013, 014 *must carry forward*.
@@ -84,10 +88,8 @@ premises) then **012b** (the acceptance tests). Lead branch committed (owner: af
   approved on 2026-10-14 (DECISIONS). A designer handover: note above the Handoff, commit only it, close the pane.
 - **Owner hand checks serve from the task's worktree** (`npm run build:clients`, `npm run dev -w apps/server` there);
   the main checkout serves `development`. The certificate is `~/.config/restaurant-pos/tls/`.
-- **Lead browser checks** (journal 2026-10-16): serve from the worktree; Chrome stops at the self-signed certificate,
-  and **the owner clicks through it** (a security warning is not the lead's to pass). Age a back-office session with
-  `docker exec` on `restaurant-pos-db-1`, `psql` as `POS_OWNER_USER` from `db/dev.env` (ruling 17 of 011d2). Activity
-  sends at most once per 60 s, so a click soon after a resume sends nothing.
+- **Lead browser checks** (journal 2026-10-16): the owner clicks through the certificate warning; age sessions with
+  `docker exec restaurant-pos-db-1 psql -U <POS_OWNER_USER>`; activity sends at most once per 60 s.
 - `ask.sh`: Haiku, then Codex luna. Real-browser checks are the owner's. Contract edits: `ALLOW_CONTRACT=1` + DECISIONS.
 
 ## Live bugs and known defects
@@ -120,6 +122,7 @@ Nothing here is decided. Detail is where each line points.
 - **Lead rulings, yours to overturn,** in task files: PHASE0-004 to 011d2, DESIGN-011-015, ARCH-006, FE-030-036;
   among them the splits of 011c and 011d, and PR #95's list (only `FORBIDDEN` acts from BO-01; `autocomplete`
   hints; the name without the role; `FORBIDDEN` at load shows *Access refused*).
+- **012a, lead acceptance yours to overturn:** a shell forging the marker, `E2E_REFUSED_DATABASES` and all three DB names passes the worker guard.
 - **ARCH-015, *For the owner*** (neither blocks 012a): (1) a ten-minute Safari hand check at the Phase 0 gate (NFR-5
   look, M-6); (2) confirm ROADMAP's Phase 0 "inline manager-approval prompt" is met by the primitive, the adapter and
   the stand-ins, the route coming with Phase 2 (architect: yes, no wording change).
@@ -141,6 +144,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. Write PHASE0-012a from ARCH-015 (sandbox check and host browser install first); owner reads it; dispatch.
+1. Owner looks at and merges PR #99 (012a) and the lead branch's PR; then fast-forward, verify, remove the 012a worktree and run dir.
 2. Then 012b; the browser-clients ADR after 012a merges; the fresh-clone run and `test:e2e:all` at the Phase 0 gate.
    Owner, any time: the questions above.

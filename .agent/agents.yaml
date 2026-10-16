@@ -53,6 +53,8 @@ launch:
     allowed_tools:
       - Bash(npm run verify:*)
       - Bash(npm run typecheck:*)
+      - Bash(npm run build:clients:*)   # owner, 2026-10-16: the browser harness (PHASE0-012a, 012b)
+      - Bash(npm run test:e2e:*)        # owner, 2026-10-16: also matches test:e2e:all
       - Bash(npm test:*)
       - Bash(npx vitest:*)
       - Bash(npx tsc:*)
