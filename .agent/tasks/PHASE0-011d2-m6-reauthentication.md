@@ -5,7 +5,7 @@ category: feature
 touches: [identity, boundaries]
 depends_on: [PHASE0-011d1]
 owns: [apps/back-office/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-011d2 — M-6, the back-office re-authentication
@@ -690,6 +690,26 @@ stop and raise it.
 - A discard confirmation on the top bar's Log out outside M-6.
 - Any server change, `packages/**`, `docs/` of any kind, and `apps/pos`. Slice B's BO-01 and BO-02.
 - The designer's text owed at SCREEN-INVENTORY `:1115-1120` and `:617`.
+
+## Lead check before review (2026-10-16)
+
+Addressed to the reviewer.
+
+The lead's verify in this worktree is green: 90 test files, 3726 tests, typecheck clean, the same counts as the
+Handoff. Every changed path is inside `owns:`. The only existing test file changed is `session-lifecycle.test.tsx`,
+which holds the five tests the task lists; `session-harness.tsx` is test infrastructure. The lead read the store's
+`onCoreEvent` against rulings 6, 7 and 10 and found it consistent: from idle, `UNAUTHENTICATED` and `ACTOR_CHANGED`
+keep the work unless a discard logout is in flight, and `actor-changed` is ignored only while the other-manager
+sign-in is in flight.
+
+Reviewer: look hardest at these. First, whether anything other than a re-authentication or sign-in sent from M-6
+in this tab can take the screen from `idle` to `signed-in`, or re-arm the session behind M-6 (a stale `me`, a core
+event, a settled flag, the `otherSignIn` window). Second, the B-12 path for both M-6 forms, including the fixed
+Username set from a ref. Third, whether the dialog guard, the Escape handling and the Tab loop can leave M-6
+dismissed while idle, or leave the frame reachable. Fourth, the builder's finding on red proof 4: the revision guard
+is no longer the only line against a stale read; judge whether the remaining lines are sound. Fifth, the untested
+`session-gone` path of a re-authentication (*What I found*). Reviewers' sandboxes cannot run single server test
+files; this task changes none.
 
 ## Handoff
 
