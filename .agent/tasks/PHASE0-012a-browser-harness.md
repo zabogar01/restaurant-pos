@@ -824,4 +824,46 @@ imports `databaseEnv`; that is the only place the server tests reach into `e2e/`
   driven for real; the approval stand-ins must not be driven as if they verified.
 - `.agent/bin/ask.sh librarian` was not needed.
 
-BLOCKED: A3 fails in both engines because zod's `Function('')` probe raises a `script-src eval` violation in both built clients; shall the lead make `z.config({ jitless: true })` (first import of each `main.tsx`, tested to give 12 of 12) a task of its own, or rule that A3 should expect the violation until then?
+*(Round 1 ended here with a BLOCKED question about A3. It is answered by the lead's Round 2 ruling and closed below, so that the file's last line is the current state.)*
+
+## Handoff — Round 2 (the zod probe)
+
+**Result: done. A3 is green in both engines with the test unchanged, and `npm run test:e2e:all` passes 12 of 12.**
+
+### What I did
+
+- `packages/contracts/src/browser.ts` (new): a side-effect module, `z.config({ jitless: true })`, with a comment giving the reason
+  (the policy forbids `eval`; zod's start-up probe would report a violation; it must run before the first schema).
+- `packages/contracts/package.json`: an `exports` map with `"."` → `./src/index.ts` (what `main` resolved to) and `"./browser"` → `./src/browser.ts`.
+  `main` is kept. I grepped `apps`, `packages` and `e2e` (excluding `node_modules`, `dist`) for any `@pos/contracts/` deep path: **none**, so nothing
+  the map restricts was in use; `tsc` for every package and both client builds resolve as before.
+- `apps/pos/src/main.tsx` and `apps/back-office/src/main.tsx`: `import '@pos/contracts/browser';` is the first line. The server does not import it.
+- Tests, all new, none existing changed: `packages/contracts/test/browser.test.ts` (after importing `../src/browser.js`, `z.config().jitless` is `true`);
+  `apps/pos/test/main-first-import.test.ts` and `apps/back-office/test/main-first-import.test.ts` (the first `import` in `src/main.tsx` is `'@pos/contracts/browser'`).
+- `premises.spec.ts` is untouched, so the round-1 inline-`<style>` proof was not repeated.
+- Commit: one commit on `agent/phase0-012a` after round 1's (`git log -1`).
+
+### Verify and the runs (from the source as committed)
+
+- `npm run verify`: typecheck clean; **93 test files, 3741 tests, all passed** (round 1: 90 and 3738; +3 are the new tests).
+- `npm run test:e2e:all`: `12 passed (8.4s)`; run again immediately: `12 passed (7.6s)`. A final run after reverting the red proof: `12 passed (8.5s)`.
+
+### Red proof (made, run, read, reverted)
+
+I removed the import from the POS `main.tsx` and ran `npm run test:e2e:all` (which rebuilds): **A3 failed in both engines**,
+`- Array []  + Array [ "script-src eval" ]` at `premises.spec.ts:75`, 10 passed and 2 failed. The POS unit test failed:
+`apps/pos/test/main-first-import.test.ts`, `AssertionError: expected 'react' to be '@pos/contracts/browser'`. I put the import back
+(a `git checkout` restored the uncommitted-less file without it, so I re-added the line by hand) and re-ran green.
+
+### Found and not fixed
+
+- Nothing new. The back-office test is the same check as the POS one; I did not run a separate red proof for it, since the task asked for the POS file's.
+- The regular expression the two unit tests use finds the first `import ... '<specifier>'` in the file; a side-effect import with a comment above it is fine,
+  a `type`-only import first would count as the first import and fail the test, which is the intended strictness.
+
+### What the next agent needs
+
+Nothing beyond round 1's *What 012b needs*, which stands. The zod finding is closed; 012b can rely on `violationsOn` returning `[]`
+for both shells as long as `@pos/contracts/browser` stays the first import of each `main.tsx`.
+
+DONE
