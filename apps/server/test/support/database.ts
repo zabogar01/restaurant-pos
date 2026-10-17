@@ -26,9 +26,16 @@ export async function ownerQuery<T extends pg.QueryResultRow>(
 
 /**
  * Drop and recreate schema public through the owner connection, then run the
- * real db/migrations. Tests reset with this and never with DELETE.
+ * real db/migrations. Tests reset with this and never with DELETE. The path is
+ * relative to the working directory, which is the repository root for the server
+ * tests. It takes no argument, so a test runner may pass it as a hook.
  */
 export async function resetDatabase(): Promise<void> {
+  await resetDatabaseFrom('db/migrations');
+}
+
+/** The same reset, for a caller whose working directory is not the root: it passes an anchored path. */
+export async function resetDatabaseFrom(migrationsDir: string): Promise<void> {
   const client = await ownerClient();
   try {
     // A fresh `public` created by the owner has none of the grants the template
@@ -40,5 +47,5 @@ export async function resetDatabase(): Promise<void> {
   } finally {
     await client.end();
   }
-  await runMigrations('db/migrations');
+  await runMigrations(migrationsDir);
 }

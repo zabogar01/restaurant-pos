@@ -16,7 +16,9 @@
     "build:clients": "npm run build -w apps/pos && npm run build -w apps/back-office",
     "test": "vitest run",
     "test:unit": "vitest run",
-    "typecheck": "tsc -p apps/server --noEmit && tsc -p packages/money --noEmit && tsc -p packages/contracts --noEmit && tsc -p packages/api-client --noEmit && tsc -p apps/pos && tsc -p apps/back-office",
+    "test:e2e": "npm run build:clients && npm test -w e2e -- --project=chromium",
+    "test:e2e:all": "npm run build:clients && npm test -w e2e",
+    "typecheck": "tsc -p apps/server --noEmit && tsc -p packages/money --noEmit && tsc -p packages/contracts --noEmit && tsc -p packages/api-client --noEmit && tsc -p apps/pos && tsc -p apps/back-office && tsc -p e2e",
     "verify": "npm run typecheck && npm run test:unit"
   },
   "devDependencies": {

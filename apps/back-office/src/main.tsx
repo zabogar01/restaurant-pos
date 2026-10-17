@@ -1,3 +1,4 @@
+import '@pos/contracts/browser';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@pos/tokens/frost.css';
