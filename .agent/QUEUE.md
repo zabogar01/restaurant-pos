@@ -112,10 +112,10 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-011d1, the back office signs in, merged 2026-10-15 as PR #95.)*
     - *(Done: PHASE0-011d2, M-6 over the working area, merged 2026-10-16 as PR #97.)*
     - *(Done: ARCH-015, the Task 12 consult, 2026-10-16: split into 012a and 012b.)*
-    - **PHASE0-012a, the harness and its premises** — complete 2026-10-16 (`d8eae51`, review clean after three rounds);
-      PR #99, the owner merges.
-    - **PHASE0-012b, the browser acceptance tests** (B1-B11, the AC-18 scan) — depends on 012a — not written.
-    - **The browser-clients ADR** (commissioned 2026-10-13) — after 012a merges (ARCH-015 §8) — not written.
+    - *(Done: PHASE0-012a, the browser harness and its premises, merged 2026-10-17 as PR #99.)*
+    - **PHASE0-012b, the browser acceptance tests** (B1-B11, the AC-18 scan) — 012a merged — not written; next.
+    - **The browser-clients ADR** (commissioned 2026-10-13) — 012a merged, may run beside 012b (ARCH-015 §8) — waits
+      for the owner's word to open an architect.
     - **The queued POS gap:** POS-03's actor group and Release (`order.html:77`), left out of 011c2 — not written.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
       by the owner 2026-10-06, possibly to after the MVP — not written.
