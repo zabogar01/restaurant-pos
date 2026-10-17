@@ -117,11 +117,25 @@ That origin is exactly `https://localhost:<port>`; `https://127.0.0.1:<port>`
 reaches the same listener and is refused, because it would be a second cookie
 jar. The server sends no `Access-Control-*` header, answers no preflight, and
 has no second trusted origin in development (ADR-010).
-The two session cookies have different names and server-side audiences. The
+The two session cookies have different names and server-side audiences, and
+each is scoped to its own API surface's path, so neither is sent to the other
+surface or with a bundle request (ADR-011). The
 shared `ClientInstance` cookie uses the root path because it describes the
 browser profile, not either authenticated session. Every cookie has a
 project-specific name, because browsers share one `localhost` cookie jar
 across ports (section 16).
+
+Each client is built into its own package's `dist/`, and the server finds it by
+a path anchored to its own source file, never the working directory. Under each
+prefix, a path whose first segment is `assets` or whose last segment contains a
+dot is a file, and a missing one is a plain 404, never HTML; any other path falls
+back to that client's own `index.html`. Those two shapes are therefore reserved,
+and no client route may use them. `index.html` is revalidated on every load,
+content-hashed assets are immutable, and every miss, error and redirect outside
+`/api` is `no-store`. Every bundle response carries one strict content-security
+policy with no `unsafe-inline`, `unsafe-eval`, nonce or `data:` source. A bundle
+request reads and issues no cookie and touches no database, and a bundle that
+has not been built is answered with a fixed 503. ADR-011 holds these rules.
 
 HTTPS on localhost should be terminated by Fastify for the MVP using a local
 development certificate. Caddy, an internal certificate authority, terminal
@@ -165,6 +179,13 @@ deployment gate:
 - a review of the `localhost` cookie jar accepted for the loopback MVP, which
   every other local server shares whatever its port, and which ends when the
   origin becomes a real host name;
+- a review of two tabs of one client in one browser profile sharing one
+  session cookie, accepted for the loopback MVP, which a real host name does
+  not end;
+- a review of browser-saved back-office passwords on machines that staff
+  share;
+- a review of sign-in without a pre-session anti-CSRF token, which rests on
+  the same-origin refusal alone;
 - real-floor concurrency and a dedicated waiter-role validation.
 
 The loopback-only startup guard must fail closed until this gate is deliberately
@@ -224,6 +245,20 @@ Other catalog mutations also advance the catalog version. A command built on
 stale names, prices, variants, modifiers, or presets fails with
 `CATALOG_CHANGED`; the client refreshes rather than silently adding a line at a
 price different from the one displayed.
+
+The two clients share one transport core, an authentication primitive with no
+user interface (section 2.1). Each client constructs one instance, addresses
+every request by the shared route table, and keeps the anti-CSRF token in that
+instance alone. It switches on error codes, never on statuses, and never resends
+a request on its own. A request refused for its token is retried once, and only
+when the session still names the person the tab held when it sent the request: a
+tab never acts as, or shows, a person it did not sign in, and it sends at most
+one sign-in, re-authentication, release or logout at a time. The server is the
+only clock. A client's idle countdown is reckoned from durations PostgreSQL
+computed, it never ends a session by itself, and activity is reported only from
+a person's input. A fixture session is chosen by the build command and proved
+absent from a served bundle, and every sentence a person reads is placed from
+the design documents. ADR-011 holds these rules.
 
 ### 4.4 Server responsibilities
 
@@ -504,11 +539,15 @@ identifier.
 Use opaque server-side sessions, not JWTs. Cookies are `Secure`, `HttpOnly`,
 and `SameSite=Strict`. Every request must name the one origin in its `Host`
 header, and every API request, reads included, passes a same-origin check
-before anything is read or written (ADR-010); mutating routes also validate
-an anti-CSRF token. Passing the origin check grants nothing: it is only ever
-a reason to refuse. Use separate, project-specific cookie names for POS and
-back office, and select the expected cookie from the route's server-side
-audience rather than from a client-supplied header.
+before anything is read or written (ADR-010). Every request that is not `GET`
+or `HEAD` to a route that has a session also carries an anti-CSRF token derived
+from the session token, checked before the session is resolved; the two sign-in
+routes have no session and carry none (ADR-011). Passing the origin check or the
+token check grants nothing: each is only ever a reason to refuse. Use separate,
+project-specific cookie names for POS and back office, each scoped to its own
+API surface's path and given no lifetime of its own, and select the expected
+cookie from the route's server-side audience rather than from a client-supplied
+header. No route accepts either cookie (ADR-011).
 
 - POS sessions have audience `POS`, expire after 90 seconds without
   interactive activity, and support explicit release.
@@ -521,6 +560,9 @@ audience rather than from a client-supplied header.
   with their password, which renews the same session under a new token; the
   absolute lifetime keeps running from the original sign-in. Another manager
   signs in afresh instead, into a new session, and never receives that state.
+  The client keeps that state under the identity of the manager it belongs to,
+  so the same manager signing in again in that tab, even after the absolute
+  lifetime, gets it back, and anyone else does not (ADR-011).
 - A StaffUser has one credential version. Deactivation, a PIN reset, or a
   back-office password set or reset increments it and causes every session of
   that user, POS and back office, to fail on its next authenticated request.
@@ -768,13 +810,13 @@ complete replacement Order.
 
 | Surface | Representative boundary |
 |---|---|
-| `/api/pos/auth/...` | PIN login, current actor, release, inline approval as part of protected commands |
+| `/api/pos/auth/...` | PIN login, current actor, activity, release, inline approval as part of protected commands |
 | `/api/pos/catalog/...` | POS menu projection, tables, catalog revision |
 | `/api/pos/orders/...` | Open/read order; add/edit/remove pending line; apply/replace/remove discount; fire; void |
 | `/api/pos/checkout/...` | Acquire/renew/release/take over lease; preview authoritative totals; atomically settle and close |
 | `/api/pos/history/...` | Closed-order lookup, receipt read/reprint, full refund |
 | `/api/pos/printing/...` | Incident projection and explicit reprint |
-| `/api/back-office/auth/...` | Manager sign-in by username and password, current session, logout, password re-authentication of an idle session |
+| `/api/back-office/auth/...` | Manager sign-in by username and password, current session, activity, logout, password re-authentication of an idle session |
 | `/api/back-office/config/...` | Settings, tables, users, menu, options, presets, tender types, 86 commands |
 | `/api/back-office/business-days/...` | Current day, close preview, commit close, immutable reports |
 | `/api/back-office/audit/...` | Manager-only filtered audit reads |
@@ -786,6 +828,16 @@ audience and role are both enforced server-side. Back-office configuration
 commands cannot mutate orders or tenders; their effects on current POS work are
 controlled by snapshots, catalog versions, availability validation, and the
 CheckoutLease.
+
+Every API route declares its access: no session, a presented session its
+handler manages (the sign-ins, release, logout and re-authentication only), or
+an active session of one audience with an explicit interactive flag. A route
+with no declaration or a malformed one, an audience that does not match its
+surface, or a registration outside the API context stops the server at startup.
+A read that both clients need is one handler registered under both surfaces,
+each registration with its own audience; no route accepts either session. The
+route table, with each route's method, path and interactive flag, lives in the
+shared contracts and is held equal to the registered routes (ADR-011).
 
 Mutation requests carry expected aggregate/catalog versions where applicable.
 The seven irreversible or duplicate-sensitive commands carry idempotency keys.
@@ -799,6 +851,14 @@ Every API response that is not 2xx has the body
 shared contracts and no free-text field. JSON is the only request body type
 the server parses. Every API response carries `Cache-Control: no-store`.
 ADR-010 holds these rules and the reasoning behind them.
+
+The authentication codes are `INVALID_CREDENTIALS` (401), `THROTTLED` (429),
+`UNAUTHENTICATED` (401), `SESSION_IDLE` (401), `FORBIDDEN` (403) and
+`CSRF_REFUSED` (403). Only the first two carry details, a `retryAfterSeconds`
+that PostgreSQL computed. No code tells a caller that a token is valid on the
+other surface, and no response reports a count of attempts remaining. Because
+three codes share 401, clients switch on the code, never on the status
+(ADR-011).
 
 ## 14. Testing strategy
 
@@ -849,7 +909,30 @@ or process boundaries, including:
   takeover, and print-incident visibility;
 - manager approval, void/cancellation paper, atomic settlement, receipt
   reprint, refund, and end-of-day refusal/retry;
-- kitchen emergency versus receipt-warning urgency.
+- kitchen emergency versus receipt-warning urgency;
+- the premises the clients rest on (one origin, session cookies stored and
+  resent under a certificate exception, no content-security violation) and a
+  tab that never acts as, or shows, a person it did not sign in.
+
+The browser harness owns its whole world: its own database, port, lock and
+server, started by the harness with an environment built in code, never falling
+back to the development installation. It uses a throwaway certificate and lets
+the browser ignore certificate errors, which reproduces the owner's
+click-through: it proves the cookies are stored and resent in that state, and
+nothing about the certificate, which the server tests prove. Before every test
+it drops and re-migrates the schema, never deleting a row. It makes people
+through the domain functions in test code, with random, independent names and
+credentials. It ages a session by a relative shift of the database stamp and
+moves the page's clock by the same amount. Every request is made by the page,
+and assertions are on state attributes, accessible names and error codes, never
+on copy or a status alone. No trace, video, report or diagnostic may hold a
+credential; because Playwright writes an error context for every failure
+whatever it is configured to do, this is enforced at the source, by helpers that
+fail with fixed messages. Every browser test also scans for the credentials it
+used. The harness runs in Chromium and WebKit, outside `npm run verify`, and
+before the merge of any task that touches a client, the transport core, the
+shared contracts, the HTTP layer, the session or credential domain, or a
+migration (ADR-011).
 
 Do not prove arithmetic, report totals, snapshot immutability, or audit-table
 completeness primarily through Playwright. AC-4 belongs in unit/property tests;
@@ -876,9 +959,20 @@ explicit import path and must never become a hard-coded menu, rate, table, or
 staff list. Acceptance tests run against the same one-origin route shape used
 by the MVP, not directly against independent Vite development origins.
 
+A client runs in one of two modes that never mix: fixture mode, on the Vite
+development server with no API call, and served mode, in which Fastify serves
+the built bundle and a watch build replaces it. Which session source a bundle
+uses is fixed by the build command, never by `NODE_ENV`, a mode or a query
+string, and a test of the built bundle proves the fixture session absent from
+it. The browser harness has its own database and port, so it never touches the
+development installation (ADR-011).
+
 Make clocks injectable in unit tests and use PostgreSQL time for lease,
 cooldown, session, receipt, and business-day persistence. This prevents the
 browser clock from becoming an authority and makes expiry tests deterministic.
+A client receives the idle limit and the time remaining as durations PostgreSQL
+computed, counts them down on the page's monotonic clock, and at the deadline
+asks the server rather than deciding (ADR-011).
 
 ## 15. Future offline-mode implications
 
@@ -920,12 +1014,15 @@ That is an architectural change, not a caching enhancement.
 | Back-office usernames can be discovered: a throttled account answers differently from an unknown username, and only a known username costs an Argon2id verification | An attacker learns which accounts to attack | A username is not a secret; the listener is loopback-only; reconsider at the gate in section 3.2 | Accepted for the MVP |
 | Anyone who knows a manager's username can lock that manager out of the back office | A bounded denial of service against one manager, five minutes at a time | Per-account counting, so no other manager, PIN login, or approval is affected; durable database-time cooldown that attempts cannot extend; reconsider at the gate in section 3.2 | Accepted for the MVP |
 | Cookies on `localhost` are shared with every other local server, whatever its port | Another program on the owner's machine can receive or replace this application's cookies | Project-specific cookie names; `HttpOnly`, `Secure`, `SameSite=Strict`; reconsider at the gate in section 3.2 | Accepted for the MVP |
+| Two tabs of one client in one browser profile share one session cookie | A sign-in in one tab ends the other's session, and concurrent sign-ins from two tabs can leave a tab's token and the cookie naming different people | Every such sequence fails closed; a tab retries only as the person it held and never acts as or shows another; one cookie-changing request at a time per tab; reconsider at the gate in section 3.2, since a real host name does not end it | Accepted for the MVP |
+| A browser may offer to save a manager's back-office password | On a machine other staff can reach, a saved password leaves the back office open | The application stores no credential; reconsider at the gate in section 3.2 | Accepted for the MVP |
+| The sign-in routes carry no anti-CSRF token | A page that defeated the same-origin refusal could sign a browser in as an account the attacker holds | JSON-only bodies, no CORS, the origin refusal; a valid credential is still required; an open tab returns to its sign-in screen rather than act as that account; reconsider at the gate in section 3.2 | Accepted for the MVP |
 | A PIN blind index becomes a fast verifier if its secret and database are both stolen | Six-digit PINs can be enumerated after complete-host compromise | Keep the key outside PostgreSQL, retain Argon2id as verifier, restrict host access, rotate credentials after compromise | Accepted architecture |
 | CheckoutLease outlives an abandoned tab | Order mutations are temporarily blocked | Five-minute renewable TTL, explicit release, database time, 15-minute authentication hard stop, audited takeover | Accepted architecture |
 | Takeover races a physical card charge | Customer may have been charged before software settlement | Explicit warning, audited takeover, displaced-token rejection, manager reconciliation | Accepted architecture |
 | ESC/POS cannot prove exactly-once paper delivery | Missing or duplicate kitchen work | Immutable documents, PrintAttempt history, UNKNOWN state, no automatic retry, explicit operator recovery | Accepted architecture |
 | Two frontend bundles drift or duplicate domain behavior | Inconsistent rules and higher maintenance | Share schemas and domain services, never committed calculation or authorization logic in either client | Accepted architecture |
-| Local development certificates add setup friction | HTTPS may initially show trust errors | Script and document local certificate creation/trust; do not substitute loopback HTTP | Accepted architecture |
+| Local development certificates add setup friction | HTTPS may initially show trust errors | Script local certificate creation; nothing installs trust, and the warning is clicked through once per browser profile; do not substitute loopback HTTP | Accepted architecture |
 | Receipt law is unresolved | Final fields, numbering, refund documents, and markings may be wrong | Keep Receipt immutable and numbering isolated; settle jurisdiction before Phase 4 completion | Open product decision |
 | Permitted rate range is unresolved | Settings validation cannot be finalized | Approve maximum tax and service-charge rates before Phase 2 | Open product decision |
 | Post-close corrections are unresolved | Legitimate corrections after day close lack a supported path | Preserve closed-day immutability and define a next-day adjustment process before Phase 5 completion | Open product decision |
