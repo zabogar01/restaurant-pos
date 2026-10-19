@@ -5,8 +5,8 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-012, DESIGN-015]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 1
+status: active
+cycles: 2
 ---
 # DESIGN-016 — BO-01 Login and BO-02 Today (slice B)
 
@@ -314,6 +314,30 @@ finding to its change and its evidence (quoted check output), with updated measu
 round 1's sections only where a fix makes a statement in them untrue (F2's focus and state counts, F3's sentence).
 Replace the final `DONE` with your Round 2 section, ending the file with `DONE` or `BLOCKED: <one question>`. Commit on
 `agent/design-016` (path-scoped), never push, and report with the `design016b` lines.
+
+## Round 3 — the re-review's two lows (lead rulings, 2026-10-19)
+
+The re-review (`.agent/reviews/DESIGN-016-review.md`, rewritten in place, at `e913c87`) found F1 to F5 fixed as ruled
+and two new lows. Both are accepted. This is fix cycle 2 of 2, the last the kit allows: fix exactly these and nothing
+else. The provisional build already behaves as ruled here (`apps/back-office/src/SignIn.tsx:47`, `:151-174`), so the
+artifact and the build agree once this round lands.
+
+- **R2-1, oversize: option (a), within `I:599`.** An oversized field gets `aria-invalid="true"` and **no inline text**;
+  the reviewed Error notice is the only sentence. Point each oversized field's `aria-describedby` at `#notice-body`.
+  Register an `oversize-both` state so the gallery shows a double oversize, and have the double-oversize render use it
+  rather than `oversize-username`. In `design016.cjs`, the double-oversize assertion checks `aria-invalid` on both
+  fields, the notice, and the absence of inline text. Remove the "reviewed generic error body beside it" wording from
+  the Handoff's round 1 state map and round 2 table.
+- **R2-2, descriptions only while invalid.** Drop the static `aria-describedby` from `login.html`; `render` sets it to the
+  field's error span only while that field is missing (to `#notice-body` while oversized, per R2-1) and removes it
+  otherwise. Add an assertion that in `default` neither field has an `aria-describedby`.
+- **The re-review's *Not findings*, first bullet:** change the Handoff's "No credential is prefilled in the new
+  artifact" to "No password is prefilled in the new artifact".
+
+Rerun `design016.cjs` and `design012.cjs` to completion (013 and 014 too only if a shared file changes), `node --check`,
+`npm run verify` and `git diff --check`. Add a short **Round 3** section at the end of the Handoff mapping R2-1 and
+R2-2 to change and evidence, end the file with `DONE`, commit on `agent/design-016` (path-scoped), never push, and
+report with the `design016b` lines.
 
 ## Handoff
 
