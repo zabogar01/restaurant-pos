@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: [PHASE0-012a]
 owns: [e2e/**]
-status: active
+status: review
 cycles: 0
 ---
 # PHASE0-012b — The browser acceptance tests
@@ -426,6 +426,13 @@ cleared). All three are accepted. These rulings are addressed to the builder.
 4. Everything else in round 1 stands. `npm run verify` green and `npm run test:e2e:all` passing twice from the committed
    source; the 012a greps still empty. Append a *Round 2* section to the Handoff (do not rewrite round 1), commit, and end
    with DONE or BLOCKED as before. One fix round remains after this one.
+
+## Lead verify (2026-10-19, after round 2)
+
+At `35b3247`, in this worktree: `npm run verify` green, 93 test files and 3744 tests; `npm run test:e2e:all` 58 passed
+(42.2 s), both engines. The 012a greps over `e2e/` are empty; round 2 changed only `e2e/support/fixtures.ts`,
+`e2e/support/scan.ts`, the new `e2e/tests/scan.spec.ts` and this Handoff. The reviewer re-reviews F1 to F3 against the
+round 2 rulings; this note and the Handoff's outputs are the browser evidence.
 
 ## Handoff
 
