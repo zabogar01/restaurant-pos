@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: [PHASE0-012a]
 owns: [e2e/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE0-012b — The browser acceptance tests
@@ -400,6 +400,32 @@ test changed. The lead accepts the Handoff's two substituted red proofs (decisio
 proof cannot go red once the spec reads `SESSION_POLICY`, and `pos_app` cannot read `security_event` for B2's), since
 each replacement hits the real path. A reviewer cannot run the browser suite or reach the database; this note and the
 Handoff's outputs are the run evidence.
+
+## Round 2 — the review's three findings (lead rulings, 2026-10-19)
+
+The review is `.agent/reviews/PHASE0-012b-review.md` (Codex, three findings in the AC-18 scan; the cases themselves
+cleared). All three are accepted. These rulings are addressed to the builder.
+
+1. **F1 (P1): no request-derived text in a scan diagnostic.** Every problem the scan reports is built from fixed
+   strings only: the credential kind and a fixed place ("a password in a request body outside its credential route",
+   "a PIN in a request URL", …). No pathname, URL, header, body fragment, log line or row value is interpolated, ever.
+   Add a vitest-free check in `e2e/` (a Playwright test that needs no browser page, or a plain test in the scan's own
+   spec file) that feeds the scanner a request whose path and body both carry a generated password and asserts the
+   scan fails **and** that no diagnostic string contains the password.
+2. **F2 (P2): a credential route is origin, method and path together.** Carry the request method into the scan's
+   evidence, and accept a credential body only when the request is `POST` to the harness origin (`E2E_ORIGIN`) and the
+   pathname is that credential's route. Anything else, wrong method or wrong origin included, is a problem with a fixed
+   diagnostic, and the positive body-count helper counts only accepted submissions. Cover a wrong method, a wrong origin
+   and an allowed submission in the same check file as ruling 1.
+3. **F3 (P2): every page URL visited.** Record each page's URLs from creation onward, including same-document changes
+   (`history.pushState`, `replaceState`, hash changes), and keep them until the scan has run, including for pages closed
+   during the test. Use whatever Playwright and an init script give you; say in the Handoff which events you rely on and
+   that you checked each fires for a same-document change in both engines. **Red proof:** in a client's source, put the
+   person's PIN or password into the URL by `history.replaceState` after sign-in and restore the clean URL at once; the
+   scan must fail with a fixed diagnostic. Made, run, read, reverted.
+4. Everything else in round 1 stands. `npm run verify` green and `npm run test:e2e:all` passing twice from the committed
+   source; the 012a greps still empty. Append a *Round 2* section to the Handoff (do not rewrite round 1), commit, and end
+   with DONE or BLOCKED as before. One fix round remains after this one.
 
 ## Handoff
 
