@@ -9,7 +9,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-19 (night): `development` at `82876b4`. **Phase 0 closed.** The owner approved the Phase 1 plan approach
+2026-10-19 (night): `development` at `1701e36` (PR #110 merged). **Phase 0 closed.** The owner approved the Phase 1 plan approach
 (DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 round 2**: the Claude Opus
 review found 2 medium, 3 low, all accepted (`e13707b`); `design016b` is fixing them (cycle 1 of 2). Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
 
@@ -32,15 +32,15 @@ review found 2 medium, 3 low, all accepted (`e13707b`); `design016b` is fixing t
 
 ## Integration branch
 
-- **`development`** at `82876b4` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `1701e36` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-19); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1019e`** (from `82876b4`; pushed on the owner's word, PR #110). **Before any follow-up push to a lead branch, check its
-  PR is still open** (`gh pr view <n> --json state`): a push after the merge is lost (#103, 2026-10-19).
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1019f`** (from `1701e36`, not pushed). **Run `gh pr view <n> --json
+  state` as its own step before any push to a lead branch**: chained behind a push it does not stop it (#110, 2026-10-19).
 - **Task branches open:** `agent/arch-017` (plan `7e7fb06`), `agent/design-016` (`d4502d3`, `npm ci` run), worktrees
-  `../restaurant-pos-wt/<ID>`, cut from `82876b4`; kit copies deleted. `.agent/runs/` empty. Merged branches still exist (cleanup later).
+  `../restaurant-pos-wt/<ID>`, cut from `82876b4`; kit copies deleted. `.agent/runs/DESIGN-016/` holds the review run. Merged branches still exist (cleanup later).
   Not the lead's: worktrees `../restaurant-pos-design` and `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
