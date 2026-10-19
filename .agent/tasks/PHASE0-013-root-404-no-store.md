@@ -5,7 +5,7 @@ category: quick
 touches: []
 depends_on: [PHASE0-012b]
 owns: [apps/server/src/http/errors.ts, apps/server/test/server.test.ts, apps/server/test/bundles.test.ts]
-status: not-started
+status: complete
 cycles: 0
 ---
 # PHASE0-013 — The root's 404 is `no-store`
@@ -89,6 +89,17 @@ The lead runs `npm run test:e2e:all` before merge, because the change is under `
 Commit on `agent/phase0-013` only, after verify is green, and never push. Conventional Commits, explaining why
 (ADR-011 rule 12). Write the Handoff below in full prose, ending with `DONE` or `BLOCKED: <one question>`, then
 report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify and review (2026-10-19)
+
+At `db3f503`, in this worktree. `git diff --name-only development...HEAD` shows the task file and the three owned files
+only; no test changed outside the four listed sites. Seven changed lines and no `touches` flag, so the lead reviewed it
+as trivial: the header is added on the plain branch only, the `/api` branch and every other response are untouched, and
+the choice not to route through `sendPlain` (it needs the configured origin, which `notFoundHandler` does not have) is
+right. The red proof was repeated by the lead: the four test sites run against `development`'s `errors.ts` fail 12
+assertions (113 tests in the two files, 101 passing), as the Handoff says. `npm run verify`: 93 files, 3744 tests,
+green. `npm run test:e2e:all`: 58 passed (43.1 s). Every acceptance criterion holds. ADR-011's "not yet built" marker
+stays as history (accepted ADRs are not edited); ARCHITECTURE §3.1 already states the rule. Complete.
 
 ## Handoff
 
