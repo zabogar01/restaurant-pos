@@ -10,8 +10,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-19 (night): `development` at `82876b4`. **Phase 0 closed.** The owner approved the Phase 1 plan approach
-(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 stopped at Codex's limit**,
-nearly done, work uncommitted in its worktree: the owner picks wait-for-reset or OpenCode stand-in. Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
+(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016** ran out of Codex; the
+owner chose an OpenCode stand-in, `design016b`, now finishing it (handover note above the Handoff). Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
 
 ## Phase and gates
 
@@ -46,8 +46,8 @@ nearly done, work uncommitted in its worktree: the owner picks wait-for-reset or
 ## Running tasks and agents
 
 - **Live agents: `lead`, `architect17`** (idle, pane `ARCH-017`; kept open for a revision round until the owner
-  accepts the plan) **and `design016`** (Codex `gpt-6-astra`, pane `DESIGN-016`, session `01a15478-8268-71c3-b179-b8047d9de216`,
-  **out of quota** until 2026-10-20 02:02; sitting on a "switch to gpt-6-luna?" prompt: never accept it).
+  accepts the plan) **and `design016b`** (OpenCode `openai/gpt-6-astra`, pane `DESIGN-016`, the 2026-10-14 allow list as
+  `OPENCODE_CONFIG_CONTENT`; background wait running). Codex `design016`'s pane is closed (session `01a15478-…`).
 - **ARCH-017, done:** `docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`, `Proposed`. 11 slices
   (S0-S10), ADR-012 (versioned configuration) and consults C1-C5, 14 owner questions. Key finding (Q13): AC-31, AC-12's
   rejections and AC-32's second sentence need orders, so cannot pass in Phase 1; ROADMAP wording proposed. Lead checked:
@@ -117,7 +117,6 @@ Nothing here is decided. Detail is where each line points.
 - **Lead choices in ARCH-017 and DESIGN-016, yours to overturn:** the plans path granted to the architect; DESIGN-016's focus reading (Part A item 3).
 - **ARCH-017's 14 questions** (plan §8, Handoff): accept the plan; Q13 (ROADMAP acceptance line) first, then Q5, Q12,
   Q1 and Q7-Q11, Q14, Q4, Q10. Contract wording for ROADMAP, PRD FR-B1/B2/B3/B5/J3/M1 and §9 is drafted in its Handoff.
-- **DESIGN-016:** wait for the Codex reset or an OpenCode `gpt-6-astra` stand-in (needs the owner's yes)?
 - **PHASE0-012b, yours to overturn:** its 15 lead rulings and the two substituted red proofs (B6/B7, B2; journal 10-19).
 - **012a, lead acceptance yours to overturn:** a shell forging the marker, `E2E_REFUSED_DATABASES` and all three
   database names passes the worker guard (task file, round 3).
@@ -146,5 +145,5 @@ Nothing here is decided. Detail is where each line points.
 ## Next up
 
 1. The owner reads the plan and answers Q13 first; on acceptance, record it, commission ADR-012 + C1 and C2, write S0.
-2. DESIGN-016 finishes (reset or stand-in); then a Claude Opus design review (`.agent/runs/DESIGN-016/builder/meta.json`
+2. `design016b` finishes (handover items 1-6); then a Claude Opus design review (`.agent/runs/DESIGN-016/builder/meta.json`
    with `"cli":"codex"` first).
