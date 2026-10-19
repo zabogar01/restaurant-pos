@@ -116,8 +116,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-012b, the browser acceptance tests, merged 2026-10-19 as PR #104.)*
     - *(Done: ARCH-016, ADR-011 accepted 2026-10-19, merged as PR #102.)*
     - *(Done: PHASE0-013, root 404s answer `no-store`, merged 2026-10-19 as PR #106.)*
-    - **The Phase 0 gate** — fresh-clone `verify` + `test:e2e:all` green, DoD wording applied, roadmap reading
-      confirmed, Safari check passed, gate report written (all 2026-10-19) — waits for the owner to close Phase 0.
+    - *(Done: the Phase 0 gate; Phase 0 closed by the owner 2026-10-19, `.agent/reviews/PHASE0-gate.md`, PR #108.)*
     - **The queued POS gap:** POS-03's actor group and Release (`order.html:77`), left out of 011c2 — not written.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
       by the owner 2026-10-06, possibly to after the MVP — not written.
@@ -127,8 +126,11 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
 ## Later
 
 13. **Phases 1 to 6** and the **pre-production gate** (appliance, LAN TLS, UPS, backups) —
-    each phase needs its own plan before execution; only Phase 0 has one — depends on Phase 0
-    finishing — see `docs/ROADMAP.md`.
+    each phase needs its own plan before execution; only Phase 0 has one — Phase 0 closed
+    2026-10-19 — see `docs/ROADMAP.md`.
+    - **The Phase 1 plan** (Back office and catalog) — an architect's slicing plan, owner-accepted
+      before any Phase 1 task (lead's proposal, journal 2026-10-19 *Phase 0 closed*) — waits for
+      the owner's word on the approach — not written.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
     post-close corrections (before Phase 5), permitted tax and service-charge range (before
     Phase 2) — depends on the owner — waiting; see `docs/PRD.md` section 9.
