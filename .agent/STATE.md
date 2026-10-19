@@ -9,53 +9,50 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-17 (wrap-up): `development` at `9ae3a4d` (PR #100, the lead branch, then PR #99, **PHASE0-012a merged**).
-Verify green 93 / 3744 and `test:e2e:all` 12 of 12 on it; the 012a worktree and run dir removed. **Next: write
-PHASE0-012b** (the browser acceptance tests). Narrative: [journal/2026-10-16.md](journal/2026-10-16.md) and
-[journal/2026-10-17.md](journal/2026-10-17.md).
+2026-10-19: `development` at `33eb910`. **PHASE0-012b dispatched** (owner's go). **ADR-011 accepted** by the owner;
+applied at `a8f0939`; `agent/arch-016` and `agent/lead-1017b` pushed for PRs, to be merged by the owner.
+Narrative: [journal/2026-10-17.md](journal/2026-10-17.md) *Later*, [journal/2026-10-19.md](journal/2026-10-19.md). Narrative: [journal/2026-10-17.md](journal/2026-10-17.md), section *Later*.
 
 ## Phase and gates
 
 - **Phase 0**, started 2026-09-14. Done: tasks 1 to 11 (with 003a-c, 006b, 007b, 008a/b, 009a/b, 010a/b, 011a,
   011b, 011c1, 011c2, 011d1, 011d2) and DESIGN-015; **012a** (the browser harness, PR #99). **Left: 012b**, then
   the Phase 0 gate (below).
-- **Architecture:** nine accepted ADRs (001-007, 009, 010); ADR-008 reserved (deferred). **Commissioned, not
-  written** (owner 2026-10-13): one ADR on the browser clients and what is served to them, taking in ARCH-012's
-  sessions-over-HTTP ADR and the browser-saved-password item for §3.2. ARCH-015 §8: commission it **now** (012a has
-  merged), with a section amending ARCHITECTURE §14.3/§14.4 with the harness's standing rules; it may run beside
-  012b. Recommended, not commissioned: an inline-approval ADR (ARCH-013).
+- **Architecture:** ten accepted ADRs (001-007, 009-011; ADR-011 accepted 2026-10-19, merging via `agent/arch-016`);
+  ADR-008 reserved (deferred). ADR-011: on the browser clients, their sessions and what is served, with the
+  §3.1/§4.3/§7.2/§13/§14.3/§14.4 amendments and the §3.2 clauses. Recommended, not commissioned: an inline-approval
+  ADR (ARCH-013).
 - **Frontend:** POS-01 to POS-07 against fixtures, POS-01 real. **Back office:** `apps/back-office` with real
   sign-in, the provisional BO-01 form, the empty Phase 0 frame and M-6; Frost slices A, C, I designed.
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
 - **Phase 0 gate owes** (ARCH-015 §7, *For the lead* 4): 012b; `verify` then `test:e2e:all` from a fresh clone; the
-  browser-clients ADR proposed; the owner's Safari check and roadmap reading; the plan's Definition of Done wording.
+  ADR-011 merged (accepted 2026-10-19); the owner's Safari check and roadmap reading; the plan's Definition of Done wording.
 - **Last verify by the lead:** `development` `9ae3a4d`, 93 files / 3744 tests and `test:e2e:all` 12 passed,
   2026-10-17, after `npm ci`. Server tests need `npm run db:up` and `openssl` on `PATH`. Dev `pos` holds 0001-0008
   and one manager. Certificate made.
 
 ## Integration branch
 
-- **`development`** at `9ae3a4d` on GitHub; the main checkout matches it (fast-forwarded 2026-10-17; if the
+- **`development`** at `33eb910` on GitHub; the main checkout matches it (checked 2026-10-17; if the
   permission classifier refuses `git merge --ff-only`, the owner runs it). `main` and `development` are protected:
   PR required, 0 approvals, admins too.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-17, agents.yaml with the e2e allow-list merged).
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1017`** (from `9ae3a4d`): wrap-up pushed for a PR (owner, 2026-10-17).
-- **Task branches:** none open. Only the owner merges; the lead commits when asked, pushes when told. Merged
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1017b`** (from `33eb910`, no upstream): DECISIONS, journal,
+  STATE, QUEUE uncommitted; the 012b task file untracked there (never commit it on the lead branch).
+- **Task branches:** `agent/arch-016` (worktree `../restaurant-pos-wt/ARCH-016`, task file `16f393a`). Only the owner
+  merges; the lead commits when asked, pushes when told. Merged
   branches still exist (cleanup later). Not the lead's: worktrees `../restaurant-pos-design` and `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **Live agents: the lead only.** A fresh session renames its pane `lead` first (`/lead` does).
-- **PHASE0-012b, not written; next.** Source: ARCH-015 (`.agent/reviews/ARCH-015-browser-harness.md`) question 5's
-  rows B1-B11, *PHASE0-012b: rules / test cases / red proofs / acceptance*, and *The Handoffs must carry forward*, copied
-  verbatim; plus 012a's Handoff (*What 012b needs* in round 1, amended in round 3): fixtures `test`, `oneProfile`,
-  `twoProfiles`, `world` (reset, `people.cashier()` / `manager()` random and independent, `serverLog()`), helpers
-  `signInAtPos(page, person)` and `signInAtBackOffice(page, person)` (take the `Person`, fixed failure messages),
-  `violationsOn(page)`, `ageSession(audience, person, seconds)` with `page.clock`, per-profile `console` and `requests`
-  for the AC-18 scan. B10 needs a second manager (the factory makes one). Rules: no credential in any assertion
-  message; limits read from responses or `SESSION_POLICY`. Baseline 93 / 3744, e2e 12.
+- **Live agents: `lead` and `phase0-012b`** (Sonnet 5.5 builder, pane `w2:p60`). `architect16` closed.
+- **PHASE0-012b, dispatched 2026-10-19** (worktree `../restaurant-pos-wt/PHASE0-012b`, `agent/phase0-012b`, task file
+  `1b14d81`; kit copy deleted). Owns `e2e/**` only. Ruling 5 makes the AC-18 scan exact (a credential only in its own
+  route's bodies, as often as typed). Then: verify, Codex review, the lead's `test:e2e:all`, the owner's look.
+- **ARCH-016 complete:** accepted, applied at `a8f0939`, `agent/arch-016` pushed for a PR. The lead updated the ADR counts in AGENTS.md, CLAUDE.md and the
+  architect role on `agent/lead-1017b`, and AGENTS.md *What exists* from the Handoff's wording.
 - **Carry-forwards:** Handoffs of PHASE0-005 to 012a (*For Task 12*, *For Phase 1's first form*, *What 012b needs*);
   ARCH-012, 013, 014, 015 *must carry forward* (Phase 1: AC-32's POS half and AC-35's last sentence close in the
   harness; Phase 2: AC-27's second sentence, AC-19's approval class, M-1 for real).
@@ -115,17 +112,17 @@ Nothing here is decided. Detail is where each line points.
 
 - **ARCH-015, *For the owner*:** (1) a ten-minute Safari hand check at the Phase 0 gate (NFR-5 look, M-6); (2) confirm
   ROADMAP's Phase 0 "inline manager-approval prompt" is met by the primitive, the adapter and the stand-ins, the route
-  coming with Phase 2 (architect: yes, no wording change). Also: commission the browser-clients ADR now (lead: yes)?
+  coming with Phase 2 (architect: yes, no wording change).
+- **PHASE0-012b's 15 lead rulings** are yours to overturn (task file).
+- **The plan's Definition of Done wording** (ARCH-016 Handoff, three lines): approve to apply?
 - **012a, lead acceptance yours to overturn:** a shell forging the marker, `E2E_REFUSED_DATABASES` and all three
   database names passes the worker guard (task file, round 3).
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
   for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
 - **ROADMAP `:50`** waits on ARCH-013 item 2, **`:29`** on FR-M3/B-2 below (journal 2026-10-12 *Evening* items 4, 5).
-- **ARCH-012:** (2) the FR-A2c reading, no route takes either cookie (lead: confirm)? (3) sign-in without a
-  pre-session CSRF token until §3.2 (lead: accept)?
 - **Receipt, PRD §9 q1** (`reviews/RESEARCH-receipt.md`, A to E; lead: the first of each). **Service charge** before non-zero: Pasal 8.
-- **PHASE0-008b's builder choices, yours to overturn** (its Handoff); **ARCHITECTURE §16 certificate row** (ARCH-011).
+- **PHASE0-008b's builder choices, yours to overturn** (its Handoff).
 - **Lead rulings, yours to overturn,** in task files: PHASE0-004 to 012a, DESIGN-011-015, ARCH-006, FE-030-036;
   among them the splits of 011c, 011d and Task 12, 012a's zod fix in `@pos/contracts/browser`, and PR #95's list.
 - **Phase 1 (ADR-009 "Not decided here"):** own-password change, own-PIN reset, role change; before the users screen.
@@ -145,6 +142,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. Write PHASE0-012b in the kit from ARCH-015 and 012a's Handoff (above); dry-run; owner reads it; dispatch.
-2. On the owner's word, commission the browser-clients ADR (an architect, hand-opened) beside 012b.
+1. When `phase0-012b` reports: verify, Codex review, `test:e2e:all`, the owner's look; then merge by the owner.
+2. After the owner merges both PRs: fast-forward, remove the ARCH-016 worktree; write the root-404 task.
 3. Then the Phase 0 gate list above. Owner, any time: the questions above.
