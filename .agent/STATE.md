@@ -10,8 +10,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-19 (night): `development` at `82876b4`. **Phase 0 closed.** The owner approved the Phase 1 plan approach
-(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016** ran out of Codex; the
-owner chose an OpenCode stand-in, `design016b`, now finishing it (handover note above the Handoff). Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
+(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 round 2**: the Claude Opus
+review found 2 medium, 3 low, all accepted (`e13707b`); `design016b` is fixing them (cycle 1 of 2). Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
 
 ## Phase and gates
 
@@ -53,9 +53,10 @@ owner chose an OpenCode stand-in, `design016b`, now finishing it (handover note 
   rejections and AC-32's second sentence need orders, so cannot pass in Phase 1; ROADMAP wording proposed. Lead checked:
   only the plan and task file changed, `diff --check` clean, no code; Q2 (no rate range, 2026-10-06) and the
   reactivation ruling (2026-10-07) cited correctly. S0 can be written once the plan is accepted.
-- **DESIGN-016, left:** `design016.cjs` never completed (fixed, not rerun), final 1440/1920 measurements and contrast,
-  static checks, the Handoff's last line, the commit. Done: both artifacts (17 + 9 states), N1-N3, links, tokens,
-  `verify` 93/3744, slice A/C/I checks green. Owner question in it: a different manager after the eight hours.
+- **DESIGN-016, round 2 running** (rulings `e13707b`; review `.agent/reviews/DESIGN-016-review.md`; F1 centring on
+  menu/report-detail plus one DESIGN.md sentence allowed, F2 every invalid field marked and no trim). Round 1 (`3ec72c9`): checks 381/381 (016), 281, 371, 288; lead `verify` exit 0, 93/3744;
+  notice contrast 5.23:1; meta.json `cli: opencode`. Owner question in it: a different manager after the eight hours.
+  `design016b`'s pane stays open for a fix round. Lead browser walk not done (the check script walks all 26 states).
 - **Carry-forwards:** placed slice by slice in the Phase 1 plan §5 (Phase 2's stay Phase 2: AC-27, AC-19, M-1, the
   idempotency design). Design slices left: B (DESIGN-016), D, E, F, G, H (the plan §4 orders them).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density.
@@ -145,5 +146,5 @@ Nothing here is decided. Detail is where each line points.
 ## Next up
 
 1. The owner reads the plan and answers Q13 first; on acceptance, record it, commission ADR-012 + C1 and C2, write S0.
-2. `design016b` finishes (handover items 1-6); then a Claude Opus design review (`.agent/runs/DESIGN-016/builder/meta.json`
-   with `"cli":"codex"` first).
+2. `design016b` reports round 2: lead verify, then re-review (`dispatch.sh DESIGN-016 --role reviewer --resume
+   --message "... Write only your report ..."`); clean → `status: complete`, push the branch for a PR.
