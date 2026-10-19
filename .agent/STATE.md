@@ -143,5 +143,6 @@ Nothing here is decided. Detail is where each line points.
 ## Next up
 
 1. Owner: remove the two worktrees and the 012b run dir (Integration branch, above); push `agent/lead-1019` for a PR.
-2. Write the root-404 `no-store` task (`quick`, from ARCH-016's Handoff); dry-run; owner's go; dispatch.
+2. **PHASE0-013** (root-404 `no-store`, `quick`) written in the kit, untracked; dry-run clean 2026-10-19 (Sonnet 5.5,
+   interactive). Waits for the owner's go; the lead reviews it as trivial and runs `test:e2e:all` before merge.
 3. The Phase 0 gate: fresh-clone `verify` + `test:e2e:all`, the owner's Safari check and roadmap reading, the DoD wording.

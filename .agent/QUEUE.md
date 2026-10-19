@@ -113,11 +113,10 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-011d2, M-6 over the working area, merged 2026-10-16 as PR #97.)*
     - *(Done: ARCH-015, the Task 12 consult, 2026-10-16: split into 012a and 012b.)*
     - *(Done: PHASE0-012a, the browser harness and its premises, merged 2026-10-17 as PR #99.)*
-    - **PHASE0-012b, the browser acceptance tests** (B1-B11, the AC-18 scan) — complete 2026-10-19 (`6ee0e22`), waiting
-      for the owner's look and merge (PR #104).
-    - **ARCH-016, ADR-011** — accepted by the owner 2026-10-19, applied at `a8f0939` — PR #102, waiting for merge.
-    - **Root 404s answer `Cache-Control: no-store`** (ADR-011 rule 12; `apps/server/src/http/errors.ts:131-136`, the
-      assertion at `apps/server/test/server.test.ts:222`) — after ADR-011 merges — not written; small, `quick`.
+    - *(Done: PHASE0-012b, the browser acceptance tests, merged 2026-10-19 as PR #104.)*
+    - *(Done: ARCH-016, ADR-011 accepted 2026-10-19, merged as PR #102.)*
+    - **PHASE0-013, root 404s answer `Cache-Control: no-store`** (ADR-011 rule 12) — 012b merged — written in the kit,
+      dry-run clean 2026-10-19; waits for the owner's go. Then the Phase 0 gate.
     - **The queued POS gap:** POS-03's actor group and Release (`order.html:77`), left out of 011c2 — not written.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
       by the owner 2026-10-06, possibly to after the MVP — not written.
