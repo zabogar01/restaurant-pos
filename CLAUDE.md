@@ -99,7 +99,8 @@ require breaking one, the task is wrong.
 
 - The architecture is **approved** (2026-09-10): `docs/ARCHITECTURE.md` and
   seven accepted ADRs; ADR-009 (back-office username and password) and
-  ADR-010 (the HTTP boundary) were accepted on 2026-10-08. The deployment-shape conflict was resolved in the
+  ADR-010 (the HTTP boundary) were accepted on 2026-10-08, and ADR-011 (the
+  browser clients and their sessions) on 2026-10-19. The deployment-shape conflict was resolved in the
   documents (single host, loopback only). The PRD now states the stack and the
   currency. Live conflicts, if any, are listed in STATE.md.
 - The visual direction is **Frost** (owner, 2026-09-14), stated as tokens in

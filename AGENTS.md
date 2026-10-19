@@ -11,7 +11,9 @@ MVP runs on the owner's local machine only.
 ## What exists
 
 - `apps/pos` — the POS client (React, Vite). POS-01 to POS-07 are built
-  against fixtures and a client order store. The back office is not built yet.
+  against fixtures and a client order store; POS-01 signs in for real.
+  `apps/back-office` — the back-office client: BO-01 sign-in, the empty
+  frame, and M-6.
 - `apps/server` — the Phase 0 domain modules in `src/domain` (PIN, audit,
   throttle, sessions, back-office credential, inline manager approval) on
   migrations `0001` to `0008`, and the HTTPS server in `src/http` (TLS on
@@ -19,8 +21,10 @@ MVP runs on the owner's local machine only.
   instance, route access declarations and the session guard, the approval
   adapter). Routes: `GET /api/health`, and the POS and back-office sign-in
   routes under `/api/pos/auth/` and `/api/back-office/auth/`. No production
-  route takes a manager approval yet (Phase 2). Plan Tasks 11 and 12 serve the
-  bundles, build the back-office shell and add the browser harness.
+  route takes a manager approval yet (Phase 2). The server serves both built
+  bundles under `/pos/` and `/back-office/`. `packages/api-client` is the one
+  transport core both clients use, and `e2e/` is the browser harness
+  (`npm run test:e2e`).
 - `packages/money` (exact monetary arithmetic), `packages/tokens` (Frost
   design tokens) and `packages/contracts` (the API error codes, the session
   views and the request schemas). `db/migrations`.
@@ -104,7 +108,7 @@ not fix, and what they need but do not have. "Done" is not a Handoff.
 
 ## Architecture and contract
 
-**Architecture.** `docs/ARCHITECTURE.md` and nine accepted ADRs are binding.
+**Architecture.** `docs/ARCHITECTURE.md` and ten accepted ADRs are binding.
 `docs/ARCHITECTURE_PROPOSAL.md` is kept under a superseded banner as history.
 A new ADR starts as `Proposed`; only the owner accepts it. Never edit an
 accepted ADR; supersede it with a new one.
