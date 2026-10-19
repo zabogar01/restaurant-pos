@@ -10,8 +10,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-19 (night): `development` at `1701e36` (PR #110 merged). **Phase 0 closed.** The owner approved the Phase 1 plan approach
-(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 round 3** (last): re-review closed
-F1-F5, found 2 lows (oversize text, static `aria-describedby`); `design016b` fixing (rulings `1e9fde1`). Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
+(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 complete** (`8b0d87a`, 3 rounds, merges
+cleanly), not pushed: waits for the owner's word to push it for a PR. Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
 
 ## Phase and gates
 
@@ -45,18 +45,16 @@ F1-F5, found 2 lows (oversize text, static `aria-describedby`); `design016b` fix
 
 ## Running tasks and agents
 
-- **Live agents: `lead`, `architect17`** (idle, pane `ARCH-017`; kept open for a revision round until the owner
-  accepts the plan) **and `design016b`** (OpenCode `openai/gpt-6-astra`, pane `DESIGN-016`, the 2026-10-14 allow list as
-  `OPENCODE_CONFIG_CONTENT`; background wait running). Codex `design016`'s pane is closed (session `01a15478-…`).
+- **Live agents: `lead`, `architect17`** (idle, pane `ARCH-017`; kept for a revision round until the owner accepts the
+  plan). `design016b`'s pane closed after DESIGN-016 completed; Codex `design016`'s too.
 - **ARCH-017, done:** `docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`, `Proposed`. 11 slices
   (S0-S10), ADR-012 (versioned configuration) and consults C1-C5, 14 owner questions. Key finding (Q13): AC-31, AC-12's
   rejections and AC-32's second sentence need orders, so cannot pass in Phase 1; ROADMAP wording proposed. Lead checked:
   only the plan and task file changed, `diff --check` clean, no code; Q2 (no rate range, 2026-10-06) and the
   reactivation ruling (2026-10-07) cited correctly. S0 can be written once the plan is accepted.
-- **DESIGN-016, round 3 running** (cycle 2 of 2; rulings `1e9fde1`): R2-1 oversize = notice only + `aria-invalid`
-  (option a, as the build); R2-2 `aria-describedby` only while invalid. Round 2 `6aa4881`: 393/293/371/288, verify ok. Round 1: checks 381/381 (016), 281, 371, 288; lead `verify` exit 0, 93/3744;
-  notice contrast 5.23:1; meta.json `cli: opencode`. Owner question in it: a different manager after the eight hours.
-  `design016b`'s pane stays open for a fix round. Lead browser walk not done (the check script walks all 26 states).
+- **DESIGN-016, complete** (`agent/design-016` at `8b0d87a`, cycles 2): BO-01 (19 states) and BO-02 (9) in Frost, N1-N3,
+  wide-window rule in DESIGN *Layout*; checks 399/293/371/288; lead verify exit 0, 93/3744. Review: F1-F5, then R2-1/R2-2,
+  all fixed; round 3 lead-reviewed. Feeds plan slice S10. Its Handoff raises stale BO-01/M-6/DESIGN text (wording given).
 - **Carry-forwards:** placed slice by slice in the Phase 1 plan §5 (Phase 2's stay Phase 2: AC-27, AC-19, M-1, the
   idempotency design). Design slices left: B (DESIGN-016), D, E, F, G, H (the plan §4 orders them).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density.
@@ -115,6 +113,8 @@ F1-F5, found 2 lows (oversize text, static `aria-describedby`); `design016b` fix
 
 Nothing here is decided. Detail is where each line points.
 
+- **DESIGN-016's question:** after the eight hours, a different manager signs in at BO-01: is the old draft destroyed
+  (designer's proposal, as the M-6 ruling) or kept for its owner? Also its R2-1 ruling (oversize: notice only), yours.
 - **Lead choices in ARCH-017 and DESIGN-016, yours to overturn:** the plans path granted to the architect; DESIGN-016's focus reading (Part A item 3).
 - **ARCH-017's 14 questions** (plan §8, Handoff): accept the plan; Q13 (ROADMAP acceptance line) first, then Q5, Q12,
   Q1 and Q7-Q11, Q14, Q4, Q10. Contract wording for ROADMAP, PRD FR-B1/B2/B3/B5/J3/M1 and §9 is drafted in its Handoff.
@@ -146,5 +146,5 @@ Nothing here is decided. Detail is where each line points.
 ## Next up
 
 1. The owner reads the plan and answers Q13 first; on acceptance, record it, commission ADR-012 + C1 and C2, write S0.
-2. `design016b` reports round 3: lead verify and reads the small diff; a last reviewer resume only if it is not
-   trivial; then `status: complete`, push `agent/design-016` for a PR.
+2. On the owner's word: push `agent/design-016` and `agent/lead-1019f` for PRs. After merge: remove the worktree and
+   `.agent/runs/DESIGN-016/` (owner runs removals). Next design slice: D, E or F per the plan §4, once accepted.
