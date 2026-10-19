@@ -340,4 +340,19 @@ No accepted ADR needs a superseding note: ADR-011 supersedes nothing, and its op
 The owner's ruling on the two proposed points and on where the two-tab risk is filed. Nothing else blocks
 acceptance. After acceptance, one small task is owed: the root 404's `no-store` (above).
 
+### Acceptance (applied 2026-10-19)
+
+Applied as the *Acceptance (owner, 2026-10-19)* section asks, and nothing else:
+
+- `docs/decisions/ADR-011-browser-clients.md`: `**Status:** Accepted`, `**Date:** 2026-10-19`, `**Approved by:**
+  Product owner` in place of `**Proposed by:**`. The opening paragraph that listed the two proposals is now one
+  sentence recording that the owner accepted both on 2026-10-19. The five markers are gone: the "(proposed)" in the
+  headings of rules 3 and 5, the two "(proposed …)" in *Options considered* (now "Rejected (rule 3)" and "Rejected
+  (rule 5)"), and the one on the sign-in risk, which now reads "(owner, 2026-10-19; rule 5)" like its two
+  neighbours. The body is otherwise unchanged; the Context's "commissioned one, as `Proposed`" is history and stays.
+- `docs/ARCHITECTURE.md`: §1 says "the ten consequential decisions"; §18 gains "ADR-011 was accepted on 2026-10-19:"
+  and its own table after ADR-010's. My amendments carried no "proposed" marker (a grep found none), so nothing
+  else changed. Rule 12's root-404 `no-store` stays stated ahead of the code, for the lead's task.
+- AGENTS.md, CLAUDE.md and `.agent/roles/` are untouched, as ruled.
+
 DONE

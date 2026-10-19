@@ -1,10 +1,10 @@
 # ADR-011: The browser clients, their sessions and what is served to them
 
-**Status:** Proposed
+**Status:** Accepted
 
-**Date:** 2026-10-17
+**Date:** 2026-10-19
 
-**Proposed by:** `architect16` (ARCH-016), for the product owner
+**Approved by:** Product owner
 
 Nothing is superseded by this record. ADR-010 left five matters for later in
 its *Not decided here*: the session cookies (their names, lifetime, path, and
@@ -22,12 +22,9 @@ and 011d2 (the back office and M-6), and 012a (the browser harness). It records
 what was built and why. It redesigns nothing, and it decides one small change
 that is not built yet (rule 12, the root's 404).
 
-Two of its rules are proposals the owner has not yet ruled on. They are marked
-**(proposed)** where they appear, and the owner's acceptance of this record
-settles them:
-
-- the reading of FR-A2c, that no route accepts either cookie (rule 3);
-- accepting that the two sign-in routes carry no anti-CSRF token (rule 5).
+The owner accepted both of the record's proposals on 2026-10-19, with the
+record: the reading of FR-A2c, that no route accepts either cookie (rule 3),
+and that the two sign-in routes carry no anti-CSRF token (rule 5).
 
 ## Context
 
@@ -254,7 +251,7 @@ POS token is dead); and when re-authentication finds nothing to renew. It is
 touched by a sign-in that fails or is throttled. A session row is not marked
 when its cookie is cleared for expiry.
 
-#### 3. No route accepts either cookie (proposed)
+#### 3. No route accepts either cookie
 
 FR-A2c says "shared read routes **may** accept either" session. This record
 reads that as a permission the architecture does not use. A read that both
@@ -315,7 +312,7 @@ origin, and ADR-010 rule 3 refuses its mutating requests by `Origin` and
 `Sec-Fetch-Site`. The token is the second refusal, and the one bound to the
 session, which §7.2 has required since it was approved.
 
-#### 5. The sign-in routes carry no anti-CSRF token (proposed)
+#### 5. The sign-in routes carry no anti-CSRF token
 
 `POST /api/pos/auth/login` and `POST /api/back-office/auth/login` have no
 session, so there is nothing to bind a token to. What a sign-in grants, it
@@ -902,7 +899,7 @@ and each appears only in the request bodies of its own credential route.
 - *A route that accepts either cookie*, as FR-A2c permits. It must choose a
   winner when a profile holds both, and could only choose by something in the
   request. With path-scoped cookies, a route outside both surfaces receives
-  neither. Rejected (proposed reading, rule 3).
+  neither. Rejected (rule 3).
 - *A per-route `preHandler`*, as the plan had it. A route that forgets it is
   unguarded and nothing notices. Rejected for a declaration every route must
   carry and a startup refusal.
@@ -931,8 +928,7 @@ and each appears only in the request bodies of its own credential route.
 - *A pre-session token signed under a server secret, handed out by an
   unauthenticated route.* Anyone may ask for one, so it protects only through
   the same-origin rule the existing refusals already rest on. A second
-  mechanism and a new secret for the first one's guarantee. Rejected (proposed,
-  rule 5).
+  mechanism and a new secret for the first one's guarantee. Rejected (rule 5).
 
 **Serving the bundles.**
 
@@ -1085,7 +1081,7 @@ to be reconsidered at the gate before any networked or production use
   The application stores no credential, and browsers largely ignore a page's
   request not to offer saving. On a machine other staff can reach, a saved
   password is the back office left open.
-- **The sign-in routes have no anti-CSRF token** (proposed, rule 5). A hostile
+- **The sign-in routes have no anti-CSRF token** (owner, 2026-10-19; rule 5). A hostile
   page that could get a JSON request past the browser's cross-origin rules and
   past the origin refusal could sign the victim's profile in as an account the
   attacker holds. Nothing known does that; the attacker would need a valid PIN

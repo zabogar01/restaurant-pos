@@ -19,7 +19,7 @@ appears to conflict with the product contract, implementation stops and raises
 the conflict rather than silently choosing one.
 
 The product owner approved this architecture on 2026-09-10. The accepted
-decision records in section 18 preserve the nine consequential decisions and
+decision records in section 18 preserve the ten consequential decisions and
 their trade-offs. Future changes to an accepted decision require a new ADR that
 supersedes the old one; accepted ADRs are not edited into a different decision.
 
@@ -1113,6 +1113,12 @@ ADR-010 was accepted on 2026-10-08:
 | ADR | Accepted decision |
 |---|---|
 | [ADR-010](decisions/ADR-010-http-boundary.md) | The HTTP boundary |
+
+ADR-011 was accepted on 2026-10-19:
+
+| ADR | Accepted decision |
+|---|---|
+| [ADR-011](decisions/ADR-011-browser-clients.md) | The browser clients, their sessions and what is served to them |
 
 ## 19. Open product dependencies
 
