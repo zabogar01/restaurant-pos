@@ -10,8 +10,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-19 (night): `development` at `82876b4`. **Phase 0 closed.** The owner approved the Phase 1 plan approach
-(DECISIONS). **ARCH-017** (the plan, `architect17`) and **DESIGN-016** (slice B, `design016`) are **running**, opened
-by hand on the owner's go. Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
+(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 stopped at Codex's limit**,
+nearly done, work uncommitted in its worktree: the owner picks wait-for-reset or OpenCode stand-in. Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
 
 ## Phase and gates
 
@@ -39,23 +39,25 @@ by hand on the owner's go. Narrative: [journal/2026-10-19.md](journal/2026-10-19
 - **Guard hooks** current (`--check` 2026-10-19); no agents.yaml or `.githooks/` change since 2026-10-17.
 - **Lead work: `../restaurant-pos-kit` on `agent/lead-1019e`** (from `82876b4`; pushed on the owner's word, PR #110). **Before any follow-up push to a lead branch, check its
   PR is still open** (`gh pr view <n> --json state`): a push after the merge is lost (#103, 2026-10-19).
-- **Task branches open:** `agent/arch-017` (task file `50134af`), `agent/design-016` (`d4502d3`, `npm ci` run), worktrees
+- **Task branches open:** `agent/arch-017` (plan `7e7fb06`), `agent/design-016` (`d4502d3`, `npm ci` run), worktrees
   `../restaurant-pos-wt/<ID>`, cut from `82876b4`; kit copies deleted. `.agent/runs/` empty. Merged branches still exist (cleanup later).
   Not the lead's: worktrees `../restaurant-pos-design` and `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **Live agents: `lead`, `architect17`** (Claude Opus 5.5, pane `ARCH-017`, journal 2026-10-12 launch line with the
-  worktree's role file) **and `design016`** (Codex `gpt-6-astra` high, pane `DESIGN-016`, journal 2026-10-06 recipe;
-  update prompt answered Skip). Both briefed 2026-10-19 night; the lead runs a background `herdr agent wait` on each.
-  Codex asks the owner before each browser run and `git commit`.
-- **Carry-forwards:** the Handoffs of PHASE0-005 to 013 (*For Task 12*, *For Phase 1's first form*, *What the next
-  agent needs*); ARCH-012 to 016 *must carry forward*. Phase 1: AC-32's POS half and AC-35's last sentence close in the
-  harness; the harness rules (012a/012b Handoffs, ADR-011 rules 27-28) bind every later browser test. Phase 2: AC-27's
-  second sentence, AC-19's approval class, M-1 for real, the idempotency design (a `CSRF_REFUSED` retry resends the
-  same key, ADR-011).
-- **Design slices left: B (DESIGN-016), D, E, F, G, H.** The users screen warns that a PIN or password reset ends all
-  that manager's sessions (ADR-009).
+- **Live agents: `lead`, `architect17`** (idle, pane `ARCH-017`; kept open for a revision round until the owner
+  accepts the plan) **and `design016`** (Codex `gpt-6-astra`, pane `DESIGN-016`, session `01a15478-8268-71c3-b179-b8047d9de216`,
+  **out of quota** until 2026-10-20 02:02; sitting on a "switch to gpt-6-luna?" prompt: never accept it).
+- **ARCH-017, done:** `docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`, `Proposed`. 11 slices
+  (S0-S10), ADR-012 (versioned configuration) and consults C1-C5, 14 owner questions. Key finding (Q13): AC-31, AC-12's
+  rejections and AC-32's second sentence need orders, so cannot pass in Phase 1; ROADMAP wording proposed. Lead checked:
+  only the plan and task file changed, `diff --check` clean, no code; Q2 (no rate range, 2026-10-06) and the
+  reactivation ruling (2026-10-07) cited correctly. S0 can be written once the plan is accepted.
+- **DESIGN-016, left:** `design016.cjs` never completed (fixed, not rerun), final 1440/1920 measurements and contrast,
+  static checks, the Handoff's last line, the commit. Done: both artifacts (17 + 9 states), N1-N3, links, tokens,
+  `verify` 93/3744, slice A/C/I checks green. Owner question in it: a different manager after the eight hours.
+- **Carry-forwards:** placed slice by slice in the Phase 1 plan §5 (Phase 2's stay Phase 2: AC-27, AC-19, M-1, the
+  idempotency design). Design slices left: B (DESIGN-016), D, E, F, G, H (the plan §4 orders them).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density.
 - **Open ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -76,8 +78,7 @@ by hand on the owner's go. Narrative: [journal/2026-10-19.md](journal/2026-10-19
   browsers installed on the host. **The lead runs `test:e2e` before merging any task touching** `apps/pos`,
   `apps/back-office`, `packages/api-client`, `packages/contracts`, `apps/server/src/http`, `apps/server/src/domain` or
   `db/migrations` (ARCH-015 *For the lead* 6). The harness makes its own people and certificate.
-- **A fresh-clone check** must clone into a directory named `restaurant-pos` (the compose file has no `name:`, so any
-  other name starts a second database on 5433; adding a `name:` is a small builder task, not filed).
+- **A fresh-clone check** must clone into a directory named `restaurant-pos` until plan slice S0 adds a compose `name:`.
 - **The permission classifier refuses the lead** `git worktree remove` and `rm -rf` of run directories (even of merged,
   clean worktrees), and once refused a read-only `grep` after that; the owner runs removals. Read files with Read.
 - **Background commands die at two hours;** a dispatcher may exit 1 when Codex hits its limit after writing its
@@ -114,8 +115,9 @@ by hand on the owner's go. Narrative: [journal/2026-10-19.md](journal/2026-10-19
 Nothing here is decided. Detail is where each line points.
 
 - **Lead choices in ARCH-017 and DESIGN-016, yours to overturn:** the plans path granted to the architect; DESIGN-016's focus reading (Part A item 3).
-- **Phase 1 will need** (ARCH-017 raises them with proposed answers): ADR-009 *Not decided here*; PRD §9's rate range
-  vs. BO-08; Pasal 8; FR-B7 tender types in no ROADMAP phase; FR-B1 currency/precision as settings vs. fixed IDR.
+- **ARCH-017's 14 questions** (plan §8, Handoff): accept the plan; Q13 (ROADMAP acceptance line) first, then Q5, Q12,
+  Q1 and Q7-Q11, Q14, Q4, Q10. Contract wording for ROADMAP, PRD FR-B1/B2/B3/B5/J3/M1 and §9 is drafted in its Handoff.
+- **DESIGN-016:** wait for the Codex reset or an OpenCode `gpt-6-astra` stand-in (needs the owner's yes)?
 - **PHASE0-012b, yours to overturn:** its 15 lead rulings and the two substituted red proofs (B6/B7, B2; journal 10-19).
 - **012a, lead acceptance yours to overturn:** a shell forging the marker, `E2E_REFUSED_DATABASES` and all three
   database names passes the worker guard (task file, round 3).
@@ -143,6 +145,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. Wait for `architect17` and `design016`; read each Handoff whole. DESIGN-016 then gets a cross-family design review
-   (Claude Opus; write `.agent/runs/DESIGN-016/builder/meta.json` with `"cli":"codex"` first).
-2. ARCH-017's Handoff: the owner accepts the plan; then the first Phase 1 task file (or the consult it names).
+1. The owner reads the plan and answers Q13 first; on acceptance, record it, commission ADR-012 + C1 and C2, write S0.
+2. DESIGN-016 finishes (reset or stand-in); then a Claude Opus design review (`.agent/runs/DESIGN-016/builder/meta.json`
+   with `"cli":"codex"` first).
