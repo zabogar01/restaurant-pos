@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-012, DESIGN-015]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: review
 cycles: 1
 ---
 # DESIGN-016 — BO-01 Login and BO-02 Today (slice B)
