@@ -393,6 +393,77 @@ boundaries).
 
 ## Handoff
 
-*(The builder writes here: what you did, path by path; what you decided and on what evidence; each case and its red
-proof's failure message; verify and the runs; what each engine did; found and not fixed; what the next agent needs.
-End with `DONE` or `BLOCKED: <question>`.)*
+### What I did
+
+All work is under `e2e/`; nothing outside it is changed (`git status` outside `e2e/` was clean after the last red proof was reverted). `premises.spec.ts` is untouched and passes in both engines.
+
+New files:
+
+- `e2e/support/scan.ts`: the AC-18 scan. A `Ledger` (owned by the `world` fixture for one test) records every credential the test was given or typed and how many times it submitted each; `scan(ledger, evidence)` returns problems, each naming only a kind and a place ("a PIN in the server log", "a password in a request body to /api/…", "a PIN in 2 request bodies of its own route, but 1 were submitted"). A PIN matches only as a whole run of digits, so it is not found inside a longer number. Own routes: a PIN only `POST /api/pos/auth/login`; a username only `POST /api/back-office/auth/login`; a password `login` or `reauthenticate`.
+- `e2e/support/probe.ts`: `probe(page, path)` (a GET made by the page; returns the status and the envelope's `error.code`) and `submitPin(page, pin)` (the page's own `fetch` to the PIN sign-in route, counted in the ledger). `submitPin` exists because the pad is `disabled` while a cooldown runs (`lockViewOf`, phase `throttled`), so B1 and B2's "correct PIN while throttled" cannot go through the pad.
+- `e2e/tests/throttle.spec.ts` (B1, B2), `audience.spec.ts` (B3, B4, B5 twice: each direction), `idle.spec.ts` (B6, B7, B8 twice: POS and back office), `reauthenticate.spec.ts` (B9, B10 twice: another manager, and the discard logout), `identity.spec.ts` (B11).
+
+Changed: `e2e/support/fixtures.ts`. `Seen` gained `replies` (each API response's method, path, status, envelope `code` and `retryAfterSeconds`; only error bodies are read, because a successful sign-in body holds the anti-CSRF token), and the request records gained the `page` that made them; `Profile` gained `settled()`. `World` gained `wrongPin()`, `wrongPassword()`, `credentialBodies(kind, person)` and the internal `scan()` and `watch()`. `people.cashier()` and `people.manager()` now also record the person's credentials in the ledger. `signInAtPos` and `signInAtBackOffice` record each submission; the new `reauthenticateAtOffice(page, person)` does M-6's same-manager form. The profile fixtures run `world.scan()` after the test body and before closing their contexts (storage and cookies can be read only from live pages). No assertion in `premises.spec.ts` changed.
+
+### The cases (all run in Chromium and WebKit)
+
+- B1: five wrong PINs at the real pad, each `INVALID_CREDENTIALS`, only the fifth carrying `retryAfterSeconds` (between 1 and `COOLDOWN_MINUTES * 60`, imported); `data-lock-state` is `error` four times, then `throttled`; the correct PIN by the page's own fetch is `THROTTLED`; `security_event` holds `MAX_FAILURES` `PIN_FAILURE` and one `COOLDOWN_STARTED`, `audit_entry` is empty; the POS is still unauthenticated.
+- B2: as B1, then `context.clearCookies({ name: 'rpos_cid' })`; the correct PIN is still `THROTTLED`, and a different `rpos_cid` was issued.
+- B3: a manager signs in at the POS and the back office in one profile; both survive a reload; the cookies are `rpos_pos_sid` on `/api/pos` and `rpos_bo_sid` on `/api/back-office`, one each.
+- B4: Release at the POS leaves the back office signed in after a reload; after a fresh POS sign-in, a back-office logout leaves the POS signed in after a reload.
+- B5 (two tests): a manager with only a POS session sees BO-01 and the back-office `me` probe answers `UNAUTHENTICATED`; with only a back-office session the POS loads `signed-out` / `resting` and its probe answers `UNAUTHENTICATED`.
+- B6 and B7: the row aged by `SESSION_POLICY.<audience>.idleSeconds + 1` (POS) and `+ 60` (back office), the page clock forward by the same amount; the POS ends `signed-out` / `resting`, the back office `idle` with the `REAUTH_TITLE` dialog open and `.bonav`, `.botop`, `.bocontent` inert; the deadline read answered `SESSION_IDLE`; zero `activity` requests.
+- B8 (two tests): the row shifted by `limit - floor(limit / 3)` and the page forward past the client's deadline; the read at the deadline is 200 and the page is still signed in; then the row and page shift by `floor(limit / 3) + 1` and the next read is `SESSION_IDLE`; zero `activity` requests throughout. A first read that had extended the session would leave the second shift short, and the page would stay signed in.
+- B9: from B7's state, a wrong password gives `INVALID_CREDENTIALS` and M-6 stays; the right one gives `signed-in`, the inert attributes gone, the `RESUMED` status, the same working-area element (marked before the idle), and in `actor_session` the same session id with a different `token_hash`.
+- B10 (a): a second manager signs in from M-6 ("Sign in as a different manager", "Continue to sign-in", then the form); the frame is live, the actor chip names the second manager, the first manager's working-area element is gone (a new element), one open session for the second. (b) "Log out" then "Discard changes and log out": BO-01, the working area removed (0 elements), no open session for the manager. Phase 0 mounts no draft under M-6 (011d2), so "the destroyed draft" is asserted as the survival or destruction of the keyed working-area element itself; AC-35's last sentence stays Phase 1's.
+- B11: two POS tabs open signed out, A signs in at tab 1, B at tab 2; tab 1's next tap is answered `CSRF_REFUSED`, tab 1 then reads `me` (200, naming B), ends `signed-out` with `data-lock-state="invalidated"`, and sent exactly one `activity` (never retried as B). A `MutationObserver` installed before the page's scripts proves B's name never appeared in tab 1; tab 2 stays signed in as B. The state is pinned from `packages/api-client/src/client.ts` (`run`, the `ACTOR_CHANGED` end) and `apps/pos/src/session/realSession.ts` (`onCoreEvent`: a `session-ended` for any reason other than `SESSION_IDLE` or `SIGNED_OUT` calls `toSignedOut('invalidated')`); it is one of the states listed under Required inputs, so no BLOCKED.
+- The positive scan test of each file (ruling 7), each named `B-scan. …`: `throttle.spec.ts` "the scan finds a PIN in its own sign-in body, once per submission"; `audience.spec.ts` "the scan finds a manager’s PIN, username and password in their own bodies"; `idle.spec.ts` "the scan finds the credentials typed here in their own bodies"; `reauthenticate.spec.ts` "the scan finds the password in both of its routes, once for each submission" (password in 2 bodies, username in 1); `identity.spec.ts` "the scan finds each PIN in its own sign-in body".
+
+### What I decided, and on what evidence
+
+1. **Limits.** No literal limit in any spec: idle limits come from `SESSION_POLICY`, the failure count and the cooldown from `MAX_FAILURES` and `COOLDOWN_MINUTES` exported by `throttle.ts`. The grep for `\b(90|1800|28800)\b` over the five specs is empty.
+2. **The consult's red proof for B6 and B7 (`SESSION_POLICY.POS.idleSeconds` to 900) cannot go red as written.** Ruling 4 makes the spec read the same constant, so with 900 in the server the test ages by 901 and the session is idle for the same reason in both. I used proofs that hit the real path instead (below). The policy values themselves stay API-level proofs.
+3. **The consult's B2 proof cannot be made literally.** `pos_app` has insert-only rights on `security_event`, so a "no `PIN_FAILURE` row for this client instance" lookup in the server fails with a database error and shows as the general failure at the pad (I tried it; B1 and the scan test failed at `Expected: "error"  Received: "failed"`). I used the same behaviour from memory: the server remembers which client instances failed in a module-level set and only blocks those.
+4. **Response bodies.** `response.json()` waits for a body the page never reads; premises A2 (a probe that looks only at the status) hung in Chromium in the scan's teardown ("Tearing down "oneProfile" exceeded the test timeout"). `Profile.settled()` therefore waits at most 1.5 s for envelope reads, and an unread reply keeps `code: null`. Every reply the new cases read is read by the page.
+5. **A race in my own first B4**, found by its red proof: the POS goes to POS-01 at once on Release, while the release request is still in flight, so reloading the back office could beat the server and the mutation (below) passed the test. B4 now waits for the release and logout responses.
+
+### Red proofs (each made in source, run, read, reverted)
+
+Every mutation was made in `apps/`, `packages/` or `db/`, run, and reverted with `git checkout -- <file>`; the clients were rebuilt after each client-side mutation and again after its revert. Messages are trimmed; none contains a credential.
+
+- **B1**: `if (false && bucket.blocked)` in `apps/server/src/domain/throttle.ts`. `expect(received).toEqual(expected)` at `throttle.spec.ts:56`: expected `"code": "THROTTLED"`, received `"code": null` (the correct PIN signed in).
+- **B2**: the blocked branch only for client instances remembered as having failed (decision 3). B1 and the scan test stayed green; B2 failed at `throttle.spec.ts:78`: `Expected: "THROTTLED"  Received: null`.
+- **B3**: `BACK_OFFICE: { name: 'rpos_pos_sid', path: '/api' }` in `session-guard.ts`. Failed at `audience.spec.ts:28`: `Locator: locator('#root')  Expected: "signed-in"  Received: "signed-out"` (the POS saw a repeated cookie name).
+- **B4**: `signOut` also clears the other audience's cookie. Failed at `audience.spec.ts:58`: `Expected: "signed-in"  Received: "signed-out"` (the back office after its reload). See decision 5: the first B4 passed this mutation.
+- **B5**: the three layers together (POS cookie path `/api` in `session-guard.ts`; the back office reading `rpos_pos_sid`; the audience predicate replaced by `$2::text IS NOT NULL` in `session.ts`, keeping the parameter used). `B5. a POS session is not a back-office session` failed: `Expected: "signed-out"  Received: "signed-in"`. That mutation leaves the converse green, so the converse has the mirrored proof (back-office cookie path `/api`, reading `rpos_bo_sid`, predicate dropped): `B5. and a back-office session is not a POS session` failed with the same message.
+- **B6, B7, B8 (server)**: `NOT_IDLE` in `session.ts` replaced by `AND $3::int > 0` (idleness never judged). B6, B7 and both B8 tests failed: `Expected: "signed-out"  Received: "signed-in"` (POS) and `Expected: "idle"  Received: "signed-in"` (back office).
+- **B6, B7, B8 (client; the consult's proof)**: `void api['/api/pos/auth/activity']()` and its back-office twin called at the deadline in each `realSession.ts`. B6 and B7: `Expected length: 0  Received length: 1` (the `activity` requests, counted as a number after I changed the helper; the run quoted printed the request record, which holds no body). Both B8 tests failed on the session not idling (`Expected: "signed-out"  Received: "signed-in"` and `Expected: "idle"  Received: "signed-in"`): the extension the proof looks for.
+- **B9**: `clearSessionCookie` on `SESSION_IDLE` for every audience in `sessionGuard`. B9 failed at `reauthenticate.spec.ts:76`: `Expected: "INVALID_CREDENTIALS"  Received: "UNAUTHENTICATED"`. B10's discard and the scan test failed too; B10's other-manager test passed under this mutation, so it has its own proof.
+- **B10 (other manager)**: `key="same"` in place of `key={workKey}` in `OfficeApp.tsx`. Failed at `reauthenticate.spec.ts:114`: `Expected: false  Received: true` (the working-area element survived into the second manager's session).
+- **B10 (discard)**: `if (destroy && false) heldId = null;` in the back-office `realSession.ts`. Failed at `reauthenticate.spec.ts:132`: `Locator: locator('.office-work')  Expected: 0  Received: 1`.
+- **B11**: `if (false && me.view.staffUserId !== actorAtSend)` in `packages/api-client/src/client.ts`. Failed at `identity.spec.ts:61`: `Array [ "CSRF_REFUSED", + null, ]` (the tap was retried as B and answered 204).
+- **AC-18 scan**: `request.log.info({ digits: pin });` after `parseBody` in the POS login handler. `Error: the AC-18 scan found credentials where they do not belong:` / `a PIN in the server log`, thrown from the profile fixture's teardown. It names the kind and the place and no value.
+
+In a run of these proofs the B9 and B10 assertions that printed the session rows (id and token hash) were changed afterwards to compare lengths and booleans, so no hash is printed on failure; those edits are in the committed specs, and the full run after them is green.
+
+### Verification
+
+- `npm run verify`: typecheck clean (including `tsc -p e2e`); 93 test files, 3744 tests, all passed. The counts equal the baseline, as expected: this task adds no vitest test.
+- `npm run test:e2e:all`, twice in a row after the last revert: 50 passed both times (43.2 s and 41.4 s; both engines, 25 tests each: A1 to A6, B1 to B11 with the extra direction tests, and the five scan tests). Chromium and WebKit behaved the same on every case; I branched on neither.
+- The 012a greps over `e2e/` (excluding `node_modules` and `test-results`) are empty; the credential check, printing only hit or no hit per name, gave `DATABASE_URL`, `MIGRATION_DATABASE_URL`, `PIN_PEPPER`, `POS_APP_PASSWORD`, `POS_OWNER_PASSWORD`: all `no hit` (the script is in my scratchpad, outside the repository). The grep for `\b(90|1800|28800)\b` over the five specs is empty.
+- After the runs no `rpos-e2e-*` directory remains in the temporary directory (`ls` of `os.tmpdir()` showed no such entry).
+
+### Found and not fixed
+
+- The scan matches a PIN as a whole run of six digits, so a PIN equal to a six-digit number the server logs on its own (a process id, say) would be a false hit. About one in a million per such number per test; it would show as a plain scan failure naming "a PIN in the server log". Left as it is.
+- Playwright still writes `error-context.md` for failing tests whatever the reporter and trace settings say; the harness's random people keep it free of credentials, and the failure messages above hold none. `test-results/` is not committed.
+- The harness reads only error bodies, because a 2xx sign-in body holds the anti-CSRF token; a later phase that needs a 2xx body must read it in the page.
+
+### What the next agent needs
+
+- Carried forward for every later phase's browser tests: the fixtures, the reset before every test, people through domain functions, both clocks (`ageSession` and `page.clock.fastForward` by the same amount, `install()` before `goto`, nothing in flight), requests made by the page, assertions on state and codes (`#root[data-session]`, `data-lock-state`, the envelope `code`), no traces. The AC-18 scan runs in every test that uses `oneProfile` or `twoProfiles`; a later test that signs someone in must go through the helpers (or `submitPin`) so the ledger counts the submission.
+- Phase 1: AC-32's POS half (a deactivated user's POS session) and AC-35's last sentence (unsaved work found after M-6) close in this harness with the first deactivation and the first real form; B10 only proves that the working-area element is kept or destroyed.
+- Phase 2: AC-27's second sentence, AC-19's approval class through a route, and M-1 driven for real; the approval stand-ins must not be driven as if they verified. `MANAGER_APPROVAL` is not touched here.
+- Not run: Safari by hand (the owner's check, as A2 says), the optional restart-surviving-cooldown case (ruling 13), the eight-hour absolute limit in a browser.
+
+DONE
