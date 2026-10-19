@@ -5,8 +5,8 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-012, DESIGN-015]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # DESIGN-016 — BO-01 Login and BO-02 Today (slice B)
 
@@ -275,6 +275,45 @@ retained-draft proposal or the owner question. If something seems wrong, write i
 review. Running the checks is part of this brief; anything your allow list does not cover will ask the owner.
 
 Report with `design016b` in place of `design016` in the two Reporting lines above.
+
+## Round 2 — the review's five findings (lead rulings, 2026-10-19)
+
+The review is `.agent/reviews/DESIGN-016-review.md` (Claude Opus 5.5, at `3ec72c9`). Read it in full. **Every finding
+is accepted as proposed**; this is fix cycle 1 of 2. The reviewer could not run a browser or `node --check` (its
+unattended session refused them), so its findings come from reading the code; the lead confirmed both medium ones in
+the source (`office.css:15-16`; `login.js:57`). Fix each, then rerun everything, because nobody but you has run the
+checks on this branch.
+
+- **F1 (medium), wide-window centring on every consumer.** As proposed: centre `.device.device--bo` (or the outermost
+  frame element) so that `menu.html` and `report-detail.html` centre at 1920 exactly as `today.html` does, and extend
+  `design016.cjs`'s frame-geometry assertion to `menu.html` and `report-detail.html` at 1440 and 1920. **The lead also
+  allows one sentence in `docs/DESIGN.md`**, in *Layout* beside the 1440-wide back-office sentence (`D:804`), stating
+  the rule: wider than `--frost-office-width`, the signed-in frame stays that width, centred, with the canvas filling
+  both sides; the sign-in column centres in the window. This answers the review's note for the lead, so the frontend
+  task can cite DESIGN rather than a Handoff.
+- **F2 (medium), local validation.** As proposed: compute the set of missing fields and, separately, the set of
+  oversize fields; mark **every** member with its message and `aria-invalid`; focus the first in document order.
+  Emptiness is `=== ''`, never `trim()`: a username of spaces goes to the server (`I:626-631`; the contract schema has no
+  trim). The trimmed, lower-cased key stays only for the cooldown account match (`I:602`). Draw a blank-form state (both
+  messages) and register it, and in `design016.cjs` assert both errors and both `aria-invalid` on a blank submit, both
+  on a double oversize, and a whitespace username reaching `loading`. Say in the Handoff that local validation marks
+  every invalid field.
+- **F3 (low), the throttled picture.** As proposed: prefill the direct `throttled` state with `m.iqbal` (M-6's fixture
+  manager), password empty, so the picture shows the submitted username kept and editable. A username is not a
+  credential value under B-12. Drop the blank-username explanation from the fixture text and the Handoff.
+- **F4 (low), M-6 announces once.** As proposed: port `login.js`'s `announcedKey` guard to `shell.js` so the snapshot is
+  written only when a lock newly arrives or the locked account key changes; build the snapshot as `title + '. ' +
+  body`; add a keystroke case (a trailing space, a case change) to `design012.cjs`'s N3 block.
+- **F5 (low), N1's guard.** As proposed: both close guards reopen M-6 through the same focus rule `start()` uses, and
+  restore the pre-logout state with `O.setState`; add the forced close from `reauth-other-throttled` to `design012.cjs`
+  and assert where focus lands.
+
+Then rerun `design016.cjs`, `design012.cjs`, `design013.cjs` and `design014.cjs` to completion, `node --check` on every
+changed script, `npm run verify` and `git diff --check`. Add a **Round 2** section at the end of the Handoff mapping each
+finding to its change and its evidence (quoted check output), with updated measurements wherever F1 changes them; change
+round 1's sections only where a fix makes a statement in them untrue (F2's focus and state counts, F3's sentence).
+Replace the final `DONE` with your Round 2 section, ending the file with `DONE` or `BLOCKED: <one question>`. Commit on
+`agent/design-016` (path-scoped), never push, and report with the `design016b` lines.
 
 ## Handoff
 
