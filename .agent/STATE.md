@@ -10,8 +10,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-19 (night): `development` at `1701e36` (PR #110 merged). **Phase 0 closed.** The owner approved the Phase 1 plan approach
-(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 round 2**: the Claude Opus
-review found 2 medium, 3 low, all accepted (`e13707b`); `design016b` is fixing them (cycle 1 of 2). Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
+(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 round 3** (last): re-review closed
+F1-F5, found 2 lows (oversize text, static `aria-describedby`); `design016b` fixing (rulings `1e9fde1`). Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
 
 ## Phase and gates
 
@@ -53,8 +53,8 @@ review found 2 medium, 3 low, all accepted (`e13707b`); `design016b` is fixing t
   rejections and AC-32's second sentence need orders, so cannot pass in Phase 1; ROADMAP wording proposed. Lead checked:
   only the plan and task file changed, `diff --check` clean, no code; Q2 (no rate range, 2026-10-06) and the
   reactivation ruling (2026-10-07) cited correctly. S0 can be written once the plan is accepted.
-- **DESIGN-016, round 2 running** (rulings `e13707b`; review `.agent/reviews/DESIGN-016-review.md`; F1 centring on
-  menu/report-detail plus one DESIGN.md sentence allowed, F2 every invalid field marked and no trim). Round 1 (`3ec72c9`): checks 381/381 (016), 281, 371, 288; lead `verify` exit 0, 93/3744;
+- **DESIGN-016, round 3 running** (cycle 2 of 2; rulings `1e9fde1`): R2-1 oversize = notice only + `aria-invalid`
+  (option a, as the build); R2-2 `aria-describedby` only while invalid. Round 2 `6aa4881`: 393/293/371/288, verify ok. Round 1: checks 381/381 (016), 281, 371, 288; lead `verify` exit 0, 93/3744;
   notice contrast 5.23:1; meta.json `cli: opencode`. Owner question in it: a different manager after the eight hours.
   `design016b`'s pane stays open for a fix round. Lead browser walk not done (the check script walks all 26 states).
 - **Carry-forwards:** placed slice by slice in the Phase 1 plan §5 (Phase 2's stay Phase 2: AC-27, AC-19, M-1, the
@@ -146,5 +146,5 @@ Nothing here is decided. Detail is where each line points.
 ## Next up
 
 1. The owner reads the plan and answers Q13 first; on acceptance, record it, commission ADR-012 + C1 and C2, write S0.
-2. `design016b` reports round 2: lead verify, then re-review (`dispatch.sh DESIGN-016 --role reviewer --resume
-   --message "... Write only your report ..."`); clean → `status: complete`, push the branch for a PR.
+2. `design016b` reports round 3: lead verify and reads the small diff; a last reviewer resume only if it is not
+   trivial; then `status: complete`, push `agent/design-016` for a PR.
