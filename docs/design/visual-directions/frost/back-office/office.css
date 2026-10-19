@@ -12,7 +12,7 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 b, strong { font-weight: var(--frost-weight-semibold); }
 .wfbar, .device__caption { display: none; }
 .wfmain, .devicewrap { display: block; margin: 0; padding: 0; min-width: 0; }
-.device.device--bo { width: var(--frost-office-width); min-height: 0; border: 0; }
+.device.device--bo { margin-inline: auto; width: var(--frost-office-width); min-height: 0; border: 0; }
 .bo { margin-inline: auto; display: flex; width: var(--frost-office-width); height: 100dvh; min-height: 0; overflow: hidden; font-size: var(--frost-text-14); }
 .bo .bonav { width: var(--frost-office-nav-width); flex: none; overflow-y: auto; background: var(--frost-elevated); border-right: var(--frost-divider-stroke); }
 .bonav .bonav__brand { height: var(--frost-office-header-height); padding: 0 var(--frost-space-6); display: flex; align-items: center; border-bottom: var(--frost-divider-stroke); font-size: var(--frost-text-20); font-weight: var(--frost-weight-medium); }

@@ -16,7 +16,7 @@
   let departure=O.logout.href;
   let resumeFocus=$('#draft-limit'), selection=[0,6], timer, verifyingTimer, returnToReauth=false, queued=false;
   const accounts=new Map(), idled='m.iqbal', manager=$('#manager');
-  let other=false, priorState='reauth', separate=false;
+  let other=false, priorState='reauth', separate=false, announcedKey=null;
   const account=(username=manager.value)=>{const key=username.trim().toLowerCase();if(!accounts.has(key))accounts.set(key,{failures:0,expires:0});const value=accounts.get(key);if(value.expires&&value.expires<=Date.now()){value.expires=0;value.failures=0;}return value;};
   const remaining=username=>Math.max(0,Math.ceil((account(username).expires-Date.now())/1000));
   let reauthRequired=false, departureState='none', departureFocus;
@@ -31,9 +31,15 @@
   function start(state='reauth') {
     if(separate)return;
     if(!reauthRequired)remember();
-    reauthRequired=true; render(state); O.open(dialog, state==='reauth-other-confirm'?$('#stay-manager'):other?manager:secret.disabled ? $('#other-manager') : secret);
+    reauthRequired=true; render(state); O.open(dialog, reauthFocus(state));
+  }
+  const reauthFocus=state=>state==='reauth-other-confirm'?$('#stay-manager'):other?manager:secret.disabled?$('#other-manager'):secret;
+  const returnState=()=>remaining()?(other?'reauth-other-throttled':'reauth-throttled'):departureState.endsWith('-throttled')||departureState.endsWith('-verifying')?(other?'reauth-other':'reauth'):departureState;
+  function reopenReauth(){
+    if(reauthRequired&&!logout.open&&!dialog.open)start(document.documentElement.dataset.state==='reauth-logout'?returnState():document.documentElement.dataset.state);
   }
   const wait=seconds=>[seconds>=60?Math.floor(seconds/60)+' min':'',seconds%60?seconds%60+' s':''].filter(Boolean).join(' ');
+  const otherCooldown=left=>['This username is locked for '+wait(left),'This username is cooling down. Other managers can sign in with their own usernames.'];
   function message(node,title,body) {
     const heading=document.createElement('strong');heading.textContent=title;
     node.replaceChildren(heading,document.createElement('br'),document.createTextNode(body));
@@ -45,7 +51,7 @@
   }
   function cooldown() {
     const left=remaining();
-    if(other)message($('#cooldown'),'This username is locked for '+wait(left),'This username is cooling down. Other managers can sign in with their own usernames.');
+    if(other)message($('#cooldown'),...otherCooldown(left));
     else $('#cooldown').textContent='This username is cooling down. Try again in '+wait(left)+'. You can sign in as a different manager or log out.';
     logoutCooldown();
     if(!left) { clearInterval(timer); account().failures=0; if(dialog.open){render(other?'reauth-other':'reauth');secret.focus();} }
@@ -78,8 +84,13 @@
     $('#credential-message').textContent=error?credentialCopy.wrong:'';
     if(error&&other)message($('#credential-message'),'Sign-in failed','Check your username and password, then try again.');
     if(error) { secret.value=''; secret.focus(); }
-    if(locked) { secret.value=''; cooldown(); $('#cooldown-announcement').textContent=$('#cooldown').textContent; if(remaining())timer=setInterval(cooldown,1000); }
-    else $('#cooldown-announcement').textContent='';
+    if(locked) {
+      secret.value=''; cooldown();
+      const key=manager.value.trim().toLowerCase();
+      if(remaining()&&announcedKey!==key){$('#cooldown-announcement').textContent=other?otherCooldown(remaining()).join('. '):$('#cooldown').textContent;announcedKey=key;}
+      if(remaining())timer=setInterval(cooldown,1000);
+    }
+    else {$('#cooldown-announcement').textContent='';announcedKey=null;}
   }
   function resume() {
     clearInterval(timer);secret.value='';account().failures=0;reauthRequired=false;
@@ -117,9 +128,9 @@
   }
   dialog.addEventListener('cancel',e=>e.preventDefault());
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dialog.open){e.preventDefault();e.stopImmediatePropagation();}},true);
-  dialog.addEventListener('close',()=>{if(reauthRequired&&!logout.open&&!dialog.open)O.open(dialog,secret.disabled?$('#reauth-logout'):secret);});
+  dialog.addEventListener('close',reopenReauth);
   logout.addEventListener('cancel',e=>{e.preventDefault();$('#keep-session').click();});
-  logout.addEventListener('close',()=>{if(reauthRequired&&!logout.open&&!dialog.open)O.open(dialog,secret.disabled?$('#other-manager'):secret);});
+  logout.addEventListener('close',reopenReauth);
   $('#idle').onclick=()=>start();
   document.addEventListener('keydown',e=>{if(e.altKey&&e.key.toLowerCase()==='i'&&!dialog.open&&!logout.open){e.preventDefault();start();}});
   $('#verify-form').onsubmit=e=>{
@@ -142,7 +153,7 @@
   $('#reauth-logout').onclick=()=>{clearTimeout(verifyingTimer);askLogoutOrLeave();};
   O.logout.addEventListener('click',e=>{if(separate)return;e.preventDefault();askLogoutOrLeave();});
   document.addEventListener('click',e=>{const a=e.target.closest('.bo a');if(a&&a!==O.logout){e.preventDefault();askLogoutOrLeave('navigation',a.href);}});
-  $('#keep-session').onclick=()=>{logout.close();if(returnToReauth){start(remaining()?(other?'reauth-other-throttled':'reauth-throttled'):departureState.endsWith('-throttled')||departureState.endsWith('-verifying')?(other?'reauth-other':'reauth'):departureState);}else{O.setState(departureState);departureFocus?.focus({preventScroll:true});}};
+  $('#keep-session').onclick=()=>{logout.close();if(returnToReauth){start(returnState());}else{O.setState(departureState);departureFocus?.focus({preventScroll:true});}};
   $('#queue-incidents').onclick=()=>{queued=true;$('#queue-incidents').textContent='Print incidents will open after sign-in';secret.focus();};
   $('#confirm-logout').onclick=()=>{reauthRequired=false;$('#draft').reset();};
   const initial=document.documentElement.dataset.state;

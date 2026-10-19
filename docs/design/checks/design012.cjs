@@ -44,7 +44,26 @@ const base=path.resolve('docs/design/visual-directions'),out=process.env.DESIGN_
  await p.goto(url('shell','reauth-throttled'));
  const announced=await p.locator('#cooldown-announcement').textContent();await p.waitForTimeout(1100);
  check(await p.locator('#cooldown-announcement').textContent()===announced,'N3 lockout announcement does not tick');
- for(const id of ['cooldown','logout-cooldown'])check(await p.locator('#'+id).getAttribute('aria-live')==='off'&&!await p.locator('#'+id).getAttribute('role'),'N3 timer is not a live region '+id);
+  for(const id of ['cooldown','logout-cooldown'])check(await p.locator('#'+id).getAttribute('aria-live')==='off'&&!await p.locator('#'+id).getAttribute('role'),'N3 timer is not a live region '+id);
+  await p.goto(url('shell','reauth-other-throttled'));
+  const otherAnnounced=await p.locator('#cooldown-announcement').textContent();
+  check(/^This username is locked for .+\. This username is cooling down\. Other managers can sign in with their own usernames\.$/.test(otherAnnounced),'N3 other-manager snapshot separates title and body');
+  await p.evaluate(()=>{window.announcementWrites=0;new MutationObserver(records=>window.announcementWrites+=records.length).observe(document.querySelector('#cooldown-announcement'),{childList:true,characterData:true,subtree:true});});
+  await p.waitForTimeout(1100);await p.locator('#manager').press('End');await p.locator('#manager').press('Space');
+  await p.locator('#manager').fill(' R.AYU ');
+  check(await p.locator('#cooldown-announcement').textContent()===otherAnnounced&&await p.evaluate(()=>window.announcementWrites)===0&&await p.locator('#continue').isDisabled(),'N3 trailing-space and case edits never rewrite locked account announcement');
+  await p.locator('#manager').fill('another.manager');check(await p.locator('#cooldown-announcement').textContent()===''&&await p.locator('#continue').isEnabled(),'N3 leaving locked account clears snapshot');
+  await p.locator('#manager').fill('r.ayu');check((await p.locator('#cooldown-announcement').textContent()).startsWith('This username is locked for ')&&await p.locator('#continue').isDisabled(),'N3 returning to locked account announces newly present lock');
+  for(const state of ['reauth','reauth-throttled','reauth-other-throttled','reauth-other-confirm']){
+   await p.goto(url('shell',state));
+   const focus=state==='reauth-other-confirm'?'stay-manager':state==='reauth-other-throttled'?'manager':state==='reauth-throttled'?'other-manager':'credential';
+   await p.locator('#reauth-dialog').evaluate(e=>e.close());await p.waitForFunction(()=>document.querySelector('#reauth-dialog').open);
+   check(await p.evaluate(()=>document.activeElement.id)===focus&&await p.evaluate(()=>document.documentElement.dataset.state)===state,'N1 direct close restores shared focus '+state);
+   if(state==='reauth-other-confirm')continue;
+   await p.locator('#reauth-logout').click();await p.locator('#logout-dialog').evaluate(e=>e.close());await p.waitForFunction(()=>document.querySelector('#reauth-dialog').open);
+   check(await p.evaluate(()=>document.activeElement.id)===focus&&await p.evaluate(()=>document.documentElement.dataset.state)===state&&new URL(p.url()).searchParams.get('state')===state,'N1 forced logout close restores state and shared focus '+state);
+   if(state==='reauth-other-throttled')check(await p.locator('#manager').inputValue()==='r.ayu'&&await p.locator('#continue').isDisabled(),'N1 forced close retains other account cooldown');
+  }
  await p.goto(url('shell','none'));
  await p.locator('#draft-name').fill('Owner-edited fixture');await p.locator('#draft-choice').selectOption({label:'First choice'});await p.locator('[name=mode][value=standard]').check();await p.locator('#draft-limit').focus();await p.locator('#draft-limit').evaluate(e=>e.setSelectionRange(1,4));
  const snapshot=()=>p.evaluate(()=>({values:[...new FormData(document.querySelector('#draft')).entries()],error:document.querySelector('#draft-error').textContent,invalid:document.querySelector('#draft-limit').getAttribute('aria-invalid'),focus:document.activeElement.id,selection:[document.activeElement.selectionStart,document.activeElement.selectionEnd]}));

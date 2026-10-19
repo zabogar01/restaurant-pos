@@ -344,15 +344,17 @@ The fields are named `username` and `password`, with `autocomplete="username"`
 and `autocomplete="current-password"`. Password remains a native password
 input. No reveal, remember-me or recovery control exists. No credential is
 prefilled in the new artifact, recorded in screenshots, persisted, logged or
-sent. The direct cooldown drawing leaves its submitted username blank to avoid
-publishing a credential fixture. Its clearly separated review controls let a
-reviewer enter an invented identifier and simulate a response for that account.
-This does not suggest that an empty username can reach production verification.
+sent. The direct cooldown drawing retains the fixture username `m.iqbal`,
+editable, with an empty password. A username is not a PIN or password value
+under B-12. Its clearly separated review controls let a reviewer enter an
+invented identifier and simulate a response for that account.
 
 The lead's focus reading is confirmed for cold start, explicit logout and an
 ordinary credential failure. Cold start, logout, session loss and access refusal
-focus Username. Local invalid input focuses the first invalid field; local
-oversize input clears Password and focuses the oversized field. Credential
+focus Username. Local validation marks every missing field, or every oversized
+field, with its message and `aria-invalid`, and focuses the first in document
+order. Oversize input clears Password. Emptiness is an empty string, without
+trimming; nonempty whitespace usernames reach verification. Credential
 failure and the two general failures retain Username, clear Password and focus
 Password. A failed initial lookup disables both fields and Sign in and focuses
 Try again; successful lookup recovery focuses Username. A general-failure retry
@@ -365,7 +367,7 @@ both fields and Sign in are disabled.
 ### Requirement and state map
 
 Every named state below is registered in the gallery manifest and directly
-reachable through `?state=`. BO-01 has 17 states and BO-02 has nine.
+reachable through `?state=`. BO-01 has 18 states and BO-02 has nine after Round 2.
 
 | Requirement | Artifact state or interaction |
 |---|---|
@@ -373,8 +375,8 @@ reachable through `?state=`. BO-01 has 17 states and BO-02 has nine.
 | Part 0 N2 | One sentence after the inert-action rule in DESIGN states that a modal decision repeats the emergency and defers its action only until the decision is made. |
 | Part 0 N3 | M-6 and logout ticking text have `aria-live="off"` and no status role. A separate M-6 status region receives one snapshot on lock arrival; logout's static description includes its remaining wait. BO-01 similarly announces a lock once and updates its visible timer outside the live region. |
 | A1 resting / explicit logout | Login `default`, `logged-out`. Empty native fields and exact common copy. Actual logout also reaches the default state. |
-| A1 local invalid | `invalid-username`, `invalid-password`, and submitting missing values. Errors are associated with their fields. |
-| A1 local oversize | `oversize-username`, `oversize-password`, and submitting a value over the shared 256/1024 UTF-16 bounds. No truncation or creation-policy checks. |
+| A1 local invalid | `invalid-both`, `invalid-username`, `invalid-password`, and submitting missing values. Every missing field has its associated error and `aria-invalid`; focus goes to the first. |
+| A1 local oversize | `oversize-username`, `oversize-password`, and submitting values over the shared 256/1024 UTF-16 bounds. Every oversized field has `aria-invalid` and the reviewed generic error body beside it, alongside the shared error notice. Focus goes to the first oversized field; Password is cleared. No truncation or creation-policy checks. |
 | A1 loading / error | `loading`, `error`; local submission traverses loading to the selected response. |
 | A1 throttle | `throttled`; edit away and return with trimmed/lower-case matching, retaining the original deadline. Separate accounts keep separate known deadlines. |
 | A1 session loss | `session-ended` has no draft claim; `session-ended-draft` adds the proposed sentence only when the tab actually has retained work. |
@@ -392,7 +394,7 @@ reachable through `?state=`. BO-01 has 17 states and BO-02 has nine.
 | B1 / B3 incidents | `incident` uses slice A's persistent emergency and receipt chip; `receipt` shows only the lower-priority receipt warning. The emergency action reaches Frost BO-13. Explicit incoming alert context retains slice A's precedence. |
 | B1 / B4 Phase 0 | `phase0` has an empty rail and content pane, Back office, M. Iqbal's name and Log out; no day, incident or empty-data claim. |
 | C1 destinations | Shared Today and logout destinations and the authored menu/report/shell links now target the two Frost artifacts. |
-| C2 gallery | Both surfaces and all 26 states are registered; the gallery explains the absence of a success or idle BO-01 picture. |
+| C2 gallery | Both surfaces and all 27 states are registered after Round 2; the gallery explains the absence of a success or idle BO-01 picture. |
 | C3 documentation | BO-01's provisional-composition introduction and BO-02's slice-B sentence link to the new artifacts; the retained-draft row is added. Both historical greyscale prototypes link to the corresponding Frost surface. The exact diff is recorded below. |
 
 Today's columns are Table / order, Area, Opened and Total. Time is HH:MM WIB;
@@ -641,5 +643,75 @@ scripts: `design012.cjs`, `design014.cjs`, `design016.cjs`, `office.js`,
 No additional design finding arose from these checks. The retained-draft
 owner question and previously recorded documentation conflicts remain for
 review exactly as proposed above.
+
+### Round 2 — F1 to F5, completed by design016b
+
+Applied the lead's five accepted findings from `.agent/reviews/DESIGN-016-review.md`.
+The following changes and regression assertions address each finding. All
+existing assertions remain; none was removed or weakened.
+
+| Finding | Change | Passing evidence |
+|---|---|---|
+| F1 | Added `margin-inline: auto` to `.device.device--bo` in `office.css`, centring the outer wrapper on Menu and Report detail as well as the inner frame. Added the authorized wide-window sentence beside the back-office Layout paragraph in `docs/DESIGN.md`. | DESIGN-016 now measures both wrapped frames at 1440×900 and 1920×1080, checking width, x coordinate, rail, header, padding and document overflow. All four `wrapped frame geometry` assertions passed; measurements are below. |
+| F2 | `login.js` computes missing fields using `=== ''`, then computes oversized fields separately using the unchanged 256/1024 UTF-16 limits. Every member receives a field message and `aria-invalid`; the first in document order receives focus. Oversize keeps the reviewed generic notice, repeats its existing body beside each affected field and clears Password. Registered the new `invalid-both` blank-form state in the artifact and manifest. | DESIGN-016 passed blank-submit and blank-deep-link assertions for both messages, both invalid attributes and Username focus; double oversize marked both fields, cleared Password, retained the untruncated username and focused Username. A three-space username reached `loading` unchanged. BO-01 now has 18 states; BO-02 retains nine. |
+| F3 | The direct `throttled` state now starts with the submitted fixture username `m.iqbal` and an empty password. Removed the blank-username rationale from the fixture explanation and this Handoff. | DESIGN-016 passed `direct throttle retains submitted fixture username and empty secret`: Username is editable, while Password and Sign in are disabled. Clearing Username removes the lock and enables entry; the empty key is not locked. Both target-size throttle screenshots show the retained username. |
+| F4 | Added a normalized `announcedKey` guard to M-6. The other-manager snapshot is built from the same title/body pair as the visible notice, joined with `. `, rather than concatenating DOM text. Unlocked rendering clears the snapshot and guard. | DESIGN-012's MutationObserver recorded zero announcement writes after a timer tick, a trailing-space keystroke and a case change on the same locked account. The snapshot remained identical, with a sentence separator. Leaving the account cleared the snapshot; returning announced the newly present lock. |
+| F5 | Both close listeners now call `reopenReauth`, which reopens through `start` and its shared `reauthFocus` rule. Forced logout closure restores the pre-logout state through `render` / `O.setState`; the existing expired-wait normalization is shared with Keep this draft. | DESIGN-012 forced direct M-6 closure in `reauth`, `reauth-throttled`, `reauth-other-throttled` and `reauth-other-confirm`: focus returned respectively to Password, Sign in as a different manager, Username and Stay with current manager. Forced logout closure in the first three restored the same focus plus the document and URL state. The other-manager case retained `r.ayu` and its disabled submission. |
+
+#### Completed checks
+
+All four browser checks ran to completion using the installed Chrome and
+`PLAYWRIGHT_MODULE="$PWD/node_modules/playwright"`. The quoted final output is:
+
+| Check | Output | Evidence directory |
+|---|---|---|
+| DESIGN-016 | `"passed": 393, "total": 393, "failures": [], "errors": []` | `/tmp/design016-evidence/round2` |
+| DESIGN-012 | `"states": 52, "checks": 293, "errors": [], "failures": []` | `/tmp/design012-evidence/design016-round2` |
+| DESIGN-013 | `"states": 41, "checks": 371, "failed": [], "errors": []` | `/tmp/design013-evidence/design016-round2` |
+| DESIGN-014 | `"states": 24, "passed": 288, "total": 288, "errors": [], "failures": []` | `/tmp/design014-evidence/design016-round2` |
+
+`node --check` exited 0 for `design012.cjs`, `design014.cjs`, `design016.cjs`,
+`office.js`, `shell.js`, `login.js`, `today.js` and `manifest.js`, covering every
+script changed in this round and the earlier slice. `npm run verify` exited 0:
+typechecking passed, with `Test Files 93 passed (93)` and
+`Tests 3744 passed (3744)`. The existing Vite native-config warning remains.
+`git diff --check` passed.
+
+#### Updated browser measurements
+
+Quoted from the completed DESIGN-016 `measurements.json`, in CSS pixels:
+
+| Surface and measurement | 1440×900 | 1920×1080 |
+|---|---|---|
+| Menu frame `(x, y, width, height)` | `(0, 0, 1440, 900)` | `(240, 0, 1440, 1080)` |
+| Report detail frame `(x, y, width, height)` | `(0, 0, 1440, 900)` | `(240, 0, 1440, 1080)` |
+| Both wrapped rails `(x, y, width, height)` | `(0, 0, 220, 900)` | `(240, 0, 220, 1080)` |
+| Both wrapped top bars `(x, y, width, height)` | `(220, 0, 1220, 64)` | `(460, 0, 1220, 64)` |
+| Both wrapped content paddings | `24px` | `24px` |
+| Both wrapped document overflows | `0` | `0` |
+| Today frame `(x, y, width, height)` | `(0, 0, 1440, 900)` | `(240, 0, 1440, 1080)` |
+| Login error panel `(x, y, width, height)` | `(510, 195.5, 420, 509.015625)` | `(750, 285.5, 420, 509.015625)` |
+| Notice contrast ratio | `5.234805077491828` | `5.234805077491828` |
+| Today overflow header `(x, y, width, height)` | `(244, 64, 375.375, 40.9375)` | `(484, 64, 375.375, 40.9375)` |
+| Today content top / scroll offset | `64 / 600` | `64 / 600` |
+
+Thus both wrapped frames now have 240px of canvas on each side at 1920px,
+matching Today, while the 1440px geometry is preserved. All 27 Login/Today
+states at both target widths passed the one-landmark, empty-password and
+zero-horizontal-overflow assertions, including the long name and amount.
+The Today header remains at the scroll owner's top after scrolling 600px.
+
+I inspected the generated blank-form, error and throttle screenshots at 1440px,
+plus Menu and Report detail at 1920px. The Impeccable detector ran once over
+the changed UI files and reported one `cramped-padding` warning on the Login
+notice, claiming no inset. This is a static false positive: imported
+`office.css` supplies `padding: var(--frost-space-3) var(--frost-space-4)`
+(12px / 16px), and the error and throttle screenshots visibly retain that
+inset. No change was made for that warning. All browser evidence stays in `/tmp`.
+
+The retained-draft proposal, unresolved owner question and earlier documentation
+conflicts remain as recorded. This round adds no token or product copy; the
+oversize field messages reuse the reviewed error body. Only the authorized
+design files, their checks and this Handoff changed.
 
 DONE

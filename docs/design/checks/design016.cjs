@@ -52,8 +52,15 @@ let browser, progress;
   geometry.sticky={header:await rect('th:first-child'),content:await rect('.bocontent'),scroll:await p.locator('.bocontent').evaluate(e=>e.scrollTop)};
   check(geometry.sticky.scroll>0&&Math.abs(geometry.sticky.header.y-geometry.sticky.content.y)<1,'overflow header sticks at scroll edge '+viewport.width,geometry.sticky);
   check(await p.locator('.office-actor').innerText()==='Ratna Ayu Kartikasari Prameswari · Manager'&&await p.locator('#orders-rows').innerText().then(t=>t.includes('999.999.999')),'long name and amount retained '+viewport.width);
-  await p.screenshot({path:path.join(out,'today-overflow-scrolled-'+viewport.width+'.png')});
-  results.geometry.push(geometry);
+   await p.screenshot({path:path.join(out,'today-overflow-scrolled-'+viewport.width+'.png')});
+   geometry.wrappedFrames=[];
+   for(const file of ['menu','report-detail']){
+    await p.goto(url(file,'default'));
+    const wrapped={file,frame:await rect('.bo'),nav:await rect('.bonav'),top:await rect('.botop'),padding:await p.locator('.bocontent').evaluate(e=>getComputedStyle(e).padding),overflow:await p.evaluate(()=>document.documentElement.scrollWidth-innerWidth)};
+    check(wrapped.frame.width===1440&&wrapped.frame.x===(viewport.width-1440)/2&&wrapped.nav.width===220&&wrapped.top.height===64&&wrapped.padding==='24px'&&wrapped.overflow===0,'wrapped frame geometry '+file+'/'+viewport.width,wrapped);
+    geometry.wrappedFrames.push(wrapped);await p.screenshot({path:path.join(out,file+'-centred-'+viewport.width+'.png')});
+   }
+   results.geometry.push(geometry);
  }
  fs.writeFileSync(path.join(out,'measurements.json'),JSON.stringify(results,null,2));
  await p.setViewportSize({width:1440,height:900});
@@ -63,17 +70,27 @@ let browser, progress;
  for(const [state,id] of Object.entries(focusStates)){await p.goto(url('login',state));check(await p.evaluate(()=>document.activeElement?.id)===id,'initial focus '+state);}
  await p.goto(url('login','default'));
  check(await p.locator('#username').getAttribute('name')==='username'&&await p.locator('#username').getAttribute('autocomplete')==='username'&&await p.locator('#password').getAttribute('name')==='password'&&await p.locator('#password').getAttribute('autocomplete')==='current-password','password-manager native semantics');
- await p.locator('#sign-in').click();check(await p.locator('#username-error').isVisible()&&await p.evaluate(()=>document.activeElement?.id)==='username','empty username validation');
+  await p.locator('#sign-in').click();check(await p.locator('#username-error').isVisible()&&await p.evaluate(()=>document.activeElement?.id)==='username','empty username validation');
+  check(await p.locator('#password-error').isVisible()&&await p.locator('#username').getAttribute('aria-invalid')==='true'&&await p.locator('#password').getAttribute('aria-invalid')==='true'&&await p.locator('#username-error').textContent()==='Enter your username.'&&await p.locator('#password-error').textContent()==='Enter your password.','blank submit marks both missing fields');
+  await p.goto(url('login','invalid-both'));
+  check(await p.locator('#username-error').isVisible()&&await p.locator('#password-error').isVisible()&&await p.locator('#username').getAttribute('aria-invalid')==='true'&&await p.locator('#password').getAttribute('aria-invalid')==='true'&&await p.evaluate(()=>document.activeElement?.id)==='username','blank form deep link marks both fields and focuses first');
  await p.locator('#username').fill('review-account');await p.locator('#sign-in').click();check(await p.locator('#password-error').isVisible()&&await p.evaluate(()=>document.activeElement?.id)==='password','empty password validation');
  // Generated disposable text exercises shape checks. It is never photographed or returned.
  await p.locator('.office-fixture').evaluate(e=>e.open=true);await p.locator('#password').fill('x'.repeat(7));await p.locator('#login-response').selectOption('error');await p.locator('#sign-in').click();
  check(await p.locator('#username').isDisabled()&&await p.locator('#password').isDisabled()&&await p.locator('#sign-in').isDisabled(),'loading disables all credential controls');
  await p.waitForFunction(()=>document.documentElement.dataset.state==='error');
  check(await p.locator('#password').inputValue()===''&&await p.locator('#username').inputValue()==='review-account'&&await p.evaluate(()=>document.activeElement?.id)==='password','failure preserves username and clears/focuses secret');
- for(const field of ['username','password']){
+  for(const field of ['username','password']){
   await p.goto(url('login','default'));await p.locator('#username').fill(field==='username'?'x'.repeat(257):'review-account');await p.locator('#password').fill('x'.repeat(field==='password'?1025:7));await p.locator('#sign-in').click();
   check(await p.evaluate(()=>document.documentElement.dataset.state)==='oversize-'+field&&await p.evaluate(()=>document.activeElement?.id)===field&&await p.locator('#password').inputValue()==='','oversize shape '+field);
- }
+  }
+  await p.goto(url('login','default'));await p.locator('#username').fill('x'.repeat(257));await p.locator('#password').fill('x'.repeat(1025));await p.locator('#sign-in').click();
+  check(await p.locator('#username').getAttribute('aria-invalid')==='true'&&await p.locator('#password').getAttribute('aria-invalid')==='true'&&await p.locator('#username-error').isVisible()&&await p.locator('#password-error').isVisible()&&await p.locator('#username-error').textContent()===expected.error[1]&&await p.locator('#password-error').textContent()===expected.error[1]&&await p.evaluate(()=>document.activeElement?.id)==='username'&&await p.locator('#password').inputValue()===''&&await p.locator('#username').inputValue().then(v=>v.length===257),'double oversize marks both fields, clears secret and focuses first without truncating username');
+  await p.goto(url('login','default'));await p.locator('#username').fill('   ');await p.locator('#password').fill('x'.repeat(7));await p.locator('#sign-in').click();
+  check(await p.evaluate(()=>document.documentElement.dataset.state)==='loading'&&await p.locator('#username').inputValue()==='   '&&await p.locator('#username').getAttribute('aria-invalid')==='false','nonempty whitespace username reaches loading unchanged');
+  await p.goto(url('login','throttled'));
+  check(await p.locator('#username').inputValue()==='m.iqbal'&&await p.locator('#username').isEditable()&&await p.locator('#password').inputValue()===''&&await p.locator('#password').isDisabled()&&await p.locator('#sign-in').isDisabled(),'direct throttle retains submitted fixture username and empty secret');
+  await p.locator('#username').fill('');check(await p.locator('#sign-in').isEnabled()&&await p.locator('#password').isEnabled()&&await p.locator('#login-notice').isHidden(),'clearing submitted username does not lock empty key');
  await p.goto(url('login','default'));await p.locator('.office-fixture').evaluate(e=>e.open=true);await p.locator('#username').fill('review-account');await p.locator('#login-response').selectOption('throttled');await p.locator('#simulate-response').click();
  const announcement=await p.locator('#lock-announcement').textContent();await p.waitForTimeout(1100);
  check(await p.locator('#lock-announcement').textContent()===announcement&&await p.locator('#login-notice').getAttribute('aria-live')==='off'&&!await p.locator('#login-notice').getAttribute('role'),'N3 single announcement and nonlive clock');

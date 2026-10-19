@@ -20,7 +20,7 @@
     if(!left){clearInterval(timer);render('default',false);/* Do not steal focus while a username is being edited. */if(document.activeElement!==username)password.focus();return;}
     title.textContent='This username is locked for '+duration(left);
   }
-  function render(next, focus=true){
+  function render(next, focus=true, invalidFields=next==='invalid-both'?['username','password']:[next.replace(/^(invalid|oversize)-/,'')]){
     clearInterval(timer);setState(next);
     const loading=next==='loading', lookup=next.startsWith('lookup-'), locked=next==='throttled';
     const kind=next.startsWith('oversize-')?'error':next==='session-ended-draft'||next==='overflow'?'session-ended':lookup?next.slice(7):next;
@@ -31,7 +31,12 @@
     retry.hidden=!['unavailable','unexpected'].includes(kind);
     username.disabled=loading||lookup;password.disabled=loading||lookup||locked;submit.disabled=loading||lookup||locked;
     submit.textContent=loading?'Signing in…':'Sign in';$('#login-form').setAttribute('aria-busy',String(loading));
-    for(const field of [username,password]){const invalid=next==='invalid-'+field.id;field.setAttribute('aria-invalid',String(invalid));$('#'+field.id+'-error').hidden=!invalid;}
+    for(const field of [username,password]){
+      const invalid=(next.startsWith('invalid-')||next.startsWith('oversize-'))&&invalidFields.includes(field.id);
+      field.setAttribute('aria-invalid',String(invalid));
+      const error=$('#'+field.id+'-error');error.hidden=!invalid;
+      error.textContent=next.startsWith('oversize-')?copy.error[1]:'Enter your '+field.id+'.';
+    }
     if(next!=='loading')password.value='';
     if(!locked){$('#lock-announcement').textContent='';announcedKey=null;}
     if(locked){
@@ -54,10 +59,10 @@
   }
   $('#login-form').onsubmit=e=>{
     e.preventDefault();if(submit.disabled)return;
-    if(!username.value.trim()){render('invalid-username');return;}
-    if(!password.value){render('invalid-password');return;}
-    if(username.value.length>256){render('oversize-username');return;}
-    if(password.value.length>1024){render('oversize-password');return;}
+    const missing=[username,password].filter(field=>field.value==='').map(field=>field.id);
+    if(missing.length){render(missing.length===2?'invalid-both':'invalid-'+missing[0],true,missing);return;}
+    const oversized=[username,password].filter(field=>field.value.length>(field===username?256:1024)).map(field=>field.id);
+    if(oversized.length){render('oversize-'+oversized[0],true,oversized);return;}
     const result=$('#login-response').value;render('loading',false);
     pending=setTimeout(()=>response(result),650);
   };
@@ -66,7 +71,7 @@
     // Compare account identities, retaining each deadline; never move focus on input.
     if(seconds())render('throttled',false);
     else if(state==='throttled')render('default',false);
-    else if(state==='invalid-username'){username.setAttribute('aria-invalid','false');$('#username-error').hidden=true;}
+    else if(state.startsWith('invalid-')){username.setAttribute('aria-invalid','false');$('#username-error').hidden=true;}
   });
   retry.onclick=()=>{
     if(state.startsWith('lookup-')){retry.disabled=true;$('#login-form').setAttribute('aria-busy','true');pending=setTimeout(()=>{retry.disabled=false;render('default');},650);}
@@ -74,7 +79,7 @@
   };
   $('#simulate-response').onclick=()=>response($('#login-response').value);
   $('#finish-wait').onclick=()=>{waits.set(key(),0);if(state==='throttled')tick();};
-  if(state==='throttled')waits.set(key(),Date.now()+281000);
+  if(state==='throttled'){username.value='m.iqbal';waits.set(key(),Date.now()+281000);}
   render(state);
   window.addEventListener('pagehide',()=>{clearInterval(timer);clearTimeout(pending);password.value='';});
 })();

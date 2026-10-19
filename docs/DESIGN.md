@@ -813,6 +813,8 @@ report detail in two columns (`--frost-report-columns`) with a 16px gap
 (`--frost-office-modal-width`). The back office has no fixed height: the
 review gallery framed it at 900px, that value is not a product limit and no
 token carries it; the report reaches about 946px and scrolls.
+Wider than `--frost-office-width`, the signed-in frame stays that width, centred,
+with the canvas filling both sides; the sign-in column centres in the window.
 
 **Spacing scale:** 4, 8, 12, 16, 20, 24, 32, 40, 48px (`--frost-space-1`,
 `--frost-space-2`, `--frost-space-3`, `--frost-space-4`, `--frost-space-5`,
