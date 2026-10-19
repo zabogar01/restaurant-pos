@@ -9,22 +9,18 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-19 (wrap-up): `development` at `0339fad`. **Phase 0 is closed** ([reviews/PHASE0-gate.md](reviews/PHASE0-gate.md)).
-Nothing running. **Next: the owner's word on how the Phase 1 plan is written** (Questions, first line). This STATE is on
-`agent/lead-1019d` (PR #109): if `development`'s STATE still says Phase 0 waits to be closed, that PR has not merged;
-read this file from the branch. Narrative: [journal/2026-10-19.md](journal/2026-10-19.md).
+2026-10-19 (night): `development` at `82876b4`. **Phase 0 closed.** The owner approved the Phase 1 plan approach
+(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016** ran out of Codex; the
+owner chose an OpenCode stand-in, `design016b`, now finishing it (handover note above the Handoff). Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
 
 ## Phase and gates
 
 - **Phase 0: CLOSED 2026-10-19** (DECISIONS). All eight Definition of Done lines met, B-24 qualified by the 2026-10-13
   fixtures ruling; every ARCH-015 gate item done (fresh clone, ADR-011, PHASE0-013, DoD wording, roadmap reading,
   Safari check).
-- **Phase 1 (Back office and catalog, ROADMAP `:60-81`): not started.** It needs its own plan first. The lead's
-  proposal (journal 2026-10-19 *Phase 0 closed*): an architect writes a slicing plan (slices, order, which need an ADR
-  or consult: likely the catalog schema with versioned settings FR-B1, catalog revisions with the two-second poll and
-  `CATALOG_CHANGED` FR-C6/C7, sessions ended on deactivation or reset FR-B3; the Phase 1 DoD with AC-12, AC-31, AC-32
-  and the carry-forwards); the owner accepts it before any Phase 1 task; task files then one at a time, as in Phase 0.
-  Meanwhile the designer runs back-office slices B, then D-H. **Not approved yet.**
+- **Phase 1 (Back office and catalog, ROADMAP `:60-81`): planning.** Approach approved (owner, DECISIONS 2026-10-19):
+  an architect's slicing plan (ARCH-017, under `docs/superpowers/plans/`, `owns:` granted for that one file), accepted
+  by the owner before any Phase 1 task; task files then one at a time. Designer beside it: slice B (DESIGN-016), then D-H.
 - **Architecture:** ten accepted ADRs (001-007, 009-011); ADR-008 reserved (deferred by the owner). ADR-011: the
   browser clients, their sessions and what is served. Recommended, not commissioned: an inline-approval ADR (ARCH-013).
 - **Frontend:** POS-01 to POS-07 against fixtures, POS-01 real. **Back office:** `apps/back-office` with real
@@ -36,27 +32,32 @@ read this file from the branch. Narrative: [journal/2026-10-19.md](journal/2026-
 
 ## Integration branch
 
-- **`development`** at `0339fad` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `82876b4` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-19); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1019d`** (from `0339fad`, pushed, PR #109). After it merges, cut
-  a new lead branch from `development` for the next change. **Before any follow-up push to a lead branch, check its PR
-  is still open** (`gh pr view <n> --json state`): a push after the merge is lost (it happened to #103 on 2026-10-19).
-- **Task branches open:** none. No task worktree; `.agent/runs/` empty. Merged branches still exist (cleanup later).
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1019e`** (from `82876b4`; pushed on the owner's word, PR #110). **Before any follow-up push to a lead branch, check its
+  PR is still open** (`gh pr view <n> --json state`): a push after the merge is lost (#103, 2026-10-19).
+- **Task branches open:** `agent/arch-017` (plan `7e7fb06`), `agent/design-016` (`d4502d3`, `npm ci` run), worktrees
+  `../restaurant-pos-wt/<ID>`, cut from `82876b4`; kit copies deleted. `.agent/runs/` empty. Merged branches still exist (cleanup later).
   Not the lead's: worktrees `../restaurant-pos-design` and `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **Live agents: the lead only.** Nothing running. `/lead` renames the pane `lead`.
-- **Carry-forwards:** the Handoffs of PHASE0-005 to 013 (*For Task 12*, *For Phase 1's first form*, *What the next
-  agent needs*); ARCH-012 to 016 *must carry forward*. Phase 1: AC-32's POS half and AC-35's last sentence close in the
-  harness; the harness rules (012a/012b Handoffs, ADR-011 rules 27-28) bind every later browser test. Phase 2: AC-27's
-  second sentence, AC-19's approval class, M-1 for real, the idempotency design (a `CSRF_REFUSED` retry resends the
-  same key, ADR-011).
-- **Design slices left: B, D, E, F, G, H.** B (BO-01/02) takes DESIGN-012's N1-N3 and replaces the provisional BO-01
-  form. The users screen warns that a PIN or password reset ends all that manager's sessions (ADR-009).
+- **Live agents: `lead`, `architect17`** (idle, pane `ARCH-017`; kept open for a revision round until the owner
+  accepts the plan) **and `design016b`** (OpenCode `openai/gpt-6-astra`, pane `DESIGN-016`, the 2026-10-14 allow list as
+  `OPENCODE_CONFIG_CONTENT`; background wait running). Codex `design016`'s pane is closed (session `01a15478-…`).
+- **ARCH-017, done:** `docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`, `Proposed`. 11 slices
+  (S0-S10), ADR-012 (versioned configuration) and consults C1-C5, 14 owner questions. Key finding (Q13): AC-31, AC-12's
+  rejections and AC-32's second sentence need orders, so cannot pass in Phase 1; ROADMAP wording proposed. Lead checked:
+  only the plan and task file changed, `diff --check` clean, no code; Q2 (no rate range, 2026-10-06) and the
+  reactivation ruling (2026-10-07) cited correctly. S0 can be written once the plan is accepted.
+- **DESIGN-016, left:** `design016.cjs` never completed (fixed, not rerun), final 1440/1920 measurements and contrast,
+  static checks, the Handoff's last line, the commit. Done: both artifacts (17 + 9 states), N1-N3, links, tokens,
+  `verify` 93/3744, slice A/C/I checks green. Owner question in it: a different manager after the eight hours.
+- **Carry-forwards:** placed slice by slice in the Phase 1 plan §5 (Phase 2's stay Phase 2: AC-27, AC-19, M-1, the
+  idempotency design). Design slices left: B (DESIGN-016), D, E, F, G, H (the plan §4 orders them).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density.
 - **Open ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -77,8 +78,7 @@ read this file from the branch. Narrative: [journal/2026-10-19.md](journal/2026-
   browsers installed on the host. **The lead runs `test:e2e` before merging any task touching** `apps/pos`,
   `apps/back-office`, `packages/api-client`, `packages/contracts`, `apps/server/src/http`, `apps/server/src/domain` or
   `db/migrations` (ARCH-015 *For the lead* 6). The harness makes its own people and certificate.
-- **A fresh-clone check** must clone into a directory named `restaurant-pos` (the compose file has no `name:`, so any
-  other name starts a second database on 5433; adding a `name:` is a small builder task, not filed).
+- **A fresh-clone check** must clone into a directory named `restaurant-pos` until plan slice S0 adds a compose `name:`.
 - **The permission classifier refuses the lead** `git worktree remove` and `rm -rf` of run directories (even of merged,
   clean worktrees), and once refused a read-only `grep` after that; the owner runs removals. Read files with Read.
 - **Background commands die at two hours;** a dispatcher may exit 1 when Codex hits its limit after writing its
@@ -104,8 +104,8 @@ read this file from the branch. Narrative: [journal/2026-10-19.md](journal/2026-
 - **Must not become a guarantee:** optional `OrderLine.itemId` (L1787); the in-memory refund and change walk.
 - **Backend:** `session_replication_role` bypasses the append-only trigger (ADR-008); PIN timing (ARCH-013 §7); no
   schema check at startup. `npm ci` warns about install scripts (`esbuild`, `fsevents`).
-- **011d1 found, not fixed:** two `<main>` while signed out (slice B); unchecked by eye: notice contrast, a password
-  manager. After a logout BO-01 focuses Password, not Username; the frame stops at `--frost-office-width`. Slice B.
+- **011d1 found, not fixed:** two `<main>`, focus after logout, the frame beyond 1440px, notice contrast, password
+  managers: all handed to DESIGN-016 Part A item 3; the build follows its review.
 - **012a/b:** `makePeople` (server tests) names people after their PIN; never reuse it in `e2e/`. The AC-18 scan
   could, about once in a million, take a logged six-digit number for a PIN (012b Handoff).
 - **One high-severity npm advisory** in a development-only dependency (PHASE0-008a Handoff).
@@ -114,10 +114,9 @@ read this file from the branch. Narrative: [journal/2026-10-19.md](journal/2026-
 
 Nothing here is decided. Detail is where each line points.
 
-- **How to write the Phase 1 plan** (Phase and gates above; journal 2026-10-19 *Phase 0 closed*): approve the
-  architect's slicing plan and the designer starting slice B? Then the lead writes both task files for the owner to read.
-- **Phase 1 will need:** ADR-009 *Not decided here* (own-password change, own-PIN reset, role change) before the users
-  screen; PRD §9's rate range already in Phase 1 (settings store rates; PRD says "before Phase 2")?
+- **Lead choices in ARCH-017 and DESIGN-016, yours to overturn:** the plans path granted to the architect; DESIGN-016's focus reading (Part A item 3).
+- **ARCH-017's 14 questions** (plan §8, Handoff): accept the plan; Q13 (ROADMAP acceptance line) first, then Q5, Q12,
+  Q1 and Q7-Q11, Q14, Q4, Q10. Contract wording for ROADMAP, PRD FR-B1/B2/B3/B5/J3/M1 and §9 is drafted in its Handoff.
 - **PHASE0-012b, yours to overturn:** its 15 lead rulings and the two substituted red proofs (B6/B7, B2; journal 10-19).
 - **012a, lead acceptance yours to overturn:** a shell forging the marker, `E2E_REFUSED_DATABASES` and all three
   database names passes the worker guard (task file, round 3).
@@ -145,6 +144,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. The owner rules on the Phase 1 plan approach (Questions, first line). On a yes: write the architect's task file
-   (`arch`, hand-opened, like ARCH-016) and the slice B designer task (DESIGN-016), owner reads both, then open them.
-2. After PR #109 merges: fast-forward the main checkout; cut a new lead branch for the next change.
+1. The owner reads the plan and answers Q13 first; on acceptance, record it, commission ADR-012 + C1 and C2, write S0.
+2. `design016b` finishes (handover items 1-6); then a Claude Opus design review (`.agent/runs/DESIGN-016/builder/meta.json`
+   with `"cli":"codex"` first).

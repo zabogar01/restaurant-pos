@@ -64,13 +64,13 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    2026-10-05, `.agent/reviews/DESIGN-011-back-office-audit.md`.)* Nine slices, each a designer
    task re-pointing the wireframe links whose Frost destinations it creates:
    - *(Done: A, DESIGN-012, the shell, alerts, M-6 and shared patterns, merged 2026-10-06 as PR #55.)*
-   - **B (BO-01, 02)** carries DESIGN-012's three low findings N1-N3 as its first items — waits on Q2, Q4.
+   - **B (BO-01, 02): DESIGN-016**, with DESIGN-012's N1-N3 first and 011d1's layout findings (Q2, Q4 ruled
+     2026-10-06) — task file written 2026-10-19 — waits for the owner to read it, then opened by hand.
    - *(Done: C, DESIGN-013, BO-13 print incidents, merged 2026-10-06 as PR #57.)*
      The BO-13 frontend task must carry its re-review rules N1 and N2 (task file, end).
    - *(Done: I, DESIGN-014, BO-12 audit viewer, merged 2026-10-08 as PR #67.)* The BO-12 frontend
      task must carry its rule C1 and density rule (task file, last lead ruling).
-   - **Ready now:** B (BO-01, 02; also BO-01 and SITEMAP `:248` still
-     name a PIN at the back office) · D (BO-03, 04) · E (BO-05, 06) · F (BO-07, 08; Q5 ruled out of
+   - **Ready after B:** D (BO-03, 04) · E (BO-05, 06) · F (BO-07, 08; Q5 ruled out of
      scope by the lead) · G (BO-09) · H (BO-10, 11).
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
@@ -128,9 +128,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
 13. **Phases 1 to 6** and the **pre-production gate** (appliance, LAN TLS, UPS, backups) —
     each phase needs its own plan before execution; only Phase 0 has one — Phase 0 closed
     2026-10-19 — see `docs/ROADMAP.md`.
-    - **The Phase 1 plan** (Back office and catalog) — an architect's slicing plan, owner-accepted
-      before any Phase 1 task (lead's proposal, journal 2026-10-19 *Phase 0 closed*) — waits for
-      the owner's word on the approach — not written.
+    - **ARCH-017, the Phase 1 plan** (Back office and catalog) — an architect's slicing document,
+      owner-accepted before any Phase 1 task (approach approved by the owner 2026-10-19, DECISIONS)
+      — task file written 2026-10-19 — waits for the owner to read it, then opened by hand.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
     post-close corrections (before Phase 5), permitted tax and service-charge range (before
     Phase 2) — depends on the owner — waiting; see `docs/PRD.md` section 9.
