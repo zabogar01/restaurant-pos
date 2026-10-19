@@ -64,8 +64,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    2026-10-05, `.agent/reviews/DESIGN-011-back-office-audit.md`.)* Nine slices, each a designer
    task re-pointing the wireframe links whose Frost destinations it creates:
    - *(Done: A, DESIGN-012, the shell, alerts, M-6 and shared patterns, merged 2026-10-06 as PR #55.)*
-   - **B (BO-01, 02): DESIGN-016**, with DESIGN-012's N1-N3 first and 011d1's layout findings (Q2, Q4 ruled
-     2026-10-06) — task file written 2026-10-19 — waits for the owner to read it, then opened by hand.
+   - *(Done: B, DESIGN-016, BO-01 and BO-02, complete 2026-10-19 at `8b0d87a`, not yet pushed; feeds plan slice S10.)*
    - *(Done: C, DESIGN-013, BO-13 print incidents, merged 2026-10-06 as PR #57.)*
      The BO-13 frontend task must carry its re-review rules N1 and N2 (task file, end).
    - *(Done: I, DESIGN-014, BO-12 audit viewer, merged 2026-10-08 as PR #67.)* The BO-12 frontend
