@@ -37,6 +37,14 @@ const base=path.resolve('docs/design/visual-directions'),out=process.env.DESIGN_
   for(let i=0;i<4;i++){await p.keyboard.press('Escape');check(await p.locator('#reauth-dialog').evaluate(e=>e.open),'direct load Escape '+(i+1));}
   await p.locator('#reauth-dialog').evaluate(e=>e.close());await p.waitForFunction(()=>document.querySelector('#reauth-dialog').open);
   await p.locator('#draft-name').evaluate(e=>e.focus());check(await p.evaluate(()=>!!document.activeElement.closest('#reauth-dialog')),'unexpected close guard retains inert draft');
+ await p.goto(url('shell','reauth-logout'));
+ for(const key of ['Escape','Escape','Tab','Shift+Tab','Escape']){await p.keyboard.press(key);check(await p.evaluate(()=>document.querySelector('#reauth-dialog').open||document.querySelector('#logout-dialog').open),'N1 logout decision key '+key);}
+ await p.locator('#reauth-logout').click();await p.locator('#logout-dialog').evaluate(e=>e.close());await p.waitForFunction(()=>document.querySelector('#reauth-dialog').open);
+ await p.locator('#draft-name').evaluate(e=>e.focus());check(await p.evaluate(()=>!!document.activeElement.closest('#reauth-dialog')),'N1 forced logout close keeps draft inert');
+ await p.goto(url('shell','reauth-throttled'));
+ const announced=await p.locator('#cooldown-announcement').textContent();await p.waitForTimeout(1100);
+ check(await p.locator('#cooldown-announcement').textContent()===announced,'N3 lockout announcement does not tick');
+ for(const id of ['cooldown','logout-cooldown'])check(await p.locator('#'+id).getAttribute('aria-live')==='off'&&!await p.locator('#'+id).getAttribute('role'),'N3 timer is not a live region '+id);
  await p.goto(url('shell','none'));
  await p.locator('#draft-name').fill('Owner-edited fixture');await p.locator('#draft-choice').selectOption({label:'First choice'});await p.locator('[name=mode][value=standard]').check();await p.locator('#draft-limit').focus();await p.locator('#draft-limit').evaluate(e=>e.setSelectionRange(1,4));
  const snapshot=()=>p.evaluate(()=>({values:[...new FormData(document.querySelector('#draft')).entries()],error:document.querySelector('#draft-error').textContent,invalid:document.querySelector('#draft-limit').getAttribute('aria-invalid'),focus:document.activeElement.id,selection:[document.activeElement.selectionStart,document.activeElement.selectionEnd]}));

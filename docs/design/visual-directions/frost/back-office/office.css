@@ -13,7 +13,7 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 .wfbar, .device__caption { display: none; }
 .wfmain, .devicewrap { display: block; margin: 0; padding: 0; min-width: 0; }
 .device.device--bo { width: var(--frost-office-width); min-height: 0; border: 0; }
-.bo { display: flex; width: var(--frost-office-width); height: 100dvh; min-height: 0; overflow: hidden; font-size: var(--frost-text-14); }
+.bo { margin-inline: auto; display: flex; width: var(--frost-office-width); height: 100dvh; min-height: 0; overflow: hidden; font-size: var(--frost-text-14); }
 .bo .bonav { width: var(--frost-office-nav-width); flex: none; overflow-y: auto; background: var(--frost-elevated); border-right: var(--frost-divider-stroke); }
 .bonav .bonav__brand { height: var(--frost-office-header-height); padding: 0 var(--frost-space-6); display: flex; align-items: center; border-bottom: var(--frost-divider-stroke); font-size: var(--frost-text-20); font-weight: var(--frost-weight-medium); }
 .bonav .bonav__sec { padding: var(--frost-nav-section-padding); font-size: var(--frost-text-11); letter-spacing: var(--frost-tracking-nav); font-weight: var(--frost-weight-medium); color: var(--frost-muted); text-transform: none; }
@@ -106,3 +106,5 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 .office-legacy-actor { padding: var(--frost-space-4); border-top: var(--frost-divider-stroke); margin-top: var(--frost-space-4); }
 .bo .bobtn--primary { background: var(--frost-primary); color: var(--frost-primary-text); border-color: var(--frost-primary); }
 .bo .bobtn--off { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; }
+
+.office-announcement { position: absolute; width: var(--frost-space-1); height: var(--frost-space-1); overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

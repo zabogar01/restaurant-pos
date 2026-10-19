@@ -78,7 +78,8 @@
     $('#credential-message').textContent=error?credentialCopy.wrong:'';
     if(error&&other)message($('#credential-message'),'Sign-in failed','Check your username and password, then try again.');
     if(error) { secret.value=''; secret.focus(); }
-    if(locked) { secret.value=''; cooldown(); if(remaining())timer=setInterval(cooldown,1000); }
+    if(locked) { secret.value=''; cooldown(); $('#cooldown-announcement').textContent=$('#cooldown').textContent; if(remaining())timer=setInterval(cooldown,1000); }
+    else $('#cooldown-announcement').textContent='';
   }
   function resume() {
     clearInterval(timer);secret.value='';account().failures=0;reauthRequired=false;
@@ -118,6 +119,7 @@
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&dialog.open){e.preventDefault();e.stopImmediatePropagation();}},true);
   dialog.addEventListener('close',()=>{if(reauthRequired&&!logout.open&&!dialog.open)O.open(dialog,secret.disabled?$('#reauth-logout'):secret);});
   logout.addEventListener('cancel',e=>{e.preventDefault();$('#keep-session').click();});
+  logout.addEventListener('close',()=>{if(reauthRequired&&!logout.open&&!dialog.open)O.open(dialog,secret.disabled?$('#other-manager'):secret);});
   $('#idle').onclick=()=>start();
   document.addEventListener('keydown',e=>{if(e.altKey&&e.key.toLowerCase()==='i'&&!dialog.open&&!logout.open){e.preventDefault();start();}});
   $('#verify-form').onsubmit=e=>{

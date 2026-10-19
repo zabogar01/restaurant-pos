@@ -1,0 +1,21 @@
+/* DESIGN-016: desktop entry and read-only landing; shared controls stay in office.css. */
+.login-page { min-height: 100dvh; display: flex; flex-direction: column; padding: var(--frost-office-content-padding); }
+.login-panel { width: var(--frost-office-login-width); max-width: 100%; margin: auto; padding-block: var(--frost-space-6); }
+.login-panel h1 { margin: 0 0 var(--frost-space-2); font-size: var(--frost-text-30); font-weight: var(--frost-weight-medium); letter-spacing: var(--frost-tracking-headline); }
+.login-intro { margin: 0 0 var(--frost-space-8); color: var(--frost-muted); }
+.login-field { margin-bottom: var(--frost-space-5); }
+.login-field label { display: block; margin-bottom: var(--frost-space-1); font-size: var(--frost-text-12); color: var(--frost-muted); }
+.login-panel .office-notice { background: var(--frost-warning-surface); color: var(--frost-warning); border-color: var(--frost-warning); }
+.login-panel .office-notice button { margin-top: var(--frost-space-3); }
+.login-submit { width: 100%; }
+.login-panel .office-fixture p { margin-bottom: 0; }
+.today-day { display: flex; align-items: baseline; gap: var(--frost-space-6); flex-wrap: wrap; padding-bottom: var(--frost-space-6); border-bottom: var(--frost-divider-stroke); }
+.today-day h2 { margin: 0; font-size: var(--frost-text-20); font-weight: var(--frost-weight-medium); }
+.today-day p { margin: var(--frost-space-1) 0 0; color: var(--frost-muted); }
+.today-day a { margin-left: auto; }
+.today-orders { margin-top: var(--frost-space-8); }
+.today-orders h2 { font-size: var(--frost-text-18); font-weight: var(--frost-weight-medium); margin: 0 0 var(--frost-space-2); }
+.today-orders > p { margin: 0 0 var(--frost-space-5); color: var(--frost-muted); }
+.today-orders caption { text-align: left; padding-bottom: var(--frost-space-3); color: var(--frost-muted); font-size: var(--frost-text-13); }
+.today-orders td { overflow-wrap: anywhere; }
+html[data-state='overflow'] .today-orders td { padding: var(--frost-table-cell-tight-padding); }

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" data-direction="frost"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-01 Login</title><link rel="stylesheet" href="office.css"><link rel="stylesheet" href="entry.css">
+<script>window.WF={id:'BO-01',client:'bo',name:'Login',reqs:'FR-A2b, A2c, A5b, A7; DESIGN-016',states:[['default','Resting'],['logged-out','After explicit logout'],['invalid-username','Missing username'],['invalid-password','Missing password'],['oversize-username','Oversize username'],['oversize-password','Oversize password'],['loading','Signing in'],['error','Sign-in failed'],['throttled','Account cooldown'],['session-ended','Session ended — no draft'],['session-ended-draft','Session ended — isolated draft'],['forbidden','Manager access required'],['unavailable','System unavailable'],['unexpected','Something went wrong'],['lookup-unavailable','Initial lookup unavailable'],['lookup-unexpected','Initial lookup unexpected failure'],['overflow','Overflow — form scrolls']]};</script>
+<script defer src="../../mockup.js"></script><script defer src="login.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<main class="login-page"><div class="login-panel">
+<h1>Back office</h1><p class="login-intro">Sign in with your manager username and password.</p>
+<section id="login-notice" class="office-notice" hidden><strong id="notice-title"></strong><p id="notice-body"></p><p id="draft-note" hidden>The previous session’s unsaved changes are stored on this tab and are not submitted automatically.</p><button id="retry" class="office-button" type="button" hidden>Try again</button></section>
+<span id="lock-announcement" class="office-announcement" role="status" aria-atomic="true"></span>
+<form id="login-form" novalidate>
+<div class="login-field"><label for="username">Username</label><input class="office-field" id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="username-error"><span class="office-error" id="username-error" hidden>Enter your username.</span></div>
+<div class="login-field"><label for="password">Password</label><input class="office-field" id="password" name="password" type="password" autocomplete="current-password" aria-describedby="password-error"><span class="office-error" id="password-error" hidden>Enter your password.</span></div>
+<button class="office-button primary login-submit" id="sign-in" type="submit">Sign in</button>
+</form>
+<details class="office-fixture"><summary>Review fixtures · outside the product</summary>
+<p>No credential is prefilled, checked, saved or sent. The direct cooldown picture withholds the submitted username; enter invented text and use the response control to inspect an account-specific wait.</p>
+<div class="office-actions"><label for="login-response">Next local response</label><select id="login-response" class="office-field"><option value="success">Success — Phase 0 frame</option><option value="error">Sign-in failed</option><option value="throttled">Account cooldown</option><option value="unavailable">Unavailable</option><option value="unexpected">Something went wrong</option></select><button id="simulate-response" class="office-button small" type="button">Show selected response</button><button id="finish-wait" class="office-button small" type="button">Finish fixture wait</button><a href="../../index.html?direction=frost&amp;screen=back-office/login.html">All screens</a></div>
+<p>Success has no BO-01 picture; it enters the frame. Idle opens <a href="shell.html?state=reauth">M-6 over the work</a>. The retained-draft sentence is new for DESIGN-016 review; it is absent in Phase 0.</p>
+</details>
+</div></main>
+</body></html>

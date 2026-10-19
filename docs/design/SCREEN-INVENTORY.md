@@ -584,9 +584,9 @@ Reporting and audit are read surfaces; everything else operates.
 Idle expiry uses the re-authentication modal instead, so unsaved form state is
 preserved (FR-A2b).
 
-**States and exact copy — DESIGN-015 (awaiting review).** This table is the
-copy specification for PHASE0-011d's provisional Frost form; a complete BO-01
-visual composition remains slice B. Use DESIGN-012's stacked 40px native
+**States and exact copy — DESIGN-015 (reviewed).** This table remains the
+copy specification. The complete [Frost BO-01 composition](visual-directions/frost/back-office/login.html)
+is drawn by DESIGN-016 for design review, using DESIGN-012's stacked 40px native
 fields, persistent labels, primary office button and amber notice. The page
 heading is “Back office”; helper text is “Sign in with your manager username
 and password.” Labels are “Username” and “Password”; the primary action is
@@ -601,6 +601,7 @@ and password.” Labels are “Username” and “Password”; the primary actio
 | Error | `INVALID_CREDENTIALS` without cooldown details | “Sign-in failed” / “Check your username and password, then try again.” Do not identify which credential failed. |
 | Throttled | `INVALID_CREDENTIALS` with `retryAfterSeconds`, or `THROTTLED` | “This username is locked for {wait}” / “This username is cooling down. Other managers can sign in with their own usernames.” Use POS-01's duration format. Disable password and Sign in for the submitted username; keep Username editable. As soon as the edited username no longer matches the locked account (compare trimmed, lower-case usernames), remove that notice and enable Password and Sign in unless the new account has its own known wait. Switching back restores the original remaining wait; editing never resets it. |
 | Session ended | `UNAUTHENTICATED` on a held session, including M-6 after eight hours | “Your session has ended” / “Sign in again to continue.” No claim about the cause. Do not place a retained-draft sentence in Phase 0; see the deferred copy below. |
+| Session ended with an isolated draft — DESIGN-016 proposal for review | Eight-hour expiry with unsaved work in this tab; absent in Phase 0 | Keep Session ended’s title and body, then add: “The previous session’s unsaved changes are stored on this tab and are not submitted automatically.” Show no manager identity or draft contents before sign-in, and promise no restoration to the unknown reader. |
 | Access refused | `FORBIDDEN` on an authenticated back-office request, including M-6 | “Manager access required” / “This account cannot use the back office. Sign in with a manager account.” Remove the protected working area; show this notice on BO-01 with the ordinary form. Do not claim that the account was disabled or explain why its role changed. |
 | Unavailable / something went wrong | Shared general-failure triggers | Use the exact shared title, body and “Try again” action above. |
 | Success | Successful sign-in | No success sentence; enter the Phase 0 frame described at BO-02. |
@@ -662,8 +663,9 @@ name and offers “Log out”. No loading skeleton or empty-data message: this i
 a shell with no landing content yet. No navigation entries, business-day
 indicator, incident banner or receipt chip until their destinations and routes
 exist. This is a Phase 0 exception to the populated DESIGN-012 fixture, not a
-replacement for I-2 or the eventual BO-02 design. No new drawing or token is
-needed; slice B still owns the complete sign-in and landing screens. This
+replacement for I-2. DESIGN-016 supplies the [complete Frost landing](visual-directions/frost/back-office/today.html)
+and its named [Phase 0 frame](visual-directions/frost/back-office/today.html?state=phase0),
+alongside [Frost sign-in](visual-directions/frost/back-office/login.html). This
 empty-content allowance does not suppress errors: a failed Log out uses the
 notice placement and repeat-logout action in the shared failures table above.
 

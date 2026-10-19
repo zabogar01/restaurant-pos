@@ -1961,6 +1961,23 @@
         ],
         "why": "A shared desktop label/value grid gives the editable value twice the label space; dialog fields stack vertically. No new fixed field width or color is needed."
       }
+    },
+    "--frost-office-login-width": {
+      "value": "420px",
+      "group": "Geometry",
+      "source": null,
+      "designed": {
+        "task": ".agent/tasks/DESIGN-016-login-and-today.md",
+        "date": "2026-10-19",
+        "by": "design016 (Codex designer)",
+        "status": "designed under DESIGN-016; awaiting design review",
+        "stylesheet": "docs/design/visual-directions/frost/back-office/entry.css — .login-panel",
+        "shown": [
+          "docs/design/visual-directions/frost/back-office/login.html?state=default",
+          "docs/design/visual-directions/frost/back-office/login.html?state=session-ended-draft"
+        ],
+        "why": "A desktop sign-in column keeps two stacked native fields and the full reviewed notice readable at both desktop targets. It is separate from the POS lock-box geometry."
+      }
     }
   }
 }

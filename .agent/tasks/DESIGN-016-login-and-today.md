@@ -237,4 +237,370 @@ full prose, ending with `DONE` or `BLOCKED: <one question>`. Then run exactly on
     herdr agent prompt lead "design016: DESIGN-016 done — <one line>"
     herdr agent prompt lead "design016: BLOCKED — <question>"
 
+## Handover (lead, 2026-10-19): finish on OpenCode
+
+`design016` (Codex `gpt-6-astra`) ran out of its Codex allowance before finishing. The owner chose an OpenCode
+`gpt-6-astra` stand-in, `design016b`, to **finish** the slice, not to redo it. Everything below the Handoff heading is
+design016's, written in the worktree and **not committed**: 23 paths, among them `F/login.html`, `F/login.js`,
+`F/today.html`, `F/today.js`, `F/entry.css`, `docs/design/checks/design016.cjs` (new), and edits to `office.css`,
+`office.js`, `shell.html`, `shell.js`, `menu.html`, `report-detail.html`, `manifest.js`, `index.html`, `DESIGN.md`,
+`SCREEN-INVENTORY.md`, the two greyscale prototypes, the token files, and `design012.cjs` and `design014.cjs`
+(`git status` lists them all). Keep every one of them.
+
+What design016 finished, by its Handoff: both artifacts with all 26 states, N1 to N3, the Part C links and counts, the
+inventory and prototype edits, the token registration, `npm run verify` green (93 files, 3744 tests), and the slice A,
+C and I checks passing (281/281, 371/371, and DESIGN-014 after its two link counts changed).
+
+**What is left, and all you do:**
+
+1. Run `docs/design/checks/design016.cjs` to completion. It never completed: run 1 stopped on a collapsed review
+   control, run 2 while reading focus during logout navigation; design016 fixed both in the script but did not rerun
+   it. Run it as `PLAYWRIGHT_MODULE="$PWD/node_modules/playwright" DESIGN_EVIDENCE_DIR=/tmp/design016-evidence node
+   docs/design/checks/design016.cjs` from the worktree root (Chrome is at its default path). If it fails, fix the
+   **check** where the check is wrong; where the **artifact** is wrong, fix only that defect and say so. Remove or
+   weaken no assertion.
+2. Rerun `design012.cjs`, `design013.cjs` and `design014.cjs` the same way, and `npm run verify`, after any change.
+3. Record in the Handoff the final measurements the task asks for (acceptance criterion 7): the frame's geometry at
+   1440×900, the wide-window behaviour at 1920×1080, the notice's measured contrast ratio, the sticky header in Today's
+   `overflow`, and no horizontal overflow. Quote the check output; evidence stays in `/tmp`.
+4. Run the static checks design016 asked for and did not get: `node --check` on each changed or new `.js`/`.cjs`, and
+   `git diff --check`.
+5. Replace the Handoff's *"Final measurements and completion will be recorded after the approved reruns"* sentence
+   with what the reruns showed, add a short **Finished by design016b** section saying what you ran and changed, and end
+   the file with `DONE` or `BLOCKED: <one question>`.
+6. Commit everything on `agent/design-016` (path-scoped `git add` of the paths `git status` lists), never push.
+
+**Do not change any design decision** in the Handoff: the layout, the focus policy, the copy, the states, the
+retained-draft proposal or the owner question. If something seems wrong, write it in your section as a finding for the
+review. Running the checks is part of this brief; anything your allow list does not cover will ask the owner.
+
+Report with `design016b` in place of `design016` in the two Reporting lines above.
+
 ## Handoff
+
+### Delivery and design decisions
+
+Designed by design016 on `agent/design-016`. The new entry points are
+`docs/design/visual-directions/frost/back-office/login.html` and `today.html`.
+Both consume `office.css`; Today also consumes `office.js`. `entry.css` holds
+only this slice's layout, while `login.js` and `today.js` provide local review
+interactions. No service, real authentication or order command is invoked.
+The delivery is a design proposal for the task's subsequent design review.
+
+BO-01 uses a 420px column on the Frost canvas, with a 30px medium heading,
+14px body, persistent 12px labels, 40px native fields and a full-width 36px
+primary office action. The form is centred in the available desktop window.
+At short heights the page grows and scrolls; its top and submission action
+remain reachable. It has no rail or authenticated top bar. A builder must
+unmount the authenticated frame while signed out, including its main landmark,
+and mount this one `main` instead. Merely hiding another `main` is insufficient.
+
+The signed-in frame retains the 1440px width, 220px rail, 64px header and 24px
+content padding. Its new `margin-inline: auto` centres it on a wider window,
+with the existing Frost canvas filling both side margins. The frame does not
+stretch its table or navigation beyond the reviewed geometry. This placement
+rule applies to all consumers of `office.css`; their state behavior is unchanged.
+
+The fields are named `username` and `password`, with `autocomplete="username"`
+and `autocomplete="current-password"`. Password remains a native password
+input. No reveal, remember-me or recovery control exists. No credential is
+prefilled in the new artifact, recorded in screenshots, persisted, logged or
+sent. The direct cooldown drawing leaves its submitted username blank to avoid
+publishing a credential fixture. Its clearly separated review controls let a
+reviewer enter an invented identifier and simulate a response for that account.
+This does not suggest that an empty username can reach production verification.
+
+The lead's focus reading is confirmed for cold start, explicit logout and an
+ordinary credential failure. Cold start, logout, session loss and access refusal
+focus Username. Local invalid input focuses the first invalid field; local
+oversize input clears Password and focuses the oversized field. Credential
+failure and the two general failures retain Username, clear Password and focus
+Password. A failed initial lookup disables both fields and Sign in and focuses
+Try again; successful lookup recovery focuses Username. A general-failure retry
+requests fresh password entry and never resends a secret. Editing away from a
+locked account keeps focus in Username so typing is uninterrupted. A deadline
+ending also keeps focus there if the user is still typing; otherwise Password
+receives focus. Expiry enables entry without submitting it. During loading,
+both fields and Sign in are disabled.
+
+### Requirement and state map
+
+Every named state below is registered in the gallery manifest and directly
+reachable through `?state=`. BO-01 has 17 states and BO-02 has nine.
+
+| Requirement | Artifact state or interaction |
+|---|---|
+| Part 0 N1 | The `logout-dialog` close guard reopens M-6 when re-authentication is still required and neither dialog is open. DESIGN-012's check adds repeated Escape, Tab/Shift+Tab, forced logout-dialog closure and an attempted background focus. |
+| Part 0 N2 | One sentence after the inert-action rule in DESIGN states that a modal decision repeats the emergency and defers its action only until the decision is made. |
+| Part 0 N3 | M-6 and logout ticking text have `aria-live="off"` and no status role. A separate M-6 status region receives one snapshot on lock arrival; logout's static description includes its remaining wait. BO-01 similarly announces a lock once and updates its visible timer outside the live region. |
+| A1 resting / explicit logout | Login `default`, `logged-out`. Empty native fields and exact common copy. Actual logout also reaches the default state. |
+| A1 local invalid | `invalid-username`, `invalid-password`, and submitting missing values. Errors are associated with their fields. |
+| A1 local oversize | `oversize-username`, `oversize-password`, and submitting a value over the shared 256/1024 UTF-16 bounds. No truncation or creation-policy checks. |
+| A1 loading / error | `loading`, `error`; local submission traverses loading to the selected response. |
+| A1 throttle | `throttled`; edit away and return with trimmed/lower-case matching, retaining the original deadline. Separate accounts keep separate known deadlines. |
+| A1 session loss | `session-ended` has no draft claim; `session-ended-draft` adds the proposed sentence only when the tab actually has retained work. |
+| A1 access refused | `forbidden` uses Manager access required and contains no protected working area. |
+| A1 general failures | `unavailable`, `unexpected`; Try again clears the notice and focuses fresh Password entry. |
+| A1 lookup failures | `lookup-unavailable`, `lookup-unexpected`; disabled credential controls, retry of the simulated lookup only. |
+| A1 overflow | `overflow` uses the longest legitimate session-ended notice. At a short desktop height the form scrolls without clipping its action. It adds no product sentence. |
+| A1 success / idle | Neither is a BO-01 picture. The gallery and review notes say that success enters the frame and idle opens the existing M-6 fixture. |
+| A2 / A3 composition | All Login states use the shared office fields, button and notice geometry, the new desktop width token, one landmark and the focus policy above. |
+| A4 retained draft | `session-ended-draft`; no actor identity or draft content before sign-in, no resend or restoration promise to the unknown reader. Outcomes and the unresolved disposal question are below. |
+| A5 credential vocabulary | The new BO-01 text and existing P/login annotation describe username/password; S's BO-01 entries already say password cooldown. The annotation's reference to separate POS PIN classes remains correct. |
+| B1 / B2 open day and outstanding orders | Today `default` shows the opening WIB date and three read-only orders; `ready` has an open day and no open orders; `empty` means no trading yet. |
+| B1 read states | `loading` withholds unread rows and the day indicator; `error` offers Try again and traverses loading to the default list. |
+| B1 overflow | `overflow` contains 36 open orders, including the long area/table identity, the long named manager and `999.999.999`; the shared table header sticks within `.bocontent`. |
+| B1 / B3 incidents | `incident` uses slice A's persistent emergency and receipt chip; `receipt` shows only the lower-priority receipt warning. The emergency action reaches Frost BO-13. Explicit incoming alert context retains slice A's precedence. |
+| B1 / B4 Phase 0 | `phase0` has an empty rail and content pane, Back office, M. Iqbal's name and Log out; no day, incident or empty-data claim. |
+| C1 destinations | Shared Today and logout destinations and the authored menu/report/shell links now target the two Frost artifacts. |
+| C2 gallery | Both surfaces and all 26 states are registered; the gallery explains the absence of a success or idle BO-01 picture. |
+| C3 documentation | BO-01's provisional-composition introduction and BO-02's slice-B sentence link to the new artifacts; the retained-draft row is added. Both historical greyscale prototypes link to the corresponding Frost surface. The exact diff is recorded below. |
+
+Today's columns are Table / order, Area, Opened and Total. Time is HH:MM WIB;
+amounts are bare integer rupiah, with IDR stated once in the table caption.
+The day is named by its opening date, Tue 6 Oct 2026, without start/end times.
+The fixture lists totals of 155.925, 80.000 and 421.000 without aggregating them
+into an invented analytics metric. Overflow adds 33 rows. No settle, fire,
+void, refund, reopen or POS navigation control exists. The End of day action
+opens the existing BO-09 behavioral wireframe and does not execute a close.
+No closed-order metric or analytics dashboard was added.
+
+Slice A already supplies the business-day indicator, emergency and receipt
+compositions. This slice does not create substitutes. The full rail contains
+Today, End of day, Reports, Audit, Menu, Tables, Staff, Discount presets,
+Settings and Printing. Every destination exists: Today, Audit, Menu and
+Printing are Frost; the remaining destinations still use their behavioral
+wireframes pending their own slices. Phase 0 shows none of these entries.
+The narrowly scoped `WF.phase0` flag suppresses generated navigation, day and
+alerts for that named fixture only. Other shared behavior changes are N1 and
+N3; the destination resolver also adds Today and the Frost logout fallback.
+
+### New copy and unresolved questions
+
+The only new BO-01 product sentence is the proposed retained-draft sentence:
+“The previous session’s unsaved changes are stored on this tab and are not
+submitted automatically.” It keeps DESIGN-015's deferred words verbatim and
+is explicitly marked as a DESIGN-016 proposal in the inventory and review
+notes. Every other BO-01 product string is DESIGN-015's exact copy. Review
+control explanations are outside the product.
+
+After eight-hour expiry, the same manager signing in again in the same tab
+gets their unsaved draft back under the 2026-10-14 ruling. A builder must
+restore its values and validation without submitting it and return to that
+working area. A different manager sees only their separate working area,
+with none of the earlier draft visible, editable or submitted. The sign-in
+notice promises neither manager a recovery flow before identity is established.
+
+**Owner question:** after a different manager signs in from BO-01 following
+eight-hour expiry, is the isolated old draft destroyed or retained for its
+original manager? Proposed answer: destroy it after the different manager's
+successful sign-in, matching the already-ruled M-6 transition. Until ruled,
+keep it inaccessible and make no disposal or later-restoration claim. This
+proposal is not implemented in the fixture.
+
+The following existing text conflicts with the supplied rulings or current
+Frost composition. Part C requires further conflicts to be raised rather
+than edited, so these passages remain for the lead to reconcile:
+
+- BO-01's paragraph below its copy table still says same-manager recovery is
+  an owner question and calls the sentence deferred. Proposed replacement:
+  “At absolute expiry the draft remains isolated in this tab and is never
+  submitted automatically. The same manager receives it after signing in
+  again in this tab. Another manager never receives it; whether that sign-in
+  destroys the isolated draft remains an owner question. Phase 0 has no
+  draft, so it shows no retained-draft sentence.”
+- M-6's Session ended row and Owner questions paragraph still call the two
+  2026-10-14 answers unresolved. Proposed replacement: “The same manager
+  receives the tab's unsaved draft after signing in again beyond eight hours.
+  A different manager signing in through M-6 destroys it and enters a separate
+  working area. Disposal after a different manager signs in through BO-01
+  following absolute expiry remains undecided.”
+- DESIGN's M-6 and DESIGN-015 supplements repeat those old unresolved claims
+  and call the BO-01 composition provisional. Proposed replacement: “The
+  reviewed DESIGN-015 copy is drawn in DESIGN-016's Frost Login and Today
+  compositions. Same-manager recovery after absolute expiry and draft
+  destruction on M-6's different-manager success follow the 2026-10-14
+  rulings; the BO-01 different-manager disposal question remains open.”
+- P/today's historical drawing still has a start time, decimal amounts,
+  a PIN-labelled old M-6 and a claim that I-2 could be cut. Proposed exact
+  replacements are “Business day · Tue 6 Oct 2026”, totals “155.925”,
+  “80.000”, “421.000”, the current M-6 username/password composition via
+  `F/shell.html?state=reauth`, and “I-2 is kept. Frost Today is the current
+  composition.” Its new pointer makes its historical status explicit; it
+  is not used as the destination of any Frost Today link.
+
+### Files, token and validation
+
+The only added token is `--frost-office-login-width: 420px`, registered with
+`source: null` and its DESIGN-016 designed record in `frost.tokens.json`,
+regenerated in `frost.css`, and described in DESIGN's token supplement.
+No new colour, font weight, fixed product height or success green is introduced.
+The shared frame's centring and visually hidden announcement utility consume
+existing tokens. The four product documents, application code, packages and
+database files are unchanged. No existing check assertion was removed or
+weakened, DESIGN-013 needs no expectation change. DESIGN-014 changes only its two
+prototype-link counts from 38/9 to 36/7.
+
+The authored `prototype/` counts are Menu 36, Report detail 7, Shell 0 and
+Office runtime 1. The remaining runtime occurrence is the common resolver
+prefix for existing greyscale destinations. There is no Frost back-office
+reference to `prototype/back-office/login.html` or `prototype/back-office/today.html`.
+
+Repository verification passed: typechecking and 93 test files / 3,744 tests,
+including the unchanged token tests. Its final output arrived while I was
+attempting to stop what appeared to be a stalled run. A duplicate approved
+run had already started; it was stopped rather than repeating the passed
+suite. The first run exited 0; the duplicate was interrupted and is not
+claimed as passing. The existing Vite native-config warning remains.
+
+The individually approved DESIGN-012 run passed 281/281 assertions across
+52 states, including N1's key sequence and forced-close hardening, N3's static
+announcement, and preserved 1440px geometry. DESIGN-013 passed 371/371 across
+41 states. Both reported zero page errors and no failed assertions. DESIGN-014
+initially passed 286/288; only the two prototype-link counts failed. Its
+expected counts now match the authorized migration; no assertion was removed.
+
+The first DESIGN-016 run captured all states at both target widths, then
+stopped because the check tried to select a collapsed review control. The
+second run passed the state/geometry capture phase and stopped while reading
+focus during navigation. These are recorded as incomplete checks, not passes.
+The check now opens its disclosure before using its controls and waits for
+logout navigation before checking focus. The completed design016b reruns passed
+all four browser checks and repository verification; final measurements and
+completion are recorded below.
+
+
+### Exact inventory and wireframe changes
+
+The following is the complete diff for the three Part C documentation files.
+No sitemap line needed correction.
+
+```diff
+diff --git a/docs/design/SCREEN-INVENTORY.md b/docs/design/SCREEN-INVENTORY.md
+index 2f02b22..896c8e5 100644
+--- a/docs/design/SCREEN-INVENTORY.md
++++ b/docs/design/SCREEN-INVENTORY.md
+@@ -584,9 +584,9 @@ Reporting and audit are read surfaces; everything else operates.
+ Idle expiry uses the re-authentication modal instead, so unsaved form state is
+ preserved (FR-A2b).
+
+-**States and exact copy — DESIGN-015 (awaiting review).** This table is the
+-copy specification for PHASE0-011d's provisional Frost form; a complete BO-01
+-visual composition remains slice B. Use DESIGN-012's stacked 40px native
++**States and exact copy — DESIGN-015 (reviewed).** This table remains the
++copy specification. The complete [Frost BO-01 composition](visual-directions/frost/back-office/login.html)
++is drawn by DESIGN-016 for design review, using DESIGN-012's stacked 40px native
+ fields, persistent labels, primary office button and amber notice. The page
+ heading is “Back office”; helper text is “Sign in with your manager username
+ and password.” Labels are “Username” and “Password”; the primary action is
+@@ -601,6 +601,7 @@ and password.” Labels are “Username” and “Password”; the primary actio
+ | Error | `INVALID_CREDENTIALS` without cooldown details | “Sign-in failed” / “Check your username and password, then try again.” Do not identify which credential failed. |
+ | Throttled | `INVALID_CREDENTIALS` with `retryAfterSeconds`, or `THROTTLED` | “This username is locked for {wait}” / “This username is cooling down. Other managers can sign in with their own usernames.” Use POS-01's duration format. Disable password and Sign in for the submitted username; keep Username editable. As soon as the edited username no longer matches the locked account (compare trimmed, lower-case usernames), remove that notice and enable Password and Sign in unless the new account has its own known wait. Switching back restores the original remaining wait; editing never resets it. |
+ | Session ended | `UNAUTHENTICATED` on a held session, including M-6 after eight hours | “Your session has ended” / “Sign in again to continue.” No claim about the cause. Do not place a retained-draft sentence in Phase 0; see the deferred copy below. |
++| Session ended with an isolated draft — DESIGN-016 proposal for review | Eight-hour expiry with unsaved work in this tab; absent in Phase 0 | Keep Session ended’s title and body, then add: “The previous session’s unsaved changes are stored on this tab and are not submitted automatically.” Show no manager identity or draft contents before sign-in, and promise no restoration to the unknown reader. |
+ | Access refused | `FORBIDDEN` on an authenticated back-office request, including M-6 | “Manager access required” / “This account cannot use the back office. Sign in with a manager account.” Remove the protected working area; show this notice on BO-01 with the ordinary form. Do not claim that the account was disabled or explain why its role changed. |
+ | Unavailable / something went wrong | Shared general-failure triggers | Use the exact shared title, body and “Try again” action above. |
+ | Success | Successful sign-in | No success sentence; enter the Phase 0 frame described at BO-02. |
+@@ -662,8 +663,9 @@ name and offers “Log out”. No loading skeleton or empty-data message: this i
+ a shell with no landing content yet. No navigation entries, business-day
+ indicator, incident banner or receipt chip until their destinations and routes
+ exist. This is a Phase 0 exception to the populated DESIGN-012 fixture, not a
+-replacement for I-2 or the eventual BO-02 design. No new drawing or token is
+-needed; slice B still owns the complete sign-in and landing screens. This
++replacement for I-2. DESIGN-016 supplies the [complete Frost landing](visual-directions/frost/back-office/today.html)
++and its named [Phase 0 frame](visual-directions/frost/back-office/today.html?state=phase0),
++alongside [Frost sign-in](visual-directions/frost/back-office/login.html). This
+ empty-content allowance does not suppress errors: a failed Log out uses the
+ notice placement and repeat-logout action in the shared failures table above.
+
+diff --git a/docs/design/prototype/back-office/login.html b/docs/design/prototype/back-office/login.html
+index d17ac07..fe431fa 100644
+--- a/docs/design/prototype/back-office/login.html
++++ b/docs/design/prototype/back-office/login.html
+@@ -40,6 +40,7 @@
+ </div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+ <aside class="rail">
++  <div class="ann"><p>The complete BO-01 states and native form are drawn in <a href="../../visual-directions/frost/back-office/login.html">Frost Login</a> (DESIGN-016, awaiting review). This greyscale drawing is historical; use the Frost artifact for the current composition and state coverage.</p></div>
+   <h2>Purpose</h2>
+   <div class="ann"><p>Establish a conventional desk session for a manager.</p></div>
+   <h2>Fixed by the PRD</h2>
+diff --git a/docs/design/prototype/back-office/today.html b/docs/design/prototype/back-office/today.html
+index 19911c9..902cd0f 100644
+--- a/docs/design/prototype/back-office/today.html
++++ b/docs/design/prototype/back-office/today.html
+@@ -110,6 +110,7 @@
+ </div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+
+ <aside class="rail">
++  <div class="ann"><p>The read-only BO-02 states, Phase 0 frame and persistent alerts are drawn in <a href="../../visual-directions/frost/back-office/today.html">Frost Today</a> (DESIGN-016, awaiting review). This greyscale drawing is historical; use the Frost artifact for the current composition and state coverage.</p></div>
+   <h2>Purpose</h2>
+   <div class="ann"><p>A landing destination after sign-in: the open business day, anything
+    outstanding, and the route to end of day.</p></div>
+```
+
+### Finished by design016b
+
+Completed the lead's finish-only handover on `agent/design-016`. No artifact,
+check, token, copy or design decision needed changing. This completion updates
+only the Handoff, including removal of trailing whitespace from four blank
+context lines in its quoted diff after the first `git diff --check` flagged them.
+
+The browser checks ran to completion with `PLAYWRIGHT_MODULE="$PWD/node_modules/playwright"`
+and their respective `DESIGN_EVIDENCE_DIR=/tmp/designNNN-evidence` directories.
+Their final output was:
+
+| Check | Completed output |
+|---|---|
+| DESIGN-016 | `"passed": 381, "total": 381, "failures": [], "errors": []` |
+| DESIGN-012 | `"states": 52, "checks": 281, "errors": [], "failures": []` |
+| DESIGN-013 | `"states": 41, "checks": 371, "failed": [], "errors": []` |
+| DESIGN-014 | `"states": 24, "passed": 288, "total": 288, "errors": [], "failures": []` |
+
+The final `npm run verify` exited 0: typechecking passed, followed by
+`Test Files 93 passed (93)` and `Tests 3744 passed (3744)`, including the
+unchanged token tests. The existing Vite native-config warning was emitted.
+
+#### Final browser measurements
+
+The following values are quoted from `/tmp/design016-evidence/measurements.json`.
+Coordinates and dimensions are CSS pixels; the frame measurements use Today's
+incident state, and the login measurements use its error state.
+
+| Measurement | 1440×900 | 1920×1080 |
+|---|---|---|
+| Frame `(x, y, width, height)` | `(0, 0, 1440, 900)` | `(240, 0, 1440, 1080)` |
+| Navigation `(x, y, width, height)` | `(0, 0, 220, 900)` | `(240, 0, 220, 1080)` |
+| Top bar `(x, y, width, height)` | `(220, 0, 1220, 64)` | `(460, 0, 1220, 64)` |
+| Content padding | `24px` | `24px` |
+| Emergency `(x, y, width, height)` | `(220, 64, 1220, 80)` | `(460, 64, 1220, 80)` |
+| Receipt chip `(x, y, width, height)` | `(878.453125, 17.5, 191.375, 28)` | `(1118.453125, 17.5, 191.375, 28)` |
+| Login panel `(x, y, width, height)` | `(510, 195.5, 420, 509.015625)` | `(750, 285.5, 420, 509.015625)` |
+| Username field `(width, height)` | `(420, 40)` | `(420, 40)` |
+| Today overflow header `(x, y, width, height)` | `(244, 64, 375.375, 40.9375)` | `(484, 64, 375.375, 40.9375)` |
+| Today scroll owner `(x, y, width, height)` | `(220, 64, 1220, 836)` | `(460, 64, 1220, 1016)` |
+| Today scroll offset | `600` | `600` |
+
+The 1440px frame geometry matches slice A's passing rerun. At 1920px the frame
+remains 1440px wide and is centred with 240px side margins; the login column is
+centred independently in the window. At both sizes the overflow header stays
+at its scroll owner's `y: 64` after scrolling 600px.
+
+The notice measured `foreground: rgb(131, 97, 28)`,
+`background: rgb(255, 245, 218)`, and `ratio: 5.234805077491828` at both sizes,
+exceeding the 4.5:1 AA threshold. Every one of the 26 states at both target
+sizes passed `overflow: 0` and `contentOverflow: false`, with one main landmark
+and an empty password field. The overflow assertions also confirmed the full
+name `Ratna Ayu Kartikasari Prameswari · Manager` and amount `999.999.999`.
+Screenshots and measurement files remain outside the repository in `/tmp`.
+
+Static syntax checks passed with `node --check` for all eight changed or new
+scripts: `design012.cjs`, `design014.cjs`, `design016.cjs`, `office.js`,
+`shell.js`, `login.js`, `today.js` and `manifest.js`. The final
+`git diff --check` passed after the whitespace correction above.
+
+No additional design finding arose from these checks. The retained-draft
+owner question and previously recorded documentation conflicts remain for
+review exactly as proposed above.
+
+DONE

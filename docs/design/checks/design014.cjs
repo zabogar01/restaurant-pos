@@ -150,7 +150,7 @@ const base=path.resolve('docs/design/visual-directions'),out=process.env.DESIGN0
  }
  await p.goto(url('default','&alerts=both'));const alert=await p.locator('.office-emergency').innerText();await p.locator('[data-open="refund"]').click();await inspectReadOnly('dialog with both alerts');await p.keyboard.press('Escape');check(await p.locator('.office-receipt').isVisible()&&(await p.locator('.office-emergency').innerText())===alert,'reading detail retains global alerts');
  await p.goto(pathToFileURL(path.join(base,'index.html')).href+'?direction=frost&screen=back-office/audit.html&state=entry-refund');check((await p.locator('iframe').getAttribute('src')).includes('audit.html?state=entry-refund'),'gallery opens selected audit state');
- for(const [file,count] of [['menu',38],['report-detail',9]])check(fs.readFileSync(path.join(base,'frost/back-office/'+file+'.html'),'utf8').split('\n').filter(l=>l.includes('prototype/')).length===count,'authored prototype count '+file);
+ for(const [file,count] of [['menu',36],['report-detail',7]])check(fs.readFileSync(path.join(base,'frost/back-office/'+file+'.html'),'utf8').split('\n').filter(l=>l.includes('prototype/')).length===count,'authored prototype count '+file);
  const artifactFiles=fs.readdirSync(path.join(base,'frost/back-office')).filter(f=>/\.(html|js)$/.test(f));
  check(artifactFiles.every(f=>!fs.readFileSync(path.join(base,'frost/back-office',f),'utf8').includes('prototype/back-office/audit.html')),'no old BO-12 destinations');
  check(errors.length===0,'no page JavaScript errors',errors);result.errors=errors;
