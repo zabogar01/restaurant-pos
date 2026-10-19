@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-012, DESIGN-015]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: complete
 cycles: 2
 ---
 # DESIGN-016 — BO-01 Login and BO-02 Today (slice B)
@@ -338,6 +338,24 @@ Rerun `design016.cjs` and `design012.cjs` to completion (013 and 014 too only if
 `npm run verify` and `git diff --check`. Add a short **Round 3** section at the end of the Handoff mapping R2-1 and
 R2-2 to change and evidence, end the file with `DONE`, commit on `agent/design-016` (path-scoped), never push, and
 report with the `design016b` lines.
+
+## Lead verify and acceptance (2026-10-19)
+
+Round 3 (`44a6497`) was reviewed by the lead, not resumed to the reviewer: it is the last fix cycle, its code change is
+about twenty lines in `login.js`, `login.html` and `manifest.js` plus check assertions, and it applies two low findings
+exactly as ruled. The lead read the whole diff: oversized fields carry `aria-invalid` and describe themselves by
+`#notice-body` with their inline spans hidden and empty; `aria-describedby` exists only while a field is invalid and is
+removed on edit; `oversize-both` is registered identically in `login.html` and `manifest.js` and used for a double
+oversize. The two stale Handoff phrases survive only inside this file's rulings, as quotations.
+
+Lead runs at `44a6497`: `npm run verify` exit 0, `Test Files 93 passed (93)`, `Tests 3744 passed (3744)`;
+`git diff --check development` clean. The browser checks are design016b's (399/399, 293, 371, 288); the reviewer could
+not run them in either round, and the lead did not walk the artifacts by hand. Review history: round 1 two medium and
+three low (all fixed in round 2), round 2 two low (fixed in round 3), nothing open. **Status: complete.**
+
+Open for the owner, not blocking: the draft's fate when a different manager signs in from BO-01 after the eight hours
+(the Handoff proposes destroying it); the stale BO-01, M-6 and DESIGN paragraphs the Handoff raises with exact
+replacement wording, for a later design task.
 
 ## Handoff
 
