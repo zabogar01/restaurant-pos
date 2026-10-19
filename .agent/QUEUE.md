@@ -115,8 +115,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE0-012a, the browser harness and its premises, merged 2026-10-17 as PR #99.)*
     - *(Done: PHASE0-012b, the browser acceptance tests, merged 2026-10-19 as PR #104.)*
     - *(Done: ARCH-016, ADR-011 accepted 2026-10-19, merged as PR #102.)*
-    - **PHASE0-013, root 404s answer `Cache-Control: no-store`** (ADR-011 rule 12) — 012b merged — written in the kit,
-      dry-run clean 2026-10-19; waits for the owner's go. Then the Phase 0 gate.
+    - **PHASE0-013, root 404s answer `Cache-Control: no-store`** (ADR-011 rule 12) — complete 2026-10-19, PR #106,
+      waits for the owner's merge. Then the Phase 0 gate.
     - **The queued POS gap:** POS-03's actor group and Release (`order.html:77`), left out of 011c2 — not written.
     - **ADR-008** (database roles and structural immutability), recommended by ARCH-006 — deferred
       by the owner 2026-10-06, possibly to after the MVP — not written.

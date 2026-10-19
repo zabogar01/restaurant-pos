@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-19 (later): `development` at `afe7819`. The owner merged **#104** (PHASE0-012b), **#103** and **#105** (lead
-memory) and **#102** (ADR-011). Verify and `test:e2e:all` green on `4967ade` (#105 is lead memory only). Narrative:
+memory) and **#102** (ADR-011). **PHASE0-013 complete, PR #106** waits for the owner's merge. Narrative:
 [journal/2026-10-17.md](journal/2026-10-17.md) *Later*, [journal/2026-10-19.md](journal/2026-10-19.md).
 
 ## Phase and gates
@@ -19,16 +19,16 @@ memory) and **#102** (ADR-011). Verify and `test:e2e:all` green on `4967ade` (#1
   #104). **Left:** the Phase 0 gate (below).
 - **Architecture:** ten accepted ADRs (001-007, 009-011); ADR-008 reserved (deferred). ADR-011 (PR #102): the browser
   clients, their sessions and what is served; it settles ARCH-012 items 2 and 3, files the two-tab case as its own
-  accepted risk, rewrites the §16 certificate row, decides `no-store` on root 404s (not built). Recommended, not
+  accepted risk, rewrites the §16 certificate row, decides `no-store` on root 404s (built by 013). Recommended, not
   commissioned: an inline-approval ADR (ARCH-013).
 - **Frontend:** POS-01 to POS-07 against fixtures, POS-01 real. **Back office:** `apps/back-office` with real
   sign-in, the provisional BO-01 form, the empty Phase 0 frame and M-6; Frost slices A, C, I designed.
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
 - **Phase 0 gate owes** (ARCH-015 §7, *For the lead* 4): `verify` then `test:e2e:all` from a
   fresh clone; the owner's Safari check and roadmap reading; the plan's Definition of Done wording (drafted in
-  ARCH-016's Handoff, three lines, not approved); the root-404 `no-store` task (small, queued).
-- **Last verify by the lead:** `development` `4967ade` (2026-10-19, main checkout, not a fresh clone): 93 / 3744,
-  `test:e2e:all` 58 (51 s). Server tests need `npm run db:up` and `openssl` on `PATH`. Dev `pos` holds 0001-0008 and one manager. Certificate made.
+  ARCH-016's Handoff, three lines, not approved); PHASE0-013 merged (PR #106).
+- **Last verify by the lead:** `agent/phase0-013` `db3f503` (2026-10-19, its worktree, not a fresh clone): 93 / 3744,
+  `test:e2e:all` 58 (43 s); `development` `4967ade` the same earlier that day. Server tests need `npm run db:up` and `openssl` on `PATH`. Dev `pos` holds 0001-0008 and one manager. Certificate made.
 
 ## Integration branch
 
@@ -38,13 +38,15 @@ memory) and **#102** (ADR-011). Verify and `test:e2e:all` green on `4967ade` (#1
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-17); no agents.yaml or `.githooks/` change since.
 - **Lead work: `../restaurant-pos-kit` on `agent/lead-1019b`** (from `afe7819`, not pushed). Before any follow-up push to a lead branch, check its PR is still open.
-- **Task branches open:** none; no task worktree, `.agent/runs/` empty (the owner removed ARCH-016's and 012b's,
-  2026-10-19; the classifier refuses the lead `git worktree remove`). Merged branches still exist (cleanup later). Not the lead's: worktrees
+- **Task branches open:** `agent/phase0-013` (worktree `../restaurant-pos-wt/PHASE0-013`, PR #106). After it merges,
+  the owner removes the worktree and `.agent/runs/PHASE0-013/` (the classifier refuses the lead both). Merged branches still exist (cleanup later). Not the lead's: worktrees
   `../restaurant-pos-design` and `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
 - **Live agents: the lead only.** No task running. `/lead` renames the pane `lead`.
+- **PHASE0-013, complete** (`db3f503`, review `3f3ccec`, `cycles: 0`, PR #106): root 404 `no-store`, ADR-011 rule 12.
+  Lead review as trivial; red proof repeated (12 failures on the old handler).
 - **PHASE0-012b, complete** (`6ee0e22`, `cycles: 1`): B1-B11, the AC-18 scan in every profile test, `scan.spec.ts`.
   Its Handoffs carry forward the harness rules for every later phase's browser tests.
 - **ARCH-016, complete** (`a8f0939`): its Handoff holds the DoD wording and the root-404 task's two lines.
@@ -140,6 +142,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **PHASE0-013** (root-404 `no-store`, `quick`) written in the kit, untracked; dry-run clean 2026-10-19 (Sonnet 5.5,
-   interactive). Waits for the owner's go; the lead reviews it as trivial and runs `test:e2e:all` before merge.
+1. Owner merges PR #106; then fast-forward, owner removes the 013 worktree and run dir.
 2. The Phase 0 gate: fresh-clone `verify` + `test:e2e:all`, the owner's Safari check and roadmap reading, the DoD wording.
