@@ -128,6 +128,26 @@ prose, ending with `DONE` or `BLOCKED: <one question>`. Then run exactly one of:
     herdr agent prompt lead "architect16: ARCH-016 done — <one line>"
     herdr agent prompt lead "architect16: BLOCKED — <question>"
 
+## Acceptance (owner, 2026-10-19)
+
+The owner accepted ADR-011 with its ARCHITECTURE.md amendments, as written at `1698711`, in the lead session of
+2026-10-19 ("accept ADR-011"; the lead's `.agent/DECISIONS.md` line, on `agent/lead-1017b`). The acceptance settles the
+FR-A2c reading (rule 3), sign-in without a pre-session token (rule 5), and the two-tab risk filed as its own §3.2 and §16
+entries, all as you wrote them. Apply, in the form ADR-010's acceptance took:
+
+1. ADR-011's status block: `**Status:** Accepted`, `**Date:** 2026-10-19`, `**Approved by:** Product owner` in place
+   of `**Proposed by:**`. The two "(proposed)" markers, and the opening paragraph that lists them, become one sentence
+   recording that the owner accepted both on 2026-10-19. The body is otherwise unchanged.
+2. ARCHITECTURE.md §18: a dated sentence "ADR-011 was accepted on 2026-10-19:" and a table with the ADR-011 row (*The
+   browser clients, their sessions and what is served to them*), after the ADR-010 table, leaving the earlier tables as
+   they are. §1 (`:22`): "the nine consequential decisions" becomes "the ten consequential decisions".
+3. Where an amendment of yours marks the pre-session-token §3.2 clause or any other text as proposed, remove the marker.
+   Rule 12 (root 404s `no-store`) stays stated ahead of the code; the lead queues its task. Nothing else changes.
+4. Do not edit AGENTS.md, CLAUDE.md or `.agent/roles/`: the lead updates their "nine ADRs" lines.
+
+Add an **Acceptance** note at the end of the Handoff saying what was applied (keep `DONE` as the file's last line),
+commit on `agent/arch-016` after `git diff --check`, and report with the `architect16` lines above.
+
 ## Handoff
 
 **Author:** `architect16`, 2026-10-17, on `agent/arch-016` from `16f393a`. Two files changed besides this
