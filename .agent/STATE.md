@@ -26,8 +26,8 @@ the gate waits only on the owner (below). Narrative:
   sign-in, the provisional BO-01 form, the empty Phase 0 frame and M-6; Frost slices A, C, I designed.
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
 - **Phase 0 gate owes** (ARCH-015 §7, *For the lead* 4), **all the owner's now**: the Safari check; the roadmap
-  reading (ARCH-015 *For the owner* 2); the plan's Definition of Done wording (ARCH-016 Handoff `:302-311`, three
-  lines, not approved). Done 2026-10-19: fresh-clone `verify` + `test:e2e:all`; ADR-011; PHASE0-013.
+  reading (ARCH-015 *For the owner* 2). Done 2026-10-19: fresh-clone `verify` + `test:e2e:all`; ADR-011; PHASE0-013;
+  the plan's Definition of Done wording (owner approved; applied on `agent/lead-1019b`, DECISIONS).
 - **Last verify by the lead:** **fresh clone** of `development` `70fb286` from GitHub (2026-10-19): `npm ci`,
   `db:up` (reused the running container), `db:migrate` (none pending), `verify` 93 / 3744, `test:e2e:all` 58 (47 s). Server tests need `npm run db:up` and `openssl` on `PATH`. Dev `pos` holds 0001-0008 and one manager. Certificate made.
 
@@ -113,7 +113,6 @@ Nothing here is decided. Detail is where each line points.
 - **ARCH-015, *For the owner*:** (1) a ten-minute Safari hand check at the Phase 0 gate (NFR-5 look, M-6); (2) confirm
   ROADMAP's Phase 0 "inline manager-approval prompt" is met by the primitive, the adapter and the stand-ins, the route
   coming with Phase 2 (architect: yes, no wording change).
-- **The plan's Definition of Done wording** (ARCH-016 Handoff, three lines): approve to apply?
 - **PHASE0-012b, yours to overturn:** its 15 lead rulings and the two substituted red proofs (B6/B7, B2; journal 10-19).
 - **012a, lead acceptance yours to overturn:** a shell forging the marker, `E2E_REFUSED_DATABASES` and all three
   database names passes the worker guard (task file, round 3).
@@ -142,6 +141,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. The Phase 0 gate, the owner's three items (Phase and gates, above). On the DoD approval, the lead applies the three
-   lines to the plan on a lead branch; then the lead writes the gate report and the owner closes Phase 0.
+1. The Phase 0 gate, the owner's two items left (Phase and gates, above); then the lead writes the gate report
+   against the plan's Definition of Done and the owner closes Phase 0.
 2. Then Phase 1 needs its own plan (QUEUE item 13) before any Phase 1 task; design slices B, D-H can run meanwhile.

@@ -3751,11 +3751,11 @@ git commit -m "test: two-client acceptance coverage for phase 0"
 
 ## Phase 0 Definition of Done
 
-- [ ] `npm run verify` passes from a clean checkout after `npm run db:up && npm run db:migrate`.
+- [ ] `npm run verify` passes from a clean checkout after `npm run db:up && npm run db:migrate`, and `npm run test:e2e:all` passes after it.
 - [ ] No `number` type touches a monetary or rate value anywhere in `packages/money` or `apps/server` (B-1).
-- [ ] `grep -ri "pin" apps/server/src --include=*.ts` shows no path that writes a PIN value to a log, audit row, telemetry row, or error message (B-12).
+- [ ] No path writes a PIN or password value to a log, audit row, telemetry row, or error message (B-12), proven by the log-scan tests (`apps/server/test/log-scan.test.ts`, `apps/server/test/session-scan.test.ts`) and the browser harness's credential scan, not by a grep.
 - [ ] The application database role cannot UPDATE or DELETE `audit_entry`, proven by a passing test rather than by inspection (B-7).
-- [ ] The server refuses to start when `HOST` is not a loopback address (NFR-1).
+- [ ] The server refuses to start when `POS_LISTEN_HOST` is not a loopback IP literal (NFR-1, ADR-010 rule 5).
 - [ ] A success in the `LOGIN` class does not reset the `MANAGER_APPROVAL` counter (FR-A5).
 - [ ] The POS and back office are two separate bundles with two separate session cookies; neither session resolves on the other's routes (NFR-5, FR-A2c).
 - [ ] No menu, rate, table, or business detail is hard-coded or seeded outside the test fixture (B-24).
