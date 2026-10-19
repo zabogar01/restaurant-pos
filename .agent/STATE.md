@@ -9,16 +9,18 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-19 (evening): `development` at `67311d8`. Merged today: #102 (ADR-011), #103, #105, #107 (lead memory, the
-DoD wording), #104 (PHASE0-012b), #106 (PHASE0-013). **Fresh-clone `verify` and `test:e2e:all` green**; the owner
-confirmed the roadmap reading and passed the Safari check. **Gate report written** (`reviews/PHASE0-gate.md`,
-recommends closing); **Phase 0 waits for the owner to close it.** Narrative:
+2026-10-19 (evening): `development` at `0339fad`. **The owner closed Phase 0** on the gate report (#108). Merged today:
+#102 (ADR-011), #104 (PHASE0-012b), #106 (PHASE0-013), #103, #105, #107, #108 (lead memory, DoD wording, gate report).
+**Next: the Phase 1 plan** (approach waits for the owner, below). Narrative:
 [journal/2026-10-17.md](journal/2026-10-17.md) *Later*, [journal/2026-10-19.md](journal/2026-10-19.md).
 
 ## Phase and gates
 
-- **Phase 0**, started 2026-09-14. Done: tasks 1 to 11 (all slices), DESIGN-015, **012a** (PR #99), **012b** (PR
-  #104), **013** (PR #106). **Left:** the Phase 0 gate (below).
+- **Phase 0: CLOSED 2026-10-19** by the owner (DECISIONS) on [reviews/PHASE0-gate.md](reviews/PHASE0-gate.md): all
+  eight DoD lines met, B-24 qualified by the 2026-10-13 fixtures ruling; every ARCH-015 gate item done.
+- **Phase 1 (Back office and catalog, ROADMAP `:60-81`): not started.** It needs its own plan first (ROADMAP; QUEUE
+  item 13). Inputs: back-office design slices B, D-H (not designed); ADR-009 *Not decided here* before the users
+  screen; PRD §9 rate question and Pasal 8 before a non-zero service charge; the Phase 1 carry-forwards (below).
 - **Architecture:** ten accepted ADRs (001-007, 009-011); ADR-008 reserved (deferred). ADR-011 (PR #102): the browser
   clients, their sessions and what is served; it settles ARCH-012 items 2 and 3, files the two-tab case as its own
   accepted risk, rewrites the §16 certificate row, decides `no-store` on root 404s (built by 013). Recommended, not
@@ -26,9 +28,6 @@ recommends closing); **Phase 0 waits for the owner to close it.** Narrative:
 - **Frontend:** POS-01 to POS-07 against fixtures, POS-01 real. **Back office:** `apps/back-office` with real
   sign-in, the provisional BO-01 form, the empty Phase 0 frame and M-6; Frost slices A, C, I designed.
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
-- **Phase 0 gate: every item done** 2026-10-19 (fresh-clone `verify` + `test:e2e:all`; ADR-011; PHASE0-013; DoD
-  wording, PR #107; roadmap reading, DECISIONS; Safari check, owner: "all looks good"). Gate report:
-  [reviews/PHASE0-gate.md](reviews/PHASE0-gate.md), all eight DoD lines met, B-24 qualified by the 2026-10-13 ruling.
 - **Last verify by the lead:** **fresh clone** of `development` `70fb286` from GitHub (2026-10-19): `npm ci`,
   `db:up` (reused the running container), `db:migrate` (none pending), `verify` 93 / 3744, `test:e2e:all` 58 (47 s). Server tests need `npm run db:up` and `openssl` on `PATH`. Dev `pos` holds 0001-0008 and one manager. Certificate made.
 
@@ -112,7 +111,7 @@ recommends closing); **Phase 0 waits for the owner to close it.** Narrative:
 
 Nothing here is decided. Detail is where each line points.
 
-- **Close Phase 0** on the gate report (`reviews/PHASE0-gate.md`; lead: close)?
+- **How to write the Phase 1 plan** (lead's proposal in the 2026-10-19 journal, *Phase 0 closed*): approve?
 - **PHASE0-012b, yours to overturn:** its 15 lead rulings and the two substituted red proofs (B6/B7, B2; journal 10-19).
 - **012a, lead acceptance yours to overturn:** a shell forging the marker, `E2E_REFUSED_DATABASES` and all three
   database names passes the worker guard (task file, round 3).
@@ -141,5 +140,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. The owner closes Phase 0 on the gate report; the lead records it in DECISIONS and STATE.
-2. Then Phase 1 needs its own plan (QUEUE item 13) before any Phase 1 task; design slices B, D-H can run meanwhile.
+1. The owner rules on how the Phase 1 plan is written (waiting, above); then commission it.
+2. Design slices B, D-H can run beside the plan (designer, Codex); B first (BO-01/02, DESIGN-012 N1-N3).
