@@ -5,8 +5,8 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: [PHASE0-012a]
 owns: [e2e/**]
-status: review
-cycles: 0
+status: complete
+cycles: 1
 ---
 # PHASE0-012b — The browser acceptance tests
 
