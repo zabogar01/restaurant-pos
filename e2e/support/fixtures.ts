@@ -40,6 +40,12 @@ export interface Profile extends Seen {
   context: BrowserContext;
   /** Resolves when every response seen so far has had its envelope read into `replies`. */
   settled(): Promise<void>;
+  /**
+   * Every URL any page of this profile has had, from creation on, same-document
+   * changes included, kept for pages that were closed too. Two independent sources:
+   * the page's own report of each change, and Playwright's navigation events.
+   */
+  visited: { fromPage: string[]; fromNavigation: string[] };
 }
 
 export interface OneProfile extends Profile {
@@ -86,6 +92,7 @@ interface WorkerFixtures {
 // A violation is recorded by a listener installed before any page script runs, so
 // nothing the page does can happen first.
 const VIOLATIONS = '__rposViolations';
+const VISITED = '__rposVisited';
 const UNREAD_MS = 1_500;
 
 async function openProfile(browser: Browser, opened: BrowserContext[]): Promise<Profile> {
@@ -100,6 +107,17 @@ async function openProfile(browser: Browser, opened: BrowserContext[]): Promise<
       return null;
     }
   };
+  const visited: Profile['visited'] = { fromPage: [], fromNavigation: [] };
+  // A page that changes its URL without a request (history.pushState, replaceState, a
+  // hash) leaves nothing on the network. Each change is reported out of the page the
+  // moment it happens, so that a URL restored a moment later is still on record, and
+  // so that it survives the page being closed.
+  await context.exposeFunction(VISITED, (url: string) => {
+    visited.fromPage.push(url);
+  });
+  context.on('page', (page) => {
+    page.on('framenavigated', (frame) => visited.fromNavigation.push(frame.url()));
+  });
   context.on('console', (message) => seen.console.push(`${message.type()}: ${message.text()}`));
   context.on('request', (request) =>
     seen.requests.push({ page: pageOf(request), method: request.method(), url: request.url(), body: request.postData() })
@@ -130,6 +148,23 @@ async function openProfile(browser: Browser, opened: BrowserContext[]): Promise<
       )
     );
   });
+  await context.addInitScript((name) => {
+    const win = window as unknown as Record<string, (url: string) => Promise<void>>;
+    const tell = () => {
+      void Promise.resolve(win[name]?.(location.href)).catch(() => undefined);
+    };
+    tell();
+    for (const method of ['pushState', 'replaceState'] as const) {
+      const original = history[method];
+      history[method] = function (this: History, ...args: Parameters<History['pushState']>) {
+        const result = original.apply(this, args);
+        tell();
+        return result;
+      };
+    }
+    window.addEventListener('hashchange', tell);
+    window.addEventListener('popstate', tell);
+  }, VISITED);
   await context.addInitScript((key) => {
     const found: string[] = [];
     (window as unknown as Record<string, string[]>)[key] = found;
@@ -142,6 +177,7 @@ async function openProfile(browser: Browser, opened: BrowserContext[]): Promise<
     console: seen.console,
     requests: seen.requests,
     replies: seen.replies,
+    visited,
     settled: async () => {
       // A body the page never reads (a probe that looks only at the status) is not
       // finished until the page goes, and its envelope can then not be read at all.
@@ -169,6 +205,9 @@ async function gather(watched: Profile[], serverLog: string): Promise<Evidence> 
   const storage: string[] = [];
   const cookies: string[] = [];
   for (const profile of watched) {
+    // Whatever a page reported is in before its evaluate below answers: one channel.
+    await Promise.all(profile.context.pages().map((page) => page.evaluate(() => 0).catch(() => 0)));
+    urls.push(...profile.visited.fromPage, ...profile.visited.fromNavigation);
     for (const page of profile.context.pages()) {
       urls.push(page.url());
       // A page that cannot be read (closed, or a blank one with no storage) holds nothing to scan.

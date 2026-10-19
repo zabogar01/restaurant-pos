@@ -2,7 +2,12 @@
 // anywhere but in the request bodies of its own credential route, and in exactly as
 // many of those as the test submitted it. A hit is reported by place and by kind
 // ("a PIN in the server log"), never by value: the report is itself an artefact
-// (B-12), so nothing here may print what it looks for.
+// (B-12), so nothing here may print what it looks for. Every diagnostic is built from
+// fixed strings and the credential's kind: nothing taken from a request, a log line or
+// a row (a path, a URL, a body) is ever put into one, because that is where a
+// credential that leaked would be.
+
+import { E2E_ORIGIN } from './env.js';
 
 export type Kind = 'PIN' | 'username' | 'password';
 
@@ -14,6 +19,7 @@ const OWN_ROUTES: Record<Kind, readonly string[]> = {
 };
 
 export interface Sent {
+  method: string;
   url: string;
   body: string | null;
 }
@@ -69,17 +75,27 @@ export function holds(text: string, kind: Kind, value: string): boolean {
   return text.includes(value);
 }
 
-const pathOf = (url: string): string => {
+/**
+ * A credential route is origin, method and path together: a POST to the harness origin
+ * whose pathname is the route. Anything else carrying the credential is not a
+ * submission, whatever its path says.
+ */
+function isOwnRoute(kind: Kind, request: Sent): boolean {
+  if (request.method !== 'POST') return false;
+  let url: URL;
   try {
-    return new URL(url).pathname;
+    url = new URL(request.url);
   } catch {
-    return url;
+    return false;
   }
-};
+  return url.origin === E2E_ORIGIN && OWN_ROUTES[kind].includes(url.pathname);
+}
 
-/** How many request bodies hold this credential, wherever they were sent. */
+/** How many request bodies hold this credential in an accepted submission. */
 export function bodiesHolding(requests: Sent[], kind: Kind, value: string): number {
-  return requests.filter((request) => request.body !== null && holds(request.body, kind, value)).length;
+  return requests.filter(
+    (request) => request.body !== null && holds(request.body, kind, value) && isOwnRoute(kind, request)
+  ).length;
 }
 
 /** The problems found, each naming a kind and a place and no value. Empty means clean. */
@@ -92,8 +108,8 @@ export function scan(book: Ledger, evidence: Evidence): string[] {
     let own = 0;
     for (const request of evidence.requests) {
       if (request.body === null || !holds(request.body, kind, value)) continue;
-      if (OWN_ROUTES[kind].includes(pathOf(request.url))) own += 1;
-      else problems.push(`a ${kind} in a request body to ${pathOf(request.url)}`);
+      if (isOwnRoute(kind, request)) own += 1;
+      else problems.push(`a ${kind} in a request body outside its credential route`);
     }
     if (own !== submissions) {
       problems.push(`a ${kind} in ${own} request bodies of its own route, but ${submissions} were submitted`);

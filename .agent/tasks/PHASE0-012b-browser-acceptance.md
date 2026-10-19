@@ -502,4 +502,46 @@ In a run of these proofs the B9 and B10 assertions that printed the session rows
 - Phase 2: AC-27's second sentence, AC-19's approval class through a route, and M-1 driven for real; the approval stand-ins must not be driven as if they verified. `MANAGER_APPROVAL` is not touched here.
 - Not run: Safari by hand (the owner's check, as A2 says), the optional restart-surviving-cooldown case (ruling 13), the eight-hour absolute limit in a browser.
 
+(Round 1 ended `DONE`; round 2 follows and ends the file.)
+
+## Round 2
+
+All three findings are fixed under `e2e/` only; nothing outside it is committed (every red proof below was reverted; `git status` shows only `e2e/` files).
+
+### F1: no request-derived text in a diagnostic
+
+`e2e/support/scan.ts` now builds every problem from the credential's kind and fixed strings: "a PIN in a URL", "a password in a request body outside its credential route", and the count line, which carries only numbers. The pathname interpolation is gone. The `place` strings come from `gather` in `fixtures.ts` and are constants ("the server log", "audit_entry", "a URL", …). The check is `e2e/tests/scan.spec.ts`, in the scan's own spec file, using the plain Playwright `test` (no page, and without the `world` fixture, so no database reset): `F1. a credential in a request path and body is reported without being repeated` feeds the scanner a legitimate sign-in plus a request whose path and body both carry a generated password, and asserts the scan reports problems and that no diagnostic contains the password; the second F1 test does the same for a PIN in a path, a body and a place.
+
+**Red proof:** in `scan.ts`, the diagnostic changed to `` `a ${kind} in a request body to ${request.url}` ``. Both F1 tests failed: `Expected: false  Received: true` at `plainExpect(problems.some((problem) => problem.includes(secret))).toBe(false)` (the assertion reports a boolean, so the failure itself does not repeat the value). Reverted.
+
+### F2: origin, method and path together
+
+`Sent` now carries `method`. `isOwnRoute(kind, request)` accepts a body only for a `POST` to `E2E_ORIGIN` whose pathname is that credential's route (a PIN only `/api/pos/auth/login`; a username only `/api/back-office/auth/login`; a password `login` or `reauthenticate`). A request that carries the credential in any other combination is the fixed problem above; `bodiesHolding` (the positive helper, behind `world.credentialBodies`) counts only accepted submissions. `F2. only a POST to the harness origin on the credential’s own path is a submission` covers an allowed submission (no problems, count 1), a `PUT` to the login path, and a `POST` to another origin (each: problems, no password in them, and a count that stays 1).
+
+**Red proof:** `isOwnRoute` with the method and origin conditions removed. F2 failed at `plainExpect(bodiesHolding([allowed, refused], 'password', password)).toBe(1)`: `Expected: 1  Received: 2`. Restored.
+
+### F3: every page URL visited
+
+Two independent sources, both kept on `Profile.visited` for the life of the profile (so they survive a page being closed and are read by the scan before the contexts close):
+
+1. **From the page**: a context-wide `exposeFunction` binding, and an init script (installed before any page script) that reports `location.href` at document start and after every `history.pushState` and `history.replaceState` (the methods are wrapped, the report follows the call), on `hashchange`, and on `popstate`. Each report leaves the page the moment the change happens, so a URL restored a moment later is still on record. A URL changed and restored inside one synchronous run is reported twice, in order.
+2. **From Playwright**: `page.on('framenavigated')` for every page of the context, which fires for same-document navigations.
+
+The scan also reads each open page's final URL, every request URL, and, before it reads, does a round trip (`page.evaluate`) to each page so that reports sent from it are in.
+
+**Which events fire, checked in both engines:** `F3. every same-document URL change is on record, from the page and from the navigation events` does, in a real page, `pushState`, `replaceState`, a hash change, then `history.back()`, then opens a second page, navigates it and closes it. For each of the four markers it asserts that **both** channels hold it (so `framenavigated` fires for `pushState`, `replaceState` and a hash change, and for a real navigation on a closed page), and that the page's own channel also reported a clean URL after the marked one (the way back: `popstate` / `hashchange`). It passes in Chromium and in WebKit.
+
+**Red proof:** in `apps/pos/src/session/realSession.ts`, in the sign-in `ok` branch, `history.replaceState(null, '', location.pathname + '?p=' + pin)` and then `history.replaceState(null, '', location.pathname)` (the URL is clean again at once); the POS rebuilt. `throttle.spec.ts` `B-scan` failed in both engines with `Error: the AC-18 scan found credentials where they do not belong:` / `a PIN in a URL`. Reverted, and the POS rebuilt again; the full run after it is the one below.
+
+### Verification
+
+- `npm run verify`: typecheck clean including `tsc -p e2e`; 93 test files, 3744 tests, all passed (the counts equal the baseline; this round adds no vitest test).
+- `npm run test:e2e:all` twice in a row after the last revert, on the source as committed (the working tree before committing differed only by the Handoff): 58 passed both times (42.0 s and 41.7 s): the round-1 50 plus `scan.spec.ts`'s four tests in each of the two engines (F1 twice, F2, F3). Both engines behaved the same.
+- The 012a greps over `e2e/` are empty; the credential check printed `no hit` for `DATABASE_URL`, `MIGRATION_DATABASE_URL`, `PIN_PEPPER`, `POS_APP_PASSWORD` and `POS_OWNER_PASSWORD`.
+
+### Found and not fixed
+
+- `scan.spec.ts` contains its test names and its checks' markers only; its F1/F2 inputs are generated and are never written to a file or a message. The three non-browser checks run twice (once per project) because the project config applies to every file.
+- The page-side reports go through a function named `__rposVisited` that the page can see; it exists only in the harness's contexts.
+
 DONE
