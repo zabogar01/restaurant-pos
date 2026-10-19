@@ -9,9 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-19 (later): `development` at `4967ade`. The owner merged **#104** (PHASE0-012b), **#103** (lead memory, at
-`2e6cac2`) and **#102** (ADR-011). The wrap-up commit pushed to `agent/lead-1017b` after #103 merged was carried onto
-`agent/lead-1019`. Verify and `test:e2e:all` green on `development`. Narrative:
+2026-10-19 (later): `development` at `afe7819`. The owner merged **#104** (PHASE0-012b), **#103** and **#105** (lead
+memory) and **#102** (ADR-011). Verify and `test:e2e:all` green on `4967ade` (#105 is lead memory only). Narrative:
 [journal/2026-10-17.md](journal/2026-10-17.md) *Later*, [journal/2026-10-19.md](journal/2026-10-19.md).
 
 ## Phase and gates
@@ -33,15 +32,14 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Integration branch
 
-- **`development`** at `4967ade` on GitHub; the main checkout matches it (if the permission classifier refuses
+- **`development`** at `afe7819` on GitHub; the main checkout matches it (if the permission classifier refuses
   `git merge --ff-only`, the owner runs it). `main` and `development` are protected: PR required, 0 approvals, admins too.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-17); no agents.yaml or `.githooks/` change since.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1019`** (from `4967ade`, not pushed).
-- **Task branches open:** none. **Owner to run** (the classifier refused the lead, 2026-10-19): `git worktree remove`
-  `../restaurant-pos-wt/ARCH-016` and `../restaurant-pos-wt/PHASE0-012b` (both clean, both merged), and delete
-  `.agent/runs/PHASE0-012b/` in the main checkout. Merged branches still exist (cleanup later). Not the lead's: worktrees
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1019b`** (from `afe7819`, not pushed). Before any follow-up push to a lead branch, check its PR is still open.
+- **Task branches open:** none; no task worktree, `.agent/runs/` empty (the owner removed ARCH-016's and 012b's,
+  2026-10-19; the classifier refuses the lead `git worktree remove`). Merged branches still exist (cleanup later). Not the lead's: worktrees
   `../restaurant-pos-design` and `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
@@ -142,7 +140,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. Owner: remove the two worktrees and the 012b run dir (Integration branch, above); push `agent/lead-1019` for a PR.
-2. **PHASE0-013** (root-404 `no-store`, `quick`) written in the kit, untracked; dry-run clean 2026-10-19 (Sonnet 5.5,
+1. **PHASE0-013** (root-404 `no-store`, `quick`) written in the kit, untracked; dry-run clean 2026-10-19 (Sonnet 5.5,
    interactive). Waits for the owner's go; the lead reviews it as trivial and runs `test:e2e:all` before merge.
-3. The Phase 0 gate: fresh-clone `verify` + `test:e2e:all`, the owner's Safari check and roadmap reading, the DoD wording.
+2. The Phase 0 gate: fresh-clone `verify` + `test:e2e:all`, the owner's Safari check and roadmap reading, the DoD wording.
