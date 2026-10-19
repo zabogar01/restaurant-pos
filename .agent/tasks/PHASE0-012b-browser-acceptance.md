@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: [PHASE0-012a]
 owns: [e2e/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE0-012b — The browser acceptance tests
@@ -390,6 +390,16 @@ boundaries).
   sentence (Phase 1 and 2, as question 5 says).
 - The browser-clients ADR (ARCH-016, running beside this task), `docs/` of any kind, the plan's Definition of Done.
 - A development server, the owner's database `pos`, the owner's manager.
+
+## Lead verify (2026-10-19, after round 1)
+
+At `d3d6070`, in this worktree: `npm run verify` green, 93 test files and 3744 tests (baseline unchanged, as expected);
+`npm run test:e2e:all` 50 passed (41.7 s), both engines. The greps of acceptance criterion 4 and the limit grep over the
+five specs are empty; no `rpos-e2e-*` temporary directory remains; every changed path is under `e2e/`, and no existing
+test changed. The lead accepts the Handoff's two substituted red proofs (decisions 2 and 3: the consult's B6/B7 policy
+proof cannot go red once the spec reads `SESSION_POLICY`, and `pos_app` cannot read `security_event` for B2's), since
+each replacement hits the real path. A reviewer cannot run the browser suite or reach the database; this note and the
+Handoff's outputs are the run evidence.
 
 ## Handoff
 
