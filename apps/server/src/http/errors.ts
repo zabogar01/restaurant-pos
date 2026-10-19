@@ -132,7 +132,7 @@ export function notFoundHandler(request: FastifyRequest, reply: FastifyReply) {
   if (isApiPath(request.url)) {
     return send(reply, 404, ErrorCode.NOT_FOUND);
   }
-  return reply.code(404).type('text/plain').send('Not Found');
+  return reply.code(404).header('cache-control', 'no-store').type('text/plain').send('Not Found');
 }
 
 const ENVELOPE_400 = JSON.stringify({ error: { code: ErrorCode.VALIDATION_FAILED } });

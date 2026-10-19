@@ -93,6 +93,7 @@ describe('server', () => {
     expect(elsewhere.statusCode).toBe(404);
     expect(elsewhere.body).toBe('Not Found');
     expect(elsewhere.headers['content-type']).toMatch(/^text\/plain/);
+    expect(elsewhere.headers['cache-control']).toBe('no-store');
   });
 
   it('17. malformed JSON is 400, text/plain 415 and an oversized body 413, each exactly the envelope', async () => {
@@ -219,7 +220,7 @@ describe('server', () => {
       const res = await inject(app,{ method: 'GET', url });
       expect(res.statusCode).toBe(404);
       expect(res.body).toBe('Not Found');
-      expect(res.headers['cache-control']).toBeUndefined();
+      expect(res.headers['cache-control']).toBe('no-store');
     }
   );
 

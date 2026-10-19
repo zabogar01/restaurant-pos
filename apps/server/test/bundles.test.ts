@@ -204,6 +204,7 @@ describe('what each path answers', () => {
       const res = await inject(app, { method: 'GET', url });
       expect(res.statusCode).toBe(404);
       expect(String(res.headers['content-type'])).toMatch(/^text\/plain/);
+      expect(res.headers['cache-control']).toBe('no-store');
       expect(res.body).toBe('Not Found');
     }
   );
@@ -451,6 +452,7 @@ describe('without bundles', () => {
       const res = await inject(server, { method: 'GET', url });
       expect(res.statusCode).toBe(404);
       expect(String(res.headers['content-type'])).toMatch(/^text\/plain/);
+      expect(res.headers['cache-control']).toBe('no-store');
       expect(res.body).toBe('Not Found');
       expect(res.headers['content-security-policy']).toBeUndefined();
     }

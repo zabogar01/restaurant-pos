@@ -91,3 +91,19 @@ Commit on `agent/phase0-013` only, after verify is green, and never push. Conven
 report to the lead through Herdr as AGENTS.md says.
 
 ## Handoff
+
+**What I did.** The plain 404 for a path outside `/api` and both bundle prefixes now carries `Cache-Control: no-store`. The code change is one line in `notFoundHandler` (`apps/server/src/http/errors.ts`): `.header('cache-control', 'no-store')` added to the plain branch. Status, content type and body (`Not Found`) are unchanged. Four test sites now assert the header: `apps/server/test/server.test.ts` case 16 (the `/nope` half, new assertion) and case 31 (`toBeUndefined()` became `toBe('no-store')`, over `/API/nope`, `/elsewhere`, `/%41PI/nope`, `/api%2Fnope`); `apps/server/test/bundles.test.ts` case 8 (the six-URL plain-404 list) and case 16 (bundles omitted: `/pos/`, `/pos/floor`, `/pos`, `/back-office/`). I added assertions inline rather than using `expectPlain404` in case 8 and 16, because case 16 also asserts the absence of a CSP header, which the helper does not cover, and I wanted the edit minimal.
+
+**What I decided.** I did not route the branch through `sendPlain`. `plainText(404, …)` does return `Not Found` byte-for-byte (`PLAIN_TEXT[404]`), but `sendPlain` needs the configured `origin` argument and `notFoundHandler(request, reply)` has no access to it; threading it through would change the handler's signature and its registration site for no behavioural gain. The one-line header is the smaller change.
+
+**Red run before the handler change.** 12 assertions failed, all `expected undefined to be 'no-store'`: `bundles.test.ts:207` (case 8, six URLs), `bundles.test.ts:455` (case 16), `server.test.ts:96` (case 16), `server.test.ts:223` (case 31, four URLs). Then green after the handler change.
+
+**Existing tests changed.** Only the four listed sites; case 31's one assertion was flipped from `toBeUndefined()` to `toBe('no-store')` as the task directed. No assertion was loosened and no test added or removed.
+
+**Found, not fixed.** Nothing. `npm test -w apps/server` does not exist (no `test` script in that workspace); I ran `npx vitest run <files>` for the red run instead.
+
+**`npm run verify` output.** typecheck clean; `Test Files 93 passed (93)`, `Tests 3744 passed (3744)`. Same counts as the baseline. No formatter run. I did not run `npm run test:e2e:all`; the task leaves that to the lead.
+
+**Next agent.** Nothing missing. ADR-011's "not yet built" marker stays as history, per the task.
+
+DONE
