@@ -10,8 +10,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-20 (afternoon): `development` at `38537bd`. **Phase 1 plan accepted** by the owner with all 14 answers
-(DECISIONS 2026-10-20); the contract wording applied to ROADMAP and PRD on `agent/lead-1020` (PR #113, open, not yet
-committed). Nothing is running. If `development`'s STATE predates this, read this file from the branch. Narrative:
+(DECISIONS 2026-10-20); the contract wording applied to ROADMAP and PRD on `agent/lead-1020` (PR #113, pushed).
+The plan is PR #114. Nothing is running. If `development`'s STATE predates this, read this file from the branch. Narrative:
 [journal/2026-10-19.md](journal/2026-10-19.md) *Night* onward, [journal/2026-10-20.md](journal/2026-10-20.md).
 
 ## Phase and gates
@@ -19,7 +19,7 @@ committed). Nothing is running. If `development`'s STATE predates this, read thi
 - **Phase 1 (Back office and catalog, ROADMAP `:60-90`): plan accepted 2026-10-20, no task started.** Task files one
   at a time; the designer runs back-office slices beside it. **The plan:**
   `docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md` on `agent/arch-017` (`7e7fb06`, worktree
-  `../restaurant-pos-wt/ARCH-017`, not pushed); its header still says `Proposed` (architect-owned: flip it in the
+  `../restaurant-pos-wt/ARCH-017`, PR #114); its header still says `Proposed` (architect-owned: flip it in the
   ADR-012 task). 11 slices S0-S10; ADR-012 and consults C1-C5. Rulings by slice: S2 the 0-100% rate ceiling (Q2),
   IDR fixed (Q5), business details (Q12); S7 real items into the client stand-in (Q14); S8 Q1, Q7-Q11.
 - **Owed after the contract change (not drafted):** ROADMAP Phase 1's users bullet omits role change (Q1c; FR-B3 has
@@ -113,8 +113,7 @@ committed). Nothing is running. If `development`'s STATE predates this, read thi
 
 Nothing here is decided. Detail is where each line points.
 
-- **Commit `agent/lead-1020`** (DECISIONS, STATE, ROADMAP, PRD; `ALLOW_CONTRACT=1`) into PR #113, and **push
-  `agent/arch-017`** for its PR: both wait for the owner's word.
+- **Merge PR #113** (lead memory, ROADMAP and PRD wording) **and PR #114** (the Phase 1 plan).
 - **Lead choice in ARCH-017, yours to overturn:** the `docs/superpowers/plans/` file granted to the architect.
 - **PHASE0-012b, yours to overturn:** its 15 lead rulings and the two substituted red proofs (B6/B7, B2; journal 10-19).
 - **012a, lead acceptance yours to overturn:** a shell forging the marker, `E2E_REFUSED_DATABASES` and all three
@@ -143,6 +142,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. Commit and push on the owner's word (above). Then write S0 (rulings it needs: the architect's Handoff, *What the
+1. Write S0 (rulings it needs: the architect's Handoff, *What the
    lead needs*) and commission ADR-012 + C1 and C2 (architects, hand-opened).
 2. Design: slice E1 (BO-05 tables) can start with C2, since S1b needs it; then D and F per the plan's §4.
