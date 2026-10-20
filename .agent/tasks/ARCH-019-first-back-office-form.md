@@ -106,6 +106,16 @@ run exactly one of:
     herdr agent prompt lead "architect19: ARCH-019 done — <one line>"
     herdr agent prompt lead "architect19: BLOCKED — <question>"
 
+## Lead review (2026-10-20)
+
+At `2481752`. `git diff --name-only development...HEAD`: the report and this task file only; `git diff --check` clean.
+All ten items are answered with alternatives and reasons. Ids in `POST` bodies and no wire details for
+`VALIDATION_FAILED` keep ADR-011 rules 9 and 16 word for word, so no superseding ADR is needed. The pattern is consistent
+with ADR-012 (ARCH-018): a resent versioned command is refused as stale by ADR-012's version check. New code `DUPLICATE`
+enters the contracts in S1a, its first emitter (ADR-010 rule 1). OQ1 (tender reactivation, FR-B7) goes to the owner;
+it blocks S3 only. The ARCHITECTURE §8 DiningTable sentence is owed by an architect before the Phase 2 plan. E1's brief
+carries the modal-dialog hazard and the other items listed under *What the lead needs*. S1a waits only on S0's merge.
+
 ## Handoff
 
 Written by `architect19`, 2026-10-20. The report is `.agent/reviews/ARCH-019-first-back-office-form.md`; this
