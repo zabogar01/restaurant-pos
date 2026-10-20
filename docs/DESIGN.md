@@ -1,6 +1,6 @@
 ---
 name: Restaurant POS — Frost
-description: The Frost light direction, chosen 2026-09-14, stated as values an implementation can consume. 170 tokens trace to a reviewed Frost artifact; five are designed and await review (four under DESIGN-005 and the office form grid under DESIGN-012). Updated by DESIGN-012, awaiting review.
+description: The Frost light direction, chosen 2026-09-14, stated as values an implementation can consume. 170 tokens trace to a reviewed Frost artifact; six are designed and await review (four under DESIGN-005, the office form grid under DESIGN-012, and the login width under DESIGN-016). Updated by DESIGN-016, awaiting review.
 colors:
   surface: "#fafafa"
   elevated: "#ffffff"
@@ -492,14 +492,15 @@ with a path, line, selector, property and the authored value. Two of them,
 registered by DESIGN-010 after the fact. Their source cites the declaration
 that consumes them, so the authored value there is the token itself; the
 values were first authored in DESIGN-009 round 1 (`06f3a25`, `closed.css:12`
-and `:17`) and approved by the lead's ruling on round 2's question 4. Five tokens
-are designed (updated by DESIGN-012, awaiting review). Four were
+and `:17`) and approved by the lead's ruling on round 2's question 4. Six tokens
+are designed (updated by DESIGN-016, awaiting review). Four were
 designed under DESIGN-005 — `--frost-pressed-ring`, `--frost-invalid`,
 `--frost-invalid-border`, `--frost-round-tag-size` — and carry `source: null`
 and a `designed` block naming the task, the date, the author, the review
 status, the stylesheet that holds the rule, the fixture states that show it,
 and why. The fifth, `--frost-office-form-columns`, was designed under DESIGN-012
 with the same null-source provenance; see the shared back-office supplement.
+The sixth, `--frost-office-login-width`, is designed under DESIGN-016; see below.
 A designed token never cites a file and line as if it had been read
 there; a null is the honest answer. The frontmatter above is the
 same values in the portable DESIGN.md schema, for tools that read it. That
@@ -812,6 +813,8 @@ report detail in two columns (`--frost-report-columns`) with a 16px gap
 (`--frost-office-modal-width`). The back office has no fixed height: the
 review gallery framed it at 900px, that value is not a product limit and no
 token carries it; the report reaches about 946px and scrolls.
+Wider than `--frost-office-width`, the signed-in frame stays that width, centred,
+with the canvas filling both sides; the sign-in column centres in the window.
 
 **Spacing scale:** 4, 8, 12, 16, 20, 24, 32, 40, 48px (`--frost-space-1`,
 `--frost-space-2`, `--frost-space-3`, `--frost-space-4`, `--frost-space-5`,
@@ -1458,7 +1461,9 @@ definitely refused with edits kept, and outcome unknown. Unknown disables
 resubmission and rereads the saved fixture before confirming its outcome;
 Check saved sample is a read, never a resend. Results use the grouping-blue and
 neutral palette. No page state makes the kitchen action, receipt chip or Log out
-inert. Pending/unknown navigation opens a leave decision explaining that the save
+inert. While a modal decision is open, the emergency is repeated inside it and
+its action is deferred until the decision is made; no other state may defer it.
+Pending/unknown navigation opens a leave decision explaining that the save
 may or may not have succeeded and leaving never resends it. Stay retains the
 request/result context; Leave without resending follows the chosen destination.
 Navigation with unsaved edits otherwise offers stay or explicit discard.
@@ -1480,3 +1485,12 @@ The registry now has 175 entries: 170 sourced and five designed. No color,
 weight, fixed viewport height, custom radio mark, skeleton recipe, login width,
 large-empty padding or incident-action size token is added. All other values
 compose the existing registry.
+
+### Desktop sign-in width — DESIGN-016 (designed, awaiting review)
+
+`--frost-office-login-width: 420px` is registered with `source: null` and a
+DESIGN-016 designed record. `entry.css` uses it for the BO-01 form column,
+including its stacked 40px fields and full-width amber notices. The column
+centres within the viewport with 24px outer padding and scrolls at short heights.
+It is a desktop width, independent of the POS lock-box token. The registry now
+has 176 entries: 170 sourced and six designed. No new colour or weight is added.

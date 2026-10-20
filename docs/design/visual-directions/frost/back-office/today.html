@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en" data-direction="frost"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BO-02 Today</title><link rel="stylesheet" href="office.css"><link rel="stylesheet" href="entry.css">
+<script>window.WF={id:'BO-02',client:'bo',nav:'today',name:'Today',reqs:'FR-I1, I2, E3, E6; DESIGN-016',phase0:new URLSearchParams(location.search).get('state')==='phase0',states:[['default','Day open — orders outstanding'],['ready','Day open — no open orders'],['empty','No trading yet'],['loading','Reading Today'],['error','Read failed'],['overflow','Long open-order list'],['incident','Kitchen emergency and receipt warning'],['receipt','Receipt warning'],['phase0','Phase 0 — empty frame']]};if(new URLSearchParams(location.search).get('state')==='incident'&&!new URLSearchParams(location.search).has('alerts')){const u=new URL(location.href);u.searchParams.set('alerts','both');history.replaceState(null,'',u);}</script>
+<script defer src="../../mockup.js"></script><script defer src="office.js"></script><script defer src="today.js"></script>
+</head><body>
+<header class="wfbar"></header>
+<div class="bo"><nav class="bonav" aria-label="Back office"></nav><div class="bomain">
+<header class="botop"><strong class="office-title">Today</strong></header>
+<main class="bocontent" id="today-content">
+<div class="office-heading"><h1>Today</h1></div>
+<div id="today-status" class="office-notice" role="status" hidden></div>
+<section id="today-data">
+<div class="today-day"><div><h2>Business day open</h2><p>Tue 6 Oct 2026 · Opening date, WIB</p></div><a class="office-button" href="../../../prototype/back-office/end-of-day.html">Go to end of day</a></div>
+<section class="today-orders" aria-labelledby="orders-title"><h2 id="orders-title">Open orders</h2><p id="orders-summary"></p>
+<div class="office-empty" id="orders-empty" hidden>No open orders</div>
+<table class="office-table" id="orders-table"><caption>Current open orders · Times in WIB · Totals in IDR</caption><thead><tr><th scope="col">Table / order</th><th scope="col">Area</th><th scope="col" class="time">Opened</th><th scope="col" class="num">Total</th></tr></thead><tbody id="orders-rows"></tbody></table>
+</section>
+</section>
+<details class="office-fixture"><summary>Review fixtures · outside the product</summary><p>Illustrative orders, amounts and manager names. Today reads orders; it has no order actions. End of day opens the existing behavioural wireframe. <a href="../../index.html?direction=frost&amp;screen=back-office/today.html">All screens</a></p></details>
+</main></div></div>
+</body></html>

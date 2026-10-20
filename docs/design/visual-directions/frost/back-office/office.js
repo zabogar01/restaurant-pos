@@ -4,20 +4,21 @@
   const params = new URLSearchParams(location.search);
   const state = document.documentElement.dataset.state || 'none';
   const nav = $('.bonav');
+  const phase0 = window.WF.phase0 === true;
   const routes = [
     ['Trading', [['Today','today.html','today'],['End of day','end-of-day.html','eod']]],
     ['History', [['Reports','reports.html','reports'],['Audit','audit.html','audit']]],
     ['Configuration', [['Menu','menu.html','menu'],['Tables','tables.html','tables'],['Staff','users.html','users'],['Discount presets','presets.html','presets'],['Settings','settings.html','settings']]],
     ['Hardware', [['Printing','incidents.html','incidents']]]
   ];
-  if (!nav.children.length) {
+  if (!nav.children.length && !phase0) {
     nav.innerHTML = '<div class="bonav__brand">Back office</div>';
     routes.forEach(([section, entries]) => {
       const heading = document.createElement('div');
       heading.className = 'bonav__sec'; heading.textContent = section; nav.append(heading);
       entries.forEach(([label, file, key]) => {
         const a = document.createElement('a'); a.textContent = label;
-        a.href = ['menu','incidents','audit'].includes(key) ? file : '../../../prototype/back-office/' + file;
+        a.href = ['menu','incidents','audit','today'].includes(key) ? file : '../../../prototype/back-office/' + file;
         a.dataset.nav = key; nav.append(a);
       });
     });
@@ -28,15 +29,17 @@
   // Reuse authored logout destinations on existing pages, preserving their link ledger.
   const legacy = nav.querySelector('[href$="login.html"]');
   const logout = legacy || document.createElement('a');
-  logout.href = legacy ? legacy.getAttribute('href') : '../../../prototype/back-office/login.html';
+  logout.href = legacy ? legacy.getAttribute('href') : 'login.html';
   logout.textContent = 'Log out'; logout.className = 'office-logout';
   const oldActor = legacy && legacy.parentElement;
   if (oldActor) oldActor.remove();
   top.insertAdjacentHTML('beforeend','<span class="office-day">Business day · Tue 6 Oct</span><span class="office-actor">M. Iqbal · Manager</span>');
   top.append(logout);
+  if(phase0) $('.office-day').remove();
   const incidents = 'incidents.html';
   const kitchenIncident = {title:'Kitchen printing needs attention',identity:params.get('kitchenIdentity') || '1 kitchen ticket · Table 1, round 2 · 19:58'};
   let alertMode = params.get('alerts') || (['none','kitchen','receipt','both'].includes(state) ? state : (state === 'reauth-kitchen' ? 'kitchen' : 'none'));
+  if(phase0) alertMode='none';
   let kitchen = alertMode === 'kitchen' || alertMode === 'both';
   let receipt = alertMode === 'receipt' || alertMode === 'both';
   const emergency = document.createElement('section');
