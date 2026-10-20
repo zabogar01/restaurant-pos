@@ -8,6 +8,7 @@ const MIGRATED_TABLES = [
   'audit_entry',
   'back_office_credential',
   'client_instance',
+  'dining_table',
   'pin_throttle_bucket',
   'schema_migration',
   'security_event',

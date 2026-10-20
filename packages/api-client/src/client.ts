@@ -96,6 +96,11 @@ export const ROUTES = {
   backOfficeActivity: find('/api/back-office/auth/activity'),
   backOfficeLogout: find('/api/back-office/auth/logout'),
   backOfficeReauthenticate: find('/api/back-office/auth/reauthenticate'),
+  tablesList: find('/api/back-office/config/tables'),
+  tablesCreate: find('/api/back-office/config/tables/create'),
+  tablesUpdate: find('/api/back-office/config/tables/update'),
+  tablesDeactivate: find('/api/back-office/config/tables/deactivate'),
+  tablesReactivate: find('/api/back-office/config/tables/reactivate'),
 } as const;
 
 interface View {

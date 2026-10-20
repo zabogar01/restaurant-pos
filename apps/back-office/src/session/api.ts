@@ -25,5 +25,11 @@ export function officeApi(client: ApiClient): OfficeApi {
     '/api/back-office/auth/activity': () => client.request(ROUTES.backOfficeActivity),
     '/api/back-office/auth/logout': () => client.request(ROUTES.backOfficeLogout),
     '/api/back-office/auth/reauthenticate': (body) => client.request(ROUTES.backOfficeReauthenticate, body),
+    // Declared, not called by any screen until BO-05 (PHASE1-S1b).
+    '/api/back-office/config/tables': () => client.request(ROUTES.tablesList),
+    '/api/back-office/config/tables/create': (body) => client.request(ROUTES.tablesCreate, body),
+    '/api/back-office/config/tables/update': (body) => client.request(ROUTES.tablesUpdate, body),
+    '/api/back-office/config/tables/deactivate': (body) => client.request(ROUTES.tablesDeactivate, body),
+    '/api/back-office/config/tables/reactivate': (body) => client.request(ROUTES.tablesReactivate, body),
   };
 }

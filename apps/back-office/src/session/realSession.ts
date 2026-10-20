@@ -90,6 +90,7 @@ function meaningOf(body: ErrorBody, context: Context): Meaning {
     case ErrorCode.CSRF_REFUSED:
     case ErrorCode.APPROVAL_FAILED:
     case ErrorCode.APPROVAL_THROTTLED:
+    case ErrorCode.DUPLICATE:
       return { kind: 'general-failure' };
     default: {
       const unplaced: never = error;
