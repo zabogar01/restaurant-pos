@@ -107,3 +107,93 @@ run exactly one of:
     herdr agent prompt lead "architect19: BLOCKED — <question>"
 
 ## Handoff
+
+Written by `architect19`, 2026-10-20. The report is `.agent/reviews/ARCH-019-first-back-office-form.md`; this
+section is its digest for the lead. Nothing else was edited.
+
+### What I decided, and why
+
+- **Addressing (item 1).** A record is addressed by an id in the body of a `POST`; every route-table path stays a
+  fixed string, so the transport core, the route-table equality test and ADR-011 rule 16 are unchanged. S1 needs no
+  single-record read. A path template was rejected because it removes the property "the path the core sends is a
+  table string" that every Phase 0 test relies on; a later slice that needs a `GET` by id brings it to a consult. A
+  new contracts test makes "no `?`, `#` or `:` in any route-table path" a checked property.
+- **`VALIDATION_FAILED` (item 2).** The form needs a field list and gets it from its own check against the shared
+  schema before sending, built as ADR-011's *Not decided here* requires (issue `path[0]` intersected with
+  `Object.keys(schema.shape)`, in schema order, typed as the union of those literal keys), in one back-office helper.
+  The wire is unchanged: `VALIDATION_FAILED` keeps no details, so rule 9 stays true word for word and **no
+  superseding ADR is needed**. A server `VALIDATION_FAILED` means a stale tab and is shown as the general failure,
+  draft kept. A server-side list is deferred to the first slice with a representational rule the shared schema
+  cannot hold; S1 has none. I checked the zod facts against the installed zod 4.6.5.
+- **Answers and interactivity (item 3).** Every command answers `{ table: TableView }`, the list answers
+  `{ tables }`; `TableView` is `{ tableId, label, isActive }`. The list read is not interactive (the page rereads it
+  itself); the four commands are. No area column: nothing in the contract or the designs reads one (Q10's reasoning
+  for seats).
+- **Uniqueness (item 4).** A label (1 to 32 characters, trimmed, no control characters) is unique among active
+  tables, case-insensitively, by one partial unique index. A new generic code `DUPLICATE` (409, no details) refuses
+  create, rename and reactivation into a held label; renaming an inactive table is allowed, which is the way out of
+  a refused reactivation.
+- **The lock (item 5).** Update, deactivation and reactivation open with `SELECT … FOR UPDATE` on the DiningTable
+  row; Phase 2's open-order takes the same lock after BusinessDay and before Order, and Phase 2 adds its open-order
+  check after the lock in deactivation, reordering nothing. S1a proves the lock comes before the read through the
+  no-op path (a deactivation of an already inactive table must wait for another holder of the row lock).
+- **Unknown outcomes (item 6).** Keep the draft, reread the list, say the outcome could not be confirmed, never
+  resend and never infer success from the reread. S1's commands make a manager's own resend harmless: a repeated
+  create is `DUPLICATE`, a repeated rename sets the same label, and a command that would change nothing writes
+  nothing and answers the record. So S1 needs no idempotency key.
+- **Manifest, rail, working area, AC-35 (item 7).** A small route manifest of the back office's own, a rail of
+  built destinations only, BO-05 inside the keyed working area, reached through a store member typed to the
+  configuration routes only. **One hazard found:** by HTML §6.3.1 and CSS Position 4 §3.1 (librarian), a modal
+  `<dialog>` under a `display: none` ancestor still blocks the document while drawing nothing, so a table form left
+  open when BO-01 appears would make BO-01's own fields inert. Rule: a working-area dialog is closed (state kept)
+  whenever the frame is not shown and reopened for the same manager. The browser spec has three cases: the same
+  manager through M-6, another manager through M-6, and both through BO-01 with the form open.
+- **Cash and card (item 8).** Fixed kinds, never rows; only custom methods are configuration, as FR-B7 and B-5
+  already read. S3 follows this consult's pattern with a `tender_method` table.
+- **C5 (item 9).** The watch-build measurement is the right trigger if it times save-to-visible over ten warm
+  edits; C5 is justified above a five-second median, or a warm full rebuild over ten seconds.
+- **The split (item 10).** S1a: the migration, the domain, the routes, the contracts and the compile-forced client
+  lines (the back-office API functions and `DUPLICATE` in both clients' code switches). S1b: the manifest, the rail,
+  BO-05, the form rules, the browser spec and the measurement. Scope, `owns`, acceptance criteria with red proofs,
+  the tests expected to change and the `touches` flags are in the report's *For the lead*, ready to copy.
+
+### Question for the owner
+
+**OQ1 (blocks S3 only):** may a deactivated custom tender method be reactivated? Q10 named tables, presets, items and
+categories, not tender types. Proposed: yes, with FR-B7 reading "Manage tender types: create, rename, deactivate and
+reactivate custom named methods alongside cash and card." (the rest of FR-B7 unchanged).
+
+### Stale text found, with replacement wording
+
+1. **ARCHITECTURE §8's lock order** omits the DiningTable row. Replace "BusinessDay precedes Order; Order precedes
+   CheckoutLease and ReceiptSeries." with "BusinessDay precedes DiningTable, and DiningTable precedes Order; Order
+   precedes CheckoutLease and ReceiptSeries. Opening a table order, and deactivating, reactivating or renaming a
+   table, lock the DiningTable row before reading its state, so a deactivation and an order opening on the same
+   table serialise and the deactivation's open-order check (FR-C8) sees any order committed before it." This is an
+   architect edit, owed before the Phase 2 plan; it fits ADR-012's ARCHITECTURE amendments.
+2. **SCREEN-INVENTORY and SITEMAP BO-05** (the designer's, through E1): add reactivation and the *label in use*
+   refusal, and mark the open-order refusal as arriving with Phase 2 (exact wording in the report, *Stale text* 2).
+3. The plan's S1 goal predates Q10's reactivation; recorded, not edited, since later consults win over the plan.
+
+No contract document is wrong; no PRD, PRODUCT, ROADMAP or BOUNDARIES wording is proposed except OQ1's FR-B7 line.
+
+### What the lead needs to write S1a and S1b
+
+- The report's *For the lead* gives each task its touches flags, dependencies, owned globs, scope, numbered
+  acceptance criteria with red proofs, the tests expected to change and what its Handoff must carry forward.
+- **E1's brief** must carry: the modal-dialog hazard and the rule above; DESIGN-012 F1's "*Log out* never inert"
+  against a native modal form (E1 decides modal under N2, or non-modal); the label-in-use and reactivation states;
+  the outcome-unknown and departure copy; and that architecture requires no confirmation step for deactivation or
+  reactivation (both reversible; the ARCH-002 test).
+- **For ADR-012** (the other architect): the six things the pattern needs where it meets a versioned record are in
+  the report's *What the pattern needs from ADR-012*; the main one is that a manual resend of an applied versioned
+  command must be refused as stale, not applied twice.
+- S1b waits on E1 and on DESIGN-016's accepted Handoff (the rail and the landing); S1a waits only on S0.
+
+### Not done
+
+No code, test or browser was run, except one Node check of zod 4.6.5's issue shapes against the installed copy.
+The dialog-blocking behaviour is from the specification, not from either engine; S1b's browser case C3 is the
+evidence, and its Handoff reports what each engine did.
+
+DONE
