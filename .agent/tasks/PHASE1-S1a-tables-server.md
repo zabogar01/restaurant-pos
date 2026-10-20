@@ -5,7 +5,7 @@ category: feature
 touches: [boundaries]
 depends_on: [PHASE1-S0]
 owns: [db/migrations/0010_dining_table.sql, apps/server/src/domain/dining-table.ts, apps/server/src/http/routes/back-office-tables.ts, apps/server/src/http/server.ts, packages/contracts/src/tables.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S1a — Tables on the server
@@ -264,6 +264,32 @@ the routes against C2 §1, §3, §4 and §5: ids in bodies, `{ table }`/`{ table
 partial unique index as the only authority, `lockDiningTable` first in update, deactivation and reactivation, no-op
 writes nothing, `23505` on the named index only is `DUPLICATE`, database text never logged or wrapped, no audit entry.
 Sent to review (`touches: boundaries`); the owner looks before merge.
+
+## Round 2 — the review's F1 (lead ruling, 2026-10-20)
+
+Codex reviewed `8c2fa0e` (`.agent/reviews/PHASE1-S1a-review.md`): no production-code defect; one P2. **F1 is accepted.**
+Acceptance criterion 6 asks for "two connections, a barrier"; the two cases in `apps/server/test/tables.test.ts`
+(`two concurrent writers`, `:256-281`) fire two requests with `Promise.all` and cannot tell a real overlap from two
+commands that ran one after the other. Fix only that:
+
+1. **Hold a barrier that both commands must reach.** Before the two requests, the owner connection opens a transaction
+   and takes a table lock both commands' first statement conflicts with (`LOCK TABLE dining_table IN EXCLUSIVE MODE`
+   conflicts with the `ROW EXCLUSIVE` an `INSERT` or `UPDATE` takes and the `ROW SHARE` a `SELECT … FOR UPDATE` takes;
+   confirm against the PostgreSQL 16 lock table, through `.agent/bin/ask.sh librarian` if unsure). Then wait until
+   **two distinct `pos_app` backends** are waiting on a lock, the way `throttle.test.ts` (`:78`), `session.test.ts`
+   (`:96`) and `back-office-credential.test.ts` (`:94`) observe it through `pg_stat_activity` (count the rows, with a
+   deadline). Then commit the barrier, so both commands proceed together and one meets the other's uncommitted index
+   entry.
+2. **Release the barrier in cleanup** (`finally`) even when an assertion throws, so a failure cannot hang later cases
+   (you hit that once already with the lock tests).
+3. **Keep the assertions:** one 200 and one bare `DUPLICATE`, the final rows (one row per label for creates; one active
+   row per label for reactivations). One run per case is enough once the overlap is proved; drop the four-label loop
+   or keep it, your call, and say which.
+4. **Redo the red proof under the barrier:** make the index non-unique, see both cases fail (two 200s), revert. Record
+   the observed waiting-backend count in the Handoff.
+
+Touch only `apps/server/test/tables.test.ts`. Run `npm run verify`; commit; append a *Round 2* section to the Handoff
+(what changed, the red proof, the counts) ending `DONE` or `BLOCKED: <question>`.
 
 ## Handoff
 
