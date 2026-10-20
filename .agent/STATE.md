@@ -10,8 +10,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-19 (night): `development` at `1701e36` (PR #110 merged). **Phase 0 closed.** The owner approved the Phase 1 plan approach
-(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 complete** (`8b0d87a`, 3 rounds, merges
-cleanly), not pushed: waits for the owner's word to push it for a PR. Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
+(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 complete** (`8b0d87a`), pushed for a PR
+with the lead branch on the owner's word (2026-10-20); the draft question ruled (destroyed). Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
 
 ## Phase and gates
 
@@ -37,7 +37,7 @@ cleanly), not pushed: waits for the owner's word to push it for a PR. Narrative:
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-19); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1019f`** (from `1701e36`, not pushed). **Run `gh pr view <n> --json
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1019f`** (from `1701e36`, pushed 2026-10-20 for a PR). **Run `gh pr view <n> --json
   state` as its own step before any push to a lead branch**: chained behind a push it does not stop it (#110, 2026-10-19).
 - **Task branches open:** `agent/arch-017` (plan `7e7fb06`), `agent/design-016` (`d4502d3`, `npm ci` run), worktrees
   `../restaurant-pos-wt/<ID>`, cut from `82876b4`; kit copies deleted. `.agent/runs/DESIGN-016/` holds the review run. Merged branches still exist (cleanup later).
@@ -45,8 +45,8 @@ cleanly), not pushed: waits for the owner's word to push it for a PR. Narrative:
 
 ## Running tasks and agents
 
-- **Live agents: `lead`, `architect17`** (idle, pane `ARCH-017`; kept for a revision round until the owner accepts the
-  plan). `design016b`'s pane closed after DESIGN-016 completed; Codex `design016`'s too.
+- **Live agents: the lead only.** All task panes closed 2026-10-20 (owner: close what is not needed). For an ARCH-017
+  revision, resume `architect17`: `claude --resume f49d621e-bff4-4c8e-bed9-f9b89310b9a4` in its worktree (2026-10-12 line).
 - **ARCH-017, done:** `docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`, `Proposed`. 11 slices
   (S0-S10), ADR-012 (versioned configuration) and consults C1-C5, 14 owner questions. Key finding (Q13): AC-31, AC-12's
   rejections and AC-32's second sentence need orders, so cannot pass in Phase 1; ROADMAP wording proposed. Lead checked:
@@ -113,9 +113,7 @@ cleanly), not pushed: waits for the owner's word to push it for a PR. Narrative:
 
 Nothing here is decided. Detail is where each line points.
 
-- **DESIGN-016's question:** after the eight hours, a different manager signs in at BO-01: is the old draft destroyed
-  (designer's proposal, as the M-6 ruling) or kept for its owner? Also its R2-1 ruling (oversize: notice only), yours.
-- **Lead choices in ARCH-017 and DESIGN-016, yours to overturn:** the plans path granted to the architect; DESIGN-016's focus reading (Part A item 3).
+- **Lead choices in ARCH-017, yours to overturn:** the plans path granted to the architect.
 - **ARCH-017's 14 questions** (plan §8, Handoff): accept the plan; Q13 (ROADMAP acceptance line) first, then Q5, Q12,
   Q1 and Q7-Q11, Q14, Q4, Q10. Contract wording for ROADMAP, PRD FR-B1/B2/B3/B5/J3/M1 and §9 is drafted in its Handoff.
 - **PHASE0-012b, yours to overturn:** its 15 lead rulings and the two substituted red proofs (B6/B7, B2; journal 10-19).
@@ -146,5 +144,5 @@ Nothing here is decided. Detail is where each line points.
 ## Next up
 
 1. The owner reads the plan and answers Q13 first; on acceptance, record it, commission ADR-012 + C1 and C2, write S0.
-2. On the owner's word: push `agent/design-016` and `agent/lead-1019f` for PRs. After merge: remove the worktree and
+2. The owner merges the DESIGN-016 and lead PRs. After merge: remove the worktree and
    `.agent/runs/DESIGN-016/` (owner runs removals). Next design slice: D, E or F per the plan §4, once accepted.
