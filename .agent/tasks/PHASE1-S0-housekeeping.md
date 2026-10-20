@@ -143,3 +143,44 @@ Handoff below in full prose, ending with `DONE` or `BLOCKED: <one question>`, th
 AGENTS.md says.
 
 ## Handoff
+
+**What I did.** (1) `docker-compose.yml` now starts with `name: restaurant-pos`; nothing else changed. (2) New migration
+`db/migrations/0009_schema_migration_read.sql` grants `SELECT` on `schema_migration` to `pos_app` and nothing else, with a
+header comment saying why. (3) New `apps/server/src/db/migration-files.ts` holds the one listing rule
+(`listMigrationFiles`: `.sql` suffix, sorted) and `defaultMigrationsDir()` (anchored to the source file); `migrate.ts` now
+imports both instead of its own copies, so runner and check cannot disagree. (4) New `apps/server/src/db/schema-check.ts`
+exports `assertSchemaCurrent(dir = defaultMigrationsDir())`. It reads `schema_migration` through `query()` as `pos_app`
+and compares file names as sets. Recorded-but-no-file throws `StartupError` with the "ahead" sentence (checked first, so it
+wins when both hold); file-but-no-row throws the "behind" sentence. A `42501` or `42P01` from the read throws the "behind"
+sentence; any other error is rethrown untouched. Both sentences are exactly the wording in ruling 5, with no values.
+(5) `main()` in `index.ts` calls `assertSchemaCurrent()` right after the `SELECT 1` block and before `buildServer`. Not in
+`buildServer`, no new variable, no route change, health untouched.
+
+**Red first.** Before any source existed I ran `schema.test.ts` and the new `schema-check.test.ts`. `schema.test.ts:167`
+failed: `expected { table: [], columns: {} } to deeply equal { table: [ 'SELECT' ], columns: {} }`; `schema-check.test.ts`
+failed to load: `Cannot find module '../src/db/schema-check.js'`. After the code, all green. I also mutated the guard
+(swapped the order of the two checks so "behind" is tested first) and `uses the ahead sentence when both differences hold`
+failed with the behind sentence received; reverted.
+
+**Tests changed.** Only `apps/server/test/schema.test.ts` case 1: the title now says "and only SELECT on schema_migration",
+and the assertion is `toEqual({ table: ['SELECT'], columns: {} })`. The privilege query returns `columns: {}` for a
+table-level grant (the helper skips column privileges the table grant already covers), so the shape is asserted exactly,
+not loosened. Added `apps/server/test/schema-check.test.ts`, 9 tests: passes on the real directory (default and explicit),
+behind (extra file), ahead (file removed), both differences gives ahead, a non-`.sql` extra file is ignored, `REVOKE SELECT`
+gives behind (42501), `DROP TABLE schema_migration` gives behind (42P01), and a renamed column surfaces the raw `42703`
+error, not a `StartupError`. Each refusal asserts `StartupError` and the exact sentence.
+
+**Verify.** `npm run verify` green: typecheck clean, 94 test files and 3753 tests passed (baseline 93 and 3744: one new
+file, nine new tests). `git diff --name-only development...HEAD` shows only the task file and owned paths.
+
+**Found, not fixed.** `grep -n MIGRATION_DATABASE_URL apps/server/src` also matches a comment in `pool.ts:22`, besides
+`migrate.ts`; no code path outside `migrate.ts` reads it. The check does not detect a migration file edited after it was
+applied (the runner stores no checksum), as ruling 3 says; no checksums added. I did not run Docker, `db:migrate` on the
+development database `pos`, or `test:e2e`; the lead does those after the merge. No formatter was run; I wrapped no files
+by hand beyond matching style (`schema-check.ts` has one long `recorded = new Set(...)` line, as `index.ts` already has).
+
+**Next agent needs.** Nothing missing. The lead should confirm `docker compose --env-file db/dev.env config` prints
+`name: restaurant-pos`, run `npm run test:e2e:all`, apply `0009` to `pos`, and confirm the server refuses before
+`db:migrate` and starts after it.
+
+DONE

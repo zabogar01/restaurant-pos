@@ -1,5 +1,6 @@
 import { listenHost, listenPort, logLevel, pinPepper, tlsPaths } from './config.js';
 import { closePool, query } from './db/pool.js';
+import { assertSchemaCurrent } from './db/schema-check.js';
 import { defaultBundleRoots } from './http/bundles.js';
 import { StartupError } from './http/errors.js';
 import { logLine } from './http/log.js';
@@ -36,6 +37,8 @@ async function main(): Promise<void> {
     logLine('error', 'the database did not answer', err);
     throw new StartupError('the database did not answer; is DATABASE_URL set and the database running (npm run db:up)?');
   }
+  // The schema must match db/migrations, so a stale schema is not an INTERNAL on first use.
+  await assertSchemaCurrent();
   // 5. The server.
   const origin = `https://localhost:${port}`;
   const app = buildServer({ origin, logLevel: level, tls, bundles: defaultBundleRoots() });

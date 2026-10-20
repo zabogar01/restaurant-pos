@@ -161,10 +161,10 @@ describe('privileges', () => {
     return actual;
   }
 
-  it('gives pos_app exactly the privileges in the expected map, and none on schema_migration (case 1)', async () => {
+  it('gives pos_app exactly the privileges in the expected map, and only SELECT on schema_migration (case 1)', async () => {
     const actual = await actualPrivileges();
 
-    expect(actual.schema_migration).toEqual({ table: [], columns: {} });
+    expect(actual.schema_migration).toEqual({ table: ['SELECT'], columns: {} });
 
     // A table the map does not name fails here, whatever grants it has.
     const { schema_migration: _migration, ...application } = actual;
