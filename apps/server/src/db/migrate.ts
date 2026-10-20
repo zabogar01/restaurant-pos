@@ -1,7 +1,8 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import pg from 'pg';
+import { defaultMigrationsDir, listMigrationFiles } from './migration-files.js';
 
 // The migration runner is the only module that holds the owner connection
 // (MIGRATION_DATABASE_URL). The application pool in pool.ts connects as the
@@ -28,7 +29,7 @@ export async function runMigrations(dir: string): Promise<string[]> {
       )
     );
 
-    const files = (await readdir(dir)).filter((f) => f.endsWith('.sql')).sort();
+    const files = await listMigrationFiles(dir);
     const applied: string[] = [];
 
     for (const file of files) {
@@ -66,7 +67,7 @@ if (invokedDirectly) {
   // anchored to this file, and an explicit path to where npm was invoked.
   const dir = process.argv[2]
     ? resolve(process.env.INIT_CWD ?? process.cwd(), process.argv[2])
-    : fileURLToPath(new URL('../../../../db/migrations', import.meta.url));
+    : defaultMigrationsDir();
   runMigrations(dir)
     .then((a) => {
       process.stdout.write(`${a.length ? `applied: ${a.join(', ')}` : 'no pending migrations'}\n`);
