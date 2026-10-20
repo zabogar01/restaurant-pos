@@ -5,7 +5,7 @@ category: feature
 touches: [boundaries]
 depends_on: [PHASE1-S0]
 owns: [db/migrations/0010_dining_table.sql, apps/server/src/domain/dining-table.ts, apps/server/src/http/routes/back-office-tables.ts, apps/server/src/http/server.ts, packages/contracts/src/tables.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S1a — Tables on the server
@@ -253,6 +253,17 @@ The lead runs `npm run test:e2e:all` before merge (a migration, the contracts an
 Commit on `agent/phase1-s1a` only, after verify is green, and never push. Conventional Commits, explaining why. Write the
 Handoff below in full prose, carrying forward what the consult's *The Handoff must carry forward* names, ending with
 `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify (2026-10-20)
+
+At `f6cf34a`, in this worktree. `git diff --name-only development...HEAD`: the task file and paths in `owns` only; the
+changed existing tests are the three listed (`schema.test.ts`, `harness-race.test.ts`, `error-details.types.ts`), plus
+new files under the owned test globs. `npm run verify`: 97 files, 3790 tests, green. `npm run test:e2e:all`: 58 passed
+(42.9 s), the harness server starting on a database with `0010` through S0's check. Read the migration, the domain and
+the routes against C2 §1, §3, §4 and §5: ids in bodies, `{ table }`/`{ tables }` answers, list non-interactive, the
+partial unique index as the only authority, `lockDiningTable` first in update, deactivation and reactivation, no-op
+writes nothing, `23505` on the named index only is `DUPLICATE`, database text never logged or wrapped, no audit entry.
+Sent to review (`touches: boundaries`); the owner looks before merge.
 
 ## Handoff
 
