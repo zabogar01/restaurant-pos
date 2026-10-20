@@ -5,8 +5,8 @@ category: feature
 touches: [boundaries]
 depends_on: [PHASE1-S0]
 owns: [db/migrations/0010_dining_table.sql, apps/server/src/domain/dining-table.ts, apps/server/src/http/routes/back-office-tables.ts, apps/server/src/http/server.ts, packages/contracts/src/tables.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: active
-cycles: 0
+status: complete
+cycles: 1
 ---
 # PHASE1-S1a — Tables on the server
 
@@ -290,6 +290,16 @@ commands that ran one after the other. Fix only that:
 
 Touch only `apps/server/test/tables.test.ts`. Run `npm run verify`; commit; append a *Round 2* section to the Handoff
 (what changed, the red proof, the counts) ending `DONE` or `BLOCKED: <question>`.
+
+## Round 2 lead review (2026-10-20)
+
+At `e8c1418`. Only `apps/server/test/tables.test.ts` changed (and the Handoff). The `raced` helper holds `LOCK TABLE
+dining_table IN EXCLUSIVE MODE` on the owner connection, waits until `pg_stat_activity` shows two distinct `pos_app`
+backends waiting on a lock, asserts that count is 2, commits, and ends the barrier connection in `finally`: F1's ask,
+met. The lead repeated the red proof: with `0010`'s index made non-unique, both barrier cases fail `[200, 200]` (2 failed,
+20 skipped); reverted, `git status` clean. `npm run verify`: 97 files, 3790 tests; `tables.test.ts` 22 passed. A
+test-only round of about sixty lines, so the lead reviewed it instead of a second Codex round (kit practice, DESIGN-016
+round 3). F1 closed. Complete; `touches: boundaries`, so the owner looks before merge.
 
 ## Handoff
 
