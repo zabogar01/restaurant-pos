@@ -429,8 +429,8 @@ offered, and the flag is kept for when it is restored. No migration and no new t
 **For Phase 4, in the task file verbatim:** FR-G13's check (refuse an 86 of an item that is on a pending line of a
 quick-sale order holding an active CheckoutLease, naming that order) is added inside this command **after** the
 `FOR UPDATE` it already takes, and lease acquisition on a quick-sale order takes the same row `FOR SHARE` before the
-order and the lease. The lock order is catalog, then business day, then order, then lease (ADR-012 rule 14;
-ARCHITECTURE §8). Phase 4 adds a check; it does not move the lock.
+order and the lease. The lock order is catalog, then business day, then dining table (a quick sale has none), then
+order, then lease (ADR-012 rule 14; ARCHITECTURE §8 as amended with C2's DiningTable sentence). Phase 4 adds a check; it does not move the lock.
 
 ### 3.2 Test cases (`catalog.test.ts`, extended)
 

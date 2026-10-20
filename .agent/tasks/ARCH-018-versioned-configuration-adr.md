@@ -286,4 +286,25 @@ because `catalog_revision` is a coordination row, not configuration (ADR-012 *Co
 `git diff --check` is clean. `git diff --name-only development` lists only the four owned paths and this task file. No
 code changed, so `npm run verify` was not run; the task names `git diff --check` as the check for this docs-only work.
 
+### Round 2 (2026-10-20, from the lead)
+
+The owner accepted ADR-012 on 2026-10-20 ("accept ADR-012, one counter") and asked for consult C2's lock-order
+sentence first. Done in this branch:
+
+1. **ARCHITECTURE §8.** The sentence the lead quoted ("BusinessDay precedes Order; …") no longer existed verbatim,
+   because round 1 had rewritten the paragraph with the lock modes. I reconciled the two so the section states one order
+   (catalog row, then BusinessDay, then DiningTable, then Order, then CheckoutLease and ReceiptSeries) and carries C2's
+   wording word for word from "BusinessDay precedes DiningTable" to "sees any order committed before it." Round 1's lock
+   modes, quick-sale lease acquisition and the settings sentence follow unchanged.
+2. **ADR-012.** *Consequences* lists the §8 DiningTable sentence as an amendment taken from C2 (ARCH-019, *Stale text*
+   1) and says the DiningTable lock is C2's decision. Rule 14's lock-order sentence names DiningTable too, citing C2, so
+   the ADR and §8 agree; C1's Phase 4 note for S5 says the same.
+3. **Acceptance.** ADR-012's status is Accepted, 2026-10-20, approved by the product owner, with a paragraph recording
+   that the one global catalog counter was kept over the two-counter alternative. ARCHITECTURE §18 gains the ADR-012 row.
+   Nothing else in the ADR changed. Its *Not decided here* still lists `created_by` and leaves the decision to the lead,
+   who has since kept it (task file, *Lead review*); I did not edit that line, since an accepted record should change only
+   where the owner asked.
+
+`git diff --check` is clean, and the changes are confined to the owned paths and this Handoff.
+
 DONE

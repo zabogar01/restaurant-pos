@@ -1,10 +1,16 @@
 # ADR-012: Versioned configuration — settings versions and the catalog version
 
-**Status:** Proposed
+**Status:** Accepted
 
 **Date:** 2026-10-20
 
-**Proposed by:** `architect18` (ARCH-018), for the product owner
+**Approved by:** Product owner
+
+Proposed by `architect18` (ARCH-018) and accepted by the owner on 2026-10-20
+("accept ADR-012, one counter"), with its ARCHITECTURE.md amendments and, at the
+owner's request, consult C2's DiningTable sentence in §8. The owner kept the one
+global catalog counter that rules 9 and 10 decide, over the two-counter
+alternative under *Options considered*.
 
 Nothing is superseded by this record. ARCHITECTURE §5.1 names a SettingsVersion
 and a CatalogRevision, §4.3 and §8 describe what they are for, and ADR-003 and
@@ -361,8 +367,10 @@ a refusal that only another back-office tab, or a second manager, can cause.
 #### 14. The coordination row comes first in the lock order
 
 All catalog coordination goes through the one `catalog_revision` row, which comes
-**first** in ARCHITECTURE §8's lock order: catalog, then BusinessDay, then Order,
-then CheckoutLease, then ReceiptSeries.
+**first** in ARCHITECTURE §8's lock order: catalog, then BusinessDay, then
+DiningTable, then Order, then CheckoutLease, then ReceiptSeries. (DiningTable's
+place is consult C2's, ARCH-019; a quick-sale command has no table and skips
+it.)
 
 - **Every catalog write command takes the row `FOR UPDATE` before it reads
   anything it validates**, checks the expected version if it carries one, writes,
@@ -561,6 +569,17 @@ record needs three things of whatever it decides:
     constraint list gains the single catalog coordination row, unique settings
     version numbers with rates from zero to 1,000,000 parts per million, and
     settings versions among the immutable records.
+  - **§8, taken from consult C2** (ARCH-019 report, *Stale text* 1, added at
+    the owner's request before acceptance): the order becomes catalog row, then
+    BusinessDay, then DiningTable, then Order, CheckoutLease and ReceiptSeries,
+    with C2's sentence "BusinessDay precedes DiningTable, and DiningTable
+    precedes Order; Order precedes CheckoutLease and ReceiptSeries. Opening a
+    table order, and deactivating, reactivating or renaming a table, lock the
+    DiningTable row before reading its state, so a deactivation and an order
+    opening on the same table serialise and the deactivation's open-order check
+    (FR-C8) sees any order committed before it." The DiningTable lock is C2's
+    decision, not this record's; it is listed here so that the owner's
+    acceptance covers it with the rest of §8.
   - **§13**: the codes paragraph gains `SETTINGS_CHANGED`, says what carries the
     catalog and settings versions, and says rates cross as canonical integer
     strings of parts per million.
@@ -571,8 +590,7 @@ record needs three things of whatever it decides:
     recorded as closed, in the wording ARCH-017's Handoff drafted, item 3 adjusted
     for the 2026-10-20 ruling; the section's opening sentence says that closed
     items are marked.
-  - **§18** gains the ADR-012 row when the owner accepts this record, as for
-    ADR-011.
+  - **§18** gains the ADR-012 row, accepted 2026-10-20.
 - **ADR-004 is not edited.** Its last consequence, "the product owner must still
   set maximum permitted tax and service-charge rates", is answered by the owner's
   rulings of 2026-10-06 and 2026-10-20, and §19 item 3 records the closure.

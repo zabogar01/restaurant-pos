@@ -642,9 +642,15 @@ successfully committed command after server validation. Fire, discount change,
 checkout, void, refund, receipt allocation, and business-day close never use
 blind last-write-wins.
 
-Commands acquire locks in a documented order: the catalog coordination row
-(CatalogRevision) first, for commands that write or depend on current catalog
-state; then BusinessDay; then Order; then CheckoutLease and ReceiptSeries.
+Commands acquire locks in one documented order: the catalog coordination row,
+then BusinessDay, then DiningTable, then Order, then CheckoutLease and
+ReceiptSeries. The catalog coordination row (CatalogRevision) comes first for
+commands that write or depend on current catalog state, and precedes
+BusinessDay. BusinessDay precedes DiningTable, and DiningTable precedes Order;
+Order precedes CheckoutLease and ReceiptSeries. Opening a table order, and deactivating, reactivating or
+renaming a table, lock the DiningTable row before reading its state, so a
+deactivation and an order opening on the same table serialise and the
+deactivation's open-order check (FR-C8) sees any order committed before it.
 Every catalog command takes the coordination row `FOR UPDATE` before reading
 anything it validates, so catalog writes run one at a time and need no lock on
 the affected catalog rows. Add-line, preset-discount apply, fire, acquiring a
@@ -1141,6 +1147,12 @@ ADR-011 was accepted on 2026-10-19:
 | ADR | Accepted decision |
 |---|---|
 | [ADR-011](decisions/ADR-011-browser-clients.md) | The browser clients, their sessions and what is served to them |
+
+ADR-012 was accepted on 2026-10-20:
+
+| ADR | Accepted decision |
+|---|---|
+| [ADR-012](decisions/ADR-012-versioned-configuration.md) | Versioned configuration: settings versions and the one global catalog version |
 
 ## 19. Open product dependencies
 
