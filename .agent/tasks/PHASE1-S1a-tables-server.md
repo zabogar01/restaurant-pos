@@ -255,3 +255,108 @@ Handoff below in full prose, carrying forward what the consult's *The Handoff mu
 `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
 
 ## Handoff
+
+**What I did.** Everything in the task's scope, in one commit on `agent/phase1-s1a`: `8cfff71`
+("feat(server): dining tables and the five back-office table routes"). Nothing was pushed. The migration is
+`db/migrations/0010_dining_table.sql`: `dining_table (id uuid PK default gen_random_uuid(), label text NOT NULL,
+is_active boolean NOT NULL default true, created_at timestamptz NOT NULL default now())`, one check constraint
+`dining_table_label_check` (`char_length(label) BETWEEN 1 AND 32 AND label !~ '^\s|\s$'`), the partial unique index
+`dining_table_active_label_key ON dining_table (lower(label)) WHERE is_active`, and the grants `SELECT, INSERT` plus
+`UPDATE (label, is_active)` to `pos_app`; no `DELETE`, no row inserted. The domain is
+`apps/server/src/domain/dining-table.ts`; the routes are `apps/server/src/http/routes/back-office-tables.ts`,
+registered in `apps/server/src/http/server.ts` after the back-office auth routes. The contracts are
+`packages/contracts/src/tables.ts` plus `routes.ts`, `errors.ts` and `index.ts`. The client lines are the five `SPECS`
+entries, five `ROUTES` names, the five functions in `apps/back-office/src/session/api.ts` (declared, called by no
+screen) and `DUPLICATE` in the general-failure group of both `realSession.ts` switches.
+
+**What the next agent needs (the items the task said to carry forward).**
+
+- *Names.* Routes (all `{ session: 'ACTIVE', audience: 'BACK_OFFICE' }`): `GET /api/back-office/config/tables`
+  (`interactive: false`, `ROUTES.tablesList`, answers `{ tables: TableView[] }`) and `POST .../tables/create`
+  (`{ label }`), `.../tables/update` (`{ tableId, label }`), `.../tables/deactivate` (`{ tableId }`),
+  `.../tables/reactivate` (`{ tableId }`), each `interactive: true`, each answering `{ table: TableView }`
+  (`ROUTES.tablesCreate`, `tablesUpdate`, `tablesDeactivate`, `tablesReactivate`). Contract names exported from
+  `@pos/contracts`: `TableLabel` (the one shared label schema value), `TableView`, `CreateTableRequest`,
+  `UpdateTableRequest`, `DeactivateTableRequest`, `ReactivateTableRequest`, `TableResponse` (`{ table }`),
+  `TablesResponse` (`{ tables }`). `TableView` is a strict `{ tableId: uuid, label: string, isActive: boolean }`.
+  `TableLabel` is `z.string().min(1).max(32)` refined by "equals its own trim" and "no `\p{Cc}`"; no transform, no
+  custom message. Back-office API keys are the route paths (`api['/api/back-office/config/tables/create']`).
+- *The lock.* `lockDiningTable(client, tableId)` in the domain module runs `SELECT id, label, is_active FROM
+  dining_table WHERE id = $1 FOR UPDATE` and returns the row or null (null is `NOT_FOUND`). It is exported on purpose:
+  Phase 2's open-order command takes the same lock after the BusinessDay row and before inserting the order. Phase 2's
+  refusal to deactivate a table holding an open order goes in `deactivateTable`, between the `lockDiningTable` call and
+  the `UPDATE`, after the existing "already inactive, answer and write nothing" return or before it as that task
+  decides (a table with an open order is active, so the order of those two does not matter). I left a comment there.
+- *The no-op rule.* Deactivating an inactive table, reactivating an active one, and renaming to the identical label
+  each answer the record and execute no `UPDATE`; the test proves it by `xmin`. A change of case alone (`on` to `On`)
+  is a change and is written.
+- *`DUPLICATE` is generic.* It is a bare 409 with no details in `ErrorCode`, the `ErrorBody` union and its
+  completeness check, and `error-details.types.ts` pins that a details argument does not compile. The domain returns a
+  `{ kind: 'DUPLICATE' }` outcome and the route raises the `AppError`, so a later unique name (S3, S6) reuses the code
+  and the pattern. Both clients place it in the general-failure group for now; a screen that wants it on a field
+  reads `result.body.error.code` at the call site (BO-05 is S1b).
+
+**What I decided, and the evidence.**
+
+- The domain returns outcomes and the route raises `AppError`, instead of the domain throwing `AppError`. Evidence: no
+  file under `src/domain` imports from `src/http`, and `back-office-credential.ts`/`throttle.ts` return result kinds
+  that a route maps.
+- A database error is replaced by a fixed-message `Error` without a cause (as `staff.ts` does), so the global error
+  handler logs a 500 with no PostgreSQL text. Only SQLSTATE `23505` on `dining_table_active_label_key` is
+  `DUPLICATE`; any other error, another unique violation included, is that fault. I could not provoke a second
+  unique violation (the only other unique key is the generated uuid), so the "other unique violation is a fault" half
+  has no test; the code path is the single `throw` after the `if`.
+- The label check constraint's whitespace test is the POSIX `\s` class, which is narrower than JavaScript's `trim()`
+  (a non-breaking space passes the database and is refused by the schema). That is the direction the consult wants:
+  the backstop never refuses what the schema accepts. The control-character rule has no database backstop, as the
+  consult describes.
+- `listTables` is one statement (`ORDER BY created_at, id`), so it is its own transaction; it takes no lock.
+- The log-scan case compares lower-cased text, because the index expression makes PostgreSQL's `detail` quote
+  `lower(label)`. It also captures `process.stdout` (where `logLine` writes) as well as the server's log stream, so
+  the red mutation I used (a `logLine` of the error's `detail`) is visible to it.
+- The fixtures create tables through the routes, never by insertion, and each case starts with `TRUNCATE dining_table`
+  on the owner connection so the manager's session survives between cases.
+
+**Existing tests I changed, and why.** Only the three the task named. `schema.test.ts`: the privilege map gained
+`dining_table` (`INSERT, SELECT` on the table, `UPDATE` on `label` and `is_active`), plus a new `describe('dining_table')`
+(empty after migration, exact columns, privileges and refused `DELETE`/`TRUNCATE`/`id`/`created_at` updates, the label
+check, the active-label index). `harness-race.test.ts`: `dining_table` added to `MIGRATED_TABLES`.
+`error-details.types.ts`: the `DUPLICATE` block. New files: `apps/server/test/tables.test.ts` (22 cases),
+`packages/contracts/test/routes.test.ts` (2) and `packages/contracts/test/tables.test.ts` (8).
+`route-table.test.ts` and `access.test.ts` are unedited and pass.
+
+**Red proofs (each mutation applied, the failure read, then reverted).**
+
+1. Removed `tables/update` from `ROUTE_TABLE`: `route-table.test.ts` case 8 failed ("registered but not in the table:
+   POST /api/back-office/config/tables/update"), and so did its interactive-equality test.
+2. Appended `?x` to `tables/deactivate`: the new "no path contains ?, # or :" test failed, and so did the list test.
+3. Declared `create` `{ session: 'OPTIONAL', audience: 'BACK_OFFICE' }`: the loop's no-cookie case failed (got 200, wanted
+   401); `access.test.ts` case 7 and `route-table.test.ts` "every non-ACTIVE route is interactive false" failed too, as expected.
+4. Added `DELETE` to the grant: `schema.test.ts` case 1 failed (the map showed `DELETE`), and so did my new privilege case.
+5. Indexed `label` instead of `lower(label)`: the case-variant create, rename and reactivate cases and the schema
+   case-variant case failed (`t1` was created, 200).
+6. Made the index non-unique: both concurrency cases failed (`[200, 200]` for creates and for reactivations).
+7. Logged the error's `detail` through `logLine`: the marker case failed, with `key (lower(label))=(mark-dup-label-5521)
+   already exists.` in the output.
+8. Removed `FOR UPDATE` from `lockDiningTable`: all three lock cases failed (the call returned at once). My first version
+   of that test left the other connection holding the lock when the assertion threw, which hung every later case for
+   ten seconds each; I rewrote it to commit the other connection before asserting.
+9. Made the deactivate write unconditional: the no-op case failed (`xmin` moved from 834027 to 834033).
+10. Dropped the `.refine` for "equals its trim": the label cases in the contracts tests (`" T1"`) failed.
+11. Criterion 11 (no audit entry) has no red proof, as the task says: it guards a later change. Criterion 12 is a
+    compile-time fact: `error-details.types.ts` has `@ts-expect-error` on each `DUPLICATE` details line.
+
+**`npm run verify`, real output:** typecheck clean; `Test Files 97 passed (97), Tests 3790 passed (3790)`. The
+baseline was 94 files and 3753 tests, so +3 files and +37 tests (22 in `tables.test.ts`, 8 and 2 in the two contracts
+files, 5 new `schema.test.ts` cases). `npm run typecheck` runs `tsc -p apps/pos` and `tsc -p apps/back-office` without
+`--noEmit`; `git status` showed no emitted files afterwards.
+
+**Not done, and why.** `npm run test:e2e:all` (criterion 13) was not run: the baseline names it as the lead's before-merge
+step, and this session has no browser. No browser test changed. I did not run `db:migrate` on the development database
+`pos`; the server will refuse to start there until the lead does (S0).
+
+**Found and not fixed.** (a) The comment at the top of `error-details.types.ts` still says "No current code declares
+details", which has been false since 009b; I did not touch it, it is outside this task's edit. (b) `ErrorDetailsByCode`'s
+doc comment counts the codes without details; I changed "eleven" to "twelve" for the new code.
+
+DONE
