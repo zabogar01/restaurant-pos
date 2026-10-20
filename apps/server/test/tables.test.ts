@@ -254,29 +254,59 @@ describe('the label', () => {
 // ---- 6: two writers at once ---------------------------------------------------
 
 describe('two concurrent writers', () => {
-  it('6. two creates of one label leave one row and one DUPLICATE', async () => {
-    for (const label of ['Race A', 'Race B', 'Race C', 'Race D']) {
-      const [a, b] = await Promise.all([create(label), create(label)]);
-      expect([a.statusCode, b.statusCode].sort(), label).toEqual([200, 409]);
-      expect([a, b].find((r) => r.statusCode === 409)!.body).toBe(DUPLICATE);
+  // The backends of the application pool that are waiting on a lock, counted apart.
+  async function waitingBackends(): Promise<number> {
+    const rows = await ownerQuery<{ n: number }>(
+      `SELECT count(DISTINCT pid)::int AS n FROM pg_stat_activity
+        WHERE usename = 'pos_app' AND wait_event_type = 'Lock'`
+    );
+    return rows[0]?.n ?? 0;
+  }
+
+  /**
+   * Starts two commands behind a barrier: the owner connection holds LOCK TABLE ...
+   * IN EXCLUSIVE MODE, which conflicts with the ROW EXCLUSIVE an INSERT or UPDATE
+   * takes and the ROW SHARE of SELECT ... FOR UPDATE, so both commands are in flight
+   * and blocked on their first statement. Only when two distinct pos_app backends are
+   * waiting does the barrier commit, and the commands proceed together. The barrier
+   * is released in `finally`, so a failed wait cannot leave the table locked.
+   */
+  async function raced(first: () => Promise<Res>, second: () => Promise<Res>) {
+    const barrier = await ownerClient();
+    try {
+      await barrier.query('BEGIN');
+      await barrier.query('LOCK TABLE dining_table IN EXCLUSIVE MODE');
+      const calls = [first(), second()];
+      let waiting = 0;
+      for (let i = 0; i < 200 && waiting < 2; i++) {
+        waiting = await waitingBackends();
+        if (waiting < 2) await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+      await barrier.query('COMMIT');
+      return { waiting, answers: await Promise.all(calls) };
+    } finally {
+      await barrier.end();
     }
-    const rows = await whole();
-    expect(rows).toHaveLength(4);
+  }
+
+  it('6. two creates of one label, both in flight behind a barrier, leave one row and one DUPLICATE', async () => {
+    const { waiting, answers } = await raced(() => create('Race'), () => create('Race'));
+    expect(waiting, 'both commands were waiting when the barrier was released').toBe(2);
+    expect(answers.map((r) => r.statusCode).sort()).toEqual([200, 409]);
+    expect(answers.find((r) => r.statusCode === 409)!.body).toBe(DUPLICATE);
+    expect(await whole()).toHaveLength(1);
   });
 
-  it('6. two reactivations of two inactive tables sharing a label leave one active and one DUPLICATE', async () => {
-    for (const label of ['Race A', 'Race B', 'Race C', 'Race D']) {
-      const first = await made(label, false);
-      const second = await made(label, false);
-      const [a, b] = await Promise.all([reactivate(first), reactivate(second)]);
-      expect([a.statusCode, b.statusCode].sort(), label).toEqual([200, 409]);
-      expect([a, b].find((r) => r.statusCode === 409)!.body).toBe(DUPLICATE);
-      const active = await ownerQuery(
-        'SELECT 1 FROM dining_table WHERE lower(label) = lower($1) AND is_active',
-        [label]
-      );
-      expect(active, label).toHaveLength(1);
-    }
+  it('6. two reactivations of two inactive tables sharing a label, behind a barrier, leave one active and one DUPLICATE', async () => {
+    const first = await made('Race', false);
+    const second = await made('Race', false);
+    const { waiting, answers } = await raced(() => reactivate(first), () => reactivate(second));
+    expect(waiting, 'both commands were waiting when the barrier was released').toBe(2);
+    expect(answers.map((r) => r.statusCode).sort()).toEqual([200, 409]);
+    expect(answers.find((r) => r.statusCode === 409)!.body).toBe(DUPLICATE);
+    const active = await ownerQuery('SELECT 1 FROM dining_table WHERE lower(label) = lower($1) AND is_active', ['Race']);
+    expect(active).toHaveLength(1);
+    expect(await whole()).toHaveLength(2);
   });
 });
 

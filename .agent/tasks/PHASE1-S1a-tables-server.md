@@ -397,3 +397,26 @@ details", which has been false since 009b; I did not touch it, it is outside thi
 doc comment counts the codes without details; I changed "eleven" to "twelve" for the new code.
 
 DONE
+
+### Round 2 — F1, the barrier
+
+**What changed.** Only `apps/server/test/tables.test.ts`, the `two concurrent writers` block. A helper `raced(first, second)`
+has the owner connection open a transaction and `LOCK TABLE dining_table IN EXCLUSIVE MODE`, which conflicts with the
+`ROW EXCLUSIVE` an `INSERT` or `UPDATE` takes and the `ROW SHARE` of `SELECT … FOR UPDATE`, so the create's `INSERT` and
+the reactivation's locking read both block on their first statement. It then starts both requests and polls
+`pg_stat_activity` (`usename = 'pos_app'`, `wait_event_type = 'Lock'`, `count(DISTINCT pid)`, up to 200 tries 25 ms apart)
+until two distinct backends are waiting, and only then commits the barrier. The barrier connection is ended in `finally`,
+which rolls it back if an assertion or the wait throws, so a failure cannot hang later cases. The case asserts the
+observed waiting count is exactly 2 before the old assertions (one 200, one bare `DUPLICATE`, one row for creates; one
+active row and two rows for reactivations). I dropped the four-label loop: with the overlap proved, one run per case is
+enough. One limit I note: the barrier proves both commands were in flight and started together, but not that one's
+`INSERT`/`UPDATE` ran before the other's commit; the unique index is what decides that either way.
+
+**Red proof under the barrier.** Changed `CREATE UNIQUE INDEX` to `CREATE INDEX` in `0010_dining_table.sql`: both cases
+failed with `expected [ 200, 200 ] to deeply equal [ 200, 409 ]`. The observed waiting-backend count was 2 in both runs
+(the `waiting` assertion passed ahead of the failing one). Reverted; the migration is unchanged from `8cfff71`.
+
+**Counts.** `npm run verify`: typecheck clean; `Test Files 97 passed (97), Tests 3790 passed (3790)` (unchanged: the two
+cases were rewritten, not added). `git status` showed only `tables.test.ts` modified before the commit.
+
+DONE
