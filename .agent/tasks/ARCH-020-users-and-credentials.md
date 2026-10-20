@@ -140,3 +140,91 @@ question>`. Then run exactly one of:
     herdr agent prompt lead "architect20: BLOCKED — <question>"
 
 ## Handoff
+
+**architect20, 2026-10-20.** The report is `.agent/reviews/ARCH-020-users-and-credentials.md`. It
+answers the ten items in order (sections 1 to 10), each with the decided basis, the recommendation,
+the alternatives and why they lost, then *For the owner*, *Stale text found* and *For the lead*
+(S8a, S8b and S8c, each with touches, depends, owns, scope, acceptance criteria with red proofs,
+tests expected to change and what its Handoff must carry). Nothing else was edited.
+
+**What I decided, and why, in brief.**
+
+- *Kitchen* is a `staff_user` row with `role`, `pin_hash` and `pin_lookup` all null, held by one
+  check constraint (all three or none), so "a role and no PIN" is impossible in the database; the
+  existing role and hash checks pass a null and stay; the `0006` partial index needs nothing.
+  `pos_app`'s table-wide `UPDATE` becomes a column grant on `role, pin_hash, pin_lookup, is_active,
+  credential_version` (revoke first: the librarian confirmed a table revoke removes column grants).
+  The name gains C1's printed-text check. The session predicate gains `u.role IS NOT NULL` as
+  defence in depth.
+- *Role change* is one command whose body is a union keyed by the move (`KITCHEN_TO_CASHIER` and
+  five more), so each move's required credentials are a schema property; the move's origin is a
+  precondition under the lock, refused by a new `USER_CHANGED` (409). Every move increments the
+  version (Q1c). Promotion always sets a new password (a former manager's old one would otherwise
+  verify again) and a username only for someone who never had one.
+- *Increments:* deactivation, every role change, every stored or removed PIN or password; not
+  creation or reactivation alone. The deactivation increment is what keeps old sessions dead after
+  a reactivation, and S8a's red proof shows it.
+- *Own password and own PIN:* the existing `verifyPasswordThrottled({ staffUserId })`, unchanged,
+  for the session's own user, in its own transaction; then the new secret hashed outside any lock;
+  then one transaction that re-checks the version, writes, increments, re-stamps the acting session
+  (exactly one row or everything rolls back) and audits. Wrong current password is
+  `INVALID_CREDENTIALS`, cooldown `THROTTLED`, failure a security event as at M-6; no cookie, token
+  or `csrfToken` changes. It is not a sign-in.
+- *Q8:* `OWN_ACCOUNT` (409, not `FORBIDDEN`, which would destroy the working area), checked before
+  the transaction because it compares two ids. It also refuses the other-user PIN and password
+  resets aimed at oneself, so the current-password rule cannot be bypassed. Beyond the plan's rule,
+  every users command locks and re-reads the **acting** manager's row too (`FOR NO KEY UPDATE`, id
+  order): without it two managers demoting each other at once both succeed and leave none, which is
+  the case the owner's reason for Q8 excludes.
+- *Reactivation* takes an optional PIN; a taken PIN is `DUPLICATE` with new optional typed details
+  `{ field: 'pin' | 'username' }` (tables keep sending none, so S1a's exact-body assertion holds).
+- *Audit:* one entry per successful command, in its transaction, through `writeAudit`, actor the
+  manager, subject `staff_user`/id, a closed list of dotted action names encoding the move; nothing
+  for a no-op, a refusal or a wrong current password; a marker scan over whole rows proves no PIN,
+  password, username, lookup or hash.
+- *Fields:* only `pin`, `password`, `username`, `currentPassword`, top-level; the backstop gains
+  `username` and `currentPassword`, and a contracts test fails on a credential-looking key the
+  backstop does not list. Set-schemas hold the full username and password rules (the form must place
+  the error); the current password keeps the loose verification schema so it is counted.
+- *No standalone "set username and password" route:* a manager is only ever made at create or
+  promotion, both of which set them.
+
+**The ADR-009 §5 question.** Q1(b) makes a user-management command write a session row in two
+places, and Q1(c) falsifies ADR-009's *Consequences* bullet on role changes. My judgement: both are
+answers to ADR-009's own *Not decided here* items, not changes to its decision (the ADR calls the
+PIN case's status quo provisional, the mechanism of one version and a same-transaction re-stamp of
+the acting session is unchanged, and "single place" described the one command that then existed).
+I recommend recording the current rule in ARCHITECTURE §7.2 (exact wording in *Stale text* 1), not a
+superseding ADR. If the lead judges otherwise, section 3 gives the exact decision text of a
+one-point ADR-013, which I propose and do not assume.
+
+**Questions for the owner, each with a proposed answer.**
+
+- **OQ1** (blocks only S8a's two create actions): is creating a cashier or manager audited?
+  Proposed yes (`user.create.cashier`, `user.create.manager`; none for kitchen; the script still
+  none), for Q11's own reason that the manager who sets a PIN knows it.
+- **OQ2** (blocks nothing): may a display name be corrected? Proposed no in Phase 1 (FR-B3 omits
+  it; a rename rewrites how past entries read). The column grant leaves `name` out accordingly.
+
+**Stale text found, with exact replacement wording in the report.** ARCHITECTURE §7.2 (the
+increments and the own-PIN re-stamp), §3.2 and §16 (the PIN-in-use oracle, as the plan asked), §8
+(the users lock order), §11 (the audited actions, also missing the I-8 reprint); SCREEN-INVENTORY and
+SITEMAP BO-06 (the designer's, through E2); the plan's S8 goal and AC-32 DoD line (own PIN); ADR-011's
+reading on a demoted manager at M-6 and ADR-009's role-change consequence (recorded, not edited).
+Offered, not required: one AC-18 sentence so the criterion lists what FR-J3 now audits. No contract
+document contradicts the consult.
+
+**What the lead needs for S8a to S8c and E2.** *For the lead* is written to be copied. S8a carries
+credentials in its bodies already (create, promotion, reactivation), so it is `identity` and owns
+its own log-scan cases; the plan's split otherwise holds, and an optional S8a1/S8a2 line is given.
+E2's brief is section 10 plus *Stale text* 5: kitchen without a PIN, create by classification, role
+change as a move, the warning before every session-ending command (no confirmation required by the
+ARCH-002 test), the own-password and own-PIN forms with the current password, uncontrolled
+credential inputs with `autocomplete` hints, every refusal's state, and the own-password unknown
+outcome, whose reread cannot tell whether the change applied.
+
+**Not done.** No code or test was run, and no browser was opened. Four PostgreSQL facts came from
+the librarian through a summarising fetch; the task file should have the builder confirm the
+column-grant syntax and `[[:cntrl:]]`'s coverage of C1 controls against the manual, as C1 asked.
+
+DONE
