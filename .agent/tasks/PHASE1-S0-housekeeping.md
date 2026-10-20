@@ -5,7 +5,7 @@ category: feature
 touches: []
 depends_on: []
 owns: [docker-compose.yml, db/migrations/0009_*.sql, apps/server/src/index.ts, apps/server/src/db/**, apps/server/test/schema.test.ts, apps/server/test/schema-check.test.ts]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE1-S0 — Housekeeping before Phase 1's migrations
@@ -151,6 +151,14 @@ so the harness server starts through the check on a fully migrated database. Han
 the development database `pos` (0001-0008, no `0009`) exits 1 with the StartupError "the database is missing migrations
 that are in db/migrations; run npm run db:migrate" (the 42501 path). `db:migrate` on `pos` and the start after it wait
 for the merge. Sent to review: a migration and about 350 changed lines.
+
+## Review and lead ruling (2026-10-20)
+
+Codex `gpt-6-astra` reviewed `68a6909` (`.agent/reviews/PHASE1-S0-review.md`): no code findings; every ruling and
+acceptance criterion cleared by inspection. Its verdict is `blocked` only because its sandbox refuses TCP to
+`127.0.0.1:5433` (`EPERM`), so its `verify` produced no test results; a known limit of the reviewer environment, not of
+the work. **Lead ruling:** the review stands as clear; the runtime evidence is the lead's verify note above (94 files,
+3753 tests; `test:e2e:all` 58; the refusal hand check), run on this same tree. No fix round. Complete.
 
 ## Handoff
 
