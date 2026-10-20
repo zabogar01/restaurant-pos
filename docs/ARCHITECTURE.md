@@ -241,10 +241,17 @@ also revalidates availability when adding and firing, so polling is never the
 integrity control. An item that becomes unavailable while its selection panel
 is open remains visible, preserves selections, disables Add, and explains why.
 
-Other catalog mutations also advance the catalog version. A command built on
-stale names, prices, variants, modifiers, or presets fails with
-`CATALOG_CHANGED`; the client refreshes rather than silently adding a line at a
-price different from the one displayed.
+The revision the POS polls and the catalog version a command carries are one
+number, held on one coordination row (section 8). Every committed catalog
+change advances it: menu, option, price, availability, archive, restore and
+preset changes alike. A read that returns catalog contents reports the version
+from the same database snapshot as the contents. A POS command built on stale
+names, prices, variants, modifiers, or presets fails with `CATALOG_CHANGED`;
+the client refreshes rather than silently adding a line at a price different
+from the one displayed. A back-office catalog edit carries the version its form
+was read at and fails the same way, so a stale form never restores an old
+price; an 86, an archive or a restore states its target and carries none
+(ADR-012).
 
 The two clients share one transport core, an authentication primitive with no
 user interface (section 2.1). Each client constructs one instance, addresses
@@ -291,13 +298,13 @@ remain enums and do not acquire redundant boolean flags.
 | ActorSession | Opaque session, actor, audience (`POS` or `BACK_OFFICE`), issue time, last interactive activity, absolute expiry, release, and credential version |
 | PinThrottleBucket | One durable installation-wide counter and cooldown for each of `LOGIN` and `MANAGER_APPROVAL` |
 | SecurityEvent | Operational evidence for unauthenticated failures and cooldowns, containing no PIN, no password, no username and no claimed audit actor |
-| SettingsVersion | Immutable currency, precision, tax rate, service-charge rate, receipt business details, and calculation-policy version |
+| SettingsVersion | Immutable, server-numbered version of the tax rate, service-charge rate, receipt business details (outlet name, address, phone, optional NPWPD, footer line), and calculation-policy version; the highest number is current. Currency and precision are installation constants, not stored (ADR-012) |
 | DiningTable | Physical table label, optional area, and active state |
-| CatalogRevision | Monotonic version of menu, option, price, availability, and preset configuration |
+| CatalogRevision | The one catalog coordination row, holding the monotonic catalog version that every menu, option, price, availability, archive, restore, and preset change advances (ADR-012) |
 | MenuCategory | Current category name, display order, and active state |
 | MenuItem | Current category, tax-inclusive base price, availability, and active state |
-| Variant | Current option name, signed price delta, display order, and active state |
-| Modifier | Current modifier name, non-negative price delta, applicability, and active state |
+| Variant | The one item it belongs to, current option name, signed price delta, display order, and active state |
+| Modifier | The one item it belongs to, current modifier name, non-negative price delta, display order, and active state |
 | DiscountPreset | Current name, percentage-or-fixed kind, value, and active state |
 | TenderType | Cash, card, or configured custom method, display name, and active state |
 | BusinessDay | Open/close timestamps, state, closing actor, and report reference |
@@ -336,12 +343,14 @@ snapshots:
 - A discount captures its displayed name, kind, and value.
 - A Tender captures its displayed tender-type name.
 - A Receipt captures every displayed figure and business field required for an
-  identical reprint.
+  identical reprint, copying the business fields from the SettingsVersion its
+  order captured (ADR-012).
 - A BusinessDayReport is stored at close and never recomputed from current
   configuration.
 
-Currency and precision become immutable after the first order. The settled
-installation is IDR with precision zero. Menu availability remains a current
+Currency and precision are fixed for the installation at IDR and precision
+zero; they are not configuration and are not stored in a SettingsVersion
+(FR-B1, FR-M1, ADR-012). Menu availability remains a current
 operational rule: add and fire commands recheck it even though a pending line
 already holds historical price snapshots.
 
@@ -633,12 +642,19 @@ successfully committed command after server validation. Fire, discount change,
 checkout, void, refund, receipt allocation, and business-day close never use
 blind last-write-wins.
 
-Commands acquire locks in a documented order. CatalogRevision and affected
-catalog rows precede BusinessDay for commands that depend on current catalog
-state; BusinessDay precedes Order; Order precedes CheckoutLease and
-ReceiptSeries. Catalog commands and add/fire/quick-sale-close commands use the
-same catalog coordination row, so an 86 or price change cannot commit between
-version validation and the dependent order mutation. Order creation and
+Commands acquire locks in a documented order: the catalog coordination row
+(CatalogRevision) first, for commands that write or depend on current catalog
+state; then BusinessDay; then Order; then CheckoutLease and ReceiptSeries.
+Every catalog command takes the coordination row `FOR UPDATE` before reading
+anything it validates, so catalog writes run one at a time and need no lock on
+the affected catalog rows. Add-line, preset-discount apply, fire, acquiring a
+CheckoutLease on a quick-sale order, and quick-sale close take the same row
+`FOR SHARE`, never `FOR KEY SHARE`, so an 86 or price change cannot commit
+between their catalog validation and the dependent order mutation. Because
+quick-sale lease acquisition shares that row, an 86 either sees a committed
+lease and is refused, or commits first and the acquisition is refused before
+payment begins (ADR-012). A SettingsVersion needs no lock: its unique,
+server-assigned number refuses a concurrent duplicate. Order creation and
 end-of-day close use the same BusinessDay coordination row. Settlement, void,
 and refund also lock the day before changing reportable facts, preventing a
 closed report from racing a late mutation.
@@ -662,6 +678,9 @@ unique active-lease constraint and retry-safe token/generation protocol.
 Database constraints should enforce at least:
 
 - exactly one open BusinessDay;
+- exactly one catalog coordination row;
+- unique SettingsVersion numbers, rates from zero to 1,000,000 parts per
+  million;
 - at most one `OPEN` order per DiningTable;
 - table orders have a DiningTable and quick sales do not;
 - at most one OrderDiscount per Order;
@@ -672,9 +691,9 @@ Database constraints should enforce at least:
 - one active CheckoutLease per Order;
 - unique receipt numbers;
 - at most one Refund per Order and exact RefundTender allocation totals;
-- immutable receipt, report, audit, ticket, cancellation, tender, and refund
-  records through privileges and the absence of update/delete application
-  paths.
+- immutable settings-version, receipt, report, audit, ticket, cancellation,
+  tender, and refund records through privileges and the absence of
+  update/delete application paths.
 
 ## 9. Receipt numbering
 
@@ -839,12 +858,16 @@ each registration with its own audience; no route accepts either session. The
 route table, with each route's method, path and interactive flag, lives in the
 shared contracts and is held equal to the registered routes (ADR-011).
 
-Mutation requests carry expected aggregate/catalog versions where applicable.
+Mutation requests carry expected aggregate, catalog, or settings versions where
+applicable: a POS command built on catalog contents and a back-office catalog
+edit carry the catalog version, and a settings change carries the number of the
+settings version it was built on (ADR-012).
 The seven irreversible or duplicate-sensitive commands carry idempotency keys.
-Money fields are canonical integer strings. Responses return authoritative
-state plus structured error or warning codes such as `VERSION_CONFLICT`,
-`CATALOG_CHANGED`, `ITEM_UNAVAILABLE`, `LEASE_HELD`, `LEASE_DISPLACED`,
-`PENDING_LINES`, `SETTLEMENT_MISMATCH`, and print-delivery warnings.
+Money fields are canonical integer strings, and so are rates, in parts per
+million. Responses return authoritative state plus structured error or warning
+codes such as `VERSION_CONFLICT`, `CATALOG_CHANGED`, `SETTINGS_CHANGED`,
+`ITEM_UNAVAILABLE`, `LEASE_HELD`, `LEASE_DISPLACED`, `PENDING_LINES`,
+`SETTLEMENT_MISMATCH`, and print-delivery warnings.
 
 Every API response that is not 2xx has the body
 `{ "error": { "code", "details"? } }`, with `details` typed per code in the
@@ -1024,7 +1047,6 @@ That is an architectural change, not a caching enhancement.
 | Two frontend bundles drift or duplicate domain behavior | Inconsistent rules and higher maintenance | Share schemas and domain services, never committed calculation or authorization logic in either client | Accepted architecture |
 | Local development certificates add setup friction | HTTPS may initially show trust errors | Script local certificate creation; nothing installs trust, and the warning is clicked through once per browser profile; do not substitute loopback HTTP | Accepted architecture |
 | Receipt law is unresolved | Final fields, numbering, refund documents, and markings may be wrong | Keep Receipt immutable and numbering isolated; settle jurisdiction before Phase 4 completion | Open product decision |
-| Permitted rate range is unresolved | Settings validation cannot be finalized | Approve maximum tax and service-charge rates before Phase 2 | Open product decision |
 | Post-close corrections are unresolved | Legitimate corrections after day close lack a supported path | Preserve closed-day immutability and define a next-day adjustment process before Phase 5 completion | Open product decision |
 
 ## 17. Rejected alternatives
@@ -1122,28 +1144,27 @@ ADR-011 was accepted on 2026-10-19:
 
 ## 19. Open product dependencies
 
-Architecture approval does not close these product decisions:
+Architecture approval did not close these product decisions. Those the owner
+has since ruled on are marked closed, with where the ruling is recorded:
 
-1. **Restaurant time zone — product decision required before timestamp
-   rendering and business-day acceptance are final.** The database stores UTC
-   instants, but the PRD does not name the restaurant time zone used to display
-   receipt timestamps or interpret business-day boundaries.
+1. **Restaurant time zone — closed.** WIB (Asia/Jakarta, UTC+7), shown as
+   24-hour `HH:MM`; a business day runs from one end-of-day close to the next
+   and is named by the WIB date on which it opened (PRD §9; owner, 2026-09-24
+   and 2026-10-06).
 2. **Receipt content and fiscal requirements — product decision required
    before Phase 4 completion.** Confirm the jurisdiction, business fields,
    number format and reset policy, mandatory tax wording, refund document,
    retention, logo/footer, reprint marking, and any fiscal-device requirement.
-3. **Maximum tax and service-charge rates — product decision required before
-   Phase 2.** Rate precision is one part per million, but the permitted range
-   still needs a business limit.
+3. **Maximum tax and service-charge rates — closed.** A rate is a whole number
+   of parts per million from zero to 100 percent, with no narrower range (PRD
+   FR-M5 and §9; owner, 2026-10-06 and 2026-10-20). ADR-012 enforces the bound.
 4. **Post-close corrections — product decision required before Phase 5
    completion.** Define the legitimate correction workflow after BusinessDay
    close. It must use a new adjustment in a later open day and must never mutate
    the closed report or its original orders.
-5. **Back-office kitchen-ticket reprint audit treatment — product decision
-   required before Phase 3 completion.** FR-E3 grants the reprint action, while
-   FR-J3 does not include it in the audited-action list. The immutable-document
-   and PrintAttempt design supports either ruling; architecture approval does
-   not silently make the action audited or unaudited.
+5. **Back-office kitchen-ticket reprint audit treatment — closed.** Audited,
+   naming the actor, the order and the round (ruling I-8, FR-J3); a reprinted
+   cancellation ticket counts as a kitchen ticket (owner, 2026-10-06).
 
 ## 20. Deferred beyond MVP
 

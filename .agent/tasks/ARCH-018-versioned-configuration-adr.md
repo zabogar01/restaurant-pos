@@ -131,3 +131,143 @@ any) with proposed answers, and anything stale you found with exact replacement 
     herdr agent prompt lead "architect18: BLOCKED — <question>"
 
 ## Handoff
+
+**Written** 2026-10-20 by `architect18`. **Files written:** `docs/decisions/ADR-012-versioned-configuration.md`
+(`Status: Proposed`); `docs/ARCHITECTURE.md` (the amendments below); `.agent/reviews/ARCH-018-c1-configuration-schema.md`
+(consult C1, headed not binding); the plan's status banner. Nothing else, apart from this Handoff.
+
+### What I read
+
+This task file; the plan in full; ARCH-017's Handoff; `docs/ARCHITECTURE.md` in full; ADR-002, ADR-003 and ADR-004 in
+full; ADR-010's rule 1, *Consequences* and *Not decided here*; ADR-011's opening, *Consequences* and *Not decided here*,
+and its headings; ADR-009's headings. `.agent/DECISIONS.md` from 2026-10-05 to the end. PRD §3 B and C, §4, §7, §9;
+ROADMAP Phases 1 and 2 (as applied on 2026-10-20); BOUNDARIES in full. ARCH-006 §3 (later tables), §5, §7, the schema
+test list and its rules. `db/migrations/0001`, `0002`, `0004`, `0007`; `schema.test.ts` (the privilege map and case
+list), `harness-race.test.ts`, the throttle concurrency tests; `packages/money/src/index.ts`; `packages/contracts/src/
+errors.ts`; both clients' `realSession.ts` code maps by search. RESEARCH-receipt's *Proposal*; DESIGN-011's BO-03,
+BO-04, BO-07, BO-08 and its questions table; SCREEN-INVENTORY BO-03, BO-04, BO-07, BO-08. The librarian answered five
+PostgreSQL 16 questions (the privilege `FOR UPDATE` and `FOR SHARE` need; the row-lock conflict table; a concurrent
+duplicate key waiting then failing 23505, confirmed from source; `REPEATABLE READ` taking one snapshot; and whether a
+schema drop fires a `TRUNCATE` trigger, which the docs do not say and the existing `audit_entry` trigger shows it does
+not). I did not print `db/dev.env`.
+
+### What I decided, and why
+
+**Settings (ADR-012 Part 1).** One append-only table; every change, rate or business detail, writes a whole new
+version, with `SELECT` and `INSERT` only and a trigger against `UPDATE`, `DELETE` and `TRUNCATE`. The current version is
+the one with the highest number; the number is the primary key, assigned by the server as current plus one, which is what
+refuses a concurrent duplicate and answers ARCH-006 §5's ordering problem without a timestamp, a flag or a pointer row.
+The settings command carries the version it was built on and is refused with a new code, `SETTINGS_CHANGED` (409, no
+details), when stale; the code enters the contracts in S2a. An identical submission writes nothing. A receipt's
+business fields come from the settings version its order captured, which is why every change makes a version.
+**Currency and precision are installation constants, not stored** (Q5): a column that can hold one value records
+nothing, and the "immutable after the first order" mechanism goes away. The calculation-policy version is stored, pinned
+to 1 by a database check, written by the server only; a policy 2 then needs a migration, which is where its effect on
+open orders must be decided. Rates are ppm in `bigint`, checked 0 to 1,000,000 (Q2), and cross the wire as canonical
+integer strings, never JSON numbers. The five business details per Q12; no text that reaches paper may hold a control
+character, because ESC/POS reads them as printer commands (a finding, applied to every catalog name too).
+
+**Catalog (ADR-012 Part 2).** **One global version** on **one seeded coordination row** (`catalog_revision`, version
+0), which is both the number the POS polls and commands carry and the §8 lock point. Every committed catalog write
+advances it by one, **availability, archive and restore included** (Q10; ROADMAP Phase 1 as applied says availability
+advances "the catalog version that later POS commands carry"). A read that reports the version reads it in the same
+snapshot as the contents; otherwise a POS could pair old prices with a current version, which is exactly what FR-C7
+forbids. A Phase 2 POS command built on catalog contents (add-line, preset apply) carries that one integer; fire and
+quick-sale close carry none and recheck availability. **Back-office catalog edits are version-checked with
+`CATALOG_CHANGED`**; state commands (86, archive, restore, deactivate, reactivate) and creates are not, so an urgent 86 is
+never refused for an unrelated edit. `CATALOG_CHANGED` therefore enters the contracts in **S4b**, its first emitter,
+before Phase 2's add-line reuses it. Lock order: the catalog row first, `FOR UPDATE` by every catalog command, `FOR
+SHARE` (never `FOR KEY SHARE`) by add-line, preset apply, fire, quick-sale lease acquisition and quick-sale close; then
+business day, order, lease, receipt series. 86-versus-lease is sound because quick-sale lease acquisition takes the
+shared lock, so Phase 4 adds a check to S5's command without reordering it.
+
+The one choice I weighed hardest was one counter against two (a content version for commands and a revision for the
+poll). Two would spare a cashier the up-to-two-second window in which an unrelated 86 refuses an add; I chose one because
+the contract as applied on 2026-10-20 makes availability part of the version commands carry, and the refusal costs a
+refresh and a tap. The ADR records the alternative, and if the owner prefers it the change is a ROADMAP wording change.
+
+### The ARCHITECTURE amendments (to be accepted with the ADR)
+
+§4.3 (one number, availability included, snapshot reads, back-office edits carry it); §5.1 (SettingsVersion, CatalogRevision,
+Variant and Modifier rows); §5.2 (the Receipt's business fields from the order's version; currency and precision fixed and
+not stored); §8 (lock modes and the commands that take them, quick-sale lease acquisition, settings needing no lock; the
+constraint list); §13 (what carries which version, rates as ppm strings, `SETTINGS_CHANGED`); §16 (the rate-range row
+deleted); §19 items 1, 3 (with the 0–100 percent bound) and 5 closed in ARCH-017's wording adjusted for Q2, and the
+section's opening sentence. §18's row is added on acceptance, as for ADR-011. ADR-004 is not edited; §19 records the
+closure of its last consequence. All are listed in the ADR's *Consequences*.
+
+### What C1 gives each slice
+
+- **S2a:** the `settings_version` table (sketch), its column-level `INSERT` and `SELECT` grants and the trigger, the
+  domain (`readCurrentSettings`, `saveSettings` with the stale and concurrent refusals and the unchanged case), the rate
+  codec `packages/money` lacks, 22 test cases with red proofs, and a reconciliation table against ARCH-006 §5.
+- **S4a:** `catalog_revision` (seeded, singleton, `UPDATE (version)` only, an optional monotonic trigger), the four
+  catalog tables with checks and column-level `UPDATE` grants, one `catalogWrite` helper so no command can forget the
+  lock, check or advance, the command table with which carry a version, and 19 test cases, including the lock-read test
+  in the pattern of `throttle.test.ts` case 13 and a snapshot-read test.
+- **S5:** the two explicit commands, the Phase 4 lock note to carry verbatim, and six cases, including that an 86 waits
+  for a `FOR SHARE` holder and that an edit built before an 86 is refused.
+- **S6a:** `discount_preset` with a kind–value check, its grants, the four commands and seven cases.
+- Each slice names the tests expected to change (the privilege map, `MIGRATED_TABLES`, the route-table and access tests,
+  both clients' code maps when a code is added).
+
+### For the lead to decide (not the owner's, unless the lead judges otherwise)
+
+1. **Is the footer line required?** The Q12 ruling marks only the NPWPD as optional, so ADR-012 rule 8 and C1 make the
+   other four required. *Proposed:* keep that reading. If the footer should be optional, it is a one-column change in
+   S2a and a sentence in rule 8 before acceptance.
+2. **`created_by` on a settings version** (C1 §1.6). *Proposed:* keep it: it answers "who set this rate?" and is not an
+   audit entry. If the lead reads Q11 as excluding it, S2a drops one column.
+
+### Stale text found elsewhere, with exact replacement wording
+
+**PRD (the owner's, through the lead). Optional, recommended for consistency, not needed to build.**
+
+- **FR-C7**: `Menu, variant, modifier, price, and preset changes advance a catalog version.` → *"Menu, variant, modifier,
+  price, availability, and preset changes advance a catalog version."* ROADMAP Phase 1 already says availability
+  advances it; FR-C7's list is the one place that omits it, and ADR-012 reads the contract whole.
+- **FR-B1**: `Settings hold currency, minor-unit precision, tax rate, service charge rate, and the business details
+  printed on receipts.` → *"Settings show the installation's currency and minor-unit precision and hold the tax rate,
+  service charge rate, and the business details printed on receipts."* ADR-012 rule 5 reads "hold" as what the back
+  office shows, which the next sentence of FR-B1 supports; the replacement says it plainly. Not needed if the owner is
+  content with that reading.
+
+**SCREEN-INVENTORY (the designer's).** ARCH-017's drafted replacement for BO-08's last bullet ("no permitted range") is
+itself stale since the 2026-10-20 ruling.
+
+- BO-08, **Purpose**: `Currency, minor-unit precision, tax rate, service-charge rate, and the business details printed
+  on receipts.` → *"Tax rate, service-charge rate, and the business details printed on receipts, with the installation's
+  fixed currency and minor-unit precision (IDR, 0) shown."*
+- BO-08, **States**: `*currency and precision locked — an order already exists* (FR-B1, M1)` → *"*currency and precision
+  shown, fixed — never editable* (FR-B1, M1)"*; and add *"· *settings changed elsewhere — this draft was built on an
+  earlier version; nothing was saved* (ADR-012)"*.
+- BO-08, **Must not invent**, first bullet: replace with *"Currency and minor-unit precision are fixed at IDR and 0 and
+  are never editable (FR-B1, M1). The fixed state is the only state."*; last bullet: replace with *"Rate precision is one
+  part per million, and each rate is from 0 to 100 percent (FR-M5; owner, 2026-10-20). A percent is typed with at most
+  four decimal places and converted exactly."*
+- BO-04, **States**: `*price immutable-currency context* (currency and precision are locked after the first order,
+  FR-B1, M1)` → *"*price currency context* (prices are whole rupiah; the currency is fixed, FR-B1, M1)"*; and add *"·
+  *menu changed elsewhere — this draft was built on an earlier catalog version; nothing was saved* (FR-C7, ADR-012)"*.
+- BO-07, **States**: add *"· *presets changed elsewhere — nothing was saved* (FR-C7, ADR-012)"*.
+
+**The plan.** Its S2 "Q2 is already answered by the owner: no permitted range", its Q2 text and its C1 row's "no business
+ceiling" are stale; the new banner says ADR-012 and DECISIONS supersede them, as the task asked, and nothing else in the
+plan was changed. The Definition of Done's B-24 line ("every new configuration table is empty after migration") holds,
+because `catalog_revision` is a coordination row, not configuration (ADR-012 *Consequences*; C1 C-2, C-9).
+
+### What the next tasks need that they do not have
+
+- **C2** must make each configuration command answer the version it produced and each form read report the version it
+  was read at (ADR-012 rule 15). Its name-uniqueness rule is applied to categories, items, options within an item, and
+  presets by C1.
+- **Design F and D** settle the length guards in C1 and draw the stale-draft states above; D draws items in an archived
+  category as hidden from the POS.
+- **Phase 2's plan** carries three entry conditions from ADR-012: the owner's Pasal 8 ruling before the settings capture
+  (Q3), the open-order refusal when no settings version exists, and the FR-M3/B-2 wording before totals (Q6(b)).
+
+### Checks
+
+`git diff --check` is clean. `git diff --name-only development` lists only the four owned paths and this task file. No
+code changed, so `npm run verify` was not run; the task names `git diff --check` as the check for this docs-only work.
+
+DONE
