@@ -1,0 +1,145 @@
+---
+id: PHASE1-S0
+title: One development database from any checkout, and a server that refuses a schema out of step with db/migrations
+category: feature
+touches: []
+depends_on: []
+owns: [docker-compose.yml, db/migrations/0009_*.sql, apps/server/src/index.ts, apps/server/src/db/**, apps/server/test/schema.test.ts, apps/server/test/schema-check.test.ts]
+status: not-started
+cycles: 0
+---
+# PHASE1-S0 — Housekeeping before Phase 1's migrations
+
+**Written** 2026-10-20 by the lead, from slice S0 of the accepted Phase 1 plan
+(`docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`, *S0*, accepted by the owner 2026-10-20) and the
+architect's Handoff in `.agent/tasks/ARCH-017-phase-1-plan.md` (*What the lead needs to write the first task file*). The
+plan says no consult is needed; the decisions it leaves open are the lead rulings below.
+
+## Objective
+
+Two things become true. First, `docker compose` names its project explicitly, so a clone or worktree in a directory of
+any name reaches the one development database container and volume instead of creating its own. Second, the server
+refuses to start, before it opens any socket, when the set of migrations recorded in the database differs from the set
+of `.sql` files in `db/migrations`, with a fixed sentence that tells the operator what to do. Phase 1 adds about eight
+migrations across parallel worktrees; without the check a stale schema shows up only as `INTERNAL` on first use
+(ARCH-010, Task 8 consult).
+
+## Required inputs
+
+- **The compose file** (`docker-compose.yml`) has no top-level `name:`, so Compose derives the project from the directory
+  name. The owner's running container is `restaurant-pos-db-1`, project label `restaurant-pos`, and its volume is
+  `restaurant-pos_pgdata` (the lead checked with `docker ps` and `docker volume ls`, 2026-10-20). A checkout in
+  `../restaurant-pos-wt/<ID>` or a fresh clone under another name would otherwise create a second container fighting
+  for port 5433.
+- **The migration runner** (`apps/server/src/db/migrate.ts`). It is the only module that holds the owner connection
+  (`MIGRATION_DATABASE_URL`). It creates `schema_migration (filename text PRIMARY KEY, applied_at timestamptz)` if
+  absent, lists `readdir(dir).filter(f => f.endsWith('.sql')).sort()`, and applies each file not yet recorded, one
+  transaction per file. Its default directory is anchored to the source file
+  (`new URL('../../../../db/migrations', import.meta.url)`), not to the working directory. It stores no checksum.
+- **The startup sequence** (`apps/server/src/index.ts`, `main()`): 1 configuration, 2 the pepper, 3 the certificate
+  (`loadTls`), 4 the database (`SELECT 1` as `pos_app`, refusing with a `StartupError`), 5 `buildServer` then
+  `listenLoopback`. In-process server tests call `buildServer` directly and never run `main()`.
+- **The privilege, and why S0 needs a migration.** The server connects as `pos_app`. `pos_app` has no privilege on
+  `schema_migration` today: ARCH-006 prescribed it (`.agent/reviews/ARCH-006-phase0-core-schema.md:1011-1014`) and
+  `apps/server/test/schema.test.ts:164-170`, case 1, asserts
+  `expect(actual.schema_migration).toEqual({ table: [], columns: {} })`. ARCH-010's Task 8 consult
+  (`.agent/reviews/ARCH-010-https-server.md:660-664`) declined the check in Phase 0 for exactly this reason and called it
+  "a gap worth closing with a small migration later". This is that migration. Neither ADR nor `docs/ARCHITECTURE.md`
+  says anything about `schema_migration`'s grants (the lead's grep).
+- **ADR-010 rule 2** (`docs/decisions/ADR-010-http-boundary.md:163-170`): "The server defines a small, closed set of its
+  own startup and configuration errors, whose sentences an operator has to be able to read … Such a sentence may be
+  logged only because it is fixed wording in the server's source combined with values that are neither secrets nor
+  taken from a request: a variable's name, a file path, a refused bind address. A value read from the environment or a
+  file is never among them." The new refusals join that set.
+- **The browser harness** (`e2e/support/global-setup.ts:85-130`) resets its own database with the real migrations
+  (`resetE2eDatabase`), then spawns `apps/server/src/index.ts` with no `MIGRATION_DATABASE_URL`, and fails if the server
+  exits during start-up. That run is the end-to-end proof that the check accepts a fully migrated database.
+- **Server tests** run serially on `pos_test` (`resetDatabase()` drops the schema and runs the real migrations through
+  the owner connection; `ownerQuery` reads as the owner). They need `npm run db:up` first and `openssl` on `PATH`.
+
+## Lead rulings
+
+1. **The project name is `restaurant-pos`**, as a top-level `name: restaurant-pos` in `docker-compose.yml`. It matches
+   the running container and volume, so the owner's data is untouched and every checkout shares one container, which
+   the Phase 0 race design assumes. Change nothing else in the file.
+2. **Migration `0009` grants `pos_app` `SELECT` on `schema_migration`, and nothing else** (no `INSERT`, `UPDATE`,
+   `DELETE`, `TRUNCATE`, no sequence). The application may read which migrations were applied; it can never record or
+   erase one, so the separation in ARCHITECTURE §11 stands. Name it `0009_schema_migration_read.sql` (or a name in the
+   same style), with a header comment saying why, in the manner of the existing migrations. `schema_migration` exists by
+   the time any migration runs, because the runner creates it first. This amends ARCH-006's case 1 as ARCH-010
+   anticipated; it is a lead ruling the owner may overturn.
+3. **"Differ" is a comparison of file names as sets.** The schema is out of step when (a) a `.sql` file in
+   `db/migrations` has no row in `schema_migration` ("behind"), or (b) a row in `schema_migration` has no file
+   ("ahead"). Use the runner's own listing rule (`.sql` suffix only), so the two can never disagree about what counts as
+   a migration: share it through a small module both import, not a copy. Content is not compared; the runner stores no
+   checksum, so a file edited after it was applied is not detected. Say so in the Handoff; do not add checksums.
+4. **When `pos_app` cannot read the table** (`42501` permission denied, or `42P01` undefined table), the database is
+   behind by definition (it predates `0009`, or was never migrated): refuse with the "behind" sentence. Any other error
+   from the check is not caught by the check; it reaches `main()`'s existing fatal path and the safe serializer.
+5. **Two fixed sentences, no values.** Behind: `the database is missing migrations that are in db/migrations; run npm
+   run db:migrate`. Ahead: `the database has migrations that are not in db/migrations; this checkout is older than the
+   database`. When both hold, use the "ahead" sentence, because migrating will not fix it. Neither sentence names a
+   file, a count or a database name (rule 2: a value read from a file or the environment is never among them). Both are
+   `StartupError`s, so `log.ts` prints exactly the sentence.
+6. **Where it runs.** In `main()` only, as part of step 4: after the `SELECT 1`, before `buildServer` and before any
+   socket; so after the certificate check, as the plan says. Not in `buildServer` and not in a Fastify hook, so the
+   in-process tests are unaffected. Through `query()` as `pos_app`; **the server never reads `MIGRATION_DATABASE_URL`
+   and never imports a code path that does.** The directory is anchored to the source file as the runner's default is,
+   never to the working directory and never to an environment variable.
+7. **No new environment variable, no new route, no change to `/api/health`.** Health keeps answering `SELECT 1` only.
+
+## Rules
+
+- Touch only the paths in `owns`. If you need another file (a test helper under `apps/server/test/support/`, for
+  instance), stop and write `BLOCKED: <question>` in the Handoff.
+- Red first: write the check's tests and the `schema.test.ts` change, run them against the unchanged code and record
+  the failing assertions and lines in the Handoff; then write the code.
+- Do not run `npm run db:migrate` against the development database `pos`; the lead applies `0009` there after the merge
+  and does the hand check. Your proof is the server tests on `pos_test` and the harness's own database.
+- Format by hand, matching each file; there is no formatter config.
+
+## Tests expected to change
+
+- `apps/server/test/schema.test.ts:164-170`, case 1: the title ("…and none on schema_migration") and the assertion on
+  `actual.schema_migration` change to say `pos_app` has exactly table-level `SELECT` on it and nothing else. Report the
+  exact shape the privilege query returns (whether `columns` stays empty for a table-level grant) and assert that shape
+  exactly; do not loosen it to a subset. The rest of case 1, and every other case, is unchanged.
+- **New:** `apps/server/test/schema-check.test.ts`, the check's own tests (below).
+- No other existing test should change. `migrate.test.ts` uses temporary directories and the owner connection;
+  `harness-race.test.ts`'s table list is unchanged because `0009` creates no table. If either fails, stop and say so.
+
+## Acceptance criteria
+
+1. `docker-compose.yml` has `name: restaurant-pos` and no other change. (The lead runs `docker compose --env-file
+   db/dev.env config` from the worktree and checks it prints `name: restaurant-pos`; you need not run Docker.)
+2. `0009` grants `SELECT` on `schema_migration` to `pos_app` and nothing else; `schema.test.ts` case 1 asserts exactly
+   that, and the red run before the migration existed is recorded.
+3. The check, run against `pos_test` after `resetDatabase()`, with the real `db/migrations` passes; with a temporary
+   directory holding the real files plus one more it refuses with the "behind" sentence; with one real file missing it
+   refuses with the "ahead" sentence; with both differences, the "ahead" sentence; after the test revokes `pos_app`'s
+   `SELECT` through the owner connection (or drops the table), the "behind" sentence. Each refusal is asserted as a
+   `StartupError` with the exact sentence. The red run is recorded.
+4. `main()` runs the check after `SELECT 1` and before `buildServer`; `grep -n MIGRATION_DATABASE_URL
+   apps/server/src` shows it only in `migrate.ts`.
+5. `npm run verify` green. The baseline is 93 test files and 3744 tests (lead's verify at `44a6497`; only documents
+   changed since); the Handoff states the new counts and which tests were added.
+6. `git diff --name-only development...HEAD` shows only the task file and paths in `owns`.
+
+The lead runs `npm run test:e2e:all` before merge (the change touches `db/migrations`), which proves the check accepts
+the harness's fully migrated database, and then applies `0009` to the development database and checks that the server
+refuses before `db:migrate` and starts after it.
+
+## Out of scope
+
+- Running migrations from the server, or at startup in any form (ARCH-010: migrating stays a deliberate command).
+- Checksums or content comparison of migration files.
+- Any Phase 1 table, route or screen; `AGENTS.md` and the lead's notes (the lead updates them after the merge).
+- The `npm ci` install-script warnings and the npm advisory (known, separate).
+
+## Commit and report
+
+Commit on `agent/phase1-s0` only, after verify is green, and never push. Conventional Commits, explaining why. Write the
+Handoff below in full prose, ending with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as
+AGENTS.md says.
+
+## Handoff
