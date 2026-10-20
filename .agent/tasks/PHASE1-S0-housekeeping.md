@@ -5,7 +5,7 @@ category: feature
 touches: []
 depends_on: []
 owns: [docker-compose.yml, db/migrations/0009_*.sql, apps/server/src/index.ts, apps/server/src/db/**, apps/server/test/schema.test.ts, apps/server/test/schema-check.test.ts]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S0 — Housekeeping before Phase 1's migrations
@@ -141,6 +141,16 @@ refuses before `db:migrate` and starts after it.
 Commit on `agent/phase1-s0` only, after verify is green, and never push. Conventional Commits, explaining why. Write the
 Handoff below in full prose, ending with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as
 AGENTS.md says.
+
+## Lead verify (2026-10-20)
+
+At `5191bf9`, in this worktree. `git diff --name-only development...HEAD`: the task file and owned paths only; the one
+changed existing test is `schema.test.ts` case 1, as listed. `npm run verify`: 94 files, 3753 tests, green.
+`docker compose --env-file db/dev.env config` prints `name: restaurant-pos`. `npm run test:e2e:all`: 58 passed (44.9 s),
+so the harness server starts through the check on a fully migrated database. Hand check: this worktree's server against
+the development database `pos` (0001-0008, no `0009`) exits 1 with the StartupError "the database is missing migrations
+that are in db/migrations; run npm run db:migrate" (the 42501 path). `db:migrate` on `pos` and the start after it wait
+for the merge. Sent to review: a migration and about 350 changed lines.
 
 ## Handoff
 
