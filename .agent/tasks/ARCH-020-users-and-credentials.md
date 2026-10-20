@@ -139,6 +139,17 @@ question>`. Then run exactly one of:
     herdr agent prompt lead "architect20: ARCH-020 done — <one line>"
     herdr agent prompt lead "architect20: BLOCKED — <question>"
 
+## Lead review (2026-10-20)
+
+At `36f2da8`. `git diff --name-only development...HEAD`: the report and this task file; `git diff --check` clean. All
+ten items answered with alternatives; consistent with Q1, Q6a, Q7-Q9, Q11 and FR-B3 as applied. The lead accepts, as
+its own reading and the owner's to overturn: the acting manager's row locked and re-read by every users command (two
+managers demoting each other at once would otherwise leave none, the case Q8's reason excludes); `OWN_ACCOUNT` and
+`USER_CHANGED` (409) entering the contracts with their first emitters; `DUPLICATE`'s new optional `{ field }` details
+(tables keep none). To the owner: OQ1 (audit of create), OQ2 (name correction), and whether ADR-009 §5's second
+session-row writer is recorded in ARCHITECTURE §7.2 (the architect's recommendation, the lead agrees) or by a one-point
+ADR-013. The ARCHITECTURE wording in *Stale text* needs an architect writing task once the owner rules.
+
 ## Handoff
 
 **architect20, 2026-10-20.** The report is `.agent/reviews/ARCH-020-users-and-credentials.md`. It
