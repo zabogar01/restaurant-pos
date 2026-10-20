@@ -130,6 +130,22 @@ any) with proposed answers, and anything stale you found with exact replacement 
     herdr agent prompt lead "architect18: ARCH-018 done — <one line>"
     herdr agent prompt lead "architect18: BLOCKED — <question>"
 
+## Lead review and rulings (2026-10-20)
+
+At `d0cabb5`. `git diff --name-only development...HEAD`: the four owned paths and this task file; no accepted ADR is
+edited; `git diff --check` clean. The Handoff answers every question in the plan's ADR-012 row and is consistent with the
+2026-10-20 rulings (0-100% bound, storable non-zero service charge with Pasal 8 as a Phase 2 entry condition, IDR and 0 as
+constants, the five business details, restorable records advancing the version). The two lead calls:
+
+1. **The footer line is required.** The owner's Q12 ruling marks only the NPWPD as optional, and nothing is seeded, so
+   the manager types a footer once with the first settings version. The owner may overturn; it is one column in S2a.
+2. **`created_by` stays on a settings version.** It is a column naming who wrote the version, not an audit entry, so it
+   does not extend Q11's audit list.
+
+`catalog_revision`'s seeded row is a counter and lock point, not restaurant configuration; B-24 lists menu, prices,
+staff, rates, tables and presets, and the Phase 0 throttle buckets are the precedent. ADR-012 goes to the owner as
+`Proposed`, with the one-counter choice and the optional PRD FR-C7 and FR-B1 wording put to them.
+
 ## Handoff
 
 **Written** 2026-10-20 by `architect18`. **Files written:** `docs/decisions/ADR-012-versioned-configuration.md`
