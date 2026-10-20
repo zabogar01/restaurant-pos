@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-19 (night): `development` at `1701e36` (PR #110 merged). **Phase 0 closed.** The owner approved the Phase 1 plan approach
-(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 complete** (`8b0d87a`), pushed for a PR
-with the lead branch on the owner's word (2026-10-20); the draft question ruled (destroyed). Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
+2026-10-20: `development` at `38537bd` (PRs #111 lead, #112 DESIGN-016 merged). **Phase 0 closed.** The owner approved the Phase 1 plan approach
+(DECISIONS). **ARCH-017 done** (`7e7fb06`): the plan waits for the owner. **DESIGN-016 merged** (#112) and cleaned up; the
+draft question ruled (destroyed). Next: the owner's read of the Phase 1 plan. Narrative: [journal/2026-10-19.md](journal/2026-10-19.md) *Night*.
 
 ## Phase and gates
 
@@ -32,19 +32,17 @@ with the lead branch on the owner's word (2026-10-20); the draft question ruled 
 
 ## Integration branch
 
-- **`development`** at `1701e36` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `38537bd` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-19); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1019f`** (from `1701e36`, pushed 2026-10-20 for a PR). **Run `gh pr view <n> --json
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1020`** (from `38537bd`, not pushed). **Run `gh pr view <n> --json
   state` as its own step before any push to a lead branch**: chained behind a push it does not stop it (#110, 2026-10-19).
-- **Task branches open:** `agent/arch-017` (plan `7e7fb06`), `agent/design-016` (`d4502d3`, `npm ci` run), worktrees
-  `../restaurant-pos-wt/<ID>`, cut from `82876b4`; kit copies deleted. `.agent/runs/DESIGN-016/` holds the review run. Merged branches still exist (cleanup later).
-  Not the lead's: worktrees `../restaurant-pos-design` and `keen-chebyshev-ccf255`.
-
-## Running tasks and agents
-
+- **Task branches open:** `agent/arch-017` only (plan `7e7fb06`, worktree `../restaurant-pos-wt/ARCH-017`). `.agent/runs/`
+  empty. 2026-10-20 cleanup: DESIGN-016 worktree, branch and run dir removed (the classifier allowed it this time), 92
+  merged or patch-equivalent local `agent/*` branches deleted; remote branches untouched. Not the lead's: worktrees
+  `../restaurant-pos-design` and `keen-chebyshev-ccf255`, branch `setting/add-permission`.
 - **Live agents: the lead only.** All task panes closed 2026-10-20 (owner: close what is not needed). For an ARCH-017
   revision, resume `architect17`: `claude --resume f49d621e-bff4-4c8e-bed9-f9b89310b9a4` in its worktree (2026-10-12 line).
 - **ARCH-017, done:** `docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`, `Proposed`. 11 slices
@@ -78,8 +76,8 @@ with the lead branch on the owner's word (2026-10-20); the draft question ruled 
   `apps/back-office`, `packages/api-client`, `packages/contracts`, `apps/server/src/http`, `apps/server/src/domain` or
   `db/migrations` (ARCH-015 *For the lead* 6). The harness makes its own people and certificate.
 - **A fresh-clone check** must clone into a directory named `restaurant-pos` until plan slice S0 adds a compose `name:`.
-- **The permission classifier refuses the lead** `git worktree remove` and `rm -rf` of run directories (even of merged,
-  clean worktrees), and once refused a read-only `grep` after that; the owner runs removals. Read files with Read.
+- **The permission classifier has refused the lead** `git worktree remove` and `rm -rf` of run directories, though it
+  allowed both on 2026-10-20 after the owner said "clean up": try, and hand to the owner if refused.
 - **Background commands die at two hours;** a dispatcher may exit 1 when Codex hits its limit after writing its
   report: read the report whole before deciding. **Prompts do not wake the lead**; the owner answers them
   (`BLOCKED ON APPROVAL` in the dispatcher's output).
@@ -144,5 +142,4 @@ Nothing here is decided. Detail is where each line points.
 ## Next up
 
 1. The owner reads the plan and answers Q13 first; on acceptance, record it, commission ADR-012 + C1 and C2, write S0.
-2. The owner merges the DESIGN-016 and lead PRs. After merge: remove the worktree and
-   `.agent/runs/DESIGN-016/` (owner runs removals). Next design slice: D, E or F per the plan §4, once accepted.
+2. Next design slice: D, E or F per the plan §4, once the plan is accepted.
