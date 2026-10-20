@@ -141,8 +141,8 @@ All of section B lives in the back-office client. None of it ships to the POS.
 - **FR-B4** Manage menu: categories, items, variants, modifiers, prices. An
   archived item or category may be restored.
 - **FR-B5** Manage discount presets: create, edit, deactivate and reactivate.
-- **FR-B7** Manage tender types: create, rename, and deactivate custom named
-  methods alongside cash and card. B-24 makes this configuration, so a
+- **FR-B7** Manage tender types: create, rename, deactivate and reactivate
+  custom named methods alongside cash and card. B-24 makes this configuration, so a
   cashier never types a tender name as free text on the fastest screen in the
   product.
 - **FR-B6** Toggle an item's 86 status.

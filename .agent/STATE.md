@@ -9,18 +9,16 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-20 (afternoon): `development` at `38537bd`. **Phase 1 plan accepted** by the owner with all 14 answers
-(DECISIONS 2026-10-20); the contract wording applied to ROADMAP and PRD on `agent/lead-1020` (PR #113, pushed).
-The plan is PR #114. Nothing is running. If `development`'s STATE predates this, read this file from the branch. Narrative:
+2026-10-20 (evening): `development` at `ffe0bb2` (PRs #113, #114 merged: plan accepted, contract wording applied).
+**Phase 1:** S0 PR #115; ADR-012 accepted, PR #117; C2 PR #116. Narrative:
 [journal/2026-10-19.md](journal/2026-10-19.md) *Night* onward, [journal/2026-10-20.md](journal/2026-10-20.md).
 
 ## Phase and gates
 
-- **Phase 1 (Back office and catalog, ROADMAP `:60-90`): plan accepted 2026-10-20, no task started.** Task files one
+- **Phase 1 (Back office and catalog, ROADMAP `:60-90`): plan accepted 2026-10-20, S0 building.** Task files one
   at a time; the designer runs back-office slices beside it. **The plan:**
-  `docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md` on `agent/arch-017` (`7e7fb06`, worktree
-  `../restaurant-pos-wt/ARCH-017`, PR #114); its header still says `Proposed` (architect-owned: flip it in the
-  ADR-012 task). 11 slices S0-S10; ADR-012 and consults C1-C5. Rulings by slice: S2 the 0-100% rate ceiling (Q2),
+  `docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md` (merged, #114); its header still says
+  `Proposed` (ARCH-018 flips it). 11 slices S0-S10; ADR-012 and consults C1-C5. Rulings by slice: S2 the 0-100% rate ceiling (Q2),
   IDR fixed (Q5), business details (Q12); S7 real items into the client stand-in (Q14); S8 Q1, Q7-Q11.
 - **Owed after the contract change (not drafted):** ROADMAP Phase 1's users bullet omits role change (Q1c; FR-B3 has
   it). ARCHITECTURE §16 row, §19 items 1/3/5 (architect, ADR-012 task) and BO-06/BO-08/SITEMAP (designer, slice E2/F),
@@ -35,22 +33,27 @@ The plan is PR #114. Nothing is running. If `development`'s STATE predates this,
 
 ## Integration branch
 
-- **`development`** at `38537bd` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `ffe0bb2` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-19); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1020`** (from `38537bd`), pushed for the wrap-up PR. After it
-  merges, cut a new lead branch from `development`. **Run `gh pr view <n> --json state` as its own step before any
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1020b`** (from `ffe0bb2`), pushed. **Run `gh pr view <n> --json state` as its own step before any
   follow-up push**: chained with `&&` before a push it printed `MERGED` and did not stop it (#110, 2026-10-19).
-- **Task branches:** `agent/arch-017` only. `.agent/runs/` empty. Local merged `agent/*` branches were deleted
+- **Task branches:** `agent/phase1-s0`, `agent/arch-018`, `agent/arch-019`, worktrees `../restaurant-pos-wt/<ID>`, all
+  from `ffe0bb2`; kit task-file copies deleted. `agent/arch-017` merged (worktree removable). Local merged `agent/*` branches were deleted
   2026-10-20; remote branches untouched. Not the lead's: worktrees `../restaurant-pos-design` and `keen-chebyshev-ccf255`,
   branch `setting/add-permission`, pane `w2:pE`.
 
 ## Running tasks and agents
 
-- **Live agents: the lead only.** Every task pane is closed. For an ARCH-017 revision round, resume `architect17` in
-  a new pane with its worktree: the 2026-10-12 launch line plus `--resume f49d621e-bff4-4c8e-bed9-f9b89310b9a4`.
+- **PHASE1-S0, complete** (PR #115, `dbed83a`): compose `name:`, `0009` (`pos_app` SELECT on
+  `schema_migration`, lead ruling over ARCH-006 case 1), startup schema check. Lead verify 94/3753, e2e:all 58, refusal
+  hand-checked; Codex review: no findings, "blocked" only by its sandbox's EPERM (lead ruling in the task file). After
+  merge: `db:migrate` on `pos`, confirm the server starts (any clone directory name works once merged).
+- **ARCH-018: ADR-012 accepted** (owner, one counter), PR #117 (`709378d`): §8 one lock order with C2's DiningTable
+  line, §18 row; panes closed. Design text BO-04/07/08 → slices D, F. Eleven accepted ADRs now (001-007, 009-012).
+- **ARCH-019 (C2) done** (PR #116, pane closed): S1a/S1b copyable; OQ1 yes, FR-B7 applied. ROADMAP P1 tender bullet lacks "reactivate".
 - **DESIGN-016, merged** (#112). Its Handoff gives wording for stale BO-01, M-6 and DESIGN paragraphs (later design
   task); S10 cites DESIGN *Layout*'s wide-window rule and the 2026-10-20 oversize ruling.
 - **Carry-forwards:** placed slice by slice in the plan's §5 (Phase 2's stay Phase 2: AC-27's second sentence, AC-19's
@@ -79,7 +82,6 @@ The plan is PR #114. Nothing is running. If `development`'s STATE predates this,
   `apps/back-office`, `packages/api-client`, `packages/contracts`, `apps/server/src/http`, `apps/server/src/domain` or
   `db/migrations` (ARCH-015 *For the lead* 6). Design checks: `PLAYWRIGHT_MODULE="$PWD/node_modules/playwright" node
   docs/design/checks/designNNN.cjs` in a worktree after `npm ci`.
-- **A fresh-clone check** must clone into a directory named `restaurant-pos` until plan slice S0 adds a compose `name:`.
 - **Worktree and run-dir removal:** the classifier has refused the lead before, allowed it 2026-10-20; try, else owner.
 - **Close panes once no round is expected**; check `herdr pane list` after a dispatch (a reviewer pane stayed, 10-20).
 - **Background commands die at two hours;** read a report whole even when the dispatcher exits 1. **Prompts do not
@@ -142,6 +144,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. Write S0 (rulings it needs: the architect's Handoff, *What the
-   lead needs*) and commission ADR-012 + C1 and C2 (architects, hand-opened).
+1. After #115 merges: `db:migrate` on `pos`, server start check; write S1a from C2 (waits only on S0). Then E1 (BO-05) design brief with C2's modal-dialog hazard; S1b after E1.
 2. Design: slice E1 (BO-05 tables) can start with C2, since S1b needs it; then D and F per the plan's §4.
