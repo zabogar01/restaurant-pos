@@ -63,22 +63,30 @@ Everything a manager sets up before a single order exists. All of it lives in
 the back-office client.
 
 - Desktop back-office navigation and dense management layouts
-- Settings: currency and minor-unit precision, tax rate, service charge rate,
-  and business details, versioned so a rate change affects only orders opened
-  afterwards (FR-B1)
+- Settings: tax rate, service charge rate and business details, with the
+  installation's fixed currency and minor-unit precision (IDR, 0) shown,
+  versioned so a rate change affects only orders opened afterwards (FR-B1)
 - Categories, items, variants, modifiers, prices (FR-B4, C1–C4)
 - 86 toggle (FR-B6, C5)
-- Tables, with deactivation blocked while an order is open (FR-B2, C8)
+- Tables: create, edit and deactivate (FR-B2); the refusal while a table
+  holds an open order arrives with orders in Phase 2 (FR-C8)
 - Discount presets (FR-B5)
+- Tender types: create, rename and deactivate custom named methods alongside
+  cash and card (FR-B7)
 - Users, including a manager's back-office username and password;
   deactivation, or a PIN or password reset, invalidates every session of that
   user (FR-B3)
 - Catalog-revision propagation into the POS client, two-second poll (FR-C6)
-- Catalog-version handling and `CATALOG_CHANGED` rejection (FR-C7)
+- Catalog-version handling: every menu, option, price, availability and
+  preset change advances the catalog version that later POS commands carry
+  (FR-C7)
 
 **Demonstrable:** a real menu is loaded in the back office and browsable at
-the POS; an 86 in one client reaches the other within three seconds.
-**AC-12, AC-31, AC-32** pass here.
+the POS; an 86 in the back office reaches the POS within three seconds.
+AC-32's first sentence and AC-35's last sentence pass here, and AC-12 as far
+as the POS presents an 86: disabled in place, and an open selection dialog
+keeping its choices with Add disabled. AC-31 passes in Phase 2, with the first
+command that carries the catalog version this phase delivers.
 
 ### Phase 2 — Order capture and totals
 
@@ -96,9 +104,14 @@ The order model and the arithmetic, without the kitchen or the money.
 - Discount replacement and removal under whole-transition gating (FR-F8)
 - Zero-total order behavior (FR-G11)
 - Void a pending line; void an unfired order (FR-H2, H3)
+- Table deactivation refused while the table holds an `OPEN` order (FR-C8)
+- `CATALOG_CHANGED` rejection of a command built on a stale catalog version,
+  and availability revalidated when a line is added (FR-C6, C7)
 
 **Demonstrable:** an order is built on screen and its total matches the
-worked example exactly. **AC-4, AC-8, AC-9, AC-10, AC-24, AC-26** pass here.
+worked example exactly. **AC-4, AC-8, AC-9, AC-10, AC-24, AC-26, AC-31** pass
+here, with AC-32's second sentence and AC-12's rejection of an unavailable
+item when a line is added.
 
 ### Phase 3 — Kitchen printing
 
@@ -110,13 +123,13 @@ worked example exactly. **AC-4, AC-8, AC-9, AC-10, AC-24, AC-26** pass here.
   clients; lower-priority class for receipts, which arrive in Phase 4
   (FR-E3, E6)
 - Firing blocked on 86'd pending lines (FR-E4)
-- Two-second availability polling, three-second AC-12 budget (FR-C6)
+- Fire revalidates availability (FR-C6, E4)
 - Fired-line and fired-order voids behind the manager gate (FR-H4)
 - Kitchen cancellation tickets for fired-line and fired-order voids (FR-H4)
 
 **Demonstrable:** the full order loop — order, fire, add a round, fire again,
-cancel fired work — with correct paper. **AC-1, AC-2, AC-3, AC-22, AC-23,
-AC-33** pass here.
+cancel fired work — with correct paper. **AC-1, AC-2, AC-3, AC-12, AC-22,
+AC-23, AC-33** pass here; AC-12 completes with its rejection at fire.
 
 **Risk:** printer integration is the phase most likely to surprise. Prove the
 ESC/POS path against real hardware early rather than at the end of the phase.

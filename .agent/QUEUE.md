@@ -64,7 +64,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    2026-10-05, `.agent/reviews/DESIGN-011-back-office-audit.md`.)* Nine slices, each a designer
    task re-pointing the wireframe links whose Frost destinations it creates:
    - *(Done: A, DESIGN-012, the shell, alerts, M-6 and shared patterns, merged 2026-10-06 as PR #55.)*
-   - *(Done: B, DESIGN-016, BO-01 and BO-02, complete 2026-10-19 at `8b0d87a`, not yet pushed; feeds plan slice S10.)*
+   - *(Done: B, DESIGN-016, BO-01 and BO-02, merged 2026-10-20 as PR #112; feeds plan slice S10.)*
    - *(Done: C, DESIGN-013, BO-13 print incidents, merged 2026-10-06 as PR #57.)*
      The BO-13 frontend task must carry its re-review rules N1 and N2 (task file, end).
    - *(Done: I, DESIGN-014, BO-12 audit viewer, merged 2026-10-08 as PR #67.)* The BO-12 frontend
@@ -127,9 +127,11 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
 13. **Phases 1 to 6** and the **pre-production gate** (appliance, LAN TLS, UPS, backups) —
     each phase needs its own plan before execution; only Phase 0 has one — Phase 0 closed
     2026-10-19 — see `docs/ROADMAP.md`.
-    - **ARCH-017, the Phase 1 plan** (Back office and catalog) — an architect's slicing document,
-      owner-accepted before any Phase 1 task (approach approved by the owner 2026-10-19, DECISIONS)
-      — task file written 2026-10-19 — waits for the owner to read it, then opened by hand.
+    - *(Done: ARCH-017, the Phase 1 plan, accepted by the owner 2026-10-20 with all 14 answers;
+      contract wording applied on `agent/lead-1020`.)*
+    - **Phase 1, from the plan** — S0 (housekeeping before the first Phase 1 migration) first, then
+      S1-S10 in the plan's §3.0 order — ADR-012 and consults C1, C2 commissioned with the acceptance
+      — task files written one at a time; S0 next. S9 is the queued POS gap above.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
     post-close corrections (before Phase 5), permitted tax and service-charge range (before
     Phase 2) — depends on the owner — waiting; see `docs/PRD.md` section 9.

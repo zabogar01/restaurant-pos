@@ -120,20 +120,27 @@ enums and do not acquire redundant booleans.
 All of section B lives in the back-office client. None of it ships to the POS.
 
 - **FR-B1** Settings hold currency, minor-unit precision, tax rate, service
-  charge rate, and the business details printed on receipts. Currency and
-  minor-unit precision become immutable after the first order. Changes to tax
+  charge rate, and the business details printed on receipts. This
+  installation's currency and minor-unit precision are fixed at IDR and 0; the
+  back office shows them and never offers to change them. Changes to tax
   or service-charge rates create a new settings version and affect only
   orders opened afterwards.
-- **FR-B2** Manage tables: create, edit, and deactivate.
-- **FR-B3** Manage users: create, assign role, set and reset PIN, set and
-  reset a manager's back-office username and password, deactivate.
-  Deactivating a user, or resetting their PIN or password, from the back office
+- **FR-B2** Manage tables: create, edit, deactivate and reactivate.
+- **FR-B3** Manage users: create, assign a role or the kitchen classification,
+  set and reset PIN, set a manager's back-office username and password and
+  reset the password, deactivate and reactivate. A username, once set, never
+  changes. A reactivated user keeps their PIN unless another active user holds
+  it, in which case a new PIN is set before reactivation. Deactivating a user,
+  changing their role, or resetting their PIN or password, from the back office
   invalidates every session of that user, POS and back office, on its next
   authenticated request. The one exception is a manager who changes their own
-  password: the back-office session the change was made from continues, and
-  every other session of theirs is invalidated.
-- **FR-B4** Manage menu: categories, items, variants, modifiers, prices.
-- **FR-B5** Manage discount presets: create, edit, deactivate.
+  password or PIN, which requires their current password: the back-office
+  session the change was made from continues, and every other session of
+  theirs is invalidated. A manager cannot deactivate their own account or
+  remove their own manager role.
+- **FR-B4** Manage menu: categories, items, variants, modifiers, prices. An
+  archived item or category may be restored.
+- **FR-B5** Manage discount presets: create, edit, deactivate and reactivate.
 - **FR-B7** Manage tender types: create, rename, and deactivate custom named
   methods alongside cash and card. B-24 makes this configuration, so a
   cashier never types a tender name as free text on the fastest screen in the
@@ -356,7 +363,9 @@ back-office client.
 - **FR-J3** Audited actions are whole-order void, fired-line void, discount
   apply/replace/remove, refund, manager takeover of a `CheckoutLease`,
   back-office reprint of a kitchen ticket (naming the actor, the order, and
-  the round reprinted), and every manager-approval outcome. A
+  the round reprinted), a back-office change to a user's status, role or
+  credentials (naming the acting manager and the user, and never a PIN or
+  password), and every manager-approval outcome. A
   successful approved action creates **one combined entry** naming actor and
   approver. A failed or cancelled approval creates one entry naming the
   initiating actor with approver null. A refund that is approved and then
@@ -384,8 +393,8 @@ nett, and every figure below follows from that.
 separator. The worked example below is written in generic minor units so the
 arithmetic reads the same at any precision.
 
-- **FR-M1** Currency and minor-unit precision are configured once (2 for USD
-  or EUR, 0 for IDR or JPY) and become immutable after the first order.
+- **FR-M1** Currency and minor-unit precision are fixed for an installation
+  (2 for USD or EUR, 0 for IDR or JPY) and never change.
 - **FR-M2** All money is stored as integers in minor units. Binary floating
   point is never used for money at any layer. Money and exact rate arithmetic
   use an integer-exact type behind a single calculation module; canonical
@@ -394,7 +403,8 @@ arithmetic reads the same at any precision.
   stored or displayed value.
 - **FR-M4** Tax is computed once at order level from the discounted subtotal,
   never summed from per-line figures.
-- **FR-M5** Bounds: rate precision one part per million; maximum quantity 99
+- **FR-M5** Bounds: rate precision one part per million; tax and
+  service-charge rates 0–100%; maximum quantity 99
   per line, whole numbers only; maximum line total, order total, and single
   tender 99,999,999 minor units; maximum change 9,999,999 minor units. The
   settlement UI validates the change ceiling before committing and shows the
@@ -573,12 +583,13 @@ scheduled discount campaigns. More than one discount per order.
 2. **Post-close corrections.** Blocks final Phase 5 behavior. Corrections
    that alter a closed day require a new adjustment record and next-day
    reporting; mutating the closed report would violate B-9.
-3. **Maximum tax and service-charge rates.** Rate precision is settled at one
-   part per million; the permitted range is not.
 
 ### Closed since the first draft
 
 - **Tax model.** Nett, not "++". See section 4.
+- **Tax and service-charge rates.** A rate is a whole number of parts per
+  million, from zero to 100 percent; no narrower range is set (owner,
+  2026-10-06 and 2026-10-20).
 - **Currency and precision.** IDR at precision 0.
 - **Restaurant time zone.** WIB (Asia/Jakarta, UTC+7), with no daylight
   saving. Every stored and displayed time is in WIB, shown as 24-hour
