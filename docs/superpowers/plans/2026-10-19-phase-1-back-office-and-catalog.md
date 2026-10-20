@@ -1,7 +1,10 @@
 # Phase 1 — Back office and catalog: the slicing plan
 
-> **Status: Proposed, 2026-10-19.** Written by `architect17` (ARCH-017) for the owner's acceptance. **No Phase 1 task
-> is dispatched until the owner accepts this plan.**
+> **Status: Accepted by the owner on 2026-10-20**, with the owner's answers to the fourteen questions of section 8
+> recorded in `.agent/DECISIONS.md` (2026-10-20). Written by `architect17` (ARCH-017) on 2026-10-19. Where an ADR, a
+> consult or a DECISIONS line differs from this plan, it wins and this plan is the stale one; in particular, the
+> "no range" lines on rates (S2, Q2, the C1 row of section 7) are superseded by the owner's 0–100 percent ruling and by
+> ADR-012.
 >
 > **This is a slicing document, not a build script.** It holds no SQL, no code and no test bodies. It says what Phase 1
 > delivers, in which slices and in what order, what each slice waits on, which slices need an ADR or an architect
