@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-016]
 owns: [docs/design/**, docs/DESIGN.md]
-status: not-started
+status: review
 cycles: 0
 ---
 # DESIGN-017 — BO-05 Tables (slice E1)
@@ -179,6 +179,16 @@ full prose, ending with `DONE` or `BLOCKED: <one question>`. Then run exactly on
 
     herdr agent prompt lead "design017: DESIGN-017 done — <one line>"
     herdr agent prompt lead "design017: BLOCKED — <question>"
+
+## Lead verify (2026-10-21)
+
+At `599c795`, in this worktree. `git diff --name-only development...HEAD`: the task file and paths under
+`docs/design/**` and `docs/DESIGN.md` only; nothing under `apps/`, `packages/`, `db/`, `e2e/` or the tokens. `git diff
+--check` clean. Lead runs: `design017.cjs` 249/249; `design016.cjs` 399/399; `design014.cjs` 288/288 (expected link
+counts 36/7 to 35/6, the only change to it); `design012.cjs` and `design013.cjs` no failures; `npm run verify` 94 files,
+3753 tests. Decisions to review: the non-modal panel (Log out and the rail stay live; only the departure decision is
+modal), no confirmation for deactivate or reactivate, active-first natural label order, the reactivation-refusal
+recovery (rename, then reactivate), and the copy table. Sent to the Claude reviewer (Codex built it).
 
 ## Handoff
 
