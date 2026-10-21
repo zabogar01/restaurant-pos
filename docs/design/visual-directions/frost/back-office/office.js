@@ -18,7 +18,7 @@
       heading.className = 'bonav__sec'; heading.textContent = section; nav.append(heading);
       entries.forEach(([label, file, key]) => {
         const a = document.createElement('a'); a.textContent = label;
-        a.href = ['menu','incidents','audit','today','tables'].includes(key) ? file : '../../../prototype/back-office/' + file;
+        a.href = ['menu','incidents','audit','today','tables','settings'].includes(key) ? file : '../../../prototype/back-office/' + file;
         a.dataset.nav = key; nav.append(a);
       });
     });

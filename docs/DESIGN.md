@@ -1625,6 +1625,144 @@ acknowledgement and sign-in form retain their distinct reviewed headings.
 No new token is introduced. The fixture's row state, ids and response selector
 exist for review only; S1b must use C2's authoritative records and responses.
 
+### Configuration forms — DESIGN-018 additions (awaiting review)
+
+DESIGN-018 (BO-08 Settings and payment methods) adds the rules below for every
+later configuration form. Each is marked **behaviour** (binding on every form
+that meets the case) or **BO-08 copy and layout** (BO-08's own words and
+composition, which a later screen replaces with its own). No rule above is
+changed; each addition applies them to a case they did not yet meet.
+
+**The stale-draft refusal — behaviour.** A command built on a version that is no
+longer current (`SETTINGS_CHANGED` now, `CATALOG_CHANGED` on BO-04 and BO-07)
+is a definite refusal: nothing was written. Keep the form open and the draft
+as typed, read the current record once, and show beside each field the current
+value wherever it differs from the draft; when nothing differs, say that the
+current record has the same values. Name the version that is now current and,
+when the read carries them, who saved it and when. Then the manager decides,
+between exactly two explicit choices, and Save stays disabled, with a visible
+reason, until one is made:
+
+- *keep the draft*: the form now builds on the version just read. Nothing is
+  sent; Save is the next explicit step, and it carries the new version;
+- *take the current values*: the fields are replaced by the values just read,
+  the form is clean against them, and nothing is sent.
+
+Nothing is resent, merged field by field or chosen for the manager. Focus moves
+to the refusal notice on arrival, to Save after *keep*, and to the first field
+after *take*. Any confirmation the form requires (below) compares the draft
+with the version it now builds on, so a draft that undoes another manager's
+change shows that change being undone. **The version a draft builds on changes
+only three ways:** an authoritative success (the version it names), an
+"unchanged" answer (the version it names), or the manager's choice here. A
+reread alone never moves it, because a draft silently rebased onto a reread
+would overwrite whatever that reread contains, which is the last-write-wins
+ADR-012 rule 3 forbids. This is the expected state after M-6, when a manager
+returns to a draft opened half an hour earlier (ADR-012 *Consequences*); it is
+drawn the same way there, and the copy holds when the manager who saved the
+newer version is the same person in another tab.
+
+**An unknown outcome on a versioned form — behaviour.** The rule above for an
+unknown outcome holds: keep the draft, reread once, never resend, never infer
+success. When the reread shows the same version the draft builds on, show the
+plain uncertainty. When it shows a newer version, show the uncertainty together
+with the stale-draft comparison and its two choices, and say that the newer
+version may be this save; never say that it is. When the reread fails, withhold
+the version facts (nothing may claim to be current) and offer Try again, which
+repeats the read only.
+
+**"Unchanged" — behaviour.** A versioned form offers Save even when the draft
+equals the record it was opened from: the save still proves the draft is not
+stale, and the server's no-op answer (ADR-012 rule 4) closes the form with a
+result that names the version still in force. No version is claimed to have
+been written.
+
+**The version-change confirmation — behaviour.** Before a save that changes a
+rate (money that later orders will charge), a modal decision names each changed
+rate, from and to, and states exactly which orders the change reaches: only
+those opened afterwards; open orders keep theirs; closed orders and day reports
+never change (FR-B1, B-8, B-9). It is not shown at the first run (there is no
+earlier rate) or for a save that changes only business details: those reach
+only later orders too (ADR-012 rule 4), and the form's standing context sentence
+says so, but a wrong phone number moves no money, and a confirmation spent on it
+teaches the manager to click through the one that does (PRODUCT principle 3).
+Initial focus is the keep action; Escape means keep; keeping returns focus to
+the first changed rate. It is a working-area modal: closed with its state kept
+at BO-01 and reopened for the same manager before focus is restored; under M-6
+it stays open, visible and inert. While it is open it repeats the kitchen
+emergency and defers its action (N2), with its own sentence. BO-07's percentage
+preset needs no such confirmation: a preset changes no rate an order has
+captured.
+
+**The rate field — behaviour; BO-07's percentage preset reuses it.** The manager
+types a percent. Before checking: trim; remove one trailing `%` and trim again.
+Accepted: digits, with at most one decimal separator, either `,` or `.`, and at
+least one digit in all; leading zeros (`05`), a leading separator (`,5`), a
+trailing separator (`10.`) and trailing zeros (`10,50`) are accepted. At most
+four digits after the separator, counted as typed (`10,50000` is refused);
+four places of a percent are exactly one part per million. The client converts
+exactly: `,` becomes `.`, leading zeros of the whole part are dropped (one zero
+kept), an empty whole part becomes `0`, an empty fraction is dropped, and the
+result goes to `rateFromPercent`, whose parts per million are then checked to
+be at most 1,000,000. No float is used, and the server never parses a percent.
+Refusals, checked in this order, each placed on the field before anything is
+sent: empty; a negative number (a leading `-`); anything else that is not such
+a number (letters, a second separator, a sign `+`, an exponent, grouping
+spaces, a Unicode minus); more than four decimal places; more than 100. A
+stored rate is shown with the decimal comma, without trailing zeros and with
+`%` after it in the read view (`11%`, `10,5%`, `0,0001%`); the field is filled
+with the same text without `%`, which sits beside the field. The comma matches
+the money convention, where `.` groups thousands (`155.925`): a rate written
+`10.000` beside an amount would read as ten thousand.
+
+**A read-only installation fact — behaviour.** A value the installation fixes
+(currency and minor-unit precision) is plain text in a term-and-value row, in
+the read view, in the form and at the first run alike. It is never an input,
+a disabled or read-only control, a lock symbol or a warning, and it has no
+Change action. It comes from the read, like any other value: it is withheld
+while the read is loading or failed.
+
+**Two forms on one screen — behaviour.** One form is open at a time on a
+screen, and one command is in flight at a time on a screen. Every opener on the
+screen (each Change, New, Edit, Deactivate and Reactivate) goes through the
+departure decision of the form that is open when that form is dirty or its
+save pending or unknown, and simply closes a clean one. While any command on
+the screen is pending, a discarded save still outstanding included, every
+opener on the screen is inert and the waiting sentence appears in the status of
+the part that sent it; after an unknown outcome they are live again. The
+departure decision therefore never holds two drafts, and its copy is unchanged.
+Log out, the rail and incident actions stay live, as for any non-modal form
+(F1). In code, the screen registers one work guard whose status is the open
+form's.
+
+**A success while the list read stands failed — behaviour, revising S1b's F4
+composition.** Draw the rows the client knows with the answered record applied,
+announce the named result and focus that row's Edit, keep New live and withhold
+the counts, as S1b's F4 ruling did. Replace the read-failure alert above those
+rows: "could not be loaded" is untrue of a list that is drawn. Its title and
+body say instead that the list may be out of date, that the rows are the ones
+this page knows including the latest change, and that Try again reads the full
+list; Try again still repeats the read only. BO-05 should adopt the same alert
+(its wording in DESIGN-018's Handoff) in a later change.
+
+**BO-08 copy and layout.** `frost/back-office/settings.html` is the consumer;
+its exact copy, accessible names and focus targets are in DESIGN-018's
+Handoff. The screen has two parts. *Rates and receipt details* is a read view
+in two columns: Money (currency and decimal places, with "Fixed for this
+installation.") and Rates on the left, Receipt details on the right ("These
+details are printed on receipts."). Each group is a bordered white group with
+the data-table header's tinted band as its label, and each editable row has its
+own small Change action, which opens the whole set in one non-modal form in
+place with focus in that row's field. The form is one bordered panel, with the
+same two columns as plain labelled regions (never boxes within the panel), the
+shared 40px fields, a rate field with `%` beside it, a three-row address
+textarea, and Save and Cancel in the shared footer. *Payment methods* follows
+below with BO-05's list and non-modal panel (it reuses `tables.css`): cash and
+card first, labelled "Always offered" and without actions, then custom methods,
+active before inactive, names in natural order. The Phase 1 rail lists Tables
+and Settings; `tables.html`'s drawing now shows both. The business-day
+indicator is suppressed, as on BO-05. No new token is introduced.
+
 ### One new designed token
 
 `--frost-office-form-columns: minmax(0, 1fr) minmax(0, 2fr)` is registered with
