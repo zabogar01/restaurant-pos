@@ -4,7 +4,7 @@ title: Consult C3 — users and credentials (plan slice S8), under the owner's Q
 category: arch
 touches: [identity, audit, boundaries]
 depends_on: []
-owns: [.agent/reviews/ARCH-020-*.md]
+owns: [.agent/reviews/ARCH-020-*.md, docs/ARCHITECTURE.md]
 status: not-started
 cycles: 0
 ---
@@ -138,6 +138,24 @@ question>`. Then run exactly one of:
 
     herdr agent prompt lead "architect20: ARCH-020 done — <one line>"
     herdr agent prompt lead "architect20: BLOCKED — <question>"
+
+## Round 2 — the ARCHITECTURE amendments (lead, 2026-10-21)
+
+The owner ruled on 2026-10-21 (DECISIONS): **OQ1 yes** (creating a cashier or manager is audited, one entry per create;
+kitchen not; the script none); **OQ2 no** (no name correction in Phase 1); and **record ADR-009's answered items in
+ARCHITECTURE §7.2, not a superseding ADR-013.** This round writes `docs/ARCHITECTURE.md` on this branch (now in
+`owns`), in your *Stale text* wording:
+
+1. §7.2's last two bullets, as your *Stale text* 1.
+2. §3.2 and §16, the PIN-in-use oracle, as *Stale text* 2.
+3. §8, the users lock order, as *Stale text* 3, placed after the DiningTable sentence (ADR-012's amendment already put
+   C2's DiningTable sentence and the one lock order into §8; keep the section reading as one order).
+4. §11, the audited actions, as *Stale text* 4, **adjusted for OQ1**: the list names the creation of a cashier or a
+   manager as well as every change to a user's status, role or credentials.
+
+Change nothing else in ARCHITECTURE, no accepted ADR, and no other file except this Handoff and, if a reading changes,
+your report. `git diff --check` clean; commit on `agent/arch-020`; never push. Add a short *Round 2* note to the Handoff
+(what changed, where), end `DONE`, then `herdr agent prompt lead "architect20: ARCH-020 round 2 done — <one line>"`.
 
 ## Lead review (2026-10-20)
 
