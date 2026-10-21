@@ -400,6 +400,19 @@ lists `apps/server/package.json` and `package-lock.json`, for finding 2 only. Ap
   again. No other change to that file.
 - **Then** `npm run verify`, commit, and report as before. Change nothing else.
 
+## Round 2 lead review and acceptance (2026-10-21)
+
+Round 2 is small and fully ruled, so the lead reviewed it rather than a second Codex round (as on S1a). The lead read
+`2090625` against the rulings, and it is exactly what they ask. The old S2-14 case is kept and retitled, and the new
+case submits version 2's own values with `expectedVersion: 1`. `@pos/money` is added to `apps/server/package.json` and
+to the lockfile's `apps/server` entry, one line each. The `errors.ts` comment no longer counts codes. **`npm ci`** in
+this worktree completed and left the lockfile unchanged, so the hand edit is consistent. **Red proof, repeated by the
+lead:** with the stale check and the identical-values check swapped in `saveSettings`, `settings.test.ts` failed 2 of
+26: the new S2-14 case, and S2-20 with it. The old different-values case still passed, which is why it could not catch
+the swap. The lead restored the file, and the tree was clean. **Green, run by the lead on the final tree:**
+`npm run verify` 107 files, 4007 tests; `npm run test:e2e:all` 68 passed. **Complete.** `touches: money, boundaries`:
+the owner looks before merge. After merge, the lead runs `npm run db:migrate` on the development database (`0011`).
+
 ## Handoff
 
 ### What I did
