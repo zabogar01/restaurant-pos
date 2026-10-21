@@ -5,7 +5,7 @@ category: ui
 touches: []
 depends_on: [DESIGN-018]
 owns: [docs/design/**, docs/DESIGN.md]
-status: not-started
+status: complete
 cycles: 0
 ---
 # DESIGN-018b — the phone field refuses "/"
@@ -72,6 +72,16 @@ Commit on `agent/design-018b` only, and never push. Write the Handoff below in f
 
     herdr agent prompt lead "design018b: DESIGN-018b done — <one line>"
     herdr agent prompt lead "design018b: BLOCKED — <question>"
+
+## Lead review and acceptance (2026-10-21)
+
+Trivial review (11 changed lines under `docs/design/`, no `touches` flag), by the lead. The lead read `13f051d`
+against the task: the charset, the two copy strings, the longest value and the new refusal vector are as written, and
+no other phone `/` remains under `docs/design/` or in `docs/DESIGN.md`. **Red proof, repeated by the lead:** with the
+slash put back into the charset in `settings.js`, `design018.cjs` stops at the `021 / 555` refusal vector ("Last
+assertion: local detail refusal invalid-phone"), because the field accepts the value instead of refusing it; the lead
+restored the file and the tree was clean. **Green, run by the lead:** `design018.cjs` 722/722, `design017.cjs` 347/347.
+**Complete.** S2b copies the phone copy and guard from this Handoff, which supersedes DESIGN-018's phone row.
 
 ## Handoff
 
