@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-017]
 owns: [docs/design/**, docs/DESIGN.md]
-status: not-started
+status: review
 cycles: 0
 ---
 # DESIGN-018 — BO-08 Settings and payment methods (slice F, BO-08 half)
@@ -269,6 +269,22 @@ full prose, ending with `DONE` or `BLOCKED: <one question>`. Then run exactly on
 
     herdr agent prompt lead "design018: DESIGN-018 done — <one line>"
     herdr agent prompt lead "design018: BLOCKED — <question>"
+
+## Lead verify (2026-10-21)
+
+The lead read the whole Handoff and checked the branch at `95b199b`. The tree is clean. Every changed path is inside
+`owns` (`docs/design/**`, `docs/DESIGN.md`) or is this task file. No token or package changed, so `npm run verify` does
+not apply. The lead ran all six checks in this worktree after `npm ci`, with evidence outside the repository:
+`design018.cjs` 702/702 (128 state and viewport combinations, no errors); `design012.cjs` 293 checks and 52 states, no
+failures; `design013.cjs` 371 checks and 41 states, no errors; `design014.cjs` 288/288; `design016.cjs` 399/399;
+`design017.cjs` 347/347. The only change to `design014.cjs` is its two expected prototype-link counts (menu 35 to 34,
+report-detail 6 to 5), which match the Settings link migration. The lead looked at the `default` and `stale`
+screenshots at 1440. **For the reviewer:** in `stale`, the facts line above the form still reads "Version 4 · In force
+since 12 Oct 2026, 14:05 · Saved by M. Iqbal", while the notice says version 5 is now in force. Check whether that line
+names the version in force or the version the draft builds on, and whether either reading is honest in `stale`,
+`unknown-changed` and after *Keep my changes*.
+
+**Review:** Claude Opus, hand-opened, under the owner exception above; the dispatcher would pick Codex.
 
 ## Handoff
 
