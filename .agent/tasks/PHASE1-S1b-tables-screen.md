@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries, identity]
 depends_on: [PHASE1-S1a, DESIGN-017]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/tables.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S1b — BO-05 Tables in the back office
