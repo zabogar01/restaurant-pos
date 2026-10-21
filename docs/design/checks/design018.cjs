@@ -53,6 +53,7 @@ let browser,last;
   check(shownLongest.outlet.length===64&&shownLongest.address.length===200&&shownLongest.address.split('\n').length===3&&shownLongest.phone.length===32&&shownLongest.npwpd.length===32&&shownLongest.footer.length===120&&shownLongest.tax==='99,9999%'&&shownLongest.service==='0,0001%','longest stored values at their limits '+viewport.width,shownLongest);
   geometry.longestView=await p.locator('#settings-view').boundingBox();
   await p.goto(url('edit-longest'));check(await p.evaluate(()=>['outlet-name','address','phone','npwpd','footer'].map(id=>document.getElementById(id).value.length).join())==='64,200,32,32,120','longest values in every field '+viewport.width);
+  await save();await ready('unchanged');check(await p.locator('[data-show=phone]').innerText()==='+62 (021) 5550-1340 0812-3456-78'&&await fx('commands')===1,'longest phone passes validation unchanged '+viewport.width);
   await p.goto(url('methods-overflow'));check((await row('many-0').locator('td').first().innerText()).length===32,'longest method name is 32 UTF-16 units '+viewport.width);
   const th=p.locator('#methods-list th').first();await p.locator('.bocontent').evaluate(e=>{const t=document.querySelector('#methods-list');e.scrollTop=t.offsetTop+400;});
   geometry.sticky={header:await th.boundingBox(),owner:await p.locator('.bocontent').boundingBox(),scroll:await p.locator('.bocontent').evaluate(e=>e.scrollTop)};
@@ -60,6 +61,7 @@ let browser,last;
   report.geometry.push(geometry);
  }
  await p.setViewportSize({width:1440,height:900});
+ await p.goto(url('edit'));check(await p.locator('#phone-help').innerText()==='Up to 32 characters: digits, spaces and + - . ( )','phone help names the allowed characters');
 
  /* The rate field rule, as S2b will test it. */
  const rules=await p.evaluate(()=>{const r=SettingsFixture.parseRate,t=SettingsFixture.percentText;return {
@@ -79,7 +81,8 @@ let browser,last;
   [{'outlet-name':'x'.repeat(65),'address':'x'.repeat(201),'phone':'1'.repeat(33),'npwpd':'x'.repeat(33),'footer':'x'.repeat(121)},'invalid-long',{'outlet-name':'Use 64 characters or fewer.','address':'Use 200 characters or fewer.','phone':'Use 32 characters or fewer.','npwpd':'Use 32 characters or fewer.','footer':'Use 120 characters or fewer.'}],
   [{'address':'Jl. Melati 12\nKebayoran Baru\nJakarta Selatan\n12160'},'invalid-address-lines',{'address':'Use three lines or fewer.'}],
   [{'outlet-name':'Warung\u0007','address':'Jl. Melati\t12','npwpd':'P.2\u001b','footer':'Terima\u0007 kasih'},'invalid-control',{'outlet-name':'Remove control characters from the outlet name.','address':'Remove control characters from the address. Line breaks are allowed.','npwpd':'Remove control characters from the NPWPD.','footer':'Remove control characters from the footer line.'}],
-  [{'phone':'WA 0812 3456 7890'},'invalid-phone',{'phone':'Use only digits, spaces and + - . ( ) /.'}]]){
+  [{'phone':'WA 0812 3456 7890'},'invalid-phone',{'phone':'Use only digits, spaces and + - . ( ).'}],
+  [{'phone':'021 / 555'},'invalid-phone',{'phone':'Use only digits, spaces and + - . ( ).'}]]){
   await p.goto(url('edit'));for(const [id,v] of Object.entries(fills))await p.locator('#'+id).evaluate((e,v)=>{e.value=v;},v);await save();await ready(state);
   const got=await p.evaluate(ids=>Object.fromEntries(ids.map(id=>[id,document.getElementById(id+'-error').hidden?'':document.getElementById(id+'-error').textContent])),Object.keys(expect));
   check(JSON.stringify(got)===JSON.stringify(expect)&&await focus()===Object.keys(expect).find(k=>['outlet-name','address','phone','npwpd','footer'].includes(k))&&await fx('commands')===0,'local detail refusal '+state,got);
