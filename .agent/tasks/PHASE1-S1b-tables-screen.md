@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries, identity]
 depends_on: [PHASE1-S1a, DESIGN-017]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/tables.spec.ts, e2e/support/**]
-status: active
+status: review
 cycles: 0
 ---
 # PHASE1-S1b — BO-05 Tables in the back office
@@ -513,6 +513,15 @@ rounds 2 and 3 together.
 
 Touch only `owns`. Run `npm run verify` and `npm run test:e2e:all`; commit; append a *Round 3* section to the Handoff
 (what changed, the red proof for item 1, the counts) ending `DONE` or `BLOCKED: <question>`; report through Herdr.
+
+## Lead verify, rounds 2 and 3 (2026-10-21)
+
+At `f20cb71`. Only paths in `owns` changed. Existing tests changed in round 3: two cases in the builder's own
+`tables-round2.test.tsx`, both following the visit-read rule (accepted). Lead runs: `npm run verify` 103 files, 3930
+tests; `npm run test:e2e:all` 68 passed (51.6 s). Read the round 2 and 3 source against F1 to F4 and the round 3
+rulings: the confirmation keyed to `staffUserId`; the model owned by `Screens` per key, started and stopped with it; the
+`applied` clock and the merge in `load`; `partial` drawing rows with the alert kept and counts withheld; a reread on
+every visit after the first. Sent to Codex for one re-review of rounds 2 and 3.
 
 ## Handoff
 
