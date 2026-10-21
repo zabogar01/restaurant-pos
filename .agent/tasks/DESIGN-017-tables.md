@@ -5,8 +5,8 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-016]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
-cycles: 1
+status: complete
+cycles: 2
 ---
 # DESIGN-017 — BO-05 Tables (slice E1)
 
@@ -287,6 +287,20 @@ counts 36/7 to 35/6, the only change to it); `design012.cjs` and `design013.cjs`
 3753 tests. Decisions to review: the non-modal panel (Log out and the rail stay live; only the departure decision is
 modal), no confirmation for deactivate or reactivate, active-first natural label order, the reactivation-refusal
 recovery (rename, then reactivate), and the copy table. Sent to the Claude reviewer (Codex built it).
+
+## Round 3 lead review and acceptance (2026-10-21)
+
+At `bda417f`, applied by a Claude Opus designer (`design017c`) under the owner's one-time exception (DECISIONS
+2026-10-21); reviewed by the lead, no Codex check. Five files changed (the task file, `D`, `SITEMAP.md`,
+`design017.cjs`, `F/tables.js`); `git diff --check` clean. Each ruling is applied verbatim: N1 (`resume(false)` marks
+any in-flight command discarded and clears `pending`; a discarded command's late answer updates the list silently,
+never announced or focused; the `D` sentence), N2 (the waiting sentence while a discarded save is outstanding, cleared
+on settle), N3 (the session-refusal sentence for status commands), the sitemap blank line, and the logout emergency
+sentence. `design017.cjs` gained the different-manager cases (save and deactivate, idle and ended) and the N2/N3 and
+emergency assertions; no assertion was weakened. Lead runs: `design017.cjs` 346/346, `design016.cjs` 399/399,
+`design014.cjs` 288/288, `design013.cjs` and `design012.cjs` clean, `npm run verify` 94 files, 3753 tests. All review
+findings (F1-F10, N1-N3, two cosmetic) closed. **Complete.** `touches: identity`, so the owner looks before merge. S1b
+is written from this Handoff's copy table and `D`'s configuration-form rules.
 
 ## Handoff
 
