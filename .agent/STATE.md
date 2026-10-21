@@ -53,10 +53,10 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **DESIGN-018 (BO-08), hand-opened:** agent `design018`, Codex `gpt-6-astra` high, pane `DESIGN-018` (`w2:p70`), idle,
-  **not briefed** (Codex at 16% of its allowance at 17:23, reset 20:13). Review: Claude Opus, after writing
-  `.agent/runs/DESIGN-018/builder/meta.json` with `"cli":"codex"`; then the owner's look. Designers stay hand-opened
-  (the dispatcher routes `ui` to the builder). **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
+- **DESIGN-018 (BO-08), running:** agent `design018`, **Claude Opus 5.5** (owner exception, DECISIONS 10-21: Opus
+  designs and reviews, no Codex), pane `DESIGN-018` (`w2:p81`), briefed 17:3x. Watcher: `$CLAUDE_JOB_DIR/tmp/
+  watch-design018.sh`. Review: a hand-opened Claude Opus reviewer (the dispatcher would pick Codex from
+  `meta.json`'s `"cli":"claude"`); then the owner's look. **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
   slices left: F's BO-07 half, D (BO-03, BO-04, the POS addition), E2 (BO-06); G and H later.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
@@ -115,7 +115,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
-- **DESIGN-018's start:** brief Codex now on 16% (runs out mid-slice), or at 20:13. Lead: wait for the reset.
+- **S8a now, beside DESIGN-018?** (users server from C3; needs no design; builder idle). Lead: yes.
 - **S1b's lead rulings, yours to overturn** (merged in #123): the nine, the builder's two questions, and F4's screen
   for a save after a failed reread (DESIGN-018 is asked to draw BO-08's and say whether BO-05's should change).
 - **When to start design slice E2 (BO-06 Users)**: the plan put it last, but every owner answer it waited on is in;
@@ -144,7 +144,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **DESIGN-018:** brief `design018` (owner's timing); on DONE, run the five earlier checks and `design018.cjs`, review.
+1. **DESIGN-018:** on DONE, run the five earlier checks and `design018.cjs`, then the Opus review.
 2. **Builder idle meanwhile:** S2a waits on DESIGN-018's length guards (C1 §1.1). S8a (users server, from C3) needs no
    design: the lead proposes writing it now (owner's word). Then D, after DESIGN-018.
 3. **Then S2a** (settings versions, from ADR-012, C1 and DESIGN-018's guards), S2b and S3 from DESIGN-018.
