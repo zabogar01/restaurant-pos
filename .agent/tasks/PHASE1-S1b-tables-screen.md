@@ -495,6 +495,25 @@ you re-ran. Run `npm run verify` and `npm run test:e2e:all`; commit on `agent/ph
 the Handoff (what changed per finding, where, the red proofs, the counts) ending `DONE` or `BLOCKED: <question>`; report
 to the lead through Herdr.
 
+## Round 3 — two items from the lead's review of round 2 (lead rulings, 2026-10-21)
+
+The lead read `1ac6aa8` against the four rulings: F1 to F4 are met as ruled, the new tests are the review's scenarios,
+and no existing test changed. Two items remain; this is the last fix round (`max_fix_cycles` 2). Codex then re-reviews
+rounds 2 and 3 together.
+
+1. **Every visit to Tables reads the list.** Moving the model to the working area made `shown()` read the list only the
+   first time per manager; before, each visit read it. Opening Tables from the rail must show a list read on that visit:
+   the first visit reads as now (loading shown); every later visit starts a reread that does not hide the rows already
+   held (as the reread after a refusal does), and the F3 merge keeps any record answered after it began. A visit while a
+   command is pending reads too; the command's answer still wins by F3. No reread on any other trigger (C2 §3: none after
+   success, no polling). Test: leave Tables, change the server's list behind it, return: one list read is sent and the
+   new row is shown; while that read is held, the old rows stay visible with no loading state.
+2. **Formatting.** `apps/back-office/src/tables/Tables.tsx`: `useEffect(() => model.shown(), [model]);` and the
+   `workGuard.register` effect share one line; put each on its own line.
+
+Touch only `owns`. Run `npm run verify` and `npm run test:e2e:all`; commit; append a *Round 3* section to the Handoff
+(what changed, the red proof for item 1, the counts) ending `DONE` or `BLOCKED: <question>`; report through Herdr.
+
 ## Handoff
 
 ### What I did
