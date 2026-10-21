@@ -75,4 +75,51 @@ Commit on `agent/design-018b` only, and never push. Write the Handoff below in f
 
 ## Handoff
 
-_Not started._
+Implemented the owner's phone charset ruling in the BO-08 Frost fixture. The phone field now refuses `/` with
+"Use only digits, spaces and + - . ( )." Its help is exactly "Up to 32 characters: digits, spaces and + - . ( )".
+The longest stored phone is `+62 (021) 5550-1340 0812-3456-78`, exactly 32 characters. Both `longest` and
+`edit-longest` retain their exact-limit property.
+
+The phone guard S2a will copy is: trim surrounding whitespace before validating; require 1–32 characters; allow
+only ASCII digits, ASCII spaces and `+ - . ( )`; allow no control character. The fixture's charset expression is
+`/^[0-9 +\-.()]+$/`. The existing required-field, length, trimming and control-character handling is unchanged.
+This ruling supersedes only DESIGN-018's phone slash allowance. NPWPD's separate rule is unchanged.
+
+The changed-line inventory below uses the resulting line numbers from `git diff --unified=0`:
+
+- In `docs/design/visual-directions/frost/back-office/settings.js`, line 17 removes `/` from the phone refusal,
+  line 21 replaces only the longest phone value, and line 113 removes `/` from the accepted character class.
+- In `docs/design/visual-directions/frost/back-office/settings.html`, line 61 removes `/` from the phone help;
+  the rest of the phone row is unchanged.
+- In `docs/design/checks/design018.cjs`, line 56 adds an explicit Save of the longest phone at both viewport
+  sizes and checks the unchanged result, exact displayed value and single command. Line 64 checks the exact help
+  copy. Line 84 updates the existing letter-refusal copy, and line 85 adds `021 / 555` as a refusal vector with
+  the new copy. The existing loop also verifies focus on the phone field and zero commands for that refusal.
+  No existing assertion was weakened or removed.
+- In this task file, only the Handoff replaces the not-started placeholder with the implementation and evidence.
+
+A search across `docs/design/` found no other phone rule, copy or accepted value requiring a change. The remaining
+slash in the longest NPWPD belongs to that separate field. `docs/DESIGN.md` contains no phone charset rule and was
+left unchanged. The merged DESIGN-018 task remains untouched, as instructed; builders must use the superseding
+phone guard recorded here. No production file, shared rail, token or other artifact was changed.
+
+The owner approved each check in this pane. Before changing the guard, a focused Node check extracted the actual
+phone regular expression from `settings.js` and asserted that `021 / 555` was refused. It failed as expected:
+the original guard accepted the value. That same value is the new browser refusal vector.
+
+After the change, `design018.cjs` completed once: **722/722 assertions passed**, with **130 state/viewport
+captures** and no page errors. An initial sandbox attempt failed to launch Chrome before any assertion ran;
+the owner approved the retry outside the sandbox. Evidence is in `/tmp/design018b-evidence/settings`, including
+`measurements.json` and screenshots. The generated `edit-longest-1440.png` and `invalid-phone-1440.png` were
+visually inspected; the phone value, help and refusal fit the existing layout.
+
+`design017.cjs` completed once outside the sandbox with owner approval: **347/347 assertions passed**, with
+**74 state/viewport captures** and no page errors. Evidence is in `/tmp/design018b-evidence/tables`, including
+`measurements.json` and screenshots. Both browser checks used `PLAYWRIGHT_MODULE="$PWD/node_modules/playwright"`
+and their respective `DESIGN_EVIDENCE_DIR` above.
+
+The owner also approved `npm run verify`. It passed typechecking and **3,934 tests across 104 test files**.
+No additional browser rerun or end-to-end suite was run. All evidence remains outside the repository. There are
+no unresolved findings or missing inputs for this change.
+
+DONE

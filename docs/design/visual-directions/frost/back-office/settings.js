@@ -14,11 +14,11 @@
     {key:'npwpd',id:'npwpd',max:32,optional:true,control:'Remove control characters from the NPWPD.'},
     {key:'footer',id:'footer',max:120,empty:'Enter the footer line.',control:'Remove control characters from the footer line.'}];
   const RATE={format:'Enter a number, such as 10 or 10,5.',negative:'Use 0 or more.',over:'Use 100 or less.',decimals:'Use at most four decimal places.'};
-  const TEXT={lines:'Use three lines or fewer.',phone:'Use only digits, spaces and + - . ( ) /.',long:n=>'Use '+n+' characters or fewer.'};
+  const TEXT={lines:'Use three lines or fewer.',phone:'Use only digits, spaces and + - . ( ).',long:n=>'Use '+n+' characters or fewer.'};
   const METHOD={empty:'Enter a method name.',long:'Use 32 characters or fewer.',control:'Remove control characters from the name.',duplicate:'An active payment method already uses this name. Choose another name.',reactivate:'An active payment method already uses this name. Rename this inactive method, save, then reactivate it.'};
   const FORM={failure:'Nothing was saved. Your draft is kept. Press Save to try again.',waiting:'Waiting for an earlier save to finish. Nothing will be sent again.'};
   const V4={tax:100000,service:50000,outlet:'Warung Sederhana',address:'Jl. Melati No. 12\nKebayoran Baru\nJakarta Selatan 12160',phone:'021 555 0134',npwpd:'P.2.0012345.07.001',footer:'Terima kasih atas kunjungan Anda'};
-  const LONGEST={tax:999999,service:1,outlet:'Rumah Makan Padang Sederhana Sejahtera Cabang Kebayoran Baru Dua',address:'Jalan Raya Kebayoran Lama No. 128, Blok C, Ruko Permata Hijau Indah Lantai 2\nKelurahan Grogol Utara, Kecamatan Kebayoran Lama\nKota Administrasi Jakarta Selatan, DKI Jakarta 12210, Indonesia ABCDEFGHIJ',phone:'+62 21 5550 1340 / 0812 345 6789',npwpd:'P.2.0012345.07.001 / 2026-000123',footer:'Terima kasih atas kunjungan Anda. Simpan struk ini sebagai bukti pembayaran yang sah. Kritik dan saran: 021 5550 1340 AB'};
+  const LONGEST={tax:999999,service:1,outlet:'Rumah Makan Padang Sederhana Sejahtera Cabang Kebayoran Baru Dua',address:'Jalan Raya Kebayoran Lama No. 128, Blok C, Ruko Permata Hijau Indah Lantai 2\nKelurahan Grogol Utara, Kecamatan Kebayoran Lama\nKota Administrasi Jakarta Selatan, DKI Jakarta 12210, Indonesia ABCDEFGHIJ',phone:'+62 (021) 5550-1340 0812-3456-78',npwpd:'P.2.0012345.07.001 / 2026-000123',footer:'Terima kasih atas kunjungan Anda. Simpan struk ini sebagai bukti pembayaran yang sah. Kritik dan saran: 021 5550 1340 AB'};
   const LONGEST_METHOD='Voucher Makan Karyawan ABCDEFGHI';
   const seedMethods=()=>[{id:'m1',name:'Bank transfer',active:true},{id:'m2',name:'Meal voucher',active:true},{id:'m3',name:'Staff account',active:true},{id:'m4',name:'Gift card',active:false}];
 
@@ -110,7 +110,7 @@
       if(!v){if(!f.optional){msg=f.empty;kind='required';}}
       else if(v.length>f.max){msg=TEXT.long(f.max);kind='long';}
       else if(f.lines&&v.split('\n').length>f.lines){msg=TEXT.lines;kind='address-lines';}
-      else if(f.phone&&!/^[0-9 +\-.()/]+$/.test(v)){msg=TEXT.phone;kind='phone';}
+      else if(f.phone&&!/^[0-9 +\-.()]+$/.test(v)){msg=TEXT.phone;kind='phone';}
       else if(/\p{Cc}/u.test(f.lines?v.replace(/\n/g,''):v)){msg=f.control;kind='control';}
       if(msg)errors.push([f,msg,kind]);else values[f.key]=v||null;
     }
