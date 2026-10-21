@@ -46,7 +46,7 @@ at `0010`. **S1b complete, PR #123 open** for the owner's look and merge. Nothin
   **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-20); no agents.yaml or `.githooks/` change since 2026-10-17.
 - **Lead work: `../restaurant-pos-kit` on `agent/lead-1021`** (from `da7c270`): STATE, QUEUE, DECISIONS, LESSONS,
-  journal, and `dispatch.rb`'s resume guards (journal 10-21), pushed for a PR. The lead pushes and opens PRs (owner,
+  journal, and `dispatch.rb`'s resume guards (journal 10-21), PR #124. The lead pushes and opens PRs (owner,
   DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own step before any follow-up push** (#110).
 - **Task branches:** `agent/phase1-s1b` (worktree `../restaurant-pos-wt/PHASE1-S1b`, PR #123). After it merges: remove
   the worktree and `.agent/runs/PHASE1-S1b/`. Not the lead's: worktrees `../restaurant-pos-design` and
@@ -117,7 +117,7 @@ at `0010`. **S1b complete, PR #123 open** for the owner's look and merge. Nothin
 Nothing here is decided. Detail is where each line points.
 
 - **Look at BO-05 and merge PR #123** (serve from the S1b worktree: `build:clients`, `npm run dev -w apps/server`), and
-  the lead branch's PR. **S1b's lead rulings, yours to overturn:** the nine, the builder's two questions, and F4's
+  PR #124 (lead memory, dispatcher). **S1b's lead rulings, yours to overturn:** the nine, the builder's two questions, and F4's
   screen for a save after a failed reread (no designed state; the designer may redraw it).
 - **When to start design slice E2 (BO-06 Users)**: the plan put it last, but every owner answer it waited on is in;
   lead: after F's BO-08 half, beside D.
