@@ -786,4 +786,23 @@ that file. I again used a heredoc to append it, against the shell rule; the file
 
 **Counts.** `npm run verify`: typecheck clean, **103 files, 3930 tests** (+1 test). `npm run test:e2e:all`: **68 passed**.
 
+### Round 4 — N1 and N2
+
+Both applied in `apps/back-office/src/tables/model.ts`; new tests in `apps/back-office/test/tables-round4.test.tsx`. No existing
+assertion changed.
+
+- **N1.** When a read fails and it is the latest read, `load` now sets `partial` if any authoritative answer was applied after
+  that read began (`appliedClock > startedAt`), keeping an existing `partial`. The known rows stay drawn in the F4 composition:
+  alert kept, counts withheld, the answered row with its Edit, New table live. Focus is not moved by the failure. With no
+  answer after the read began, a failure behaves as before (the list is withheld; the second test holds that).
+  **Red proof:** the failure branch back to `set({ read: 'failed' })`: the review's scenario failed with `expected [] to include
+  'Window 1'`. Reverted.
+- **N2.** The model-wide `reading` count is removed; every real visit sends its own read, and the read sequence plus the F3 merge
+  keep an older answer from winning. I kept no guard, so a development double effect may send one extra read for a visit, which
+  is harmless. The test runs the review's scenario twice, with the held reads settling newest-first and oldest-first.
+  **Red proof:** the old guard restored in the form "skip a visit's read while any read is out": both orders failed with
+  `expected 2 to be 3` list reads. Reverted.
+
+**Counts.** `npm run verify`: typecheck clean, **104 files, 3934 tests** (+1 file, +4 tests). `npm run test:e2e:all`: **68 passed**.
+
 DONE

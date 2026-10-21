@@ -127,8 +127,6 @@ export function createTablesModel(config: ConfigApi) {
   let gate = false;
   let stopped = true;
   let loaded = false;
-  /** Reads out now. */
-  let reading = 0;
   /** Counts the answers applied to the list, so a read can tell which came after it began. */
   let appliedClock = 0;
   const applied = new Map<string, { table: TableView; at: number }>();
@@ -170,21 +168,22 @@ export function createTablesModel(config: ConfigApi) {
     const startedAt = appliedClock;
     if (visible) set({ read: 'loading' });
     let rows: readonly TableView[] | null = null;
-    reading += 1;
     try {
       const answer = await config['/api/back-office/config/tables']();
       if (answer.kind === 'ok') rows = answer.value.tables;
     } catch {
       rows = null;
-    } finally {
-      reading -= 1;
     }
     if (mine === readSequence) {
       if (rows !== null) {
         let merged = [...rows];
         for (const { table, at } of applied.values()) if (at > startedAt) merged = upsert(merged, table);
         set({ read: 'ready', rows: merged, partial: false });
-      } else set({ read: 'failed' });
+      } else {
+        // The same reconciliation as a read that succeeded: an answer applied after this read
+        // began is on screen, so the known rows stay drawn with the alert and no counts.
+        set({ read: 'failed', partial: state.partial || appliedClock > startedAt });
+      }
     }
     return rows !== null;
   }
@@ -426,14 +425,15 @@ export function createTablesModel(config: ConfigApi) {
     /**
      * Tables is on screen. Every visit reads the list: the first shows "Loading", a later one
      * rereads without hiding the rows already held (the F3 merge keeps any record a command
-     * answered after the read began). A stale result is dropped. A read already out serves
-     * a visit that begins at once (a development remount).
+     * answered after the read began). A stale result is dropped. A visit sends its own read even
+     * while an earlier one is out: the latest read decides. A development double effect may send
+     * one more, which is harmless, a read not being interactive.
      */
     shown(): void {
       if (!loaded) {
         loaded = true;
         void load(true);
-      } else if (reading === 0) {
+      } else {
         void load(false);
       }
       const { page } = state;
