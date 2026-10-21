@@ -256,4 +256,31 @@ outcome, whose reread cannot tell whether the change applied.
 the librarian through a summarising fetch; the task file should have the builder confirm the
 column-grant syntax and `[[:cntrl:]]`'s coverage of C1 controls against the manual, as C1 asked.
 
+**Round 2 (architect20, 2026-10-21).** After the owner's rulings (OQ1 yes, OQ2 no, ADR-009's answered
+items recorded in ARCHITECTURE rather than a superseding ADR), `docs/ARCHITECTURE.md` carries the
+report's *Stale text* 1 to 4, and nothing else in it changed:
+
+- **§3.2**, the authentication-risks bullet, ends "…the unaudited first-manager script, and the users
+  screen's refusal of a PIN another active user holds;".
+- **§7.2**, the last two bullets replaced: the increment rule (deactivation, a role or classification
+  change, storing or removing a PIN or password; not reactivation alone), and the own password or own
+  PIN change with the current password, the re-stamp of the acting session in the same transaction
+  (nothing committed if it cannot), and "these two commands are the only user-management commands
+  that write a session row", citing the owner's answers to ADR-009's open items.
+- **§8**, after the DiningTable sentence, so the section still reads as one lock order: users
+  commands take no coordination row, lock the acting manager's and the subject's StaffUser rows in id
+  order `FOR NO KEY UPDATE`, then the BackOfficeCredential row, then the acting ActorSession, and
+  re-read the actor under the lock.
+- **§11**, the audited actions, adjusted for OQ1: the list adds the back-office reprint of a kitchen
+  ticket (already missing, I-8), "the back-office creation of a cashier or a manager and every
+  back-office change to a user's status, role or credentials (one entry per command, naming the
+  acting manager and the user, never a PIN, password or hash)"; the closing sentence adds that
+  creating kitchen staff and anything the first-manager script does are not audited, which is the
+  rest of the OQ1 ruling.
+- **§16**, a new row after the per-account lockout row: the PIN-in-use refusal, accepted for the MVP.
+
+No reading of the report changed, so the report is untouched. The citation in §7.2 names the owner's
+2026-10-21 ruling, which this branch's DECISIONS.md does not yet carry; the lead's line should land
+with or before the merge.
+
 DONE
