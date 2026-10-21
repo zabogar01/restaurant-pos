@@ -8,7 +8,7 @@ import {
   button, field, mount, ok, press, refusal, sessionState, text, type,
 } from './session-harness.js';
 import {
-  CREATE, LIST, OTHER, T1, T2, UPDATE,
+  CREATE, LIST, OTHER, T1, T2, T3, UPDATE,
   dialogNamed, formNotice, harness, labelField, named, openDialogs, openScreens, pageStatus, panel, rowLabels,
   table, tables, tap, typeInto,
 } from './tables-support.js';
@@ -135,7 +135,8 @@ describe('F2. a command outlives the screen, not the working area', () => {
     expect(named(host, 'New table').getAttribute('aria-disabled')).toBe('true');
     expect(named(host, 'Edit Table 2 — active').getAttribute('aria-disabled')).toBe('true');
     expect(named(host, 'Deactivate Table 2').getAttribute('aria-disabled')).toBe('true');
-    expect(h.count(LIST)).toBe(1);
+    // Round 3: the visit read the list, without hiding the rows held.
+    expect(h.count(LIST)).toBe(2);
 
     held.deliver(table({ ...T1, label: 'Window 1' }));
     await h.settle();
@@ -160,6 +161,8 @@ describe('F2. a command outlives the screen, not the working area', () => {
     // The answer arrives while the landing is shown.
     held.deliver(table({ tableId: '44444444-4444-4444-8444-444444444444', label: 'Window 2', isActive: true }));
     await h.settle();
+    // The visit's read now sees the committed create.
+    h.reply(LIST, tables(T1, T2, T3, { tableId: '44444444-4444-4444-8444-444444444444', label: 'Window 2', isActive: true }));
     forward();
     await h.settle();
     expect(rowLabels(host)).toContain('Window 2');
@@ -242,5 +245,30 @@ describe('F4. a success after a failed reread is shown', () => {
     expect(host.querySelector('[role="alert"]')).toBeNull();
     expect(text(host.querySelector('#table-count'))).toBe('2 active · 0 inactive');
     expect(h.count(UPDATE)).toBe(2);
+  });
+});
+
+describe('Round 3. every visit to Tables reads the list', () => {
+  it('leave, change the list behind it, return: one read, the new row shown, and no loading state while it is out', async () => {
+    const host = await open('/back-office/');
+    tap(named(rail(host), 'Tables'));
+    await h.settle();
+    expect(h.count(LIST)).toBe(1);
+
+    back();
+    expect(host.querySelector('h1')).toBeNull();
+    const extra = { tableId: '55555555-5555-4555-8555-555555555555', label: 'Window 5', isActive: true };
+    const visit = h.hold(LIST);
+    tap(named(rail(host), 'Tables'));
+    await h.settle();
+    // The read is out: the rows already held stay, and nothing says "Loading".
+    expect(h.count(LIST)).toBe(2);
+    expect(rowLabels(host)).toEqual(['Table 1', 'Table 2', 'Terrace 1']);
+    expect(host.textContent).not.toContain('Loading tables…');
+
+    visit.deliver(tables(T1, T2, T3, extra));
+    await h.settle();
+    expect(rowLabels(host)).toContain('Window 5');
+    expect(h.count(LIST)).toBe(2);
   });
 });

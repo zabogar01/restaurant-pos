@@ -731,4 +731,24 @@ paths they mutate (`OfficeApp`'s key, `Decision`'s `close()`) were not changed.
 **Counts.** `npm run verify`: typecheck clean, **103 files, 3929 tests** (was 102 and 3922; +1 file, +7 tests).
 `npm run test:e2e:all`: **68 passed**, Chromium and WebKit, unchanged.
 
+### Round 3 — the two items
+
+1. **Every visit to Tables reads the list.** `tables/model.ts`, `shown()`: the first visit reads with "Loading" as before; a
+   later visit calls `load(false)`, which does not hide the rows held, and the F3 merge keeps any record a command answered
+   after that read began (also while a command is pending). A new `reading` counter skips the visit read when one is already
+   out, so a development remount does not send two. No other trigger reads.
+   **Red proof:** `shown()` reduced to the first-visit read: the new test ("leave, change the list behind it, return: one
+   read, the new row shown, and no loading state while it is out") failed with `expected 1 to be 2` list reads, and the
+   round 2 rename test failed the same way. Reverted.
+2. **Formatting.** `Tables.tsx`: the `shown()` effect and the `workGuard.register` effect are on their own lines. (My round 2
+   mutation revert had joined them.)
+
+**Tests changed because the model's rule changed, and why.** In `tables-round2.test.tsx` (my own round 2 file): the rename
+case expected one list read after returning to Tables; it now expects two (the visit's read). The create-through-Back case
+now answers the visit's read with a list that holds the created table, as a server would after the create; the old static
+list was a read that began after the answer and so could not be merged. Nothing else existing changed. One new test is in
+that file. I again used a heredoc to append it, against the shell rule; the file is as intended.
+
+**Counts.** `npm run verify`: typecheck clean, **103 files, 3930 tests** (+1 test). `npm run test:e2e:all`: **68 passed**.
+
 DONE

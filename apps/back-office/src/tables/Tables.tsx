@@ -92,7 +92,8 @@ export function Tables({ model }: { model: TablesModel }) {
   const signedIn = phase === 'signed-in';
   const root = useRef<HTMLDivElement>(null);
 
-  useEffect(() => model.shown(), [model]);  useEffect(() => workGuard.register(model.guard), [model]);
+  useEffect(() => model.shown(), [model]);
+  useEffect(() => workGuard.register(model.guard), [model]);
   useEffect(() => model.subscribe(workGuard.changed), [model]);
 
   // Coming back from BO-01 as the same manager: the panel is shown again with the

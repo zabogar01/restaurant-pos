@@ -127,6 +127,8 @@ export function createTablesModel(config: ConfigApi) {
   let gate = false;
   let stopped = true;
   let loaded = false;
+  /** Reads out now. */
+  let reading = 0;
   /** Counts the answers applied to the list, so a read can tell which came after it began. */
   let appliedClock = 0;
   const applied = new Map<string, { table: TableView; at: number }>();
@@ -168,11 +170,14 @@ export function createTablesModel(config: ConfigApi) {
     const startedAt = appliedClock;
     if (visible) set({ read: 'loading' });
     let rows: readonly TableView[] | null = null;
+    reading += 1;
     try {
       const answer = await config['/api/back-office/config/tables']();
       if (answer.kind === 'ok') rows = answer.value.tables;
     } catch {
       rows = null;
+    } finally {
+      reading -= 1;
     }
     if (mine === readSequence) {
       if (rows !== null) {
@@ -418,11 +423,18 @@ export function createTablesModel(config: ConfigApi) {
         stopped = true;
       };
     },
-    /** Tables is on screen: reads the list the first time only, and drops a result that is stale. */
+    /**
+     * Tables is on screen. Every visit reads the list: the first shows "Loading", a later one
+     * rereads without hiding the rows already held (the F3 merge keeps any record a command
+     * answered after the read began). A stale result is dropped. A read already out serves
+     * a visit that begins at once (a development remount).
+     */
     shown(): void {
       if (!loaded) {
         loaded = true;
         void load(true);
+      } else if (reading === 0) {
+        void load(false);
       }
       const { page } = state;
       if (page !== null && !['waiting', 'deactivating', 'reactivating'].includes(page.kind)) set({ page: null });
