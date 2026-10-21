@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries, identity]
 depends_on: [PHASE1-S1a, DESIGN-017]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/tables.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S1b — BO-05 Tables in the back office
@@ -432,6 +432,27 @@ than one commit is fine if it reads better. Write the Handoff below in full pros
 was decided and on what evidence, tests changed and why, each red proof (mutation, failure read, reverted), what was
 found and not fixed, the real `verify` and `test:e2e:all` output, the C5 numbers, and what C2's *The Handoff must carry
 forward* names. End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify (2026-10-21)
+
+At `5fea2f8`, in this worktree. `git diff --name-only development...HEAD`: the task file and paths in `owns` only.
+Existing tests changed: `sign-in.test.tsx` (`:57`, listed, and `:64`, the frame's link count, for the same reason: the
+rail's one link; not weaker) and `session-harness.tsx` (an optional second argument to `mount`, every existing call
+unchanged). Both accepted. Lead runs: `npm run verify` 102 files, 3922 tests, green; `npm run test:e2e:all` 68 passed
+(50.7 s), the five `tables.spec.ts` cases in each engine. The C5 numbers (median save-to-visible 91 ms, slowest 105 ms)
+are far below C2 §9's five-second trigger: **C5 is not needed**; the lead records that. Not done by the lead: a walk in
+a real window (needs a manager's password; the owner's look before merge covers it).
+
+**Lead rulings on the Handoff's two questions** (yours to overturn, owner):
+
+1. **Decision 1 is accepted.** Ruling 4's "a command pending or unknown" meant a form's command. A status command has no
+   draft (`D`, *Status commands*: navigation stays live), so the top bar's *Log out* does not ask for one.
+2. **Decision 3 is accepted.** A client path holds no data (C2 §7), so showing the screen the address names after any
+   sign-in is harmless, and it is the same rule that makes a reload land on BO-05. Ruling 5's "lands on `/back-office/`"
+   describes signing in from the landing; no reset is added.
+
+Decision 2 (*Keep this draft* returns focus to the label, as `D` says for *Stay*) is accepted. Sent to review
+(`touches: boundaries, identity`); the owner looks before merge.
 
 ## Handoff
 
