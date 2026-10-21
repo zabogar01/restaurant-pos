@@ -53,10 +53,10 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **DESIGN-018 (BO-08), running:** agent `design018`, **Claude Opus 5.5** (owner exception, DECISIONS 10-21: Opus
-  designs and reviews, no Codex), pane `DESIGN-018` (`w2:p81`), briefed 18:4x. Watcher: `$CLAUDE_JOB_DIR/tmp/
-  watch-design018.sh`. Review: a hand-opened Claude Opus reviewer (the dispatcher would pick Codex from
-  `meta.json`'s `"cli":"claude"`); then the owner's look. **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
+- **DESIGN-018 (BO-08), round 2:** agent `design018`, **Claude Opus 5.5** (owner exception, DECISIONS 10-21), pane
+  `w2:p81`. Round 1 `95b199b`: 64 states; lead ran all six checks green (018 702/702). Opus review (hand-opened): F1
+  facts line, F2 after-M-6 state, both ruled above the Handoff (`d4fc0cd`, cycles 1). Round 2 small and fully ruled:
+  the lead reviews it, then the owner's look. **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
   slices left: F's BO-07 half, D (BO-03, BO-04, the POS addition), E2 (BO-06); G and H later.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
@@ -144,7 +144,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **DESIGN-018:** on DONE, run the five earlier checks and `design018.cjs`, then the Opus review.
+1. **DESIGN-018 round 2:** on DONE, repeat the red proof, run all six checks, lead review; push, open the PR.
 2. **Builder idle meanwhile:** S2a waits on DESIGN-018's length guards (C1 §1.1). S8a (users server, from C3) needs no
    design: the lead proposes writing it now (owner's word). Then D, after DESIGN-018.
 3. **Then S2a** (settings versions, from ADR-012, C1 and DESIGN-018's guards), S2b and S3 from DESIGN-018.
