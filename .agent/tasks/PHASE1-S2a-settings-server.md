@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries]
 depends_on: [PHASE1-S1b, DESIGN-018]
 owns: [db/migrations/0011_settings_version.sql, apps/server/src/domain/settings.ts, apps/server/src/http/routes/back-office-settings.ts, apps/server/src/http/server.ts, packages/money/src/**, packages/money/test/**, packages/contracts/src/settings.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, apps/server/package.json, package-lock.json]
-status: active
+status: complete
 cycles: 1
 ---
 # PHASE1-S2a — Settings versions on the server
