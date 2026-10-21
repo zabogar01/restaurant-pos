@@ -54,7 +54,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Running tasks and agents
 
 - **DESIGN-018 (BO-08), running:** agent `design018`, **Claude Opus 5.5** (owner exception, DECISIONS 10-21: Opus
-  designs and reviews, no Codex), pane `DESIGN-018` (`w2:p81`), briefed 17:3x. Watcher: `$CLAUDE_JOB_DIR/tmp/
+  designs and reviews, no Codex), pane `DESIGN-018` (`w2:p81`), briefed 18:4x. Watcher: `$CLAUDE_JOB_DIR/tmp/
   watch-design018.sh`. Review: a hand-opened Claude Opus reviewer (the dispatcher would pick Codex from
   `meta.json`'s `"cli":"claude"`); then the owner's look. **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
   slices left: F's BO-07 half, D (BO-03, BO-04, the POS addition), E2 (BO-06); G and H later.
