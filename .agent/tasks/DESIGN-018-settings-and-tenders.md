@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-017]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: complete
 cycles: 1
 ---
 # DESIGN-018 — BO-08 Settings and payment methods (slice F, BO-08 half)
@@ -311,6 +311,21 @@ then add a section *Round 2* at the end of the Handoff (what changed, the red pr
   before) and quote the counts. Change nothing else.
 
 The Handoff's six questions go to the lead and owner with the merge; none is for this round.
+
+## Round 2 lead review and acceptance (2026-10-21)
+
+Round 2 is small and fully ruled, so the lead reviewed it rather than a second reviewer round (as on S1a and DESIGN-017).
+The lead read `52a48d2` against the rulings. `settings.js` re-renders the facts line in the stale and unknown branches,
+in both choice handlers and at the end of the direct-state block. `stale-reauth` now runs the M-6 walk with Ratna Ayu
+as the saver, and `stale-own-tab` is registered in the artifact and in `manifest.js`, which the gallery reads. The F1
+sentence is in `D` and in the Handoff's copy row, word for word. Nothing else changed. **Red proof, repeated by the
+lead:** with round 1's `settings.js` (from `d4fc0cd`) in place and round 2's page, `design018.cjs` gave 710/718. The 8
+failures were the six F1 facts-line assertions (each reading "Version 4") and the two F2 assertions. The lead restored
+the file and the tree was clean. **Green, run by the lead:** `design018.cjs` 718/718 over 130 state and viewport
+combinations; `design012.cjs` 293 checks; `design013.cjs` 371; `design014.cjs` 288/288; `design016.cjs` 399/399;
+`design017.cjs` 347/347; no failures or errors in any. The lead looked at the `stale-reauth` screenshot at 1440: the
+facts line and the notice both name version 5, saved by Ratna Ayu. **Complete.** `touches: money, boundaries`: the
+owner looks before merge. The Handoff's six questions are open for the lead and the owner.
 
 ## Handoff
 
