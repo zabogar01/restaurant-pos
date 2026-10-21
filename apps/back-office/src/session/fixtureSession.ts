@@ -21,6 +21,18 @@ const RESTING: SessionSnapshot = {
   held: null,
 };
 
+// Every configuration call answers `unavailable` and sends nothing, so BO-05 shows its
+// designed failed-to-load state here. An in-memory fake of the table commands would
+// reimplement uniqueness and no-ops in a second place (consult C2 section 7).
+const unavailable = async () => ({ kind: 'unavailable' as const });
+const CONFIG: SessionStore['config'] = {
+  '/api/back-office/config/tables': unavailable,
+  '/api/back-office/config/tables/create': unavailable,
+  '/api/back-office/config/tables/update': unavailable,
+  '/api/back-office/config/tables/deactivate': unavailable,
+  '/api/back-office/config/tables/reactivate': unavailable,
+};
+
 export function createFixtureSession(): SessionStore {
   let snapshot: SessionSnapshot = RESTING;
   const listeners = new Set<() => void>();
@@ -31,6 +43,7 @@ export function createFixtureSession(): SessionStore {
 
   return {
     kind: 'fixture',
+    config: CONFIG,
     getSnapshot: () => snapshot,
     subscribe(listener) {
       listeners.add(listener);

@@ -20,6 +20,11 @@ export function useSessionStore(): SessionStore {
   return standalone;
 }
 
+/** The configuration routes, for a screen; it can call no other route. */
+export function useConfig(): SessionStore['config'] {
+  return useSessionStore().config;
+}
+
 export function useSession(): SessionSnapshot {
   const store = useSessionStore();
   return useSyncExternalStore(store.subscribe, store.getSnapshot);

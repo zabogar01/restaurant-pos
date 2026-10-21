@@ -1,10 +1,11 @@
-import { useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 import {
   CHOOSE_OTHER_BODY,
   CHOOSE_OTHER_TITLE,
   DISCARD_BODY,
   DISCARD_TITLE,
   INCORRECT_PASSWORD,
+  LOGOUT_UNCERTAIN,
   LOGOUT_UNCONFIRMED,
   MISSING_PASSWORD,
   MISSING_USERNAME,
@@ -23,6 +24,7 @@ import {
 import { PASSWORD_LIMIT, USERNAME_LIMIT } from './SignIn.js';
 import { accountKey } from './session/account.js';
 import type { IdleAttempt, IdleMode, SessionSnapshot, SessionStore } from './session/types.js';
+import { workGuard } from './work/guard.js';
 
 // M-6, the back-office re-authentication, as DESIGN-012 draws it and SCREEN-INVENTORY
 // specifies it: native modal dialogs over the frame, which stays rendered and inert.
@@ -49,6 +51,8 @@ export function Reauth({ snapshot, store }: { snapshot: Idle; store: SessionStor
   const confirmation = useRef<HTMLDialogElement>(null);
   const { mode, attempt, busy, person } = snapshot;
   const confirming = mode === 'confirm-logout';
+  // A save pending or of unknown outcome adds one paragraph to the logout confirmation.
+  const uncertain = useSyncExternalStore(workGuard.subscribe, workGuard.status) === 'uncertain';
   const verifying = attempt === 'verifying' || busy;
   // What the other manager has typed as Username (never the password). It survives a visit
   // to the discard confirmation, because "Keep this draft" returns to the form it came
@@ -225,10 +229,12 @@ export function Reauth({ snapshot, store }: { snapshot: Idle; store: SessionStor
         ref={confirmation}
         className="office-dialog"
         aria-labelledby="logout-title"
-        aria-describedby="logout-description"
+        aria-describedby={uncertain ? 'logout-description logout-uncertain' : 'logout-description'}
         {...CLOSED_BY_NONE}
       >
-        {confirming && <Discard snapshot={snapshot} store={store} wait={snapshot.from === 'same' ? idledWait : null} />}
+        {confirming && (
+          <Discard snapshot={snapshot} store={store} wait={snapshot.from === 'same' ? idledWait : null} uncertain={uncertain} />
+        )}
       </dialog>
     </>
   );
@@ -459,7 +465,17 @@ function CredentialForm({
   );
 }
 
-function Discard({ snapshot, store, wait }: { snapshot: Idle; store: SessionStore; wait: number | null }) {
+function Discard({
+  snapshot,
+  store,
+  wait,
+  uncertain,
+}: {
+  snapshot: Idle;
+  store: SessionStore;
+  wait: number | null;
+  uncertain: boolean;
+}) {
   const { logout, busy } = snapshot;
   const copy = logout.failure === 'unavailable' ? UNAVAILABLE : WENT_WRONG;
   const off = busy || logout.inFlight;
@@ -470,6 +486,7 @@ function Discard({ snapshot, store, wait }: { snapshot: Idle; store: SessionStor
       </header>
       <div className="office-dialog__body">
         <p id="logout-description">{DISCARD_BODY}</p>
+        {uncertain && <p id="logout-uncertain">{LOGOUT_UNCERTAIN}</p>}
         {wait !== null && <p role="status">{logoutDuringCooldown(wait)}</p>}
         {logout.failure !== 'none' && (
           <Notice copy={copy}>

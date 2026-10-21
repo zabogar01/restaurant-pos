@@ -1,30 +1,51 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
-import { LOGOUT_UNCONFIRMED, RESUMED, UNAVAILABLE, WENT_WRONG } from './copy.js';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import {
+  DISCARD_BODY,
+  DISCARD_TITLE,
+  LOGOUT_UNCERTAIN,
+  LOGOUT_UNCONFIRMED,
+  RESUMED,
+  UNAVAILABLE,
+  WENT_WRONG,
+} from './copy.js';
+import { Rail } from './Rail.js';
 import { Reauth } from './Reauth.js';
+import { router } from './router.js';
 import { SignIn } from './SignIn.js';
 import { useSession, useSessionStore } from './session/useSession.js';
+import { workGuard } from './work/guard.js';
+
+const CLOSED_BY_NONE = { closedby: 'none' } as const;
 
 /**
- * The back office as the session draws it: BO-01 when signed out, the Phase 0 frame
- * when signed in (DESIGN-015, "Successful sign-in"): the top bar says "Back office",
- * shows the manager's name and offers "Log out"; the rail and the content pane are
- * empty. There is no navigation entry, no business day and no incident, because
+ * The back office as the session draws it: BO-01 when signed out, the frame when
+ * signed in (DESIGN-015, "Successful sign-in"): the top bar says "Back office", shows
+ * the manager's name and offers "Log out"; the rail lists the destinations that exist
+ * (Tables, under Configuration) and the content pane holds the screen the address
+ * names, or nothing at the landing. There is no business day and no incident, because
  * none of their destinations or routes exists. When the session goes idle the same
  * frame stays, visible and inert, under M-6.
  *
- * **The working area is keyed by the staff user it belongs to.** `children` is
- * mounted under a key equal to the signed-in `staffUserId`, inside the one
+ * **The working area is keyed by the staff user it belongs to.** `children` (the
+ * screen) is mounted under a key equal to the signed-in `staffUserId`, inside the one
  * `<main>`. When the session is lost to anything that is not a removal, the screen
  * shows BO-01 and that `<main>` stays mounted, hidden and inert, so its form state
  * survives; a sign-in as the same staff user shows it again as it was, and a
  * sign-in as anyone else changes the key, so React destroys it. A confirmed
- * logout, `FORBIDDEN` and a reload destroy it too. Phase 0 has no form: tests give
- * it a child, and a served build gives it none.
+ * logout, `FORBIDDEN` and a reload destroy it too. The served build gives it the
+ * screens (`main.tsx`); tests give it a child of their own.
+ *
+ * **Log out asks first when the work is not clean.** With unsaved changes, or a save
+ * pending or of unknown outcome, the top bar's Log out opens the built logout
+ * confirmation (the sentences M-6 uses). It is a modal dialog in the working area, so
+ * it follows the same rule as the screen's own: closed at BO-01 and not reopened (closing
+ * it is the same as "Keep this draft"), and behind M-6 while M-6 is open.
  */
 export function OfficeApp({ children }: { children?: ReactNode }) {
   const store = useSessionStore();
   const session = useSession();
   useEffect(() => store.start(), [store]);
+  useEffect(() => router.start(), []);
   useEffect(() => {
     // The harness reads this, not the copy.
     document.getElementById('root')?.setAttribute('data-session', session.phase);
@@ -73,14 +94,65 @@ export function OfficeApp({ children }: { children?: ReactNode }) {
   const logout = session.phase === 'signed-in' ? session.logout : null;
   const failure = logout?.failure ?? 'none';
   const copy = failure === 'unavailable' ? UNAVAILABLE : WENT_WRONG;
-  const pressLogout = () => {
+  const retryLogout = () => {
     if (!logout?.inFlight) store.logout();
+  };
+
+  // The top bar's Log out: at once when the work is clean, otherwise the confirmation.
+  const work = useSyncExternalStore(workGuard.subscribe, workGuard.status);
+  // The confirmation belongs to the manager it was opened for: it has the working area's
+  // identity lifetime, so a different manager (through M-6 or BO-01) never meets it.
+  const [askedFor, setAskedFor] = useState<string | null>(null);
+  const asking = askedFor !== null && askedFor === workKey;
+  const setAsking = (on: boolean) => setAskedFor(on ? workKey : null);
+  const pressLogout = () => {
+    if (logout?.inFlight) return;
+    if (workGuard.status() === 'clean') store.logout();
+    else setAsking(true);
+  };
+  const confirmation = useRef<HTMLDialogElement>(null);
+  const keep = useRef<HTMLButtonElement>(null);
+  // Open only while the frame is shown; closed with `close()` at BO-01.
+  const wanted = asking && framed;
+  const meant = useRef(wanted);
+  meant.current = wanted;
+  useLayoutEffect(() => {
+    const element = confirmation.current;
+    if (element === null) return;
+    if (wanted && !element.open) {
+      element.showModal();
+      keep.current?.focus();
+    } else if (!wanted && element.open) {
+      element.close();
+    }
+  }, [wanted]);
+  // Closing it at BO-01 is "Keep this draft": nothing destructive happens without the person.
+  useLayoutEffect(() => {
+    if (session.phase === 'signed-out' || session.phase === 'starting') setAskedFor(null);
+  }, [session.phase]);
+  // Another manager's key: the old one's confirmation is dropped for good, so it cannot
+  // come back if that manager signs in again.
+  useLayoutEffect(() => {
+    if (askedFor !== null && workKey !== null && askedFor !== workKey) setAskedFor(null);
+  }, [askedFor, workKey]);
+  // Nothing is chosen for the manager behind it: the screen holds any answer meanwhile.
+  useEffect(() => {
+    workGuard.hold(asking);
+    return () => workGuard.hold(false);
+  }, [asking]);
+  const keepDraft = () => {
+    setAsking(false);
+    workGuard.current()?.focus();
   };
 
   return (
     <>
       <div ref={frame} className={framed ? 'bo' : 'bo-signin'}>
-        {framed && <nav className="bonav" aria-label="Back office" />}
+        {framed && (
+          <nav className="bonav" aria-label="Back office">
+            <Rail />
+          </nav>
+        )}
         <div className="bomain">
           {framed && (
             <header className="botop">
@@ -108,7 +180,7 @@ export function OfficeApp({ children }: { children?: ReactNode }) {
                   type="button"
                   className="office-button small"
                   aria-disabled={logout?.inFlight ? 'true' : undefined}
-                  onClick={pressLogout}
+                  onClick={retryLogout}
                 >
                   Try again
                 </button>
@@ -128,6 +200,53 @@ export function OfficeApp({ children }: { children?: ReactNode }) {
           </main>
         </div>
       </div>
+      <dialog
+        ref={confirmation}
+        className="office-dialog"
+        aria-labelledby="bar-logout-title"
+        aria-describedby={work === 'uncertain' ? 'bar-logout-description bar-logout-uncertain' : 'bar-logout-description'}
+        {...CLOSED_BY_NONE}
+        onCancel={(event) => {
+          // Escape is "Keep this draft".
+          event.preventDefault();
+          if (meant.current) keepDraft();
+        }}
+        onClose={() => {
+          const element = confirmation.current;
+          if (meant.current && element !== null && !element.open) {
+            element.showModal();
+            keep.current?.focus();
+          }
+        }}
+      >
+        {asking && (
+          <>
+            <header className="office-dialog__head">
+              <h2 id="bar-logout-title">{DISCARD_TITLE}</h2>
+            </header>
+            <div className="office-dialog__body">
+              <p id="bar-logout-description">{DISCARD_BODY}</p>
+              {work === 'uncertain' && <p id="bar-logout-uncertain">{LOGOUT_UNCERTAIN}</p>}
+            </div>
+            <footer className="office-dialog__foot">
+              <button ref={keep} type="button" className="office-button" onClick={keepDraft}>
+                Keep this draft
+              </button>
+              <button
+                type="button"
+                className="office-button danger final"
+                aria-disabled={logout?.inFlight ? 'true' : undefined}
+                onClick={() => {
+                  setAsking(false);
+                  retryLogout();
+                }}
+              >
+                Discard changes and log out
+              </button>
+            </footer>
+          </>
+        )}
+      </dialog>
       {session.phase === 'idle' && <Reauth snapshot={session} store={store} />}
     </>
   );

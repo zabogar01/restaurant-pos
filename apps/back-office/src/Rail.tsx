@@ -1,0 +1,42 @@
+import type { MouseEvent } from 'react';
+import { CONFIGURATION, TABLES } from './copy.js';
+import { router, useScreen } from './router.js';
+import { PATHS, type Screen } from './routes.js';
+
+// The rail lists only destinations that exist (DESIGN-016 Part B 4): in S1b, Tables, under
+// a group labelled Configuration. The landing is reached by browser Back, not by an entry.
+const GROUPS: ReadonlyArray<{ label: string; entries: ReadonlyArray<{ screen: Screen; label: string }> }> = [
+  { label: CONFIGURATION, entries: [{ screen: 'tables', label: TABLES }] },
+];
+
+export function Rail() {
+  const current = useScreen();
+  const go = (screen: Screen) => (event: MouseEvent<HTMLAnchorElement>) => {
+    // A new tab or window is the browser's own business.
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return;
+    event.preventDefault();
+    router.navigate(screen);
+  };
+  return (
+    <>
+      {GROUPS.map((group) => (
+        <div key={group.label} role="group" aria-labelledby="rail-group-configuration">
+          <div id="rail-group-configuration" className="bonav__sec">
+            {group.label}
+          </div>
+          {group.entries.map((entry) => (
+            <a
+              key={entry.screen}
+              href={PATHS[entry.screen]}
+              aria-current={current === entry.screen ? 'page' : undefined}
+              onClick={go(entry.screen)}
+            >
+              {entry.label}
+            </a>
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}

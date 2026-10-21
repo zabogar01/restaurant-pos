@@ -1,4 +1,4 @@
-import { act, useState } from 'react';
+import { act, useState, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { FetchLike } from '@pos/api-client';
 import { OfficeApp } from '../src/OfficeApp.js';
@@ -123,7 +123,8 @@ export function TestChild() {
 
 export const childMounts = { count: 0 };
 
-export function mount(store: SessionStore) {
+/** `screen` is what the working area holds: the test's own child by default, or the real screens. */
+export function mount(store: SessionStore, screen: ReactNode = <TestChild />) {
   installDialogShim();
   const host = document.createElement('div');
   host.id = 'root';
@@ -132,9 +133,7 @@ export function mount(store: SessionStore) {
   act(() =>
     root.render(
       <SessionProvider store={store}>
-        <OfficeApp>
-          <TestChild />
-        </OfficeApp>
+        <OfficeApp>{screen}</OfficeApp>
       </SessionProvider>
     )
   );
