@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-016]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
+status: active
 cycles: 0
 ---
 # DESIGN-017 — BO-05 Tables (slice E1)
@@ -179,6 +179,54 @@ full prose, ending with `DONE` or `BLOCKED: <one question>`. Then run exactly on
 
     herdr agent prompt lead "design017: DESIGN-017 done — <one line>"
     herdr agent prompt lead "design017: BLOCKED — <question>"
+
+## Round 2 — the review's ten findings (lead rulings, 2026-10-21)
+
+The Claude Opus review of `026ef6e` (`.agent/reviews/DESIGN-017-review.md`) found ten. **All ten are accepted.** Read the
+report whole; each finding has a failing scenario you can walk. Where the reviewer offered a choice, the lead chose:
+
+- **F1 (high), status commands.** Take the reviewer's first fix: **no form panel for Deactivate or Reactivate.** While
+  pending, that row's own action is disabled and the page status says what is happening ("Deactivating {label}…" /
+  "Reactivating {label}…", your words). An unknown outcome is shown in the page status region over the reread list
+  (no "save", no "draft"; "Nothing was sent again"); the row's own button, which reflects the reread, is the manager's
+  explicit and harmless path. No Save or resend control anywhere for a status command. Add the status-command rule to
+  `D` beside the form rule.
+- **F2 (high), M-6 copy.** M-6, its different-manager acknowledgement and form, and the M-6 Log out confirmation are
+  **built and reviewed** (`apps/back-office/src/copy.ts:50-64`, DESIGN-015, DESIGN-012 `F/shell.*`): reproduce their
+  titles, bodies and actions verbatim in the fixture, and in the copy table either quote them exactly with a pointer to
+  `copy.ts` or remove those rows and point to it. Do not change them. **The top-bar Log out with a dirty table form
+  reuses the built logout confirmation verbatim** ("Keep this draft" / "Discard changes and log out"), so one title
+  never has two bodies. "Stay" / "Discard" remain only for the form's own departures (Cancel, Escape, browser Back, a
+  rail entry).
+- **F3 (medium).** After Discard, a late authoritative answer still replaces or inserts its record in the list,
+  silently: it does not reopen the form, move focus or announce. Say so in `D`; make the fixture do it.
+- **F4 (medium).** Delete the "Pending interrupted by session" state and the answer-dropping in `expire()`. A command in
+  flight across M-6 or BO-01 settles by C2 §6's table when it answers (`ok` applied, `SESSION_IDLE` definite with the
+  draft kept, the rest as the session handles them). Draw nothing new.
+- **F5 (medium).** Use a 32-unit longest label (`'Terrace ABCDEFGHIJKLMNOPQRSTUVWX'`); `invalid-long` becomes exactly
+  33. Add a length assertion to `design017.cjs`; re-measure overflow at 1440×900 and 1920×1080 and correct the Handoff.
+- **F6 (low).** The page result is cleared when a form opens or a new command is sent; `#phase-note` hides with it.
+  State it in `D`.
+- **F7 (low).** Use the sitemap's existing tags: `[INLINE] Table create / edit — non-modal panel`, and fold reactivate
+  into the screen's line or an `[INLINE]` row action. Add no new tag.
+- **F8 (low).** For BO-05's definite general failure, **remove the "Try again" button** (it sent nothing) and write a
+  body for a signed-in manager, with no "ask a manager": your words, saying nothing was saved, the draft is kept, and
+  Save tries again. The read failure's "Try again" (which does repeat the read) stays. Do not edit the shared `I:88`
+  row; record the back-office wording in BO-05's copy and in `D` as BO-05's.
+- **F9 (low).** Specify and draw focus: during pending, on the form's status notice (focusable) or another live
+  control; after a failure or an unknown outcome, the label; after Discard, the opener, as clean Cancel does. Remove the
+  double `closeForm`.
+- **F10 (low).** (1) **While a command is pending**, New table and every other record's actions are inert (one command
+  at a time, as the fixture does); **after an unknown outcome** they are live again and opening another record goes
+  through the departure decision. Make `D` say exactly that. (2) Reconcile `D:1471-1474` (DESIGN-012's "Leave without
+  resending") with the new section: configuration forms use "Discard", and the pending or unknown departure body says
+  leaving does not send it again; point the old lines at the new section rather than rewriting DESIGN-012's history.
+  (3) Suppress the business-day indicator on `tables.html` (the day arrives in Phase 5). (4) Mark the duplicate's holder
+  row with a text marker or the selected-row treatment, exposed to assistive technology, not an underline.
+
+Then: re-run `design017.cjs` and the four regression checks (owner approves each), update the Handoff with a *Round 2*
+section (what changed per finding, the new measurements, the counts), commit on `agent/design-017`, never push, and run
+exactly one of the two `herdr agent prompt lead` lines in *Reporting*.
 
 ## Lead verify (2026-10-21)
 
