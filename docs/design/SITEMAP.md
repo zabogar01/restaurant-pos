@@ -50,6 +50,15 @@ non-modal panel, with inline label refusal and deactivate/reactivate actions.
 Its stay-or-discard decision is `[MODAL]`. The OPEN-order refusal is explicitly
 Phase 2. These use the existing node vocabulary; the screen routes are unchanged.
 
+**BO-08 updated 2026-10-21, DESIGN-018.** Currency and precision are fixed and
+shown only (owner Q5), so the "locked after first order" node is retyped as a
+fixed fact. The settings are edited in place as one set and saved as one
+version; the rate-change decision stays `[MODAL]`, and a save refused because
+the settings changed meanwhile is an `[INLINE]` state of that form. Payment
+method create / edit becomes an `[INLINE]` non-modal panel, as BO-05's table
+form, with inline name refusal and deactivate / reactivate row actions; its
+stay-or-discard decision is `[MODAL]`. No route is added or removed.
+
 Derived from [PRD.md](../PRD.md). Constrained by [BOUNDARIES.md](../BOUNDARIES.md).
 Companion document: [SCREEN-INVENTORY.md](SCREEN-INVENTORY.md).
 
@@ -285,11 +294,16 @@ reports and audit.
 │   ├── [MODAL] Preset create / edit .................... FR-B5
 │   └── [MODAL] Deactivate — stays readable on orders ... FR-F5, C8
 │
-├── BO-08 [SCREEN] Settings ......................... FR-B1, M1, G1
-│   ├── [INLINE] Currency + precision locked after first order  FR-B1, M1
+├── BO-08 [SCREEN] Settings ......................... FR-B1, B7, M1, M5, G1
+│   ├── [INLINE] Currency + precision — fixed, shown only .. FR-B1, M1
+│   ├── [INLINE] Settings edit — whole set, one version .... FR-B1
+│   ├── [MODAL] Rate change — applies to future orders only  FR-B1
+│   ├── [INLINE] Settings changed — draft kept, manager decides  FR-B1
 │   ├── [INLINE] Custom payment methods (configuration) ...... [RULED IN] I-9, G1
-│   ├── [MODAL] Payment method create / edit ................ [RULED IN] I-9
-│   └── [MODAL] Rate change — applies to future orders only  FR-B1
+│   ├── [INLINE] Payment method create / edit — non-modal panel  [RULED IN] I-9, B7
+│   ├── [INLINE] Name in use — refused ...................... FR-B7
+│   ├── [INLINE] Row actions — deactivate / reactivate ...... FR-B7
+│   └── [MODAL] Stay or discard unsaved changes ............ FR-A2b
 │
 ├── BO-09 [SCREEN] End of day ............................ FR-I2, I3, I4
 │   ├── [INLINE] Refused — list of still-OPEN orders ..... FR-I2

@@ -816,28 +816,54 @@ readable on orders carrying it* (FR-F5, AC-17).
 
 ## BO-08 — Settings
 
-**Purpose.** Currency, minor-unit precision, tax rate, service-charge rate,
-and the business details printed on receipts.
+**Purpose.** Show the installation's fixed currency and minor-unit precision;
+set the tax rate, the service-charge rate and the five business details printed
+on receipts, saved together as one settings version; and manage the payment
+methods (ruling I-9): cash and card, fixed, and the restaurant's own custom
+methods, created, renamed, deactivated and reactivated.
 
-**Reached by / from.** Manager, from navigation.
+**Reached by / from.** Manager, from navigation. The [Frost BO-08 composition](visual-directions/frost/back-office/settings.html)
+(DESIGN-018, awaiting review) supplies every state and its exact copy.
 
-**States.** *empty* (first-run configuration) · *loading* · *error*
-(validation) · *permission-denied* (n/a) · *overflow* (n/a) · *currency and
-precision locked — an order already exists* (FR-B1, M1) · *rate change creates
-a new settings version affecting only orders opened afterwards* (FR-B1).
+**States.** *first run* (no settings version: every rate and detail empty,
+currency and precision still shown; saving creates version 1 — a real starting
+state, B-24) · *loading* · *error* (read failed; command failure with the
+draft kept) · *permission-denied* (n/a) · *overflow* (n/a for the settings; a
+long payment-method list) · *invalid input* (each rate refusal; each
+business-detail refusal) · *rate change confirmation — the new version applies
+only to orders opened afterwards* (FR-B1) · *saved — a new version in force* ·
+*unchanged — nothing differed, no version written* (ADR-012 rule 4) ·
+*settings changed — `SETTINGS_CHANGED`: a save built on an older version is
+refused, the draft kept beside the current values, and the manager decides*
+(ADR-012 rule 3; most often after M-6) · *no custom payment methods* (cash and
+card still listed) · *name in use — create, rename or reactivation refused*
+(FR-B7) · *deactivated method retained* · *reactivated method*. Forms also show
+local validation, pending, outcome unknown, stay-or-discard and the retained
+draft through M-6 / BO-01.
 
-**Requirements.** FR-B1, FR-M1, FR-M5.
+**Requirements.** FR-B1, FR-B7, FR-M1, FR-M5, FR-A2b, AC-35; ADR-012.
 
 **Must not invent.**
-- Currency and minor-unit precision become **immutable after the first order**
-  (FR-B1, M1). The locked state is not an edge case; it is the state this
-  screen spends its life in.
-- A rate change is versioned and **never retroactive** (FR-B1, B-8, B-9). No
+- Currency and minor-unit precision are **fixed** for the installation at IDR
+  and 0 (FR-B1, FR-M1; owner Q5, 2026-10-20). They are shown as plain facts in
+  every state, the first run included, and are never offered for change: no
+  field, no lock symbol, no warning.
+- Every settings change, a rate or a business detail, makes a new immutable
+  version and is **never retroactive** (FR-B1, B-8, B-9; ADR-012 rule 4). No
   "apply to open orders" option.
 - One tax rate. Tax-inclusive. Service charge untaxed (§4, B-3, B-4). No tax
   groups, no per-item rates, no jurisdiction packs (out of scope).
-- Rate precision is one part per million; the permitted **range** is Open
-  Question 4 and is not yours to settle.
+- Each rate is **0–100%** at a precision of one part per million (FR-M5; owner
+  Q2). The manager types a percent with at most four decimal places. Zero is a
+  valid rate, and neither rate is pre-filled at the first run.
+- The business details are the outlet name, address, phone, an optional NPWPD
+  and a footer line (owner Q12), all typed by the manager and none seeded.
+  Nothing else of the receipt is set here: the rest of its content is PRD §9
+  question 1.
+- Cash and card are fixed and always offered; only custom methods are created,
+  renamed, deactivated and reactivated (FR-B7; ARCH-019 §8). A custom method
+  has a name and an active state and nothing else. Its use in tendering is
+  Phase 4 (FR-G1).
 
 ---
 
