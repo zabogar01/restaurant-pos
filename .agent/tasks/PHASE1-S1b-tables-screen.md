@@ -487,6 +487,8 @@ Codex reviewed `ffd6b42` (`.agent/reviews/PHASE1-S1b-review.md`): four P2 findin
   *Try again* then replaces the rows as any read does (F3's rule applies). Red test: the review's scenario (fault, failed
   reread, Save succeeds): the row *Window 1* is present and focused, the alert is present, no counts line.
 
+*Lead note, 15:30:* the first resume of round 2 (15:19) never reached the builder: the prompt was sent before the resumed CLI was ready, and the dispatcher read round 1's `DONE` as this round's. Nothing changed in the worktree. The lead fixed the dispatcher (it now waits for the resumed CLI, and refuses an unchanged round's verdict) and set the round counter back, so round 2 is still this one.
+
 Touch only `owns`. Keep every existing assertion; a test that changes because the model moved says so in the Handoff.
 Re-run each earlier red proof that the move could affect (AC 6, 7, 8, 9, 10 and the constant-key proof) and say which
 you re-ran. Run `npm run verify` and `npm run test:e2e:all`; commit on `agent/phase1-s1b`; append a *Round 2* section to
