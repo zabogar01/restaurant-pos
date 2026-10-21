@@ -1,75 +1,63 @@
-# PHASE1-S1b review
+# PHASE1-S1b re-review — rounds 2 and 3
 
 ## Verdict
 
-**findings** — four correctness findings. Reviewed `agent/phase1-s1b` at `ffd6b4243a55eb9e7c807a789a2439cc6514a8d4` against `development` at `da7c270f505c44dc38703391bbfc930be00936be` and the task's cited authorities, including its later lead rulings. No source or test was edited. Nothing was committed or pushed.
+**findings** — F1–F4 are resolved for their original scenarios and the Round 2 rulings. Two new P2 findings remain in the visit-read behavior introduced by Round 3.
+
+Reviewed fix commits `1ac6aa8788d3e1f7070b349dc89ec7d4b833909f` and `f20cb7132ec98d201145d6e696eab46fdf450298`, with the task's Round 2 and Round 3 rulings. The tested branch head was `1b8e1ce6c3dfc6aa50a3d9f8995d83af13821ab9`; `development` remained `da7c270f505c44dc38703391bbfc930be00936be`. This report replaces the previous review. Only this report was edited; nothing was committed or pushed.
 
 ## Findings
 
-### F1 — P2: The previous manager's top-bar logout decision survives a different manager's sign-in
+### N1 — P2: A failed visit reread hides a successful save that answered after the read began
 
-**Location:** `apps/back-office/src/OfficeApp.tsx:103`, `:125`, and `:194`.
+**Location:** `apps/back-office/src/tables/model.ts:187` and `:293`; `apps/back-office/src/tables/Tables.tsx:168` and `:227`.
 
-The `asking` state and its dialog belong to `OfficeApp`, outside the working area's `staffUserId` key. The reset observes only `signed-out` and `starting`. Changing managers through M-6 transitions from `idle` to `signed-in`, so the old confirmation remains open over the new manager's clean area. Its global hold also remains set.
+Round 3 keeps existing rows actionable while a visit reread is outstanding. If a command succeeds during that read, the success branch leaves `partial` false because `read` is still `ready`. A subsequent failure of that older read sets `read` to `failed` without preserving visibility of the newly authoritative record. The table disappears, New table becomes inert, and focus falls off the removed Edit button, while the page still announces success.
 
-**Authority:** PHASE1-S1b lead ruling 2 explicitly includes the top-bar logout confirmation among the dialogs destroyed by a different manager's sign-in; the task's interpretation of AC 10 says a different manager destroys all of it. ADR-011 rule 22 defines the identity-owned working area. The table draft itself is correctly destroyed here; the defect is the surviving departure decision, not exposure of its field value.
+**Authority:** Task AC 3 and `docs/DESIGN.md:1529` require the returned record to be shown and its Edit control focused after success. The task's Round 2 F4 ruling specifies the truthful combination of known rows, the read-failure alert, withheld counts, and live New table. Round 3 ruling 1 introduces a reread that keeps the held rows available while it runs. The resulting behavior must not depend on whether read failure arrives immediately before or immediately after the authoritative success.
 
-**Observed scenario:** Open Table 1, change its label to Window 1, press the top-bar Log out, let the session reach M-6, and sign in as R. Ayu through the different-manager flow. An in-memory jsdom run using the existing real-session harness returned `phase: signed-in`, `actor: R. Ayu`, and no edit panel, but still had the open dialog “Log out and discard your changes?” with Keep this draft and Discard changes and log out. Neither choice belongs to the new manager's session.
+**Observed scenario:** Start with the loaded table list, navigate to the landing through the production router, then return through the Tables rail link while holding that visit's GET. Edit Table 1 to Window 1 and deliver a successful Save. At this point the list contains Window 1 and the page says “Window 1 saved.” Deliver a fault for the held GET, with health succeeding. The component run then returned no visible rows, New table `aria-disabled="true"`, the read-failure alert, and “Window 1 saved.”; `document.activeElement` was `BODY`. The saved record remains in model memory but is suppressed by the shared `read`/`partial` render gate.
 
-**Proposed fix:** Give the confirmation and its hold the same identity lifetime as the working area, or explicitly clear both when that identity changes. Preserve the same-manager M-6 behavior. Add the different-manager transition with this particular confirmation already open; the existing different-manager tests cover the table panel and departure dialog instead.
+**Proposed fix:** Reconcile failed reads with intervening authoritative command answers as well as reconciling successful reads. If an answer was applied after a read began, preserve the known-row presentation when that read fails, using the Round 2 F4 composition: alert retained, counts withheld, returned row visible, and controls available when no command is pending. Add the deferred visit-read failure after a successful command as a regression test. The original F4 test covers the opposite response order and passes.
 
-### F2 — P2: Leaving and returning to Tables loses an outstanding command and its authoritative answer
+### N2 — P2: An outstanding read suppresses the refresh required by a later visit
 
-**Location:** `apps/back-office/src/Screens.tsx:12`, `apps/back-office/src/tables/Tables.tsx:90`, and `apps/back-office/src/tables/model.ts:224`.
+**Location:** `apps/back-office/src/tables/model.ts:436`.
 
-The model is constructed inside `Tables`, whose component is unmounted when the route becomes the landing. Its cleanup sets `stopped`, and `answered` then ignores the command's eventual answer. Returning to Tables constructs a fresh model with no pending command. This makes command lifetime depend on screen lifetime even when the signed-in manager and working-area key have not changed.
+The `reading === 0` condition uses one model-wide in-flight count to deduplicate both development effect remounts and genuine later visits. Consequently, leaving Tables and returning while an earlier visit's GET remains outstanding sends no read for the new visit. The response can be an older snapshot that predates changes made while the manager was away.
 
-**Authority:** The task's AC 9 interpretation requires a late authoritative answer after Discard to insert or replace its record silently and requires the waiting status while the discarded save is outstanding. Its AC 7 interpretation keeps New table and every row action inert while any command is pending. `docs/DESIGN.md:1526` and `:1579` carry the same rules.
+**Authority:** The task's Round 3 ruling 1, at `.agent/tasks/PHASE1-S1b-tables-screen.md:504`, requires every visit to read the list, including visits during a pending command, with no loading replacement on later visits. Its required scenario is leaving, changing the server's list, and returning to see a new read and the new row. The builder's development-remount rationale does not establish an exception for a distinct production visit.
 
-**Observed scenario:** Hold a rename of Table 1 to Window 1, request navigation to the landing through the production router, choose Discard, then use the real Tables rail link to return before the answer arrives. The new screen displays the old rows, no waiting status, and an enabled New table control. Deliver the successful rename answer: the list still shows Table 1. This was reproduced with the real `Screens`, router, components, and transport harness; no component or source was substituted. Browser Back uses the same guarded route-departure path. The committed late-answer test cancels the panel without leaving `Tables`, so it cannot expose this unmount.
+**Observed scenario:** Load Tables once, leave, and return while holding the second GET. Leave again, arrange the next server response to include a newly created Window 5, and return through the real Tables rail link. The read count remains **2**, although there have been three visits. Deliver the earlier held response, captured without Window 5: the list still lacks Window 5 and the count remains 2. This was reproduced with the real router, rail, screen, and transport harness; no component was replaced. The existing Round 3 test waits for the previous visit's read to finish, so it does not exercise this condition.
 
-**Proposed fix:** Retain command ownership and authoritative records for the lifetime of the manager's keyed working area, independently of whether Tables is currently displayed. Discard should remove the draft while preserving the outstanding operation and silent answer handling. Test leaving the route, returning before settlement, and receiving the answer, including the pending control states.
-
-### F3 — P2: A delayed refusal reread overwrites a later successful command
-
-**Location:** `apps/back-office/src/tables/model.ts:163`, `:265`, and `:285`.
-
-The sequence counter orders reads against other reads only. A DUPLICATE or NOT_FOUND reread starts without being awaited, and the command is cleared immediately. The manager can submit and complete a new command while that read is outstanding. Applying the newer command does not invalidate or reconcile the older read, which can then replace the entire list with its earlier snapshot.
-
-**Authority:** Consult C2 section 3 requires the client to replace its record with the authoritative command answer. Task AC 3 and `docs/DESIGN.md:1529` require the returned record and named success to agree; success must not cause another list read.
-
-**Observed scenario:** Rename Table 1 to Table 2 and return DUPLICATE, holding the resulting GET. Correct the field to Window 1 and return a successful update. The list then contains Window 1 and the page says “Window 1 saved.” Deliver the earlier GET containing Table 1: the list changes back to Table 1 while “Window 1 saved.” remains. An in-memory run reproduced both snapshots through the existing components and transport harness. The held GET models a snapshot read before the second command committed, whose response arrived later.
-
-**Proposed fix:** Reconcile reads with intervening successful commands, for example by tracking command-applied revisions and retaining authoritative records newer than a read's start. Do not let an older snapshot overwrite those records or add a success-triggered reread. Add a deferred-GET test spanning a refusal followed by a successful correction.
-
-### F4 — P2: A successful retry after a failed reread leaves the saved record hidden
-
-**Location:** `apps/back-office/src/tables/model.ts:265` and `apps/back-office/src/tables/Tables.tsx:225`.
-
-The success branch updates `rows`, closes the editor, and announces success, but leaves `read` unchanged. After an unknown outcome whose reread failed, `read` is still `failed`. That same value suppresses the whole table and disables New table, even when the next explicit Save succeeds. The requested focus target is also absent from the rendered table.
-
-**Authority:** Task AC 3 and `docs/DESIGN.md:1529` require an authoritative success to show the returned record and focus its Edit control. Task AC 6 and `docs/DESIGN.md:1535` keep explicit Save available after an unknown outcome, including a failed reread. These rules must work together; the artifact's similar shared read-state pattern does not establish correctness for this transition.
-
-**Observed scenario:** Rename Table 1 to Window 1; return a command fault and then a failed list reread. Press Save again and return the authoritative Window 1 record. The in-memory component run showed no table rows, no editor, New table still `aria-disabled="true"`, the read-failure notice, and “Window 1 saved.” simultaneously. The existing recovery test uses Try again to repair the read first, which avoids this state.
-
-**Proposed fix:** Separate collection-refresh failure from whether known authoritative rows can be rendered. Show and focus the returned record after success while accurately preserving any unresolved collection-refresh warning; do not silently assert that a failed full-list refresh succeeded. Cover explicit Save succeeding before Try again repairs the collection.
+**Proposed fix:** Distinguish repeated effects for the same visit from a new route visit. Each genuine visit should start its own read even if an earlier visit's read remains outstanding; the existing read sequence and per-record command merge can prevent older responses from overriding it. Add a two-return test with the previous visit's GET still held.
 
 ## What I ran and what I did not
 
-- `npm run verify` exited 0: all seven typecheck projects completed, and **102 test files / 3,922 tests passed**. Reported duration was 76.13 seconds.
-- A separate `npm run test:unit -- --project=client` exited 0: **71 files / 3,233 tests passed**. It was started while the full run's output had not yet returned, not because the full run failed.
-- `npm run test:e2e:all` built both clients successfully but exited 1 during harness setup with `connect EPERM 127.0.0.1:5433`. **No browser cases ran in my attempt.** The builder's and lead's recorded 68 passes are their evidence, not mine. I did not seek an approval override or claim a browser pass.
-- Four read-only `node --import tsx --input-type=module -e` reproductions imported the existing jsdom harness, real session store, transport, `OfficeApp`, and `Screens`. They drove controls and supplied deferred responses in memory. All four observed outcomes are recorded above. These are component-level reproductions, not real-browser inertness or layout evidence. No mutation of source or tests was made, and I did not rerun the builder's mutation proofs.
-- Before and after the green full verification, `git diff --stat development` was identical: **30 files, 3,813 insertions, 27 deletions**. The branch and development hashes above remained unchanged. The working tree was clean before writing this report. `git diff --check development...HEAD` passed. A final pre-report stat and hash check also matched.
+- `npm run verify` exited 0: all seven typecheck projects completed, and **103 test files / 3,930 tests passed**. Vitest reported 64.53 seconds. This includes the eight new Round 2/3 tests and the unchanged earlier suites.
+- Four independent, read-only `node --import tsx --input-type=module -e` runs replayed the original F1–F4 scenarios through jsdom, the existing real-session/transport harness, `OfficeApp`, and `Screens`. All four included assertions and exited 0. F2 used the production router to leave and the real rail to return. The observations are summarized under Cleared.
+- Two additional in-memory component runs reproduced N1 and N2 and printed the relevant rows, request counts, control states, notice, and focus. They supplied deferred transport responses; they did not mutate source or test files. These observations are component evidence, not browser inertness or layout evidence.
+- `git diff --stat development` was identical before and after the green verification: **32 files, 4,371 insertions, 27 deletions**. The head and development hashes above remained unchanged. The tree was clean before this report was rewritten. `git diff --check development...HEAD` passed.
 
-I inspected the branch's source and test changes, C2, the DESIGN-017 Handoff and copy/state inventory, the Frost HTML/CSS/behavioral source, the binding configuration-form rules, S1a's handoff, the cited PRD and boundaries, and the applicable ADR-011 rules. The task's ADR-011 filename is stale; the actual file is `docs/decisions/ADR-011-browser-clients.md`. No Context7 or external library lookup was needed. No file-reading tool was exposed in this session, so reads used simple `rg` and `awk` commands; the report was written with the file patch tool.
+I reviewed the two fix diffs, their new tests, and the task's rulings and handoffs against the previously read PRD FR-B2 and FR-A2b, AC-28 and AC-35, B-13/B-20/B-24, C2, ADR-011, and DESIGN-017's configuration-form rules and artifact. Those authorities and the browser spec were not changed by these fixes. I did not call Context7 or need an external library lookup.
 
-I did not perform a visual comparison in a real window, a screen-reader pass, the 60-row geometry check, or repeat C5 timings. The reviewed browser spec reaches Tables through the production sign-in and rail path and uses both session clocks and the credential helpers. Its coverage does not prove the additional interleavings above. The client navigation tests synthesize `popstate`; I do not treat them as proof of native browser history behavior.
+I did not rerun the browser suite in this re-review. The previous reviewer attempt failed during setup with `connect EPERM 127.0.0.1:5433`; the task records the builder's and lead's **68 passes** on the fixed code, which remain their evidence, not mine. I did not rerun their red mutations, C5 timings, visual measurements, or screen-reader checks. The new tests' `back()` and `forward()` helpers use `pushState` plus synthetic `popstate`; their passing results do not prove native browser history behavior.
 
 ## Cleared
 
-The manifest and built-only rail, configuration-only API type, shared validation helper, trimming and UTF-16/control-character rules, designed field errors, natural ordering and counts, empty first-run state, inactive-label editing, and separate reactivation recovery are sound in the reviewed code and passing client checks. No restaurant table seed or production fixture state was added (B-24).
+| Original finding | Resolution and evidence |
+|---|---|
+| **F1 — resolved** | `OfficeApp.tsx:106` associates the confirmation with `staffUserId`, derives visibility from the working-area key, and clears obsolete identity state. The original different-manager M-6 reproduction now ends signed in with no open dialog and no global hold. The new suite also covers BO-01 and a later return of the first manager. This meets the Round 2 F1 ruling and ADR-011 rule 22. |
+| **F2 — resolved** | `Screens.tsx:23` owns the model inside the keyed working area; leaving Tables no longer calls its stop. The original rename reproduction now returns to the waiting notice with controls inert, then applies the late authoritative row silently. The new tests cover rename and create across route changes. A different manager still gets a different model. This meets the Round 2 F2 ruling and task AC 7/9. |
+| **F3 — resolved** | `model.ts:170` captures the applied-answer clock when each read begins; `:185` merges later authoritative records into its response. The original delayed-DUPLICATE-reread reproduction keeps Window 1 instead of restoring Table 1. The new tests also cover insertion of a created record absent from the older snapshot. No success-triggered reread was added. |
+| **F4 — resolved for the original scenario** | An authoritative success received after a failed reread now sets `partial`. The original reproduction shows and focuses Window 1, retains the alert, withholds counts, and enables New table, exactly as the Round 2 F4 ruling requires. Try again remains a list-only retry. N1 is a separate response-order regression exposed by the new visit reread; it does not negate this observed fix. |
 
-Ordinary command success, refusal, unknown outcome, one-command guarding while the screen stays mounted, read-only retry, and no automatic command resend are covered and pass. The model does not infer success from a reread. The shared-value review specifically followed `read` through failure and later success, producing F4, and followed `asking` across identities, producing F1.
+The Round 3 ordinary return scenario passes: a later visit starts a read while old rows remain visible, then displays its response. Its formatting correction is also present. N2 limits the claim that this happens on every visit.
 
-The table panel and departure decision preserve the same manager's draft through M-6 and BO-01 in component tests, and a different manager destroys those keyed components. The top-bar confirmation is the exception in F1. B-13 and B-20 do not acquire a new actor, audit, or transaction path in this client-only change; the existing server and contracts are unchanged. The Phase 2 open-order refusal and the other explicitly excluded design content remain out of scope as ruled.
+The shared-state checks followed both `reading` across development remounts and genuine visits, and `read`/`partial` across the two response orders. Those checks produced N2 and N1 respectively. No change introduces a production table seed (B-24), a new audit actor or audit path (B-13), or a server transaction change (B-20). The configuration-only API, designed validation copy, no automatic resend, and session identity boundaries remain unchanged.
+
+## Handoff
+
+F1–F4 are closed for their original reproductions and the Round 2 rulings. The lead has two new, reproduced P2 findings, N1 and N2, to disposition. Verification is green on the stable head identified above; no new browser pass is claimed. The review is complete, and this report is the only edited file.
+
+DONE

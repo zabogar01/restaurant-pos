@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries, identity]
 depends_on: [PHASE1-S1a, DESIGN-017]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/tables.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S1b — BO-05 Tables in the back office
@@ -522,6 +522,32 @@ tests; `npm run test:e2e:all` 68 passed (51.6 s). Read the round 2 and 3 source 
 rulings: the confirmation keyed to `staffUserId`; the model owned by `Screens` per key, started and stopped with it; the
 `applied` clock and the merge in `load`; `partial` drawing rows with the alert kept and counts withheld; a reread on
 every visit after the first. Sent to Codex for one re-review of rounds 2 and 3.
+
+## Round 4 — the re-review's N1 and N2 (owner exception; lead rulings, 2026-10-21)
+
+Codex re-reviewed rounds 2 and 3 (`.agent/reviews/PHASE1-S1b-review.md`, rewritten in place): F1 to F4 resolved; two new
+P2 findings, both from the lead's round 3 ruling. **Both are accepted.** The fix rounds were used up; **the owner granted
+one more builder round** (DECISIONS 2026-10-21), which the lead reviews instead of a Codex round. The words below are
+ruled; each *Observed scenario* in the report is the red test to write first.
+
+- **N1, a failed visit reread hides a success that answered after it began.** When a read fails, apply the same
+  reconciliation as a successful read: if any authoritative answer was applied after that read began (the `applied`
+  clock), set `partial`, so the known rows stay drawn in the F4 composition (alert kept, counts withheld, the answered
+  row visible with its Edit focusable, *New table* live when no command is pending). Focus is not moved by the failure.
+  If no answer landed after the read began, a failure behaves as today. Red test: the review's scenario (visit read
+  held, Save succeeds, the held read faults with health 200): the row *Window 1* is present, its Edit is in the document,
+  the alert is present, no counts line, *New table* live.
+- **N2, an outstanding read suppresses a later visit's read.** Every real visit sends its own read, even while an earlier
+  one is out; the read sequence (the latest read decides) and the F3 merge already keep an older answer from winning.
+  Remove the model-wide `reading` count. A development double effect (React StrictMode) may send a second read for one
+  visit: that is harmless (reads are not interactive) and needs no guard; if you prefer to keep the guard, key it to the
+  visit, not to any read in flight. Red test: the review's scenario (two returns with the previous visit's read still
+  held; the third visit's read carries *Window 5*): three reads in all, and *Window 5* shown once the newest settles,
+  whatever order the held reads settle in.
+
+Touch only `owns`. Keep every existing assertion. Run `npm run verify` and `npm run test:e2e:all`; commit; append a
+*Round 4* section to the Handoff (what changed, the two red proofs, the counts) ending `DONE` or `BLOCKED: <question>`;
+report through Herdr.
 
 ## Handoff
 
