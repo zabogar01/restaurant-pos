@@ -14,7 +14,9 @@ cycles: 0
 (`docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`, §4: "then F's BO-08 half, with the payment
 methods"), split from DESIGN-011's slice F (`.agent/reviews/DESIGN-011-back-office-audit.md:463`). The BO-07 half
 (discount presets) is a later task.
-**Owner:** a Codex designer on `gpt-6-astra`, effort high, opened by hand in its own pane (name `design018`).
+**Owner:** a Claude Opus 5.5 designer, opened by hand in its own pane (name `design018`). *Owner exception* (DECISIONS
+2026-10-21, "just this once use opus as designer and review"): Codex was at 16% of its allowance, so this task is
+designed and reviewed by Claude Opus, with no Codex step. The other-family rule stands for every other task.
 **Branch and place:** `agent/design-018`, cut from `development` at `513a436`, in the worktree
 `../restaurant-pos-wt/DESIGN-018`. Touch nothing under `apps/`, `packages/`, `db/` or `e2e/`, and nothing in the main
 checkout.
