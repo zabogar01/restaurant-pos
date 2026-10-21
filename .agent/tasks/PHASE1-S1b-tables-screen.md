@@ -6,7 +6,7 @@ touches: [boundaries, identity]
 depends_on: [PHASE1-S1a, DESIGN-017]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/tables.spec.ts, e2e/support/**]
 status: complete
-cycles: 0
+cycles: 3
 ---
 # PHASE1-S1b — BO-05 Tables in the back office
 
@@ -548,6 +548,18 @@ ruled; each *Observed scenario* in the report is the red test to write first.
 Touch only `owns`. Keep every existing assertion. Run `npm run verify` and `npm run test:e2e:all`; commit; append a
 *Round 4* section to the Handoff (what changed, the two red proofs, the counts) ending `DONE` or `BLOCKED: <question>`;
 report through Herdr.
+
+## Round 4 lead review and acceptance (2026-10-21)
+
+At `eda079c`, under the owner's exception (DECISIONS 2026-10-21), reviewed by the lead in place of a Codex round. Only
+`model.ts` changed in source (nine lines), plus the new `tables-round4.test.tsx`; no existing assertion changed. N1: a
+failed latest read sets `partial` when an answer was applied after it began, keeping an existing `partial`; a failure with
+no such answer still withholds the list. N2: the model-wide `reading` guard is gone; every visit reads, and the read
+sequence and the F3 merge decide. The lead repeated both red proofs: the failure branch back to `set({ read: 'failed' })`
+fails the N1 case (1 failed, 3 passed); the "skip while any read is out" guard restored fails both N2 orders (2 failed, 2
+passed); reverted, `git status` clean. Lead runs: `npm run verify` 104 files, 3934 tests; `npm run test:e2e:all` 68 passed
+(48.8 s); `git diff --name-only development...HEAD` inside `owns`. Review findings F1-F4 and N1-N2 closed. **Complete.**
+`touches: boundaries, identity`, so the owner looks before merge (BO-05 served and signed in, beside the Frost artifact).
 
 ## Handoff
 
