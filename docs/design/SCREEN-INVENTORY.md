@@ -737,21 +737,28 @@ the first order, FR-B1, M1).
 
 ## BO-05 — Tables
 
-**Purpose.** Define the floor: create, edit, deactivate tables.
+**Purpose.** Define the floor: create, edit, deactivate and reactivate tables.
 
-**Reached by / from.** Manager, from navigation.
+**Reached by / from.** Manager, from navigation. The [Frost BO-05 composition](visual-directions/frost/back-office/tables.html)
+(DESIGN-017, awaiting review) supplies every form state and its exact copy.
 
 **States.** *empty* (no tables — a real starting state, B-24) · *loading* ·
-*error* · *permission-denied* (n/a) · *overflow* · *deactivation rejected —
-table holds an OPEN order* (FR-C8, AC-32) · *deactivated table retained for
-history*.
+*error* (read failed or command failure, draft kept) · *permission-denied* (n/a) ·
+*overflow* · *label in use — create, rename or reactivation refused* (FR-B2) ·
+*deactivated table retained for history* · *reactivated table* · *deactivation
+rejected — table holds an OPEN order* (FR-C8, AC-32; arrives with Phase 2's
+orders, Q13; not built in S1b). Forms also show local validation, pending,
+saved, outcome unknown, stay-or-discard and the retained draft through M-6 / BO-01.
 
-**Requirements.** FR-B2, FR-C8.
+**Requirements.** FR-B2, FR-C8, FR-A2b, AC-35.
 
-**Must not invent.** A table holding an OPEN order cannot be deactivated
-(FR-C8) — the rejection must name the order, because the manager's next step
-is to go and settle it at the POS. No table merge, transfer, or split (out of
-scope).
+**Must not invent.** Rows show only label, active status and actions: no seats,
+area, current order or timestamps (Q10, C2). Labels are 1–32 characters after
+trimming, without control characters, and unique among active tables without
+regard to case. Inactive tables may share labels and may be renamed. A table
+holding an OPEN order cannot be deactivated (FR-C8) — the Phase 2 rejection
+must name the order, because the manager's next step is to settle it at the POS.
+No table merge, transfer, or split (out of scope).
 
 ---
 

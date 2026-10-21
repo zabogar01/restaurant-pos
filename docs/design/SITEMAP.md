@@ -263,8 +263,11 @@ reports and audit.
 │       └── [MODAL] Archive item — snapshots unaffected ... FR-C8, B-8
 │
 ├── BO-05 [SCREEN] Tables ................................ FR-B2, C8
-│   ├── [MODAL] Table create / edit ...................... FR-B2
-│   └── [INLINE] Deactivate rejected — table holds OPEN order  FR-C8
+│   ├── [PANEL] Table create / edit — non-modal ........... FR-B2
+│   ├── [INLINE] Label in use — refused .................. FR-B2
+│   ├── [ACTION] Deactivate / reactivate ................. FR-B2
+│   ├── [MODAL] Stay or discard unsaved changes .......... FR-A2b
+│   └── [INLINE] Deactivate rejected — holds OPEN order (Phase 2) FR-C8
 │
 ├── BO-06 [SCREEN] Users ................................. FR-B3, A1, A3, A4
 │   ├── [MODAL] User create / edit — role assignment ..... FR-B3, A1

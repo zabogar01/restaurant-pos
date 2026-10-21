@@ -1,0 +1,21 @@
+/* DESIGN-017 composes the shared office controls without adding token values. */
+.tables-workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--frost-space-6); align-items: start; }
+.tables-workspace.editing { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.tables-workspace > * { min-width: 0; }
+.table-editor { position: sticky; top: 0; background: var(--frost-elevated); border: var(--frost-overlay-border); border-radius: var(--frost-radius-surface); max-height: calc(100dvh - var(--frost-office-header-height) - 2 * var(--frost-space-6)); overflow-y: auto; }
+.table-editor h2 { overflow-wrap: anywhere; }
+.table-editor label { display: block; margin-bottom: var(--frost-space-1); font-size: var(--frost-text-12); color: var(--frost-muted); }
+.table-editor .office-dialog__body { font-size: var(--frost-text-14); }
+#label-help { font-size: var(--frost-text-12); margin-bottom: 0; }
+#tables-list caption { text-align: left; color: var(--frost-muted); font-size: var(--frost-text-12); padding-bottom: var(--frost-space-3); }
+#tables-list th:last-child, #tables-list td:last-child { text-align: right; }
+#tables-list td:last-child { white-space: nowrap; }
+#tables-list td:last-child button + button { margin-left: var(--frost-space-2); }
+#tables-list tr[data-active='false'] td { color: var(--frost-muted); }
+#tables-list tr[data-selected='true'] { background: var(--frost-group); }
+#tables-list tr[data-holder='true'] td:first-child { text-decoration: underline; text-underline-offset: var(--frost-link-underline-offset); }
+#tables-list .table-status { white-space: nowrap; }
+#form-notice[data-kind='failure'], #read-state .office-notice { color: var(--frost-warning); background: var(--frost-warning-surface); border-color: var(--frost-warning); }
+#read-state .office-button { margin-top: var(--frost-space-4); }
+.tables-phase { padding: var(--frost-space-3) var(--frost-space-4); background: var(--frost-warning-surface); color: var(--frost-warning); }
+html[data-state='overflow'] #tables-list td { padding: var(--frost-table-cell-tight-padding); }
