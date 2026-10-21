@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-21 (evening): `development` at `da7c270` (S1a #119, DESIGN-017 #120, C3 #121, lead #122 merged). Dev `pos`
-at `0010`. **S1b complete, PR #123 open** for the owner's look and merge. Nothing is running. Narrative:
+2026-10-21 (night): `development` at `513a436` (S1b #123, lead #124 merged). Dev `pos` at `0010`. **DESIGN-018
+(BO-08, slice F's BO-08 half) hand-opened** on Codex. Narrative:
 [journal/2026-10-20.md](journal/2026-10-20.md), [journal/2026-10-21.md](journal/2026-10-21.md).
 
 ## Phase and gates
@@ -18,7 +18,7 @@ at `0010`. **S1b complete, PR #123 open** for the owner's look and merge. Nothin
 - **Phase 1 (Back office and catalog, ROADMAP `:60-90`): building.** Plan accepted 2026-10-20
   (`docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`, merged; its banner says accepted). 11
   slices S0-S10. **Done and merged:** S0 (#115: compose `name:`, `0009`, startup schema check), S1a (#119: tables on
-  the server, `0010`, `DUPLICATE`). **Complete, not merged:** S1b (#123). **Consults:** C1 (with ADR-012, #117), C2
+  the server, `0010`, `DUPLICATE`), S1b (#123: BO-05 and the rail). **Consults:** C1 (with ADR-012, #117), C2
   (#116), C3 (#121); C4 (POS catalog) not written; **C5 not needed** (S1b: median save-to-visible 91 ms, trigger 5 s).
 - **Rulings by slice** (DECISIONS 2026-10-20/21): S2 0-100% rate ceiling (Q2), IDR fixed (Q5), five business details
   (Q12), footer required and `created_by` (lead); S3 tender reactivation (OQ1); S7 real items into the client stand-in
@@ -30,35 +30,34 @@ at `0010`. **S1b complete, PR #123 open** for the owner's look and merge. Nothin
   (OQ1). Designer: BO-06 inventory and sitemap (E2, C3 *Stale text* 5); BO-08 0-100% and BO-04/07/08 stale-draft states
   (D, F; ADR-012 Handoff). The plan's S1 and S8 goals predate Q10 and Q1(b) (later consults win; recorded, not edited).
 - **Frontend:** POS-01 to POS-07 against fixtures, POS-01 real. **Back office:** real sign-in, the provisional BO-01,
-  the Phase 0 frame and M-6; on #123, the rail and BO-05 Tables (the form pattern later forms copy: `tables/model.ts`,
+  the Phase 0 frame and M-6; since #123, the rail and BO-05 Tables (the form pattern later forms copy: `tables/model.ts`,
   `forms/fieldsInError.ts`, `work/guard.ts`, the `Decision` dialog; Handoff *How it works*). **Frost designed:** slices A, B (BO-01,
   BO-02), C, I, and **E1 (BO-05 Tables, DESIGN-017, 37 states, the configuration-form rules in `docs/DESIGN.md`)**.
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
-- **Last verify by the lead:** S1b's final tree (`e1648d7`): verify 104 files / 3934 tests, `test:e2e:all` 68.
-  `development` (`da7c270`): 97 / 3790, e2e 58. Dev `pos`: 0001-0010, one manager.
+- **Last verify by the lead:** S1b's final tree (`e1648d7`, merged): verify 104 / 3934, e2e:all 68. Dev `pos`: 0010.
 
 ## Integration branch
 
-- **`development`** at `da7c270` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `513a436` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
   **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-20); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1021`** (from `da7c270`): STATE, QUEUE, DECISIONS, LESSONS,
-  journal, and `dispatch.rb`'s resume guards (journal 10-21), PR #124. The lead pushes and opens PRs (owner,
-  DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own step before any follow-up push** (#110).
-- **Task branches:** `agent/phase1-s1b` (worktree `../restaurant-pos-wt/PHASE1-S1b`, PR #123). After it merges: remove
-  the worktree and `.agent/runs/PHASE1-S1b/`. Not the lead's: worktrees `../restaurant-pos-design` and
-  `keen-chebyshev-ccf255`, branch `setting/add-permission`, pane `w2:pE`.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1021b`** (from `513a436`), not yet pushed. The lead pushes and
+  opens PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own step before any follow-up push**
+  (#110).
+- **Task branches:** `agent/design-018` (worktree `../restaurant-pos-wt/DESIGN-018`, `npm ci` done; task file committed
+  there at `4e61eea`, no kit copy). S1b's worktree, run dir and branch removed 2026-10-21. Not the lead's: worktrees
+  `../restaurant-pos-design` and `keen-chebyshev-ccf255`, branch `setting/add-permission`, pane `w2:pE`.
 
 ## Running tasks and agents
 
-- **Live agents: the lead only.** **PHASE1-S1b complete** (PR #123, `e1648d7`, four builder rounds: Codex review F1-F4,
-  re-review N1-N2, round 4 by owner exception and lead-reviewed). `touches: boundaries, identity`: the owner looks at
-  BO-05 served and signed in before merge. **Carry-forwards:** placed slice by slice in the plan's §5 (Phase 2's stay Phase 2: AC-27's second sentence, AC-19's
-  approval class, M-1, the idempotency design with ADR-011's `CSRF_REFUSED` retry). Design slices left for Phase 1:
-  F (BO-08 half, then BO-07 half), D (BO-03, BO-04, with the POS addition), E2 (BO-06); G and H later.
+- **DESIGN-018 (BO-08), hand-opened:** agent `design018`, Codex `gpt-6-astra` high, pane `DESIGN-018` (`w2:p70`), idle,
+  **not briefed** (Codex at 16% of its allowance at 17:23, reset 20:13). Review: Claude Opus, after writing
+  `.agent/runs/DESIGN-018/builder/meta.json` with `"cli":"codex"`; then the owner's look. Designers stay hand-opened
+  (the dispatcher routes `ui` to the builder). **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
+  slices left: F's BO-07 half, D (BO-03, BO-04, the POS addition), E2 (BO-06); G and H later.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -116,9 +115,9 @@ at `0010`. **S1b complete, PR #123 open** for the owner's look and merge. Nothin
 
 Nothing here is decided. Detail is where each line points.
 
-- **Look at BO-05 and merge PR #123** (serve from the S1b worktree: `build:clients`, `npm run dev -w apps/server`), and
-  PR #124 (lead memory, dispatcher). **S1b's lead rulings, yours to overturn:** the nine, the builder's two questions, and F4's
-  screen for a save after a failed reread (no designed state; the designer may redraw it).
+- **DESIGN-018's start:** brief Codex now on 16% (runs out mid-slice), or at 20:13. Lead: wait for the reset.
+- **S1b's lead rulings, yours to overturn** (merged in #123): the nine, the builder's two questions, and F4's screen
+  for a save after a failed reread (DESIGN-018 is asked to draw BO-08's and say whether BO-05's should change).
 - **When to start design slice E2 (BO-06 Users)**: the plan put it last, but every owner answer it waited on is in;
   lead: after F's BO-08 half, beside D.
 - **Lead rulings, yours to overturn:** S0's `0009` (`pos_app` SELECT on `schema_migration`, over ARCH-006 case 1);
@@ -145,6 +144,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **After #123 merges:** fast-forward, remove the S1b worktree and run dir (if refused, the owner does). No migration.
-2. **Next design slice:** F's BO-08 half (settings and tender types, for S2b and S3), Codex designer; then D.
-3. **Then S2a** (settings versions, from ADR-012 and C1, copying S1b's form pattern); S8a from C3 (S8c needs E2).
+1. **DESIGN-018:** brief `design018` (owner's timing); on DONE, run the five earlier checks and `design018.cjs`, review.
+2. **Builder idle meanwhile:** S2a waits on DESIGN-018's length guards (C1 §1.1). S8a (users server, from C3) needs no
+   design: the lead proposes writing it now (owner's word). Then D, after DESIGN-018.
+3. **Then S2a** (settings versions, from ADR-012, C1 and DESIGN-018's guards), S2b and S3 from DESIGN-018.
