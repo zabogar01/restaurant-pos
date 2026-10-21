@@ -4,9 +4,9 @@ title: Settings versions on the server — settings_version, the rate codec, the
 category: feature
 touches: [money, boundaries]
 depends_on: [PHASE1-S1b, DESIGN-018]
-owns: [db/migrations/0011_settings_version.sql, apps/server/src/domain/settings.ts, apps/server/src/http/routes/back-office-settings.ts, apps/server/src/http/server.ts, packages/money/src/**, packages/money/test/**, packages/contracts/src/settings.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: review
-cycles: 0
+owns: [db/migrations/0011_settings_version.sql, apps/server/src/domain/settings.ts, apps/server/src/http/routes/back-office-settings.ts, apps/server/src/http/server.ts, packages/money/src/**, packages/money/test/**, packages/contracts/src/settings.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, apps/server/package.json, package-lock.json]
+status: active
+cycles: 1
 ---
 # PHASE1-S2a — Settings versions on the server
 
@@ -377,6 +377,28 @@ findings, in the next round. **For the reviewer:** you cannot reach the database
 evidence for both suites, and a "blocked" on that alone is ruled clear. Check the work against the *Rulings*, C1
 §1.4's cases and ADR-012 Part 1. Above all, check the order of checks in `saveSettings`, the 23505 mapping, the
 request schema's rate and text rules against Ruling 2's table, and the Handoff's decisions 1 and 2.
+
+## Round 2 — the review's two findings (lead rulings, 2026-10-21)
+
+The Codex review (`.agent/reviews/PHASE1-S2a-review.md`, verdict *findings*, two) is accepted in full. `owns` now also
+lists `apps/server/package.json` and `package-lock.json`, for finding 2 only. Apply exactly this, then add a section
+*Round 2* at the end of the Handoff (what changed, the red proof, the counts) and end it with `DONE`.
+
+- **F1 (medium), the stale-before-identical test.** In `apps/server/test/settings.test.ts:196`, the case must submit
+  **the values version 2 already holds** with `expectedVersion: 1` (create version 2 with footer `Sampai jumpa`, then
+  `save(1, { footer: 'Sampai jumpa' })`), and assert the exact 409 `{ "error": { "code": "SETTINGS_CHANGED" } }`
+  envelope, the row count and the current version unchanged. Keep the existing different-values stale case as its own
+  case, with a title that says what it shows. **Red proof:** swap the stale check and the identical-values check in
+  `saveSettings` (in memory or on disk, then restore): the new case fails because the save answers 200 with the
+  existing version. Record it.
+- **F2 (low), the dependency.** Add `"@pos/money": "*"` to `dependencies` in `apps/server/package.json`, in the
+  alphabetical place after `@pos/contracts`, and the same line under `packages["apps/server"].dependencies` in
+  `package-lock.json` (by hand: the file's `"apps/server"` entry at about line 56; change nothing else in the lockfile).
+  Do not run `npm install`. The lead runs `npm ci` afterwards to prove the lockfile is consistent.
+- **The Handoff's finding 2, the stale comment.** In `packages/contracts/src/errors.ts:31`, replace the stale count with
+  wording that does not count ("for every other code a details argument does not compile"), so it cannot go stale
+  again. No other change to that file.
+- **Then** `npm run verify`, commit, and report as before. Change nothing else.
 
 ## Handoff
 
