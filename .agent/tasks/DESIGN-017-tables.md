@@ -5,8 +5,8 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-016]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # DESIGN-017 — BO-05 Tables (slice E1)
 
@@ -179,6 +179,32 @@ full prose, ending with `DONE` or `BLOCKED: <one question>`. Then run exactly on
 
     herdr agent prompt lead "design017: DESIGN-017 done — <one line>"
     herdr agent prompt lead "design017: BLOCKED — <question>"
+
+## Round 3 — the re-review's N1 to N3 and two cosmetic notes (lead rulings, 2026-10-21)
+
+The Claude re-review of `dbf371e` (`.agent/reviews/DESIGN-017-review.md`, rewritten in place) found F1 to F10 resolved
+and five new items the fixes created. **All five are accepted.** This is the last fix round (`max_fix_cycles` 2); the
+lead reviews it, not a third Claude round. The words below are ruled; use them exactly.
+
+- **N1 (medium), a command crosses a different manager's sign-in.** In `resume(false)` (a different manager), mark any
+  in-flight command `discarded` whatever its kind, and start the new manager's area with no pending command (`pending`
+  false, no `inFlight`). A late answer may update the list silently; it is never announced to the new manager and
+  never moves their focus. Add to `D`'s modal-dialog paragraph: *"A different manager's working area starts with no
+  pending command; the previous manager's command is never announced or focused in it."* Add the different-manager
+  case to the F4 loop in `design017.cjs`.
+- **N2 (low), inert page after Discard during a pending save.** While a discarded save is still outstanding, the page
+  status reads exactly: **"Waiting for an earlier save to finish. Nothing will be sent again."** It clears silently
+  when the answer settles (F3). Add the row to the copy table and the sentence to `D` *Command results*.
+- **N3 (low), stale "Deactivating {label}…" after `SESSION_IDLE`.** When a status command is refused by a session
+  refusal, after the same manager resumes the page status reads exactly: **"{label} was not changed. Use its row action
+  to try again."** Add it to `D`'s *Status commands* paragraph and the copy table.
+- **Cosmetic 1.** `SITEMAP.md:47`: add the blank line before the dated BO-05 note.
+- **Cosmetic 2.** In the logout decision with a kitchen emergency, the emergency sentence reads exactly: **"Decide
+  whether to keep this draft or discard it before opening print incidents."** The form departures keep their current
+  sentence.
+
+Then re-run only `design017.cjs` (the owner approves), add a *Round 3* section to the Handoff (what changed per item,
+the count), commit on `agent/design-017`, never push, and report as *Reporting* says.
 
 ## Handover (lead, 2026-10-21): finish round 2 on OpenCode
 
