@@ -73,3 +73,72 @@ export const RESUMED: NoticeCopy = {
 export const LOGOUT_UNCONFIRMED = 'Sign-out has not been confirmed.';
 export const MISSING_USERNAME = 'Enter your username.';
 export const MISSING_PASSWORD = 'Enter your password.';
+
+// BO-05 Tables (PHASE1-S1b). Every sentence is a row of DESIGN-017's copy table
+// (.agent/tasks/DESIGN-017-tables.md, "Exact product copy and accessible names for S1b").
+// Braces in the table are the values here; a zod message, a server text, an error code or
+// a submitted value never becomes visible text. The M-6 and logout rows above stay the
+// one source for those sentences.
+
+export const CONFIGURATION = 'Configuration';
+export const TABLES = 'Tables';
+export const NEW_TABLE = 'New table';
+export const counts = (active: number, inactive: number): string => `${active} active · ${inactive} inactive`;
+export const LIST_CAPTION = 'Active tables first · Labels in order';
+export const EMPTY_TITLE = 'No tables yet';
+export const EMPTY_BODY = 'Create your first table to set up the floor.';
+export const LOADING = 'Loading tables…';
+export const READ_FAILED: NoticeCopy = {
+  title: 'Tables could not be loaded',
+  body: 'Try again to read the table list.',
+};
+
+export const editTitle = (label: string): string => `Edit ${label}`;
+export const CREATE_CONTEXT = 'Choose the label staff will see on the floor.';
+export const RENAME_ACTIVE_CONTEXT = 'Active table. Changes keep this table’s history.';
+export const RENAME_INACTIVE_CONTEXT = 'Inactive table. Saving its label does not reactivate it.';
+export const LABEL_NAME = 'Table label';
+export const LABEL_HELP = '1–32 characters. Active tables must have different labels.';
+export const LABEL_EMPTY = 'Enter a table label.';
+export const LABEL_LONG = 'Use 32 characters or fewer.';
+export const LABEL_CONTROL = 'Remove control characters from the label.';
+export const LABEL_DUPLICATE = 'An active table already uses this label. Choose another label.';
+export const LABEL_DUPLICATE_REACTIVATE =
+  'An active table already uses this label. Rename this inactive table, save, then reactivate it.';
+export const LABEL_IN_USE = 'Label in use';
+
+export const SAVING: NoticeCopy = { title: 'Saving…', body: 'Wait for the result. Your draft is kept.' };
+export const FORM_FAILED: NoticeCopy = {
+  title: 'Something went wrong',
+  body: 'Nothing was saved. Your draft is kept. Press Save to try again.',
+};
+export const OUTCOME_UNKNOWN: NoticeCopy = {
+  title: 'Outcome not confirmed',
+  body: 'The outcome could not be confirmed. The list has been refreshed. Your draft is kept; nothing was sent again.',
+};
+export const OUTCOME_UNKNOWN_UNREAD: NoticeCopy = {
+  title: 'Outcome not confirmed',
+  body: 'The outcome could not be confirmed. The list could not be refreshed. Your draft is kept; nothing was sent again.',
+};
+
+export const saved = (label: string): string => `${label} saved.`;
+export const deactivated = (label: string): string => `${label} deactivated. It is kept for history.`;
+export const reactivated = (label: string): string => `${label} reactivated.`;
+export const deactivating = (label: string): string => `Deactivating ${label}…`;
+export const reactivating = (label: string): string => `Reactivating ${label}…`;
+export const statusUnknown = (label: string): string =>
+  `${label}: the outcome could not be confirmed. The list has been refreshed. Nothing was sent again.`;
+export const statusUnknownUnread = (label: string): string =>
+  `${label}: the outcome could not be confirmed. The list could not be refreshed. Nothing was sent again.`;
+export const statusFailed = (label: string): string =>
+  `Something went wrong. ${label} was not changed. Use its row action to try again.`;
+export const statusSessionRefused = (label: string): string =>
+  `${label} was not changed. Use its row action to try again.`;
+export const WAITING = 'Waiting for an earlier save to finish. Nothing will be sent again.';
+
+export const DEPARTURE_TITLE = 'Discard unsaved changes?';
+export const DEPARTURE_BODY = 'Your edits have not been saved. Stay to keep editing, or discard them before leaving.';
+export const DEPARTURE_BODY_UNCERTAIN =
+  'The save may or may not have succeeded. Leaving does not send it again. Stay to keep the draft, or discard it and leave.';
+/** The separate paragraph of the logout decisions while a save is pending or its outcome unknown. */
+export const LOGOUT_UNCERTAIN = 'The save may or may not have succeeded. Leaving does not send it again.';

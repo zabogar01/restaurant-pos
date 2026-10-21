@@ -54,14 +54,18 @@ describe('case 1. a sign-in', () => {
     expect(h.keyed(LOGIN)[0]!.body).toBe('{"username":"m.iqbal","password":"correct horse"}');
     expect(sessionState(host)).toBe('signed-in');
     expect(text(host.querySelector('.botop'))).toBe('Back officeM. IqbalLog out');
-    expect(host.querySelector('.bonav')!.childElementCount).toBe(0);
+    // The rail lists the one destination that exists, under its group (PHASE1-S1b).
+    expect(text(host.querySelector('.bonav'))).toBe('ConfigurationTables');
+    expect(host.querySelector('.bonav a')!.getAttribute('href')).toBe('/back-office/tables');
     expect(host.querySelector('input[type="password"]')).toBeNull();
   });
 
   it('shows no success sentence, link, date or incident in the frame (case 19)', async () => {
     const host = await open(ok(VIEW));
     expect(sessionState(host)).toBe('signed-in');
-    expect(host.querySelectorAll('a')).toHaveLength(0);
+    // The only link is the rail's one entry; the success view adds none (PHASE1-S1b).
+    expect([...host.querySelectorAll('a')].map((a) => a.textContent)).toEqual(['Tables']);
+    expect(host.querySelectorAll('.botop a, .bocontent a')).toHaveLength(0);
     expect(host.querySelector('.bocontent')!.querySelector(':scope > :not(.office-work)')).toBeNull();
     expect(host.querySelector('.office-notice')).toBeNull();
     expect(host.querySelector('time')).toBeNull();

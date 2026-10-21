@@ -75,3 +75,42 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 .office-dialog__foot { display: flex; justify-content: flex-end; gap: var(--frost-space-3); flex: none; padding: var(--frost-overlay-foot-padding); border-top: var(--frost-divider-stroke); background: var(--frost-surface); }
 .office-dialog .office-error { font-size: var(--frost-text-13); }
 .office-dialog label { display: block; font-size: var(--frost-text-12); margin: var(--frost-space-4) 0 var(--frost-space-1); }
+
+/*
+ * BO-05 Tables (PHASE1-S1b), ported from Frost's office.css and tables.css
+ * (docs/design/visual-directions/frost/back-office/): the rail group and its entry, the
+ * page heading, the table, the empty state, and the non-modal panel beside the list.
+ */
+.bonav .bonav__sec { padding: var(--frost-nav-section-padding); font-size: var(--frost-text-11); letter-spacing: var(--frost-tracking-nav); font-weight: var(--frost-weight-medium); color: var(--frost-muted); }
+.bonav a { display: block; padding: var(--frost-nav-item-padding); color: var(--frost-text); font-size: var(--frost-text-14); text-decoration: none; border: 0; }
+.bonav a:hover { background: var(--frost-group); }
+.bonav a[aria-current='page'], .bonav a[aria-current='page']:hover { background: var(--frost-selected); color: var(--frost-selected-text); font-weight: var(--frost-weight-semibold); }
+.office-heading { display: flex; align-items: baseline; gap: var(--frost-space-4); margin: var(--frost-space-2) 0 var(--frost-space-6); }
+.office-heading h1 { margin: 0; font-size: var(--frost-text-30); font-weight: var(--frost-weight-medium); letter-spacing: var(--frost-tracking-headline); }
+.office-heading p { margin: 0; color: var(--frost-muted); }
+.office-push { margin-left: auto; }
+.office-empty { padding: var(--frost-space-12); border: var(--frost-control-stroke); border-style: dashed; text-align: center; color: var(--frost-muted); }
+.office-empty-title { font-weight: var(--frost-weight-semibold); margin-bottom: var(--frost-space-2); }
+.office-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--frost-elevated); }
+.office-table th { position: sticky; top: calc(-1 * var(--frost-office-content-padding)); z-index: 1; padding: var(--frost-table-head-padding); background: var(--frost-group); border-bottom: var(--frost-control-stroke); text-align: left; font-size: var(--frost-text-11); font-weight: var(--frost-weight-medium); text-transform: var(--frost-table-head-case); letter-spacing: var(--frost-tracking-table); }
+.office-table td { padding: var(--frost-table-cell-padding); border-bottom: var(--frost-divider-stroke); vertical-align: top; }
+.office-table td:first-child { font-weight: var(--frost-weight-medium); max-width: var(--frost-office-nav-width); overflow-wrap: anywhere; }
+.office-table tbody tr:hover { background: var(--frost-surface); }
+.tables-workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--frost-space-6); align-items: start; }
+.tables-workspace.editing { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.tables-workspace > * { min-width: 0; }
+.table-editor { position: sticky; top: 0; background: var(--frost-elevated); border: var(--frost-overlay-border); border-radius: var(--frost-radius-surface); max-height: calc(100dvh - var(--frost-office-header-height) - 2 * var(--frost-space-6)); overflow-y: auto; }
+.table-editor h2 { overflow-wrap: anywhere; }
+.table-editor label { display: block; margin-bottom: var(--frost-space-1); font-size: var(--frost-text-12); color: var(--frost-muted); }
+.table-editor .office-dialog__body { font-size: var(--frost-text-14); }
+#label-help { font-size: var(--frost-text-12); margin-bottom: 0; }
+#tables-list caption { text-align: left; color: var(--frost-muted); font-size: var(--frost-text-12); padding-bottom: var(--frost-space-3); }
+#tables-list th:last-child, #tables-list td:last-child { text-align: right; }
+#tables-list td:last-child { white-space: nowrap; }
+#tables-list td:last-child button + button { margin-left: var(--frost-space-2); }
+#tables-list tr[data-active='false'] td { color: var(--frost-muted); }
+#tables-list tr[data-selected='true'] { background: var(--frost-group); }
+.table-holder { display: block; margin-top: var(--frost-space-1); font-size: var(--frost-text-12); color: var(--frost-muted); font-weight: var(--frost-weight-regular); }
+#tables-list .table-status { white-space: nowrap; }
+#form-notice[data-kind='failure'], #read-state .office-notice { color: var(--frost-warning); background: var(--frost-warning-surface); border-color: var(--frost-warning); }
+#read-state .office-button { margin-top: var(--frost-space-4); }

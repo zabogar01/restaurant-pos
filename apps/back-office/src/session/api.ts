@@ -16,6 +16,26 @@ export type OfficeApi = {
   [P in OfficePath]: (...body: ArgsOf<P>) => Promise<ApiResult<ValueOf<P>>>;
 };
 
+type ConfigPath = Extract<keyof OfficeApi, `/api/back-office/config/${string}`>;
+
+/**
+ * What a screen may call: the configuration routes and no others (consult C2 section 7).
+ * A screen cannot name sign-in, logout, re-authentication or `activity` through it, which
+ * keeps the input listener the only caller of `activity`.
+ */
+export type ConfigApi = { [P in ConfigPath]: OfficeApi[P] };
+
+/** The configuration routes of an API module, and only those. */
+export function configApi(api: OfficeApi): ConfigApi {
+  return {
+    '/api/back-office/config/tables': api['/api/back-office/config/tables'],
+    '/api/back-office/config/tables/create': api['/api/back-office/config/tables/create'],
+    '/api/back-office/config/tables/update': api['/api/back-office/config/tables/update'],
+    '/api/back-office/config/tables/deactivate': api['/api/back-office/config/tables/deactivate'],
+    '/api/back-office/config/tables/reactivate': api['/api/back-office/config/tables/reactivate'],
+  };
+}
+
 /** The one set of back-office calls, over the one core instance the store constructs. */
 export function officeApi(client: ApiClient): OfficeApi {
   return {
@@ -25,7 +45,7 @@ export function officeApi(client: ApiClient): OfficeApi {
     '/api/back-office/auth/activity': () => client.request(ROUTES.backOfficeActivity),
     '/api/back-office/auth/logout': () => client.request(ROUTES.backOfficeLogout),
     '/api/back-office/auth/reauthenticate': (body) => client.request(ROUTES.backOfficeReauthenticate, body),
-    // Declared, not called by any screen until BO-05 (PHASE1-S1b).
+    // Reached by a screen only through `configApi` below.
     '/api/back-office/config/tables': () => client.request(ROUTES.tablesList),
     '/api/back-office/config/tables/create': (body) => client.request(ROUTES.tablesCreate, body),
     '/api/back-office/config/tables/update': (body) => client.request(ROUTES.tablesUpdate, body),

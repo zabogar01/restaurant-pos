@@ -434,3 +434,181 @@ found and not fixed, the real `verify` and `test:e2e:all` output, the C5 numbers
 forward* names. End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
 
 ## Handoff
+
+### What I did
+
+BO-05 is built, with the rail, the route manifest, the `config` member of the session store, the first configuration form
+and the browser spec for AC-35. It is one commit on `agent/phase1-s1b` (`git log -1` names it; a commit cannot hold its own
+hash); nothing was pushed. I changed only paths under `owns`, plus this Handoff.
+
+New source, all in `apps/back-office/src/`: `routes.ts` (the manifest, one row per screen, `Record<Screen, string>`, so a
+screen without a path does not compile); `router.ts` (`pushState`, `popstate`, an unknown path replaced by the landing, and
+the Back and Forward restore); `Rail.tsx` and `Screens.tsx`; `forms/fieldsInError.ts` (C2 section 2, as written);
+`tables/label.ts` (the form's own check: trim, then empty, over 32 UTF-16 units, control character); `tables/model.ts` (the
+behaviour of BO-05, apart from how it is drawn); `tables/Tables.tsx` (the view); `work/guard.ts` (what the frame needs to know
+of the screen in its working area). Changed: `OfficeApp.tsx` (rail, router start, the top bar's logout confirmation, header
+comment), `Reauth.tsx` (the paragraph), `copy.ts` (every BO-05 sentence, each a row of DESIGN-017's copy table),
+`office.css` (ported from Frost's `office.css` and `tables.css`; the no-invented-values test passes), `main.tsx` (the served
+build gives the working area `<Screens />`), and in `session/`: `api.ts` (`ConfigApi`, `configApi`), `types.ts`, `realSession.ts`,
+`fixtureSession.ts`, `useSession.tsx` (`useConfig`). New tests: `routes.test.ts`, `fields-in-error.test.ts`,
+`tables.test.tsx`, `tables-departure.test.tsx`, `config-api.test.tsx`, `tables-support.tsx`; new browser spec
+`e2e/tests/tables.spec.ts` and helper `e2e/support/absolute.ts`.
+
+### How it works, and what a later form copies
+
+**The model** (`tables/model.ts`) is a plain store read by `useSyncExternalStore`, one per working area. A later form copies
+its shape: `meaningOf(answer)` is C2 section 6's table as one `switch` (`ok`, `duplicate`, `not-found`, `session`, `general`,
+`unknown`); `send` calls the core exactly once and never again; `command` is the one command in flight and every opener is
+inert while it is non-null; an answer that arrives while the session is away or a decision is open is held and presented
+later (`gate`, `held`, `flush`); a `session` answer is never held, because it is definite and applied nothing; `present`
+applies the answer; the reread (`load(false)`) follows `unknown`, `DUPLICATE` and `NOT_FOUND` and never establishes success.
+
+**The field list and the form's own check.** `fieldsInError(schema, body)` is the gate before the core is called; `label.ts`
+decides which designed sentence. A test proves `checkLabel` and `CreateTableRequest` agree for 13 labels. If they ever
+disagree the form shows the general failure and sends nothing. Copy the pair, not the message text.
+
+**The departure decision** is a modal `<dialog>` in `Tables.tsx` (`Decision`), driven by `state.decision`. **The dialog rule at
+BO-01** is the `wanted` boolean: open only for `signed-in` or `idle`; `close()` in a layout effect when it turns false; the
+`close` handler reopens it only when `wanted` is still true; React state is untouched, so the same manager gets it back with
+`showModal()` and focus on Stay, and a different manager's key destroys it. `OfficeApp` has the same logic for the top bar's
+logout confirmation. A later form with a modal copies `Decision` verbatim.
+
+**`work/guard.ts`** is how the frame asks the screen: `status()` (`clean`, `dirty`, `uncertain`), `leave(proceed)` for the
+router, `focus()` after "Keep this draft", and `hold(on)` so the screen holds an answer while the frame's own confirmation
+is open. One screen registers at a time. **`router.ts`** asks it before a rail entry and on `popstate`; on a held Back it
+puts the path back with `pushState` and pushes the destination again only on Discard.
+
+**Accessible names the browser spec drives (from DESIGN-017):** link `Tables` (group `Configuration`), heading `Tables`,
+button `New table`, non-modal dialogs named `New table` and `Edit {label}`, textbox `Table label`, buttons `Save`, `Cancel`,
+`Stay`, `Discard`, row buttons `Edit {label} — active` / `— inactive`, `Deactivate {label}`, `Reactivate {label}`, modal
+dialog `Discard unsaved changes?`, `Log out and discard your changes?` with `Keep this draft` and `Discard changes and log
+out`, and M-6's existing `Your session timed out`, `Sign in as a different manager`, `Continue to sign-in`.
+
+### What I decided, and on what evidence
+
+1. **The top bar's Log out asks only when a form is open and unsaved, pending or unknown.** Ruling 4 says "a command pending or
+   unknown"; `D` *Status commands* says a status command has no draft and navigation stays live. A confirmation titled "discard
+   your changes" over a pending Deactivate would be false, so a pending or unknown status command does not ask. If the lead
+   meant otherwise it is one condition in `work/guard.ts` consumers (`model.status()`).
+2. **"Keep this draft" returns focus to the label** (or the Saving notice while pending), as `D` says for Stay. Ruling 4's
+   "returns to the caller with ... focus intact" could also be read as the Log out button; I followed `D`.
+3. **The path is not reset by a sign-in.** Ruling 5 says signing in lands on the Phase 0 frame at `/back-office/`. A fresh
+   sign-in with the address still `/back-office/tables` (a deep link, or a logout then a sign-in without navigating) shows
+   BO-05, because the path is read from the address bar and the same rule makes a reload at `/back-office/tables` land on
+   BO-05, which ruling 5 also requires. Resetting to the landing on a *fresh* sign-in is one `replaceState` in `OfficeApp`;
+   I did not add it because it would contradict the reload rule for a user who is already signed in. **Question for the
+   lead, not blocking.**
+4. **A session refusal of a status command** (`SESSION_IDLE`, `UNAUTHENTICATED`, `FORBIDDEN`, `session-gone`) sets the page
+   status "{label} was not changed. Use its row action to try again." at once, so it is what the same manager sees after M-6.
+   For a save the same refusal clears the Saving state and keeps the draft with no message.
+5. **A list read refused or failed is "failed to load"**, whatever the reason, including a session refusal; Try again repeats
+   the read. This is also what a reread that fails after `unknown` shows (the list is withheld, `unknown-unread` copy).
+6. **Holder match** ("Label in use") compares `toLowerCase()` of the draft to each active row's label; the server uses
+   `lower()`. They agree for ordinary labels; a locale-specific case folding could differ, and the holder mark would then be
+   missing while the refusal sentence is still right.
+7. **Chromium's second Escape.** Like `Reauth`, the decision and the logout confirmation reopen themselves if closed by
+   anything but this component. I have not seen that behaviour in either engine here; it is defence copied from M-6.
+
+### Not built on purpose (lead ruling 7)
+
+The Phase 2 "deactivation rejected, open order" state; the kitchen-emergency sentences in the departure decisions (the built
+frame has no incident action); BO-01's held-draft sentence "The previous session's unsaved changes are stored on this tab...";
+any business-day indicator. None is drawn and none has a hook.
+
+### Existing tests I changed, and why
+
+- `apps/back-office/test/sign-in.test.tsx`: **two** assertions, not the one the task named. `:57` (the rail is empty) now reads
+  that the rail holds `ConfigurationTables` and the one link to `/back-office/tables`. `:64` (`querySelectorAll('a')` has
+  length 0 in the signed-in frame) failed for the same reason, the rail's new link; it now says the only link is `Tables` and
+  there is none in the top bar or the content pane. Neither is weaker in what it guards: the frame still has no link other
+  than the one destination that exists.
+- `apps/back-office/test/session-harness.tsx`: `mount(store, screen = <TestChild />)` gained an optional second argument and
+  `ReactNode` import; every existing call is unchanged. This file is under `test/**`, which `owns` lists, but it is shared by
+  every back-office test, so I say so.
+- `OfficeApp.tsx`'s header comment updated as the task required. `reauth.test.tsx`, `session-lifecycle.test.tsx`,
+  `boundaries.test.tsx`, `fixture-session.test.tsx`, the `built-session*` tests and every existing e2e spec pass unedited.
+  The e2e specs that select `.bonav`, `.botop` and `.bocontent` passed unchanged.
+
+### Red proofs (each a mutation I applied, the failure I read, and the revert)
+
+1. **AC 1.** `PATHS.tables` set to `/back-office/tables.html`: `routes.test.ts` failed three tests, "holds no path with a dot in
+   its last segment" (`/back-office/tables.html: expected true to be false`) among them. Reverted.
+2. **AC 2.** `ConfigApi` mapped over `keyof OfficeApi` instead of `ConfigPath`: `tsc -p apps/back-office` failed with TS2578
+   "Unused '@ts-expect-error' directive" at all six lines of `config-api.test.tsx`, and TS2740 in `api.ts` and
+   `fixtureSession.ts`. Reverted.
+3. **AC 4.** `fieldsInError` returning every `path[0]` unfiltered (`named.add(String(issue.path[0]))`): "never names a key the
+   schema does not have" failed with `expected [ 'undefined' ] to deeply equal []` for the extra-key body. (The extra key has an
+   empty path, so the unfiltered mutation leaks `undefined`, not the key's name; the key name cannot reach `path[0]` for a strict
+   object, which is the property the filter protects.) Reverted.
+4. **AC 5.** The reread dropped from the `DUPLICATE` path: three tests failed (`expected 1 to be 2` list reads, and the
+   `[LIST, CREATE, LIST]` call order). Reverted.
+5. **AC 6.** `send` calling the command once more after `failed` or `unavailable`: six tests failed with `expected 2 to be 1`
+   (the count of command requests became 2). Reverted.
+6. **AC 7.** The `state.command !== null` guard removed from `save()`: "a second Save press while a command is pending sends
+   nothing" failed with `expected 3 to be 1`. Reverted.
+7. **AC 8, 9.** The hold removed from `answered` (an answer presented at once, behind M-6 or a decision): three tests failed
+   ("an answer that arrives while the decision is open waits for it", "a command in flight when the session goes idle ...",
+   "holds an answer that arrives behind it"). Reverted.
+8. **AC 10 (client).** The decision's `close()` removed: five tests failed, the BO-01 one at `departure.open` (`expected true to be
+   false`). Reverted.
+9. **Constant working-area key** (`key="one"`), client: "through M-6 as a different manager ..." and "a different manager's
+   sign-in destroys the form and the decision with the key" failed. In the browser, rebuilt: **C2 and C3's B variant failed in
+   both Chromium and WebKit** (`toHaveCount(0)` received 1, the unsaved edit dialog). Reverted and rebuilt.
+10. **Leaving the decision open at BO-01** (skip its `close()` when the phase is `signed-out`), rebuilt: **C3 failed in both
+    engines**, at BO-01's Username field (`toHaveValue('x')` timed out, "waiting for getByLabel('Username')") for the
+    same-manager case, and at `signInAtBackOffice` ("signing in at the back office failed") for the B variant. Both engines
+    showed the blocking; a modal left open in the hidden area does block BO-01's fields. The "AC-18 scan found credentials where
+    they do not belong" line that follows in those failing runs is the harness noticing a sign-in that was typed and never
+    sent; it is a consequence, not a second defect. Reverted and rebuilt.
+
+### Found and not fixed
+
+- **The sentence "awaiting review"** still heads `docs/DESIGN.md:1486` ("Configuration forms — DESIGN-017 / consult C2"). It
+  was reviewed and merged; the lead's task file already says so. I did not touch the document.
+- **Dev server** (`npm run dev -w apps/back-office`, fixture mode) was not opened in a browser. The fixture-mode behaviour is
+  proved in jsdom (`config-api.test.tsx`, AC 12) and the built-bundle tests; I did not look at it served by Vite.
+- **Layout.** The e2e proves behaviour and names, not appearance. I did not open BO-05 beside the Frost artifact to compare
+  spacing; the CSS is ported rule by rule from `office.css` and `tables.css` and passes the registry test. A look by a person
+  is still worth doing for the 3:2 split, the sticky header and the overflow case (60 rows).
+- **Process.** Early on I ran one compound shell command with a `cd` and, once, a heredoc to append `copy.ts`. Neither touched
+  anything outside the worktree, and I stopped; the rest used the file tools.
+
+### The C5 measurement (consult C2 section 9)
+
+Machine: Apple M4, 16 GB, macOS (Darwin 25.5.0), Node v26.10.0, Vite 8.3.0. Server and the back office's `vite build --watch`
+running; headless Chromium signed in as a harness-made manager (random credentials, the e2e database, never `pos`) at BO-05.
+Measured by a temporary Playwright spec that was deleted afterwards (nothing of it is committed; `Tables.tsx` was restored and
+compared byte for byte with a copy taken before).
+
+- **Cold build:** 255 ms from starting `vite build --watch` to its first "built in" line.
+- **Ten consecutive warm edits**, each a one-line visible change to the page heading in `Tables.tsx`:
+  - save to the watch build's completion line: 58, 62, 71, 62, 76, 62, 60, 59, 66, 61 ms. **Median 62 ms, slowest 76 ms.**
+  - save to the reloaded page showing the change (signed in, at BO-05, `page.reload()`): 88, 98, 101, 97, 105, 91, 90, 84, 91,
+    83 ms. **Median 91 ms, slowest 105 ms.**
+- **Built bundle** (the production build of this commit): `index-*.js` 281.90 kB (84.86 kB gzip), `index-*.css` 15.20 kB
+  (3.52 kB gzip).
+- **What a reload loses**, in words: the page is a new document, so the React tree is gone. The signed-in session survives
+  (its cookie), and the reload lands on BO-05 at the same path, but the open form, whatever the manager typed in it, any
+  pending or unknown outcome, the page status and the departure decision are destroyed (rule 22). Working on a form's
+  appearance means opening it again and retyping it after every save, and states that need a particular server answer (the
+  failures, the unknowns) cannot be reached by reload at all; the Frost artifact is where those are reviewed.
+
+### Verification
+
+`npm run verify`: typecheck clean (all seven projects) and **102 test files, 3922 tests passed** (baseline at `da7c270`:
+97 files, 3790 tests, confirmed by running it before I changed anything; +5 files, +132 tests).
+`npm run test:e2e:all`: **68 passed** in Chromium and WebKit (baseline 58; +10: five cases in each engine). The built-bundle
+proofs (plain and `NODE_ENV=development`) find no fixture marker, inside the unit run. `git diff --check` is clean. I ran no
+formatter.
+
+### What the next agent needs and does not have
+
+- A person's eyes on BO-05 served, signed in, in a real window (see "Found and not fixed").
+- A ruling on decision 3 (does a fresh sign-in reset the path to `/back-office/`?) and, if the lead reads ruling 4 literally,
+  on decision 1.
+- The `work/guard.ts` registry is a module singleton. It is correct for one screen at a time; the first slice that has two
+  screens with unsaved work at once (none planned) needs it keyed.
+- Server, contracts and transport core are untouched, as the task required. `DUPLICATE` reaches the client through the
+  general-failure group of `realSession.ts`'s switch and is read at the call site in `model.ts`, as S1a said.
+
+DONE

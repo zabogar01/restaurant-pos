@@ -2,7 +2,7 @@ import { createApiClient, type ApiClient, type FetchLike } from '@pos/api-client
 import { ErrorCode, type ErrorBody } from '@pos/contracts';
 import { accountKey } from './account.js';
 import { listenForActivity } from './activity.js';
-import { officeApi } from './api.js';
+import { configApi, officeApi } from './api.js';
 import type {
   Arrival,
   Attempt,
@@ -505,6 +505,7 @@ export function createRealSession(deps: Deps = {}): SessionStore {
 
   return {
     kind: 'real',
+    config: configApi(api),
     getSnapshot: () => snapshot,
     subscribe(listener) {
       listeners.add(listener);

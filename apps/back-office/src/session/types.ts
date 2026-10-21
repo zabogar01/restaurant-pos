@@ -2,6 +2,8 @@
 // with lead rulings 3 to 8 of PHASE0-011d1). Every state and event of that table is
 // one value here; nothing in a screen reasons about a server code.
 
+import type { ConfigApi } from './api.js';
+
 export type Person = { staffUserId: string; name: string; username: string };
 
 /**
@@ -84,6 +86,12 @@ export type SessionSnapshot =
 export interface SessionStore {
   /** Which source this is. A screen may differ in what it draws, never in what it asks. */
   readonly kind: 'fixture' | 'real';
+  /**
+   * The configuration routes, typed to those alone: a screen reads this and can call no
+   * sign-in, logout, re-authentication or `activity` route. The fixture session answers
+   * every call `unavailable` and sends nothing.
+   */
+  readonly config: ConfigApi;
   getSnapshot(): SessionSnapshot;
   subscribe(listener: () => void): () => void;
   /** Reads the session once, and begins listening. Returns the stop. Idempotent in its read. */
