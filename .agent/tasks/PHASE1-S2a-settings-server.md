@@ -369,4 +369,59 @@ the lead drops it, remove it from the table, the grant and S2-1.
 
 ## Handoff
 
-_Not started._
+### What I did
+
+Built the whole slice on `agent/phase1-s2a`, committed after `npm run verify` was green, in one commit, `feat(settings): …` (this file is in it, so its hash is in `git log`, not here).
+
+- `db/migrations/0011_settings_version.sql`: the `reject_change_to_immutable()` function (neutral message), the `settings_version` table exactly as Ruling 1 and C1 §1.1 (integer primary key `settings_version_pkey`, ten insertable columns, `created_by` kept, `footer` `NOT NULL`, no currency or precision column), the five text checks of Ruling 2, `GRANT SELECT` plus a column-level `GRANT INSERT` on the ten columns, and the `BEFORE UPDATE OR DELETE OR TRUNCATE` trigger. No seed.
+- `packages/money`: `src/installation.ts` (`INSTALLATION_CURRENCY = 'IDR'`, `INSTALLATION_MINOR_UNIT_PRECISION = 0`), `encodeRate` and `decodeRate` in `src/index.ts`, both re-exported from the index. Test: `test/rate-codec.test.ts` (new file, 28 cases).
+- `packages/contracts`: `src/settings.ts` (new), exported from `index.ts`; `SETTINGS_CHANGED` in `errors.ts` (`ErrorCode`, and a `bare()` envelope in the `ErrorBody` union); the two routes in `routes.ts`. Test: `test/settings.test.ts` (new, 11 cases).
+- `apps/server`: `src/domain/settings.ts` (`readCurrentSettings()`, `saveSettings({ actorId, expectedVersion, values })`), `src/http/routes/back-office-settings.ts`, registered in `src/http/server.ts` after the table routes. Test: `test/settings.test.ts` (new, 25 cases).
+- Compile-forced client lines only (Ruling 9): `packages/api-client/src/specs.ts` (two `SPECS` entries), `client.ts` (`ROUTES.settingsRead`, `ROUTES.settingsSave`), `apps/back-office/src/session/api.ts` (two `OfficeApi` functions), and `SETTINGS_CHANGED` in both `realSession.ts` code maps (in the general-failure group of each).
+
+### What S2b needs (the carry-forward the task asked for)
+
+- **Routes.** `GET /api/back-office/config/settings` (not interactive) and `POST /api/back-office/config/settings/save` (interactive). In the client: `ROUTES.settingsRead`, `ROUTES.settingsSave`; the `OfficeApi` keys are the two paths.
+- **Schemas** (`@pos/contracts`): `SettingsReadView` = `{ installation: { currency, minorUnitPrecision }, current: SettingsVersionView | null }`; `SettingsVersionView` = `{ version, createdAt, createdByName, taxRatePpm, serviceChargeRatePpm, outletName, address, phone, npwpd: string | null, footer }`; `SaveSettingsRequest` = `{ expectedVersion: number | null, taxRatePpm, serviceChargeRatePpm, outletName, address, phone, npwpd: string | null, footer }`, strict. Field schemas are exported too (`RatePpm`, `OutletName`, `OutletAddress`, `OutletPhone`, `OutletNpwpd`, `ReceiptFooter`) so S2b can reuse the exact rules in the form. `createdAt` is `toISOString()` of the database's timestamp (millisecond precision, `Z`).
+- **How *unchanged* reads on the wire.** There is no flag. An identical save answers 200 with the full `SettingsReadView` whose `current.version` equals the `expectedVersion` the client sent; a saved change answers `current.version = expectedVersion + 1` (or 1 for the first save). The client compares the answered version to the one it carried.
+- **A stale save** (older number, a number ahead, `null` when a version exists, a number when none exists, or a concurrent loser) is 409 `{ "error": { "code": "SETTINGS_CHANGED" } }`, no details.
+- **Rate codec.** `encodeRate(rate: Rate): string`, `decodeRate(value: unknown): Rate` in `@pos/money`; `decodeRate` does not bound the value (the request schema does, 0 to 1,000,000). The client converts a typed percent with the existing `rateFromPercent` and `encodeRate`s it.
+- **Constants.** `INSTALLATION_CURRENCY`, `INSTALLATION_MINOR_UNIT_PRECISION` from `@pos/money`.
+- **Control-character pattern.** The database uses `[[:cntrl:]]` (POSIX class). I verified it, as C1 §0 asked: in the test container (UTF8, `en_US.utf8`) it matches ESC, DEL, LF, U+0085 and U+009B, and does not match U+00A0 or U+2028 (which `\p{Cc}` in the schema does not match either). I did not spell the ranges out. The schema test (S2-7) holds ESC, U+009B, U+0085, DEL, tab and LF against the outlet name, so a database with a different collation would fail it. The address check removes line feeds with `translate(address, E'\n', '')` before the `[[:cntrl:]]` test and counts them with `char_length(address) - char_length(replace(address, E'\n', ''))`. Untrimmed or blank values are refused by `x !~ '^\s|\s$'` (the pattern `dining_table` already uses) rather than `btrim`, because `btrim` trims spaces only and would let a trailing tab or line feed through.
+
+### Decisions, with evidence
+
+1. **`ConfigApi` excludes the settings routes for now.** `OfficeApi` maps every back-office path, so the two new paths had to be declared in `api.ts`. `ConfigApi` was derived from every `/config/` key, so adding them there would have forced changes to `fixtureSession.ts` (not owned) and `config-api.test.tsx`, which asserts the exact five table keys at run time (not owned). In `api.ts` I excluded the two paths from `ConfigPath` with a comment saying S2b adds them to `ConfigApi`, `configApi()` and the fixture session together with the screen. No test changed. **S2b must remove that `Exclude` and update `fixtureSession.ts` and `config-api.test.tsx`'s key list in the same change.**
+2. **The rate bound in the schema re-tests the shape.** zod 4 runs every check after one fails, so a `.refine(BigInt(ppm) <= …)` after `.regex()` threw `SyntaxError` on `'1e5'` and the route answered 500 `INTERNAL`. The test run caught it. `RatePpm` now re-tests the canonical pattern and a seven-character cap inside the refine before reading the string as a bigint.
+3. **`decodeRate`'s error message quotes only strings**: `JSON.stringify(1n)` throws, which hid the intended message for a bigint input.
+4. **`saveSettings` re-reads the highest row after the insert** (inside the same transaction) rather than building the answer from the request, so `createdAt` and `createdByName` come from the database (S2-23).
+5. **`calculation_policy`** is a module constant (`1`) in the domain, passed to the insert; no value type carries it.
+6. **Tests that empty the table.** `settings_version` is immutable even to the owner, so `settings.test.ts` empties it between cases by disabling the trigger for one owner connection (`ALTER TABLE … DISABLE TRIGGER`, `DELETE`, `ENABLE TRIGGER`). The schema tests use `resetDatabase()` as everywhere else.
+
+### Existing tests changed
+
+Only the ones the task lists: `schema.test.ts` (case 1's `EXPECTED` map gained `settings_version`; a new `describe('settings_version')` block for S2-1 to S2-8), `harness-race.test.ts` (`MIGRATED_TABLES` gained `settings_version`), `error-details.types.ts` (a `SETTINGS_CHANGED` block). No assertion changed meaning. The route-table and access tests needed no edit: they read `ROUTE_TABLE`, which now has the two routes, and the server registers them. `packages/contracts/test/routes.test.ts` was not touched (it filters on `/config/tables`).
+
+### Red proofs observed
+
+Each mutation was applied, the named test failed for the stated reason, and I reverted (a script in the scratchpad applied and restored from copies; `verify` at the end ran on the restored tree).
+
+- **S2-1** (grant `UPDATE`): case 1's map failed. **S2-2** (same mutation): the `UPDATE` reached the trigger instead of *permission denied*. **S2-3** (drop the trigger): the owner's statements succeeded; the case failed. **S2-4** (bound 1000001): the refused value was stored. **S2-6** (add a `currency` column): the column list differed. **S2-7** (remove the control-character clause on `outlet_name`): ESC was stored; the case failed.
+- **S2-9** (`next = expectedVersion ?? 0`): the first save failed. My first attempt, `(expectedVersion ?? 0) + 1`, left every test green because it is equivalent code; I changed it to the form that actually starts numbering from the expected value.
+- **S2-11 / S2-12** (remove the comparison; separately, treat `null` as "any"): S2-11 and S2-12 failed respectively. **S2-13** (remove the 23505 mapping): both concurrency cases failed with a 500 where a 409 was expected. **S2-14** (remove the sameness check): S2-14 and S2-23's identical-save case failed. **S2-15** (leave the footer out of the sameness check): the footer-alone case failed.
+- **S2-18** (decode through `Number()`, no canonical check): sixteen codec cases failed, among them `'1e6'`, the JSON number and the property tests. The first mutation I tried kept the canonical check and changed only the final conversion, which no case can observe for values below 2^53; the property test failed on large values only. **S2-19** (non-strict request schema): the schema case for extra keys failed. **S2-20** (answer `DUPLICATE`): the stale-save cases failed. **S2-23** (build the answer from a version with no `createdAt`): the answer cases failed and every saving case with it. **S2-25** (log the footer on a stale save): the marker case failed.
+- **S2-22** (declare the save route `audience: 'POS'`): the server refuses to start (`StartupError: … declares audience POS but is not under /api/pos/`), so every case fails at `beforeAll`. The access guard is stronger than the test the task expected.
+- **S2-21**: as the task says, hard-coding the values stays green; the test imports the constants and compares to them. **S2-17**: not testable red by input (S2-5 proves the database refuses any other value). **S2-24**: a guard against a later change, no red, as the task says.
+- **S2-8 could not be made red by a seed.** A seed row needs a `created_by` that references a `staff_user`, and no staff row exists at migration time, so an `INSERT … SELECT … FROM staff_user` inserts nothing and the table stays empty. The foreign key is the structural guard; the test remains as written.
+
+### Found and not fixed
+
+1. **`@pos/money` is not a declared dependency of `@pos/server`.** `apps/server/package.json` lists `@pos/contracts` only, and the lockfile would need the matching workspace entry. The server now imports `@pos/money` (`domain/settings.ts`, the route and the test) and it resolves, because npm workspaces link every workspace package into the root `node_modules`, and typecheck and tests are green. `package.json` is not in this task's owned paths, so I left it. Proposed fix, for the lead or the next task that owns it: add `"@pos/money": "*"` under `dependencies` in `apps/server/package.json` and run `npm install` to update `package-lock.json`.
+2. The comment above `ErrorDetailsByCode` in `errors.ts` says "for the other twelve a details argument does not compile"; there are now seventeen codes with four declaring details. The count was already stale before this slice (DUPLICATE made it thirteen) and I did not edit the comment.
+3. The test for S2-13's second case uses `LOCK TABLE settings_version IN ACCESS EXCLUSIVE MODE` as a barrier (the first statement of the save is a `SELECT`, which an `EXCLUSIVE` lock does not block). It passed in every run of the unmutated tree I made (the focused runs and the full verify); I did not repeat it in a loop to look for flakiness.
+
+### Verify
+
+`npm run verify`: typecheck clean for all seven projects; **107 test files, 4006 tests passed** (baseline 104 files and 3934; the difference is the three new files: `packages/money/test/rate-codec.test.ts`, `packages/contracts/test/settings.test.ts`, `apps/server/test/settings.test.ts`, plus new cases in `schema.test.ts`). I did not run `npm run test:e2e:all` (the lead's step before merge), and I did not run `db:migrate` on the development database. No browser was available or used. No formatter was run.
+
+DONE

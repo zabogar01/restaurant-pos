@@ -38,4 +38,8 @@ export const ROUTE_TABLE = [
   { method: 'POST', path: '/api/back-office/config/tables/update', interactive: true },
   { method: 'POST', path: '/api/back-office/config/tables/deactivate', interactive: true },
   { method: 'POST', path: '/api/back-office/config/tables/reactivate', interactive: true },
+  // The settings read is not interactive, for the reason the tables list is not; the save
+  // is a person pressing a control.
+  { method: 'GET', path: '/api/back-office/config/settings', interactive: false },
+  { method: 'POST', path: '/api/back-office/config/settings/save', interactive: true },
 ] as const satisfies readonly RouteEntry[];

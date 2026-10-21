@@ -7,7 +7,9 @@ import {
   ReactivateTableRequest,
   ReauthenticateRequest,
   ROUTE_TABLE,
+  SaveSettingsRequest,
   SessionView,
+  SettingsReadView,
   TableResponse,
   TablesResponse,
   UpdateTableRequest,
@@ -77,6 +79,8 @@ export const SPECS = {
   '/api/back-office/config/tables/update': { body: UpdateTableRequest, response: TableResponse },
   '/api/back-office/config/tables/deactivate': { body: DeactivateTableRequest, response: TableResponse },
   '/api/back-office/config/tables/reactivate': { body: ReactivateTableRequest, response: TableResponse },
+  '/api/back-office/config/settings': { response: SettingsReadView },
+  '/api/back-office/config/settings/save': { body: SaveSettingsRequest, response: SettingsReadView },
 } as const satisfies Record<RoutePath, Spec>;
 
 type Specs = typeof SPECS;

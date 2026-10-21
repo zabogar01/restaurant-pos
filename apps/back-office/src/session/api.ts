@@ -16,7 +16,11 @@ export type OfficeApi = {
   [P in OfficePath]: (...body: ArgsOf<P>) => Promise<ApiResult<ValueOf<P>>>;
 };
 
-type ConfigPath = Extract<keyof OfficeApi, `/api/back-office/config/${string}`>;
+// The settings routes are declared in OfficeApi (the route table forces it) and reached by
+// no screen yet: PHASE1-S2b adds them to ConfigApi, `configApi` and the fixture session
+// together with the screen that calls them.
+type SettingsPath = '/api/back-office/config/settings' | '/api/back-office/config/settings/save';
+type ConfigPath = Exclude<Extract<keyof OfficeApi, `/api/back-office/config/${string}`>, SettingsPath>;
 
 /**
  * What a screen may call: the configuration routes and no others (consult C2 section 7).
@@ -51,5 +55,8 @@ export function officeApi(client: ApiClient): OfficeApi {
     '/api/back-office/config/tables/update': (body) => client.request(ROUTES.tablesUpdate, body),
     '/api/back-office/config/tables/deactivate': (body) => client.request(ROUTES.tablesDeactivate, body),
     '/api/back-office/config/tables/reactivate': (body) => client.request(ROUTES.tablesReactivate, body),
+    // Declared and called by no screen until PHASE1-S2b.
+    '/api/back-office/config/settings': () => client.request(ROUTES.settingsRead),
+    '/api/back-office/config/settings/save': (body) => client.request(ROUTES.settingsSave, body),
   };
 }

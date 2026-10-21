@@ -127,6 +127,23 @@ describe('privileges', () => {
       table: ['INSERT', 'SELECT'],
       columns: { label: ['UPDATE'], is_active: ['UPDATE'] },
     },
+    // S2-1: SELECT on the table, INSERT on each of the ten insertable columns, and no
+    // UPDATE or DELETE anywhere; created_at is the database's alone.
+    settings_version: {
+      table: ['SELECT'],
+      columns: {
+        version: ['INSERT'],
+        tax_rate_ppm: ['INSERT'],
+        service_rate_ppm: ['INSERT'],
+        outlet_name: ['INSERT'],
+        address: ['INSERT'],
+        phone: ['INSERT'],
+        npwpd: ['INSERT'],
+        footer: ['INSERT'],
+        calculation_policy: ['INSERT'],
+        created_by: ['INSERT'],
+      },
+    },
   };
 
   const TABLE_PRIVILEGES = ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE'];
@@ -562,6 +579,190 @@ describe('dining_table', () => {
     await insert('T2', false);
     const count = await ownerQuery<{ n: string }>('SELECT count(*) AS n FROM dining_table');
     expect(only(count).n).toBe('4');
+  });
+});
+
+describe('settings_version', () => {
+  const GOOD = {
+    tax: 100000,
+    service: 0,
+    outlet: 'Warung Contoh',
+    address: 'Jl. Contoh 1\nBandung',
+    phone: '+62 (22) 555-0100',
+    npwpd: null as string | null,
+    footer: 'Terima kasih',
+  };
+  let manager: string;
+
+  /** Written through the owner connection, so the trigger and the checks are all that refuse it. */
+  const insert = (over: Partial<Record<keyof typeof GOOD | 'version' | 'policy', unknown>> = {}) => {
+    const row = { version: 1, policy: 1, ...GOOD, ...over };
+    return ownerQuery(
+      `INSERT INTO settings_version
+         (version, tax_rate_ppm, service_rate_ppm, outlet_name, address, phone, npwpd, footer,
+          calculation_policy, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [row.version, row.tax, row.service, row.outlet, row.address, row.phone, row.npwpd, row.footer, row.policy, manager]
+    );
+  };
+
+  beforeEach(async () => {
+    manager = await insertStaff({ role: 'MANAGER' });
+  });
+
+  it('is empty after migration (B-24) (S2-8)', async () => {
+    expect(await ownerQuery('SELECT 1 FROM settings_version')).toEqual([]);
+  });
+
+  it('has exactly the columns written here, and no currency or precision column (S2-6)', async () => {
+    const columns = (
+      await ownerQuery<{ column_name: string; data_type: string; is_nullable: string; column_default: string | null }>(
+        `SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'settings_version' ORDER BY ordinal_position`
+      )
+    ).map(
+      (c) =>
+        `${c.column_name} ${c.data_type} ${c.is_nullable === 'YES' ? 'NULL' : 'NOT NULL'} ${c.column_default}`
+    );
+    expect(columns).toEqual([
+      'version integer NOT NULL null',
+      'tax_rate_ppm bigint NOT NULL null',
+      'service_rate_ppm bigint NOT NULL null',
+      'outlet_name text NOT NULL null',
+      'address text NOT NULL null',
+      'phone text NOT NULL null',
+      'npwpd text NULL null',
+      'footer text NOT NULL null',
+      'calculation_policy smallint NOT NULL null',
+      'created_by uuid NOT NULL null',
+      'created_at timestamp with time zone NOT NULL now()',
+    ]);
+  });
+
+  it('refuses UPDATE, DELETE and TRUNCATE to pos_app as permission denied, and an insert that supplies created_at (S2-2)', async () => {
+    await insert();
+    for (const sql of [
+      `UPDATE settings_version SET footer = 'x'`,
+      'DELETE FROM settings_version',
+      'TRUNCATE settings_version',
+    ]) {
+      expect((await refusal(query(sql))).code, sql).toBe(PERMISSION_DENIED);
+    }
+    const supplied = await refusal(
+      query(
+        `INSERT INTO settings_version
+           (version, tax_rate_ppm, service_rate_ppm, outlet_name, address, phone, footer,
+            calculation_policy, created_by, created_at)
+         VALUES (2, 0, 0, 'A', 'B', '1', 'F', 1, $1, now())`,
+        [manager]
+      )
+    );
+    expect(supplied.code).toBe(PERMISSION_DENIED);
+  });
+
+  it('refuses UPDATE, DELETE and TRUNCATE to the owner by the trigger, with the table empty and with a row (S2-3)', async () => {
+    const statements = [
+      `UPDATE settings_version SET footer = 'x'`,
+      'DELETE FROM settings_version',
+      'TRUNCATE settings_version',
+    ];
+    for (const sql of statements) {
+      const failure = await refusal(ownerQuery(sql));
+      expect([failure.code, failure.message], `empty: ${sql}`).toEqual([RAISE_EXCEPTION, expect.stringContaining('immutable')]);
+    }
+    await insert();
+    for (const sql of statements) {
+      const failure = await refusal(ownerQuery(sql));
+      expect([failure.code, failure.message], `with a row: ${sql}`).toEqual([RAISE_EXCEPTION, expect.stringContaining('immutable')]);
+    }
+    expect(only(await ownerQuery<{ n: string }>('SELECT count(*) AS n FROM settings_version')).n).toBe('1');
+  });
+
+  it('holds each rate to 0 to 1,000,000 parts per million (S2-4)', async () => {
+    for (const [column, key, constraint] of [
+      ['tax', 'tax', 'settings_version_tax_rate_check'],
+      ['service', 'service', 'settings_version_service_rate_check'],
+    ] as const) {
+      for (const bad of [-1, 1000001]) {
+        const failure = await refusal(insert({ [key]: bad }));
+        expect([failure.code, failure.constraint], `${column} ${bad}`).toEqual([CHECK_VIOLATION, constraint]);
+      }
+    }
+    await insert({ version: 1, tax: 0, service: 1000000 });
+    await insert({ version: 2, tax: 1000000, service: 0 });
+  });
+
+  it('refuses version 0, a duplicate version and calculation_policy 2 (S2-5)', async () => {
+    expect((await refusal(insert({ version: 0 }))).constraint).toBe('settings_version_version_check');
+    expect((await refusal(insert({ policy: 2 }))).constraint).toBe('settings_version_policy_check');
+    await insert();
+    const duplicate = await refusal(insert());
+    expect([duplicate.code, duplicate.constraint]).toEqual([UNIQUE_VIOLATION, 'settings_version_pkey']);
+  });
+
+  // S2-7. [[:cntrl:]] is spelled out and proved here, not assumed: it must match the C1
+  // controls (U+0085, U+009B) under this database's encoding and collation.
+  it('refuses a blank or untrimmed text and a control character, and holds each length (S2-7)', async () => {
+    const refused: [string, Partial<Parameters<typeof insert>[0]>, string][] = [
+      ['outlet: blank', { outlet: ' ' }, 'settings_version_outlet_name_check'],
+      ['outlet: empty', { outlet: '' }, 'settings_version_outlet_name_check'],
+      ['outlet: leading space', { outlet: ' A' }, 'settings_version_outlet_name_check'],
+      ['outlet: trailing space', { outlet: 'A ' }, 'settings_version_outlet_name_check'],
+      ['outlet: 65 characters', { outlet: 'x'.repeat(65) }, 'settings_version_outlet_name_check'],
+      ['outlet: ESC', { outlet: 'A\u001bB' }, 'settings_version_outlet_name_check'],
+      ['outlet: U+009B', { outlet: 'A\u009bB' }, 'settings_version_outlet_name_check'],
+      ['outlet: U+0085', { outlet: 'A\u0085B' }, 'settings_version_outlet_name_check'],
+      ['outlet: DEL', { outlet: 'A\u007fB' }, 'settings_version_outlet_name_check'],
+      ['outlet: a line feed', { outlet: 'A\nB' }, 'settings_version_outlet_name_check'],
+      ['outlet: a tab', { outlet: 'A\tB' }, 'settings_version_outlet_name_check'],
+      ['address: empty', { address: '' }, 'settings_version_address_check'],
+      ['address: 201 characters', { address: 'x'.repeat(201) }, 'settings_version_address_check'],
+      ['address: trailing line feed', { address: 'A\n' }, 'settings_version_address_check'],
+      ['address: a third line feed', { address: 'A\nB\nC\nD' }, 'settings_version_address_check'],
+      ['address: a carriage return', { address: 'A\r\nB' }, 'settings_version_address_check'],
+      ['address: ESC', { address: 'A\u001bB' }, 'settings_version_address_check'],
+      ['address: U+009B', { address: 'A\u009bB' }, 'settings_version_address_check'],
+      ['address: a tab', { address: 'A\tB' }, 'settings_version_address_check'],
+      ['phone: empty', { phone: '' }, 'settings_version_phone_check'],
+      ['phone: 33 characters', { phone: '1'.repeat(33) }, 'settings_version_phone_check'],
+      ['phone: a slash', { phone: '022/555' }, 'settings_version_phone_check'],
+      ['phone: a letter', { phone: '022 555 x' }, 'settings_version_phone_check'],
+      ['phone: an Arabic-Indic digit', { phone: '٢٢٢' }, 'settings_version_phone_check'],
+      ['phone: leading space', { phone: ' 022' }, 'settings_version_phone_check'],
+      ['phone: a line feed', { phone: '022\n' }, 'settings_version_phone_check'],
+      ['npwpd: blank string', { npwpd: '' }, 'settings_version_npwpd_check'],
+      ['npwpd: whitespace only', { npwpd: '  ' }, 'settings_version_npwpd_check'],
+      ['npwpd: 33 characters', { npwpd: 'x'.repeat(33) }, 'settings_version_npwpd_check'],
+      ['npwpd: trailing space', { npwpd: 'P.1 ' }, 'settings_version_npwpd_check'],
+      ['npwpd: ESC', { npwpd: 'P\u001b1' }, 'settings_version_npwpd_check'],
+      ['npwpd: U+009B', { npwpd: 'P\u009b1' }, 'settings_version_npwpd_check'],
+      ['footer: empty', { footer: '' }, 'settings_version_footer_check'],
+      ['footer: blank', { footer: '   ' }, 'settings_version_footer_check'],
+      ['footer: 121 characters', { footer: 'x'.repeat(121) }, 'settings_version_footer_check'],
+      ['footer: untrimmed', { footer: ' Terima kasih' }, 'settings_version_footer_check'],
+      ['footer: a line feed', { footer: 'A\nB' }, 'settings_version_footer_check'],
+      ['footer: ESC', { footer: 'A\u001bB' }, 'settings_version_footer_check'],
+    ];
+    for (const [name, over, constraint] of refused) {
+      const failure = await refusal(insert(over));
+      expect([failure.code, failure.constraint], name).toEqual([CHECK_VIOLATION, constraint]);
+    }
+
+    // The null columns: a null NPWPD is accepted, a null phone is not.
+    await insert({ version: 1, npwpd: null });
+    expect((await refusal(insert({ version: 2, phone: null }))).code).toBe(NOT_NULL_VIOLATION);
+    expect((await refusal(insert({ version: 2, footer: null }))).code).toBe(NOT_NULL_VIOLATION);
+
+    // The longest accepted values, and a line feed in the address (two of them).
+    await insert({
+      version: 2,
+      outlet: 'x'.repeat(64),
+      address: `${'x'.repeat(100)}\n${'y'.repeat(96)}\nz`,
+      phone: '1'.repeat(32),
+      npwpd: 'n'.repeat(32),
+      footer: 'f'.repeat(120),
+    });
+    await insert({ version: 3, address: 'A\nB\nC', phone: '+62 (22) 555-0100.', npwpd: '01.234.567.8-901.000' });
   });
 });
 
