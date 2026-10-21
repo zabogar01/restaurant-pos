@@ -1495,7 +1495,9 @@ or `idle` for BO-01, close it with `close()`, keep its mounted state, and do not
 treat that close event as Cancel. When the same manager signs in again, reopen
 it with `showModal()` before restoring focus. Under M-6 it stays open behind
 M-6, visible and inert. A different manager's sign-in destroys it with the
-working-area key. A non-modal form is hidden at BO-01 and shown again only for
+working-area key. A different manager's working area starts with no pending
+command; the previous manager's command is never announced or focused in it.
+A non-modal form is hidden at BO-01 and shown again only for
 the same manager; its label receives focus with the unsaved value. This also
 applies to BO-05's modal departure decision. Never hide a live modal behind
 BO-01's fields. These C2 and owner rulings supersede the earlier unresolved
@@ -1521,6 +1523,9 @@ all record actions are inert while any command is pending; after an unknown
 outcome they are live again. Opening another record then goes through the draft's
 departure decision. An inert Edit opener may receive programmatic focus after
 Discard, but cannot start another command until the pending one settles.
+While a discarded save is still outstanding, the page status reads “Waiting for
+an earlier save to finish. Nothing will be sent again.” It clears silently when
+the answer settles.
 An authoritative success inserts or replaces only the returned record, closes
 the form, announces the named result and focuses that row's Edit control (New
 table if that opener no longer exists). Success does not trigger a list reread.
@@ -1547,7 +1552,10 @@ list has been refreshed. Nothing was sent again.” If that read fails, replace
 ordinary action reflects the reread record and is the only explicit command path.
 There is no unsaved draft to discard for a status command, so navigation stays
 live without a draft decision. A definite status-command failure says “Something
-went wrong. {label} was not changed. Use its row action to try again.” Success
+went wrong. {label} was not changed. Use its row action to try again.” When a
+status command is refused by a session refusal, after the same manager resumes
+the page status reads “{label} was not changed. Use its row action to try
+again.” Success
 uses the named page result and returns focus to the affected row's Edit.
 
 **Departure.** Dirty means the current draft differs from its opening value

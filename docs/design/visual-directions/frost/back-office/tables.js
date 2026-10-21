@@ -7,7 +7,7 @@
   let rows=seed(), editor=null, result='', read='ready', pending=false, inFlight=null, departure=null, session='active', heldDecision=false, otherMode=false, queueIncidents=false;
   let commands=0, rereads=0, settledResponse=null, statusCommand=null;
   $('.office-day')?.remove();
-  const copy={empty:'Enter a table label.',long:'Use 32 characters or fewer.',control:'Remove control characters from the label.',duplicate:'An active table already uses this label. Choose another label.',reactivate:'An active table already uses this label. Rename this inactive table, save, then reactivate it.',unknown:'The outcome could not be confirmed. The list has been refreshed. Your draft is kept; nothing was sent again.',unknownRead:'The outcome could not be confirmed. The list could not be refreshed. Your draft is kept; nothing was sent again.',failure:'Nothing was saved. Your draft is kept. Press Save to try again.'};
+  const copy={empty:'Enter a table label.',long:'Use 32 characters or fewer.',control:'Remove control characters from the label.',duplicate:'An active table already uses this label. Choose another label.',reactivate:'An active table already uses this label. Rename this inactive table, save, then reactivate it.',unknown:'The outcome could not be confirmed. The list has been refreshed. Your draft is kept; nothing was sent again.',unknownRead:'The outcome could not be confirmed. The list could not be refreshed. Your draft is kept; nothing was sent again.',failure:'Nothing was saved. Your draft is kept. Press Save to try again.',waiting:'Waiting for an earlier save to finish. Nothing will be sent again.'};
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const current=()=>rows.find(r=>r.id===editor?.id);
   const dirty=()=>!!editor && $('#table-label').value!==editor.original;
@@ -84,13 +84,17 @@
   }
   function finish(response,command=inFlight){
     if(!command)return;
+    // A previous manager's command: never announced or focused in the new manager's area.
+    if(command.discarded&&command!==inFlight){if(response==='saved')applyRecord(command);renderList();return;}
     if(response==='idle'||response==='ended'){
-      pending=false;inFlight=null;result='';notice('','','');$('#save-table').disabled=false;$('#table-label').disabled=false;renderList();
+      pending=false;inFlight=null;result='';notice('','','');$('#save-table').disabled=false;$('#table-label').disabled=false;
+      status(command.op!=='save'?command.label+' was not changed. Use its row action to try again.':'');renderList();
       if(session==='active'||(response==='ended'&&session!=='ended'))expire(response==='idle'?'idle':'ended');return;
     }
     if(departure||session!=='active'){settledResponse={response,command};return;}
     pending=false;inFlight=null;$('#save-table').disabled=false;$('#table-label').disabled=false;
     const silent=command.discarded||(command.op==='save'&&command.editor!==editor);
+    if(silent)status('');
     if(response==='saved')return applyCommand(command,silent);
     if(response.startsWith('unknown'))return unknown(response==='unknown-read-failed',command,silent);
     if(silent){if(response==='duplicate'||response==='not-found')rereads++;renderList();return;}
@@ -134,7 +138,7 @@
   function alertCopy(target){
     const area=$(target);area.hidden=!O.kitchen;if(O.kitchen){area.querySelector('strong').textContent=O.kitchenIncident.title;area.querySelector('p').textContent=O.kitchenIncident.identity;}
   }
-  function depart(action){if(editor)closeForm();flushAnswer();action();}
+  function depart(action){if(editor)closeForm();flushAnswer();action();if(pending&&inFlight?.discarded)status(copy.waiting);}
   function leave(action,reason='cancel'){
     if(!editor||(!dirty()&&!uncertain())){depart(action);return;}
     departure={action,reason,prior:document.documentElement.dataset.state,focus:document.activeElement};
@@ -142,7 +146,7 @@
     $('#stay').textContent=reason==='logout'?'Keep this draft':'Stay';$('#discard').textContent=reason==='logout'?'Discard changes and log out':'Discard';
     $('#departure-copy').textContent=reason==='logout'?'The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session.':uncertain()?'The save may or may not have succeeded. Leaving does not send it again. Stay to keep the draft, or discard it and leave.':'Your edits have not been saved. Stay to keep editing, or discard them before leaving.';
     $('#departure-uncertain').hidden=!(reason==='logout'&&uncertain());
-    alertCopy('#departure-emergency');O.open($('#departure'),$('#stay'));
+    alertCopy('#departure-emergency');$('#departure-emergency p:last-of-type').textContent=reason==='logout'?'Decide whether to keep this draft or discard it before opening print incidents.':'Decide whether to stay or discard before opening print incidents.';O.open($('#departure'),$('#stay'));
     set(uncertain()?(pending?'leave-pending':'leave-unknown'):reason==='cancel'?'unsaved':'unsaved-'+reason);
   }
   function stay(){
@@ -173,7 +177,8 @@
       else{set('default');$('#new-table').focus();}
       if(queueIncidents){queueIncidents=false;leave(()=>location.href=O.emergency.querySelector('a').href,'rail');}
     }else{
-      departure=null;$('#departure').close();if(editor)closeForm(null,false);$('#table-label').value='';$('.office-actor').textContent='Ratna Ayu · Manager';clearStatus();flushAnswer();renderList();$('#new-table').focus();set('default');
+      departure=null;$('#departure').close();if(editor)closeForm(null,false);
+      if(inFlight)inFlight.discarded=true;if(settledResponse)settledResponse.command.discarded=true;pending=false;inFlight=null;$('#table-label').value='';$('.office-actor').textContent='Ratna Ayu · Manager';clearStatus();flushAnswer();renderList();$('#new-table').focus();set('default');
     }
     heldDecision=false;
   }

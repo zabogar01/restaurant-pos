@@ -417,6 +417,8 @@ build annotation are outside the product and are not copied into S1b.
 | Status command unknown | Page result | `{label}: the outcome could not be confirmed. The list has been refreshed. Nothing was sent again.` | Focusable page status; ordinary row action reflects reread |
 | Status unknown, read failed | Page result | `{label}: the outcome could not be confirmed. The list could not be refreshed. Nothing was sent again.` | Page status; Try again repeats the list read only |
 | Status definite failure | Page result | `Something went wrong. {label} was not changed. Use its row action to try again.` | Focusable page status |
+| Status command refused by a session refusal | Page result after the same manager resumes | `{label} was not changed. Use its row action to try again.` | Page status; a different manager's area shows no status |
+| Discarded save still outstanding | Page result | Waiting for an earlier save to finish. Nothing will be sent again. | Page status; clears silently when the answer settles |
 | Duplicate holder | Label-cell marker | Label in use | Visible text in the holder's cell, not a link |
 | General failure | Title / body | Something went wrong / Nothing was saved. Your draft is kept. Press Save to try again. | Form alert |
 | Unknown, reread complete | Title | Outcome not confirmed | Form status |
@@ -430,7 +432,8 @@ build annotation are outside the product and are not copied into S1b.
 | Ordinary departure | Body | Your edits have not been saved. Stay to keep editing, or discard them before leaving. | Dialog description |
 | Pending / unknown departure | Body | The save may or may not have succeeded. Leaving does not send it again. Stay to keep the draft, or discard it and leave. | Dialog description |
 | Form departure except logout | Actions | Stay / Discard | buttons `Stay`, `Discard`; initial focus Stay |
-| Departure with emergency | Additional sentence | Decide whether to stay or discard before opening print incidents. | Repeats the shared incident title/identity above it |
+| Form departure with emergency (except logout) | Additional sentence | Decide whether to stay or discard before opening print incidents. | Repeats the shared incident title/identity above it |
+| Logout departure with emergency | Additional sentence | Decide whether to keep this draft or discard it before opening print incidents. | Repeats the shared incident title/identity above it |
 | M-6 | Title | Your session timed out | modal dialog `Your session timed out` |
 | M-6 | Body | `Your unsaved changes are kept. Continue as {username} to resume them.` | Dialog description |
 | M-6 | Labels | Username / Password | Read-only username, secret `Password` |
@@ -820,5 +823,62 @@ for the current tree, including the corrected 32-unit longest label.
 At 1440×900, overflow scrolls 650px inside its owner. The lead confirmed
 that `state geometry overflow` and `counts match overflow` pass at both
 sizes with the corrected 32-unit longest label.
+
+DONE
+
+### Round 3 — the re-review's N1 to N3 and two cosmetic notes
+
+design017c (a Claude designer, for this round only) applied the five lead
+rulings of 2026-10-21 with the ruled wording verbatim. `tables.html` was not
+edited; every change is in `tables.js`, `docs/DESIGN.md`, `SITEMAP.md`,
+`design017.cjs` and the copy table above.
+
+- **N1.** `resume(false)` now marks any in-flight command `discarded`, whatever
+  its kind, also marks a held answer (`settledResponse`) `discarded`, and starts
+  the new manager's area with `pending` false and no `inFlight`. `finish` treats
+  a discarded command that is no longer the in-flight one as the previous
+  manager's: a `saved` answer updates the list silently, any other answer is
+  ignored, and neither changes `pending`, the page status or focus, nor counts
+  as a reread. Because the new area has no in-flight command, the fixture's
+  *Finish pending command* does nothing after the different manager signs in.
+  `D`'s modal-dialog paragraph (Part B) now carries the ruled sentence. The F4
+  loop in `design017.cjs` gained the different-manager case for both M-6 and
+  BO-01, for every answer (saved, idle, unknown), for a form save and for a
+  status command (Deactivate Table 2). It asserts a hidden form, an empty
+  label, no page status, `pending` false, New table and every row action live,
+  focus on New table, one command sent and no reread, after a late
+  *Finish pending command*.
+- **N2.** After Discard with a save still outstanding, the page status reads
+  "Waiting for an earlier save to finish. Nothing will be sent again." (set in
+  `depart`, copy key `waiting`). Any answer to that discarded save clears it
+  silently, without moving focus. The sentence is in `D` *Command results*
+  and the row is in the copy table. The F3 loop asserts the text before the
+  late answer, for rename and create.
+- **N3.** A session refusal (`idle` or `ended`) of a status command now sets
+  the page status to "{label} was not changed. Use its row action to try
+  again." before M-6 or BO-01 opens, so it is what the same manager sees on
+  resumption; focus lands on New table as before. A different manager's
+  `resume(false)` clears it. The sentence is in `D`'s *Status commands*
+  paragraph and the row is in the copy table. One assertion replays the
+  review's scenario (Session idle, Deactivate Table 2, resume as m.iqbal).
+- **Cosmetic 1.** `SITEMAP.md` has a blank line before the dated BO-05 note.
+- **Cosmetic 2.** `leave()` sets the departure's emergency sentence per
+  reason: the logout decision reads "Decide whether to keep this draft or
+  discard it before opening print incidents."; form departures keep "Decide
+  whether to stay or discard before opening print incidents." The copy table's
+  single emergency row is split into those two rows. Two assertions check
+  both sentences with `alerts=both`.
+
+The N2, N3 and Cosmetic 2 assertions go beyond the ruled F4 addition; they
+test only the ruled copy, so that each rule ships as a test, and the lead may
+drop them.
+
+**Verification.** The owner approved one run of `design017.cjs` at the round 3
+tree: **346/346 passed**, 74 state/viewport combinations, no page errors,
+evidence in `/tmp/design017-evidence/round3`. The 41 new assertions are 36
+from the extended F4 loop, two for N2, one for N3 and two for Cosmetic 2. As
+ruled, `design016.cjs`, `design014.cjs`, `design013.cjs` and `design012.cjs`
+were not rerun, and `npm run verify` was not run because no tokens, CSS or
+components changed. Both edited scripts pass `node --check`.
 
 DONE

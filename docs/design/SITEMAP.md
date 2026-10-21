@@ -44,6 +44,7 @@ They differ only in where leaving them returns to — the quick form must never
 return to a workspace carrying a fire control (C-2, FR-E5). If the product lead
 prefers to count that as two distinct sheet nodes, it is a one-line change here
 and the modal count becomes 7.
+
 **BO-05 updated 2026-10-21, DESIGN-017.** Table create/edit is an `[INLINE]`
 non-modal panel, with inline label refusal and deactivate/reactivate actions.
 Its stay-or-discard decision is `[MODAL]`. The OPEN-order refusal is explicitly
