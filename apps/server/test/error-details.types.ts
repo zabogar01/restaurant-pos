@@ -163,6 +163,20 @@ export function neverCalled(cause: Error, text: string): void {
   const csrf_refusedObject: ErrorBody = { error: { code: ErrorCode.CSRF_REFUSED, details: { any: 'object' } } };
   void [csrf_refusedText, csrf_refusedObject];
 
+  // @ts-expect-error a string
+  new AppError(ErrorCode.DUPLICATE, 409, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.DUPLICATE, 409, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.DUPLICATE, 409, new Error('x'));
+  // @ts-expect-error an undeclared object
+  new AppError(ErrorCode.DUPLICATE, 409, { any: 'object' });
+  // @ts-expect-error a string in the body
+  const duplicateText: ErrorBody = { error: { code: ErrorCode.DUPLICATE, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const duplicateObject: ErrorBody = { error: { code: ErrorCode.DUPLICATE, details: { any: 'object' } } };
+  void [duplicateText, duplicateObject];
+
   // The two codes that carry details (009b): a number PostgreSQL computed, and
   // nothing else. A string, an exception's message, an exception and an object of
   // another shape (a parse error's issues among them) do not compile.

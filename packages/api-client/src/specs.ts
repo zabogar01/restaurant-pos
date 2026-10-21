@@ -1,10 +1,16 @@
 import {
   BackOfficeLoginRequest,
   BackOfficeSessionView,
+  CreateTableRequest,
+  DeactivateTableRequest,
   PosLoginRequest,
+  ReactivateTableRequest,
   ReauthenticateRequest,
   ROUTE_TABLE,
   SessionView,
+  TableResponse,
+  TablesResponse,
+  UpdateTableRequest,
 } from '@pos/contracts';
 
 /** The one thing the core needs of a schema; every zod schema in the contracts has it. */
@@ -66,6 +72,11 @@ export const SPECS = {
     response: BackOfficeSessionView,
     session: true,
   },
+  '/api/back-office/config/tables': { response: TablesResponse },
+  '/api/back-office/config/tables/create': { body: CreateTableRequest, response: TableResponse },
+  '/api/back-office/config/tables/update': { body: UpdateTableRequest, response: TableResponse },
+  '/api/back-office/config/tables/deactivate': { body: DeactivateTableRequest, response: TableResponse },
+  '/api/back-office/config/tables/reactivate': { body: ReactivateTableRequest, response: TableResponse },
 } as const satisfies Record<RoutePath, Spec>;
 
 type Specs = typeof SPECS;

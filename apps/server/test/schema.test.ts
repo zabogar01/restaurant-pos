@@ -123,6 +123,10 @@ describe('privileges', () => {
         blocked_until: ['UPDATE'],
       },
     },
+    dining_table: {
+      table: ['INSERT', 'SELECT'],
+      columns: { label: ['UPDATE'], is_active: ['UPDATE'] },
+    },
   };
 
   const TABLE_PRIVILEGES = ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE'];
@@ -489,6 +493,75 @@ describe('identity', () => {
     const duplicate = await refusal(sessionInsert(staff, { token_hash: Buffer.alloc(32, 2) }));
     expect(duplicate.code).toBe(UNIQUE_VIOLATION);
     expect(duplicate.constraint).toBe('actor_session_token_hash_key');
+  });
+});
+
+describe('dining_table', () => {
+  const insert = (label: string, active = true) =>
+    ownerQuery<{ id: string }>('INSERT INTO dining_table (label, is_active) VALUES ($1, $2) RETURNING id', [
+      label,
+      active,
+    ]);
+
+  it('is empty after migration (B-24) (S1a case 4)', async () => {
+    expect(await ownerQuery('SELECT 1 FROM dining_table')).toEqual([]);
+  });
+
+  it('has exactly the columns written here (S1a case 4)', async () => {
+    const columns = (
+      await ownerQuery<{ column_name: string; data_type: string; is_nullable: string; column_default: string | null }>(
+        `SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'dining_table' ORDER BY ordinal_position`
+      )
+    ).map(
+      (c) =>
+        `${c.column_name} ${c.data_type} ${c.is_nullable === 'YES' ? 'NULL' : 'NOT NULL'} ${c.column_default}`
+    );
+    expect(columns).toEqual([
+      'id uuid NOT NULL gen_random_uuid()',
+      'label text NOT NULL null',
+      'is_active boolean NOT NULL true',
+      'created_at timestamp with time zone NOT NULL now()',
+    ]);
+  });
+
+  it('lets pos_app insert, read and update label and is_active, and refuses DELETE, TRUNCATE and an update of id or created_at (S1a case 4)', async () => {
+    const [row] = await query<{ id: string }>(`INSERT INTO dining_table (label) VALUES ('T1') RETURNING id`);
+    await query(`UPDATE dining_table SET label = 'T2', is_active = false WHERE id = $1`, [row!.id]);
+    expect(await query('SELECT label, is_active FROM dining_table')).toEqual([{ label: 'T2', is_active: false }]);
+
+    for (const sql of [
+      'DELETE FROM dining_table',
+      'TRUNCATE dining_table',
+      `UPDATE dining_table SET id = gen_random_uuid()`,
+      `UPDATE dining_table SET created_at = now()`,
+    ]) {
+      expect((await refusal(query(sql))).code, sql).toBe(PERMISSION_DENIED);
+    }
+  });
+
+  it('refuses a label that is empty, over 32 characters, or has leading or trailing whitespace (S1a case 4)', async () => {
+    for (const label of ['', 'x'.repeat(33), ' T1', 'T1 ', '\tT1', 'T1\n']) {
+      const failure = await refusal(insert(label));
+      expect(failure.code, JSON.stringify(label)).toBe(CHECK_VIOLATION);
+      expect(failure.constraint, JSON.stringify(label)).toBe('dining_table_label_check');
+    }
+    await insert('x'.repeat(32));
+    await insert('Bar 2');
+  });
+
+  it('holds one active table per label in any case, and any number of inactive ones (S1a case 5)', async () => {
+    await insert('T1');
+    for (const label of ['T1', 't1']) {
+      const failure = await refusal(insert(label));
+      expect(failure.code, label).toBe(UNIQUE_VIOLATION);
+      expect(failure.constraint, label).toBe('dining_table_active_label_key');
+    }
+    await insert('T1', false);
+    await insert('t1', false);
+    await insert('T2', false);
+    const count = await ownerQuery<{ n: string }>('SELECT count(*) AS n FROM dining_table');
+    expect(only(count).n).toBe('4');
   });
 });
 

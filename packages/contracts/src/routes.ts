@@ -30,4 +30,12 @@ export const ROUTE_TABLE = [
   { method: 'POST', path: '/api/back-office/auth/activity', interactive: true },
   { method: 'POST', path: '/api/back-office/auth/logout', interactive: false },
   { method: 'POST', path: '/api/back-office/auth/reauthenticate', interactive: false },
+  // The list read is not interactive: the page rereads it after a refusal or an unknown
+  // outcome, and a read marked interactive would let those reads extend a session. A
+  // command is always a person pressing a control.
+  { method: 'GET', path: '/api/back-office/config/tables', interactive: false },
+  { method: 'POST', path: '/api/back-office/config/tables/create', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/tables/update', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/tables/deactivate', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/tables/reactivate', interactive: true },
 ] as const satisfies readonly RouteEntry[];

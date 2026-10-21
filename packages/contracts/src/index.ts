@@ -5,6 +5,16 @@ export { ROUTE_TABLE } from './routes.js';
 export type { RouteEntry, RouteMethod } from './routes.js';
 export { BackOfficeSessionView, SessionView } from './session.js';
 export {
+  CreateTableRequest,
+  DeactivateTableRequest,
+  ReactivateTableRequest,
+  TableLabel,
+  TableResponse,
+  TableView,
+  TablesResponse,
+  UpdateTableRequest,
+} from './tables.js';
+export {
   BackOfficeLoginRequest,
   ManagerPin,
   PosLoginRequest,

@@ -17,6 +17,7 @@ import {
 import { loggerOptions } from './log.js';
 import { checkHost, checkOrigin, ownOrigin } from './origin.js';
 import { backOfficeAuthRoutes } from './routes/back-office-auth.js';
+import { backOfficeTableRoutes } from './routes/back-office-tables.js';
 import { healthRoutes } from './routes/health.js';
 import { posAuthRoutes } from './routes/pos-auth.js';
 import { decorateActor, sessionGuard } from './session-guard.js';
@@ -106,6 +107,7 @@ export function buildServer({
       await api.register(healthRoutes);
       await api.register(posAuthRoutes);
       await api.register(backOfficeAuthRoutes);
+      await api.register(backOfficeTableRoutes);
       for (const routes of apiRoutes) await api.register(routes);
     },
     { prefix: '/api' }
