@@ -454,6 +454,45 @@ a real window (needs a manager's password; the owner's look before merge covers 
 Decision 2 (*Keep this draft* returns focus to the label, as `D` says for *Stay*) is accepted. Sent to review
 (`touches: boundaries, identity`); the owner looks before merge.
 
+## Round 2 — the review's four findings (lead rulings, 2026-10-21)
+
+Codex reviewed `ffd6b42` (`.agent/reviews/PHASE1-S1b-review.md`): four P2 findings, each with a reproduced scenario.
+**All four are accepted.** Read the report whole; each finding's *Observed scenario* is the red test to write first.
+(Correction to *Required inputs* 7: ADR-011's file is `docs/decisions/ADR-011-browser-clients.md`.)
+
+- **F1, the top-bar logout confirmation survives a different manager.** Give the confirmation and its hold the
+  identity lifetime of the working area: when the signed-in `staffUserId` changes (through M-6 or BO-01), the
+  confirmation is gone and the hold released; the same manager's M-6 and BO-01 behaviour stays as ruling 2 says. Red
+  test: the review's scenario (dirty form, top-bar Log out open, M-6, sign in as another manager through the
+  different-manager flow): no `Log out and discard your changes?` dialog, no hold.
+- **F2, leaving Tables loses an outstanding command.** A command's lifetime is the keyed working area's, not the
+  screen's. Own the BO-05 model (its rows, its in-flight command, its held answer) at the working-area level, created
+  once per key (for example in `Screens` or a provider inside the keyed `div`), so that unmounting `Tables` for the
+  landing does not stop it; Discard drops only the draft. Returning to Tables before the answer settles shows the
+  waiting status ("Waiting for an earlier save to finish. Nothing will be sent again."), *New table* and every row
+  action inert; the late answer then replaces or inserts its record silently. A different manager's key still destroys
+  it all (N1). Red test: the review's scenario through the real router and rail, for a rename and for a create; also
+  through browser Back.
+- **F3, a delayed refusal reread overwrites a later success.** A list read must not undo a record a command answered
+  after that read began. Track, per record, the point at which a command's authoritative answer was applied (the model's
+  sequence is enough); when a read settles, take its rows, but keep (and insert, if the read lacks it) any record whose
+  answer was applied after the read started. No success-triggered reread. Red test: the review's scenario (DUPLICATE,
+  reread held, corrected Save succeeds, the held read arrives): the list keeps *Window 1*.
+- **F4, a success after a failed reread stays hidden.** No designed state covers it, so the lead rules, from parts the
+  design already has, yours and the designer's to overturn. After an authoritative success while the collection read is
+  failed: show the rows the client knows (the last rows it held, with the answered record applied), announce the named
+  result and focus that row's Edit, keep the read-failure alert ("Tables could not be loaded" / "Try again to read the
+  table list." with *Try again*, which repeats the read only) above the list, and **withhold the counts line** until a
+  read succeeds, so nothing claims the list is current. *New table* is live again (no command is pending). A successful
+  *Try again* then replaces the rows as any read does (F3's rule applies). Red test: the review's scenario (fault, failed
+  reread, Save succeeds): the row *Window 1* is present and focused, the alert is present, no counts line.
+
+Touch only `owns`. Keep every existing assertion; a test that changes because the model moved says so in the Handoff.
+Re-run each earlier red proof that the move could affect (AC 6, 7, 8, 9, 10 and the constant-key proof) and say which
+you re-ran. Run `npm run verify` and `npm run test:e2e:all`; commit on `agent/phase1-s1b`; append a *Round 2* section to
+the Handoff (what changed per finding, where, the red proofs, the counts) ending `DONE` or `BLOCKED: <question>`; report
+to the lead through Herdr.
+
 ## Handoff
 
 ### What I did
