@@ -5,8 +5,8 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-017]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # DESIGN-018 — BO-08 Settings and payment methods (slice F, BO-08 half)
 
@@ -285,6 +285,32 @@ names the version in force or the version the draft builds on, and whether eithe
 `unknown-changed` and after *Keep my changes*.
 
 **Review:** Claude Opus, hand-opened, under the owner exception above; the dispatcher would pick Codex.
+
+## Round 2 — the review's F1 and F2 (lead rulings, 2026-10-21)
+
+The review (`.agent/reviews/DESIGN-018-review.md`, verdict *findings*, two) is accepted in full. Both are about what the
+registered drawings show; no rule in `D` or the Handoff changes except the one sentence F1 adds. Apply exactly this,
+then add a section *Round 2* at the end of the Handoff (what changed, the red proof, the counts) and end it with `DONE`.
+
+- **F1 (medium), the facts line.** The facts line names **the version in force**: the one most recently read or
+  answered, never the version the draft builds on. In `stale`, `stale-reauth` (as redrawn under F2), `unknown-changed`
+  and after *Keep my changes* or *Use current settings*, it names the newer version, as the notice does. Do the
+  review's steps 1 to 3: re-render the facts line whenever `current` changes while the form stays open (the stale and
+  unknown-with-newer-version branches, both choice handlers, and the direct-state block); add the review's sentence to
+  the Handoff's copy-table row for the facts line and to `D`'s stale-draft rule, word for word; and assert in
+  `design018.cjs` that the line starts with "Version 5" in the registered `stale`, `stale-reauth` and `unknown-changed`
+  states, in the walk, and after *Keep my changes*. **Red proof:** run the new assertions once against the round 1
+  `settings.js` (revert it in memory or with `git stash` of that one file, then restore it) and record that they fail
+  for the stated reason; then green.
+- **F2 (low), the after-M-6 state.** `stale-reauth` ("Settings changed — after M-6") must draw what its label says: its
+  direct-state block runs the after-M-6 walk the check already has (open the form and edit, idle expiry, **another
+  manager, Ratna Ayu,** saves version 5, the same manager resumes, Save, the refusal with the draft kept). Keep the
+  same-manager-in-another-tab variant as its own registered state, `stale-own-tab`, labelled "Settings changed — saved
+  by you in another tab", with the copy it has today. Register both in the artifact, `manifest.js` and the gallery.
+- **Checks.** Run `design018.cjs` and the five earlier checks once each after the change (ask the owner in the pane, as
+  before) and quote the counts. Change nothing else.
+
+The Handoff's six questions go to the lead and owner with the merge; none is for this round.
 
 ## Handoff
 
