@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-21 (night): `development` at `513a436` (S1b #123, lead #124 merged). Dev `pos` at `0010`. **DESIGN-018
-(BO-08, slice F's BO-08 half) hand-opened** on Codex. Narrative:
+(BO-08) complete, PR #125 open** for the owner's look. Nothing is running. Narrative:
 [journal/2026-10-20.md](journal/2026-10-20.md), [journal/2026-10-21.md](journal/2026-10-21.md).
 
 ## Phase and gates
@@ -27,14 +27,15 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   configuration) accepted 2026-10-20 with one catalog counter. ARCHITECTURE §8 carries one lock order (catalog →
   business day → dining table → order → lease/receipt); §7.2 the users rules (#121).
 - **Owed, not drafted:** ROADMAP Phase 1's users bullet omits role change (Q1c) and its tender bullet "reactivate"
-  (OQ1). Designer: BO-06 inventory and sitemap (E2, C3 *Stale text* 5); BO-08 0-100% and BO-04/07/08 stale-draft states
-  (D, F; ADR-012 Handoff). The plan's S1 and S8 goals predate Q10 and Q1(b) (later consults win; recorded, not edited).
+  (OQ1). Designer: BO-06 inventory and sitemap (E2, C3 *Stale text* 5); BO-04/07 stale-draft states (D, F's BO-07
+  half; DESIGN-018's `D` rule is the pattern). The plan's S1 and S8 goals predate Q10 and Q1(b) (later consults win; recorded, not edited).
 - **Frontend:** POS-01 to POS-07 against fixtures, POS-01 real. **Back office:** real sign-in, the provisional BO-01,
   the Phase 0 frame and M-6; since #123, the rail and BO-05 Tables (the form pattern later forms copy: `tables/model.ts`,
   `forms/fieldsInError.ts`, `work/guard.ts`, the `Decision` dialog; Handoff *How it works*). **Frost designed:** slices A, B (BO-01,
-  BO-02), C, I, and **E1 (BO-05 Tables, DESIGN-017, 37 states, the configuration-form rules in `docs/DESIGN.md`)**.
+  BO-02), C, I, **E1 (BO-05, DESIGN-017, the configuration-form rules in `D`)**; on #125, **F's BO-08 half (DESIGN-018,
+  65 states; the stale-draft, rate-field and one-form-per-screen rules in `D`; guards S2a needs in its Handoff)**.
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
-- **Last verify by the lead:** S1b's final tree (`e1648d7`, merged): verify 104 / 3934, e2e:all 68. Dev `pos`: 0010.
+- **Last verify by the lead:** DESIGN-018 (`52a48d2`): `design018` 718/718, 012/013/014/016/017 green. Dev `pos`: 0010.
 
 ## Integration branch
 
@@ -44,19 +45,17 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
   **before reporting or dispatching**.
 - **Guard hooks** current (`--check` 2026-10-20); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1021b`** (from `513a436`), not yet pushed. The lead pushes and
-  opens PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own step before any follow-up push**
-  (#110).
-- **Task branches:** `agent/design-018` (worktree `../restaurant-pos-wt/DESIGN-018`, `npm ci` done; task file committed
-  there at `4e61eea`, no kit copy). S1b's worktree, run dir and branch removed 2026-10-21. Not the lead's: worktrees
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1021b`** (from `513a436`), PR #126. The lead pushes and opens PRs
+  (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own step before any follow-up push** (#110).
+- **Task branches:** `agent/design-018` (worktree `../restaurant-pos-wt/DESIGN-018`, PR #125). After it merges: remove the
+  worktree and `.agent/runs/DESIGN-018/`. S1b's are removed. Not the lead's: worktrees
   `../restaurant-pos-design` and `keen-chebyshev-ccf255`, branch `setting/add-permission`, pane `w2:pE`.
 
 ## Running tasks and agents
 
-- **DESIGN-018 (BO-08), round 2:** agent `design018`, **Claude Opus 5.5** (owner exception, DECISIONS 10-21), pane
-  `w2:p81`. Round 1 `95b199b`: 64 states; lead ran all six checks green (018 702/702). Opus review (hand-opened): F1
-  facts line, F2 after-M-6 state, both ruled above the Handoff (`d4fc0cd`, cycles 1). Round 2 small and fully ruled:
-  the lead reviews it, then the owner's look. **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
+- **Live agents: the lead only.** **DESIGN-018 complete** (PR #125, `a067b7a`; Claude Opus designer and reviewer by
+  owner exception; review F1-F2 fixed in round 2, lead-reviewed with the red proof repeated). `touches: money,
+  boundaries`: the owner looks before merge. **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
   slices left: F's BO-07 half, D (BO-03, BO-04, the POS addition), E2 (BO-06); G and H later.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
@@ -115,9 +114,11 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
-- **S8a now, beside DESIGN-018?** (users server from C3; needs no design; builder idle). Lead: yes.
-- **S1b's lead rulings, yours to overturn** (merged in #123): the nine, the builder's two questions, and F4's screen
-  for a save after a failed reread (DESIGN-018 is asked to draw BO-08's and say whether BO-05's should change).
+- **Look at BO-08 and merge PR #125** (gallery: `docs/design/visual-directions/index.html`, Settings), and PR #126 (lead
+  memory). **DESIGN-018's six questions** (Handoff, end; lead: accept each): Cash/Card names unwarned; phone `/`, NPWPD
+  no charset; keep `created_by`; BO-05 adopts the new partial-list alert; the save answers the full view; decimal comma.
+- **S2a or S8a next?** Lead: S2a once #125 merges (its guards are now drawn); S8a needs no design and may go first.
+- **S1b's lead rulings, yours to overturn** (merged in #123): the nine and the builder's two questions.
 - **When to start design slice E2 (BO-06 Users)**: the plan put it last, but every owner answer it waited on is in;
   lead: after F's BO-08 half, beside D.
 - **Lead rulings, yours to overturn:** S0's `0009` (`pos_app` SELECT on `schema_migration`, over ARCH-006 case 1);
@@ -144,7 +145,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **DESIGN-018 round 2:** on DONE, repeat the red proof, run all six checks, lead review; push, open the PR.
-2. **Builder idle meanwhile:** S2a waits on DESIGN-018's length guards (C1 §1.1). S8a (users server, from C3) needs no
-   design: the lead proposes writing it now (owner's word). Then D, after DESIGN-018.
-3. **Then S2a** (settings versions, from ADR-012, C1 and DESIGN-018's guards), S2b and S3 from DESIGN-018.
+1. **After #125 merges:** fast-forward, remove its worktree and run dir; cut a new lead branch after #126.
+2. **S2a** (settings versions: ADR-012, C1 §1, DESIGN-018's guards and its question 5), or S8a first (owner's word).
+3. **Next design slice: D** (BO-03, BO-04, the POS addition), then F's BO-07 half; E2 beside D (owner's word).
