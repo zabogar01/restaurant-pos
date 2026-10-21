@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries]
 depends_on: [PHASE1-S1b, DESIGN-018]
 owns: [db/migrations/0011_settings_version.sql, apps/server/src/domain/settings.ts, apps/server/src/http/routes/back-office-settings.ts, apps/server/src/http/server.ts, packages/money/src/**, packages/money/test/**, packages/contracts/src/settings.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S2a — Settings versions on the server
@@ -366,6 +366,17 @@ error, not a test); `packages/money`'s tests (the rate codec). No existing asser
 wrong rate is found, and costs a column. It is attribution on the record, not an audit entry; the owner ruled settings
 changes unaudited (Q11), and this does not contradict that, but it is a product-visible fact no ruling asked for. If
 the lead drops it, remove it from the table, the grant and S2-1.
+
+## Lead verify (2026-10-21)
+
+The lead read the whole Handoff and the migration, and checked the branch at `043a048`. The tree is clean, and every
+changed path is inside `owns`. `npm run verify` in this worktree: typecheck clean, **107 test files, 4006 tests
+passed**. `npm run test:e2e:all`: **68 passed** (both browsers). The builder's finding 1 is real: the server uses
+`@pos/money`, which `apps/server/package.json` does not declare. The lead rules on it together with the review's
+findings, in the next round. **For the reviewer:** you cannot reach the database or launch a browser. This note is the
+evidence for both suites, and a "blocked" on that alone is ruled clear. Check the work against the *Rulings*, C1
+§1.4's cases and ADR-012 Part 1. Above all, check the order of checks in `saveSettings`, the 23505 mapping, the
+request schema's rate and text rules against Ruling 2's table, and the Handoff's decisions 1 and 2.
 
 ## Handoff
 
