@@ -70,8 +70,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
      The BO-13 frontend task must carry its re-review rules N1 and N2 (task file, end).
    - *(Done: I, DESIGN-014, BO-12 audit viewer, merged 2026-10-08 as PR #67.)* The BO-12 frontend
      task must carry its rule C1 and density rule (task file, last lead ruling).
-   - **Ready after B:** D (BO-03, 04) · E (BO-05, 06) · F (BO-07, 08; Q5 ruled out of
-     scope by the lead) · G (BO-09) · H (BO-10, 11).
+   - **Left:** F (BO-08 half first, then BO-07; Q5 ruled out of scope by the lead) · D (BO-03, 04) · E2 (BO-06) ·
+     G (BO-09) · H (BO-10, 11).
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
 
@@ -130,10 +130,10 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     2026-10-19 — see `docs/ROADMAP.md`.
     - *(Done: ARCH-017, the Phase 1 plan, accepted 2026-10-20, PR #114; contract wording applied, #113.)*
     - *(Done: PHASE1-S0, housekeeping, PR #115; ARCH-019 consult C2, #116; ARCH-018 ADR-012 + C1, accepted, #117;
-      PHASE1-S1a, tables on the server, #119; DESIGN-017, BO-05 Tables (design slice E1), #120.)*
-    - **ARCH-020, consult C3 (users) + ARCHITECTURE §7.2 etc.** — PR #121, waiting for the owner's merge.
-    - **PHASE1-S1b** — the BO-05 screen and AC-35 in the browser, from C2 *For the lead S1b* and DESIGN-017 — depends on
-      S1a and DESIGN-017 (merged) — next task file.
+      PHASE1-S1a, tables on the server, #119; DESIGN-017, BO-05 Tables (design slice E1), #120; ARCH-020, consult C3
+      (users) + ARCHITECTURE §7.2 etc., #121.)*
+    - *(Done: PHASE1-S1b, BO-05 Tables, the rail and the first configuration form, AC-35 in the browser, complete
+      2026-10-21 — PR #123, waiting for the owner's look and merge. C5 not needed.)*
     - **Design slice F, BO-08 half** (settings and tender types) — feeds S2b and S3 — next design task.
     - **PHASE1-S2a** (settings versions, ADR-012 + C1), **S3** (tender types), **S4a-c** (catalog), **S5** (86),
       **S6** (presets), **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**

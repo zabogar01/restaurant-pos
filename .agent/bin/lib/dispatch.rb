@@ -728,6 +728,9 @@ module Dispatch
         hint = msg =~ /blocked/ ? " The CLI is waiting on a dialog (trust, login or update): only the owner answers it." : ""
         refuse "herdr agent start failed: #{msg}. Pane #{p.pane_name} (#{pane}) is left open.#{hint}"
       end
+      # A resumed CLI loads its transcript before it takes input; a prompt sent
+      # earlier is lost (PHASE1-S1b round 2, 2026-10-21). Wait until it is ready.
+      Open3.capture2e("herdr", "agent", "wait", p.agent_name, "--until", "idle", "--until", "blocked", "--timeout", "120000")
     end
     [pane, new_session || session, brief]
   end
@@ -792,8 +795,20 @@ module Dispatch
     File.write(File.join(p.run_dir, "meta.json"), JSON.pretty_generate(
       "task" => p.o.id, "role" => p.role, "mode" => "interactive", "cli" => p.cli, "model" => p.profile["model"],
       "profile" => p.profile_name, "pane" => pane, "agent" => p.agent_name, "worktree" => p.worktree, "branch" => p.branch))
+    # What the round starts from: a resumed round whose task file and HEAD never
+    # changed did no work, whatever DONE the last round left in the Handoff.
+    task_f = File.join(p.worktree, p.task_rel)
+    before = [File.exist?(task_f) ? File.read(task_f).hash : nil, git("rev-parse", "HEAD", dir: p.worktree).first]
     out, st = Open3.capture2e("herdr", *p.split(p.cfg.dig("launch", "herdr", "prompt_agent"), "agent" => p.agent_name).drop(1), brief)
     refuse "herdr agent prompt failed: #{out.strip}" unless st.success?
+    # Herdr can report a resumed CLI idle before its input box takes text, so a
+    # prompt may land nowhere (PHASE1-S1b, 2026-10-21). If the agent has not
+    # started working within a minute, send the brief once more.
+    _, took = Open3.capture2e("herdr", "agent", "wait", p.agent_name, "--until", "working", "--timeout", "60000")
+    unless took.success?
+      puts "dispatch: #{p.agent_name} did not start working within 60 s; sending the brief once more"
+      Open3.capture2e("herdr", *p.split(p.cfg.dig("launch", "herdr", "prompt_agent"), "agent" => p.agent_name).drop(1), brief)
+    end
     puts "dispatch: #{p.o.id} #{p.role} running interactively as #{p.agent_name} in pane #{p.pane_name} (#{pane}); waiting until it is idle"
     $stdout.flush
     state = wait_interactive(p, pane)
@@ -806,6 +821,12 @@ module Dispatch
         1
       else
         vcode, vtext = verdict(p)
+        after = [File.exist?(task_f) ? File.read(task_f).hash : nil, git("rev-parse", "HEAD", dir: p.worktree).first]
+        if session && p.role != "reviewer" && after == before && vcode != EXIT_NO_VERDICT
+          vcode = EXIT_NO_VERDICT
+          vtext = "the task file and HEAD did not change this round, so its #{vtext.split.first} is the last round's: " \
+                  "the prompt may not have reached #{p.agent_name}; read pane #{p.pane_name}"
+        end
         if vcode == EXIT_NO_VERDICT && pane_text(pane) =~ RATE_LIMIT && !fallback_used && (fb = p.fallback_plan)
           puts "dispatch: rate limit or quota in the pane; closing it and re-running once on #{fb.profile_name} (#{fb.cli} #{fb.profile['model']})"
           File.open(File.join(p.run_dir, "fallback.log"), "a") { |f| f.puts "#{Time.now} #{p.profile_name} -> #{fb.profile_name}" }
