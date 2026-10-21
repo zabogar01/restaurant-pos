@@ -175,7 +175,8 @@ deployment gate:
 - a review of the authentication risks accepted for the loopback MVP: PIN
   guessing that a cashier's own login resets, response-time differences in PIN
   and password verification, back-office username discovery, per-account
-  lockout, and the unaudited first-manager script;
+  lockout, the unaudited first-manager script, and the users screen's refusal
+  of a PIN another active user holds;
 - a review of the `localhost` cookie jar accepted for the loopback MVP, which
   every other local server shares whatever its port, and which ends when the
   origin becomes a real host name;
@@ -572,12 +573,20 @@ header. No route accepts either cookie (ADR-011).
   The client keeps that state under the identity of the manager it belongs to,
   so the same manager signing in again in that tab, even after the absolute
   lifetime, gets it back, and anyone else does not (ADR-011).
-- A StaffUser has one credential version. Deactivation, a PIN reset, or a
-  back-office password set or reset increments it and causes every session of
-  that user, POS and back office, to fail on its next authenticated request.
-- A manager who changes their own password keeps the back-office session the
-  change was made from: the command re-stamps that one session with the new
-  version in the same transaction. Their other sessions fail as above.
+- A StaffUser has one credential version. Deactivation, a change of role or
+  classification, and storing or removing a PIN or a back-office password each
+  increment it, in the same transaction as the change, and every session of
+  that user, POS and back office, then fails on its next authenticated request.
+  Reactivation alone does not increment it: the deactivation's increment has
+  already ended every earlier session.
+- A manager who changes their own password or their own PIN from the back
+  office gives their current password, verified against their own account's
+  throttle, and keeps the back-office session the change was made from: the
+  command re-stamps that one session with the new version in the same
+  transaction, and commits nothing if it cannot. Their other sessions fail as
+  above. These two commands are the only user-management commands that write a
+  session row (owner, 2026-10-20 and 2026-10-21, answering ADR-009's open
+  items).
 
 Audience determines route context and timeout policy, not business permission.
 Every request still checks the current active StaffUser and role.
@@ -651,6 +660,12 @@ Order precedes CheckoutLease and ReceiptSeries. Opening a table order, and deact
 renaming a table, lock the DiningTable row before reading its state, so a
 deactivation and an order opening on the same table serialise and the
 deactivation's open-order check (FR-C8) sees any order committed before it.
+User-management commands take no coordination row. They lock the StaffUser
+rows of the acting manager and of the user acted on, in id order, `FOR NO KEY
+UPDATE`, then that user's BackOfficeCredential row, then, for an
+own-credential change, the acting ActorSession; the acting manager's row is
+re-read under the lock, so two managers deactivating or demoting each other at
+once cannot both succeed.
 Every catalog command takes the coordination row `FOR UPDATE` before reading
 anything it validates, so catalog writes run one at a time and need no lock on
 the affected catalog rows. Add-line, preset-discount apply, fire, acquiring a
@@ -765,8 +780,13 @@ entry carrying initiating actor and approver, not two loosely linked entries.
 Discount replacement or removal records one before/after transition and gates
 the whole transition when the old or new state requires free-form approval.
 The audited actions are whole-order void, fired-line void, discount
-apply/replace/remove, refund, manager CheckoutLease takeover, and every manager
-approval outcome. Removing a `PENDING` line is deliberately not audited.
+apply/replace/remove, refund, manager CheckoutLease takeover, back-office
+reprint of a kitchen ticket, the back-office creation of a cashier or a manager
+and every back-office change to a user's status, role or credentials (one entry
+per command, naming the acting manager and the user, never a PIN, password or
+hash), and every manager approval outcome. Removing a `PENDING` line is
+deliberately not audited; nor is creating kitchen staff, nor anything the
+first-manager script does, which has no authenticated actor (ADR-009).
 
 Failed and cancelled manager approvals are different: no business action
 exists whose transaction can contain them. They write one actor-attributed,
@@ -1042,6 +1062,7 @@ That is an architectural change, not a caching enhancement.
 | Installation-wide PIN cooldown can deny all logins or approvals for five minutes | Typing mistakes or abuse cause a bounded local denial of service | Separate LOGIN and MANAGER_APPROVAL buckets, clear UI, durable database-time cooldown; retain because client-reset-resistant throttling is required | Accepted architecture |
 | Back-office usernames can be discovered: a throttled account answers differently from an unknown username, and only a known username costs an Argon2id verification | An attacker learns which accounts to attack | A username is not a secret; the listener is loopback-only; reconsider at the gate in section 3.2 | Accepted for the MVP |
 | Anyone who knows a manager's username can lock that manager out of the back office | A bounded denial of service against one manager, five minutes at a time | Per-account counting, so no other manager, PIN login, or approval is affected; durable database-time cooldown that attempts cannot extend; reconsider at the gate in section 3.2 | Accepted for the MVP |
+| The users screen refuses a PIN another active user holds | A manager learns that some active colleague holds a six-digit PIN they typed, and can try it at the POS to learn whose it is | The refusal names no one; managers already know every PIN they set; reconsider at the gate in section 3.2 | Accepted for the MVP |
 | Cookies on `localhost` are shared with every other local server, whatever its port | Another program on the owner's machine can receive or replace this application's cookies | Project-specific cookie names; `HttpOnly`, `Secure`, `SameSite=Strict`; reconsider at the gate in section 3.2 | Accepted for the MVP |
 | Two tabs of one client in one browser profile share one session cookie | A sign-in in one tab ends the other's session, and concurrent sign-ins from two tabs can leave a tab's token and the cookie naming different people | Every such sequence fails closed; a tab retries only as the person it held and never acts as or shows another; one cookie-changing request at a time per tab; reconsider at the gate in section 3.2, since a real host name does not end it | Accepted for the MVP |
 | A browser may offer to save a manager's back-office password | On a machine other staff can reach, a saved password leaves the back office open | The application stores no credential; reconsider at the gate in section 3.2 | Accepted for the MVP |
