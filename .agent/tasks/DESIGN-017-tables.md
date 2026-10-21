@@ -180,6 +180,30 @@ full prose, ending with `DONE` or `BLOCKED: <one question>`. Then run exactly on
     herdr agent prompt lead "design017: DESIGN-017 done — <one line>"
     herdr agent prompt lead "design017: BLOCKED — <question>"
 
+## Handover (lead, 2026-10-21): finish round 2 on OpenCode
+
+Codex reached its usage limit with round 2's fixes made but **not committed**. The owner chose an OpenCode stand-in for
+the finish only. **Do not redesign, re-review or re-run any check.** The uncommitted paths are: this task file,
+`docs/DESIGN.md`, `docs/design/SITEMAP.md`, `docs/design/checks/design017.cjs`, and `F/tables.css`, `F/tables.html`,
+`F/tables.js`.
+
+The lead ran all five checks on that uncommitted tree at 10:13 on 2026-10-21, and they pass: `design017.cjs` 305/305;
+`design016.cjs` 399/399; `design014.cjs` 288/288; `design013.cjs` and `design012.cjs` no failures or errors. The
+re-measured geometry (from `design017.cjs`'s `measurements.json`), at 1440×900: frame 1440 wide at x 0, rail 220, top
+bar 1220×64, content padding 24px, form panel 459×292 at x 957, label field 417×40; overflow scrolls 650px inside its
+owner (1220×836), with the table header sticky at y 64. At 1920×1080: the frame stays 1440 wide, centred at x 240,
+with the same rail, top bar, panel and field sizes, and the sticky header at y 64 in an owner 1220×1016. The
+`state geometry overflow` and `counts match overflow` checks pass at both sizes, with the 32-unit longest label.
+
+**What is left, and only this:**
+
+1. Finish the *Round 2* section at the end of the Handoff (Codex began it; its last paragraph is about F4). Make sure
+   it names, for each of F1 to F10, what changed and where, in one or two lines each; replace any round 1 measurement
+   or count that is now stale with the figures above, and say they were taken by the lead. End the Handoff with `DONE`.
+2. `git add` exactly the seven paths above and commit on `agent/design-017` (Conventional Commits, explaining why).
+   Never push.
+3. Run `herdr agent prompt lead "design017b: DESIGN-017 round 2 done — <one line>"`.
+
 ## Round 2 — the review's ten findings (lead rulings, 2026-10-21)
 
 The Claude Opus review of `026ef6e` (`.agent/reviews/DESIGN-017-review.md`) found ten. **All ten are accepted.** Read the
@@ -267,8 +291,9 @@ the scrim and queues its destination behind authentication and departure.
 
 Deactivate and Reactivate act directly: no confirmation step is added because
 both are reversible and the server prevents the Phase 2 harmful case. Their
-pending/unknown panel keeps a read-only label and the ordinary Save/Cancel
-controls; Save deliberately issues the same status command after pending ends.
+pending/unknown result is page-level and opens no form. The reread row's ordinary
+Deactivate or Reactivate action is the only explicit command path; no Save or
+resend control is provided (corrected in Round 2, F1).
 A refused reactivation instead opens the inactive record's editable label.
 Saving there only renames it; the manager separately presses Reactivate on its
 row. No rename-and-reactivate command is implied.
@@ -277,15 +302,15 @@ The list is one table: active first, then inactive; natural case-insensitive
 label order within each status, stable id order for ties. No area grouping.
 The only columns are Label, Status and Actions. The default fixture has three
 active and one inactive row; overflow has 52 active and eight inactive rows.
-The longest label, “Terrace ABCDEFGHIJKLMNOPQRSTUVWXY”, is exactly 32 units.
+The longest label, “Terrace ABCDEFGHIJKLMNOPQRSTUVWX”, is exactly 32 units.
 Counts derive from the drawn rows, including after creation and status changes.
 The Phase 1 drawing's rail contains Tables only; the existing `phase0` flag and
 its empty rail remain unchanged. Earlier gallery artifacts retain their future
 navigation, now resolving Tables to Frost. S1b retains the Phase 0 landing and
 adds Tables to its built-destination manifest; it does not build Today’s
 future order content, business-day reads or incident routes from this drawing.
-The inherited day indicator and optional alert fixtures are review context,
-not new Phase 1 data requirements.
+The business-day indicator is suppressed on BO-05 (Round 2, F10). Optional
+alert fixtures remain shared review context, not new Phase 1 data requirements.
 
 ### Requirement, ruling and state map
 
@@ -303,12 +328,12 @@ in both the artifact and gallery manifest (37 states total).
 | C2 TableView / no area / no seats | Every row contains label, status and actions only. No current-order or timestamp column. The prototype's old incompatible table/form are replaced by pointers to the complete Frost walks. |
 | C2 §4 local schema rules | `invalid-empty`, `invalid-long`, `invalid-control`; Save trims, checks empty, length and Unicode Cc in that order, sends nothing when invalid, and does not truncate. Native input sanitisation may remove newline/tab before validation; the control fixture uses U+0007, which survives. |
 | C2 §6 authoritative success | `create`, `rename`, `rename-inactive`, `saved`; every row's Edit opens its own label, Save replaces that row, and creation inserts one row. Focus moves to the saved row's Edit. No successful-command reread. |
-| C2 one command at a time | `saving`, `pending-deactivate`, `pending-reactivate`; Save and label inert while pending, with Cancel and global departure available. A second form submission sends nothing. |
-| C2 definite general failure | `failure`; designed shared title/body above the retained draft. Try again dismisses the notice and focuses the label; only an explicit Save sends a command. The Record not found review response also performs one reread. Server `VALIDATION_FAILED` and local transport disagreement use this same general failure, never a field list from the server. |
-| C2 unknown outcome | `unknown`, `unknown-deactivate`, `unknown-reactivate`; the local reread deliberately shows an applied result, while the form still says Outcome not confirmed. No inferred success, automatic command or resend control. Save/Cancel remain available. |
+| C2 one command at a time | `saving` disables Save and the label, with focus on its status notice, Cancel and global departure available. `pending-deactivate` and `pending-reactivate` disable row actions with a named page status and no form. A second form submission sends nothing. |
+| C2 definite general failure | `failure`; designed title/body above the retained draft: “Something went wrong” / “Nothing was saved. Your draft is kept. Press Save to try again.” No dismiss-only button; explicit Save sends the next command. The Record not found review response also performs one reread. Server `VALIDATION_FAILED` and local transport disagreement use this same general failure, never a field list from the server. |
+| C2 unknown outcome | `unknown`, `unknown-deactivate`, `unknown-reactivate`; the local reread deliberately shows an applied result, while the form still says Outcome not confirmed. No inferred success, automatic command or resend control. Save/Cancel remain available for editable forms. Status commands have no form; only their ordinary reread row actions are available. |
 | Reread itself unavailable | `unknown-read-failed`; the list is withheld and the notice truthfully says it could not be refreshed. Try again repeats only the list read. Its successful recovery keeps the outcome unknown and the draft open. |
-| Part A departure, F1 and N2 | `unsaved`, `unsaved-escape`, `unsaved-back`, `unsaved-rail`, `unsaved-logout`, `leave-pending`, `leave-unknown`. The interactive check presses Cancel, Escape, actual browser Back, Tables and Log out. Kitchen/receipt/rail/logout all remain live through pending and unknown; each asks before departure. Stay retains state and focus; Discard follows the selected destination. No `beforeunload`. |
-| Response while departure decision is open | A settled fixture response is held until the decision is acknowledged. It cannot close the dialog or choose a destination. Stay then applies the authoritative response. Discard drops the draft without sending another request. |
+| Part A departure, F1 and N2 | `unsaved`, `unsaved-escape`, `unsaved-back`, `unsaved-rail`, `unsaved-logout`, `leave-pending`, `leave-unknown`. The interactive check presses Cancel, Escape, actual browser Back, Tables and Log out. Kitchen/receipt/rail/logout all remain live through pending and unknown; each asks before departure. Stay retains state and focus; Discard follows the selected destination. Logout uses the reviewed Keep this draft / Discard changes and log out confirmation. No `beforeunload`. |
+| Response while departure decision is open | A settled fixture response is held until the decision is acknowledged. It cannot close the dialog or choose a destination. Stay then applies the authoritative response. Discard drops the draft without sending another request; a held or late authoritative answer still updates the list silently (Round 2, F3). |
 | C2 §7 / AC-35 C1, same manager M-6 | `reauth`; edited table visible and inert. The interactive walk edits, opens M-6, resists Escape/background focus, resumes the same manager with the value focused, then saves explicitly. |
 | C2 C2, different manager M-6 | Sign in as a different manager acknowledges that the draft will not be available, then exposes Username/Password inside M-6. Successful different-manager fixture destroys the old field value and closes its form. It never adopts the draft. |
 | C2 C3, BO-01 hazard | `bo01-draft`; frame and form hidden, all modal dialogs closed, BO-01 fields accept typing. Same-manager sign-in restores the panel and focused unsaved value; another manager gets none of it. |
@@ -362,28 +387,34 @@ build annotation are outside the product and are not copied into S1b.
 | Saved | Result | `{label} saved.` | Page status; focus saved row's Edit |
 | Deactivated | Result | `{label} deactivated. It is kept for history.` | Page status; focus affected row's Edit |
 | Reactivated | Result | `{label} reactivated.` | Page status; focus affected row's Edit |
-| Status command panel | Title | `Deactivate {label}` / `Reactivate {label}` | Named non-modal dialog |
-| Deactivate panel | Context | This table will be inactive and kept for history. | Read-only label; Save repeats this command only by explicit choice |
-| Reactivate panel | Context | This table will be active again. | Same |
-| General failure | Title / body | Something went wrong / Try again. If the problem continues, ask a manager for help. | Form alert |
-| General failure | Recovery | Try again | button `Try again`; focuses draft, sends nothing |
+| Status command pending | Page result | `Deactivating {label}…` / `Reactivating {label}…` | Focusable page status; no form or Save |
+| Status command unknown | Page result | `{label}: the outcome could not be confirmed. The list has been refreshed. Nothing was sent again.` | Focusable page status; ordinary row action reflects reread |
+| Status unknown, read failed | Page result | `{label}: the outcome could not be confirmed. The list could not be refreshed. Nothing was sent again.` | Page status; Try again repeats the list read only |
+| Status definite failure | Page result | `Something went wrong. {label} was not changed. Use its row action to try again.` | Focusable page status |
+| Duplicate holder | Label-cell marker | Label in use | Visible text in the holder's cell, not a link |
+| General failure | Title / body | Something went wrong / Nothing was saved. Your draft is kept. Press Save to try again. | Form alert |
 | Unknown, reread complete | Title | Outcome not confirmed | Form status |
 | Unknown, reread complete | Body | The outcome could not be confirmed. The list has been refreshed. Your draft is kept; nothing was sent again. | Form status |
 | Unknown, reread failed | Body | The outcome could not be confirmed. The list could not be refreshed. Your draft is kept; nothing was sent again. | Form status; read failure has Try again |
-| Pending interrupted by session | Body | The outcome could not be confirmed. Your draft is kept; nothing was sent again. | Retained form status; no refreshed-list claim |
 | Ordinary departure | Title | Discard unsaved changes? | modal dialog `Discard unsaved changes?` |
-| Logout departure | Title | Log out and discard your changes? | Named modal dialog |
+| Logout departure (top bar and M-6) | Title | Log out and discard your changes? | Named modal dialog; reviewed `DISCARD_TITLE` |
+| Logout departure (top bar and M-6) | Body | The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session. | Reviewed `DISCARD_BODY` |
+| Logout departure | Actions | Keep this draft / Discard changes and log out | Exact button names; first focused |
+| Pending / unknown logout | Additional request context | The save may or may not have succeeded. Leaving does not send it again. | Separate paragraph; built body/actions unchanged |
 | Ordinary departure | Body | Your edits have not been saved. Stay to keep editing, or discard them before leaving. | Dialog description |
 | Pending / unknown departure | Body | The save may or may not have succeeded. Leaving does not send it again. Stay to keep the draft, or discard it and leave. | Dialog description |
-| Departure | Actions | Stay / Discard | buttons `Stay`, `Discard`; initial focus Stay |
+| Form departure except logout | Actions | Stay / Discard | buttons `Stay`, `Discard`; initial focus Stay |
 | Departure with emergency | Additional sentence | Decide whether to stay or discard before opening print incidents. | Repeats the shared incident title/identity above it |
 | M-6 | Title | Your session timed out | modal dialog `Your session timed out` |
 | M-6 | Body | `Your unsaved changes are kept. Continue as {username} to resume them.` | Dialog description |
 | M-6 | Labels | Username / Password | Read-only username, secret `Password` |
 | M-6 | Missing secret | Enter your password. | Field error |
 | M-6 | Actions | Continue / Log out / Sign in as a different manager | Buttons with these exact names |
-| Other-manager acknowledgment | Body | Your unsaved changes will not be available to the manager signing in. Continue to sign in with a different manager’s username and password. | Dialog description |
+| Other-manager acknowledgment | Title | Sign in as a different manager? | Reviewed `CHOOSE_OTHER_TITLE` |
+| Other-manager acknowledgment | Body | The current manager’s unsaved changes will not be available to the manager signing in. | Reviewed `CHOOSE_OTHER_BODY` |
 | Other-manager acknowledgment | Actions | Stay with current manager / Continue to sign-in | Exact button names; first action focused |
+| Other-manager form | Title | Sign in as a different manager | Reviewed `OTHER_TITLE` |
+| Other-manager form | Body | Enter your own username and password. The current manager’s unsaved changes will not be available to you. | Reviewed `OTHER_BODY` |
 | Other-manager form | Actions | Sign in / `Back to {username}` | Exact button names; editable Username and Password |
 | M-6 emergency | Context / action | Continue your session to open print incidents. / Open print incidents after sign-in | Exact button name |
 | M-6 queued emergency | Body | `Continue as {username} to open print incidents. Your unsaved changes are kept.` | Dialog description |
@@ -394,7 +425,9 @@ build annotation are outside the product and are not copied into S1b.
 | BO-01 local empty | Field messages | Enter your username. / Enter your password. | Invalid fields described by their messages |
 | Phase 2 refusal only | Named refusal | `{label} was not deactivated. Order {order identity} is open at this table. Settle or void that order at the POS, then try again.` | Page status; no POS action link |
 
-S1b reuses the already reviewed BO-01/M-6 failure, cooldown and logout handling;
+The M-6 strings above quote `apps/back-office/src/copy.ts:46–71` and the action
+labels in DESIGN-012's `shell.html`, verbatim after Round 2 F2. S1b reuses the
+already reviewed BO-01/M-6 failure, cooldown and logout handling;
 this slice illustrates only their table-draft composition and identity transition.
 It grants no second credential implementation. C2's C1–C3 should drive `Tables`,
 `New table`, the row-scoped `Edit {label} — active`, `Table label`, `Save`, and
@@ -635,7 +668,9 @@ pixels. The editor measurements use `rename`; sticky measurements use
 
 All 37 states at both target sizes reported zero document horizontal overflow,
 no content horizontal overflow, one active main landmark and empty password
-fields. The 32-unit label remains intact. The header is at its scroll owner's
+fields. This initial measurement used a 33-unit label, incorrectly described as 32;
+Round 2 F5 corrects the fixture and records new measurements below. The header
+was at its scroll owner's
 `y=64` at both widths, with no gap revealing rows above it. At 1920px the frame
 keeps 240px of canvas on either side; the form and table retain their geometry.
 
@@ -677,5 +712,87 @@ Completed in this worktree only, with edits confined to `docs/design/`,
 `docs/DESIGN.md` and this task's Handoff. Staging and the commit are submitted
 for the owner's explicit approval on `agent/design-017`; no push is performed.
 The lead's formal design review is the next workflow step before S1b.
+
+DONE
+
+### Round 2 — the review's ten findings
+
+Applied the ten accepted findings in `.agent/reviews/DESIGN-017-review.md` and
+the lead's rulings above. The current copy table and DESIGN rules have been
+corrected in place; the first round's verification is historical evidence and
+is not evidence for these changes. In particular, its claimed 32-unit label
+was actually 33 units. The corrected fixture is
+`Terrace ABCDEFGHIJKLMNOPQRSTUVWX` (32 UTF-16 units), and `invalid-long` adds
+one `Z` to make exactly 33.
+
+Implementation locations below use `F` for
+`docs/design/visual-directions/frost/back-office`. F1 is in `F/tables.js`
+and `docs/DESIGN.md`; F2 is in `F/tables.html` and `F/tables.js`; F3 and F4
+are in `F/tables.js`; F5 and F6 are in `F/tables.js`; F7 is in
+`docs/design/SITEMAP.md`; F8 is in `F/tables.html` and `F/tables.js`; F9 is
+in `F/tables.js`; F10 is in `F/tables.js`, `F/tables.css` and
+`docs/DESIGN.md`. All ten have dedicated coverage in
+`docs/design/checks/design017.cjs`, as detailed below.
+
+| Finding | Change | Dedicated verification in `design017.cjs` |
+|---|---|---|
+| F1 — status commands masqueraded as Save | Removed the status-command form entirely. The clicked row's status action becomes inert; pending and unknown use the page status. A reread determines the row's ordinary Deactivate/Reactivate action. No Save or resend control is shown for these commands. DESIGN and the copy table now distinguish forms from one-click commands. | Both pending status commands show the correct verb, no form and no visible Save. Unknown performs one reread, uses no save/draft wording, and changes the row action to match the observed record. Only pressing that ordinary row action issues the next command. |
+| F2 — M-6 copy drift | Different-manager acknowledgement and form now use the exact reviewed titles and bodies from `apps/back-office/src/copy.ts` and DESIGN-012's shell. Both top-bar and M-6 logout use the reviewed title, body, Keep this draft and Discard changes and log out. Pending/unknown logout adds a separate request-context paragraph without changing those strings. | Exact title/body assertions for both other-manager steps and both logout callers. Keep returns to the caller. The acknowledgment hides Log out as the reviewed shell does. |
+| F3 — Discard dropped authoritative answers | Each sent command captures its record identity, label and originating editor independently of the form DOM. Discard marks that draft departed, without cancelling its answer. A held or late successful response inserts/replaces its record silently, with no reopened form, focus change or result announcement. | Create and rename, each with the answer arriving before Discard and after Discard. All four walks assert the saved row, closed form, absent announcement and preserved focus. |
+| F4 — session transition invented unknown | Removed generation-based answer cancellation and the invented pending-interrupted copy. The fixture holds answers behind the session gate and processes them according to C2 on resumption. A definite session refusal clears pending, keeps the draft and makes no reread; only a real unknown result rereads. No command is resent. | Pending rename across M-6 and BO-01, each answered success, SESSION_IDLE or unknown. Checks distinguish each result, assert one command, and require a reread only for unknown. |
+| F5 — invalid longest label | Corrected the overflow record to 32 units and the invalid fixture to 33. Historical measurement wording is corrected above; new geometry is recorded below. | Length assertions at both viewports, successful save of the unchanged longest stored label, and exact 33-unit invalid fixture. |
+| F6 — stale page announcement | Form opening and command submission clear the prior page result and Phase 2 annotation. | Saved result followed by another form and an unknown save; Phase 2 refusal followed by a new status command. No old success/refusal remains. |
+| F7 — undefined sitemap tags | Create/edit is `[INLINE] Table create / edit — non-modal panel`; row actions are `[INLINE]`. Added a dated change note using the existing vocabulary. | Source assertion rejects `[PANEL]` and `[ACTION]` and requires the defined inline entry. |
+| F8 — dismiss-only retry | Removed the form failure's Try again button. BO-05's definite failure says “Nothing was saved. Your draft is kept. Press Save to try again.” The shared inventory row is unchanged; read failure still offers a real Try again. | Failure retains the draft with no Try again button; explicit Save sends exactly one command. Existing failed-read recovery still runs. |
+| F9 — missing focus states | Pending form focus goes to the focusable status notice; failure/unknown return to Table label. Discard closes once and returns to its own opener, as clean Cancel does. Pending record actions remain inert; an Edit opener may receive programmatic focus without becoming actionable. | Pending and both result-focus paths, clean Cancel, dirty Cancel → Discard to the same row, and late-answer focus preservation. |
+| F10 — pattern inconsistencies | New table and record actions are inert during pending; after unknown they are live, with another record behind departure. DESIGN points historical Leave without resending at the current configuration rule. BO-05 removes the Phase 5 day indicator. The duplicate holder has readable “Label in use” text instead of link-like underlining. | Pending control-state assertion; unknown → another record → Discard opens the right label; day indicator absent; holder text present with no link. |
+
+The 37 registered states remain unchanged. `pending-deactivate`,
+`pending-reactivate`, `unknown-deactivate` and `unknown-reactivate` now show
+page results over the full-width table instead of a form. No new token or
+shared artifact behaviour is introduced. Only BO-05's own files, its check,
+DESIGN, the sitemap and this Handoff change in Round 2.
+
+Focus and command lifetime are intentionally separate. During a pending
+command, the opening Edit control is `aria-disabled` and outside the tab order;
+its click handler is inert. It can receive programmatic focus after Discard
+while the answer is still outstanding. In the empty-create case the visible
+New table opener remains present through the outstanding answer. A late row
+replacement preserves the current control's identity rather than shifting focus
+or announcing success for a departed draft.
+
+For S1b, session management remains the existing implementation. This fixture
+models a selected answer being held behind its gate; it does not cancel a
+network request, infer a result from a session transition, or introduce a new
+session outcome. A different manager still destroys the prior editor state.
+The immutable command snapshot exists only to consume the eventual authoritative
+record; it is not offered to the next manager as a draft.
+
+### Round 2 verification and replacement measurements
+
+The lead ran all five checks against the uncommitted Round 2 tree at 10:13
+on 2026-10-21: `design017.cjs` passed 305/305, `design016.cjs` passed
+399/399, `design014.cjs` passed 288/288, and `design013.cjs` and
+`design012.cjs` reported no failures or errors. These are the lead's results;
+design017b did not rerun checks during the paperwork-only finish.
+
+The following measurements were taken by the lead from `design017.cjs`'s
+`measurements.json`. They supersede the Round 1 geometry and counts above
+for the current tree, including the corrected 32-unit longest label.
+
+| Measurement | 1440×900 | 1920×1080 |
+|---|---|---|
+| Frame width and x | 1440px at x 0 | 1440px at x 240, centred |
+| Rail width | 220px | 220px |
+| Top bar | 1220×64px | 1220×64px |
+| Content padding | 24px | 24px |
+| Form panel | 459×292px at x 957 | 459×292px |
+| Label field | 417×40px | 417×40px |
+| Overflow owner | 1220×836px | 1220×1016px |
+| Sticky table header | y 64 | y 64 |
+
+At 1440×900, overflow scrolls 650px inside its owner. The lead confirmed
+that `state geometry overflow` and `counts match overflow` pass at both
+sizes with the corrected 32-unit longest label.
 
 DONE

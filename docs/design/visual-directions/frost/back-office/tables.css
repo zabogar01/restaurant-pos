@@ -13,9 +13,11 @@
 #tables-list td:last-child button + button { margin-left: var(--frost-space-2); }
 #tables-list tr[data-active='false'] td { color: var(--frost-muted); }
 #tables-list tr[data-selected='true'] { background: var(--frost-group); }
-#tables-list tr[data-holder='true'] td:first-child { text-decoration: underline; text-underline-offset: var(--frost-link-underline-offset); }
+.table-holder { display: block; margin-top: var(--frost-space-1); font-size: var(--frost-text-12); color: var(--frost-muted); font-weight: var(--frost-weight-regular); }
 #tables-list .table-status { white-space: nowrap; }
 #form-notice[data-kind='failure'], #read-state .office-notice { color: var(--frost-warning); background: var(--frost-warning-surface); border-color: var(--frost-warning); }
 #read-state .office-button { margin-top: var(--frost-space-4); }
 .tables-phase { padding: var(--frost-space-3) var(--frost-space-4); background: var(--frost-warning-surface); color: var(--frost-warning); }
 html[data-state='overflow'] #tables-list td { padding: var(--frost-table-cell-tight-padding); }
+/* Keep programmatically focusable pending openers visually inert as well. */
+#new-table[aria-disabled='true'], #table-rows button[aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }
