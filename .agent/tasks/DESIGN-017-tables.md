@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-016]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: review
 cycles: 0
 ---
 # DESIGN-017 — BO-05 Tables (slice E1)
