@@ -5,6 +5,7 @@ export type { Money } from './codec.js';
 export { encodeMoney, decodeMoney } from './codec.js';
 export { divHalfUp } from './rounding.js';
 export { formatMoney } from './format.js';
+export { INSTALLATION_CURRENCY, INSTALLATION_MINOR_UNIT_PRECISION } from './installation.js';
 
 /**
  * Rates are integers in parts per million (FR-M5). 10% === 100_000n.
@@ -55,6 +56,28 @@ export function rateFromPercent(percent: string): Rate {
 export function rateFromPpm(ppm: bigint): Rate {
   if (ppm < 0n) throw new Error('rate must not be negative');
   return ppm as Rate;
+}
+
+// Canonical parts per million: '0' alone or a digit string with no leading zero.
+// A rate is never negative, so unlike money there is no sign.
+const CANONICAL_PPM = /^(0|[1-9][0-9]*)$/;
+
+/** A rate as it crosses the wire: its parts per million as a base-10 integer string. */
+export function encodeRate(rate: Rate): string {
+  return rate.toString(10);
+}
+
+/**
+ * The inverse of `encodeRate`. Takes `unknown` because the value comes off the wire:
+ * a JSON number, a sign, a leading zero, an exponent, a fraction or an empty string
+ * is refused, and nothing is ever read through `Number()`. The range a business
+ * allows is the caller's to check.
+ */
+export function decodeRate(value: unknown): Rate {
+  // The message quotes only a string: JSON.stringify throws on a bigint.
+  if (typeof value !== 'string') throw new Error(`invalid rate: not a string (${typeof value})`);
+  if (!CANONICAL_PPM.test(value)) throw new Error(`invalid rate: ${JSON.stringify(value)}`);
+  return rateFromPpm(BigInt(value));
 }
 
 /** amount x rate, rounded half-up once. */

@@ -5,6 +5,17 @@ export { ROUTE_TABLE } from './routes.js';
 export type { RouteEntry, RouteMethod } from './routes.js';
 export { BackOfficeSessionView, SessionView } from './session.js';
 export {
+  OutletAddress,
+  OutletName,
+  OutletNpwpd,
+  OutletPhone,
+  RatePpm,
+  ReceiptFooter,
+  SaveSettingsRequest,
+  SettingsReadView,
+  SettingsVersionView,
+} from './settings.js';
+export {
   CreateTableRequest,
   DeactivateTableRequest,
   ReactivateTableRequest,

@@ -12,6 +12,7 @@ const MIGRATED_TABLES = [
   'pin_throttle_bucket',
   'schema_migration',
   'security_event',
+  'settings_version',
   'staff_user',
 ];
 

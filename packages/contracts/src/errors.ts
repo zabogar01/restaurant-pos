@@ -21,13 +21,14 @@ export const ErrorCode = {
   APPROVAL_FAILED: 'APPROVAL_FAILED',
   APPROVAL_THROTTLED: 'APPROVAL_THROTTLED',
   DUPLICATE: 'DUPLICATE',
+  SETTINGS_CHANGED: 'SETTINGS_CHANGED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 /**
- * The details a code carries, by code. Only the four below declare any; for the other
- * twelve a details argument does not compile. A code that carries details declares
+ * The details a code carries, by code. Only the codes below declare any; for every other
+ * code a details argument does not compile. A code that carries details declares
  * its fields here, as numbers, enums or ids the server chose: never a string taken
  * from an exception. `retryAfterSeconds` is a number PostgreSQL computed.
  */
@@ -95,6 +96,7 @@ export const ErrorBody = z.union([
   WITH_DETAILS.APPROVAL_FAILED,
   WITH_DETAILS.APPROVAL_THROTTLED,
   bare(ErrorCode.DUPLICATE),
+  bare(ErrorCode.SETTINGS_CHANGED),
 ]);
 
 // Both directions at compile time: a code added to ErrorCode and not above, or a

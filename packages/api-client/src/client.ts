@@ -101,6 +101,8 @@ export const ROUTES = {
   tablesUpdate: find('/api/back-office/config/tables/update'),
   tablesDeactivate: find('/api/back-office/config/tables/deactivate'),
   tablesReactivate: find('/api/back-office/config/tables/reactivate'),
+  settingsRead: find('/api/back-office/config/settings'),
+  settingsSave: find('/api/back-office/config/settings/save'),
 } as const;
 
 interface View {
