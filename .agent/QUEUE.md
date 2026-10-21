@@ -133,8 +133,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       PHASE1-S1a, tables on the server, #119; DESIGN-017, BO-05 Tables (design slice E1), #120; ARCH-020, consult C3
       (users) + ARCHITECTURE §7.2 etc., #121.)*
     - *(Done: PHASE1-S1b, BO-05 Tables, the rail and the first configuration form, AC-35 in the browser, complete
-      2026-10-21 — PR #123, waiting for the owner's look and merge. C5 not needed.)*
-    - **Design slice F, BO-08 half** (settings and tender types) — feeds S2b and S3 — next design task.
+      2026-10-21, merged as PR #123. C5 not needed.)*
+    - *(Done: DESIGN-018, design slice F's BO-08 half, settings and payment methods, complete 2026-10-21 — PR #125,
+      waiting for the owner's look and merge. Feeds S2a's guards, S2b and S3.)*
     - **PHASE1-S2a** (settings versions, ADR-012 + C1), **S3** (tender types), **S4a-c** (catalog), **S5** (86),
       **S6** (presets), **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
