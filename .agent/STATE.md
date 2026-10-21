@@ -53,8 +53,8 @@ S2a (builder). DESIGN-018b complete, PR #127.** Narrative:
 
 ## Running tasks and agents
 
-- **PHASE1-S2a in review:** built `043a048` (lead: verify 107/4006, e2e:all 68); Codex reviewer dispatched in the
-  background. Owed in round 2: `@pos/money` in `apps/server/package.json` + lockfile (builder's finding). **DESIGN-018b complete**
+- **PHASE1-S2a round 2:** built `043a048` (lead: verify 107/4006, e2e:all 68). Codex review: F1 test order, F2
+  `@pos/money` undeclared; ruled at `e98adf9` (cycles 1; owns + package.json, lockfile). Builder resumed in background. **DESIGN-018b complete**
   (PR #127, `02e3003`; Codex, lead-reviewed with the red proof repeated; pane closed). After merge: remove its worktree.
   **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
   slices left: F's BO-07 half, D (BO-03, BO-04, the POS addition), E2 (BO-06); G and H later.
@@ -143,6 +143,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S2a:** rule the review's findings and the package.json fix (add both files to `owns`), round 2; owner's look. Merge #127.
+1. **S2a round 2:** on DONE, `npm ci` (lockfile), verify, repeat F1's red proof, lead review; owner's look. Merge #127.
 2. **Then S2b** (BO-08 settings section, from DESIGN-018 + 018b; carries BO-05's partial-alert copy, owner Q4), then S3.
 3. **Next design slice: D** (BO-03, BO-04, the POS addition), then F's BO-07 half; E2 beside D (owner's word).
