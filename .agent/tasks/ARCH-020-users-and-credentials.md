@@ -5,7 +5,7 @@ category: arch
 touches: [identity, audit, boundaries]
 depends_on: []
 owns: [.agent/reviews/ARCH-020-*.md, docs/ARCHITECTURE.md]
-status: not-started
+status: complete
 cycles: 0
 ---
 # ARCH-020 — Consult C3: users and credentials
@@ -167,6 +167,14 @@ managers demoting each other at once would otherwise leave none, the case Q8's r
 (tables keep none). To the owner: OQ1 (audit of create), OQ2 (name correction), and whether ADR-009 §5's second
 session-row writer is recorded in ARCHITECTURE §7.2 (the architect's recommendation, the lead agrees) or by a one-point
 ADR-013. The ARCHITECTURE wording in *Stale text* needs an architect writing task once the owner rules.
+
+## Round 2 lead review (2026-10-21)
+
+At `07c9649`. Only `docs/ARCHITECTURE.md` and this task file changed; `git diff --check` clean. The amendments are C3's
+*Stale text* 1-4 as written, with §11 naming the creation of a cashier or manager (OQ1) and the I-8 reprint: §3.2 (the
+PIN-in-use refusal on the gate list), §7.2 (the increments, and the own-password and own-PIN exception as the only two
+session-row writers), §8 (the users lock order), §11 (the audited actions), §16 (the accepted oracle row). No accepted
+ADR edited. The owner's 2026-10-21 rulings §7.2 cites are recorded in DECISIONS on the lead branch. Complete.
 
 ## Handoff
 
