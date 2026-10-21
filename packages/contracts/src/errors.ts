@@ -27,8 +27,8 @@ export const ErrorCode = {
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 /**
- * The details a code carries, by code. Only the four below declare any; for the other
- * twelve a details argument does not compile. A code that carries details declares
+ * The details a code carries, by code. Only the codes below declare any; for every other
+ * code a details argument does not compile. A code that carries details declares
  * its fields here, as numbers, enums or ids the server chose: never a string taken
  * from an exception. `retryAfterSeconds` is a number PostgreSQL computed.
  */

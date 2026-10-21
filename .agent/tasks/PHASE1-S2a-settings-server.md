@@ -458,3 +458,16 @@ Each mutation was applied, the named test failed for the stated reason, and I re
 `npm run verify`: typecheck clean for all seven projects; **107 test files, 4006 tests passed** (baseline 104 files and 3934; the difference is the three new files: `packages/money/test/rate-codec.test.ts`, `packages/contracts/test/settings.test.ts`, `apps/server/test/settings.test.ts`, plus new cases in `schema.test.ts`). I did not run `npm run test:e2e:all` (the lead's step before merge), and I did not run `db:migrate` on the development database. No browser was available or used. No formatter was run.
 
 DONE
+
+### Round 2
+
+Applied the lead's rulings exactly, in one commit on `agent/phase1-s2a`.
+
+- **F1, the stale-before-identical test.** In `apps/server/test/settings.test.ts` the old case (which submitted version 1's values with `expectedVersion: 1` after version 2 existed, so the values differed from the current version and the test could not tell the two checks apart) is kept as its own case with an honest title: *a stale submission whose values differ from the current version is refused and writes nothing*; it now also asserts the rows are unchanged. A new case, *a stale submission whose values equal the current version's is refused first, not answered as unchanged*, creates version 2 with footer `Sampai jumpa`, then sends `save(1, { footer: 'Sampai jumpa' })`, and asserts the 409 `{ "error": { "code": "SETTINGS_CHANGED" } }` envelope, that every stored row is unchanged, and that the current version is still 2.
+- **Red proof for F1.** In `saveSettings` (`apps/server/src/domain/settings.ts`) I swapped the stale check and the identical-values check on disk. The new case failed with `expected [ 200, … ] to deeply equal [ 409, … ]`: the save answered 200 with the existing version. (`S2-20` failed with it, for the same reason; the old different-values case stayed green, which is the weakness the review found.) I restored the original order; `git diff` shows no change to `settings.ts`.
+- **F2, the dependency.** Added `"@pos/money": "*"` to `dependencies` in `apps/server/package.json` after `@pos/contracts`, and the same line in `package-lock.json` under `packages["apps/server"].dependencies`. By hand; I did not run `npm install` or `npm ci`, and changed nothing else in the lockfile. The lead's `npm ci` is the proof the lockfile is consistent; I have not run it.
+- **The stale comment.** `packages/contracts/src/errors.ts` now says "Only the codes below declare any; for every other code a details argument does not compile." No other change to that file.
+
+Existing tests changed: only the one S2-14 case above, split in two as ruled. `npm run verify`: typecheck clean; **107 test files, 4007 tests passed** (one more than round 1, the new case). Not run: `test:e2e:all`, `npm ci`.
+
+DONE

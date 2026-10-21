@@ -193,12 +193,26 @@ describe('the versions', () => {
     expect(await rows()).toEqual(before);
   });
 
-  it('S2-14. a stale submission is refused before it is compared for sameness (ADR-012 rule 4)', async () => {
+  it('S2-14. a stale submission whose values differ from the current version is refused and writes nothing', async () => {
     await saved(null);
     await saved(1, { footer: 'Sampai jumpa' });
-    // These values equal version 1's, but the number is not the current one.
+    // These values equal version 1's, not version 2's, and the number is not the current one.
+    const before = await rows();
     const res = await save(1);
     expect([res.statusCode, res.body]).toEqual([409, SETTINGS_CHANGED]);
+    expect(await rows()).toEqual(before);
+  });
+
+  it('S2-14. a stale submission whose values equal the current version\'s is refused first, not answered as unchanged (ADR-012 rule 4)', async () => {
+    await saved(null);
+    await saved(1, { footer: 'Sampai jumpa' });
+    const before = await rows();
+    // Version 2 already holds these values, but the submission was built on version 1.
+    const res = await save(1, { footer: 'Sampai jumpa' });
+    expect([res.statusCode, res.body]).toEqual([409, SETTINGS_CHANGED]);
+    expect(res.json()).toEqual({ error: { code: 'SETTINGS_CHANGED' } });
+    expect(await rows()).toEqual(before);
+    expect(viewOf(await read()).current?.version).toBe(2);
   });
 
   it('S2-15. a change of the footer alone writes a new version', async () => {
