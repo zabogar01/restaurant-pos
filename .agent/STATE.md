@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-21 (late): `development` at `0006932` (DESIGN-018 #125, lead #126 merged). Dev `pos` at `0010`. **Running:
-S2a (builder) and DESIGN-018b (Codex designer).** Narrative:
+S2a (builder). DESIGN-018b complete, PR #127.** Narrative:
 [journal/2026-10-20.md](journal/2026-10-20.md), [journal/2026-10-21.md](journal/2026-10-21.md).
 
 ## Phase and gates
@@ -54,8 +54,8 @@ S2a (builder) and DESIGN-018b (Codex designer).** Narrative:
 ## Running tasks and agents
 
 - **PHASE1-S2a, builder** `phase1-s2a` (Claude Sonnet, pane `w2:p84`), dispatched ~21:20 from the kit in the background.
-  `touches: money, boundaries`: Codex review, the lead's `test:e2e:all`, the owner's look. **DESIGN-018b**, Codex
-  designer `design018b` (pane `w2:p83`), hand-opened; small, lead-reviewed; a round watcher wakes the lead.
+  `touches: money, boundaries`: Codex review, the lead's `test:e2e:all`, the owner's look. **DESIGN-018b complete**
+  (PR #127, `02e3003`; Codex, lead-reviewed with the red proof repeated; pane closed). After merge: remove its worktree.
   **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
   slices left: F's BO-07 half, D (BO-03, BO-04, the POS addition), E2 (BO-06); G and H later.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
@@ -143,6 +143,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S2a** on DONE: verify, diff against `owns`, Codex review, `test:e2e:all`, the owner's look. **DESIGN-018b**: lead review.
+1. **S2a** on DONE: verify, diff against `owns`, Codex review, `test:e2e:all`, the owner's look. Merge #127.
 2. **Then S2b** (BO-08 settings section, from DESIGN-018 + 018b; carries BO-05's partial-alert copy, owner Q4), then S3.
 3. **Next design slice: D** (BO-03, BO-04, the POS addition), then F's BO-07 half; E2 beside D (owner's word).
