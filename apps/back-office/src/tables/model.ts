@@ -56,6 +56,12 @@ export type FocusTarget = 'label' | 'notice' | 'status' | 'opener' | { edit: str
 export interface TablesState {
   read: 'loading' | 'ready' | 'failed';
   rows: readonly TableView[];
+  /**
+   * An authoritative answer was applied while the collection read stood failed: the rows are
+   * the ones the client knows, shown with the read-failure alert, and no count claims they are
+   * current. A successful read clears it.
+   */
+  partial: boolean;
   editor: Editor | null;
   /** The command in flight, or being settled; also a discarded save's, until it answers. */
   command: Command | null;
@@ -116,11 +122,14 @@ const upsert = (rows: readonly TableView[], table: TableView): TableView[] =>
 export type TablesModel = ReturnType<typeof createTablesModel>;
 
 export function createTablesModel(config: ConfigApi) {
-  let state: TablesState = { read: 'loading', rows: [], editor: null, command: null, page: null, decision: false, focus: null };
+  let state: TablesState = { read: 'loading', rows: [], partial: false, editor: null, command: null, page: null, decision: false, focus: null };
   const listeners = new Set<() => void>();
   let gate = false;
   let stopped = true;
   let loaded = false;
+  /** Counts the answers applied to the list, so a read can tell which came after it began. */
+  let appliedClock = 0;
+  const applied = new Map<string, { table: TableView; at: number }>();
   let readSequence = 0;
   let editorSequence = 0;
   let focusSequence = 0;
@@ -149,9 +158,14 @@ export function createTablesModel(config: ConfigApi) {
 
   // The list read, for the first load, for Try again, and for a reread after a refusal or an
   // unknown outcome (which does not hide the list while it runs). The latest read decides.
+  //
+  // A read is a snapshot taken before some command may have answered. A record a command's
+  // authoritative answer replaced after the read began is kept (or inserted, if the read
+  // lacks it), so an older snapshot arriving late never undoes a newer success.
   async function load(visible: boolean): Promise<boolean> {
     readSequence += 1;
     const mine = readSequence;
+    const startedAt = appliedClock;
     if (visible) set({ read: 'loading' });
     let rows: readonly TableView[] | null = null;
     try {
@@ -161,8 +175,11 @@ export function createTablesModel(config: ConfigApi) {
       rows = null;
     }
     if (mine === readSequence) {
-      if (rows !== null) set({ read: 'ready', rows });
-      else set({ read: 'failed' });
+      if (rows !== null) {
+        let merged = [...rows];
+        for (const { table, at } of applied.values()) if (at > startedAt) merged = upsert(merged, table);
+        set({ read: 'ready', rows: merged, partial: false });
+      } else set({ read: 'failed' });
     }
     return rows !== null;
   }
@@ -264,15 +281,27 @@ export function createTablesModel(config: ConfigApi) {
 
     if (meaning === 'ok' && answer.kind === 'ok') {
       const { table } = answer.value;
+      appliedClock += 1;
+      applied.set(table.tableId, { table, at: appliedClock });
       const rows = upsert(state.rows, table);
+      // The read stands failed: the rows are the client's own, and the alert stays (F4).
+      const partial = state.read === 'failed' ? true : state.partial;
       if (command.discarded) {
-        set({ command: done, rows, page: clearWaiting() });
+        set({ command: done, rows, partial, page: clearWaiting() });
       } else if (command.op === 'save') {
-        set({ command: done, rows, editor: null, page: { kind: 'saved', label: table.label }, focus: aim({ edit: table.tableId }) });
+        set({
+          command: done,
+          rows,
+          partial,
+          editor: null,
+          page: { kind: 'saved', label: table.label },
+          focus: aim({ edit: table.tableId }),
+        });
       } else {
         set({
           command: done,
           rows,
+          partial,
           page: { kind: command.op === 'deactivate' ? 'deactivated' : 'reactivated', label: table.label },
           focus: aim({ edit: table.tableId }),
         });
@@ -378,16 +407,25 @@ export function createTablesModel(config: ConfigApi) {
       };
     },
     guard,
-    /** Reads the list once, whichever number of times this is called. Returns the stop. */
+    /**
+     * The model lives as long as the working area (the keyed `div`), not as long as the screen:
+     * a command outlives the manager leaving Tables. Returns the stop, which the area's
+     * unmount calls.
+     */
     start(): () => void {
       stopped = false;
+      return () => {
+        stopped = true;
+      };
+    },
+    /** Tables is on screen: reads the list the first time only, and drops a result that is stale. */
+    shown(): void {
       if (!loaded) {
         loaded = true;
         void load(true);
       }
-      return () => {
-        stopped = true;
-      };
+      const { page } = state;
+      if (page !== null && !['waiting', 'deactivating', 'reactivating'].includes(page.kind)) set({ page: null });
     },
     /** Whether answers may be presented: the session is signed in and nothing of the frame's is open. */
     setGate(open: boolean): void {

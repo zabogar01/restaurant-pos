@@ -100,7 +100,11 @@ export function OfficeApp({ children }: { children?: ReactNode }) {
 
   // The top bar's Log out: at once when the work is clean, otherwise the confirmation.
   const work = useSyncExternalStore(workGuard.subscribe, workGuard.status);
-  const [asking, setAsking] = useState(false);
+  // The confirmation belongs to the manager it was opened for: it has the working area's
+  // identity lifetime, so a different manager (through M-6 or BO-01) never meets it.
+  const [askedFor, setAskedFor] = useState<string | null>(null);
+  const asking = askedFor !== null && askedFor === workKey;
+  const setAsking = (on: boolean) => setAskedFor(on ? workKey : null);
   const pressLogout = () => {
     if (logout?.inFlight) return;
     if (workGuard.status() === 'clean') store.logout();
@@ -124,8 +128,13 @@ export function OfficeApp({ children }: { children?: ReactNode }) {
   }, [wanted]);
   // Closing it at BO-01 is "Keep this draft": nothing destructive happens without the person.
   useLayoutEffect(() => {
-    if (session.phase === 'signed-out' || session.phase === 'starting') setAsking(false);
+    if (session.phase === 'signed-out' || session.phase === 'starting') setAskedFor(null);
   }, [session.phase]);
+  // Another manager's key: the old one's confirmation is dropped for good, so it cannot
+  // come back if that manager signs in again.
+  useLayoutEffect(() => {
+    if (askedFor !== null && workKey !== null && askedFor !== workKey) setAskedFor(null);
+  }, [askedFor, workKey]);
   // Nothing is chosen for the manager behind it: the screen holds any answer meanwhile.
   useEffect(() => {
     workGuard.hold(asking);

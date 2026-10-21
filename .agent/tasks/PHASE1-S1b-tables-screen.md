@@ -673,4 +673,43 @@ formatter.
 - Server, contracts and transport core are untouched, as the task required. `DUPLICATE` reaches the client through the
   general-failure group of `realSession.ts`'s switch and is read at the call site in `model.ts`, as S1a said.
 
+### Round 2 — the review's four findings
+
+All four applied as ruled. New tests are in `apps/back-office/test/tables-round2.test.tsx` (seven cases, each the review's own
+scenario); the red proofs are below. No earlier assertion was edited or weakened.
+
+- **F1, the logout confirmation survives a different manager.** `OfficeApp.tsx`: the state is now `askedFor`, the `staffUserId`
+  the confirmation was opened for, and `asking` is true only while that equals the working area's key. A layout effect drops it
+  for good when the key changes, so the dialog closes, `workGuard.hold` is released, and the first manager signing in later
+  does not get it back. The same manager's M-6 and BO-01 behaviour is as before.
+- **F2, leaving Tables loses an outstanding command.** The model is now made once per key in `Screens.tsx` (which sits inside
+  the keyed `div` and stays mounted across routes), with the gate (`setGate`) and `start`/stop there. `Tables` takes the model
+  as a prop. `model.shown()` replaces the model's own first load: Tables reads the list the first time it is shown, and drops a
+  stale result on return, keeping only `waiting`, `deactivating` and `reactivating`. Because the landing no longer loads the
+  list, the landing still sends no request. The view ignores focus requests made while it was not on screen (`handled`).
+  Discard drops only the draft; returning before the answer shows the waiting sentence with New table and every row action
+  inert, and the late answer lands silently, whether Tables is on screen or not.
+- **F3, a delayed refusal reread overwrites a later success.** `model.ts`: each applied authoritative answer is recorded with a
+  counter (`appliedClock`, `applied`); `load` remembers the counter when it starts and, when it settles, replaces the rows with
+  its own but upserts any record whose answer was applied after the read began. No reread follows a success.
+- **F4, a success after a failed reread stays hidden.** `model.ts` adds `partial` to the state: set when an authoritative
+  success is applied while `read` is `failed`, cleared by any successful read. `Tables.tsx` draws the rows when `read` is `ready`
+  or `partial`; the read-failure alert and its Try again stay above the list; the counts line stays withheld; New table is
+  live. The rule is mine from the design's parts, as the ruling said; the designer may overturn it.
+
+**Red proofs, round 2 (mutation, failure, reverted).** F1: `asking` as a bare boolean and the clearing effect removed: "a
+different manager through M-6 meets no confirmation" failed. F2: `Tables` also calling `model.start()` (its unmount stops the
+model, as the per-screen model did): "a create, left through browser Back ... lands in the list silently" failed. The rename
+case ("waiting, inert") is red only against the old per-screen construction itself, which I did not rebuild; I do not claim a
+mutation for it. F3: the merge disabled: both F3 cases failed (the older read restored Table 1; the created record vanished).
+F4: `usable` back to `read === 'ready'`: the F4 case failed.
+**Earlier proofs re-run on the moved model:** AC 6 (resend after a fault: 7 tests failed), AC 7 (guard removed from `save`: 1),
+AC 8 and 9 (answers not held: 3), AC 10 (decision never closed: 5), and the constant working-area key (2, "through M-6 as a
+different manager" and "destroys the form and the decision with the key"). All reverted. I did not re-run the two browser red
+proofs (constant key, decision left open at BO-01); the browser suite passes unchanged on the new code, and the browser code
+paths they mutate (`OfficeApp`'s key, `Decision`'s `close()`) were not changed.
+
+**Counts.** `npm run verify`: typecheck clean, **103 files, 3929 tests** (was 102 and 3922; +1 file, +7 tests).
+`npm run test:e2e:all`: **68 passed**, Chromium and WebKit, unchanged.
+
 DONE

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type FormEvent } from 'react';
 import {
   CREATE_CONTEXT,
   DEPARTURE_BODY,
@@ -38,9 +38,9 @@ import {
   statusUnknown,
   statusUnknownUnread,
 } from '../copy.js';
-import { useConfig, useSession } from '../session/useSession.js';
+import { useSession } from '../session/useSession.js';
 import { workGuard } from '../work/guard.js';
-import { createTablesModel, ordered, type FieldError, type PageStatus, type TablesState } from './model.js';
+import { ordered, type FieldError, type PageStatus, type TablesModel, type TablesState } from './model.js';
 
 // BO-05, as DESIGN-017 draws it (docs/design/visual-directions/frost/back-office/tables.html):
 // the list, and beside it a non-modal panel for the one form. The panel is a named
@@ -84,22 +84,16 @@ function pageText(page: PageStatus): string {
   }
 }
 
-export function Tables() {
-  const config = useConfig();
+/** The view of the working area's BO-05 model (made in `Screens`); it draws what the model holds. */
+export function Tables({ model }: { model: TablesModel }) {
   const session = useSession();
-  const [model] = useState(() => createTablesModel(config));
   const state = useSyncExternalStore(model.subscribe, model.getState);
-  const frameHolds = useSyncExternalStore(workGuard.subscribe, workGuard.isHeld);
   const phase = session.phase;
   const signedIn = phase === 'signed-in';
   const root = useRef<HTMLDivElement>(null);
 
-  useEffect(() => model.start(), [model]);
-  useEffect(() => workGuard.register(model.guard), [model]);
+  useEffect(() => model.shown(), [model]);  useEffect(() => workGuard.register(model.guard), [model]);
   useEffect(() => model.subscribe(workGuard.changed), [model]);
-  // An answer is presented only while the same manager is signed in and nothing of the
-  // frame's is open (a decision, the logout confirmation): nothing is chosen for them.
-  useEffect(() => model.setGate(signedIn && !frameHolds), [model, signedIn, frameHolds]);
 
   // Coming back from BO-01 as the same manager: the panel is shown again with the
   // unsaved value focused, unless a decision was restored, which takes focus on Stay.
@@ -118,11 +112,15 @@ export function Tables() {
   }, [phase, model]);
 
   // Where the model asked focus to go.
+  // A request made while Tables was not on screen is not for this mount.
   const focus = state.focus;
   const live = useRef(signedIn);
   live.current = signedIn;
+  const handled = useRef(focus?.n ?? 0);
   useEffect(() => {
-    if (focus === null || !live.current || root.current === null) return;
+    if (focus === null || focus.n <= handled.current) return;
+    handled.current = focus.n;
+    if (!live.current || root.current === null) return;
     const area = root.current;
     const opener = () => area.querySelector<HTMLElement>('[data-opener]');
     const target = focus.target;
@@ -164,6 +162,9 @@ export function Tables() {
     rowId !== editor.recordId &&
     label.toLowerCase() === editor.draft.trim().toLowerCase();
   // The header's New table, or the empty state's: one at a time, so one name is on the page.
+  // The rows can be drawn when a read succeeded, or when an answer was applied to the rows the
+  // client knew while a read stands failed (the alert stays, the counts are withheld).
+  const usable = read === 'ready' || state.partial;
   const emptyStart = read === 'ready' && rows.length === 0 && editor === null && !busy;
 
   return (
@@ -176,9 +177,9 @@ export function Tables() {
             type="button"
             className="office-button primary office-push"
             data-opener=""
-            aria-disabled={read !== 'ready' || busy ? 'true' : undefined}
-            tabIndex={read !== 'ready' || busy ? -1 : undefined}
-            onClick={() => read === 'ready' && model.openNew()}
+            aria-disabled={!usable || busy ? 'true' : undefined}
+            tabIndex={!usable || busy ? -1 : undefined}
+            onClick={() => usable && model.openNew()}
           >
             {NEW_TABLE}
           </button>
@@ -222,7 +223,7 @@ export function Tables() {
               )}
             </div>
           )}
-          {read === 'ready' && rows.length > 0 && (
+          {usable && rows.length > 0 && (
             <table className="office-table" id="tables-list">
               <caption>{LIST_CAPTION}</caption>
               <thead>
@@ -369,7 +370,7 @@ function Decision({
   state,
   phase,
 }: {
-  model: ReturnType<typeof createTablesModel>;
+  model: TablesModel;
   state: TablesState;
   phase: ReturnType<typeof useSession>['phase'];
 }) {
