@@ -27,7 +27,7 @@
   const reread=()=>{current=server&&{...server,values:{...server.values}};};
   let form=null, confirm=null;
   let methods=seedMethods(), mRead='ready', partial=false, failNextRead=false, mEditor=null, mResult='';
-  let inFlight=null, settled=null, commands=0, rereads=0, statusCommand=null, instant=false;
+  let inFlight=null, settled=null, commands=0, rereads=0, reauths=0, statusCommand=null, instant=false;
   const busy=()=>!!inFlight;
   let session='active', departure=null, heldDecision=false, heldConfirm=false, otherMode=false, queueIncidents=false, lastField=null;
   $('.office-day')?.remove();
@@ -142,16 +142,17 @@
     const versionLine=kind==='stale'?'Nothing was saved. Version '+current.version+' was saved by '+current.by+' on '+current.at+', after you started. ':'The outcome could not be confirmed. The settings have been read again: version '+current.version+', saved by '+current.by+' on '+current.at+', is now in force. It may be this save. ';
     const compare=differing.length?'Fields where it differs from your draft show its value. ':'It has the same values as your draft. ';
     setNotice(kind==='stale'?'stale':'unknown',kind==='stale'?'Settings changed while you were editing':'Outcome not confirmed',versionLine+compare+(kind==='stale'?'Choose which to keep.':'Your draft is kept; nothing was sent again. Choose which to keep.'),{choices:true});
-    $('#settings-notice').focus();
+    // The facts line names the version in force, the one just read, never the version the draft builds on.
+    renderSettings();$('#settings-notice').focus();
   }
   $('#keep-draft').onclick=()=>{
     const v=form.stale;form.base=v.version;form.baseValues={...v.values};form.stale=null;
-    setNotice('kept','Your changes now build on version '+v.version,'Nothing has been saved yet. Press Save to save them.');$('#save-settings').focus();
+    setNotice('kept','Your changes now build on version '+v.version,'Nothing has been saved yet. Press Save to save them.');renderSettings();$('#save-settings').focus();
   };
   $('#use-current').onclick=()=>{
     const v=form.stale;form.base=v.version;form.baseValues={...v.values};form.stale=null;
     FIELDS.forEach(f=>{const d=display(f,v.values[f.key]);field(f).value=d;form.opening[f.key]=d;setError(f,'');setCurrent(f);});
-    setNotice('used','The form now shows version '+v.version,'Nothing was saved. Edit it and save, or Cancel to close.');field(FIELDS[0]).focus();
+    setNotice('used','The form now shows version '+v.version,'Nothing was saved. Edit it and save, or Cancel to close.');renderSettings();field(FIELDS[0]).focus();
   };
   $('#retry-settings-read').onclick=()=>{
     $('#retry-settings-read').disabled=true;
@@ -348,7 +349,7 @@
       $('#departure').close();$('#rate-confirm').close();$('#settings-reauth').close();
       $('#settings-frame').hidden=true;$('#settings-content').removeAttribute('role');$('#settings-login').hidden=false;$('#settings-login').setAttribute('role','main');
       $('#username').value='';$('#password').value='';$('#username').focus();set(heldConfirm?'bo01-confirm':'bo01-draft');
-    }else{resetResume();alertCopy('#reauth-emergency');O.open($('#settings-reauth'),$('#resume-password'));set(heldConfirm?'reauth-confirm':'reauth');}
+    }else{reauths++;resetResume();alertCopy('#reauth-emergency');O.open($('#settings-reauth'),$('#resume-password'));set(heldConfirm?'reauth-confirm':'reauth');}
   }
   function resetResume(){otherMode=false;$('#reauth-title').textContent='Your session timed out';$('#idle-logout').hidden=false;$('#resume-fields').hidden=false;$('#resume-username').readOnly=true;$('#resume-username').value='m.iqbal';$('#resume-password').value='';$('#resume-error').hidden=true;$('#different-manager').hidden=false;$('#back-manager').hidden=true;$('#stay-manager').hidden=true;$('#choose-manager').hidden=true;$('#resume').hidden=false;$('#resume').textContent='Continue';$('#reauth-description').textContent='Your unsaved changes are kept. Continue as m.iqbal to resume them.';}
   function resume(sameManager){
@@ -410,7 +411,7 @@
     if(e.key==='Escape'&&session==='active'&&!$('#departure').open&&!$('#rate-confirm').open&&openForm()){e.preventDefault();leave(()=>set('default'),'escape');}
   });
   // Local fixture observations for the design check, never production API or persistence.
-  window.SettingsFixture={get commands(){return commands;},get rereads(){return rereads;},get pending(){return busy();},get version(){return server?.version??null;},get shown(){return current?.version??null;},percentText,parseRate};
+  window.SettingsFixture={get commands(){return commands;},get rereads(){return rereads;},get reauths(){return reauths;},get pending(){return busy();},get version(){return server?.version??null;},get shown(){return current?.version??null;},percentText,parseRate};
 
   /* ---------- Direct states ---------- */
   const s=initial, typeInto=(k,v)=>{field(byKey(k)).value=v;};
@@ -430,7 +431,7 @@
   if(s==='method-reactivated')methods.find(m=>m.id==='m4').active=true;
   if(s==='method-partial'){mRead='failed';partial=true;}
   renderAll();
-  const settingsForm=['first-run','edit','edit-service','edit-longest','confirm-rates','saving','stale','stale-reauth','failure','unknown','unknown-changed','unknown-read-failed','unsaved','unsaved-escape','unsaved-back','unsaved-rail','unsaved-logout','unsaved-switch','leave-pending','leave-unknown','reauth','bo01-draft','reauth-confirm','bo01-confirm'].includes(s)||s.startsWith('invalid-');
+  const settingsForm=['first-run','edit','edit-service','edit-longest','confirm-rates','saving','stale','stale-reauth','stale-own-tab','failure','unknown','unknown-changed','unknown-read-failed','unsaved','unsaved-escape','unsaved-back','unsaved-rail','unsaved-logout','unsaved-switch','leave-pending','leave-unknown','reauth','bo01-draft','reauth-confirm','bo01-confirm'].includes(s)||s.startsWith('invalid-');
   if(settingsForm){
     openSettings(s==='edit-service'?'service':'tax',s==='first-run'?null:s==='edit-service'?'service':'tax',s!=='first-run');
     if(!['first-run','edit','edit-service','edit-longest'].includes(s)&&!s.startsWith('invalid-'))typeInto('tax','11');
@@ -439,8 +440,10 @@
     if(s==='confirm-rates'||s.endsWith('-confirm'))submitSettings('saved');
     if(s==='saving'||s==='leave-pending')send({kind:'settings',op:'save',values:{...V4,tax:110000},base:4,form},'pending');
     if(s==='failure'){setNotice('failure','Something went wrong',FORM.failure);field(FIELDS[0]).focus();}
-    const answer={'stale':'stale','stale-reauth':'stale','unknown':'unknown','leave-unknown':'unknown','unknown-changed':'unknown-changed','unknown-read-failed':'unknown-read-failed'}[s];
-    if(answer){const cmd={kind:'settings',op:'save',values:{...V4,tax:110000},base:4,form};commands++;if(s==='stale-reauth'){otherSave(ME);finishSettings('saved',cmd);}else finishSettings(answer,cmd);}
+    const answer={'stale':'stale','stale-own-tab':'stale','unknown':'unknown','leave-unknown':'unknown','unknown-changed':'unknown-changed','unknown-read-failed':'unknown-read-failed'}[s];
+    if(answer){const cmd={kind:'settings',op:'save',values:{...V4,tax:110000},base:4,form};commands++;if(s==='stale-own-tab'){otherSave(ME);finishSettings('saved',cmd);}else finishSettings(answer,cmd);}
+    // After M-6: the draft waits behind the timed-out session, another manager saves, the same manager resumes and saves.
+    if(s==='stale-reauth'){expire('idle');otherSave();resume(true);submitSettings('saved');$('#confirm-save').click();}
     if(s.startsWith('unsaved')||s.startsWith('leave-'))leave(()=>{if(s==='unsaved-logout')location.href=O.logout.href;else if(s==='unsaved-switch')openMethod('m2');else set('default');},s==='unsaved'||s.startsWith('leave-')?'cancel':s.replace('unsaved-',''));
     if(s.startsWith('reauth'))expire('idle');if(s.startsWith('bo01'))expire('ended');
   }
@@ -464,5 +467,5 @@
   if(s==='method-partial'){status('methods','Lunch voucher saved.');$('[data-edit=m2]').focus();}
   if(s==='method-deactivated')status('methods','Meal voucher deactivated. It is kept for history.');
   if(s==='method-reactivated')status('methods','Gift card reactivated.');
-  instant=false;renderOpeners();set(s);
+  instant=false;renderSettings();renderOpeners();set(s);
 })();

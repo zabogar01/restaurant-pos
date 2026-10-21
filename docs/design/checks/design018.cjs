@@ -21,6 +21,7 @@ let browser,last;
  const ready=async state=>p.waitForFunction(s=>document.documentElement.dataset.state===s,state);
  const fx=k=>p.evaluate(k=>SettingsFixture[k],k);
  const save=()=>p.locator('#save-settings').click();
+ const facts=()=>p.locator('#version-facts').innerText();
  const confirmSave=async()=>{await p.locator('#rate-confirm').waitFor({state:'visible'});await p.getByRole('button',{name:'Save new rates',exact:true}).click();};
 
  /* Every state at both target sizes: geometry, identity, the fixed facts, the fixed tenders and the counts. */
@@ -111,6 +112,7 @@ let browser,last;
  /* SETTINGS_CHANGED: draft kept, current values beside it, the manager decides, nothing resent. */
  await p.goto(url());await p.getByRole('button',{name:'Change tax rate',exact:true}).click();await p.locator('#tax-rate').fill('11');await choose('stale');await save();await confirmSave();await ready('stale');
  check(await val('tax-rate')==='11'&&await focus()==='settings-notice'&&await p.locator('#settings-notice strong').innerText()==='Settings changed while you were editing'&&await p.locator('#settings-notice p').first().innerText()==='Nothing was saved. Version 5 was saved by Ratna Ayu on 21 Oct 2026, 14:32, after you started. Fields where it differs from your draft show its value. Choose which to keep.'&&await p.locator('#save-settings').isDisabled()&&await p.locator('#save-hint').isVisible(),'stale: draft kept, notice focused, Save waits for a choice');
+ check((await facts()).startsWith('Version 5'),'F1 walk: the facts line names the version in force',await facts());
  check(JSON.stringify(await p.evaluate(()=>[...document.querySelectorAll('.settings-current:not([hidden])')].map(e=>e.id+'='+e.textContent)))===JSON.stringify(['tax-rate-current=Now in force: 10%','service-rate-current=Now in force: 5,5%','phone-current=Now in force: 021 555 0199'])&&await fx('commands')===1&&await fx('rereads')===1,'stale: the reread values beside each differing field');
  await p.getByRole('button',{name:'Keep my changes',exact:true}).click();check(await focus()==='save-settings'&&await p.locator('#settings-notice strong').innerText()==='Your changes now build on version 5'&&await p.locator('#save-settings').isEnabled(),'Keep my changes: Save is the next explicit step');
  await choose('saved');await save();check(await p.locator('#confirm-changes').innerText()==='Tax rate from 10% to 11%\nService charge from 5,5% to 5%','confirmation against version 5 shows the reverted service charge');await confirmSave();await ready('saved');check(await fx('version')===6&&await fx('commands')===2&&await p.locator('[data-show=phone]').innerText()==='021 555 0134','kept draft saves as version 6 only by a second explicit Save');
@@ -122,7 +124,10 @@ let browser,last;
  await p.evaluate(()=>document.querySelector('#other-saves').click());await p.locator('#resume-password').fill('fixture-only');await p.locator('#resume').click();
  check(await focus()==='tax-rate'&&await val('tax-rate')==='11','same manager resumes into the draft');await choose('saved');await save();await confirmSave();await ready('stale');
  check(await val('tax-rate')==='11'&&await p.locator('#settings-notice strong').innerText()==='Settings changed while you were editing'&&await fx('commands')===1,'stale after M-6: refused, draft kept, nothing resent');
- await p.goto(url('stale-reauth'));check((await p.locator('#settings-notice p').first().innerText()).startsWith('Nothing was saved. Version 5 was saved by M. Iqbal on'),'stale after M-6 names the manager who saved, even the same one');
+ for(const state of ['stale','stale-reauth','stale-own-tab','unknown-changed']){await p.goto(url(state));check((await facts()).startsWith('Version 5'),'F1 registered '+state+': the facts line names the version in force',await facts());}
+ for(const choice of ['Keep my changes','Use current settings']){await p.goto(url('stale'));await p.getByRole('button',{name:choice,exact:true}).click();check((await facts()).startsWith('Version 5'),'F1 after '+choice+': the facts line names version 5',await facts());}
+ await p.goto(url('stale-reauth'));check(await p.locator('#settings-reauth').evaluate(d=>!d.open)&&await val('tax-rate')==='11'&&(await p.locator('#settings-notice p').first().innerText()).startsWith('Nothing was saved. Version 5 was saved by Ratna Ayu on')&&await p.locator('.office-actor').innerText()==='M. Iqbal · Manager'&&await fx('reauths')===1&&await fx('commands')===1,'F2 stale-reauth: through M-6, another manager saved, the same manager resumed, draft kept');
+ await p.goto(url('stale-own-tab'));check((await p.locator('#settings-notice p').first().innerText()).startsWith('Nothing was saved. Version 5 was saved by M. Iqbal on'),'F2 stale-own-tab names the manager who saved, even the same one');
 
  /* Outcome unknown: reread, draft kept, no resend, no inferred success. */
  await p.goto(url());await p.getByRole('button',{name:'Change tax rate',exact:true}).click();await p.locator('#tax-rate').fill('11');await choose('unknown');await save();await confirmSave();await ready('unknown');

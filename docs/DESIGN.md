@@ -1660,7 +1660,10 @@ would overwrite whatever that reread contains, which is the last-write-wins
 ADR-012 rule 3 forbids. This is the expected state after M-6, when a manager
 returns to a draft opened half an hour earlier (ADR-012 *Consequences*); it is
 drawn the same way there, and the copy holds when the manager who saved the
-newer version is the same person in another tab.
+newer version is the same person in another tab. The facts line always names
+the version most recently read or answered, the one in force, never the version
+the draft builds on. In the stale and unknown-with-newer-version states it names
+the newer version, as the notice does.
 
 **An unknown outcome on a versioned form — behaviour.** The rule above for an
 unknown outcome holds: keep the draft, reread once, never resend, never infer

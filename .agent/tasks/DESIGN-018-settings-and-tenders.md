@@ -479,7 +479,7 @@ composition.
 |---|---|---|---|
 | Frame | Rail entry, page heading, top bar | Settings | link `Settings` in group `Configuration`; heading `Settings` |
 | Settings part | Heading | Rates and receipt details | heading level 2 |
-| Settings part | Version facts | `Version {n} · In force since {12 Oct 2026, 14:05} · Saved by {name}` | `#version-facts`; withheld while loading, failed, or after an unknown outcome whose reread failed |
+| Settings part | Version facts | `Version {n} · In force since {12 Oct 2026, 14:05} · Saved by {name}` | `#version-facts`; withheld while loading, failed, or after an unknown outcome whose reread failed. The facts line always names the version most recently read or answered, the one in force, never the version the draft builds on. In the stale and unknown-with-newer-version states it names the newer version, as the notice does. |
 | First run | Version facts | Not saved yet. Saving creates version 1. | |
 | Loading | Status | Loading settings… | status |
 | Read failed | Title / body / action | Settings could not be loaded / Try again to read the settings. / Try again | alert; button `Try again` (read only) |
@@ -774,5 +774,58 @@ of one part per million".
    lead prefers the owner's eye on a convention).
 
 None of these blocks S2b or S3.
+
+DONE
+
+### Round 2 — the review's F1 and F2
+
+Applied exactly as ruled; nothing else changed. Files: `F/settings.js`, `F/settings.html` and `manifest.js` (one new
+registered state), `docs/design/checks/design018.cjs`, `docs/DESIGN.md` (one sentence) and this Handoff (one sentence
+in the copy table, and this section).
+
+- **F1, the facts line.** `showStale` (both the `SETTINGS_CHANGED` branch and the unknown-with-newer-version branch, and
+  the reread's Try again that reaches it), the *Keep my changes* handler and the *Use current settings* handler now
+  re-render the settings part after `current` changes, and the direct-state block re-renders it before it ends. The
+  facts line therefore names version 5 in `stale`, `stale-reauth`, `stale-own-tab` and `unknown-changed`, and after
+  either choice, as the notice does. The ruled sentence ("The facts line always names the version most recently read
+  or answered, the one in force, never the version the draft builds on. In the stale and unknown-with-newer-version
+  states it names the newer version, as the notice does.") is added word for word to the copy table's *Version
+  facts* row and to the end of `D`'s stale-draft rule.
+- **F2, the after-M-6 state.** `stale-reauth` ("Settings changed — after M-6") now runs the after-M-6 walk in its
+  direct-state block: the tax rate is edited to 11, idle expiry opens M-6 over the form, Ratna Ayu saves version 5,
+  the same manager resumes into the draft, presses Save and *Save new rates*, and meets the refusal with the draft
+  kept and one command sent. The same-manager-in-another-tab drawing keeps its copy as a new registered state,
+  `stale-own-tab` ("Settings changed — saved by you in another tab"), in the artifact and in `manifest.js`, so the
+  gallery lists it. The fixture counts M-6 openings (`SettingsFixture.reauths`) so the check can tell the two apart.
+  The artifact now registers **65** states.
+- **New assertions in `design018.cjs`.** The facts line starts with "Version 5" in the stale walk, in the registered
+  `stale`, `stale-reauth`, `stale-own-tab` and `unknown-changed` states, and after *Keep my changes* and after *Use
+  current settings* (both from the registered `stale`). `stale-reauth` is asserted to have passed through M-6 (one
+  opening), to name Ratna Ayu, to keep the draft with M. Iqbal signed in, and to have sent one command;
+  `stale-own-tab` keeps the old "saved by M. Iqbal" assertion, which moved from `stale-reauth`.
+
+**Red proof.** The owner approved one run of the new check against the round 1 `settings.js` (the file was unchanged
+in the tree; `git diff --quiet` on it confirmed so before the run; the new state was not yet registered). Result
+**702/710**, exit 1. The six F1 assertions failed for the stated reason: the registered `stale`, `stale-reauth`,
+`stale-own-tab` (which fell back to the default composition, being unregistered) and `unknown-changed` states, and the
+lines after *Keep my changes* and *Use current settings*, all read "Version 4 · In force since 12 Oct 2026, 14:05 ·
+Saved by M. Iqbal". The two F2 assertions failed because the after-M-6 walk and `stale-own-tab` did not yet exist.
+The walk's own facts-line assertion passed against round 1, as the review predicted (`finish()` re-renders after the
+interactive answer). Evidence: `…/scratchpad/r2-red/`.
+
+**Green.** After the change, each run approved by the owner:
+
+| Check | Result |
+|---|---|
+| `design018.cjs` | **718/718**, 130 state/viewport combinations (65 states × 2), no page errors, exit 0 |
+| `design012.cjs` | exit 0, 293 checks, 52 states, no failures or errors |
+| `design013.cjs` | exit 0, 371 checks, 41 states, no failures or errors |
+| `design014.cjs` | **288/288**, 24 states |
+| `design016.cjs` | **399/399** |
+| `design017.cjs` | **347/347**, 74 states |
+
+Evidence is in the session scratchpad (`r2-green/`, `r2-regress-*`). I looked at the `stale-reauth` screenshot at
+1440×900: the facts line reads "Version 5 · In force since 21 Oct 2026, 14:32 · Saved by Ratna Ayu", above the notice
+that names the same version. No token changed, so `npm run verify` was not run. `git diff --check` is clean.
 
 DONE
