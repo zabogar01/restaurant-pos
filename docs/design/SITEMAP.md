@@ -44,6 +44,12 @@ They differ only in where leaving them returns to — the quick form must never
 return to a workspace carrying a fire control (C-2, FR-E5). If the product lead
 prefers to count that as two distinct sheet nodes, it is a one-line change here
 and the modal count becomes 7.
+
+**BO-05 updated 2026-10-21, DESIGN-017.** Table create/edit is an `[INLINE]`
+non-modal panel, with inline label refusal and deactivate/reactivate actions.
+Its stay-or-discard decision is `[MODAL]`. The OPEN-order refusal is explicitly
+Phase 2. These use the existing node vocabulary; the screen routes are unchanged.
+
 Derived from [PRD.md](../PRD.md). Constrained by [BOUNDARIES.md](../BOUNDARIES.md).
 Companion document: [SCREEN-INVENTORY.md](SCREEN-INVENTORY.md).
 
@@ -263,8 +269,11 @@ reports and audit.
 │       └── [MODAL] Archive item — snapshots unaffected ... FR-C8, B-8
 │
 ├── BO-05 [SCREEN] Tables ................................ FR-B2, C8
-│   ├── [MODAL] Table create / edit ...................... FR-B2
-│   └── [INLINE] Deactivate rejected — table holds OPEN order  FR-C8
+│   ├── [INLINE] Table create / edit — non-modal panel .... FR-B2
+│   ├── [INLINE] Label in use — refused .................. FR-B2
+│   ├── [INLINE] Row actions — deactivate / reactivate ... FR-B2
+│   ├── [MODAL] Stay or discard unsaved changes .......... FR-A2b
+│   └── [INLINE] Deactivate rejected — holds OPEN order (Phase 2) FR-C8
 │
 ├── BO-06 [SCREEN] Users ................................. FR-B3, A1, A3, A4
 │   ├── [MODAL] User create / edit — role assignment ..... FR-B3, A1

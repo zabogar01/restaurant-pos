@@ -4,7 +4,7 @@
 <title>BO-05 Tables</title>
 <link rel="stylesheet" href="../wireframe.css">
 <script>window.WF={id:'BO-05',client:'bo',nav:'tables',name:'Tables',reqs:'FR-B2, C8, AC-32',states:[
-['default','Table list'],['rejected','Deactivation rejected'],['empty','No tables'],['editor','Modal — create/edit']]};</script>
+['default','Table list'],['rejected','Phase 2 — deactivation rejected'],['empty','No tables'],['editor','Create/edit — see Frost panel']]};</script>
 <script defer src="../wireframe.js"></script>
 </head><body>
 <header class="wfbar"></header>
@@ -35,54 +35,15 @@
     <div class="botop"><b>Tables</b><span class="muted">The floor plan the POS shows</span></div>
     <div class="bocontent">
 
-      <div class="banner" data-when="rejected">
-        <div class="banner__t">Table 1 was not deactivated</div>
-        <div>It is holding an open order (opened 19:38, 15.59). Settle or void that order
-        at the POS, then try again.</div>
-      </div>
-
-      <div class="bohead"><h1>Tables</h1><span class="muted">12 active &middot; 2 inactive</span>
-        <span style="margin-left:auto"></span>
-        <a class="bobtn bobtn--primary" href="tables.html?state=editor">New table</a></div>
-
-      <div class="empty" data-when="empty" style="padding:60px">
-        <div style="font-weight:700;margin-bottom:6px">No tables yet</div>
-        <div>Quick sales work without tables. Dine-in orders need at least one.</div>
-      </div>
-
-      <table class="dtable" data-unless="empty">
-        <thead><tr><th style="width:20%">Name</th><th>Seats</th><th>Status</th><th>Current order</th><th style="width:180px"></th></tr></thead>
-        <tbody>
-          <tr><td>Table 1</td><td>4</td><td><span class="tag">ACTIVE</span></td><td>Open &mdash; 15.59</td>
-            <td><a href="tables.html?state=editor">Edit</a> &middot; <a href="tables.html?state=rejected">Deactivate</a></td></tr>
-          <tr><td>Table 2</td><td>2</td><td><span class="tag">ACTIVE</span></td><td>&mdash;</td>
-            <td><a href="tables.html?state=editor">Edit</a> &middot; <a href="tables.html">Deactivate</a></td></tr>
-          <tr><td>Table 3</td><td>4</td><td><span class="tag">ACTIVE</span></td><td>Open &mdash; 8.00</td>
-            <td><a href="tables.html?state=editor">Edit</a> &middot; <a href="tables.html?state=rejected">Deactivate</a></td></tr>
-          <tr><td>Table 4</td><td>6</td><td><span class="tag">ACTIVE</span></td><td>&mdash;</td>
-            <td><a href="tables.html?state=editor">Edit</a> &middot; <a href="tables.html">Deactivate</a></td></tr>
-          <tr><td>Table 5</td><td>2</td><td><span class="tag">ACTIVE</span></td><td>&mdash;</td>
-            <td><a href="tables.html?state=editor">Edit</a> &middot; <a href="tables.html">Deactivate</a></td></tr>
-          <tr style="color:var(--ink4)"><td>Terrace 1</td><td>4</td><td><span class="tag">INACTIVE</span></td><td>&mdash;</td>
-            <td><a href="tables.html">Reactivate</a></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div data-when="editor">
-    <div class="scrim" style="position:absolute;inset:0"></div>
-    <div class="modal modal--bo">
-      <div class="modal__head"><h2>Table</h2></div>
-      <div class="modal__body">
-        <div class="kv">
-          <span>Name</span><div class="field field--sm">Table 2</div>
-          <span>Seats</span><div class="field field--sm">2</div>
-        </div>
-      </div>
-      <div class="modal__foot">
-        <a class="bobtn" href="tables.html">Cancel</a>
-        <a class="bobtn bobtn--primary" href="tables.html">Save</a>
+      <div class="bohead"><h1>Tables</h1></div>
+      <div class="empty">
+        <h2>This historical drawing has moved to Frost</h2>
+        <p>Create, edit, deactivate and reactivate tables in the current behavioural fixture.</p>
+        <a class="bobtn bobtn--primary" href="../../visual-directions/frost/back-office/tables.html">Open Tables in Frost</a>
+        <p><a href="../../visual-directions/frost/back-office/tables.html?state=empty">No tables yet</a> ·
+        <a href="../../visual-directions/frost/back-office/tables.html?state=create">New table</a> ·
+        <a href="../../visual-directions/frost/back-office/tables.html?state=rename">Edit table</a> ·
+        <a href="../../visual-directions/frost/back-office/tables.html?state=rejected-phase2">Phase 2 only — deactivation refused</a></p>
       </div>
     </div>
   </div>
@@ -90,11 +51,12 @@
 </div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
 
 <aside class="rail">
+  <div class="ann"><p>DESIGN-017: the <a href="../../visual-directions/frost/back-office/tables.html">Frost artifact</a> is the current behavioural authority. Q10 and C2 remove seat counts, area and current-order columns. A row contains label, active status and actions only. Labels are 1–32 characters; inactive tables remain editable. The form is a non-modal panel, with a modal stay-or-discard decision.</p></div>
   <h2>Purpose</h2>
-  <div class="ann"><p>Define the floor: create, edit, deactivate tables.</p></div>
+  <div class="ann"><p>Define the floor: create, edit, deactivate and reactivate tables.</p></div>
   <h2>Fixed by the PRD</h2>
   <div class="ann ann--fixed"><ul>
-    <li>A table holding an open order cannot be deactivated, and the rejection names
+    <li>Phase 2 only (Q13): a table holding an open order cannot be deactivated, and the rejection names
       the order &mdash; the manager's next step is to go and settle it at the POS.
       <span class="req">FR-C8, AC-32</span></li>
     <li>No table merge, transfer, or split. Out of MVP scope.</li>

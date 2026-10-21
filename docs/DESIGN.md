@@ -1457,16 +1457,23 @@ They contain no POS approval control.
 The shared reading states retain the collection context while withholding
 unread counts and rows; empty means zero samples and offers creation, and a
 failed read offers Try again. Command results distinguish pending, saved,
-definitely refused with edits kept, and outcome unknown. Unknown disables
-resubmission and rereads the saved fixture before confirming its outcome;
-Check saved sample is a read, never a resend. Results use the grouping-blue and
-neutral palette. No page state makes the kitchen action, receipt chip or Log out
+definitely refused with edits kept, and outcome unknown. **Updated by DESIGN-017,
+awaiting review:** the command's unknown outcome remains unknown after a list
+reread; the client never infers success from a matching row. The draft and form
+stay open, with Save and Cancel available after pending ends, and no “send again”
+control. The earlier neutral `patterns.html` sample's “Check saved sample” and
+`reconciled` state remain historical demonstrations, not the configuration-form
+contract. C2 and the BO-05 rules below govern every configuration form. Results
+use the grouping-blue and neutral palette; general failures use the shared amber
+notice. No page state makes the kitchen action, receipt chip or Log out
 inert. While a modal decision is open, the emergency is repeated inside it and
 its action is deferred until the decision is made; no other state may defer it.
 Pending/unknown navigation opens a leave decision explaining that the save
 may or may not have succeeded and leaving never resends it. Stay retains the
-request/result context; Leave without resending follows the chosen destination.
-Navigation with unsaved edits otherwise offers stay or explicit discard.
+request/result context; Leave without resending follows the chosen destination
+in the historical DESIGN-012 sample. Configuration forms use **Discard**, with
+the no-resend departure body specified in DESIGN-017 below. Navigation with
+unsaved edits otherwise offers stay or explicit discard.
 
 The sample table uses native table headers, sticky at the scroll owner's visible
 edge by offsetting the existing content padding with its negative token value.
@@ -1475,6 +1482,148 @@ cell/header padding. A wrapping subject column
 absorbs long names; time, whole-rupiah figures and named row actions remain
 legible. Paging changes both rows and the displayed range. No menu-specific
 column recipe or report figure recipe is established by this table.
+
+### Configuration forms — DESIGN-017 / consult C2 (awaiting review)
+
+The following are **binding behaviour for every configuration form**, from C2
+§2, §6 and §7. BO-05's wording and layout choices follow separately; they do not
+turn a fixture into a new server contract.
+
+**Part B — working-area dialogs and identity.** A modal dialog inside the working
+area is open only while the frame is shown. When the session leaves `signed-in`
+or `idle` for BO-01, close it with `close()`, keep its mounted state, and do not
+treat that close event as Cancel. When the same manager signs in again, reopen
+it with `showModal()` before restoring focus. Under M-6 it stays open behind
+M-6, visible and inert. A different manager's sign-in destroys it with the
+working-area key. A different manager's working area starts with no pending
+command; the previous manager's command is never announced or focused in it.
+A non-modal form is hidden at BO-01 and shown again only for
+the same manager; its label receives focus with the unsaved value. This also
+applies to BO-05's modal departure decision. Never hide a live modal behind
+BO-01's fields. These C2 and owner rulings supersede the earlier unresolved
+retention wording in this supplement: the same manager recovers the draft
+through M-6 or BO-01; a different manager destroys it. Reload destroys it.
+
+**Validation and refusal.** Validate before sending, after the form's permitted
+normalisation. Place the designed error directly below its field, mark
+`aria-invalid`, associate it through `aria-describedby`, and focus the first
+invalid field. Clear a field's obsolete error and reference when edited. Do not
+copy server or schema messages, issue keys or submitted values into error copy.
+A `DUPLICATE` is a definite refusal on the label, with the draft kept and a list
+reread so the holder is visible. Focus the label. `NOT_FOUND` and server
+`VALIDATION_FAILED` use BO-05’s definite general failure, keeping the draft;
+`NOT_FOUND` also rereads. A local transport validation disagreement also uses
+the general failure. Read failure offers Try again to repeat only the read.
+
+**Command results.** Permit one command at a time. During pending, Save is
+inert and fields are disabled so the submitted draft cannot change under it;
+Cancel and global departures remain available through the leave decision.
+Move focus to the form's focusable Saving status during pending. New table and
+all record actions are inert while any command is pending; after an unknown
+outcome they are live again. Opening another record then goes through the draft's
+departure decision. An inert Edit opener may receive programmatic focus after
+Discard, but cannot start another command until the pending one settles.
+While a discarded save is still outstanding, the page status reads “Waiting for
+an earlier save to finish. Nothing will be sent again.” It clears silently when
+the answer settles.
+An authoritative success inserts or replaces only the returned record, closes
+the form, announces the named result and focuses that row's Edit control (New
+table if that opener no longer exists). Success does not trigger a list reread.
+A fault or unavailable command means outcome unknown: keep the form and draft,
+reread once, then describe the uncertainty beside the draft. A reread failure
+must say that the list could not be refreshed; never claim it is current. Try
+again on that failed list repeats the read only. A later successful reread still
+does not establish the command's outcome. Save becomes available when pending
+ends, as does Cancel. There is no automatic resend or separate resend action.
+After a definite failure or an unknown outcome, focus the label. Clear the page
+result and its Phase 2 annotation when a form opens or another command is sent,
+so an earlier success cannot accompany a later uncertainty. M-6 or BO-01 recovery
+never resubmits or discards an in-flight command. Hold an answer behind an active
+session gate and present it under C2's result table after the same manager resumes;
+`SESSION_IDLE` is a definite refusal with the draft kept, never an unknown outcome.
+A known answer received before the gate clears is not a reason to send again.
+
+**Status commands.** Deactivate and Reactivate open no form or panel and have no
+Save or resend control. Pending disables the row action and places focus on the
+page status: “Deactivating {label}…” or “Reactivating {label}…”. On an unknown
+outcome, reread once and show “{label}: the outcome could not be confirmed. The
+list has been refreshed. Nothing was sent again.” If that read fails, replace
+“The list has been refreshed.” with “The list could not be refreshed.” The row's
+ordinary action reflects the reread record and is the only explicit command path.
+There is no unsaved draft to discard for a status command, so navigation stays
+live without a draft decision. A definite status-command failure says “Something
+went wrong. {label} was not changed. Use its row action to try again.” When a
+status command is refused by a session refusal, after the same manager resumes
+the page status reads “{label} was not changed. Use its row action to try
+again.” Success
+uses the named page result and returns focus to the affected row's Edit.
+
+**Departure.** Dirty means the current draft differs from its opening value
+(empty for create). Cancel, Escape, another record, a rail entry, browser Back
+or Forward and incident navigation require Stay or Discard when dirty. Log out
+from the top bar or M-6 instead reuses the built logout confirmation verbatim:
+“Log out and discard your changes?” / “The unsaved changes to this draft will
+be lost. Anyone signing in next starts a separate session.” Its actions are
+“Keep this draft” and “Discard changes and log out”. For pending/unknown only,
+append “The save may or may not have succeeded. Leaving does not send it again.”
+as separate request context; the built body and actions remain unchanged. A pending or unknown command requires that decision even if the draft
+is otherwise unchanged. Stay retains the draft and request/result context;
+Discard drops the local draft and follows the selected destination. Neither
+cancels an already-sent server command nor submits another command. The pending
+and unknown wording says the save may or may not have succeeded and “Leaving
+does not send it again.” Default focus is Stay; Escape means Stay. No
+`beforeunload` prompt. A modal decision repeats the kitchen emergency while
+its action is deferred under N2. The table form itself does not defer it or
+Log out. A settled response arriving while the decision is open must not
+silently choose Discard or navigate; keep the decision until acknowledged.
+After Discard, even a late authoritative answer still inserts or replaces its
+record in the list, silently: it does not reopen the form, move focus or announce.
+Discard closes the form once and returns focus to its opener, just as clean Cancel
+does. Dropping a draft never drops an already-sent command's answer.
+
+**BO-05 choices and copy.** `frost/back-office/tables.html` is the first concrete
+consumer, with exact copy and accessible names in DESIGN-017's Handoff. Its
+form is a non-modal, named dialog panel beside the list, with native 40px fields
+and shared 36px Save/Cancel actions. It uses a 3:2 fractional split within the
+existing content width. The panel's form scrolls if needed, and the list header
+sticks at the content edge. This preserves F1: the rail, Log out and incident
+actions remain reachable while editing. Only the departure decision is modal;
+no extension of N2 to a routine form is needed. Focus goes to Table label on
+open, validation, duplicate refusal and same-manager resumption; after save it
+goes to the affected row's Edit, and after Cancel or Discard to the opener. Staying
+in a departure decision returns focus to the label. A restored departure
+decision instead focuses Stay until the manager resolves it.
+
+BO-05 lists active then inactive tables in one table, labels in natural,
+case-insensitive order within each status, stable id order for ties. Counts
+are computed from all rows. Label, Status and Actions are the only columns;
+there are no seats, area, order or timestamp fields. Empty is a first-run state,
+not seeded configuration. The Phase 1 rail contains Tables only; the Phase 0
+flag remains unchanged, and other gallery artifacts retain their future rail.
+BO-05 suppresses the business-day indicator, which arrives in Phase 5. A duplicate
+holder has the visible text “Label in use” in its label cell, available to assistive
+technology; it is not underlined or presented as a link.
+
+The label remains 1–32 UTF-16 units after trimming and rejects Unicode control
+characters. Validation runs on Save, with no maxlength truncation; pasted
+control characters that survive native input sanitisation are rejected. Active
+labels are unique without regard to case; inactive labels may repeat. Reactivation
+refusal opens that inactive table's editable label and explains “Rename this
+inactive table, save, then reactivate it.” Save only renames; the manager then
+presses the row's Reactivate. Deactivate and Reactivate have no confirmation:
+both are reversible, and Phase 2's server refuses an OPEN order. The page-level
+status-command pattern above applies. The OPEN-order refusal names the
+table and order, and is marked Phase 2 in the gallery and artifact.
+
+BO-05's definite form-failure body is “Nothing was saved. Your draft is kept.
+Press Save to try again.” There is no dismiss-only Try again button. The title
+remains “Something went wrong”; the shared inventory failure row is unchanged.
+M-6's existing titles, bodies and controls are copied verbatim from DESIGN-015 /
+`apps/back-office/src/copy.ts` and DESIGN-012's shell. The different-manager
+acknowledgement and sign-in form retain their distinct reviewed headings.
+
+No new token is introduced. The fixture's row state, ids and response selector
+exist for review only; S1b must use C2's authoritative records and responses.
 
 ### One new designed token
 
