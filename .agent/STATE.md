@@ -54,9 +54,9 @@ payment-methods part), as S1 and S2 were. Narrative: [journal/2026-10-22.md](jou
 ## Running tasks and agents
 
 - **PHASE1-S3a complete** (PR #134, `ec1b9a5`; `0012`): verify 116/4367, e2e:all 74, Codex review clean. Owner looks.
-- **DESIGN-020 in Opus review** (`a33e73a`; BO-04 60 states, Part B in `D`, I/S; Codex draft, Opus finish by owner
-  exception). Lead ran all eight checks green (020 717, 019 998, 018 727, 017 348, 016 399, 014 287, 013, 012). Handoff
-  has 4 questions for the lead (option-name swap in S4a; variant over line max; Keep and untouched fields; BO-04's own read).
+- **DESIGN-020 round 2** (`design020c` resumed, pane `w2:p8J`): Opus review 7 findings, all accepted under one rule
+  (a row the draft touched keeps the draft's values whole; an untouched row follows current), `51c71ff`; Q1 to S4a, Q2-Q4
+  ruled. Checks before review: all eight green. Claude weekly usage 86% (resets 23 Oct 23:00); Codex 5h reset 21:26.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
