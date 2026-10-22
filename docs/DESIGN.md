@@ -1820,7 +1820,9 @@ answer advances it to the answered version only when that version is exactly the
 standing version plus one, or equal to it for an unchanged answer. Otherwise the
 list keeps its standing version, so the next edit opened from it is refused
 `CATALOG_CHANGED` and rereads. An editor carries the list's standing version at
-the moment it opens.
+the moment it opens. (Clarified by the lead's ruling on DESIGN-020's Question 4:
+this sentence is about BO-03's inline editors. BO-04, a screen of its own, builds
+on its own read of the item and the catalog version when it opens.)
 
 **State commands on grouped lists — behaviour.** Grouping does not change the
 status-command rule: 86, available again, archive and restore open no form and
@@ -1876,8 +1878,11 @@ that identity and owns the visible editor and return walk.
 DESIGN-020 (BO-04 Item editor) adds the rules below for every later
 configuration form. Each is marked **behaviour** (binding on every form that
 meets the case) or **BO-04 copy and layout** (BO-04's own words and
-composition). No rule above is changed; each addition applies them to a case
-they did not yet meet.
+composition). One rule above gains a lead-ruled exception, for child rows only:
+DESIGN-018's “Nothing is resent, merged field by field or chosen for the
+manager” (see *The stale-draft refusal over a form with child rows*). Every other
+rule above is unchanged; each addition applies them to a case they did not yet
+meet.
 
 **The money input — behaviour; BO-07's fixed-amount preset reuses it.** The
 manager types whole minor units of the installation currency (whole rupiah
@@ -1931,7 +1936,8 @@ row is a real editable row with its own labelled fields and inline errors.
   Move up and Move down change the draft only, as DESIGN-019's reorder without
   dragging: the first row's Move up and the last row's Move down are disabled,
   and focus stays on the moved row's control, or its other move control at an
-  end. The order of each list is part of the one save.
+  end. The row Move was pressed on counts as touched (below). The order of each
+  list is part of the one save.
 - *Names and labels.* A row's fields are labelled by kind and position
   (“Variant 2 name”), and its controls are named the same way (“Remove variant
   2”), so a name never goes stale while the manager types. A pending-removal
@@ -1942,7 +1948,11 @@ row is a real editable row with its own labelled fields and inline errors.
   that must be unique within its list is checked locally, case-insensitively,
   after trimming, among the list's active rows; the refusal is placed on the
   later row's name. A pending-removal row's name is free for another row in the
-  same save.
+  same save. A duplicate refusal belongs to its list, not to one field: any name
+  edit, removal or Undo in the list re-runs the duplicate check over the list's
+  active rows and clears each duplicate refusal that no longer holds, so the
+  conflict can be resolved through either row. This adds no new refusal before
+  Save; Save validates afresh.
 - *One save.* Save sends one command for everything on the screen. A create
   sends the record with both lists in order and carries no version. An edit
   carries the version the form builds on and an explicit list of what changed
@@ -1962,20 +1972,35 @@ stale-draft refusal holds as written, with these additions for the child lists
   differs from the draft, and each current list in its current order. Every
   row the draft's base had that the current record no longer has is listed as
   removed from the current record.
-- *Keep my changes* keeps the record's fields as the draft has them, as
-  DESIGN-018 says. Each list is rebuilt from the current record's list:
-  (a) a row the draft did not change follows the current record, with its
-  current values; if it was removed meanwhile, it leaves the draft under either
-  choice; (b) a row the draft changed (a name, an amount or its position) that
-  was removed meanwhile is added back as a new, unsaved row with no old
-  identity, sent as an added row by the next Save, and the notice says so before
-  the choice, naming the row by its saved name; a saved row the draft changed
-  that still exists keeps the draft's change; a row the draft marked for
-  removal stays pending removal if it still exists; a new draft row stays new;
-  the draft's order applies where it moved rows, and rows the current record
-  added go last; (c) the local checks run again over the result, so a row
-  whose name an active row of the current record now holds is refused on that
-  field, and Save stays held, with focus on that field, until it is fixed.
+- *Keep my changes* follows one principle, a **lead-ruled exception to
+  DESIGN-018's “nothing is merged” sentence, for child rows only** (DESIGN-020,
+  round 2): *a row the draft touched keeps the draft's values, whole; a row the
+  draft did not touch follows the current record.* The record's own fields are
+  one row, which the draft always touches, so they stay the draft's, whole, as
+  DESIGN-018 says. A child row is touched only if the manager added it, edited
+  its name or amount, removed it, or pressed Move up or Move down on it; a row
+  whose position shifted because another row was added, removed or moved is not
+  touched. Nothing is merged field by field inside a row. Each list is rebuilt
+  from the current record's list:
+  (a) an untouched row takes the current record's values; if it was removed
+  meanwhile, it leaves the draft under either choice, and the notice does not
+  mention it;
+  (b) a touched row removed meanwhile is added back as a new, unsaved row with
+  no old identity, sent as an added row by the next Save, and the notice says so
+  before the choice, naming the row by its saved name; a touched row that still
+  exists keeps all the draft's values (a row the draft edited keeps its name and
+  amount even if the current record changed either); a row the draft marked for
+  removal stays pending removal if it still exists, and leaves if it was removed
+  meanwhile; a new draft row stays new;
+  *order:* if the draft moved no row in that list, the list takes the current
+  order, with the draft's added rows last in the order they were added; if the
+  draft moved any row in it, the list takes the draft's order for the rows it
+  holds, with rows the current record added last. A row pending removal keeps its
+  place in that order, so Undo returns it in place and is not a reorder. The
+  next Save's order is exactly this order;
+  (c) the local checks run again over the result, so a row whose name an active
+  row of the current record now holds is refused on that field, and Save stays
+  held, with focus on that field, until it is fixed.
 - *Use current* replaces the fields and both lists with the record just read;
   the form is clean against it.
 - (d) Neither choice sends anything. Save, the next explicit step, carries the
@@ -2003,10 +2028,13 @@ read-only currency and decimal places, Item name, Category, Base price), then
 *Variants* and *Modifiers* as two sections, each with its Add action, then a
 sticky footer with the save hint, Cancel and Save. In the stale state the form
 narrows to two thirds and *Current item* sits beside it. The heading is the
-item's name with its availability or archived status as a plain fact, or “New
-item · Not saved yet”. BO-04 offers no 86, available again, archive or restore:
+item's name with its status as plain facts: “Archived item · ” when archived,
+then “Available” or “86 · Unavailable”, then “ · Hidden from the POS · category
+archived” when its category is archived (BO-03's wording); or “New item” with
+“Not saved yet”. BO-04 offers no 86, available again, archive or restore:
 they are BO-03's row actions. It reads the item and the catalog version itself
-when it opens, and its draft builds on that read. Save returns to BO-03 on the
+when it opens, and its draft builds on that read (lead ruling, DESIGN-020
+Question 4). Save returns to BO-03 on the
 same row, which announces the result and focuses the row's Edit. Item names are
 1–64 code points; variant and modifier names 1–32; base price 0 to 99.999.999;
 a variant's change −99.999.999 to 99.999.999; a modifier's change 0 to

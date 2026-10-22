@@ -33,6 +33,14 @@ window.WF = {id:"BO-04",client:"bo",nav:"menu",name:"Item editor",reqs:"FR-B4, C
     "Editing an unavailable item"
   ],
   [
+    "archived-eightysix",
+    "Editing an archived, 86’d item"
+  ],
+  [
+    "in-archived-category",
+    "Item in an archived category"
+  ],
+  [
     "overflow",
     "Longest names and largest amounts"
   ],

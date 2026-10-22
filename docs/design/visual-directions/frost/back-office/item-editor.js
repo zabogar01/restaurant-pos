@@ -14,12 +14,13 @@
   const suppliedCategory=readSnapshot('fixtureCategory');
   if(suppliedCategory?.id===params.get('category')){const c=category(suppliedCategory.id);if(c)Object.assign(c,suppliedCategory);else categories.push(suppliedCategory);}
   const isNew=['new','duplicate-create','create-category-archived'].includes(state);
-  let id=params.get('item')||(['archived'].includes(state)?'stew':state==='eightysix'?'soda':state==='none'?'fish':'burger');
+  let id=params.get('item')||(['archived','archived-eightysix'].includes(state)?'stew':state==='in-archived-category'?'pie':state==='eightysix'?'soda':state==='none'?'fish':'burger');
   let row=records.find(x=>x.id===id), supplied=readSnapshot('fixtureItem');
   if(supplied?.id===id)row=supplied;
   // BO-03's overflow stress rows. The index is fixture identity only, never money.
   const stressIndex=/^long-\d+$/.test(id)?Number(id.slice(5)):-1;
   if(!row&&stressIndex>=0){row={id,name:('Menu item '+String(stressIndex+1).padStart(2,'0')+' ').padEnd(80,'W'),category:'mains',variants:3,modifiers:2,active:true,available:true,order:20+stressIndex};row.price='99999999';}
+  if(state==='archived-eightysix'&&row)row={...row,available:false};
   let missing=(!isNew&&!row)||(isNew&&!category(params.get('category')||'mains'))||state==='not-found';
   const optionRows=(kind,n)=>Array.from({length:n},(_,i)=>({id:kind+'-'+(i+1),name:(kind==='variant'?['Regular','Large','Small']:['Extra cheese','Bacon','No onion'])[i]||kind+' '+(i+1),delta:(kind==='variant'?['0','20000','-10000']:['15000','20000','0'])[i]||'0'}));
   let server=isNew?null:row?{...copy(row),variants:optionRows('variant',row.variants),modifiers:optionRows('modifier',row.modifiers)}:null;
@@ -27,7 +28,7 @@
   let original=copy(server||blank()), draft=copy(original), current=copy(server), version=12, base=12, factsVersion=12;
   let pending=null, held=null, gate=null, decisionHeld=false, leaveAction=null, otherStep=0, unknown=false, stale=false, readFailed=false, refusedCategory=false, closed=false, seq=0, lastField='item-name', savedAnswer=null;
   const errors=new Map();
-  const fx={commands:[],reads:0,get draft(){return draft;},get original(){return original;},get current(){return current;},get base(){return base;},get version(){return version;},get pending(){return !!pending;},get stale(){return stale;},get unknown(){return unknown;},get newItem(){return isNew&&!savedAnswer;},money:parseMoney,otherTab(){version++;},get changes(){return changes(original,draft);}};
+  const fx={commands:[],reads:0,get draft(){return draft;},get original(){return original;},get current(){return current;},get base(){return base;},get version(){return version;},get pending(){return !!pending;},get stale(){return stale;},get unknown(){return unknown;},get newItem(){return isNew&&!savedAnswer;},money:parseMoney,otherTab(){version++;},other(change){change(server);version++;},get changes(){return changes(original,draft);}};
   window.ItemFixture=fx;
   function money(s){return String(s).replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
   // A field shows a valid amount grouped, and anything else exactly as the manager typed it.
@@ -55,10 +56,17 @@
       if(before.map(r=>r.id).join()!==active.map(r=>r.id).join())result[k].order=active.map(r=>r.id);
     }return result;
   }
-  function dirty(){return !closed&&(!!pending||unknown||JSON.stringify(normalized(draft))!==JSON.stringify(normalized(original)));}
+  // Values only: a row's bookkeeping flags (moved, an undone removal) never make a draft differ.
+  const plain=d=>{const n=normalized(d),rows=k=>n[k].map(r=>[r.id,r.name,r.delta,!!r.removed]);return JSON.stringify([n.name,n.price,n.category,rows('variants'),rows('modifiers')]);};
+  function dirty(){return !closed&&(!!pending||unknown||plain(draft)!==plain(original));}
   function showNotice(title,body,kind='status',takeFocus=false){$('#form-notice').hidden=!title;$('#notice-title').textContent=title;$('#notice-body').textContent=body;$('#form-notice').dataset.kind=kind;$('#form-notice').setAttribute('role',kind==='failure'||kind==='stale'?'alert':'status');if(takeFocus)focus('#form-notice');}
   function errorFor(field,text){if(text)errors.set(field,text);else errors.delete(field);const el=$('#'+field),error=$('#'+field+'-error');if(!el||!error)return;error.hidden=!text;error.textContent=text||'';if(text)el.setAttribute('aria-invalid','true');else el.removeAttribute('aria-invalid');const help=$('#'+field+'-help');el.setAttribute('aria-describedby',[text?error.id:'',help?.id||''].filter(Boolean).join(' '));}
   function nameError(raw,kind){const s=raw.trim(),limit=kind==='item'?64:32;return !s?'Enter '+(kind==='item'?'an item':'a '+kind)+' name.':[...s].length>limit?'Use '+limit+' characters or fewer.':/\p{Cc}/u.test(s)?'Remove control characters from the '+kind+' name.':'';}
+  const duplicateText=kind=>'Another '+kind+' uses this name. Choose another name.';
+  function recheckDuplicates(kind){
+    const rows=draft[listKey(kind)].filter(r=>!r.removed),key=r=>r.name.trim().toLowerCase();
+    for(const r of rows){const field=optionId(kind,r,'name');if(errors.get(field)===duplicateText(kind)&&!rows.some(x=>x!==r&&key(x)===key(r)))errorFor(field,'');}
+  }
   function validate(){
     errors.clear();draft.name=draft.name.trim();errorFor('item-name',nameError(draft.name,'item'));
     const selected=category(draft.category),staying=!isNew&&draft.category===original.category;
@@ -66,7 +74,7 @@
     const price=parseMoney(draft.price,'base');errorFor('item-price',price.error);if(price.value!==undefined)draft.price=price.value;
     for(const kind of ['variant','modifier']){
       const rows=draft[listKey(kind)].filter(r=>!r.removed),seen=new Set();
-      for(const r of rows){r.name=r.name.trim();let e=nameError(r.name,kind);if(!e&&seen.has(r.name.toLowerCase()))e='Another '+kind+' uses this name. Choose another name.';seen.add(r.name.toLowerCase());errors.set(optionId(kind,r,'name'),e);const amount=parseMoney(r.delta,kind);errors.set(optionId(kind,r,'delta'),amount.error||'');if(amount.value!==undefined)r.delta=amount.value;}
+      for(const r of rows){r.name=r.name.trim();let e=nameError(r.name,kind);if(!e&&seen.has(r.name.toLowerCase()))e=duplicateText(kind);seen.add(r.name.toLowerCase());errors.set(optionId(kind,r,'name'),e);const amount=parseMoney(r.delta,kind);errors.set(optionId(kind,r,'delta'),amount.error||'');if(amount.value!==undefined)r.delta=amount.value;}
     }
     for(const [k,v] of errors)if(!v)errors.delete(k);
     render();for(const [k,v] of errors)errorFor(k,v);if(errors.size)focus('#'+errors.keys().next().value);return !errors.size;
@@ -89,8 +97,9 @@
   }
   function render(){
     $('#item-title').textContent=isNew&&!savedAnswer?'New item':(original.name||'Item editor');
-    $('#item-status').textContent=isNew&&!savedAnswer?'Not saved yet':!original.active?'Archived item':original.available?'Available':'86 · Unavailable';
-    $('#item-context').textContent=!isNew&&!original.active?'Archived item. Saving does not restore it. Availability and archive actions are on Menu. Existing orders keep their saved names and prices.':!isNew&&!original.available?'86 · Unavailable. Saving does not make it available. Availability and archive actions are on Menu. Existing orders keep their saved names and prices.':'Save the item, its variants and its modifiers together. Existing orders keep their saved names and prices.';
+    const hostArchived=!isNew&&category(original.category)?.active===false;
+    $('#item-status').textContent=isNew&&!savedAnswer?'Not saved yet':(!original.active?'Archived item · ':'')+(original.available?'Available':'86 · Unavailable')+(hostArchived?' · Hidden from the POS · category archived':'');
+    $('#item-context').textContent=hostArchived&&original.active?'Its category is archived, so it stays hidden from the POS. Category actions are on Menu. Existing orders keep their saved names and prices.':!isNew&&!original.active?'Archived item. Saving does not restore it. Availability and archive actions are on Menu. Existing orders keep their saved names and prices.':!isNew&&!original.available?'86 · Unavailable. Saving does not make it available. Availability and archive actions are on Menu. Existing orders keep their saved names and prices.':'Save the item, its variants and its modifiers together. Existing orders keep their saved names and prices.';
     $('#item-form').hidden=closed||missing;$('#closed-actions').hidden=!closed&&!missing;
     $('#item-name').value=draft.name;$('#item-price').value=shown(draft.price,'base');
     $('#item-category').innerHTML='<option value="">Choose a category</option>'+categories.filter(c=>c.active||c.id===draft.category||c.id===original.category).map(c=>'<option value="'+esc(c.id)+'" '+(c.id===draft.category?'selected ':'')+(!c.active&&c.id!==original.category?'disabled':'')+'>'+esc(c.name)+(c.active?'':' · Archived')+'</option>').join('');
@@ -110,7 +119,10 @@
     for(const kind of ['variant','modifier']){const k=listKey(kind);html+='<h3>'+(kind==='variant'?'Variants':'Modifiers')+' · current order</h3><ol>'+current[k].map(r=>'<li>'+esc(r.name)+' · '+money(r.delta)+'</li>').join('')+'</ol>';if(!current[k].length)html+='<p>No '+k+'.</p>';for(const r of original[k].filter(r=>!current[k].some(x=>x.id===r.id)))html+='<p>'+esc(r.name)+' · Removed from the current item.</p>';}
     $('#current-values').innerHTML=html;
   }
-  function removedChanged(){const changed=changes(original,draft);return ['variants','modifiers'].flatMap(k=>draft[k].filter(r=>!r.new&&!r.removed&&!current[k].some(x=>x.id===r.id)&&(changed[k].edited.some(x=>x.id===r.id)||(changed[k].order.length&&original[k].findIndex(x=>x.id===r.id)!==draft[k].filter(x=>!x.removed).findIndex(x=>x.id===r.id)))).map(r=>({kind:k==='variants'?'variant':'modifier',saved:original[k].find(x=>x.id===r.id).name,name:r.name.trim()})));}
+  // Lead ruling (round 2): a row is touched only if the manager added it, edited its name or price
+  // change, removed it, or pressed Move on it. Position alone never counts: an earlier removal shifts it.
+  function touched(r,before){const old=before.find(x=>x.id===r.id);return !old||!!r.removed||!!r.moved||old.name!==r.name||old.delta!==r.delta;}
+  function removedChanged(){const a=normalized(original),b=normalized(draft);return ['variants','modifiers'].flatMap(k=>b[k].filter(r=>a[k].some(x=>x.id===r.id)&&!r.removed&&!current[k].some(x=>x.id===r.id)&&touched(r,a[k])).map(r=>({kind:k==='variants'?'variant':'modifier',saved:a[k].find(x=>x.id===r.id).name,name:r.name})));}
   // Ruling 4(b): say before the choice what each choice does to a changed option removed meanwhile.
   function removedSentence(list){
     const one=list.length===1,kinds=[...new Set(list.map(r=>r.kind))];
@@ -121,27 +133,30 @@
   function showStale(isUnknown=false){
     stale=true;unknown=isUnknown;comparison();const names=removedChanged();
     let body=isUnknown?'The menu has been read again at version '+factsVersion+'. It may include this save. Your draft is kept; nothing was sent again.':'Nothing was saved. The menu has been read again at version '+factsVersion+'. Your draft is kept.';
-    if(JSON.stringify(normalized(draft))===JSON.stringify(normalized(current)))body+=' The current item has the same values as your draft.';
+    if(plain(draft)===plain(current))body+=' The current item has the same values as your draft.';
     if(names.length)body+=removedSentence(names);
     body+=' Choose which to keep.';
     showNotice(isUnknown?'Outcome not confirmed':'The menu changed while you were editing',body,'stale');render();focus('#form-notice');
   }
-  // Lead ruling: preserve intentional child changes over current rows. An externally removed,
-  // untouched row disappears; a changed one becomes an explicitly new row, never a restore.
+  // Keep my changes over child rows (lead rulings, handover 4 and round 2): a row the draft touched keeps
+  // the draft's values whole; an untouched row follows the current item, and leaves if it was removed
+  // meanwhile. A touched row removed meanwhile comes back as a new row with no old identity, never a restore.
   function keepChildren(k){
-    const before=normalized(original)[k],wanted=normalized(draft)[k],now=copy(current[k]),delta=changes(original,draft)[k];
-    let merged=now.filter(r=>!delta.removed.includes(r.id));
-    for(const r of wanted.filter(r=>!r.removed)){
-      const old=before.find(x=>x.id===r.id),live=merged.find(x=>x.id===r.id),edit=delta.edited.find(x=>x.id===r.id);
-      const moved=!!old&&delta.order.length>0&&before.findIndex(x=>x.id===r.id)!==wanted.filter(x=>!x.removed).findIndex(x=>x.id===r.id);
-      if(!old)merged.push(copy(r));
-      else if(live&&edit)Object.assign(live,edit);
-      else if(!live&&(edit||moved)){r.id='new-'+(++seq);r.new=true;merged.push(copy(r));}
-    }
-    if(delta.order.length)merged.sort((a,b)=>{const order=r=>{const i=wanted.findIndex(x=>x.id===r.id);return i<0?wanted.length: i;};return order(a)-order(b);});
-    // Retain pending-removal rows until the answered Save, with an Undo affordance.
-    for(const r of wanted.filter(r=>r.removed&&now.some(x=>x.id===r.id)))merged.push(copy(r));
-    return merged;
+    const before=normalized(original)[k],wanted=normalized(draft)[k],now=current[k],at=id=>now.findIndex(x=>x.id===id);
+    const kept=wanted.flatMap(r=>{
+      if(!before.some(x=>x.id===r.id))return [copy(r)];
+      const live=now.find(x=>x.id===r.id);
+      if(!touched(r,before))return live?[copy(live)]:[];
+      if(live)return [copy(r)];
+      if(r.removed)return [];
+      return [{...copy(r),id:'new-'+(++seq),new:true}];
+    });
+    const fromCurrent=now.filter(c=>!before.some(x=>x.id===c.id)).map(copy);
+    // The draft moved a row: its order for the rows it holds, rows the current item added last.
+    if(wanted.some(r=>r.moved))return [...kept,...fromCurrent];
+    // Otherwise the current order (a row pending removal keeps its place), then the draft's added rows.
+    const inCurrent=[...kept.filter(r=>at(r.id)>=0),...fromCurrent].sort((a,b)=>at(a.id)-at(b.id));
+    return [...inCurrent,...kept.filter(r=>at(r.id)<0)];
   }
   function chooseCurrent(keep){
     if(!stale||readFailed)return;
@@ -217,6 +232,7 @@
     else if(el.dataset.optionField){const wrapper=el.closest('[data-option]'),r=draft[listKey(wrapper.dataset.kind)].find(r=>r.id===wrapper.dataset.option);r[el.dataset.optionField]=el.value;}
     lastField=el.id;errorFor(el.id,'');
     if(el.id==='item-name')$('#duplicate-holder').hidden=true;
+    if(el.dataset.optionField==='name')recheckDuplicates(el.closest('[data-option]').dataset.kind);
     if(el.id==='item-category'&&category(draft.category)?.active)refusedCategory=false;
     $('#save-item').disabled=stale||refusedCategory||errors.size>0;$('#save-hint').textContent=stale?'Choose which version to keep before saving.':refusedCategory?'Choose an active category before saving.':errors.size?'Correct the marked fields before saving.':'All changes are saved together.';preview();
   }
@@ -229,9 +245,9 @@
     const b=e.target.closest('button,a');if(!b)return;
     if(b.dataset.optionAction){
       if(pending)return;const w=b.closest('[data-option]'),kind=w.dataset.kind,k=listKey(kind),r=draft[k].find(x=>x.id===w.dataset.option),action=b.dataset.optionAction;
-      if(action==='remove'){if(r.new)draft[k]=draft[k].filter(x=>x!==r);else r.removed=true;for(const field of ['name','delta'])errors.delete(optionId(kind,r,field));render();if(r.new)focus('#add-'+kind);else focus('[data-option="'+r.id+'"] [data-option-action="undo"]');}
-      else if(action==='undo'){r.removed=false;render();focus('#'+optionId(kind,r,'name'));}
-      else{const active=draft[k].filter(x=>!x.removed),i=active.indexOf(r),other=active[i+(action==='up'?-1:1)];if(!other)return;const a=draft[k].indexOf(r),z=draft[k].indexOf(other);[draft[k][a],draft[k][z]]=[draft[k][z],draft[k][a]];render();const same=$('[data-option="'+r.id+'"] [data-option-action="'+action+'"]');(same.disabled?$('[data-option="'+r.id+'"] [data-option-action="'+(action==='up'?'down':'up')+'"]'):same).focus();}return;
+      if(action==='remove'){if(r.new)draft[k]=draft[k].filter(x=>x!==r);else r.removed=true;for(const field of ['name','delta'])errors.delete(optionId(kind,r,field));recheckDuplicates(kind);render();if(r.new)focus('#add-'+kind);else focus('[data-option="'+r.id+'"] [data-option-action="undo"]');}
+      else if(action==='undo'){r.removed=false;recheckDuplicates(kind);render();focus('#'+optionId(kind,r,'name'));}
+      else{const active=draft[k].filter(x=>!x.removed),i=active.indexOf(r),other=active[i+(action==='up'?-1:1)];if(!other)return;r.moved=true;const a=draft[k].indexOf(r),z=draft[k].indexOf(other);[draft[k][a],draft[k][z]]=[draft[k][z],draft[k][a]];render();const same=$('[data-option="'+r.id+'"] [data-option-action="'+action+'"]');(same.disabled?$('[data-option="'+r.id+'"] [data-option-action="'+(action==='up'?'down':'up')+'"]'):same).focus();}return;
     }
     if(b.id==='gate-incidents'){fx.incidentsQueued=true;$('#reauth-body').textContent='Continue as m.iqbal to open print incidents. Your unsaved changes are kept.';focus('#reauth-password');return;}
     if(b.tagName==='A'&&b.closest('#item-frame')&&!b.closest('.office-fixture')){e.preventDefault();const href=b.href,logout=b.classList.contains('office-logout');leave(()=>{if(logout){closed=true;session('ended');}else location.href=href;},logout);}
@@ -273,7 +289,7 @@
   const badName=state.match(/^invalid-(item|variant|modifier)-(empty|long|control|duplicate)$/);
   if(badName){const [,kind,reason]=badName,limit=kind==='item'?64:32;const value=reason==='empty'?'':reason==='long'?'W'.repeat(limit+1):reason==='control'?'Name\u0007':'Regular';if(kind==='item')draft.name=value;else{const list=draft[listKey(kind)];list[1].name=reason==='duplicate'?list[0].name.toUpperCase():value;}validate();}
   const badMoney=state.match(/^invalid-(base|variant-delta|modifier-delta)-(empty|format|bounds|negative)$/);
-  if(badMoney){const [,kind,reason]=badMoney,value=reason==='empty'?'':reason==='format'?'twelve':reason==='bounds'?'100000000':'-1';if(kind==='base')draft.price=value;else draft[kind==='variant-delta'?'variants':'modifiers'][0].delta=value;validate();}
+  if(badMoney){const [,kind,reason]=badMoney,value=reason==='empty'?'':reason==='format'?{base:'1000.5','variant-delta':'-10.000,5','modifier-delta':'twelve'}[kind]:reason==='bounds'?'100000000':'-1';if(kind==='base')draft.price=value;else draft[kind==='variant-delta'?'variants':'modifiers'][0].delta=value;validate();}
   if(['duplicate-create','duplicate-rename','duplicate-archived-category'].includes(state)){draft.name=state==='duplicate-archived-category'?'Apple Pie':isNew?'Burger':'Chicken Wings';if(isNew)draft.price='100000';render();answer('duplicate');}
   if(['saving','saved','failure','unknown','unknown-changed','unknown-read-failed','leave-pending','leave-unknown','unsaved','unsaved-logout','reauth','bo01-draft','reauth-decision','bo01-decision','stale','stale-read-failed','stale-same','stale-removed','stale-duplicate','move-category-archived'].includes(state))typeDraft();
   if(['saving','leave-pending'].includes(state)){$('#fixture-response').value='pending';submit();}

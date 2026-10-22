@@ -1302,6 +1302,14 @@ window.MOCKUPS.push({path:"back-office/item-editor.html",title:"Item editor",dir
     "Editing an unavailable item"
   ],
   [
+    "archived-eightysix",
+    "Editing an archived, 86’d item"
+  ],
+  [
+    "in-archived-category",
+    "Item in an archived category"
+  ],
+  [
     "overflow",
     "Longest names and largest amounts"
   ],
