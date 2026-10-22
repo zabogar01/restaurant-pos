@@ -73,7 +73,7 @@
   }
   function options(kind){
     const rows=draft[listKey(kind)],active=rows.filter(r=>!r.removed);
-    $('#'+kind+'-list').innerHTML=!rows.length?'<p class="item-list-empty">No '+(kind==='variant'?'variants':'modifiers')+' yet. Use Add '+kind+' to add the first choice.</p>':rows.map(r=>{
+    $('#'+kind+'-list').innerHTML=!rows.length?'<p class="item-list-empty">No '+(kind==='variant'?'variants':'modifiers')+' yet. Use Add '+kind+' to add the first one.</p>':rows.map(r=>{
       const i=active.indexOf(r),name=r.name||'Unnamed '+kind,ref=esc(r.id);
       if(r.removed)return '<div class="item-option" data-kind="'+kind+'" data-option="'+ref+'" data-removed="true"><p><strong>'+esc(name)+'</strong><br>Will be removed when you save.</p><div class="office-actions"><button type="button" class="office-button small" data-option-action="undo" aria-label="Undo removal of '+kind+' '+esc(name)+'">Undo</button></div></div>';
       // Field labels and control names use the row's position, which every render keeps current;
@@ -95,7 +95,7 @@
     $('#item-name').value=draft.name;$('#item-price').value=shown(draft.price,'base');
     $('#item-category').innerHTML='<option value="">Choose a category</option>'+categories.filter(c=>c.active||c.id===draft.category||c.id===original.category).map(c=>'<option value="'+esc(c.id)+'" '+(c.id===draft.category?'selected ':'')+(!c.active&&c.id!==original.category?'disabled':'')+'>'+esc(c.name)+(c.active?'':' · Archived')+'</option>').join('');
     options('variant');options('modifier');
-    $('#version-facts').textContent=readFailed?'':isNew&&!savedAnswer?'Not saved yet. This new item does not replace an existing item.':'Menu version '+factsVersion+' · Availability and archive status are managed on Menu.';
+    $('#version-facts').textContent=readFailed?'':isNew&&!savedAnswer?'Not saved yet. Nothing is created until you save.':'Menu version '+factsVersion+' · Availability and archive status are managed on Menu.';
     $('#comparison').hidden=!stale||readFailed;$('#retry-read').hidden=!readFailed;
     $$('#item-form input,#item-form select,#add-variant,#add-modifier,[data-option-action]').forEach(e=>{if(pending)e.disabled=true;else if(!e.dataset.optionAction||e.dataset.optionAction==='remove'||e.dataset.optionAction==='undo')e.disabled=false;});
     $('#save-item').disabled=!!pending||stale||errors.size>0||refusedCategory;
@@ -110,12 +110,20 @@
     for(const kind of ['variant','modifier']){const k=listKey(kind);html+='<h3>'+(kind==='variant'?'Variants':'Modifiers')+' · current order</h3><ol>'+current[k].map(r=>'<li>'+esc(r.name)+' · '+money(r.delta)+'</li>').join('')+'</ol>';if(!current[k].length)html+='<p>No '+k+'.</p>';for(const r of original[k].filter(r=>!current[k].some(x=>x.id===r.id)))html+='<p>'+esc(r.name)+' · Removed from the current item.</p>';}
     $('#current-values').innerHTML=html;
   }
-  function removedChanged(){const changed=changes(original,draft);return ['variants','modifiers'].flatMap(k=>draft[k].filter(r=>!r.new&&!r.removed&&!current[k].some(x=>x.id===r.id)&&(changed[k].edited.some(x=>x.id===r.id)||(changed[k].order.length&&original[k].findIndex(x=>x.id===r.id)!==draft[k].filter(x=>!x.removed).findIndex(x=>x.id===r.id)))).map(r=>r.name));}
+  function removedChanged(){const changed=changes(original,draft);return ['variants','modifiers'].flatMap(k=>draft[k].filter(r=>!r.new&&!r.removed&&!current[k].some(x=>x.id===r.id)&&(changed[k].edited.some(x=>x.id===r.id)||(changed[k].order.length&&original[k].findIndex(x=>x.id===r.id)!==draft[k].filter(x=>!x.removed).findIndex(x=>x.id===r.id)))).map(r=>({kind:k==='variants'?'variant':'modifier',saved:original[k].find(x=>x.id===r.id).name,name:r.name.trim()})));}
+  // Ruling 4(b): say before the choice what each choice does to a changed option removed meanwhile.
+  function removedSentence(list){
+    const one=list.length===1,kinds=[...new Set(list.map(r=>r.kind))];
+    const names=list.map(r=>r.kind+' '+r.saved).join(', ').replace(/, ([^,]*)$/,' and $1');
+    const added=one?'a new '+list[0].kind+(list[0].name!==list[0].saved?' named '+list[0].name:''):'new '+kinds.map(k=>k+'s').join(' and ');
+    return ' The current item no longer has '+names+', which your draft changes. Keep my changes adds '+(one?'it':'them')+' back as '+added+'; Use current item leaves '+(one?'it':'them')+' out.';
+  }
   function showStale(isUnknown=false){
     stale=true;unknown=isUnknown;comparison();const names=removedChanged();
     let body=isUnknown?'The menu has been read again at version '+factsVersion+'. It may include this save. Your draft is kept; nothing was sent again.':'Nothing was saved. The menu has been read again at version '+factsVersion+'. Your draft is kept.';
     if(JSON.stringify(normalized(draft))===JSON.stringify(normalized(current)))body+=' The current item has the same values as your draft.';
-    if(names.length)body+=' Keep my changes will add '+names.join(', ')+' again as new choices because they were removed from the current item. Use current item drops them.';
+    if(names.length)body+=removedSentence(names);
+    body+=' Choose which to keep.';
     showNotice(isUnknown?'Outcome not confirmed':'The menu changed while you were editing',body,'stale');render();focus('#form-notice');
   }
   // Lead ruling: preserve intentional child changes over current rows. An externally removed,
@@ -139,8 +147,10 @@
     if(!stale||readFailed)return;
     if(keep){draft.variants=keepChildren('variants');draft.modifiers=keepChildren('modifiers');}else draft=copy(current);
     original=copy(current);base=factsVersion;stale=false;errors.clear();refusedCategory=false;readFailed=false;
-    showNotice(keep?'Your changes are kept':'Current item loaded',keep?'Your changes now build on menu version '+base+'. Nothing has been saved yet. Review the marked fields, then press Save.':'The form now shows menu version '+base+'. Nothing was saved.');
-    render();if(keep){if(validate())focus('#save-item');}else focus('#item-name');
+    if(!keep){showNotice('Current item loaded','The form now shows menu version '+base+'. Nothing was saved. Edit it and save, or Cancel to close.');render();focus('#item-name');return;}
+    render();const valid=validate();
+    showNotice('Your changes are kept','Your changes now build on menu version '+base+'. Nothing has been saved yet. '+(valid?'Press Save to save them.':'Correct the marked fields, then press Save.'));
+    if(valid)focus('#save-item');
   }
   function reread(succeeds=true){fx.reads++;readFailed=!succeeds;if(succeeds){current=copy(server);factsVersion=version;}}
   function summary(r){return {id:r.id,name:r.name,category:r.category,price:r.price,variants:r.variants.filter(x=>!x.removed).length,modifiers:r.modifiers.filter(x=>!x.removed).length,active:r.active??true,available:r.available??true,order:r.order??records.length};}
@@ -163,7 +173,7 @@
     }
     if(answer==='idle'||answer==='ended'){showNotice('Nothing was saved','Your draft is kept. Press Save to try again.');render();session(answer);return;}
     if(answer==='duplicate'){
-      reread();render();const h=holder||records.find(r=>r.id==='burger');errorFor('item-name',category(h.category)?.active?'An active item already uses this name. Choose another name.':'An active item in an archived category still uses this name. Choose another name.');$('#duplicate-holder').hidden=false;$('#duplicate-holder').innerHTML='Name held by '+esc(h.name)+' in '+esc(category(h.category)?.name||h.category)+'. <a href="menu.html?item='+esc(h.id)+'">View item on Menu</a>';$('#save-item').disabled=true;focus('#item-name');return;
+      reread();render();const h=holder||records.find(r=>r.id==='burger');errorFor('item-name',category(h.category)?.active?'An active item already uses this name. Choose another name.':'An active item in an archived category still uses this name. Choose another name.');$('#duplicate-holder').hidden=false;$('#duplicate-holder').innerHTML='Name held by '+esc(h.name)+' in '+esc(category(h.category)?.name||h.category)+(category(h.category)?.active?'':', an archived category')+'. <a href="menu.html?item='+esc(h.id)+'">View item on Menu</a>';$('#save-item').disabled=true;focus('#item-name');return;
     }
     if(answer==='category-archived'){
       category(draft.category).active=false;version++;reread();refusedCategory=true;showNotice('The category was archived','Nothing was saved. Your draft is kept. Choose another category before saving.','failure');if(c.kind==='edit'){showStale();$('#notice-body').textContent+=' The destination category was archived. Choose another category after deciding which version to keep.';}render();errorFor('item-category','This category is archived. Choose another category.');focus(c.kind==='create'?'#item-category':'#form-notice');return;
@@ -174,7 +184,7 @@
     if(answer.startsWith('unknown')){
       unknown=true;if(answer==='unknown-changed')apply(c);reread(answer!=='unknown-read-failed');
       if(!readFailed&&c.kind==='edit'&&factsVersion!==base){showStale(true);return;}
-      showNotice('Outcome not confirmed',readFailed?'The item could not be read again. Your draft is kept; nothing was sent again. Try again reads the menu only.':'The menu has been read again. Your draft is kept; nothing was sent again.');render();focus('#item-name');return;
+      showNotice('Outcome not confirmed',readFailed?'The menu could not be refreshed. Your draft is kept; nothing was sent again.':'The menu has been refreshed. Your draft is kept; nothing was sent again.');render();focus('#item-name');return;
     }
     showNotice('Something went wrong','Nothing was saved. Your draft is kept. Press Save to try again.','failure');render();focus('#item-name');
   }
@@ -230,7 +240,7 @@
   $('#cancel-edit').onclick=()=>leave(()=>location.href=returnHref());$('#stay').onclick=stay;$('#discard').onclick=discard;
   $('#departure').addEventListener('cancel',e=>{e.preventDefault();stay();});$('#item-reauth').addEventListener('cancel',e=>e.preventDefault());
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!gate&&!$('#departure').open&&!closed){e.preventDefault();leave(()=>location.href=returnHref());}});
-  $('#retry-read').onclick=()=>{reread();if(stale)showStale(unknown);else if(unknown&&server&&factsVersion!==base&&!isNew)showStale(true);else{showNotice('Outcome not confirmed','The menu has been read again. Your draft is kept; nothing was sent again.');render();focus('#item-name');}};
+  $('#retry-read').onclick=()=>{reread();if(stale)showStale(unknown);else if(unknown&&server&&factsVersion!==base&&!isNew)showStale(true);else{showNotice('Outcome not confirmed','The menu has been refreshed. Your draft is kept; nothing was sent again.');render();focus('#item-name');}};
   $('#fixture-idle').onclick=()=>session('idle');$('#fixture-ended').onclick=()=>session('ended');$('#fixture-other').onclick=()=>fx.otherTab();$('#finish-command').onclick=()=>finish($('#fixture-response').value==='pending'?'saved':$('#fixture-response').value);
   $('#reauth-logout').onclick=()=>leave(()=>{closed=true;session('ended');},true);
   $('#other-manager').onclick=()=>{if(otherStep){resetReauth();focus('#reauth-password');return;}otherStep=1;$('#reauth-title').textContent='Sign in as a different manager?';$('#reauth-body').textContent='The current manager’s unsaved changes will not be available to the manager signing in.';$('#reauth-fields').hidden=true;$('#other-manager').textContent='Stay with current manager';$('#resume').textContent='Continue to sign-in';$('#reauth-logout').hidden=true;focus('#other-manager');};
