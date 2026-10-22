@@ -138,7 +138,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: DESIGN-018b, the phone refuses `/`, #127; PHASE1-S2a, settings on the server, #128; both merged.)*
     - *(Done: PHASE1-S2b, BO-08's settings section, #130; DESIGN-019, BO-03 Menu (design D part 1), #131.)*
     - **PHASE1-S3a**, tender methods on the server (`0012`, five routes; S3 split by the lead into S3a and S3b, as S1 and
-      S2 were) — depends on S2a — built, in review.
+      S2 were) — depends on S2a — complete, PR #134.
     - **PHASE1-S3b**, BO-08's payment-methods part — depends on S3a merged — not written.
     - **DESIGN-020** BO-04 (feeds S4c; also redraws BO-08's `first-run-closed`) — running (Codex, hand-opened);
       **DESIGN-021** the POS addition, G6 (feeds S7b) — after.

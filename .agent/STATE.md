@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-22 evening: `development` at `d164a23` (#130-#133 merged); `npm ci` done; dev `pos` at `0011`. **Running:
-PHASE1-S3a in Codex review; DESIGN-020 (Codex designer) starting.** S3 split into S3a (server) and S3b (BO-08's
+2026-10-22 evening: `development` at `d164a23` (#130-#133 merged); `npm ci` done; dev `pos` at `0011`. **S3a complete,
+PR #134 (owner's look). DESIGN-020 (Codex designer) running.** S3 split into S3a (server) and S3b (BO-08's
 payment-methods part), as S1 and S2 were. Narrative: [journal/2026-10-22.md](journal/2026-10-22.md).
 
 ## Phase and gates
@@ -37,7 +37,6 @@ payment-methods part), as S1 and S2 were. Narrative: [journal/2026-10-22.md](jou
   `work/guard.ts`, `Decision` (S1b, S2b Handoffs). **Frost designed:** A, B, C, I, E1 (BO-05), F's BO-08 half (018, 018b),
   **D part 1, BO-03 Menu (DESIGN-019, #131)**; D's rest: **DESIGN-020** BO-04 next, **DESIGN-021** POS addition (G6).
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
-- **Last verify by the lead:** S2b (`d9215ed`) verify 114/4331, e2e:all 74; DESIGN-019 (`c0a7113`) seven checks green.
 
 ## Integration branch
 
@@ -54,9 +53,9 @@ payment-methods part), as S1 and S2 were. Narrative: [journal/2026-10-22.md](jou
 
 ## Running tasks and agents
 
-- **PHASE1-S3a** (tender methods server, `0012`): builder DONE `09e23d9`, verify 116/4367; **Codex review** and e2e running.
+- **PHASE1-S3a complete** (PR #134, `ec1b9a5`; `0012`): verify 116/4367, e2e:all 74, Codex review clean. Owner looks.
 - **DESIGN-020** (BO-04 item editor, plus BO-08 `first-run-closed`): Codex `design020` in pane `w2:p8E`, hand-opened,
-  stopped on Codex's update prompt (owner's); a background script briefs it when cleared. Lead runs its checks. Meta in
+  briefed; Part D done (lead ran design018: 724/724). Codex weekly allowance 22%, resets 27 Oct 14:18. Meta in
   `.agent/runs/DESIGN-020/builder/meta.json` (`cli: codex`, so an Opus review). Design left: -021, BO-07 half, E2.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
@@ -116,7 +115,8 @@ payment-methods part), as S1 and S2 were. Narrative: [journal/2026-10-22.md](jou
 
 Nothing here is decided. Detail is where each line points.
 
-- **Lead rulings, yours to overturn:** DESIGN-019 F7 (86 and Make available act at once beside an open edit; archive and
+- **Lead rulings, yours to overturn:** DESIGN-020 (in its pane, to be in its Handoff): item names 1-64, options 1-32
+  code points; a removed option kept by *Keep my changes* returns as a new option; a URL-only return adapter. DESIGN-019 F7 (86 and Make available act at once beside an open edit; archive and
   restore ask first); S2b's first-run unknown sentence (the builder's); the NPWPD without a charset (DESIGN-018 Q2's other
   half); S1b's nine rulings and two questions; S0's `0009`; C3's acting-manager lock, `OWN_ACCOUNT`/`USER_CHANGED`,
   `DUPLICATE`'s `{ field }`; the S1a and DESIGN-017 round rulings; PHASE0-004 to 013, DESIGN-011-016, ARCH-006, FE-030-036.
@@ -142,7 +142,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S3a** review verdict, then the owner's look and merge; after merge `db:migrate` (`0012`). Then **S3b** (BO-08's
+1. **After #134 merges:** fast-forward, `db:migrate` (`0012`), remove S3a's worktree and run dir. Then **S3b** (BO-08's
    payment-methods part: S3a's *What S3b needs*, DESIGN-018's method rows, S2b's *How it works*; removes the exclusion).
 2. **DESIGN-020** to review (Opus). Then **S4a** (catalog server; `reorderItems(categoryId, expected, ids)` like
    `reorderCategories`, DESIGN-019's question; DESIGN-019/020's name lengths) and
