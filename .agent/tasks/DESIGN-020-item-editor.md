@@ -291,3 +291,544 @@ not restart it.**
    and ping the lead: `herdr agent prompt lead "design020c: DESIGN-020 done — <one line>"`.
 
 ## Handoff
+
+### Delivery
+
+Drawn by `design020` (Codex) on `agent/design-020` and finished by `design020c`
+(Claude Opus 5.5, under the owner's exception of 2026-10-22). The finishing
+pass checked the draft against *Rulings that bind this task*, *What to draw*,
+the lead's four handover rulings and the acceptance criteria. It kept the
+draft, and fixed or added the things listed under *Finishing pass* below.
+
+Commits on `agent/design-020`, after Part D's `9b1abbd`:
+
+- `a158963` Parts A and C: `F/item-editor.html`, `item-editor.css`,
+  `item-editor.js` and `item-editor-states.js` (new), the BO-03 links and
+  return adapter in `F/menu.js` and `F/menu.html`, the gallery
+  (`manifest.js`, `index.html`), `design020.cjs` (new), `design019.cjs` (one
+  expected link suffix), and `I` and `S` BO-04.
+- `b1c410c` Part B in `D`, and the copy pass on BO-04.
+- This Handoff.
+
+These are local review drawings with illustrative records and explicit result
+selectors. No credential, request or configuration is stored or sent. No
+token is added: `item-editor.css` uses registry tokens only, nothing under
+`docs/design/tokens/` changed, so `npm run verify` does not apply. Nothing
+under `apps/`, `packages/`, `db/` or `e2e/` changed, and `P/item-editor.html`
+is not edited.
+
+### Lead rulings recorded for this task
+
+These are the lead's rulings, given to `design020` in its pane and restated
+in the handover above. They are recorded here as rulings, not as the
+designer's choices, so the lead can carry them into DECISIONS.
+
+1. **Return plumbing.** `editorHref` keeps `item`, `category`,
+   `return=frost-menu`, `returnItem` and `state=new` unchanged. A snapshot of
+   the item travels in the URL only (no web storage, cookies or shared state)
+   and holds only what BO-03's row shows (id, name, category, price, the two
+   option counts, active, available, order). The BO-03 adapter in `F/menu.js`
+   reads only those parameters, applies the answered item to that one row (or
+   inserts it, for a create), marks it `data-selected` and focuses its Edit; it
+   changes no other row, count rule or BO-03 state, and sends nothing. The
+   originating category may also travel (id, name, active, order) and is
+   inserted only when no category with that id exists, solely to host the
+   returned item (the B-24 walk). Code comments in `menu.js` and
+   `item-editor.js` say both are review plumbing, which **S4c replaces with
+   the real list read**.
+2. **`design019.cjs:57`**: the expected Edit destination suffix changes from
+   `/prototype/back-office/item-editor.html` to
+   `/frost/back-office/item-editor.html`; every identity assertion stays.
+3. **Name limits**: item names 1–64 code points; variant and modifier names
+   1–32. This is a name budget of two 32-column lines, not a promise of printer
+   geometry (`D` and `I` state no printer width).
+4. **An option removed meanwhile, in the stale state**: (a) an untouched option
+   follows the current item; (b) a changed option removed meanwhile is shown
+   removed, the notice says before the choice what each choice does, and after
+   Keep it is a new, unsaved option sent as an added option; (c) local checks
+   run again after Keep; (d) neither choice sends anything. (b) and (c) are
+   drawn as `stale-removed` and `stale-duplicate`; (a) to (d) are in `D`
+   Part B as behaviour for every form with child rows.
+
+### Finishing pass (design020c)
+
+1. **The one check failure is fixed without weakening the check.** The
+   `long-N` fixture in `item-editor.js` computed its index with
+   `Number(id.slice(5))` on the line that set `price`. The index now has its own
+   line (`stressIndex`), and the price is set on a separate line. The
+   assertion "no float parsing or money arithmetic" is unchanged.
+2. **BO-03's 80-unit stress rows no longer look valid.** Opening `long-N` from
+   BO-03's `overflow` now shows the name untruncated with the local too-long
+   refusal ("Use 64 characters or fewer.") on Item name and Save held. A stored
+   name can never exceed 64 code points once S4a's check exists, so this is a
+   fixture artefact, drawn as a refusal so that it cannot pass for a valid
+   item. The editor's own fallback for `long-N` uses the same 80-unit name, so
+   the subject matches BO-03. New assertion: "stored stress name over 64 opens
+   as the local refusal".
+3. **A refused amount stays as typed.** The draft regrouped any digits in a
+   field on every render, so a refused `1000.5` became `1.000.5`. A field now
+   groups a value only when it parses, and otherwise shows exactly what the
+   manager typed. New assertions: "refused amount kept as typed", "valid amount
+   saved canonical".
+4. **Option names no longer go stale.** The draft named each row's buttons
+   after the option's name at render time, so a new row typed as "Large" kept
+   "Remove variant Unnamed variant", and its visible label ("1. Variant name")
+   did not begin its accessible name ("Variant 1 name"). Fields are now
+   labelled "Variant 1 name" and "Variant 1 price change", and controls "Remove
+   variant 1", "Move up variant 1", "Move down variant 1", by position, which
+   every render keeps current. A new row shows "New · not saved yet" beside its
+   label. New assertion: "option control name …" and "option fields named by
+   visible label".
+5. **The stale comparison marks what differs.** `D` requires the current value
+   wherever it differs from the draft. Each differing field in *Current item*
+   now reads in medium weight with "Differs from your draft" under it. New
+   assertion: "stale comparison marks differing values".
+6. **An unchanged save is never announced as saved.** The draft returned an
+   unchanged answer to BO-03 with "{name} saved.". It now returns
+   `saved=unchanged` with the version, and BO-03 shows its reviewed
+   "Nothing changed. Menu version {n} is still current." New assertion:
+   "unchanged return names the version, not a save".
+7. **A clean Cancel from New item returns focus to its opener.** The draft
+   left focus nowhere on BO-03. It now goes to that category's New item (New
+   category if that category no longer exists), as `D`'s Cancel rule says. New
+   assertion: "new item clean return focuses its opener". The Cancel return
+   also now names the category the editor opened in, not a category the
+   discarded draft had selected.
+8. **Copy.** The unknown-outcome, after-Keep and after-Use notices now use
+   BO-03's reviewed wording; stale notices end with "Choose which to keep.";
+   the after-Keep notice says "Correct the marked fields, then press Save." only
+   when the rerun local checks found something. The removed-meanwhile sentence
+   now names the option by its saved name (the comparison does), and the copy
+   no longer uses the generic word "choices" for variants and modifiers (two
+   structures, never one "options" concept). The holder of a name in an
+   archived category says so. A different manager's sign-in now leaves the
+   editor titled "Item editor" with "Choose an item on Menu to edit it.",
+   instead of the title "Menu" and a sentence about the previous manager's
+   draft. The over-maximum variant note no longer asserts POS behaviour
+   (see *Questions*).
+9. **Inventory and sitemap** (Part C item 3) were not in the draft and are
+   written (diffs below). `D` Part B was not in the draft and is written.
+
+### Requirement and state map
+
+All 60 states are registered in `item-editor-states.js` (`WF.states`) and in
+`manifest.js`; `design020.cjs` asserts the two lists are identical, and the
+gallery opens them (asserted with `stale-removed`).
+
+| Requirement, ruling or task item | State or walk |
+|---|---|
+| `I` new item; DESIGN-011 P1 (nothing implies a saved item) | `new`: blank name and price, the originating category selected, no option, heading "New item", status "Not saved yet", no 86/archive control. Walk: BO-03 New item in Sides opens with Sides. |
+| `I` loading; read failure | `loading`; `load-error` with Try again (repeats the read only); `not-found` for an unknown subject, with Return to menu. |
+| Item with options / with none | `default` (Burger: 3 variants, 3 modifiers); `none` (Fish & Chips). |
+| Editing an archived item (C1 §2.3) | `archived` (Winter Stew): status "Archived item", context says saving does not restore it. |
+| 86'd item (availability as a fact) | `eightysix` (Soda): status "86 · Unavailable", context says saving does not make it available. |
+| `I` overflow; AC 6 | `overflow`: 64-code-point item name, 18 variants and 18 modifiers at 32 code points, 99.999.999 prices and changes, −99.999.999 variant. Measured below. |
+| FR-C2, AC-26 floor | `floor`: base 100.000 with a −99.999.999 variant reads "Without modifiers: 0 · Base price plus this change is below zero, so the price floors at 0." |
+| Local invalid input, each field kind | `invalid-item-{empty,long,control}`, `invalid-variant-{empty,long,control,duplicate}`, `invalid-modifier-{empty,long,control,duplicate}`, `invalid-base-{empty,format,bounds,negative}`, `invalid-variant-delta-{empty,format,bounds}`, `invalid-modifier-delta-{empty,format,bounds,negative}`. Each sends nothing; recovery is a walk (fix the field, Save sends once). |
+| Duplicate option name, local (lead ruling) | `invalid-variant-duplicate`, `invalid-modifier-duplicate`: refused on the later row's name. |
+| Saving / saved / unchanged / failure | `saving`, `saved`, `unchanged`, `failure`. |
+| Name in use, create / rename / archived category | `duplicate-create`, `duplicate-rename`, `duplicate-archived-category` (Apple Pie, in archived Seasonal). Focus on Item name, one reread, holder shown. |
+| Outcome unknown | `unknown` (same version), `unknown-changed` (newer version: comparison and choices, "may include this save"), `unknown-read-failed` (facts withheld, Try again reads only). |
+| `CATALOG_CHANGED` on an edit, two choices | `stale`, `stale-same` (same values), `stale-read-failed`; walks: Keep (no send, Save carries 13), Use current (fields and rows replaced, no send). |
+| Ruling 4(b), 4(c) | `stale-removed`, `stale-duplicate`; walks assert 4(a) under both choices and 4(d). |
+| Create into a category archived meanwhile | `create-category-archived`: draft kept, category refused, Save held until an active category; the next create still carries no version. |
+| Move to a category archived meanwhile | `move-category-archived`: stale comparison; after Keep the category is still refused until an active one is chosen; Save carries 13. |
+| Option removal pending / undone; reorder | `remove-pending`, `remove-undone`, `reorder`; walks: removal pending until Save, Undo restores before Save, keyboard Move down. |
+| Departure decision | `unsaved`, `unsaved-logout`, `leave-pending`, `leave-unknown`; walks from Cancel, Escape, the rail, browser Back and Log out. |
+| M-6 over the editor; BO-01 with the draft held | `reauth`, `reauth-decision`, `bo01-draft`, `bo01-decision`; same manager keeps the whole draft and options; a different manager destroys them. Answers held behind each gate (saved, unknown, idle) are walked. |
+| Subject-correct walks (Part A.2) | Every BO-03 row's Edit opens that item's name, price and category; Cancel returns to that row (`data-selected`, its Edit focused); a saved return applies only that item; New item → Cancel returns to New item; first category → first item → saved return (B-24). |
+| State commands stay on BO-03 | Asserted in every state at both sizes: no Archive, Restore, 86 or Make available in the form. |
+| One Save, one command; version only on edits | Asserted for every command in every state: a create has `expected: null`, an edit an integer. |
+| Q5 fixed currency | Currency and decimal places as plain text above the fields, in every form state; withheld while loading or failed. |
+| Q11 no audit; B-13 | No audit trace drawn. M. Iqbal and Ratna Ayu are named. |
+| Part B | `D`, *Configuration forms — DESIGN-020 additions*. |
+| Part C | Links and gallery (`a158963`), `I` and `S` diffs below, counts below. |
+| Part D | `9b1abbd` (the Codex designer), accepted by the lead on `design018.cjs` 724/724. |
+
+### Rules S4a, S4b and S4c can copy
+
+**Names.**
+
+| Field | Rule |
+|---|---|
+| Item name | Trim; then 1–64 Unicode code points; no Unicode Cc control character. Checked in the order empty, length, control. Unique among **active items across the whole menu**, case-insensitively; an item in an archived category is still active and still holds its name. Server refusal `DUPLICATE`, always on the item name on BO-04. Archived items may share names. |
+| Variant name | Trim; 1–32 code points; no Cc control. Unique among the item's **active variants**, case-insensitively. Refused **locally** (the form holds every option); a pending-removal variant's name is free in the same save. |
+| Modifier name | As variant, among the item's **active modifiers**. A variant and a modifier may share a name. |
+| Budget reasoning | Item and option names print on the kitchen ticket and the receipt. 64 and 32 are a budget of two 32-column lines for the item and one for an option, not a promise of printer geometry. DESIGN-019's 80-unit BO-03 fixture now exceeds the item rule and is kept unchanged only as a wrapping stress: **S4c must not copy it as a valid name.** Carry forward to Phases 3 and 4: ticket and receipt layout must fit a 64-code-point item name and a 32-code-point option name. |
+| No truncation | No `maxlength`; validation runs on Save. A pasted control character is refused, not stripped. |
+
+**The price input** (the full table is in `D` Part B).
+
+| | Base price | Variant price change | Modifier price change |
+|---|---|---|---|
+| Bounds | 0 to 99.999.999 | −99.999.999 to 99.999.999 | 0 to 99.999.999 |
+| Sign | none (`-` refused first) | one ASCII `+` or `-` directly before the digits | none (`-` refused first) |
+| Accepted | digits (`00010`), or `.` groups of three (`10.000`) | same, signed (`-10.000`, `+5000`, `-0` → `0`) | as base |
+| 1 · empty | Enter a base price. | Enter a price change. | Enter a price change. |
+| 2 · leading `-` | Use 0 or more. | (allowed) | Use 0 or more. |
+| 3 · not such a number | Enter whole rupiah, such as 10.000. | Enter whole rupiah, such as 10.000 or -10.000. | Enter whole rupiah, such as 10.000. |
+| 4 · out of bounds | Use 99.999.999 or less. | Use a price change from -99.999.999 to 99.999.999. | Use 99.999.999 or less. |
+| Sent as | canonical integer string (`"10000"`, `"-10000"`) | | |
+| Shown as | `.` grouping, `-` for negative, no `+`, no currency symbol | | |
+
+Refused under rule 3: a space inside (`1 000`), a decimal part (`10.00`,
+`1000.5`), `,`, an exponent (`1e3`), a Unicode minus (`−1`), a space after the
+sign (`- 1`), a `+` on base or modifier. All of these are asserted in
+`design020.cjs` (21 money cases). No float is used: the fixture parses with a
+pattern and `BigInt`, and the check forbids `parseFloat`, `Number(` near a price
+or delta, and `Math.round`/`floor`.
+
+**The computed price.** BO-04 shows under each variant "Without modifiers:
+{max(0, base + change)}", because a negative change is easy to misjudge. It
+floors at 0 and says so; it is never negative. The section help says the
+final price adds the selected modifiers and then floors at zero (FR-C2), so
+the per-variant figure is correct only without modifiers, which is what it
+says. It is display only and is not sent.
+
+**Options.**
+
+| Rule | Decision |
+|---|---|
+| Two structures | Variants (single-select, signed change) and modifiers (multi-select, change ≥ 0) are two lists with two Add actions. No group, nesting, default variant, stock, image or shared library. |
+| Add | A new option goes last in its list, with an empty name and a change of `0`, marked "New · not saved yet"; focus goes to its name. |
+| Remove | A saved option becomes pending removal (Undo restores it in place, before Save). A new option is deleted at once. On Save the saved option is set inactive; it leaves the editor when the save is answered. |
+| Restore | None in Phase 1. Adding the same name later makes a new option. |
+| Confirmation | None: before Save, Undo reverses removal; after Save, re-adding restores what the POS can sell, and existing orders keep their snapshots (B-8). Only identity is not restorable, which nobody sees. |
+| Order | Move up / Move down, keyboard-operable, disabled at the ends; no drag. The order of each list is part of the one Save. |
+
+**What one save carries** (the screen's shape, not S4b's wire format).
+
+- **Create** (`createItem(categoryId, …)`), **no version**: name, category,
+  base price, the variants in order (name, change), the modifiers in order
+  (name, change).
+- **Edit** (`editItem(id, expected, changes)`), **carries the version the
+  editor read when it opened** (or the version chosen by Keep my changes, or
+  named by an earlier answer). `changes`:
+  `fields` — only the changed ones of name, base price, category;
+  for `variants` and for `modifiers`: `added` (name, change, a draft key,
+  in order), `edited` (id, and only the changed name and/or change), `removed`
+  (ids), `order` (every active option id and draft key in display order,
+  present whenever the order differs from the opening order, which includes
+  any add or removal).
+- An edit whose values equal the stored item is still sent; the answer
+  "unchanged" names the version still in force (`D`, DESIGN-018).
+- BO-04 has no other command. 86, available again, archive and restore are on
+  BO-03 and carry no version.
+
+**The version BO-04 builds on.** BO-04 is its own screen: it reads the item and
+the catalog version in one snapshot when it opens (ADR-012 rule 11), and its
+draft builds on that read. It does not inherit BO-03's list version. The base
+then moves only by an answer, an unchanged answer, or Keep my changes; a reread
+alone never moves it (`D`, DESIGN-018).
+
+**Where Save lands.** An authoritative success returns to BO-03 on the same row
+(inserted for a create), which announces "{name} saved." (or the unchanged
+sentence) and focuses that row's Edit. This is `D`'s success rule ("closes the
+form, announces the named result and focuses that row's Edit"): BO-04 is the
+form and BO-03 its list, and the state commands the manager may want next
+(86, archive) live there. The standalone `saved` and `unchanged` drawings show
+the closed form with the result and Return to menu, for review.
+
+### Exact copy and accessible names for S4c
+
+Braces are trusted record values, never server or schema messages. Review
+selectors, the fixture explanation and the All states link are outside product
+copy. Departure, logout, M-6, other-manager and BO-01 copy are DESIGN-019's
+rows, reused verbatim, and are not repeated here except where BO-04 differs.
+
+| State / context | Element | Exact text | Accessible name / test target |
+|---|---|---|---|
+| Frame | Top bar / rail | Item editor / Menu current | rail link Menu |
+| Existing item | Heading / status | `{name}` / Available, 86 · Unavailable, or Archived item | heading level 1 |
+| New item | Heading / status | New item / Not saved yet | heading level 1 |
+| Ordinary | Context | Save the item, its variants and its modifiers together. Existing orders keep their saved names and prices. | paragraph |
+| Archived item | Context | Archived item. Saving does not restore it. Availability and archive actions are on Menu. Existing orders keep their saved names and prices. | paragraph |
+| 86'd item | Context | 86 · Unavailable. Saving does not make it available. Availability and archive actions are on Menu. Existing orders keep their saved names and prices. | paragraph |
+| Existing item | Facts | `Menu version {n} · Availability and archive status are managed on Menu.` | `#version-facts`; empty when the reread failed |
+| New item | Facts | Not saved yet. Nothing is created until you save. | same |
+| Form | Section | Item details | heading level 2 |
+| Money facts | Terms / values / note | Currency: IDR · Indonesian rupiah / Decimal places: 0 · amounts are whole rupiah / Fixed for this installation. Prices include tax. | term-and-value rows, no control |
+| Item name | Label / help | Item name / 1–64 characters. Active item names are unique across the menu. | textbox Item name |
+| Category | Label / help / first option | Category / Choose an active category. An existing item may stay in its archived category. / Choose a category | combobox Category; an archived category reads `{name} · Archived` |
+| Base price | Label / help | Base price / Price the customer pays. 0–99.999.999; whole rupiah. | textbox Base price |
+| Variants | Heading / note / help | Variants / Single-select · one choice, with a positive or negative price change. / Names: 1–32 characters. Type a minus sign for a reduction, such as -10.000. | heading level 2 |
+| Variants | Floor help | The final unit price includes selected modifiers, then floors at zero. | paragraph |
+| Modifiers | Heading / note / help | Modifiers / Multi-select · any number of choices, each adding zero or more. / Names: 1–32 characters. Price changes: 0–99.999.999; whole rupiah. | heading level 2 |
+| Lists | Add | Add variant / Add modifier | same button names |
+| Empty list | Body | No variants yet. Use Add variant to add the first one. / No modifiers yet. Use Add modifier to add the first one. | paragraph |
+| Option row | Labels | `Variant {n} name` / `Variant {n} price change` (Modifier likewise) | textbox of the same name |
+| New option | Marker | New · not saved yet | beside the name label |
+| Option row | Controls | Move up / Move down / Remove | `Move up variant {n}`, `Move down variant {n}`, `Remove variant {n}` (modifier likewise) |
+| Variant preview | Note | `Without modifiers: {price}` | paragraph |
+| Floor | Note | `Without modifiers: 0 · Base price plus this change is below zero, so the price floors at 0.` | same |
+| Over the line maximum | Note | `Without modifiers: {price} · More than the largest line total, 99.999.999.` | same; see *Questions* |
+| Preview not computable | Note | Enter a valid base price and price change to see this variant’s price. | same |
+| Pending removal | Row / control | `{name}` / Will be removed when you save. / Undo | `Undo removal of variant {name}` (modifier likewise) |
+| Removal | Standing note | Removed variants and modifiers stay on existing orders. After saving, they cannot be restored; adding the name again creates a new one. | paragraph |
+| Footer | Hint | All changes are saved together. | describes Save (`aria-describedby`) |
+| Footer | Hint, pending / stale / archived category / errors | Wait for the save result. / Choose which version to keep before saving. / Choose an active category before saving. / Correct the marked fields before saving. | same |
+| Footer | Actions | Cancel / Save | same button names |
+| Item name invalid | Error | Enter an item name. / Use 64 characters or fewer. / Remove control characters from the item name. | `#item-name-error`, field `aria-invalid` |
+| Variant name invalid | Error | Enter a variant name. / Use 32 characters or fewer. / Remove control characters from the variant name. / Another variant uses this name. Choose another name. | on the row's name field |
+| Modifier name invalid | Error | Enter a modifier name. / Use 32 characters or fewer. / Remove control characters from the modifier name. / Another modifier uses this name. Choose another name. | same |
+| Money invalid | Error | the price table above | on the field |
+| Category invalid | Error | Choose a category. / This category is archived. Choose another category. | `#item-category-error` |
+| Loading | Status | Loading item… | status |
+| Read failure | Title / body / action | Item could not be loaded / Try again to read this item. / Try again | alert; read-only button |
+| Unknown subject | Title / body / action | Item could not be found / Return to Menu and choose the item again. / Return to menu | alert; link |
+| Saving | Notice | Saving… / Wait for the result. Your draft is kept. | focusable status |
+| Saved (standalone) | Result / action | `{name} saved.` / Return to menu | focusable status; link |
+| Unchanged | Result | `Nothing changed. Menu version {n} is still current.` | same, on BO-03 after return |
+| Saved return | BO-03 page status | `{name} saved.` | the row's Edit focused |
+| Definite failure | Notice | Something went wrong / Nothing was saved. Your draft is kept. Press Save to try again. | alert |
+| Session refusal, after resuming | Notice | Nothing was saved / Your draft is kept. Press Save to try again. | status |
+| Unknown, same version | Notice | Outcome not confirmed / The menu has been refreshed. Your draft is kept; nothing was sent again. | status |
+| Unknown, reread failed | Notice / action | Outcome not confirmed / The menu could not be refreshed. Your draft is kept; nothing was sent again. / Try again | read-only button |
+| Unknown, newer version | Notice | Outcome not confirmed / `The menu has been read again at version {n}. It may include this save. Your draft is kept; nothing was sent again. Choose which to keep.` | alert; comparison and choices |
+| Stale | Notice | The menu changed while you were editing / `Nothing was saved. The menu has been read again at version {n}. Your draft is kept. Choose which to keep.` | alert, focused |
+| Stale, same values | Added sentence | The current item has the same values as your draft. | before "Choose which to keep." |
+| Stale, changed option removed (4b) | Added sentence | `The current item no longer has {kind} {saved name}, which your draft changes. Keep my changes adds it back as a new {kind} named {draft name}; Use current item leaves it out.` | several: `… has variant A and modifier B, which your draft changes. Keep my changes adds them back as new variants and modifiers; Use current item leaves them out.`; "named …" is omitted when the name is unchanged |
+| Stale, reread failed | Notice / action | The menu changed while you were editing / Nothing was saved. Your draft is kept, but the current item could not be read. Try again to read it before choosing. / Try again | read-only button; no choices |
+| Comparison | Heading / terms | Current item / Item name, Category, Base price, Status / `Variants · current order`, `Modifiers · current order` | aside, heading level 2 |
+| Comparison | Marker / rows | Differs from your draft / `{name} · {change}` / `{name} · Removed from the current item.` / No variants. / No modifiers. | under a differing value |
+| Comparison | Reason / choices | Choose Keep my changes or Use current item before saving. / Keep my changes / Use current item | same button names |
+| After Keep | Notice | Your changes are kept / `Your changes now build on menu version {n}. Nothing has been saved yet. Press Save to save them.` (or `… Correct the marked fields, then press Save.`) | status |
+| After Use | Notice | Current item loaded / `The form now shows menu version {n}. Nothing was saved. Edit it and save, or Cancel to close.` | status |
+| Name in use | Error | An active item already uses this name. Choose another name. | on Item name |
+| Name in use, archived category | Error | An active item in an archived category still uses this name. Choose another name. | same |
+| Name holder | Line / link | `Name held by {name} in {category}.` (`…in {category}, an archived category.`) / View item on Menu | link to BO-03 with that item selected |
+| Create, category archived | Notice | The category was archived / Nothing was saved. Your draft is kept. Choose another category before saving. | alert; focus Category |
+| Move, category archived | Added sentence | The destination category was archived. Choose another category after deciding which version to keep. | appended to the stale notice |
+| Departure, discarded pending save | Status | Waiting for an earlier save to finish. Nothing will be sent again. | as `D` |
+| Different manager | Heading / context / action | Item editor / Choose an item on Menu to edit it. / Return to menu | link focused |
+
+### Focus
+
+| Moment | Focus |
+|---|---|
+| Open (existing or new) | Item name. |
+| Save refused locally | The first invalid field in reading order. |
+| Add variant / Add modifier | The new row's name. |
+| Remove a saved option | Its Undo. |
+| Remove a new option | That list's Add. |
+| Undo | The restored row's name. |
+| Move up / Move down | The same control, or the row's other move control at an end. |
+| Save pending | The Saving notice. Fields and option controls are inert; Cancel, the rail and Log out stay live. |
+| Saved, with BO-03 return | BO-03: that row's Edit. Standalone drawing: Return to menu. |
+| Clean Cancel / Discard | BO-03: the item's Edit, or for a new item that category's New item (New category if gone). |
+| Definite failure, unknown (same version or reread failed), name in use | Item name. |
+| Stale, unknown with a newer version, edit moved to an archived category | The notice. |
+| Keep my changes | Save, or the first field the rerun checks refuse. |
+| Use current item | Item name. |
+| Create refused, category archived | Category. |
+| Departure opens; Escape in it | Stay; Escape means Stay. |
+| Stay | The field last edited, or the notice while pending. |
+| M-6 | Password. Same manager resumes: the field last edited, or the restored decision's Stay. |
+| Different manager | Return to menu. |
+
+### Verification and measurements
+
+All runs by the lead in this worktree, at my request:
+
+- After the first finishing changes: `design020.cjs` **717 / 717**, 120 states
+  (60 × two sizes), no page errors, no failures (evidence in my scratchpad,
+  `…/scratchpad/ev1`, outside the repository); `design019.cjs` **998 / 998**,
+  74 states, no page errors, no failures (it covers `menu.js`'s changed return
+  adapter).
+- After the copy pass: `design020.cjs` **717 / 717**, 120 states, no page
+  errors, no failures (`…/scratchpad/ev2`).
+
+The draft scored 705/706 on the lead's 19:20 run. The finishing pass added 11
+assertions (listed under *Finishing pass*) and changed one: the
+`stale-removed` notice assertion now compares the exact new sentence instead
+of the old fragment "again as new choices".
+
+Measurements (overflow state, from `measurements.json`):
+
+| Viewport | Frame width / x | Rail | Top bar | Item name field | Content padding | Save before scrolling (y, bottom) | Last modifier's Remove after scrolling (y) | Scrolled |
+|---|---|---|---|---|---|---|---|---|
+| 1440×900 | 1440 / 0 | 220 | 64 | 40 high | 24px | 848, 884 | 611 | 4350 |
+| 1920×1080 | 1440 / 240 | 220 | 64 | 40 high | 24px | 1028, 1064 | 791 | 4170 |
+
+In all 60 states at both sizes: no horizontal page overflow, content overflow
+≤ 1px, one visible `main`, password fields empty, no business-day fact, every
+open dialog inside the viewport, every create unversioned and every edit
+versioned, no state command in the form. The footer is sticky, so Save stays
+in view through 18 variants and 18 modifiers at the longest legal names
+(asserted: 64 and 32 code points exactly). I inspected `default`,
+`stale-removed` and `floor` at 1440 by eye.
+
+**Earlier checks not rerun.** `design012`, `013`, `014`, `016`, `017` and `018`
+were not rerun after the finishing pass, because no file they read changed:
+the pass touched only `item-editor.*`, `menu.js`, `design020.cjs`, `D`, `I`
+BO-04 and `S` BO-04. `design017.cjs` reads `S` (no `[PANEL]`/`[ACTION]` tag,
+and BO-05's line); my `S` lines use only `[INLINE]` and `[MODAL]`, and BO-05 is
+untouched. `design018.cjs` reads `I` and `S` only between BO-08 and BO-09.
+`design014.cjs` counts `prototype/` lines in `menu.html` (0, unchanged), so it
+needs no change. The lead's 19:20 run on the draft passed `design014` and
+`design019`.
+
+### Link migration and scope
+
+`grep -c "prototype/"` against `d164a23`:
+
+| Artifact | Before | After | Why |
+|---|---|---|---|
+| `F/menu.js` | 1 | 0 | `editorHref` now points at `item-editor.html` with the same parameters, plus the URL-only review snapshots of ruling 1. |
+| `F/menu.html` | 0 | 0 | Only the review-fixture sentence changed. |
+| `F/item-editor.html`, `.css`, `.js`, `-states.js` | (new) | 0 | Its rail is authored and local. |
+
+`design019.cjs` changes only its expected Edit suffix (ruling 2).
+`design014.cjs` is unchanged (its `menu` count was already 0).
+
+**`I` BO-04, changed lines** (`git diff -U0 d164a23`): the *Reached by*,
+*States* and *Requirements* paragraphs are replaced, and two paragraphs are
+added. The old stale line *price immutable-currency context (currency and
+precision are locked after the first order)* is replaced by *Fixed currency
+context* (Q5).
+
+```
+-**Reached by / from.** BO-03.
+-
+-**States.** *empty* (new item) · *loading* · *error* (validation) ·
+-*permission-denied* (n/a) · *overflow* (many variants and modifiers on one
+-item) · *unsaved changes* (must survive idle re-authentication, FR-A2b) ·
+-*price immutable-currency context* (currency and precision are locked after
+-the first order, FR-B1, M1).
+-
+-**Requirements.** FR-B4, FR-C1, FR-C2, FR-C3, FR-C4, FR-C8.
++**Reached by / from.** BO-03: an item's Edit opens that item; a category's
++New item opens a new item in that category. Cancel, a clean return and a saved
++return land on the same BO-03 row (a new item's clean return, on that
++category's New item).
++
++**States.** *new item* (empty, in the category it was created from, no variant
++or modifier, nothing that implies a saved item) · *loading* · *read failure
++with Try again* · *permission-denied* (n/a) · *an item with variants and
++modifiers*, and *with none* · *archived item being edited* (archived shown as a
++fact; saving does not restore it) · *86'd item being edited* (unavailable shown
++as a fact) · *overflow* (many variants and modifiers, the longest names, the
++largest prices; Save and every option control reachable) · *a negative variant
++whose price floors at zero* · *local invalid input* on the item name, base
++price, variant name and price change, modifier name and price change (empty,
++too long, control character, not a whole number, out of bounds, a negative
++base price or modifier change, a duplicate option name within the item) ·
++*option removal pending, and undone* · *options reordered* (Move up, Move
++down) · *saving, saved, unchanged, definite failure* · *outcome unknown* (same
++version, newer version, reread failed) · *name in use* on create and rename,
++including a name held by an item in an archived category · *catalog changed on
++an edit* (`CATALOG_CHANGED`: nothing saved, draft and option rows kept, item
++reread, current values beside the draft, Keep my changes or Use current item
++before Save), including a changed option removed meanwhile and a kept option
++whose name is now taken · *create refused because its category was archived
++meanwhile* (choose another category) · *move to a category archived meanwhile
++refused* · *departure decision* (with pending and unknown copy) · *M-6 over the
++editor* · *BO-01 with the draft held*.
++
++**Fixed currency context** (owner, Q5): currency and decimal places are
++installation constants, IDR at 0 decimal places, shown as plain text above the
++price fields and never editable. Every price is whole rupiah, grouped with dots,
++without a currency symbol.
++
++**Rules settled by DESIGN-020.** Item names 1–64 code points, unique among
++active items across the whole menu, case-insensitively (an item in an archived
++category still holds its name); variant and modifier names 1–32 code points,
++unique among the item's active variants or active modifiers, refused locally.
++All names trimmed, no control character. Base price 0–99.999.999; variant
++change −99.999.999 to 99.999.999; modifier change 0–99.999.999. One Save sends
++every change on the screen as one command; an edit carries the catalog version
++the editor read, a create carries none. A removed option is set inactive on
++Save and cannot be restored; adding the name again makes a new option. A new
++option goes last in its list. 86, available again, archive and restore are
++BO-03's row actions; BO-04 shows availability and archived status as facts and
++offers none of them. The [Frost BO-04 composition](visual-directions/frost/back-office/item-editor.html)
++and DESIGN-020 Handoff supply the exact copy, rules and walks, pending design
++review.
++
++**Requirements.** FR-B1, FR-B4, FR-C1, FR-C2, FR-C3, FR-C4, FR-C7, FR-C8,
++FR-M1, FR-M5.
+```
+
+`I` BO-04's *Must not invent* list is unchanged.
+
+**`S` BO-04, changed lines** (`git diff -U0 d164a23`):
+
+```
+@@ -280,0 +281 @@
++│       ├── [INLINE] Currency and decimal places — fixed, plain text  FR-B1, M1
+@@ -284 +285,6 @@
+-│       └── [MODAL] Archive item — snapshots unaffected ... FR-C8, B-8
++│       ├── [INLINE] Option removal pending / undo; Move up, Move down  FR-B4
++│       ├── [INLINE] Invalid field / duplicate option name — local  FR-B4, M5
++│       ├── [INLINE] Item name in use — refused ........... FR-B4
++│       ├── [INLINE] Catalog changed — draft kept, Keep or Use current  ADR-012
++│       ├── [INLINE] Category archived meanwhile — choose another  ADR-012
++│       └── [MODAL] Stay or discard unsaved changes ....... FR-A2b
+```
+
+One removal to flag for the reviewer: BO-04's *Archive item* modal is gone
+from `S`, because the lead's ruling puts archive on BO-03, whose node already
+lists *Archive / restore category or item* (DESIGN-019). The snapshot fact it
+carried (B-8) is in BO-04's standing context: "Existing orders keep their
+saved names and prices."
+
+### Questions and downstream work
+
+No question blocks this design. Raised and not ruled, each with a proposed
+answer:
+
+1. **Swapping two option names in one save (S4a).** The screen accepts a draft
+   where variant A is renamed B and variant B renamed A in one Save, because the
+   result is valid. C1's recommended uniqueness is a partial unique index on
+   `lower(name) WHERE is_active`, which cannot be deferred, so applying the two
+   renames row by row collides mid-transaction. The same applies to removing
+   an option and adding one with its name in one save, unless removals are
+   applied first. **Proposed:** S4a's `editItem` applies removals first, then
+   edits and additions, and makes a swap safe (for example by a deferred
+   constraint trigger for within-item uniqueness, or by renaming through a
+   temporary value inside the transaction). The architect owns the mechanism;
+   the screen's rule stays "unique among active options after the save".
+2. **A variant whose price exceeds the largest line total.** Base 99.999.999
+   plus a change of 99.999.999 is within each field's bounds, but one unit
+   exceeds FR-M5's maximum line total, so it could never be sold. BO-04 does not
+   refuse it (no document grants that refusal); it notes "More than the largest
+   line total, 99.999.999." under that variant. **Proposed:** keep the note and
+   no refusal in Phase 1; Phase 2's add-line enforces FR-M5. If the owner wants
+   a refusal, it belongs in the contract first.
+3. **Keep my changes and untouched item fields.** Under DESIGN-018, Keep keeps
+   the item's fields as the draft has them, so a field another manager changed
+   that this draft never touched goes back on the next Save. Ruling 4(a) makes
+   untouched *options* follow the current item instead. **Proposed:** keep both
+   as ruled; the comparison now marks each differing field ("Differs from your
+   draft"), so the manager sees what Keep would put back. If the lead wants
+   symmetry, untouched fields would follow the current item too, which changes
+   DESIGN-018's rule and so is the owner's call.
+4. **BO-04's version is its own read.** I state that BO-04 builds on the item
+   read it makes when it opens, not on BO-03's list version (DESIGN-019's "an
+   editor carries the list's standing version" is about BO-03's inline
+   editors). **Proposed:** S4c follows this; it is what makes BO-04's loading and
+   read-failure states meaningful.
+
+For **S4a**: name lengths (64 / 32 code points), bounds and option order as in
+the tables above; `editItem` applies an explicit change list; removals set
+inactive and never restore; within-item uniqueness among active options
+(question 1).
+
+For **S4b**: prices cross as canonical strings in every field of
+`createItem` and `editItem`, including option deltas; a draft key identifies an
+added option in `order`.
+
+For **S4c**: copy, focus and rules above; the URL snapshots in `menu.js` and
+`item-editor.js` are review plumbing, replaced by real reads; do not copy
+BO-03's 80-unit stress name as valid; the money input is a pattern plus integer
+comparison on strings, never `Number` or a float.
+
+For **DESIGN-021**: nothing on the POS changes here. The POS shows
+`max(0, base + variant + modifiers)` (FR-C2); BO-04's per-variant figure is a
+back-office aid only.
+
+For the **lead**: carry the four rulings above into DECISIONS; DESIGN-018's
+"UTF-16 units" sentence still stands in `D` (not edited here, as the task
+says it is being corrected).
+
+DONE
