@@ -9,7 +9,7 @@
   const nav=document.querySelector('.screens');
   MOCKUPS.forEach((m,i)=>{ const b=document.createElement('button');b.textContent=names[i]||m.title;b.type='button';b.onclick=()=>{selected=i;if(MOCKUPS[i].directions)direction='frost';fillStates();render();};nav.append(b); });
   function fillStates(initial){
-    state.replaceChildren(...MOCKUPS[selected].states.filter(s=>direction!=='paper'||!['kitchen','category-invalid'].includes(s[0])).map(([value,label])=>{const o=document.createElement('option');o.value=value;o.textContent=label;return o;}));
+    state.replaceChildren(...(direction==='paper' && MOCKUPS[selected].paperStates || MOCKUPS[selected].states).filter(s=>direction!=='paper'||!['kitchen','category-invalid'].includes(s[0])).map(([value,label])=>{const o=document.createElement('option');o.value=value;o.textContent=label;return o;}));
     const requested=initial||defaults[selected];
     if([...state.options].some(s=>s.value===requested))state.value=requested;
   }

@@ -266,11 +266,17 @@ reports and audit.
 │
 ├── Menu ................................................. FR-B4, C1–C5
 │   ├── BO-03 [SCREEN] Items and categories ............... FR-B4, C1, B6
-│   │   ├── [INLINE] 86 toggle per item row ............... FR-B6, C5
-│   │   ├── [INLINE] 86 rejected — item on a leased order . FR-G13
-│   │   ├── [MODAL] Category create / edit ................ FR-B4
-│   │   ├── [INLINE] Category create refused — empty name . FR-B4
-│   │   └── [INLINE] Empty — no items yet ................. FR-B4
+│   │   ├── [INLINE] 86 / available again per item row .... FR-B6, C5
+│   │   ├── [INLINE] Phase 4: 86 refused — leased quick sale, order named  FR-G13
+│   │   ├── [INLINE] Category create / rename — non-modal panel  FR-B4
+│   │   ├── [INLINE] Category name invalid / name in use .. FR-B4
+│   │   ├── [INLINE] Archive / restore category or item; name-in-use refusal  FR-B4, C8
+│   │   ├── [INLINE] Archived category — items retained, hidden from POS  FR-B4, C8
+│   │   ├── [INLINE] Reorder categories / items — Move up, Move down, Save order  FR-B4
+│   │   ├── [INLINE] Catalog changed — rename / reorder draft kept  ADR-012
+│   │   ├── [INLINE] Partial list — may be out of date .... FR-B4
+│   │   ├── [MODAL] Stay or discard unsaved changes ....... FR-A2b
+│   │   └── [INLINE] Empty — create a category, then an item  FR-B4, B-24
 │   └── BO-04 [SCREEN] Item editor ................... FR-B4, C1–C4, C7, C8
 │       ├── [INLINE] Variants — single-select, ± delta .... FR-C2
 │       ├── [INLINE] Modifiers — multi-select, ≥0 delta ... FR-C3
@@ -364,7 +370,9 @@ prototype.
 
 1. **86 → POS.** BO-03 toggle → POS-03 menu browser reflects it within 3s
    (FR-C6, AC-12). Not navigation; a live data effect the prototype must fake
-   visibly.
+   visibly. DESIGN-019 pairs its Steak 86 state with the existing Frost POS
+   `order.html?state=eightysix` as review evidence only; no product navigation
+   crosses clients and no timed integration result is claimed.
 2. **Kitchen print failure → both clients.** One incident, two surfaces
    (FR-E3, AC-33).
 3. **End-of-day refusal → POS.** BO-09 lists open orders; the manager settles
@@ -374,3 +382,4 @@ prototype.
    session-invalidated state on the next authenticated request (FR-B3, AC-32).
 5. **Lease → back office.** An active CheckoutLease on a quick-sale order
    causes BO-03's 86 toggle to be rejected, naming the order (FR-G13, AC-29).
+   This refusal arrives in Phase 4; DESIGN-019 marks it separately from S5.

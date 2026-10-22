@@ -203,6 +203,421 @@ full prose, ending with `DONE` or `BLOCKED: <one question>`. Then run exactly on
     herdr agent prompt lead "design019: DESIGN-019 done — <one line>"
     herdr agent prompt lead "design019: BLOCKED — <question>"
 
+## Handover (lead, 2026-10-22): finish the Codex designer's draft on Claude Opus
+
+**Owner exception** (DECISIONS 2026-10-22): Codex hit its usage limit, so this task is finished by a Claude Opus 5.5
+designer (`design019c`) and reviewed by Claude Opus, with no Codex step. The other-family rule stands for every other
+task.
+
+The Codex designer (`design019`) drew the whole slice and wrote the Handoff below, but **committed nothing**. Its work
+is uncommitted in this worktree. Modified: `.agent/tasks/DESIGN-019-menu.md` (this Handoff), `docs/DESIGN.md`,
+`docs/design/SCREEN-INVENTORY.md`, `docs/design/SITEMAP.md`, `docs/design/checks/design014.cjs`,
+`docs/design/visual-directions/frost/back-office/menu.html`, `docs/design/visual-directions/index.html`,
+`docs/design/visual-directions/manifest.js` and `docs/design/visual-directions/review.js`. New:
+`docs/design/checks/design019.cjs`, and `frost/back-office/menu.css`, `menu.js` and `menu-states.js`. **Finish it; do
+not restart it.**
+
+**The lead's check runs on this draft** (2026-10-22): `design019.cjs` **965/967**, 74 states, no page errors. The only
+failures are "long names and amounts fit 1440" and "… 1920", with detail `{category: 33, item: 80, bad: 0}`: the longest
+category name in the fixture measures 33 against the 32-character rule. The six earlier checks pass: `design012` 421/421,
+`design013` 371/371, `design014` 288/288, `design016` 399/399, `design017` 347/347, `design018` 724/724.
+
+**What the next designer does:**
+1. Read this task file whole, including the Handoff below. Check the draft against the task's *Rulings*, *What to draw*
+   and *Acceptance criteria*, finish anything missing, and correct anything wrong, saying so in the Handoff.
+2. Fix the length failure: the longest category is exactly 32 in the fixture, and the check agrees.
+3. **Lead rulings already given in this task** (to the Codex designer): category names are 1–32 characters; reorder is by
+   *Move up* / *Move down* with *Save order*; archiving a category needs no confirmation, with copy saying it hides the
+   items from the POS without changing them; Edit links carry their own item's identity in the URL, the check asserts
+   it, and `P/item-editor.html` is **not** edited (DESIGN-020 redraws BO-04).
+4. Rerun `design019.cjs` once after your changes. Rerun the six earlier checks only if you change shared files
+   (`office.*`, `manifest.js`, `review.js`, `index.html`, or another artifact). Ask the owner in the pane before each
+   run.
+5. Commit everything on `agent/design-019` (path-scoped `git add`), complete the Handoff with the counts, end it with
+   `DONE`, and ping the lead.
+
 ## Handoff
 
-_Not started._
+### Delivery and the decisions S4a, S4c and S5 can copy
+
+Drawn by `design019` (Codex) on `agent/design-019` and finished by `design019c`
+(Claude Opus, under the owner's exception of 2026-10-22). The finishing pass
+reviewed the draft against this task's rulings, *What to draw* and acceptance
+criteria, and kept it. Two things were corrected and one rule was added; see
+*Finishing pass* below. The artifact is
+`docs/design/visual-directions/frost/back-office/menu.html`, with `menu.css`,
+`menu.js` and `menu-states.js`. It consumes `office.css`, `office.js` and
+`tables.css`. These are local review drawings, with illustrative records and
+explicit result selectors, not application code or a second configuration API.
+No credential, request or configuration is stored or sent. No token is added.
+
+The lead gave four rulings, restated in the *Handover* section above:
+category names are 1–32 characters; reorder uses Move up, Move down and Save
+order; archiving a category needs no confirmation, and the copy says it hides
+the items from the POS without changing them; and Edit links carry their own
+item's identity while `P/item-editor.html` is not edited. The later instruction
+to carry parameters only superseded an earlier answer that allowed an adapter.
+They are recorded here so the lead can carry them into DECISIONS, which this
+role cannot edit.
+
+| Rule for builders | Decision and reason |
+|---|---|
+| Category names | Trim before validating. Require 1–32 UTF-16 units, reject Unicode Cc controls, and do not truncate with maxlength. Check empty, length, then controls. A valid name typed after a refusal clears the obsolete error and enables Create for a new validation. This follows BO-05's compact name precedent. |
+| Category uniqueness | Unique among active categories, case-insensitively. Create, rename of an active category and restore into a held name are refused DUPLICATE. Archived categories may share names and may be renamed. A rename never also restores the category. |
+| Item restore uniqueness | An active item anywhere in the menu may hold the name. Refusal keeps the archived row and points to its own Edit action; DESIGN-020 owns the actual rename. Restore remains a separate action afterwards. |
+| Grouping and row order | Active categories first, then archived categories. Each set is in stored display order, ties by case-insensitive name and then stable identity. Within each category, active items precede archived items, with the same ordering rule inside each set. All categories and items remain visible; no filter can hide the affected subject after a command. |
+| Creation and restoration order | New categories go last among all stored category positions; new items go last in their category. Restoring retains the stored position and rejoins the active group, with the tie rule above. |
+| Reorder | The complete active categories, or all active items of one active category, form one scope. Explicit Move up/Move down changes the draft only. Save order sends the complete scope and its opening catalog version once. Archived records retain their stored order. First-up and last-down are disabled. Keyboard activation works without dragging. A scope with fewer than two active records has no order to change: Reorder categories is disabled below two active categories, and a category's Reorder items below two active items in it (including an empty category). |
+| Category archive | No confirmation: it is reversible and changes no item. The category header explains the effect before the action; the result names the category and states that item status and availability are unchanged. |
+| Archived categories | Keep the group after the active categories, label it Archived category, retain every item with its own active and availability flags, and label the rows Hidden from the POS · category archived. Rename and Restore remain in the group header; New item and Reorder items are absent until restoration. |
+| Item availability when archived | 86 and Make available remain on every row, including archived items and items in archived categories, per C1 §3. Their stored availability changes, but an archived item/category still keeps the item hidden from the POS. |
+| Version-bearing commands | Category rename and both reorders carry the catalog version read when their editor opened. A reread alone never rebases the draft. |
+| Commands without a version | Category create, 86, available again, category/item archive and category/item restore carry none and cannot be refused CATALOG_CHANGED. Every committed catalog write still advances the version exactly once; no-op commands do not. |
+| Prices | The stored tax-inclusive base price, whole rupiah with dot grouping and no currency prefix. BO-03 has no price input. |
+
+The four table columns are Item, Base price · IDR, Availability and Actions.
+Category headers carry their own controls. An editor opens as a full-width
+non-modal panel above the table, using the existing panel, field and button
+styles; its two internal columns put the draft beside its result/comparison.
+This keeps prices and urgent availability actions legible while an editor is
+open. The shared review rail retains future destinations; S4c must use the
+production built-destination manifest. There is no Phase 5 business-day fact.
+
+The default fixture has four categories and ten items, including one archived
+category, one archived item and two unavailable items. Overflow adds 48 items
+for 58 total, with a 32-unit category name, 80-unit item stress names, and
+99.999.999 prices. The 80-unit fixture exercises wrapping; it does not decide
+BO-04's item-name schema. DESIGN-020 must settle that limit and recheck its
+longest name against this table. Counts derive from records and are withheld
+while loading, after a failed read and in the partial-list state.
+
+### Requirement and state map
+
+All 74 states are registered in `menu-states.js` and `manifest.js`; the gallery
+loads them from that manifest. The old Paper state list is kept separately as
+`paperStates`, and the gallery selects it only for Paper. Paper files are not
+changed.
+
+| Requirement, ruling or task item | Drawing or walk |
+|---|---|
+| I BO-03 empty; B-24; Part A first category and item | `empty` has zero categories/items. New category creates the first category; its own New item link carries that category to BO-04. |
+| I loading / error; shared read failure | `loading`, `error`; Try again repeats the read only. Permission denied remains the shared session handling, not a new menu permission state. |
+| I overflow; DESIGN-011 sticky header / 86 / fixture counts | `overflow`; every row retains its own availability action and base price. The browser script measures the header against its scroll owner at both sizes and compares counts with records. |
+| FR-B4 category create/edit; DESIGN-011 recovery | `category`, `rename`, `rename-archived`, `category-invalid`, `invalid-long`, `invalid-control`; recovery is an interactive input/submit walk. |
+| C2 validation / authoritative result | `saving`, `saved`, `failure`; one command at a time, invalid input sends nothing, saved closes the editor and replaces its own record. An unchanged save closes with the version still current. |
+| Names unique while active | `duplicate-create`, `duplicate-rename`, `duplicate-category-restore`, `duplicate-item-restore`; the current holder stays visible. A refused restore remains a page result, with Rename/Edit as the explicit recovery path. |
+| Unknown outcomes and reread failure | `unknown`, `unknown-changed`, `unknown-read-failed`; no resend and no inferred success. The ordinary explicit save remains available unless a stale comparison first requires a decision. |
+| ADR-012 rules 10 and 13; list edit refusal | `stale`, `stale-read-failed`, `reorder-categories-stale`, `reorder-items-stale`; draft kept, one reread, current value/order shown, Save disabled until Keep my changes or Use current menu. |
+| Reorder without dragging | `reorder-categories-edit`, `reorder-items-edit`, each with `-pending`, `-saved`, `-stale`, `-unknown`. Keyboard Enter activates Move down; saved order carries the opening version. |
+| Q10 restore / FR-C8 / B-8 retention | `category-archived`, `category-restored`, `item-archived`, `item-restored`. Category archive/restore leaves all item flags unchanged. Existing-order snapshots are described as unchanged. |
+| Direct 86 and reversal / FR-B6, C5, C6 / C-3 | `eightysix`, `available`; the check walks both directions on every item, including archived records. Each result names the selected item, with no form. |
+| Page result matrix for state commands | `pending-`, `unknown-`, `failure-`, `session-`, each followed by `86`, `available`, `category-archive`, `category-restore`, `item-archive`, or `item-restore`. All 24 are registered; none sends a catalog version. |
+| Configuration departure / no automatic resend | `unsaved`, `unsaved-logout`, `leave-pending`, `leave-unknown`; Cancel, Escape, browser Back, rail and logout walks. Discard never cancels an already-sent command; a late authoritative answer updates its record silently. |
+| M-6 / BO-01 draft isolation | `reauth`, `bo01-draft`, `reauth-decision`, `bo01-decision`; same-manager recovery keeps the draft and does not submit, different-manager sign-in destroys it. BO-01 closes working-area modal dialogs before its fields become usable. |
+| F4 partial list | `partial`; known rows include the saved Main plates category, counts are withheld, New stays live, and Try again reads the full menu. |
+| FR-G13 / AC-29 / C-4 / owner Q13 | `leaserejected` is explicitly **Phase 4 only** in the artifact and gallery. It names Quick-sale order ORD-1048, opened 20:14. S5 must not build this refusal. No table-settlement refusal is implied. |
+| Cross-client 86 / S cross-client flow / AC-12 | Review the Steak row in `F/menu.html?state=eightysix` beside the existing Frost `pos/order.html?state=eightysix`. This is paired visual evidence only, not product navigation or proof of a three-second integration. Add/fire validation remains Phase 2/3; DESIGN-021 owns the new POS states. |
+| Subject-correct Edit / Part A.2, latest lead ruling | Every Edit URL targets P/item-editor.html with its row's `item`, `category`, `return=frost-menu` and `returnItem`. The check compares every URL with that row's identity. BO-04 ignores these today; the visible editor/Cancel/return walk belongs to DESIGN-020. |
+| Part B | DESIGN's DESIGN-019 additions separate binding reorder/grouped-command/stale-list behaviour from BO-03 copy and composition. Existing rules are unchanged. |
+| Part C rail, inventory, sitemap, gallery | Menu already resolves to Frost in office.js, so it is untouched. The manifest, gallery, inventory and sitemap now name every required family. DESIGN-014 changes only its expected authored Menu prototype-link count. |
+| B-13 / owner Q11 / constraints | M. Iqbal and Ratna Ayu are named; no audit trace, stock, image, timing control, nested modifier group or POS operation is added. |
+
+### Exact copy and accessible names for S4c and S5
+
+Braces below denote trusted record values, never server or schema error messages.
+Tests identify a row by its stable record identity before selecting a named
+control, since archived records may share names. Review selectors, the fixture
+explanation, Phase 4 build annotation and All states link are outside product
+copy. BO-01/M-6 reuse the reviewed session components; this fixture only composes
+them with the menu draft.
+
+| State / context | Element | Exact text | Accessible name / test target |
+|---|---|---|---|
+| Frame | Heading / rail / top bar | Menu | heading Menu; rail link Menu |
+| Frame | Actor / logout | `{manager} · Manager` / Log out | link Log out |
+| Menu | Count | `{categories} categories · {items} items` | `#menu-count`; absent unless full read succeeded |
+| Menu | Context | Prices include tax · Whole rupiah · IDR. Changes reach the POS within three seconds. Existing orders keep their saved names and prices. | paragraph |
+| Toolbar | Actions | New category / Reorder categories | same button names |
+| Table | Caption | Active categories first · Archived items stay in their category | table caption |
+| Table | Headers | Item / Base price · IDR / Availability / Actions | column headers |
+| Category | Heading | `{name}` or `{name} · Archived category` | heading level 2 |
+| Active category | Effect note | Archiving this category hides its items from the POS without changing them. | group note |
+| Archived category | Effect note | Hidden from the POS. Item status and availability are kept. Restore this category to show its active, available items again. | group note |
+| Category | Rename / archive / restore | Rename / Archive / Restore | Rename category {name}; Archive category {name}; Restore category {name} |
+| Active category | Reorder / add | Reorder items / New item | Reorder items in {name}; New item in {name} |
+| Empty category | Body | No items in this category yet. Use New item to add the first one. | row text |
+| Empty archived category | Body | No items in this category yet. Restore the category before adding an item. | row text |
+| Item | Options / archive status | `{n} variants · {n} modifiers` / Archived item | row text |
+| Item | Availability | Available / 86 · Unavailable | row text |
+| Item | Availability action | 86 / Make available | Mark {name} 86; Make {name} available |
+| Item | Edit / archive / restore | Edit / Archive / Restore | Edit {name}; Archive item {name}; Restore item {name} |
+| Hidden item | Note | Hidden from the POS · category archived / Hidden from the POS · item archived | category reason takes precedence when both are archived |
+| Empty menu | Heading / body | No menu yet / Nothing is preloaded. Create a category, then add your first item. | New category remains the sole creation entry |
+| Loading | Status | Loading menu… | status |
+| Read failure | Title / body / action | Menu could not be loaded / Try again to read the menu. / Try again | alert; read-only button Try again |
+| Partial list | Title | The menu list may be out of date | alert |
+| Partial list | Body / action | The menu could not be read again. The rows below are the ones this page knows, including your latest change. Try again to read the full list. / Try again | read-only button Try again |
+| Read recovered | Status | The menu has been refreshed. | not used to infer an unknown command's result |
+| Category form | Heading | New category / Rename {name} | named non-modal dialog |
+| Category form | Create context | Choose the category name staff will see at the POS. | paragraph |
+| Category form | Rename context | Rename this category. Existing orders keep their saved names. | paragraph |
+| Archived rename | Context | Archived category. Saving its name does not restore it. | paragraph |
+| Category form | Label / helper | Category name / 1–32 characters. Active categories must have different names. | textbox Category name; helper in aria-describedby |
+| Category form | Actions | Create / Save / Cancel | button names; Create only for creation |
+| Invalid empty | Field error | Enter a name | `#name-error`; invalid field described and focused |
+| Invalid long | Field error | Use 32 characters or fewer. | same |
+| Invalid control | Field error | Remove control characters from the name. | same |
+| Create / rename duplicate | Field error | An active category already uses this name. Choose another name. | same; list reread |
+| Duplicate holder | Marker | Name in use | visible row/group text |
+| Restore duplicate | Page result | `{name} was not restored. An active category already uses this name. Rename this archived category, save, then restore it.` | focusable page alert; Rename is a separate action |
+| Item restore duplicate | Page result | `{name} was not restored. An active item already uses this name. Rename this archived item in the item editor, save, then restore it.` | focusable page alert; own Edit link is the recovery |
+| Reorder | Heading | Reorder categories / Reorder items in {category} | named non-modal dialog |
+| Reorder | Context | Move each row up or down, then save the full order. Archived records keep their stored order. | paragraph |
+| Reorder | Row / controls | `{position}. {name}` / Move up / Move down | Move {name} up; Move {name} down |
+| Reorder | Submit / cancel | Save order / Cancel | exact buttons |
+| Pending edit | Status | Saving… Wait for the result. Your draft is kept. | focusable form status |
+| Saved category | Result | `{name} saved.` | page status |
+| Saved order | Result | Category order saved. / `Item order in {category} saved.` | page status |
+| Unchanged | Result | `Nothing changed. Menu version {n} is still current.` | page status |
+| Stale refusal | Notice | `The menu changed while you were editing. Nothing was saved. The menu has been read again at version {n}. Your draft is kept. Choose which to keep.` | focusable form alert |
+| Stale comparison | Heading / value | Current menu / `Current category name: {name}` or `Current order: {names separated by →}` | current values beside draft |
+| Stale choices | Controls / disabled reason | Keep my changes / Use current menu / Choose Keep my changes or Use current menu first. | exact buttons; reason describes disabled Save |
+| After Keep | Notice | `Your changes now build on version {n}. Nothing has been saved yet. Press Save to save them.` | use Save order for a reorder |
+| After Use | Notice | `The form now shows version {n}. Nothing was saved. Edit it and save, or Cancel to close.` | form status |
+| Stale reread failed | Notice | The menu changed while you were editing. Nothing was saved. Your draft is kept, but the current menu could not be read. Try again to read it before choosing. | read-only Try again; Save stays disabled |
+| Definite edit failure | Notice | Something went wrong. Nothing was saved. Your draft is kept. Press Save to try again. | substitute Create or Save order for that form's submit label |
+| Unknown edit | Notice | Outcome not confirmed. The menu has been refreshed. Your draft is kept; nothing was sent again. | form status |
+| Unknown edit, read failed | Notice | Outcome not confirmed. The menu could not be refreshed. Your draft is kept; nothing was sent again. | read-only Try again |
+| Unknown, newer menu | Notice | `Outcome not confirmed. The menu has been read again at version {n}. It may include this save. Your draft is kept; nothing was sent again. Choose which to keep.` | comparison and explicit choices; no inferred success |
+| 86 pending / available pending | Page result | `Marking {name} 86…` / `Making {name} available…` | focusable page status; no form |
+| Archive / restore pending | Page result | `Archiving {name}…` / `Restoring {name}…` | same |
+| 86 saved | Page result | `{name} is now marked 86. At the POS it is disabled in place, not removed.` | page status |
+| Available saved | Page result | `{name} is available again.` | append hidden qualifier below when relevant |
+| Available, still archived | Additional sentence | It stays hidden from the POS while it or its category is archived. | page status |
+| Category archived | Page result | `{name} archived. Its items are hidden from the POS; their status and availability are unchanged.` | page status |
+| Category restored | Page result | `{name} restored. Its active, available items are shown at the POS again.` | page status |
+| Item archived / restored | Page result | `{name} archived. It is kept for history.` / `{name} restored.` | page status |
+| Item in archived category | Additional sentence | Its category is archived, so it stays hidden from the POS. | appended to item archive/restore result |
+| Unknown state command | Page result | `{name}: the outcome could not be confirmed. The menu has been refreshed. Nothing was sent again.` | use The menu could not be refreshed. when the reread failed |
+| Definite state failure | Page result | `Something went wrong. {name} was not changed. Use its row action to try again.` | focusable page alert |
+| State session refusal | Result after resuming | `{name} was not changed. Use its row action to try again.` | no resent command |
+| Form session refusal | Notice after resuming | Nothing was saved. Your draft is kept. Press Save to try again. | substitute Create / Save order |
+| Discard, pending answer | Status | Waiting for an earlier save to finish. Nothing will be sent again. | clears silently with answer |
+| Ordinary departure | Title / body | Discard unsaved changes? / Your edits have not been saved. Stay to keep editing, or discard them before leaving. | named modal dialog |
+| Pending / unknown departure | Body | The save may or may not have succeeded. Leaving does not send it again. Stay to keep the draft, or discard it and leave. | same dialog |
+| Ordinary departure | Actions | Stay / Discard | exact buttons; Stay initially focused |
+| Logout decision | Title / body | Log out and discard your changes? / The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session. | reviewed logout copy |
+| Logout decision | Actions | Keep this draft / Discard changes and log out | exact buttons |
+| Uncertain logout | Additional sentence | The save may or may not have succeeded. Leaving does not send it again. | separate context paragraph |
+| Departure emergency | Sentence | Decide whether to stay or discard before opening print incidents. | existing incident title and identity repeated |
+| Logout emergency | Sentence | Decide whether to keep this draft or discard it before opening print incidents. | same |
+| M-6 | Title / body | Your session timed out / Your unsaved changes are kept. Continue as m.iqbal to resume them. | named modal; background visible and inert |
+| M-6 | Fields / actions | Username / Password / Continue / Log out / Sign in as a different manager | exact names; own username read-only |
+| M-6 empty secret | Error | Enter your password. | field error |
+| Other-manager acknowledgement | Title / body | Sign in as a different manager? / The current manager’s unsaved changes will not be available to the manager signing in. | named modal |
+| Other-manager acknowledgement | Actions | Stay with current manager / Continue to sign-in | exact buttons |
+| Other-manager sign-in | Title / body | Sign in as a different manager / Enter your own username and password. The current manager’s unsaved changes will not be available to you. | named modal |
+| Other-manager sign-in | Actions | Back to m.iqbal / Sign in | editable Username and Password |
+| M-6 emergency | Sentence / action | Continue your session to open print incidents. / Open print incidents after sign-in | exact button |
+| Queued M-6 emergency | Body | Continue as m.iqbal to open print incidents. Your unsaved changes are kept. | held destination; departure follows authentication |
+| BO-01 held draft | Heading / intro | Back office / Sign in with your manager username and password. | working area hidden |
+| BO-01 held draft | Notice | Your session has ended / Sign in again to continue. / The previous session’s unsaved changes are stored on this tab and are not submitted automatically. | no previous manager identity or draft displayed |
+| BO-01 | Fields / action / local errors | Username / Password / Sign in / Enter your username. / Enter your password. | exact names |
+| Phase 4 lease refusal | Page result | `{name} was not marked 86. Quick-sale order ORD-1048 (opened 20:14) is being paid and includes this item. Try again when payment is no longer in progress.` | focusable page alert; order identity from refusal |
+
+### Focus and command lifetime
+
+| Moment | Focus and behaviour |
+|---|---|
+| Open category form / invalid / duplicate / ordinary failure or unknown | Category name. An obsolete error clears on edit. |
+| Open reorder | First enabled move control. Moving retains the record's control, falling back to its other direction at an edge. |
+| Save / Create / Save order pending | The focusable Saving notice; fields and all command openers are inert. Cancel, rail, logout and incident navigation remain available. |
+| Stale or unknown with newer version | The refusal/comparison notice. Keep moves to Save; Use current moves to Category name or the first enabled move control. |
+| Category saved or state command succeeded | The affected category's Rename. |
+| Item state command succeeded | The affected item's Edit. |
+| Reorder saved | The Reorder categories / Reorder items opener for that scope. |
+| State command pending, unknown, definite failure, duplicate restore or lease refusal | The page status; no form or resend control. |
+| Clean Cancel or Discard | That editor's opener, not the first row. |
+| Departure opens / Escape while departure open | Stay; Escape means Stay. |
+| Stay | Category name, or the first enabled move control; draft and request context retained. |
+| Same manager resumes | Draft field/control, or the still-pending departure decision's Stay first. Held responses are consumed under their actual result; recovery does not resubmit. |
+| Different manager resumes | New category; prior draft and pending context destroyed, no old result announced. |
+| Discard while save pending | Waiting sentence; late authoritative record still updates the list silently, without reopening a form or announcing. |
+
+### Finishing pass (design019c, 2026-10-22)
+
+1. **The length failure is fixed.** The overflow fixture's longest category name
+   was `Category ABCDEFGHIJKLMNOPQRSTUVWX`, 33 characters against the 32-character
+   rule. It is now `Category ABCDEFGHIJKLMNOPQRSTUVW`, exactly 32, and the check's
+   existing assertion (`category === 32`) passes unchanged (`menu.js`, overflow
+   fixture).
+2. **A shared control was wrong in some states.** *Reorder items* was enabled on
+   every active category. In a category with one active item (Sides, Drinks in the
+   default fixture) or none (a category just created), it opened a reorder panel
+   with every move disabled, where focus had no target and Save order could only
+   answer "Nothing changed". It is now disabled below two active items, the same
+   rule the draft already applied to *Reorder categories*. The rule ships as code
+   in `menu.js` and as two new assertions in `design019.cjs` ("nothing to reorder
+   in an empty scope"; "Reorder items needs two active items"), and is written into
+   `D`'s DESIGN-019 reorder behaviour and the rules table above.
+3. **Checked and kept.** The draft meets each ruling: no state command or create
+   carries a version (asserted for every command in every state); state commands
+   open no form; the Phase 4 refusal is marked in the artifact and the gallery;
+   archived categories keep their items visible with their own flags; restore
+   into a held name is a page result with Rename or Edit as the way out; no audit
+   trace, stock, image or timing control appears; every person is named
+   (M. Iqbal, Ratna Ayu); `menu.css` uses tokens only. No token was added, so
+   `npm run verify` does not apply (nothing under `docs/design/tokens/` changed).
+
+### Verification and measurements
+
+Run with the owner's approval in the pane, once, after the finishing changes:
+`PLAYWRIGHT_MODULE="$PWD/node_modules/playwright" node docs/design/checks/design019.cjs`
+→ **969 / 969 passed**, 74 states, no page errors, exit 0. The two added
+assertions account for the change from the lead's 967. Evidence (screenshots of
+every state at both sizes, and `measurements.json`) is in
+`/tmp/design019-evidence/run1`, outside the repository.
+
+Measurements from that run:
+
+| Viewport | Frame width / x | Rail | Top bar | Field height | Content padding | Overflow, scrolled 850px: header top / scroll-owner top | Long names |
+|---|---|---|---|---|---|---|---|
+| 1440×900 | 1440 / 0 | 220 | 64 | 40 | 24px | 64 / 64 (sticky) | category 32, item 80, 0 cells overflowing |
+| 1920×1080 | 1440 / 240 | 220 | 64 | 40 | 24px | 64 / 64 (sticky) | category 32, item 80, 0 cells overflowing |
+
+In every one of the 74 states at both sizes: no horizontal page overflow,
+content overflow ≤ 1px, one visible `main`, every item row has its availability
+action and a whole-rupiah price, counts agree with the fixture's records
+wherever a count is shown, and every open dialog fits the viewport.
+
+**Not rerun:** the six earlier checks. The finishing pass changed only
+`menu.js`, `design019.cjs`, `D` and this Handoff; no shared file (`office.*`,
+`manifest.js`, `review.js`, `index.html`, another artifact) changed after the
+lead's run on the draft, which passed all six: `design012` 421/421, `design013`
+371/371, `design014` 288/288, `design016` 399/399, `design017` 347/347,
+`design018` 724/724. Screenshots of `default`, `stale`, `overflow` (scrolled),
+`reauth`, `duplicate-item-restore` and `leaserejected` at 1440 were inspected by
+eye.
+
+### Link migration and scope
+
+`grep -c "prototype/"` counts matching source lines, against `HEAD` (`2cc05ff`):
+
+| Artifact | Before | After | Why |
+|---|---|---|---|
+| `F/menu.html` | 34 | 0 | The old page hard-coded its rail (end-of-day, presets, reports, users) and 30 item-editor links; the rail now comes from `office.js` and rows are rendered by `menu.js`. |
+| `F/menu.js` | (new) | 1 | `editorHref`: the one BO-04 destination, `../../../prototype/back-office/item-editor.html` with the row's `item`, `category`, `return=frost-menu` and `returnItem` (`state=new` for New item). |
+| `F/menu.css`, `F/menu-states.js` | (new) | 0 | — |
+| `F/office.js` | 1 | 1 | Unchanged: it already resolves `menu` to `menu.html`. |
+
+`design014.cjs` changes only its expected authored count for `menu.html`, from
+34 to 0; no assertion is weakened. No change is made to `P/item-editor.html`,
+`apps/`, `packages/`, `db/`, `e2e/`, accepted ADRs, consults or the four
+product documents.
+
+**`I` BO-03, changed lines** (`git diff -U0`):
+
+```
+@@ -683,10 +683,24 @@
+-**States.** *empty* (no items yet — the state a new installation starts in,
+-because no menu is hard-coded, B-24) · *loading* · *error* · *permission-denied*
+-(n/a; back office is manager only) · *overflow* (long menu: dense table,
+-sticky headers, no truncation of price or availability) · *item 86'd* ·
+-*86 rejected while a CheckoutLease holds a quick-sale order carrying that item,
+-naming the order* (FR-G13, AC-29) · *item archived* (FR-C8) ·
+-*category-invalid* — Create tapped with an empty name; the Name field is
+-invalid with "Enter a name"; Create stays disabled until a name is entered;
+-nothing is written (added 2026-09-14 by the lead's ruling in DESIGN-005
+-finding 4; a state of the category modal, not a new node).
++**States.** *empty* (no category and no item; create the first category, then
++its first item; B-24) · *loading* · *read failure with Try again* ·
++*permission-denied* (n/a; manager only) · *overflow* (grouped long menu,
++sticky headers, complete prices and availability actions) · *category create
++and rename*, including archived categories · *local invalid category name*
++(empty, more than 32 UTF-16 units, control character; trimmed before checking;
++"Enter a name" for empty; typing clears the error and enables Create again) ·
++*name in use* on category create, rename or restore, and on item restore ·
++*category and item archived / restored* (retained rows; archived categories
++show all their items and explain that they are hidden from the POS without
++changing their status or availability) · *86 / available again*, directly
++from each row · *category reorder / item reorder within a category*, with
++Move up, Move down and Save order · *catalog changed on rename or reorder*
++(`CATALOG_CHANGED`: nothing saved, draft/order kept, menu reread, explicit
++Keep my changes or Use current menu before Save) · *pending, saved, definite
++failure and outcome unknown* · *partial list — the menu list may be out of date*
++(counts withheld, known rows with the latest answer, Try again reads the full
++list) · *departure decision* · *M-6 over an inert form* · *BO-01 with draft held* ·
++*Phase 4 only: 86 refused while a CheckoutLease holds a quick-sale order carrying
++that item, naming the order* (FR-G13, AC-29; S5 does not build this refusal).
++Creates and state commands never carry the catalog version and cannot be refused
++for a stale catalog. Every committed catalog write, including 86, archive and
++restore, advances the version. The [Frost BO-03 composition](visual-directions/frost/back-office/menu.html)
++and DESIGN-019 Handoff supply the exact copy and walks, pending design review.
+```
+
+One change of meaning to flag for the reviewer: the old *category-invalid* line
+said "Create stays disabled until a name is entered". The draft, following
+DESIGN-011's recovery finding, keeps Create enabled and validates on press,
+showing "Enter a name"; typing clears the error. Nothing is written either way.
+
+**`S` BO-03 and the cross-client flows, changed lines** (`git diff -U0`):
+
+```
+@@ -269,5 +269,11 @@
+-│   │   ├── [INLINE] 86 toggle per item row ............... FR-B6, C5
+-│   │   ├── [INLINE] 86 rejected — item on a leased order . FR-G13
+-│   │   ├── [MODAL] Category create / edit ................ FR-B4
+-│   │   ├── [INLINE] Category create refused — empty name . FR-B4
+-│   │   └── [INLINE] Empty — no items yet ................. FR-B4
++│   │   ├── [INLINE] 86 / available again per item row .... FR-B6, C5
++│   │   ├── [INLINE] Phase 4: 86 refused — leased quick sale, order named  FR-G13
++│   │   ├── [INLINE] Category create / rename — non-modal panel  FR-B4
++│   │   ├── [INLINE] Category name invalid / name in use .. FR-B4
++│   │   ├── [INLINE] Archive / restore category or item; name-in-use refusal  FR-B4, C8
++│   │   ├── [INLINE] Archived category — items retained, hidden from POS  FR-B4, C8
++│   │   ├── [INLINE] Reorder categories / items — Move up, Move down, Save order  FR-B4
++│   │   ├── [INLINE] Catalog changed — rename / reorder draft kept  ADR-012
++│   │   ├── [INLINE] Partial list — may be out of date .... FR-B4
++│   │   ├── [MODAL] Stay or discard unsaved changes ....... FR-A2b
++│   │   └── [INLINE] Empty — create a category, then an item  FR-B4, B-24
+@@ -367 +373,3 @@
+-   visibly.
++   visibly. DESIGN-019 pairs its Steak 86 state with the existing Frost POS
++   `order.html?state=eightysix` as review evidence only; no product navigation
++   crosses clients and no timed integration result is claimed.
+@@ -376,0 +385 @@
++   This refusal arrives in Phase 4; DESIGN-019 marks it separately from S5.
+```
+
+### Questions and downstream work
+
+No question blocks this design. The subject-adapter question was resolved by
+the lead's ruling: carry parameters only. One question is raised and not ruled:
+
+- **C1 names no command for reordering the items of a category.** C1 §2.2
+  *Display order* makes "the items of a category" a reorder scope, and this task
+  draws that reorder with a version and a `CATALOG_CHANGED` refusal, but C1 §2.3's
+  command table lists only `reorderCategories(expected, ids)`. **Proposed
+  answer:** S4a adds `reorderItems(categoryId, expected, ids)`, which carries the
+  version, is refused `CATALOG_CHANGED` when stale, and is refused
+  `VALIDATION_FAILED` for a list that is not exactly the active items of that
+  active category, mirroring `reorderCategories`. A reorder into an archived
+  category cannot be opened from BO-03 (the control is absent there), so a stale
+  read naming one is the `CATALOG_CHANGED` case. The architect owns the wording.
+
+For **DESIGN-020**: consume the `item`, `category`, `return=frost-menu` and
+`returnItem` parameters every Edit and New item link carries (New item adds
+`state=new`); draw the editor's Cancel and return walk back to the same row
+(BO-03 highlights `?item=` on return through `data-selected`); settle the item
+name length guard and recheck this table's longest name against it (the
+80-unit overflow name is a stress fixture, not a decision); and note that an
+item restore refused *name in use* sends the manager to BO-04 to rename it,
+after which Restore on BO-03 remains a separate action.
+
+For **DESIGN-021**: the new POS catalog and 86-sheet states are yours. The
+existing Steak pair (`F/menu.html?state=eightysix` beside
+`frost/pos/order.html?state=eightysix`) is review evidence only.
+
+The formal design review is the lead's next step before S4c and S5 are written.
+
+DONE
