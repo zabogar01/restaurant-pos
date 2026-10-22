@@ -311,8 +311,314 @@ window.MOCKUPS = [
     "path": "back-office/menu.html",
     "title": "Menu — items and categories",
     "states": [
-      ["kitchen", "Kitchen emergency"],
-      ["category-invalid", "Modal — category, empty name refused"],
+      [
+        "default",
+        "Grouped menu"
+      ],
+      [
+        "empty",
+        "New installation — no menu"
+      ],
+      [
+        "loading",
+        "Loading"
+      ],
+      [
+        "error",
+        "Failed to load"
+      ],
+      [
+        "overflow",
+        "Long menu — longest names"
+      ],
+      [
+        "kitchen",
+        "Kitchen emergency"
+      ],
+      [
+        "category",
+        "Create category"
+      ],
+      [
+        "rename",
+        "Rename category"
+      ],
+      [
+        "rename-archived",
+        "Rename archived category"
+      ],
+      [
+        "category-invalid",
+        "Category — empty name refused"
+      ],
+      [
+        "invalid-long",
+        "Category — name too long"
+      ],
+      [
+        "invalid-control",
+        "Category — control character"
+      ],
+      [
+        "saving",
+        "Category — saving"
+      ],
+      [
+        "saved",
+        "Category — saved"
+      ],
+      [
+        "duplicate-create",
+        "Create — name in use"
+      ],
+      [
+        "duplicate-rename",
+        "Rename — name in use"
+      ],
+      [
+        "duplicate-category-restore",
+        "Restore category — name in use"
+      ],
+      [
+        "failure",
+        "Category — definite failure"
+      ],
+      [
+        "unknown",
+        "Category — outcome unknown"
+      ],
+      [
+        "unknown-changed",
+        "Rename — unknown outcome, newer menu"
+      ],
+      [
+        "unknown-read-failed",
+        "Category — outcome unknown, read failed"
+      ],
+      [
+        "stale",
+        "Rename — catalog changed"
+      ],
+      [
+        "stale-read-failed",
+        "Rename — catalog changed, read failed"
+      ],
+      [
+        "unsaved",
+        "Departure decision"
+      ],
+      [
+        "unsaved-logout",
+        "Logout decision"
+      ],
+      [
+        "leave-pending",
+        "Departure — save pending"
+      ],
+      [
+        "leave-unknown",
+        "Departure — outcome unknown"
+      ],
+      [
+        "reauth",
+        "M-6 over category draft"
+      ],
+      [
+        "bo01-draft",
+        "BO-01 with category draft held"
+      ],
+      [
+        "reauth-decision",
+        "M-6 over departure decision"
+      ],
+      [
+        "bo01-decision",
+        "BO-01 with departure decision held"
+      ],
+      [
+        "eightysix",
+        "Item marked 86"
+      ],
+      [
+        "available",
+        "Item available again"
+      ],
+      [
+        "category-archived",
+        "Category archived — items retained"
+      ],
+      [
+        "category-restored",
+        "Category restored"
+      ],
+      [
+        "item-archived",
+        "Item archived"
+      ],
+      [
+        "item-restored",
+        "Item restored"
+      ],
+      [
+        "duplicate-item-restore",
+        "Restore item — name in use"
+      ],
+      [
+        "partial",
+        "Menu list may be out of date"
+      ],
+      [
+        "leaserejected",
+        "Phase 4 only — 86 refused during quick-sale payment"
+      ],
+      [
+        "pending-86",
+        "86 — pending"
+      ],
+      [
+        "unknown-86",
+        "86 — unknown"
+      ],
+      [
+        "failure-86",
+        "86 — failure"
+      ],
+      [
+        "session-86",
+        "86 — session"
+      ],
+      [
+        "pending-available",
+        "available — pending"
+      ],
+      [
+        "unknown-available",
+        "available — unknown"
+      ],
+      [
+        "failure-available",
+        "available — failure"
+      ],
+      [
+        "session-available",
+        "available — session"
+      ],
+      [
+        "pending-category-archive",
+        "category-archive — pending"
+      ],
+      [
+        "unknown-category-archive",
+        "category-archive — unknown"
+      ],
+      [
+        "failure-category-archive",
+        "category-archive — failure"
+      ],
+      [
+        "session-category-archive",
+        "category-archive — session"
+      ],
+      [
+        "pending-category-restore",
+        "category-restore — pending"
+      ],
+      [
+        "unknown-category-restore",
+        "category-restore — unknown"
+      ],
+      [
+        "failure-category-restore",
+        "category-restore — failure"
+      ],
+      [
+        "session-category-restore",
+        "category-restore — session"
+      ],
+      [
+        "pending-item-archive",
+        "item-archive — pending"
+      ],
+      [
+        "unknown-item-archive",
+        "item-archive — unknown"
+      ],
+      [
+        "failure-item-archive",
+        "item-archive — failure"
+      ],
+      [
+        "session-item-archive",
+        "item-archive — session"
+      ],
+      [
+        "pending-item-restore",
+        "item-restore — pending"
+      ],
+      [
+        "unknown-item-restore",
+        "item-restore — unknown"
+      ],
+      [
+        "failure-item-restore",
+        "item-restore — failure"
+      ],
+      [
+        "session-item-restore",
+        "item-restore — session"
+      ],
+      [
+        "reorder-categories-edit",
+        "Reorder categories — edit"
+      ],
+      [
+        "reorder-categories-pending",
+        "Reorder categories — pending"
+      ],
+      [
+        "reorder-categories-saved",
+        "Reorder categories — saved"
+      ],
+      [
+        "reorder-categories-stale",
+        "Reorder categories — stale"
+      ],
+      [
+        "reorder-categories-unknown",
+        "Reorder categories — unknown"
+      ],
+      [
+        "reorder-items-edit",
+        "Reorder items — edit"
+      ],
+      [
+        "reorder-items-pending",
+        "Reorder items — pending"
+      ],
+      [
+        "reorder-items-saved",
+        "Reorder items — saved"
+      ],
+      [
+        "reorder-items-stale",
+        "Reorder items — stale"
+      ],
+      [
+        "reorder-items-unknown",
+        "Reorder items — unknown"
+      ]
+    ],
+    "width": 1440,
+    "height": 900,
+    "paperStates": [
+      [
+        "kitchen",
+        "Kitchen emergency"
+      ],
+      [
+        "category-invalid",
+        "Modal — category, empty name refused"
+      ],
       [
         "default",
         "Items list"
@@ -345,9 +651,7 @@ window.MOCKUPS = [
         "overflow",
         "Overflow — long menu"
       ]
-    ],
-    "width": 1440,
-    "height": 900
+    ]
   },
   {
     "path": "back-office/report-detail.html",

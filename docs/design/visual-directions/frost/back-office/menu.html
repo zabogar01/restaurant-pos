@@ -2,162 +2,29 @@
 <html lang="en" data-direction="frost"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BO-03 Menu</title>
-<link rel="stylesheet" href="../../structure.css">
-<script>window.WF={id:'BO-03',client:'bo',nav:'menu',name:'Menu — items and categories',reqs:'FR-B4, B6, C1, C5, C7, C8, G13',states:[
-['default','Items list'],['kitchen','Kitchen emergency'],['eightysix','Item toggled to 86'],['leaserejected','86 rejected — order being paid'],
-['empty','No items yet'],['category','Modal — category'],['category-invalid','Modal — category, empty name refused'],['loading','Loading'],['error','Error'],['overflow','Overflow — long menu']]};</script>
-<script defer src="../../mockup.js"></script>
-<link rel="stylesheet" href="../../visual.css">
-<link rel="stylesheet" href="../../frost-states.css">
-<link rel="stylesheet" href="office.css">
-<script defer src="office.js"></script>
-</head><body>
-<header class="wfbar"></header>
-<main class="wfmain">
-<div class="devicewrap"><div class="device device--bo"><div class="bo">
-  <nav class="bonav">
-    <div class="bonav__brand">Back office</div>
-    <div class="bonav__sec">Trading</div>
-    <a href="today.html" data-nav="today">Today</a>
-    <a href="../../../prototype/back-office/end-of-day.html" data-nav="eod">End of day</a>
-    <div class="bonav__sec">History</div>
-    <a href="../../../prototype/back-office/reports.html" data-nav="reports">Reports</a>
-    <a href="audit.html" data-nav="audit">Audit</a>
-    <div class="bonav__sec">Configuration</div>
-    <a href="menu.html" data-nav="menu">Menu</a>
-    <a href="tables.html" data-nav="tables">Tables</a>
-    <a href="../../../prototype/back-office/users.html" data-nav="users">Staff</a>
-    <a href="../../../prototype/back-office/presets.html" data-nav="presets">Discount presets</a>
-    <a href="settings.html" data-nav="settings">Settings</a>
-    <div class="bonav__sec">Hardware</div>
-    <a href="incidents.html" data-nav="incidents">Printing</a>
-    <div class="office-legacy-actor">
-      <div class="muted">M. Iqbal &middot; Manager</div>
-      <a href="login.html">Log out</a>
-    </div>
-  </nav>
-  <div class="bomain">
-    <div class="botop"><b class="office-title">Menu</b></div>
-    <div class="bocontent">
-      <p class="office-muted">Changes reach the POS within three seconds</p>
-
-      <div class="banner" data-when="leaserejected">
-        <div class="banner__t">Steak was not marked 86</div>
-        <div>A counter order (opened 20:14) is being paid for right now and includes this
-        item. Marking it unavailable would break a payment already in progress.
-        Try again once that order is closed.</div>
-      </div>
-
-      <div class="banner banner--soft" data-when="eightysix">
-        <div class="banner__t">Steak is now marked 86</div>
-        <div>It becomes unavailable and stays greyed in its existing POS position within three seconds. Orders
-        that already contain it are unaffected, and a pending line holding it will
-        block that order from being sent to the kitchen.</div>
-      </div>
-
-      <div class="bohead">
-        <h1>Items</h1>
-        <span class="muted" data-unless="overflow">4 categories &middot; 8 items</span><span class="muted" data-when="overflow">4 categories &middot; 34 items</span>
-        <span class="office-push"></span>
-        <a class="bobtn" href="menu.html?state=category">New category</a>
-        <a class="bobtn bobtn--primary" href="../../../prototype/back-office/item-editor.html?state=new">New item</a>
-      </div>
-
-      <div data-when="loading"><div class="loadinglabel">LOADING MENU</div>
-        <div class="skel skel--w80"></div><div class="skel skel--w60"></div><div class="skel skel--w40"></div></div>
-
-      <div class="banner" data-when="error"><div class="banner__t">Could not load the menu</div>
-        <div><a href="menu.html">Retry</a></div></div>
-
-      <div class="empty office-legacy-empty" data-when="empty" >
-        <div class="office-empty-title">No items yet</div>
-        <div>Nothing is preloaded. Create a category, then add items to it.</div>
-        <div class="office-space-top"><a class="bobtn bobtn--primary" href="menu.html?state=category">Create first category</a></div>
-      </div>
-
-      <table class="dtable" data-when="default kitchen eightysix leaserejected category category-invalid">
-        <thead><tr><th>Item</th><th>Category</th><th>Variants</th><th>Modifiers</th>
-          <th class="num">Price</th><th>Availability</th><th></th></tr></thead>
-        <tbody>
-          <tr><td>Burger</td><td>Mains</td><td>3 &mdash; Regular / Large / Small</td><td>3</td><td class="num">100.000</td>
-            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
-            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Chicken Wings</td><td>Mains</td><td>&mdash;</td><td>1</td><td class="num">90.000</td>
-            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
-            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr data-when="eightysix"><td>Steak</td><td>Mains</td><td>3 &mdash; Rare / Medium / Well</td><td>2</td><td class="num">240.000</td>
-            <td><span class="tag tag--86">86</span> <a class="bobtn bobtn--sm" href="menu.html">Put back on</a></td>
-            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr data-unless="eightysix"><td>Steak</td><td>Mains</td><td>3 &mdash; Rare / Medium / Well</td><td>2</td><td class="num">240.000</td>
-            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=leaserejected">86</a></td>
-            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Fish &amp; Chips</td><td>Mains</td><td>&mdash;</td><td>&mdash;</td><td class="num">140.000</td>
-            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
-            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Caesar Salad</td><td>Mains</td><td>2</td><td>2</td><td class="num">75.000</td>
-            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
-            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Fries</td><td>Sides</td><td>2 &mdash; Regular / Large</td><td>&mdash;</td><td class="num">40.000</td>
-            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
-            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Soda</td><td>Drinks</td><td>&mdash;</td><td>&mdash;</td><td class="num">30.000</td>
-            <td><span class="tag">ON</span> <a class="bobtn bobtn--sm" href="menu.html?state=eightysix">86</a></td>
-            <td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr class="office-archived"><td>Winter Stew <span class="tag">ARCHIVED</span></td><td>Mains</td><td>&mdash;</td><td>&mdash;</td>
-            <td class="num">110.000</td><td>&mdash;</td><td><a href="../../../prototype/back-office/item-editor.html">View</a></td></tr>
-        </tbody>
-      </table>
-
-      <table class="dtable dtable--tight" data-when="overflow">
-        <thead><tr><th>Item</th><th>Category</th><th class="num">Price</th><th>Availability</th><th></th></tr></thead>
-        <tbody>
-          <tr><td>Burger</td><td>Mains</td><td class="num">100.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Cheeseburger</td><td>Mains</td><td class="num">115.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Chicken Wings</td><td>Mains</td><td class="num">90.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Steak</td><td>Mains</td><td class="num">240.000</td><td><span class="tag tag--86">86</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Fish &amp; Chips</td><td>Mains</td><td class="num">140.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Caesar Salad</td><td>Mains</td><td class="num">75.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Soup of the Day</td><td>Mains</td><td class="num">55.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Pasta</td><td>Mains</td><td class="num">120.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Fries</td><td>Sides</td><td class="num">40.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Onion Rings</td><td>Sides</td><td class="num">45.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Garlic Bread</td><td>Sides</td><td class="num">35.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Side Salad</td><td>Sides</td><td class="num">30.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Soda</td><td>Drinks</td><td class="num">30.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Coffee</td><td>Drinks</td><td class="num">35.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Tea</td><td>Drinks</td><td class="num">30.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Beer</td><td>Drinks</td><td class="num">65.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>House Wine</td><td>Drinks</td><td class="num">80.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Cheesecake</td><td>Desserts</td><td class="num">60.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Ice Cream</td><td>Desserts</td><td class="num">45.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-          <tr><td>Brownie</td><td>Desserts</td><td class="num">50.000</td><td><span class="tag">ON</span></td><td><a href="../../../prototype/back-office/item-editor.html">Edit</a></td></tr>
-        </tbody>
-      </table>
-      <div class="muted office-small-space" data-when="overflow">Header row sticks. Price and
-      availability are never truncated; the item name column absorbs the loss.</div>
-    </div>
-  </div>
-
-  <div data-when="category category-invalid">
-    <div class="scrim office-legacy-scrim"></div>
-    <div class="modal modal--bo">
-      <div class="modal__head"><h2>New category</h2></div>
-      <div class="modal__body">
-        <span class="label">Name</span><div class="field field--sm" data-when="category">Mains</div>
-        <div class="field field--sm field--invalid" data-when="category-invalid"></div>
-        <span class="field__msg" data-when="category-invalid">Enter a name</span>
-        <div class="muted office-small-space">Categories order the menu at the POS. They
-        carry no price and no availability of their own.</div>
-      </div>
-      <div class="modal__foot">
-        <a class="bobtn" href="menu.html">Cancel</a>
-        <a class="bobtn bobtn--primary" href="menu.html" data-when="category">Create</a>
-        <span class="bobtn bobtn--off" aria-disabled="true" data-when="category-invalid">Create</span>
-      </div>
-    </div>
-  </div>
-
-</div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
-
-
-</main></body></html>
+<link rel="stylesheet" href="office.css"><link rel="stylesheet" href="tables.css"><link rel="stylesheet" href="menu.css">
+<script src="menu-states.js"></script><script defer src="../../mockup.js"></script><script defer src="office.js"></script><script defer src="menu.js"></script>
+</head><body><header class="wfbar"></header>
+<div class="bo" id="menu-frame"><nav class="bonav" aria-label="Back office"><div class="bonav__brand">Back office</div><div class="bonav__sec">Configuration</div><a href="menu.html" data-nav="menu">Menu</a><a href="tables.html" data-nav="tables">Tables</a><a href="settings.html" data-nav="settings">Settings</a></nav><div class="bomain">
+<header class="botop"><strong class="office-title">Menu</strong></header>
+<main class="bocontent" id="menu-main">
+<div class="office-heading"><h1>Menu</h1><p id="menu-count"></p></div>
+<p class="menu-intro">Prices include tax · Whole rupiah · IDR. Changes reach the POS within three seconds. Existing orders keep their saved names and prices.</p>
+<div class="office-actions menu-toolbar"><button class="office-button primary" id="new-category">New category</button><button class="office-button" id="reorder-categories">Reorder categories</button></div>
+<div id="page-status" class="office-notice" role="status" tabindex="-1" hidden></div>
+<div id="phase-note" class="tables-phase" hidden>Phase 4 only · Quick-sale payment lease refusal. Not part of S5.</div>
+<div id="read-state"></div>
+<section id="menu-editor" class="table-editor menu-editor" role="dialog" aria-modal="false" aria-labelledby="editor-title" hidden>
+<header class="office-dialog__head"><h2 id="editor-title"></h2></header>
+<form id="menu-form" novalidate><div class="office-dialog__body">
+<div><p id="editor-context"></p><div id="name-part"><label for="menu-name">Category name</label><input class="office-field" id="menu-name" name="name" aria-describedby="menu-name-help"><span class="office-error" id="name-error" hidden></span><p id="menu-name-help">1–32 characters. Active categories must have different names.</p></div><ol class="menu-reorder" id="draft-order" hidden></ol></div>
+<div><div id="form-notice" class="office-notice" role="status" tabindex="-1" hidden></div><section id="comparison" hidden aria-label="Current menu"><h3>Current menu</h3><div id="current-values"></div><p id="choice-reason">Choose Keep my changes or Use current menu first.</p><div class="office-actions"><button type="button" class="office-button" id="keep-draft">Keep my changes</button><button type="button" class="office-button" id="use-current">Use current menu</button></div></section></div>
+</div><footer class="office-dialog__foot"><button type="button" class="office-button" id="cancel-edit">Cancel</button><button type="submit" class="office-button primary" id="save-menu">Save</button></footer></form></section>
+<div id="menu-list"><table class="office-table menu-table"><caption>Active categories first · Archived items stay in their category</caption><colgroup><col class="item-col"><col class="price-col"><col class="availability-col"><col class="actions-col"></colgroup><thead><tr><th scope="col">Item</th><th scope="col" class="num">Base price · IDR</th><th scope="col">Availability</th><th scope="col">Actions</th></tr></thead><tbody id="menu-rows"></tbody></table></div>
+<div class="office-empty" id="menu-empty" hidden><strong>No menu yet</strong><p>Nothing is preloaded. Create a category, then add your first item.</p></div>
+<details class="office-fixture"><summary>Review fixtures · outside the product</summary><p>Illustrative records only. No request, credential or restaurant configuration is stored or sent. BO-04 remains the behavioural prototype until DESIGN-020. The response selector applies only to compatible commands; creates and state commands cannot be refused because the catalog changed.</p><div class="office-actions"><label for="fixture-response">Next command result</label><select id="fixture-response"><option value="saved">Saved</option><option value="pending">Pending</option><option value="stale">Catalog changed (edits only)</option><option value="duplicate">Name in use</option><option value="failure">Definite failure</option><option value="unknown">Outcome unknown</option><option value="unknown-changed">Outcome unknown, newer menu</option><option value="unknown-read-failed">Outcome unknown, read failed</option><option value="idle">Session idle</option><option value="ended">Session ended</option><option value="lease">Lease refusal (86 only, Phase 4)</option></select><button class="office-button small" id="finish-command">Finish pending command</button><button class="office-button small" id="fixture-idle">Open M-6</button><button class="office-button small" id="fixture-ended">Open BO-01</button><button class="office-button small" id="fixture-partial">Fail next list read</button><button class="office-button small" id="fixture-other">Another tab saves a change</button><a href="../../index.html?direction=frost&amp;screen=back-office/menu.html">All states</a></div></details>
+</main></div></div>
+<dialog class="office-dialog" id="departure" aria-labelledby="departure-title" aria-describedby="departure-body"><header class="office-dialog__head"><h2 id="departure-title">Discard unsaved changes?</h2></header><div class="office-dialog__body"><p id="departure-body"></p><p id="departure-context" hidden></p><section id="departure-emergency" hidden></section></div><footer class="office-dialog__foot"><button class="office-button" id="stay">Stay</button><button class="office-button danger final" id="discard">Discard</button></footer></dialog>
+<dialog class="office-dialog" id="menu-reauth" aria-labelledby="reauth-title" aria-describedby="reauth-body"><header class="office-dialog__head"><h2 id="reauth-title">Your session timed out</h2></header><div class="office-dialog__body"><p id="reauth-body">Your unsaved changes are kept. Continue as m.iqbal to resume them.</p><section id="reauth-emergency" hidden></section><div id="reauth-fields"><label for="reauth-user">Username</label><input class="office-field" id="reauth-user" value="m.iqbal" readonly><label for="reauth-password">Password</label><input class="office-field" id="reauth-password" type="password" autocomplete="off"><span class="office-error" id="reauth-error" hidden>Enter your password.</span></div></div><footer class="office-dialog__foot"><button class="office-button" id="reauth-logout">Log out</button><button class="office-button" id="other-manager">Sign in as a different manager</button><button class="office-button primary" id="resume">Continue</button></footer></dialog>
+<section id="menu-signin" aria-labelledby="signin-title" hidden><h1 id="signin-title">Back office</h1><p>Sign in with your manager username and password.</p><div class="office-notice"><strong>Your session has ended</strong><p>Sign in again to continue.</p><p>The previous session’s unsaved changes are stored on this tab and are not submitted automatically.</p></div><form id="signin-form" novalidate><label for="signin-user">Username</label><input class="office-field" id="signin-user" autocomplete="off"><label for="signin-password">Password</label><input class="office-field" id="signin-password" type="password" autocomplete="off"><span class="office-error" id="signin-error" hidden></span><div class="office-actions"><button class="office-button primary">Sign in</button></div></form></section>
+</body></html>

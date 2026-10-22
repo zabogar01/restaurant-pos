@@ -144,13 +144,13 @@ const base=path.resolve('docs/design/visual-directions'),out=process.env.DESIGN0
  await p.goto(url('entry-long'));await p.locator('#close-detail').click();await p.locator('[data-entry="long"]').scrollIntoViewIfNeeded();
  result.long=await p.locator('[data-entry="long"]').evaluate(e=>({text:e.innerText,overflow:e.scrollWidth-e.clientWidth,amounts:[...e.querySelectorAll('.audit-money')].map(n=>({text:n.innerText,width:n.getBoundingClientRect().width,scroll:n.scrollWidth,client:n.clientWidth}))}));
  check(result.long.overflow===0&&result.long.amounts.every(a=>a.scroll<=a.client),'long name and amount fit',result.long);await p.screenshot({path:path.join(out,'long-row.png')});
- for(const file of ['shell','patterns','menu','report-detail','incidents']){
+ for(const file of ['shell','patterns','report-detail','incidents']){
   await p.goto(pathToFileURL(path.join(base,'frost/back-office/'+file+'.html')).href);
   const href=await p.locator('[data-nav="audit"]').getAttribute('href');check(new URL(href,p.url()).pathname.endsWith('/frost/back-office/audit.html'),'Frost Audit destination '+file);
  }
  await p.goto(url('default','&alerts=both'));const alert=await p.locator('.office-emergency').innerText();await p.locator('[data-open="refund"]').click();await inspectReadOnly('dialog with both alerts');await p.keyboard.press('Escape');check(await p.locator('.office-receipt').isVisible()&&(await p.locator('.office-emergency').innerText())===alert,'reading detail retains global alerts');
  await p.goto(pathToFileURL(path.join(base,'index.html')).href+'?direction=frost&screen=back-office/audit.html&state=entry-refund');check((await p.locator('iframe').getAttribute('src')).includes('audit.html?state=entry-refund'),'gallery opens selected audit state');
- for(const [file,count] of [['menu',34],['report-detail',5]])check(fs.readFileSync(path.join(base,'frost/back-office/'+file+'.html'),'utf8').split('\n').filter(l=>l.includes('prototype/')).length===count,'authored prototype count '+file);
+ for(const [file,count] of [['menu',0],['report-detail',5]])check(fs.readFileSync(path.join(base,'frost/back-office/'+file+'.html'),'utf8').split('\n').filter(l=>l.includes('prototype/')).length===count,'authored prototype count '+file);
  const artifactFiles=fs.readdirSync(path.join(base,'frost/back-office')).filter(f=>/\.(html|js)$/.test(f));
  check(artifactFiles.every(f=>!fs.readFileSync(path.join(base,'frost/back-office',f),'utf8').includes('prototype/back-office/audit.html')),'no old BO-12 destinations');
  check(errors.length===0,'no page JavaScript errors',errors);result.errors=errors;

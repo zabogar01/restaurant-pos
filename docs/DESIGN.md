@@ -1784,3 +1784,89 @@ including its stacked 40px fields and full-width amber notices. The column
 centres within the viewport with 24px outer padding and scrolls at short heights.
 It is a desktop width, independent of the POS lock-box token. The registry now
 has 176 entries: 170 sourced and six designed. No new colour or weight is added.
+
+### Configuration forms — DESIGN-019 additions (awaiting review)
+
+**A reorder without dragging — behaviour.** Reordering is an editable draft of
+one complete scope: the active categories, or the active items in one category.
+The list has numbered positions and named Move up / Move down buttons. The
+first row's Move up and last row's Move down are disabled. A scope with fewer
+than two active records has no order to change, so its opener (Reorder
+categories, or a category's Reorder items) is disabled. A reorder needs a complete
+read: its openers are disabled while the list is loading, failed or partial. After a move, focus
+stays on that record's move control, or its other move control when it reaches
+the end. Save order sends the entire ordered scope once, carrying the catalog
+version read when the draft opened. Cancel, departure, pending, uncertainty and
+identity follow the configuration-form rules above. Archived records keep their
+stored order and remain outside the active reorder scope. A new record goes last
+in its scope. Restore retains its stored order; ties use case-insensitive name,
+then stable identity. This is a scope and ordering rule for S4a and S4c, not a
+new drag-only interaction.
+
+**Catalog changed during a list edit — behaviour.** A category rename and either
+reorder are edits under ADR-012 rule 13. A stale refusal writes nothing, keeps
+the draft and rereads the menu once. Show the current category name or complete
+current order beside the draft, with the newly read version in the notice.
+Keep my changes and Use current menu are explicit decisions; Save / Save order
+stays disabled with an explanation until a choice is made. Keeping changes
+updates only the draft's base version; taking the current values also replaces
+the draft. Neither sends a command. An unknown outcome with a newer version
+uses the same comparison but says that version may include this save. A failed
+reread withholds the comparison and offers a read-only Try again. Focus is on
+the notice, then Save after Keep, or the name / first enabled move control after
+Use current. Reordering does not grant a silent merge of a changed scope.
+BO-03 keeps the version its list stands at. A full read sets it. A command
+answer advances it to the answered version only when that version is exactly the
+standing version plus one, or equal to it for an unchanged answer. Otherwise the
+list keeps its standing version, so the next edit opened from it is refused
+`CATALOG_CHANGED` and rereads. An editor carries the list's standing version at
+the moment it opens.
+
+**State commands on grouped lists — behaviour.** Grouping does not change the
+status-command rule: 86, available again, archive and restore open no form and
+carry no catalog version. Category creation also carries no version. These
+commands cannot be refused because a catalog version is stale, but each
+committed change advances that version. A category archive changes only the
+category's active flag; its items remain visible in the back-office group with
+their own status and availability intact. An archived item remains in its
+category, after the active items. Availability actions remain present even on
+archived items. Restore into a held name is refused at page level; the ordinary
+Rename category or Edit item action is the recovery path. Saving a new name
+never implicitly restores a record. Pending, unknown and definite failure focus
+the page status; success focuses the affected category's Rename or item's Edit.
+No archive confirmation is added: these actions are reversible, and the named
+category control and result explain their scope.
+86 and Make available act at once while an editor holds unsaved changes: no
+departure decision, and the draft is kept. They change availability only, which
+never changes a rename or a reorder scope. Their answer, when it is the list's
+standing version plus one, is the page's own write and nothing else, so the open
+editor's base advances with the list and the draft does not go stale; when the
+answer skips a version, the editor keeps its base and meets `CATALOG_CHANGED` on
+Save. Archive and Restore of an item or a category change scopes, so they keep
+going through the departure decision, whose body then reads “Your edits have not
+been saved. Stay to keep editing, or discard them to continue.” When the draft's
+own save is unknown, that body reads “The save may or may not have succeeded. Continuing does not send it again. Stay to keep the draft, or discard it to continue.”
+While a save of
+the draft is pending, the one-command-per-screen rule holds: 86 is inert until
+the answer arrives.
+
+**BO-03 copy and composition.** `frost/back-office/menu.html` uses the shared
+frame, table and `tables.css` non-modal panel. A full-width editor above the
+grouped table keeps four legible columns: Item, Base price · IDR, Availability,
+Actions. Category headers carry Rename, Archive / Restore, Reorder items and
+New item (the last two on active categories). The global toolbar carries New
+category and Reorder categories. All prices are the stored tax-inclusive base
+price, grouped with dots and without a currency symbol. Names wrap; amounts and
+availability actions remain whole. The Phase 5 business-day fact is absent.
+The Phase 1 rail lists Menu, Tables and Settings; `tables.html` and
+`settings.html` now show all three.
+
+Category names are trimmed before validation, 1–32 UTF-16 units, with no Unicode
+Cc control character. Active names are unique case-insensitively; archived names
+may repeat and may be renamed. No maxlength silently truncates input. The empty
+refusal remains “Enter a name”; editing clears the obsolete error and enables
+Create for a fresh validation. Exact copy and focus targets are in DESIGN-019's
+Handoff. The partial-list title is “The menu list may be out of date”. The
+quick-sale lease refusal is marked Phase 4 and says “Try again when payment is
+no longer in progress.” BO-04 links carry item identity; DESIGN-020 consumes
+that identity and owns the visible editor and return walk.

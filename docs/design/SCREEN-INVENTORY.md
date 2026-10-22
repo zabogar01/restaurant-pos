@@ -680,16 +680,31 @@ notice placement and repeat-logout action in the shared failures table above.
 
 **Reached by / from.** Manager, from navigation.
 
-**States.** *empty* (no items yet — the state a new installation starts in,
-because no menu is hard-coded, B-24) · *loading* · *error* · *permission-denied*
-(n/a; back office is manager only) · *overflow* (long menu: dense table,
-sticky headers, no truncation of price or availability) · *item 86'd* ·
-*86 rejected while a CheckoutLease holds a quick-sale order carrying that item,
-naming the order* (FR-G13, AC-29) · *item archived* (FR-C8) ·
-*category-invalid* — Create tapped with an empty name; the Name field is
-invalid with "Enter a name"; Create stays disabled until a name is entered;
-nothing is written (added 2026-09-14 by the lead's ruling in DESIGN-005
-finding 4; a state of the category modal, not a new node).
+**States.** *empty* (no category and no item; create the first category, then
+its first item; B-24) · *loading* · *read failure with Try again* ·
+*permission-denied* (n/a; manager only) · *overflow* (grouped long menu,
+sticky headers, complete prices and availability actions) · *category create
+and rename*, including archived categories · *local invalid category name*
+(empty, more than 32 UTF-16 units, control character; trimmed before checking;
+"Enter a name" for empty; typing clears the error and enables Create again) ·
+*name in use* on category create, rename or restore, and on item restore ·
+*category and item archived / restored* (retained rows; archived categories
+show all their items and explain that they are hidden from the POS without
+changing their status or availability) · *86 / available again*, directly
+from each row · *category reorder / item reorder within a category*, with
+Move up, Move down and Save order · *catalog changed on rename or reorder*
+(`CATALOG_CHANGED`: nothing saved, draft/order kept, menu reread, explicit
+Keep my changes or Use current menu before Save) · *pending, saved, definite
+failure and outcome unknown* · *partial list — the menu list may be out of date*
+(counts withheld, known rows with the latest answer, Try again reads the full
+list) · *departure decision* · *M-6 over an inert form* · *BO-01 with draft held* ·
+*Phase 4 only: 86 refused while a CheckoutLease holds a quick-sale order carrying
+that item, naming the order* (FR-G13, AC-29; S5 does not build this refusal).
+A category create and the state commands never carry the catalog version and
+cannot be refused for a stale catalog. An item create (BO-04) carries none either,
+but is refused `CATALOG_CHANGED` when its category has been archived (C1 §2.3). Every committed catalog write, including 86, archive and
+restore, advances the version. The [Frost BO-03 composition](visual-directions/frost/back-office/menu.html)
+and DESIGN-019 Handoff supply the exact copy and walks, pending design review.
 
 **Requirements.** FR-B4, FR-B6, FR-C1, FR-C5, FR-C7, FR-C8, FR-G13.
 
