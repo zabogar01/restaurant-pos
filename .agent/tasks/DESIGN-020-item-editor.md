@@ -606,7 +606,8 @@ rows, reused verbatim, and are not repeated here except where BO-04 differs.
 | State / context | Element | Exact text | Accessible name / test target |
 |---|---|---|---|
 | Frame | Top bar / rail | Item editor / Menu current | rail link Menu |
-| Existing item | Heading / status | `{name}` / Available, 86 · Unavailable, or Archived item | heading level 1 |
+| Existing item | Heading / status | `{name}` / `[Archived item · ]Available` or `[Archived item · ]86 · Unavailable`, then ` · Hidden from the POS · category archived` when its category is archived (round 2, F5) | heading level 1; `#item-status` |
+| Item in an archived category | Context (round 2, F5) | Its category is archived, so it stays hidden from the POS. Category actions are on Menu. Existing orders keep their saved names and prices. | paragraph; an archived item keeps the archived-item context |
 | New item | Heading / status | New item / Not saved yet | heading level 1 |
 | Ordinary | Context | Save the item, its variants and its modifiers together. Existing orders keep their saved names and prices. | paragraph |
 | Archived item | Context | Archived item. Saving does not restore it. Availability and archive actions are on Menu. Existing orders keep their saved names and prices. | paragraph |
@@ -897,5 +898,67 @@ back-office aid only.
 For the **lead**: carry the four rulings above into DECISIONS; DESIGN-018's
 "UTF-16 units" sentence still stands in `D` (not edited here, as the task
 says it is being corrected).
+
+DONE
+
+### Round 2 (design020c, 2026-10-22)
+
+The lead's rulings in *Round 2 — the review's seven findings and the Handoff's
+four questions* are applied as written, in commit `1c87f39`. The changes are in
+`item-editor.js`, `item-editor-states.js`, `manifest.js`, `design020.cjs` and
+`D`. `menu.js` did not change. The copy table's status row above is updated in
+place, and a context row is added for an item in an archived category.
+
+**Rulings recorded.** These are the lead's rulings, not the designer's
+choices.
+
+- *One principle for Keep my changes*: a row the draft touched keeps the
+  draft's values, whole; a row the draft did not touch follows the current
+  record. The item's own fields are one row, which the draft always touches, so
+  they stay the draft's (DESIGN-018 unchanged; Question 3 is answered "keep as
+  ruled"). `D` states this as a lead-ruled exception to DESIGN-018's "nothing is
+  merged" sentence, for child rows only.
+- *Question 4*: BO-04 builds on its own read of the item and the catalog version
+  when it opens. DESIGN-019's "an editor carries the list's standing version"
+  is about BO-03's inline editors; `D` now says so beside that sentence.
+- *Question 1*: swapping option names in one save is S4a's concern (removals
+  first, then edits and additions, and a swap made safe by a mechanism S4a
+  chooses). The screen's rule stays "unique among active options after the
+  save". Nothing is drawn.
+- *Question 2*: the over-maximum note stays, with no refusal in Phase 1;
+  Phase 2's add-line enforces FR-M5. The note reads "More than the largest line
+  total, 99.999.999." and asserts nothing about POS behaviour, so it is
+  unchanged.
+
+**Each finding: what changed and the walk that holds it.**
+
+| Finding | Change | Walk in `design020.cjs` |
+|---|---|---|
+| F1, position counted as a change | A row is touched only if it is new, removed, edited (trimmed name or canonical change differs), or has the `moved` flag, which *Move up* / *Move down* sets on the row it was pressed on. One helper, `touched`, serves both `keepChildren` and `removedChanged`; the absolute-index test is gone. | Remove variant 1 while another manager removes variant 3: the notice has no "no longer has" sentence; variant 3 (Small) is absent after Keep and after Use current item; after Keep, Regular stays pending removal in first place. |
+| F2, order after Keep | `keepChildren` is rewritten. If the draft moved no row in a list, the list takes the current order, with the draft's added rows (and rows re-added under ruling 4(b)) last in draft order. If the draft moved any row, it takes the draft's order for the rows it holds, with rows the current item added last. A pending-removal row keeps its place, because it is no longer re-appended. | The draft adds Kids while another manager reorders to Small, Regular, Large: after Keep the list is Small, Regular, Large, Kids, and the next Save's `order` is `variant-3, variant-1, variant-2, <Kids>`, with Kids in `added`. A draft that moved Regular down keeps Large, Regular, Small, with the current item's new Jumbo last. Undo after Keep returns Large in place, and `order` is empty. |
+| F3, merge inside a row | A touched row that still exists is copied whole from the draft. The overlay (`Object.assign(live, edit)`) is gone. | The draft changes Large to 25.000 while another manager renames it Grande: after Keep the row is Large at 25000. |
+| F4, stale duplicate refusal | `recheckDuplicates(kind)` runs after a name edit, a removal or an Undo in that list. It clears each duplicate refusal whose name no other active row in the list shares, and adds none. Save validates afresh. | `invalid-variant-duplicate`: renaming the holder clears the refusal and enables Save. Removing the holder clears it, and Save sends once. `stale-duplicate`: removing the current item's House size after Keep clears it, and Save sends once. An edit that creates a new duplicate adds no refusal before Save. |
+| F5, status hides a fact | The status is `[Archived item · ]Available` or `[Archived item · ]86 · Unavailable`, followed by ` · Hidden from the POS · category archived` when the category is archived. An active item in an archived category gets the context "Its category is archived, so it stays hidden from the POS. Category actions are on Menu. Existing orders keep their saved names and prices." Two states are added and registered: `archived-eightysix` (Winter Stew, 86'd) and `in-archived-category` (Apple Pie). | Exact status text in `archived-eightysix` ("Archived item · 86 · Unavailable"), `archived` ("Archived item · Available") and `in-archived-category` ("Available · Hidden from the POS · category archived"), plus the context sentence. Both new states also pass the geometry, dialog, version and no-state-command checks at both sizes. |
+| F6, `D` overstated what was settled | (a) DESIGN-019's version sentence gains the clarification above. *BO-04 copy and layout* cites the ruling. (b) The opening paragraph of the DESIGN-020 additions now says that one rule gains a lead-ruled exception, for child rows only, and that every other rule is unchanged. The *Keep my changes* bullet now states the principle, the touched test, the order rule and (a) to (c). The two-lists rules add that a duplicate refusal belongs to its list, that Move marks its row as touched, and the F5 status facts. | Documents only; the walks above test the behaviour `D` states. |
+| F7, letters in the format states | `invalid-base-format` draws `1000.5` and `invalid-variant-delta-format` draws `-10.000,5`. `invalid-modifier-delta-format` keeps the one letters example, `twelve`, which the ruling allows. | The two decimal values are asserted as drawn and kept as typed. |
+
+One implementation detail goes beyond the findings, and I'm noting it here.
+The new `moved` flag, and the `removed: false` an Undo leaves behind, would have
+made a draft "dirty" with values equal to its opening values. So `dirty()` and
+the stale "same values" sentence now compare values only (`plain()`: the
+fields, then each row's id, name, change and removal). A row moved down and
+back up is clean again, but it still counts as touched for Keep, because the
+manager pressed Move on it.
+
+**Verification.** The lead ran `design020.cjs` on the round 2 tree: **754 /
+754**, 124 states (62 at each size), no page errors, no failures (evidence in
+my scratchpad, `…/scratchpad/ev3`, outside the repository). The 37 assertions
+added since 717 are 21 walks and 16 per-state checks for the two new states
+(four checks each, at both sizes). No assertion was removed or weakened. I
+inspected `in-archived-category` at 1440 by eye. `manifest.js` changed, so the
+lead reruns the seven earlier checks after this commit, as the lead said. The
+walks were not run against round 1 for a red; the review's hand traces of
+F1 to F4 are the evidence of the defects they cover. `npm run verify` does not
+apply, because no token changed.
 
 DONE
