@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S2a, DESIGN-018b]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/settings.spec.ts, e2e/support/**, apps/back-office/package.json, package-lock.json]
-status: active
+status: complete
 cycles: 1
 ---
 # PHASE1-S2b — BO-08 Settings in the back office
@@ -287,6 +287,25 @@ end of the Handoff (each finding, its test, the red you observed, the counts), a
   after `@pos/contracts`, and the same line under `packages["apps/back-office"].dependencies` in `package-lock.json`, by
   hand (the entry at about line 23; change nothing else). Do not run `npm install`. The lead runs `npm ci` afterwards.
 - **Then** `npm run verify` and `npm run test:e2e:all`, commit, and report as before. Change nothing else.
+
+## Round 2 lead review and acceptance (2026-10-22)
+
+Round 2 is fully ruled, and every fix is the one the review proposed, so the lead reviewed it rather than a Codex
+re-review (Codex had run out of its allowance; the same practice as S1a and S2a). The lead read the source diff of
+`d9215ed` against the six rulings, and it is what they ask. F1 withholds the facts at page level when a discarded or
+closed form's reread fails. F2 rechecks the gate and the decision after each reread, and holds the finished result with
+its read in `held`. `flush()` then presents it through `present(command, answer, read)`, which neither rereads nor
+resends, and the focus request is no longer consumed while signed out or idle. F3 derives the annotations from the
+current draft with `differences(draft, version)`. F4 takes the title and context from `state.current` and
+`state.withheld`, leaving `form.base` alone. F5 extracts `MoneyGroup` and draws it in the closed first run. F6 is one line
+in each manifest. **`npm ci`** completed and left the lockfile unchanged. **Red proof, repeated by the lead:** with round
+1's `model.ts` and `Settings.tsx` in place, `settings-round2.test.tsx` failed **12 of 15**: every F1 to F5 case. The
+builder's thirteenth red is the F6 manifest test, which stays green because the lead kept round 2's `package.json`.
+The other two cases are regression guards that pass either way. The lead restored both files, and the tree was clean.
+**Green, run by the lead on the final tree:** `npm run verify` 114 files, 4331 tests; `npm run test:e2e:all` 74 passed.
+**Complete.** `touches: money, boundaries, identity`: the owner looks at BO-08 served before merge. The lead cannot sign
+in to look, so the visual comparison with the Frost artifact is the owner's. Owed to a designer: the artifact's
+`first-run-closed` drawing lacks the money facts (F5).
 
 ## Handoff
 
