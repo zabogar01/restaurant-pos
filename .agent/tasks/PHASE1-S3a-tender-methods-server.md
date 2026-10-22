@@ -5,7 +5,7 @@ category: feature
 touches: [boundaries]
 depends_on: [PHASE1-S2a]
 owns: [db/migrations/0012_tender_method.sql, apps/server/src/domain/tender-method.ts, apps/server/src/http/routes/back-office-tender-methods.ts, apps/server/src/http/server.ts, packages/contracts/src/tender-methods.ts, packages/contracts/src/routes.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE1-S3a — Tender methods on the server
@@ -195,6 +195,14 @@ changed existing tests are the two listed (`schema.test.ts`, `harness-race.test.
 comment. `npm run test:e2e:all` is the lead's before merge. Reviewers cannot reach the database or a browser: this note
 is the evidence for the server and browser runs, and a "blocked" on that alone is ruled clear. Sent to review
 (`touches: boundaries`); the owner looks before merge.
+
+## Review and acceptance (lead, 2026-10-22)
+
+Codex (`gpt-6-astra`, high) reviewed `a7a3591`: **clean, no findings** (`.agent/reviews/PHASE1-S3a-review.md`). It could
+not reach the database (EPERM), as the lead verify note anticipates; it ran typecheck and the client project (83 files,
+3617 tests) itself and relied on the lead's run for the server tests. The lead's `npm run test:e2e:all` on this tree: 74
+passed (Chromium and WebKit), unchanged from the baseline, with the harness migrating `0012`. Complete; `touches:
+boundaries`, so the owner looks before merge. After merge the lead runs `npm run db:migrate` for `0012`.
 
 ## Handoff
 
