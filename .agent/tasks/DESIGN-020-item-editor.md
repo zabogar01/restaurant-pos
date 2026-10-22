@@ -5,8 +5,8 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-019]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # DESIGN-020 — BO-04 Item editor (slice D, second part)
 
@@ -304,6 +304,58 @@ checks: this note is the evidence for them, and a "blocked" on that alone is rul
 (`9b1abbd`); a Claude Opus designer (`design020c`) finished the draft under the owner's exception, and its changes are
 listed in the Handoff's *Finishing pass*. Review the whole: the Codex draft and the Opus finishing pass alike. The
 Handoff's four questions are the lead's to rule after the review.
+
+## Round 2 — the review's seven findings and the Handoff's four questions (lead rulings, 2026-10-22)
+
+Claude Opus reviewed `a33e73a` (`.agent/reviews/DESIGN-020-review.md`): seven findings. **All seven are accepted.** The
+four Handoff questions are ruled here too. Round 2 is done by the same designer (`design020c`, resumed), within
+`docs/design/**` and `D`.
+
+**One principle for Keep my changes (rules F1, F2, F3 and question 3 together).** *A row the draft touched keeps the
+draft's values, whole; a row the draft did not touch follows the current record.* The item's own fields are one row,
+which the draft always touches, so they stay the draft's whole (DESIGN-018 unchanged; question 3 is answered "keep as
+ruled"). An option is touched only if the manager added it, edited its name or price change, removed it, or pressed Move
+on it. Nothing is merged field by field inside a row. State this principle in `D` Part B as a **lead-ruled exception to
+DESIGN-018's "nothing is merged" sentence, for child rows only**, and make the drawing and the check follow it.
+
+1. **F1 (accepted).** "Moved" means the manager pressed *Move up* or *Move down* on that row (a flag on the draft row),
+   never an absolute index that shifts when an earlier row is added or removed. Use the one helper in `keepChildren` and
+   `removedChanged`. Add the reviewer's walk: remove variant 1; variant 3 removed meanwhile; the notice has no
+   removed-option sentence; variant 3 is absent after Keep and after Use current item.
+2. **F2 (accepted, code follows `D`).** After Keep, each list's order is: if the draft moved no row in that list, the
+   current order, with the draft's added rows last in the order they were added; if the draft moved any row, the
+   draft's order for the rows it holds, with rows the current record added last. A row pending removal keeps its place
+   in that order, so *Undo* returns it in place and does not count as a reorder. The next Save's `order` reflects exactly
+   this. Add a walk: the draft adds "Kids"; another manager reorders; after Keep the current order stands with Kids last.
+3. **F3 (accepted).** An option the draft edited that still exists keeps all of the draft's values after Keep (its name
+   and its price change), never the current row overlaid with the draft's changed field. The comparison already shows
+   the current values, marked where they differ. Add a walk: the draft changes Large's price; another manager renames it
+   Grande; after Keep the row reads Large with the draft's price.
+4. **F4 (accepted).** A duplicate refusal belongs to its list. Any name edit, removal or undo in a list re-runs the
+   duplicate check over that list's active rows and clears refusals that no longer hold (it adds no new refusal before
+   Save; Save validates afresh). Add walks for the three resolutions the reviewer names.
+5. **F5 (accepted).** The status shows both facts when archived ("Archived item · 86 · Unavailable", as the comparison
+   does), and an item whose category is archived shows a plain fact with BO-03's wording ("Hidden from the POS ·
+   category archived"). Draw one archived-and-86'd state and one active-item-in-archived-category state (Apple Pie), and
+   update the copy table's status row.
+6. **F6 (accepted).** (a) **Question 4 is ruled: BO-04 builds on its own read** of the item and the catalog version when
+   it opens, as the Handoff proposes; DESIGN-019's "an editor carries the list's standing version" applies to BO-03's
+   inline editors. Say so in `D` beside DESIGN-019's sentence (clarifying, not changing it). (b) Introduce the child-row
+   Keep rules as the lead-ruled exception above, and remove "No rule above is changed" or narrow it to what is true.
+7. **F7 (accepted).** The base-price "not a whole number" state shows a decimal (`1000.5`); keep a letters example in at
+   most one of the three format states, or none.
+
+**The Handoff's other questions.**
+- **Question 1 (swapping option names in one save): accepted as S4a's concern.** The screen's rule stays "unique among
+  active options after the save". S4a's task file carries it: removals first, then edits and additions, and a swap made
+  safe by a mechanism S4a's task (with an architect if needed) chooses. Nothing to draw.
+- **Question 2 (a variant above the largest line total): accepted as proposed.** The note stays, no refusal in Phase 1;
+  Phase 2's add-line enforces FR-M5. Make sure the note's wording asserts nothing about POS behaviour.
+
+**What to do.** Fix F1 to F7 in `item-editor.*`, `item-editor-states.js`, `manifest.js`, `design020.cjs` and `D`; add the
+walks named above to `design020.cjs`, weakening no assertion. Ask the lead to run `design020.cjs` (and `design019.cjs`
+only if `menu.js` changes). Commit on `agent/design-020`. Append a *Round 2* section to the Handoff (each finding: what
+changed, the walk that holds it; the rulings recorded), ending `DONE` or `BLOCKED: <question>`, and ping the lead.
 
 ## Handoff
 
