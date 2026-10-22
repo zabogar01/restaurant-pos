@@ -54,11 +54,10 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE1-S2b, builder** `phase1-s2b` (Claude Sonnet), dispatched 2026-10-22 in the background: BO-08's settings part
-  (DESIGN-018, 018b), the rate field, stale refusal, `ConfigApi`, BO-05's partial alert (owner Q4), `settings.spec.ts`.
-  `touches: money, boundaries, identity`: Codex review, the lead's browser look, the owner's look. **DESIGN-019** (BO-03,
-  slice D part 1 of 3: 019 BO-03, 020 BO-04, 021 POS addition; lead split, owner said start D), Codex `design019` pane
-  `w2:p88`; a background script briefs it after Codex's update prompt, then watches. Review: Claude Opus. **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
+- **PHASE1-S2b in review:** built `26703db` (lead: verify 113/4316, e2e:all 74); BLOCKED copy question ruled by the lead
+  (builder's first-run unknown sentence stands; `a53943c`); Codex review dispatched. Round 2 owes `@pos/money` in
+  `apps/back-office/package.json` + lockfile. The lead cannot sign in to look at BO-08: the owner's look covers it. **DESIGN-019** (BO-03, D part 1 of 3:
+  020 BO-04, 021 POS next), Codex `design019` pane `w2:p88`, watched; review Claude Opus. **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
   slices left: F's BO-07 half, D (BO-03, BO-04, the POS addition), E2 (BO-06); G and H later.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
@@ -111,7 +110,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **Must not become a guarantee:** optional `OrderLine.itemId` (L1787); the in-memory refund and change walk.
 - **Backend:** `session_replication_role` bypasses the append-only trigger (ADR-008); PIN timing (ARCH-013 §7). The
   schema check compares migration names, not contents (S0). `npm ci` warns about install scripts. One high npm advisory,
-  development-only (PHASE0-008a). **BO-01 provisional** (S10 builds DESIGN-016). **012a/b:** no `makePeople` in `e2e/`.
+  development-only (PHASE0-008a). **Lengths are code points** (zod 4.6.5, `char_length`); comments, `D:1607`, `label.ts`,
+  `SignIn.tsx` say UTF-16 units: the client refuses more, never less; queued cleanup. **BO-01 provisional** (S10 builds DESIGN-016). **012a/b:** no `makePeople` in `e2e/`.
 
 ## Questions waiting for the owner
 
@@ -145,6 +145,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S2b** on DONE: verify, diff vs `owns`, e2e:all, the lead's look at BO-08 served, Codex review; owner's look.
+1. **S2b:** rule the review and finding 1 (back-office `package.json`), round 2, lead review; owner's look.
 2. **Then S3** (tender types: server and BO-08's payment methods together; C2 §8; S2b's *What S3 needs*).
 3. **Design:** DESIGN-019 running; then DESIGN-020 (BO-04), DESIGN-021 (POS addition); then F's BO-07 half; E2 (owner's word).
