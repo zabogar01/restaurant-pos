@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries]
 depends_on: [DESIGN-018b]
 owns: [docs/design/**, docs/DESIGN.md]
-status: not-started
+status: review
 cycles: 0
 ---
 # DESIGN-019 — BO-03 Menu (slice D, first part)
@@ -235,6 +235,23 @@ category name in the fixture measures 33 against the 32-character rule. The six 
    run.
 5. Commit everything on `agent/design-019` (path-scoped `git add`), complete the Handoff with the counts, end it with
    `DONE`, and ping the lead.
+
+## Lead verify (2026-10-22)
+
+The lead checked the branch at `907a9c8`. The tree is clean, and every changed path is inside `owns` or is this task
+file. The lead ran all seven checks in this worktree, with evidence outside the repository: `design019.cjs` **969/969**
+(74 states, no errors); `design012` 421/421; `design013` 371/371; `design014` 288/288; `design016` 399/399;
+`design017` 347/347; `design018` 724/724. The lead looked at `default` and `reorder-categories-stale` at 1440.
+**The designer's open question** (C1 lists no `reorderItems` command) is the lead's to settle in S4a's task file. C1
+§2.2's *Display order* note already names "the items of a category" as a reorder scope, so S4a gets
+`reorderItems(categoryId, expected, ids)`, shaped like `reorderCategories`. No change here.
+**For the reviewer:** you cannot launch a browser; this note is the evidence for the checks. Check the work against the
+task's *Rulings*, *What to draw* and *Acceptance criteria*, ADR-012 rules 10 and 13, C1 §2.2, and `D`'s
+configuration-form rules. Two things the lead noticed:
+1. **The rail.** In `default`, the rail shows the full future navigation (Today, End of day, Reports, Audit, Staff,
+   Discount presets, Printing), while `tables.html` and `settings.html` draw the Phase 1 rail (DESIGN-018: "The Phase 1
+   rail lists Tables and Settings"). Decide which is right for BO-03's Phase 1 drawing.
+2. **The row control labelled "86".** Check its accessible name, and the available-again control's.
 
 ## Handoff
 
