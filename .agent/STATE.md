@@ -58,7 +58,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   F1-F6 fixed in round 2, lead-reviewed (Codex out of allowance), red 12/15 repeated; verify 114/4331, e2e 74. Owner
   looks at BO-08 served (the lead cannot sign in). Owed to a designer: `first-run-closed` lacks the money facts. **DESIGN-019** (BO-03, D part 1 of 3;
   020, 021 next): Codex drafted 74 states uncommitted (check 965/967) and hit its limit; **owner exception** (DECISIONS
-  10-22): Claude Opus `design019c` (`w2:p8A`) finishes per *Handover*; Opus reviews. **Carry-forwards:** plan §5. Design left: F's BO-07 half, E2; G, H later.
+  10-22): Claude Opus finished it (`907a9c8`; lead: all seven checks green, 019 969/969); Opus reviewer `w2:p8B`. **Carry-forwards:** plan §5. Design left: F's BO-07 half, E2; G, H later.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
