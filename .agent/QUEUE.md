@@ -137,7 +137,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: DESIGN-018, design slice F's BO-08 half, settings and payment methods, merged 2026-10-21 as PR #125.)*
     - *(Done: DESIGN-018b, the phone refuses `/`, #127; PHASE1-S2a, settings on the server, #128; both merged.)*
     - **PHASE1-S2b**, BO-08's settings section, and BO-05's new partial-list alert (owner, DESIGN-018 Q4) — depends on
-      S2a and DESIGN-018b (merged) — running (builder, 2026-10-22).
+      S2a and DESIGN-018b (merged) — complete 2026-10-22, PR #130.
     - **Design slice D, split in three** (lead, 2026-10-22): **DESIGN-019** BO-03 (feeds S4c, S5) — running (Codex);
       **DESIGN-020** BO-04 (feeds S4c) — next; **DESIGN-021** the POS addition, G6 (feeds S7b) — after.
     - **Code-point lengths cleanup (no ID yet)** — zod 4.6.5 and `char_length` count code points; the "UTF-16 units"

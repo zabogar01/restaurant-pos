@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-22: `development` at `608f412` (S2a #128, DESIGN-018b #127, lead #129 merged). Dev `pos` migrated to `0011`.
-**Running: S2b (builder), DESIGN-019 (Codex).** Narrative:
+**S2b complete, PR #130 (owner's look). Running: DESIGN-019 (Codex).** Narrative:
 [journal/2026-10-20.md](journal/2026-10-20.md), [journal/2026-10-21.md](journal/2026-10-21.md).
 
 ## Phase and gates
@@ -18,7 +18,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **Phase 1 (Back office and catalog, ROADMAP `:60-90`): building.** Plan accepted 2026-10-20
   (`docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`, merged; its banner says accepted). 11
   slices S0-S10. **Done and merged:** S0 (#115: compose `name:`, `0009`, startup schema check), S1a (#119: tables on
-  the server, `0010`, `DUPLICATE`), S1b (#123: BO-05 and the rail); design F's BO-08 half (#125, #127); S2a (#128: settings on the server, `0011`, `SETTINGS_CHANGED`). **Running:** S2b.
+  the server, `0010`, `DUPLICATE`), S1b (#123: BO-05 and the rail); design F's BO-08 half (#125, #127); S2a (#128: settings on the server, `0011`, `SETTINGS_CHANGED`). **Complete, not merged:** S2b (#130).
   **Consults:** C1 (with ADR-012, #117), C2
   (#116), C3 (#121); C4 (POS catalog) not written; **C5 not needed** (S1b: median save-to-visible 91 ms, trigger 5 s).
 - **Rulings by slice** (DECISIONS 2026-10-20/21): S2 0-100% rate ceiling (Q2), IDR fixed (Q5), five business details
@@ -36,7 +36,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   BO-02), C, I, **E1 (BO-05, DESIGN-017)**, **F's BO-08 half (DESIGN-018, 65 states; stale-draft, rate-field and
   one-form-per-screen rules in `D`; S2a's guards in its Handoff)**; DESIGN-018b drops `/` from the phone (owner).
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
-- **Last verify by the lead:** S2a final (`2090625`): verify 107/4007, e2e:all 68, `npm ci` clean. Dev `pos`: 0011.
+- **Last verify by the lead:** S2b final (`d9215ed`): verify 114/4331, e2e:all 74, `npm ci` clean. Dev `pos`: 0011.
 
 ## Integration branch
 
@@ -54,9 +54,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE1-S2b in review:** built `26703db` (lead: verify 113/4316, e2e:all 74); BLOCKED copy question ruled by the lead
-  (builder's first-run unknown sentence stands; `a53943c`); Codex review dispatched. Round 2 owes `@pos/money` in
-  `apps/back-office/package.json` + lockfile. The lead cannot sign in to look at BO-08: the owner's look covers it. **DESIGN-019** (BO-03, D part 1 of 3:
+- **PHASE1-S2b complete** (PR #130, `53af849`): copy question ruled by the lead (builder's sentence stands); Codex review
+  F1-F6 fixed in round 2, lead-reviewed (Codex out of allowance), red 12/15 repeated; verify 114/4331, e2e 74. Owner
+  looks at BO-08 served (the lead cannot sign in). Owed to a designer: `first-run-closed` lacks the money facts. **DESIGN-019** (BO-03, D part 1 of 3:
   020 BO-04, 021 POS next), Codex `design019` pane `w2:p88`, watched; review Claude Opus. **Carry-forwards:** in the plan's §5 (Phase 2's stay Phase 2). Design
   slices left: F's BO-07 half, D (BO-03, BO-04, the POS addition), E2 (BO-06); G and H later.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
@@ -145,6 +145,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S2b:** rule the review and finding 1 (back-office `package.json`), round 2, lead review; owner's look.
+1. **After #130 merges:** fast-forward, `npm ci`; remove the S2b worktree and run dir. **DESIGN-019:** lead reruns its check.
 2. **Then S3** (tender types: server and BO-08's payment methods together; C2 §8; S2b's *What S3 needs*).
 3. **Design:** DESIGN-019 running; then DESIGN-020 (BO-04), DESIGN-021 (POS addition); then F's BO-07 half; E2 (owner's word).
