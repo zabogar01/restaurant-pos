@@ -58,7 +58,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   F1-F6 fixed in round 2, lead-reviewed (Codex out of allowance), red 12/15 repeated; verify 114/4331, e2e 74. Owner
   looks at BO-08 served (the lead cannot sign in). Owed to a designer: `first-run-closed` lacks the money facts. **DESIGN-019** (BO-03, D part 1 of 3;
   020, 021 next): Codex drafted 74 states uncommitted (check 965/967) and hit its limit; **owner exception** (DECISIONS
-  10-22): Claude Opus finished it (`907a9c8`; lead: all seven checks green, 019 969/969); Opus reviewer `w2:p8B`. **Carry-forwards:** plan §5. Design left: F's BO-07 half, E2; G, H later.
+  10-22): Opus finished it (`907a9c8`, 969/969); Opus review: 7 findings, ruled `13ef6c6`; round 2 `w2:p8C`. **Carry-forwards:** plan §5. Design left: F's BO-07 half, E2; G, H later.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -121,7 +121,7 @@ Nothing here is decided. Detail is where each line points.
 - **S1b's lead rulings, yours to overturn** (merged in #123): the nine and the builder's two questions.
 - **When to start design slice E2 (BO-06 Users)**: the plan put it last, but every owner answer it waited on is in;
   lead: after F's BO-08 half, beside D.
-- **Lead rulings, yours to overturn:** S0's `0009` (`pos_app` SELECT on `schema_migration`, over ARCH-006 case 1);
+- **Lead rulings, yours to overturn:** DESIGN-019 F7 (86 acts at once beside an open edit; archive asks first); S0's `0009` (`pos_app` SELECT on `schema_migration`, over ARCH-006 case 1);
   ARCH-018's footer-required and `created_by`; C3's acting-manager lock, `OWN_ACCOUNT`/`USER_CHANGED`, `DUPLICATE`'s
   `{ field }`; the S1a and DESIGN-017 round rulings (task files); PHASE0-004 to 013, DESIGN-011-016, ARCH-006, FE-030-036.
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
