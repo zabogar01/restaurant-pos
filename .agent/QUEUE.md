@@ -136,14 +136,16 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       2026-10-21, merged as PR #123. C5 not needed.)*
     - *(Done: DESIGN-018, design slice F's BO-08 half, settings and payment methods, merged 2026-10-21 as PR #125.)*
     - *(Done: DESIGN-018b, the phone refuses `/`, #127; PHASE1-S2a, settings on the server, #128; both merged.)*
-    - **PHASE1-S2b**, BO-08's settings section, and BO-05's new partial-list alert (owner, DESIGN-018 Q4) — depends on
-      S2a and DESIGN-018b — merged 2026-10-22 as PR #130.
-    - **Design slice D, split in three** (lead, 2026-10-22): **DESIGN-019** BO-03 (feeds S4c, S5) — merged, PR #131;
-      **DESIGN-020** BO-04 (feeds S4c) — next; **DESIGN-021** the POS addition, G6 (feeds S7b) — after.
+    - *(Done: PHASE1-S2b, BO-08's settings section, #130; DESIGN-019, BO-03 Menu (design D part 1), #131.)*
+    - **PHASE1-S3a**, tender methods on the server (`0012`, five routes; S3 split by the lead into S3a and S3b, as S1 and
+      S2 were) — depends on S2a — built, in review.
+    - **PHASE1-S3b**, BO-08's payment-methods part — depends on S3a merged — not written.
+    - **DESIGN-020** BO-04 (feeds S4c; also redraws BO-08's `first-run-closed`) — running (Codex, hand-opened);
+      **DESIGN-021** the POS addition, G6 (feeds S7b) — after.
     - **Code-point lengths cleanup (no ID yet)** — zod 4.6.5 and `char_length` count code points; the "UTF-16 units"
       comments (contracts `tables.ts`, `settings.ts`, `auth.ts`; migrations `0010`, `0011`), `D:1607`, the inventory's sign-in
       rows, and the client checks `tables/label.ts`, `SignIn.tsx` (which refuse more than the server) — found by S2b — not written.
-    - **S3** (tender types), **S4a-c** (catalog), **S5** (86),
+    - **S4a-c** (catalog), **S5** (86),
       **S6** (presets), **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
