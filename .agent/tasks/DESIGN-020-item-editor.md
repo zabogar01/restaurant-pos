@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-019]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: complete
 cycles: 1
 ---
 # DESIGN-020 — BO-04 Item editor (slice D, second part)
@@ -356,6 +356,26 @@ DESIGN-018's "nothing is merged" sentence, for child rows only**, and make the d
 walks named above to `design020.cjs`, weakening no assertion. Ask the lead to run `design020.cjs` (and `design019.cjs`
 only if `menu.js` changes). Commit on `agent/design-020`. Append a *Round 2* section to the Handoff (each finding: what
 changed, the walk that holds it; the rulings recorded), ending `DONE` or `BLOCKED: <question>`, and ping the lead.
+
+## Round 2 lead review and acceptance (2026-10-22)
+
+At `7569a94`. Round 2 changed only `item-editor.js`, `item-editor-states.js`, `manifest.js`, `design020.cjs`, `D` and the
+Handoff, as ruled. Read against the rulings: one `touched` helper (new, removed, edited, or the `moved` flag Move sets)
+serves both `keepChildren` and `removedChanged`; a touched row that still exists is copied whole from the draft; the order
+rule and pending-removal place follow ruling F2; `recheckDuplicates` clears and never adds; the status shows both facts
+and the archived-category fact; `D` states the child-row exception and the Q4 clarification without changing other rules.
+
+**Red proof repeated by the lead** (each mutation applied to round 2's `item-editor.js`, the check run, the file restored
+and compared byte for byte): (F1) every row counted as touched: `design020.cjs` 749/754, the five F1 and 4(a) walks fail;
+(F3) a touched row that still exists takes the current row: the check aborts in the F2/F3 walks (Undo of Large not found);
+(F4) the duplicate recheck disabled: the check aborts on the F4 walk (Save stays disabled). Running round 2's check against
+round 1's file aborts at once (round 1 lacks the fixture hook the new walks use), so it is no red; the mutations are.
+
+**Checks on this tree, run by the lead:** `design020` 754/754 (124 states), `design019` 998/998, `design018` 727/727,
+`design017` 348/348, `design016` 399/399, `design014` 287/287, `design013` 371 checks and `design012` 421 checks, each with
+no failures and no page errors. A fully ruled fix round whose fixes are the review's own, so the lead reviewed it instead
+of a second review round (kit practice; Claude's weekly allowance is short and Codex's is shared). **Complete.** `touches:
+money, boundaries`: the owner looks before merge.
 
 ## Handoff
 
