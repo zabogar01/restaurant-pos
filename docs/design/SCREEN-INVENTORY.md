@@ -726,15 +726,56 @@ and DESIGN-019 Handoff supply the exact copy and walks, pending design review.
 **Purpose.** Define one item: category, tax-inclusive base price, variants,
 modifiers.
 
-**Reached by / from.** BO-03.
+**Reached by / from.** BO-03: an item's Edit opens that item; a category's
+New item opens a new item in that category. Cancel, a clean return and a saved
+return land on the same BO-03 row (a new item's clean return, on that
+category's New item).
 
-**States.** *empty* (new item) · *loading* · *error* (validation) ·
-*permission-denied* (n/a) · *overflow* (many variants and modifiers on one
-item) · *unsaved changes* (must survive idle re-authentication, FR-A2b) ·
-*price immutable-currency context* (currency and precision are locked after
-the first order, FR-B1, M1).
+**States.** *new item* (empty, in the category it was created from, no variant
+or modifier, nothing that implies a saved item) · *loading* · *read failure
+with Try again* · *permission-denied* (n/a) · *an item with variants and
+modifiers*, and *with none* · *archived item being edited* (archived shown as a
+fact; saving does not restore it) · *86'd item being edited* (unavailable shown
+as a fact) · *overflow* (many variants and modifiers, the longest names, the
+largest prices; Save and every option control reachable) · *a negative variant
+whose price floors at zero* · *local invalid input* on the item name, base
+price, variant name and price change, modifier name and price change (empty,
+too long, control character, not a whole number, out of bounds, a negative
+base price or modifier change, a duplicate option name within the item) ·
+*option removal pending, and undone* · *options reordered* (Move up, Move
+down) · *saving, saved, unchanged, definite failure* · *outcome unknown* (same
+version, newer version, reread failed) · *name in use* on create and rename,
+including a name held by an item in an archived category · *catalog changed on
+an edit* (`CATALOG_CHANGED`: nothing saved, draft and option rows kept, item
+reread, current values beside the draft, Keep my changes or Use current item
+before Save), including a changed option removed meanwhile and a kept option
+whose name is now taken · *create refused because its category was archived
+meanwhile* (choose another category) · *move to a category archived meanwhile
+refused* · *departure decision* (with pending and unknown copy) · *M-6 over the
+editor* · *BO-01 with the draft held*.
 
-**Requirements.** FR-B4, FR-C1, FR-C2, FR-C3, FR-C4, FR-C8.
+**Fixed currency context** (owner, Q5): currency and decimal places are
+installation constants, IDR at 0 decimal places, shown as plain text above the
+price fields and never editable. Every price is whole rupiah, grouped with dots,
+without a currency symbol.
+
+**Rules settled by DESIGN-020.** Item names 1–64 code points, unique among
+active items across the whole menu, case-insensitively (an item in an archived
+category still holds its name); variant and modifier names 1–32 code points,
+unique among the item's active variants or active modifiers, refused locally.
+All names trimmed, no control character. Base price 0–99.999.999; variant
+change −99.999.999 to 99.999.999; modifier change 0–99.999.999. One Save sends
+every change on the screen as one command; an edit carries the catalog version
+the editor read, a create carries none. A removed option is set inactive on
+Save and cannot be restored; adding the name again makes a new option. A new
+option goes last in its list. 86, available again, archive and restore are
+BO-03's row actions; BO-04 shows availability and archived status as facts and
+offers none of them. The [Frost BO-04 composition](visual-directions/frost/back-office/item-editor.html)
+and DESIGN-020 Handoff supply the exact copy, rules and walks, pending design
+review.
+
+**Requirements.** FR-B1, FR-B4, FR-C1, FR-C2, FR-C3, FR-C4, FR-C7, FR-C8,
+FR-M1, FR-M5.
 
 **Must not invent.**
 - Prices are **tax-inclusive** (§4). The editor asks for the price the

@@ -278,10 +278,16 @@ reports and audit.
 │   │   ├── [MODAL] Stay or discard unsaved changes ....... FR-A2b
 │   │   └── [INLINE] Empty — create a category, then an item  FR-B4, B-24
 │   └── BO-04 [SCREEN] Item editor ................... FR-B4, C1–C4, C7, C8
+│       ├── [INLINE] Currency and decimal places — fixed, plain text  FR-B1, M1
 │       ├── [INLINE] Variants — single-select, ± delta .... FR-C2
 │       ├── [INLINE] Modifiers — multi-select, ≥0 delta ... FR-C3
 │       ├── [INLINE] No nested modifier groups ........... FR-C4
-│       └── [MODAL] Archive item — snapshots unaffected ... FR-C8, B-8
+│       ├── [INLINE] Option removal pending / undo; Move up, Move down  FR-B4
+│       ├── [INLINE] Invalid field / duplicate option name — local  FR-B4, M5
+│       ├── [INLINE] Item name in use — refused ........... FR-B4
+│       ├── [INLINE] Catalog changed — draft kept, Keep or Use current  ADR-012
+│       ├── [INLINE] Category archived meanwhile — choose another  ADR-012
+│       └── [MODAL] Stay or discard unsaved changes ....... FR-A2b
 │
 ├── BO-05 [SCREEN] Tables ................................ FR-B2, C8
 │   ├── [INLINE] Table create / edit — non-modal panel .... FR-B2
