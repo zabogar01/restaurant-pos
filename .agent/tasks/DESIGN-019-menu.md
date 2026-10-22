@@ -6,7 +6,7 @@ touches: [boundaries]
 depends_on: [DESIGN-018b]
 owns: [docs/design/**, docs/DESIGN.md]
 status: active
-cycles: 1
+cycles: 2
 ---
 # DESIGN-019 — BO-03 Menu (slice D, first part)
 
@@ -300,6 +300,16 @@ counts), and end it with `DONE`.
   following Save is accepted; Archive with a dirty rename open opens the decision with the new body.
 - **Checks.** Run `design019.cjs` once, then the six earlier checks once each (F5 changes `tables.html` and
   `settings.html`). Ask the owner in the pane before each run. Change nothing else.
+
+## Round 3 — the designer's question (lead ruling, 2026-10-22)
+
+The question at the end of the Handoff's *Round 2* is ruled as the designer proposes. When *Archive* or *Restore* opens
+the departure decision while the draft's own save is unknown, its body reads: "The save may or may not have succeeded.
+Continuing does not send it again. Stay to keep the draft, or discard it to continue." The same "continue, not leave"
+reasoning as F7. Every other use of DESIGN-018's uncertain body is unchanged. Apply it in `menu.js`, add the row to the
+copy table and to `D`'s *State commands on grouped lists*, and add one assertion: Archive with an unknown save open
+shows this body. Run `design019.cjs` once (ask the owner), commit, add a short *Round 3* section to the Handoff ending
+with `DONE`, and ping the lead. Change nothing else.
 
 ## Handoff
 
