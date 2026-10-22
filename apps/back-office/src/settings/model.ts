@@ -4,8 +4,8 @@ import { fieldsInError } from '../forms/fieldsInError.js';
 import type { ConfigApi } from '../session/api.js';
 import type { WorkGuard, WorkStatus } from '../work/guard.js';
 import { NOT_SET_IN_FORCE } from './copy.js';
-import { FIELD_ORDER, RATE_KEYS, TEXT_KEYS, checkDrafts, draftOf, isRate, type Drafts, type FieldError, type FieldKey, type RateKey } from './fields.js';
-import { percentText } from './rate.js';
+import { FIELD_ORDER, RATE_KEYS, TEXT_KEYS, checkDrafts, checkText, draftOf, isRate, type Drafts, type FieldError, type FieldKey, type RateKey } from './fields.js';
+import { checkRate, percentText } from './rate.js';
 
 // BO-08's settings part, apart from how it is drawn (consult C2 section 6, DESIGN-018 and `D`'s
 // configuration-form rules, copied from BO-05's model): the read, the one form, the one command,
@@ -48,10 +48,12 @@ export interface Form {
   notice: FormNotice | null;
   /** A newer version waiting for the manager's choice (Keep my changes or Use current settings), or null. */
   offered: SettingsVersionView | null;
-  /** "Now in force" beside each field where the offered version differs from what was sent. */
-  nowInForce: Partial<Record<FieldKey, string>>;
-  /** The values of the last save sent from this form, which the comparison with a reread uses. */
-  sent: Values | null;
+  /**
+   * The newer version the draft is compared with, kept after the manager chooses Keep my changes.
+   * "Now in force" beside a field, and the same-or-different sentence, are derived from the
+   * current draft against it, so they follow every edit. Null when there is none.
+   */
+  compare: SettingsVersionView | null;
   /** An unknown outcome is open: leaving asks, whatever the draft holds. */
   uncertain: boolean;
   /** The field last edited or focused, where focus returns after a decision. */
@@ -155,12 +157,23 @@ export function draftsOf(version: SettingsVersionView | null): Drafts {
   return drafts;
 }
 
-/** "Now in force" beside each field where `version` differs from what was sent. */
-function differences(sent: Values, version: SettingsVersionView): Partial<Record<FieldKey, string>> {
+/**
+ * "Now in force" beside each field where `version` differs from the current draft. The draft
+ * is read through the form's own normalisation (a rate through `checkRate`, a text trimmed, a
+ * blank NPWPD none); a rate that does not parse differs. Nothing is rebased or sent.
+ */
+export function differences(draft: Drafts, version: SettingsVersionView): Partial<Record<FieldKey, string>> {
   const out: Partial<Record<FieldKey, string>> = {};
   for (const key of FIELD_ORDER) {
     const theirs = savedValue(version, key);
-    if (sent[key] === theirs) continue;
+    let mine: string | null | undefined;
+    if (isRate(key)) {
+      const checked = checkRate(draft[key]);
+      mine = checked.ok ? checked.ppm : undefined;
+    } else {
+      mine = checkText(key, draft[key]).value;
+    }
+    if (mine === theirs) continue;
     out[key] = theirs === null ? NOT_SET_IN_FORCE : isRate(key) ? `${percentText(theirs)}%` : theirs;
   }
   return out;
@@ -193,7 +206,7 @@ export function createSettingsModel(config: ConfigApi) {
   /** Where the manager was going when the decision was shown. */
   let proceed: (() => void) | null = null;
   /** An answer that arrived while the session was away or a decision was open. */
-  let held: { command: Command; answer: Answer } | null = null;
+  let held: { command: Command; answer: Answer; read?: { view: SettingsReadView | null } } | null = null;
 
   const set = (patch: Partial<SettingsState>): void => {
     state = { ...state, ...patch };
@@ -284,8 +297,7 @@ export function createSettingsModel(config: ConfigApi) {
         errors: {},
         notice: null,
         offered: null,
-        nowInForce: {},
-        sent: null,
+        compare: null,
         uncertain: false,
         last: null,
       },
@@ -313,9 +325,9 @@ export function createSettingsModel(config: ConfigApi) {
 
   function flush(): void {
     if (held === null || !gate || state.decision) return;
-    const { command, answer } = held;
+    const { command, answer, read } = held;
     held = null;
-    void present(command, answer);
+    void present(command, answer, read);
   }
 
   function send(command: Command, call: () => Promise<Answer>, patch: Partial<SettingsState>): void {
@@ -347,8 +359,7 @@ export function createSettingsModel(config: ConfigApi) {
   // After an unknown outcome the reread has been made. Same version: the plain uncertainty.
   // A newer version: the uncertainty with the stale comparison and its two choices. The reread
   // failed: the facts are withheld and Try again repeats the read only.
-  function settleUnknown(form: Form, fresh: SettingsReadView | null, command: Command | null): Partial<SettingsState> {
-    const sent = form.sent ?? command?.values ?? null;
+  function settleUnknown(form: Form, fresh: SettingsReadView | null): Partial<SettingsState> {
     if (fresh === null) {
       return {
         withheld: true,
@@ -357,16 +368,16 @@ export function createSettingsModel(config: ConfigApi) {
       };
     }
     const newer = fresh.current;
-    if (newer !== null && newer.version !== (form.base?.version ?? null) && sent !== null) {
+    if (newer !== null && newer.version !== (form.base?.version ?? null)) {
       return {
-        form: { ...form, notice: 'unknown-changed', offered: newer, nowInForce: differences(sent, newer), uncertain: true },
+        form: { ...form, notice: 'unknown-changed', offered: newer, compare: newer, uncertain: true },
         focus: aim('notice'),
       };
     }
     return { form: { ...form, notice: 'unknown', offered: null, uncertain: true }, focus: aim({ field: 'tax' }) };
   }
 
-  async function present(command: Command, answer: Answer): Promise<void> {
+  async function present(command: Command, answer: Answer, read?: { view: SettingsReadView | null }): Promise<void> {
     const meaning = meaningOf(answer, command.expected);
     const clearWaiting = (): PageStatus | null => (state.page?.kind === 'waiting' ? null : state.page);
     const done = state.command === command ? null : state.command;
@@ -374,14 +385,22 @@ export function createSettingsModel(config: ConfigApi) {
 
     if (meaning === 'unknown') {
       // The reread comes first and never establishes success: it only makes the page current.
-      const fresh = await reread();
+      const fresh = read !== undefined ? read.view : await reread();
       if (stopped) return;
       const form = here();
       if (form === null) {
-        set({ command: done, page: clearWaiting() });
+        // The form is gone, but a reread that failed leaves the page not knowing the version in
+        // force: the facts stay withheld until a later read or an authoritative answer.
+        set({ command: done, page: clearWaiting(), ...(fresh === null ? { withheld: true } : {}) });
         return;
       }
-      set({ command: done, ...settleUnknown(form, fresh, command) });
+      if (!gate || state.decision) {
+        // The session or a decision took the screen during the reread: hold the finished result and
+        // its read, and present them once when the same manager is back. Nothing is read or sent again.
+        held = { command, answer, read: { view: fresh } };
+        return;
+      }
+      set({ command: done, ...settleUnknown(form, fresh) });
       return;
     }
 
@@ -405,18 +424,22 @@ export function createSettingsModel(config: ConfigApi) {
 
     if (meaning === 'stale') {
       // Nothing was written. One reread, so the manager sees what the server sees.
-      const fresh = await reread();
+      const fresh = read !== undefined ? read.view : await reread();
       if (stopped) return;
       const form = here();
       if (form === null) {
-        set({ command: done, page: clearWaiting() });
+        set({ command: done, page: clearWaiting(), ...(fresh === null ? { withheld: true } : {}) });
+        return;
+      }
+      if (!gate || state.decision) {
+        held = { command, answer, read: { view: fresh } };
         return;
       }
       const newer = fresh?.current ?? null;
       if (newer !== null && newer.version !== (form.base?.version ?? null)) {
         set({
           command: done,
-          form: { ...form, notice: 'stale', offered: newer, nowInForce: differences(command.values, newer), uncertain: false },
+          form: { ...form, notice: 'stale', offered: newer, compare: newer, uncertain: false },
           focus: aim('notice'),
         });
       } else {
@@ -488,7 +511,7 @@ export function createSettingsModel(config: ConfigApi) {
   function transmit(form: Form, body: SaveSettingsRequest, values: Values): void {
     const command: Command = { formKey: form.key, expected: body.expectedVersion, values, discarded: false };
     send(command, () => config[SAVE](body), {
-      form: { ...form, errors: {}, notice: null, uncertain: false, sent: values },
+      form: { ...form, errors: {}, notice: null, uncertain: false },
       confirm: null,
       page: null,
       focus: aim('notice'),
@@ -570,7 +593,7 @@ export function createSettingsModel(config: ConfigApi) {
         if (stopped || fresh === null) return;
         const now = state.form;
         if (now === null || now.key !== form.key || now.notice !== 'unknown-unread') return;
-        set(settleUnknown(now, fresh, null));
+        set(settleUnknown(now, fresh));
         return;
       }
       const ok = await load(true);
@@ -624,7 +647,7 @@ export function createSettingsModel(config: ConfigApi) {
       if (form === null || form.offered === null) return;
       const drafts = draftsOf(form.offered);
       set({
-        form: { ...form, base: form.offered, offered: null, original: drafts, draft: { ...drafts }, errors: {}, nowInForce: {}, notice: 'used' },
+        form: { ...form, base: form.offered, offered: null, original: drafts, draft: { ...drafts }, errors: {}, compare: null, notice: 'used' },
         focus: aim({ field: 'tax' }),
       });
     },

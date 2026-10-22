@@ -65,7 +65,7 @@ import {
   usedTitle,
 } from './copy.js';
 import { FIELD_ORDER, RATE_KEYS, isRate, type FieldError, type FieldKey, type RateKey, type TextKey } from './fields.js';
-import { savedValue, type Form, type PageStatus, type SettingsModel, type SettingsState } from './model.js';
+import { differences, savedValue, type Form, type PageStatus, type SettingsModel, type SettingsState } from './model.js';
 import { percentText } from './rate.js';
 import { whenText } from './when.js';
 
@@ -146,8 +146,9 @@ export function Settings({ model }: { model: SettingsModel }) {
   const handled = useRef(focus?.n ?? 0);
   useEffect(() => {
     if (focus === null || focus.n <= handled.current) return;
+    // A request made while the session is away (M-6, BO-01) waits for the same manager's return.
+    if (!signedIn || root.current === null) return;
     handled.current = focus.n;
-    if (!live.current || root.current === null) return;
     const area = root.current;
     const target = focus.target;
     let found: HTMLElement | null;
@@ -161,7 +162,7 @@ export function Settings({ model }: { model: SettingsModel }) {
         area.querySelector<HTMLElement>('[data-change]') ??
         area.querySelector<HTMLElement>('[data-opener]');
     found?.focus();
-  }, [focus]);
+  }, [focus, signedIn]);
 
   // Escape leaves the form as Cancel does, unless a modal (M-6, the decision, the
   // confirmation) is open.
@@ -225,6 +226,11 @@ export function Settings({ model }: { model: SettingsModel }) {
             </div>
           </div>
         )}
+        {firstRunEmpty && installation !== null && (
+          <div className="settings-stack">
+            <MoneyGroup installation={installation} />
+          </div>
+        )}
         {firstRunEmpty && (
           <div id="settings-read">
             <div className="office-empty">
@@ -256,6 +262,28 @@ export function Settings({ model }: { model: SettingsModel }) {
       <RateConfirm model={model} state={state} phase={phase} />
       <Decision model={model} state={state} phase={phase} />
     </div>
+  );
+}
+
+/** The constants as plain text (ADR-012 rule 5): never an input, a lock or a Change. */
+function MoneyGroup({ installation }: { installation: NonNullable<SettingsState['installation']> }) {
+  return (
+    <section className="settings-group" aria-labelledby="money-label">
+      <h3 className="settings-group__label" id="money-label">
+        {GROUP_MONEY}
+      </h3>
+      <dl className="settings-list">
+        <div className="settings-row">
+          <dt>{TERM_CURRENCY}</dt>
+          <dd className="settings-value">{currencyText(installation.currency)}</dd>
+        </div>
+        <div className="settings-row">
+          <dt>{TERM_PRECISION}</dt>
+          <dd className="settings-value">{precisionText(installation.minorUnitPrecision)}</dd>
+        </div>
+      </dl>
+      <p className="settings-note">{FIXED_NOTE}</p>
+    </section>
   );
 }
 
@@ -302,22 +330,7 @@ function ReadView({ state, model }: { state: SettingsState; model: SettingsModel
   return (
     <div id="settings-view" className="settings-columns">
       <div className="settings-stack">
-        <section className="settings-group" aria-labelledby="money-label">
-          <h3 className="settings-group__label" id="money-label">
-            {GROUP_MONEY}
-          </h3>
-          <dl className="settings-list">
-            <div className="settings-row">
-              <dt>{TERM_CURRENCY}</dt>
-              <dd className="settings-value">{currencyText(installation.currency)}</dd>
-            </div>
-            <div className="settings-row">
-              <dt>{TERM_PRECISION}</dt>
-              <dd className="settings-value">{precisionText(installation.minorUnitPrecision)}</dd>
-            </div>
-          </dl>
-          <p className="settings-note">{FIXED_NOTE}</p>
-        </section>
+        <MoneyGroup installation={installation} />
         <section className="settings-group" aria-labelledby="rates-label">
           <h3 className="settings-group__label" id="rates-label">
             {GROUP_RATES}
@@ -358,7 +371,10 @@ function SettingsForm({
   const { installation } = state;
   if (installation === null) return null;
   const chooses = form.offered !== null;
-  const firstRun = form.base === null;
+  // The title and context follow what the page knows: once any version is known to exist, or
+  // while an outcome or read is unknown, "nothing is saved yet" is not claimed.
+  const firstRun = state.current === null && !state.withheld;
+  const diffs = form.compare === null ? {} : differences(form.draft, form.compare);
 
   const notice = (() => {
     if (pendingSave) return { kind: 'pending', role: 'status', title: SAVING.title, body: SAVING.body } as const;
@@ -369,12 +385,12 @@ function SettingsForm({
         return { kind: 'failure', role: 'alert', title: FORM_FAILED.title, body: FORM_FAILED.body } as const;
       case 'stale': {
         const o = form.offered!;
-        const differs = Object.keys(form.nowInForce).length > 0;
+        const differs = Object.keys(diffs).length > 0;
         return { kind: 'stale', role: 'alert', title: STALE_TITLE, body: staleBody(o.version, o.createdByName, whenText(o.createdAt), differs) } as const;
       }
       case 'unknown-changed': {
         const o = form.offered!;
-        const differs = Object.keys(form.nowInForce).length > 0;
+        const differs = Object.keys(diffs).length > 0;
         return { kind: 'unknown', role: 'status', title: UNKNOWN_TITLE, body: unknownChangedBody(o.version, o.createdByName, whenText(o.createdAt), differs) } as const;
       }
       case 'unknown':
@@ -454,7 +470,7 @@ function SettingsForm({
                 {GROUP_RATES}
               </h4>
               {RATE_KEYS.map((key) => (
-                <Field key={key} fieldKey={key} form={form} model={model} locked={pendingSave} />
+                <Field key={key} fieldKey={key} form={form} model={model} locked={pendingSave} now={diffs[key]} />
               ))}
             </section>
           </div>
@@ -464,7 +480,7 @@ function SettingsForm({
             </h4>
             <p className="settings-note settings-note--top">{RECEIPT_NOTE}</p>
             {FIELD_ORDER.filter((key) => !isRate(key)).map((key) => (
-              <Field key={key} fieldKey={key} form={form} model={model} locked={pendingSave} />
+              <Field key={key} fieldKey={key} form={form} model={model} locked={pendingSave} now={diffs[key]} />
             ))}
           </section>
         </div>
@@ -497,15 +513,16 @@ function Field({
   form,
   model,
   locked,
+  now,
 }: {
   fieldKey: FieldKey;
   form: Form;
   model: SettingsModel;
   locked: boolean;
+  now: string | undefined;
 }) {
   const id = FIELD_ID[fieldKey];
   const error = form.errors[fieldKey];
-  const now = form.nowInForce[fieldKey];
   const described = [error !== undefined ? `${id}-error` : null, now !== undefined ? `${id}-current` : null, `${id}-help`]
     .filter((part): part is string => part !== null)
     .join(' ');
