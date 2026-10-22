@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S2a, DESIGN-018b]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/settings.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S2b — BO-08 Settings in the back office
@@ -226,6 +226,31 @@ was decided and on what evidence, tests changed and why, each red proof (mutatio
 found and not fixed, the real `verify` and `test:e2e:all` output, and **what S3 needs** to add the payment-methods part
 (how the page registers with the guard, where the second part mounts, which state is the screen's). End with `DONE` or
 `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead ruling on the BLOCKED question, and lead verify (2026-10-22)
+
+**The question (Handoff, *Found and not fixed* 3), ruled by the lead, overturnable by the owner or a designer:** the
+builder's sentence stands as written: "The outcome could not be confirmed. The settings have been read again; nothing
+is saved yet. Your draft is kept; nothing was sent again." It is DESIGN-018's own sentence with the version clause
+replaced, and it claims nothing the reread does not show. `UNKNOWN_FIRST_RUN_BODY` stays, with its comment. No change is
+needed, so no builder round is spent on it: the task goes to review as it is.
+
+**Finding 1** (`@pos/money` not declared in `apps/back-office/package.json`) is real, the same as S2a's F2. The lead
+rules it together with the review's findings, in the next round, with the two manifest files added to `owns`.
+
+**Finding 2** (lengths are code points) is confirmed by the lead: zod 4.6.5's `z.string().max(2)` accepts two emoji and
+refuses three. The wrong "UTF-16 units" wording is also in `packages/contracts/src/tables.ts`, `settings.ts` and
+`auth.ts`, the comments in `0010` and `0011`, `docs/DESIGN.md:1607`, the inventory's sign-in rows, `tables/label.ts` and
+`SignIn.tsx`. In every case the client counts UTF-16 units, which is never fewer than the code points the server counts,
+so the client refuses more than the server and nothing unsafe passes. The lead queues it as its own cleanup task. Not
+for this task.
+
+**Lead verify.** At `26703db` the tree is clean. Every changed path is inside `owns`, and nothing under `e2e/support/`
+changed. The lead's runs: `npm run verify` 113 files, 4316 tests; `npm run test:e2e:all` 74 passed (both browsers). **For the reviewer:** you cannot reach the database or launch a browser.
+The lead's verify note, added before merge, is the evidence for both suites, and a "blocked" on that alone is ruled
+clear. Review against the *Lead rulings*, DESIGN-018's copy, rate and lengths tables and DESIGN-018b's phone rule, `D`'s
+configuration-form rules, and S1b's pattern. Above all, check that the rate path never uses a float, the base-version
+rule (ruling 6), that the stale and unknown states never resend, and the confirmation's dialog rule at M-6 and BO-01.
 
 ## Handoff
 
