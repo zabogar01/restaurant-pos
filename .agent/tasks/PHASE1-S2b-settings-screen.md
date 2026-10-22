@@ -4,9 +4,9 @@ title: BO-08 Settings in the back office — the settings section, the rate fiel
 category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S2a, DESIGN-018b]
-owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/settings.spec.ts, e2e/support/**]
-status: review
-cycles: 0
+owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/settings.spec.ts, e2e/support/**, apps/back-office/package.json, package-lock.json]
+status: active
+cycles: 1
 ---
 # PHASE1-S2b — BO-08 Settings in the back office
 
@@ -251,6 +251,42 @@ The lead's verify note, added before merge, is the evidence for both suites, and
 clear. Review against the *Lead rulings*, DESIGN-018's copy, rate and lengths tables and DESIGN-018b's phone rule, `D`'s
 configuration-form rules, and S1b's pattern. Above all, check that the rate path never uses a float, the base-version
 rule (ruling 6), that the stale and unknown states never resend, and the confirmation's dialog rule at M-6 and BO-01.
+
+## Round 2 — the review's six findings (lead rulings, 2026-10-22)
+
+The Codex review (`.agent/reviews/PHASE1-S2b-review.md`, verdict *findings*, six) is accepted in full, each fix as the
+review proposes. `owns` now also lists `apps/back-office/package.json` and `package-lock.json`, for F6 only. Every fix
+gets a test that fails against round 1, which you run and record. Apply exactly this, then add a section *Round 2* at the
+end of the Handoff (each finding, its test, the red you observed, the counts), and end it with `DONE`.
+
+- **F1, the facts after a discarded save's failed reread.** A failed reread after an unknown outcome withholds the
+  version facts at page level whether or not the form still exists. They stay withheld until a later successful read or
+  an authoritative answer establishes the current version. The command is still cleared silently, as a discarded save
+  requires. Test both timings the review names: Discard while the save is pending, and Discard during the reread.
+- **F2, a gate that closes during the result's reread.** After every asynchronous reread in the unknown and stale
+  branches, recheck the session gate and the local decision before presenting anything. If presentation is not
+  permitted, hold the completed result and its read, and present it once, with its focus, when the same manager returns.
+  Resumption never repeats the save or the reread. Make the focus request survive the gate rather than being consumed
+  while signed out or idle. Test a delayed reread with M-6 and with the departure decision opening during it.
+- **F3, the stale comparison follows the draft.** Derive the "Now in force: {value}" annotations and the same-or-different
+  sentence from the **current draft** against the offered version. Update them on every field change and when a reread
+  completes, using the existing rate and text normalisation. Nothing is rebased or sent implicitly. The unknown
+  outcome's *Try again* read compares against the current draft too. Test a field becoming different and one becoming
+  equal.
+- **F4, the first-run context after a version exists.** `form.base` stays solely the outgoing version, as now. The
+  form's title and context come from the known current state: once any version is known to exist, use the edit title
+  and context ("Edit settings" / "Changes apply to orders opened after you save. …"). Use the first-run title and
+  context only while the read shows none. Never claim "nothing is saved yet" while an outcome or read is unknown. Test
+  the first-run stale and unknown transitions.
+- **F5, money facts in the closed first-run state.** When the read succeeds with `current: null` and the form is closed,
+  also render the Money group's plain facts (currency, decimal places, "Fixed for this installation."). FR-B1, ADR-012
+  rule 5 and `D:1721-1726` win over the Frost artifact's `first-run-closed` drawing, which omits them. The lead records
+  that drawing as owed to a designer. No rate is shown or pre-filled. Assert the facts before *Enter settings* and after
+  a clean Cancel.
+- **F6, the dependency.** Add `"@pos/money": "*"` to `dependencies` in `apps/back-office/package.json`, alphabetically
+  after `@pos/contracts`, and the same line under `packages["apps/back-office"].dependencies` in `package-lock.json`, by
+  hand (the entry at about line 23; change nothing else). Do not run `npm install`. The lead runs `npm ci` afterwards.
+- **Then** `npm run verify` and `npm run test:e2e:all`, commit, and report as before. Change nothing else.
 
 ## Handoff
 
