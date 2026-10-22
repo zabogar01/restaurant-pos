@@ -40,8 +40,10 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
     expect(true).toBe(true);
   });
 
-  it('holds the five table routes at run time, and nothing under /auth/', () => {
+  it('holds the five table routes and the two settings routes at run time, and nothing under /auth/', () => {
     expect(Object.keys(store.config).sort()).toEqual([
+      '/api/back-office/config/settings',
+      '/api/back-office/config/settings/save',
       '/api/back-office/config/tables',
       '/api/back-office/config/tables/create',
       '/api/back-office/config/tables/deactivate',

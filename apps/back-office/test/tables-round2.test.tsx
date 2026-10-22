@@ -234,7 +234,9 @@ describe('F4. a success after a failed reread is shown', () => {
     expect(rowLabels(host)).toContain('Window 1');
     expect(document.activeElement).toBe(named(host, 'Edit Window 1 — active'));
     expect(text(pageStatus(host))).toBe('Window 1 saved.');
-    expect(text(host.querySelector('[role="alert"]'))).toBe('Tables could not be loadedTry again to read the table list.Try again');
+    expect(text(host.querySelector('[role="alert"]'))).toBe(
+      'The list may be out of dateTables could not be read again. The rows below are the ones this page knows, including your latest change. Try again to read the full list.Try again'
+    );
     expect(host.querySelector('#table-count')).toBeNull();
     expect(named(host, 'New table').hasAttribute('aria-disabled')).toBe(false);
 

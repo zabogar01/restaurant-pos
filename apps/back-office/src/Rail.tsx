@@ -2,11 +2,19 @@ import type { MouseEvent } from 'react';
 import { CONFIGURATION, TABLES } from './copy.js';
 import { router, useScreen } from './router.js';
 import { PATHS, type Screen } from './routes.js';
+import { SETTINGS } from './settings/copy.js';
 
-// The rail lists only destinations that exist (DESIGN-016 Part B 4): in S1b, Tables, under
-// a group labelled Configuration. The landing is reached by browser Back, not by an entry.
+// The rail lists only destinations that exist (DESIGN-016 Part B 4): Tables (S1b) and
+// Settings (S2b), under a group labelled Configuration. The landing is reached by browser
+// Back, not by an entry.
 const GROUPS: ReadonlyArray<{ label: string; entries: ReadonlyArray<{ screen: Screen; label: string }> }> = [
-  { label: CONFIGURATION, entries: [{ screen: 'tables', label: TABLES }] },
+  {
+    label: CONFIGURATION,
+    entries: [
+      { screen: 'tables', label: TABLES },
+      { screen: 'settings', label: SETTINGS },
+    ],
+  },
 ];
 
 export function Rail() {

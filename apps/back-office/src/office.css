@@ -114,3 +114,63 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 #tables-list .table-status { white-space: nowrap; }
 #form-notice[data-kind='failure'], #read-state .office-notice { color: var(--frost-warning); background: var(--frost-warning-surface); border-color: var(--frost-warning); }
 #read-state .office-button { margin-top: var(--frost-space-4); }
+
+/*
+ * BO-08 Settings (PHASE1-S2b), ported from Frost's settings.css
+ * (docs/design/visual-directions/frost/back-office/settings.css) for the settings part: the
+ * part's head, the read view's groups, the one inline form, the "now in force" lines and the
+ * rate confirmation's list. The payment-methods rules are S3's.
+ */
+.settings-part__head { display: flex; align-items: flex-start; gap: var(--frost-space-4); margin-bottom: var(--frost-space-4); }
+.settings-part__head h2 { margin: 0; font-size: var(--frost-text-18); font-weight: var(--frost-weight-medium); }
+.settings-part__head p { margin: var(--frost-space-1) 0 0; color: var(--frost-muted); font-size: var(--frost-text-13); }
+.settings-status { margin-bottom: var(--frost-space-4); }
+.settings-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--frost-space-6); align-items: start; }
+.settings-columns > * { min-width: 0; }
+.settings-stack { display: grid; gap: var(--frost-space-6); min-width: 0; }
+
+/* Read view: each group reads like a small data table, with the table header's tinted band. */
+.settings-group { background: var(--frost-elevated); border: var(--frost-divider-stroke); border-radius: var(--frost-radius-surface); }
+.settings-group__label { margin: 0; padding: var(--frost-table-head-padding); background: var(--frost-group); border-bottom: var(--frost-control-stroke); font-size: var(--frost-text-11); font-weight: var(--frost-weight-medium); text-transform: var(--frost-table-head-case); letter-spacing: var(--frost-tracking-table); }
+.settings-list { margin: 0; }
+.settings-row { display: grid; grid-template-columns: var(--frost-office-form-columns) auto; gap: var(--frost-space-4); align-items: start; padding: var(--frost-table-cell-padding); border-bottom: var(--frost-divider-stroke); }
+.settings-list .settings-row:last-child { border-bottom: 0; }
+.settings-row dt { font-weight: var(--frost-weight-medium); }
+.settings-row dt span { display: block; font-size: var(--frost-text-12); font-weight: var(--frost-weight-regular); color: var(--frost-muted); }
+.settings-row dd { margin: 0; min-width: 0; }
+.settings-value { overflow-wrap: anywhere; }
+.settings-value--lines { white-space: pre-line; }
+.settings-value[data-empty='true'] { color: var(--frost-muted); }
+.settings-action { text-align: right; }
+.settings-note { margin: 0; padding: var(--frost-space-3); border-top: var(--frost-divider-stroke); font-size: var(--frost-text-12); color: var(--frost-muted); }
+.settings-note--top { border-top: 0; border-bottom: var(--frost-divider-stroke); }
+
+/* Edit view: one bordered panel, as BO-05's form; its groups are plain labelled regions, never nested boxes. */
+.settings-form { background: var(--frost-elevated); border: var(--frost-overlay-border); border-radius: var(--frost-radius-surface); }
+.settings-form .office-dialog__head h3 { margin: 0; font-size: var(--frost-text-16); font-weight: var(--frost-weight-medium); }
+.settings-form .office-dialog__head p { margin: var(--frost-space-1) 0 0; color: var(--frost-muted); font-size: var(--frost-text-13); }
+.settings-form__body { padding: var(--frost-overlay-body-padding); }
+.settings-fieldset { min-width: 0; }
+.settings-fieldset .settings-group__label { padding: 0 0 var(--frost-space-2); margin-bottom: var(--frost-space-4); background: none; border-bottom: var(--frost-divider-stroke); color: var(--frost-muted); }
+.settings-fieldset .settings-row { padding: var(--frost-space-2) 0; border-bottom: 0; }
+.settings-fieldset .settings-note { padding: var(--frost-space-2) 0 var(--frost-space-4); border: 0; }
+.settings-fieldset .settings-note--top { padding-top: 0; margin-top: calc(-1 * var(--frost-space-2)); }
+.settings-field { margin-bottom: var(--frost-space-5); }
+.settings-field label { display: block; margin-bottom: var(--frost-space-1); font-size: var(--frost-text-12); color: var(--frost-muted); }
+/* A rate is short: the field takes the form's label column width and % sits beside it. */
+.settings-rate { display: grid; grid-template-columns: var(--frost-office-form-columns); align-items: center; column-gap: var(--frost-space-2); }
+.settings-rate span { color: var(--frost-muted); }
+.settings-textarea { font: inherit; height: auto; padding-block: var(--frost-space-2); line-height: var(--frost-leading-body); resize: vertical; display: block; }
+.settings-help { margin: var(--frost-space-1) 0 0; font-size: var(--frost-text-12); color: var(--frost-muted); }
+.settings-current { margin: var(--frost-space-1) 0 0; padding: var(--frost-space-1) var(--frost-space-2); background: var(--frost-group); border-radius: var(--frost-radius-surface); font-size: var(--frost-text-13); white-space: pre-line; overflow-wrap: anywhere; }
+.settings-foot-hint { margin: 0 auto 0 0; align-self: center; font-size: var(--frost-text-12); color: var(--frost-muted); }
+.settings-changes { margin: 0 0 var(--frost-space-4); padding-left: var(--frost-space-5); }
+.settings-changes li + li { margin-top: var(--frost-space-1); }
+#settings-notice .office-actions, #settings-notice > .office-button { margin-top: var(--frost-space-3); }
+
+/* Refusals and read failures use the amber notice; pending and uncertainty keep the grouping notice. */
+#settings-notice[data-kind='failure'], #settings-notice[data-kind='stale'], #settings-read .office-notice { color: var(--frost-warning); background: var(--frost-warning-surface); border-color: var(--frost-warning); }
+#settings-read .office-button { margin-top: var(--frost-space-4); }
+
+/* Openers stay focusable for focus return but read as inert while a command is pending. */
+.settings-action button[aria-disabled='true'], #settings-read button[aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }
