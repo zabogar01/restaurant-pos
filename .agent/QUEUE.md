@@ -135,10 +135,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE1-S1b, BO-05 Tables, the rail and the first configuration form, AC-35 in the browser, complete
       2026-10-21, merged as PR #123. C5 not needed.)*
     - *(Done: DESIGN-018, design slice F's BO-08 half, settings and payment methods, merged 2026-10-21 as PR #125.)*
-    - **DESIGN-018b**, the phone field refuses `/` (owner, DESIGN-018 Q2) — complete 2026-10-21, PR #127.
-    - **PHASE1-S2a**, settings versions on the server (ADR-012, C1 §1, DESIGN-018's guards) — complete 2026-10-21, PR #128.
-    - **PHASE1-S2b**, BO-08's settings section — depends on S2a and DESIGN-018b; carries BO-05's new partial-list alert
-      copy (owner, DESIGN-018 Q4) — not written.
+    - *(Done: DESIGN-018b, the phone refuses `/`, #127; PHASE1-S2a, settings on the server, #128; both merged.)*
+    - **PHASE1-S2b**, BO-08's settings section, and BO-05's new partial-list alert (owner, DESIGN-018 Q4) — depends on
+      S2a and DESIGN-018b (merged) — running (builder, 2026-10-22).
     - **S3** (tender types), **S4a-c** (catalog), **S5** (86),
       **S6** (presets), **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
