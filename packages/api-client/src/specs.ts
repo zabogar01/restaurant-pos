@@ -2,9 +2,12 @@ import {
   BackOfficeLoginRequest,
   BackOfficeSessionView,
   CreateTableRequest,
+  CreateTenderMethodRequest,
   DeactivateTableRequest,
+  DeactivateTenderMethodRequest,
   PosLoginRequest,
   ReactivateTableRequest,
+  ReactivateTenderMethodRequest,
   ReauthenticateRequest,
   ROUTE_TABLE,
   SaveSettingsRequest,
@@ -12,7 +15,10 @@ import {
   SettingsReadView,
   TableResponse,
   TablesResponse,
+  TenderMethodResponse,
+  TenderMethodsResponse,
   UpdateTableRequest,
+  UpdateTenderMethodRequest,
 } from '@pos/contracts';
 
 /** The one thing the core needs of a schema; every zod schema in the contracts has it. */
@@ -81,6 +87,17 @@ export const SPECS = {
   '/api/back-office/config/tables/reactivate': { body: ReactivateTableRequest, response: TableResponse },
   '/api/back-office/config/settings': { response: SettingsReadView },
   '/api/back-office/config/settings/save': { body: SaveSettingsRequest, response: SettingsReadView },
+  '/api/back-office/config/tender-methods': { response: TenderMethodsResponse },
+  '/api/back-office/config/tender-methods/create': { body: CreateTenderMethodRequest, response: TenderMethodResponse },
+  '/api/back-office/config/tender-methods/update': { body: UpdateTenderMethodRequest, response: TenderMethodResponse },
+  '/api/back-office/config/tender-methods/deactivate': {
+    body: DeactivateTenderMethodRequest,
+    response: TenderMethodResponse,
+  },
+  '/api/back-office/config/tender-methods/reactivate': {
+    body: ReactivateTenderMethodRequest,
+    response: TenderMethodResponse,
+  },
 } as const satisfies Record<RoutePath, Spec>;
 
 type Specs = typeof SPECS;

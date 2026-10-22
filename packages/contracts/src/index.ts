@@ -26,6 +26,16 @@ export {
   UpdateTableRequest,
 } from './tables.js';
 export {
+  CreateTenderMethodRequest,
+  DeactivateTenderMethodRequest,
+  ReactivateTenderMethodRequest,
+  TenderMethodName,
+  TenderMethodResponse,
+  TenderMethodView,
+  TenderMethodsResponse,
+  UpdateTenderMethodRequest,
+} from './tender-methods.js';
+export {
   BackOfficeLoginRequest,
   ManagerPin,
   PosLoginRequest,

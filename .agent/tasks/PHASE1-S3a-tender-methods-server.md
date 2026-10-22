@@ -183,3 +183,57 @@ schema names, `TenderMethodView`, the `ConfigApi` exclusion S3b removes, and how
 what was decided and on what evidence; tests changed and why; each red proof (mutation, failure read, reverted); what
 was found and not fixed; the real `verify` output. End with `DONE` or `BLOCKED: <one question>`, then report to the lead
 through Herdr as AGENTS.md says.
+
+## Handoff
+
+**What I did.** I built the server half of tender methods as a near copy of S1a, on `agent/phase1-s3a`. The files are:
+
+- `db/migrations/0012_tender_method.sql`: the table, `tender_method_name_check` (1 to 32 code points, no edge whitespace, no `[[:cntrl:]]`), the partial unique index `tender_method_active_name_key ON (lower(name)) WHERE is_active`, and grants of `SELECT, INSERT` plus `UPDATE (name, is_active)`. No row is inserted and no `DELETE` is granted.
+- `packages/contracts/src/tender-methods.ts`, exported from `index.ts`: `TenderMethodName`, `TenderMethodView`, the four strict requests, `TenderMethodResponse` and `TenderMethodsResponse`. Five entries were added to `routes.ts`.
+- `apps/server/src/domain/tender-method.ts`: the five operations. `lockTenderMethod` is exported and is the first statement of update, deactivate and reactivate.
+- `apps/server/src/http/routes/back-office-tender-methods.ts`, registered in `server.ts` after the settings routes.
+- `packages/api-client`: five `SPECS` entries and five `ROUTES` names.
+- `apps/back-office/src/session/api.ts`: five `officeApi()` functions, and `ConfigPath` now `Exclude`s the tender-methods paths, with a comment saying S3b adds them.
+- Tests: new `apps/server/test/tender-methods.test.ts` (23 cases) and `packages/contracts/test/tender-methods.test.ts` (8 cases).
+
+**What S3b needs.**
+
+- Routes: `GET /api/back-office/config/tender-methods`, and `POST` to `.../create` (`{ name }`), `.../update` (`{ tenderMethodId, name }`), `.../deactivate` and `.../reactivate` (`{ tenderMethodId }`).
+- `ROUTES` names: `tenderMethodsList`, `tenderMethodsCreate`, `tenderMethodsUpdate`, `tenderMethodsDeactivate`, `tenderMethodsReactivate`.
+- Contract names: `TenderMethodName`, `TenderMethodView` (`{ tenderMethodId, name, isActive }`), `CreateTenderMethodRequest`, `UpdateTenderMethodRequest`, `DeactivateTenderMethodRequest`, `ReactivateTenderMethodRequest`, `TenderMethodResponse` (`{ tenderMethod }`) and `TenderMethodsResponse` (`{ tenderMethods }`).
+- `ConfigApi` exclusion: S3b removes the `Exclude` on `ConfigPath` in `apps/back-office/src/session/api.ts`. It then adds the five paths to `configApi()`, `fixtureSession.ts` (currently `unavailable` entries for tables and settings) and `config-api.test.tsx`, together with the screen. I did not touch those files, since they are outside `owns`.
+- Errors: `DUPLICATE` arrives as 409 `{ "error": { "code": "DUPLICATE" } }` on create, on update (rename into a name an active method holds) and on reactivate. `NOT_FOUND` arrives as 404 on update, deactivate and reactivate. Both carry no details. A bad body is 400 `VALIDATION_FAILED`.
+- Reactivation takes no new name. The way out of a refused reactivation is to rename the inactive method and then reactivate it. A test shows this.
+
+**What I decided, and on what evidence.**
+
+1. Lengths are code points, as the task said. The schema counts them through zod's `max` and the database through `char_length`. The tests use 32 and 33 emoji, and the migration and contract comments say code points. I did not copy the old "UTF-16 units" wording.
+2. `lockTenderMethod` is exported for Phase 4. Where the TenderMethod row sits in ARCHITECTURE §8's lock order is Phase 4's to decide, with an architect. S3a takes only its own row. I said so in the function's comment.
+3. In the "Cash, cash or Card" case I truncate between the three creates. `Cash` and `cash` collide case-insensitively, so creating all three in one run would, correctly, answer `DUPLICATE`. My first draft failed for this reason (a test bug, not a defect). The case then checks that a second `CARD` is `DUPLICATE`, which shows these names are ordinary rows.
+4. `makePeople` base is 690000. 680000 is already used by `settings.test.ts`.
+
+**Existing tests changed.** `schema.test.ts` gained the `tender_method` entry in the privilege map and a new `describe('tender_method')`. `harness-race.test.ts` gained `'tender_method'` in `MIGRATED_TABLES`. I did not edit `packages/contracts/test/routes.test.ts`: its table-routes case filters on `/config/tables` and does not match the new paths, and its criterion-2 case is generic over `ROUTE_TABLE`. `route-table.test.ts`, `access.test.ts` and every back-office test are unchanged and pass. No assertion was weakened.
+
+**Red proofs.** Each mutation was applied, the failure read, and the mutation reverted.
+
+1. Removed the `reactivate` entry from `ROUTE_TABLE`: `route-table.test.ts` case 8 failed ("registered but not in the table: POST …/tender-methods/reactivate"), and the interactive case failed too.
+2. Appended `?x` to the update path: `routes.test.ts` "no path contains ?, # or :" failed.
+3. Declared `create` as `{ session: 'OPTIONAL', audience: 'BACK_OFFICE' }`: case 3 failed at "POST …/create: no cookie", answering 200 instead of 401.
+4. Added `DELETE` to the grant: `schema.test.ts` case 1 (the privilege map) failed, showing `DELETE` in the table list, and the `tender_method` privilege test failed because `DELETE` succeeded.
+5. Indexed `name` instead of `lower(name)`: the case-variant tests failed (`qris` accepted as 200 on create, rename and reactivation, and in the schema test).
+6. Made the index non-unique: both race cases failed with `[200, 200]`, and the barrier's waiting count was still 2.
+7. Wrote the database error's `detail` to stdout from the domain: the marker test failed, with the line `key (lower(name))=(mark-dup-tender-5521) already exists.` in the captured output.
+8. Removed `FOR UPDATE` from `lockTenderMethod`: all three case 8 tests failed ("the call returned while the row was locked").
+9. Made `deactivateTenderMethod` write unconditionally: the case 9 `xmin` test failed (`1098387` against `1098381`).
+10. Removed the trim refinement from `TenderMethodName`: the contract test failed, and case 10 failed on the route with 500 `INTERNAL`, because the database check refused what the schema let through. That is the backstop working, and it shows the schema is the layer that answers 400.
+11. Dropped the `[[:cntrl:]]` clause from the migration: the `tender_method` schema case (criterion 11) failed on the first control-character name, which succeeded when it should have been refused.
+
+Criterion 12 (no audit entry) has no red proof, as the task says. It is a guard against a later change: it counts `audit_entry` across all five commands and a duplicate refusal.
+
+**Found and not fixed.** Older comments (`tables.ts`, `0010`, `0011`, `dining-table.ts`) still say "UTF-16 units". That is the queued cleanup, so I left it alone. I ran no formatter.
+
+**`npm run verify`.** Typecheck was clean. `vitest run`: Test Files 116 passed (116); Tests 4367 passed (4367). The baseline was 114 files and 4331 tests, so this adds 2 files and 36 tests. I did not run `npm run test:e2e:all` (the lead runs it before merge). I did not run `db:migrate` on the development database `pos`; the lead does that after the merge.
+
+**What the next agent lacks.** Nothing is blocking. `docs/` and the contract are untouched. No browser was used or needed.
+
+DONE

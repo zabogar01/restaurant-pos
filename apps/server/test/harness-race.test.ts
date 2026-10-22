@@ -14,6 +14,7 @@ const MIGRATED_TABLES = [
   'security_event',
   'settings_version',
   'staff_user',
+  'tender_method',
 ];
 
 // The harness's own regression test. It has the shape that raced when vitest ran
