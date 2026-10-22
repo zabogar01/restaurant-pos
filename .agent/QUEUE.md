@@ -140,7 +140,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - **PHASE1-S3a**, tender methods on the server (`0012`, five routes; S3 split by the lead into S3a and S3b, as S1 and
       S2 were) — depends on S2a — complete, PR #134.
     - **PHASE1-S3b**, BO-08's payment-methods part — depends on S3a merged — not written.
-    - **DESIGN-020** BO-04 (feeds S4c; also redraws BO-08's `first-run-closed`) — running (Codex, hand-opened);
+    - **DESIGN-020** BO-04 (feeds S4c; also redraws BO-08's `first-run-closed`) — complete, PR #135;
       **DESIGN-021** the POS addition, G6 (feeds S7b) — after.
     - **Code-point lengths cleanup (no ID yet)** — zod 4.6.5 and `char_length` count code points; the "UTF-16 units"
       comments (contracts `tables.ts`, `settings.ts`, `auth.ts`; migrations `0010`, `0011`), `D:1607`, the inventory's sign-in

@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-22 evening: `development` at `d164a23` (#130-#133 merged); `npm ci` done; dev `pos` at `0011`. **S3a complete,
-PR #134 (owner's look). DESIGN-020 (Codex designer) running.** S3 split into S3a (server) and S3b (BO-08's
+2026-10-22 evening: `development` at `d164a23` (#130-#133 merged); `npm ci` done; dev `pos` at `0011`. **Nothing running.
+Open for the owner: #134 (S3a), #135 (DESIGN-020).** S3 split into S3a (server) and S3b (BO-08's
 payment-methods part), as S1 and S2 were. Narrative: [journal/2026-10-22.md](journal/2026-10-22.md).
 
 ## Phase and gates
@@ -48,15 +48,15 @@ payment-methods part), as S1 and S2 were. Narrative: [journal/2026-10-22.md](jou
 - **Guard hooks** current (`--check` 2026-10-20); no agents.yaml or `.githooks/` change since 2026-10-17.
 - **Lead work: `../restaurant-pos-kit` on `agent/lead-1022c`** (from `d164a23`), not pushed. The lead pushes and
   opens PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own step before any follow-up push**.
-- **Task branches:** `agent/phase1-s3a`, `agent/design-020` (worktrees under `../restaurant-pos-wt/`). Not the lead's: worktrees
+- **Task branches:** `agent/phase1-s3a` (#134), `agent/design-020` (#135) (worktrees under `../restaurant-pos-wt/`). Not the lead's: worktrees
   `../restaurant-pos-design` and `keen-chebyshev-ccf255`, branch `setting/add-permission`, pane `w2:pE`.
 
 ## Running tasks and agents
 
 - **PHASE1-S3a complete** (PR #134, `ec1b9a5`; `0012`): verify 116/4367, e2e:all 74, Codex review clean. Owner looks.
-- **DESIGN-020 round 2** (`design020c` resumed, pane `w2:p8J`): Opus review 7 findings, all accepted under one rule
-  (a row the draft touched keeps the draft's values whole; an untouched row follows current), `51c71ff`; Q1 to S4a, Q2-Q4
-  ruled. Checks before review: all eight green. Claude weekly usage 86% (resets 23 Oct 23:00); Codex 5h reset 21:26.
+- **DESIGN-020 complete** (PR #135, `7acdf7a`): Codex draft, Opus finish and round 2 (owner exception), Opus review 7
+  findings fixed; lead re-did the red by mutation; all eight checks green (020 754). Q1 (option-name swap) goes to S4a.
+  Claude weekly usage 86% (resets 23 Oct 23:00); Codex 5h reset 21:26, weekly ~20%.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -115,8 +115,8 @@ payment-methods part), as S1 and S2 were. Narrative: [journal/2026-10-22.md](jou
 
 Nothing here is decided. Detail is where each line points.
 
-- **Lead rulings, yours to overturn:** DESIGN-020 (in its pane, to be in its Handoff): item names 1-64, options 1-32
-  code points; a removed option kept by *Keep my changes* returns as a new option; a URL-only return adapter. DESIGN-019 F7 (86 and Make available act at once beside an open edit; archive and
+- **Lead rulings, yours to overturn:** DESIGN-020 (task file): names 1-64/1-32; the Keep principle (a touched row keeps the
+  draft whole, an untouched row follows current); URL-only return plumbing; BO-04 builds on its own read. DESIGN-019 F7 (86 and Make available act at once beside an open edit; archive and
   restore ask first); S2b's first-run unknown sentence (the builder's); the NPWPD without a charset (DESIGN-018 Q2's other
   half); S1b's nine rulings and two questions; S0's `0009`; C3's acting-manager lock, `OWN_ACCOUNT`/`USER_CHANGED`,
   `DUPLICATE`'s `{ field }`; the S1a and DESIGN-017 round rulings; PHASE0-004 to 013, DESIGN-011-016, ARCH-006, FE-030-036.
@@ -144,7 +144,7 @@ Nothing here is decided. Detail is where each line points.
 
 1. **After #134 merges:** fast-forward, `db:migrate` (`0012`), remove S3a's worktree and run dir. Then **S3b** (BO-08's
    payment-methods part: S3a's *What S3b needs*, DESIGN-018's method rows, S2b's *How it works*; removes the exclusion).
-2. **DESIGN-020** to review (Opus). Then **S4a** (catalog server; `reorderItems(categoryId, expected, ids)` like
+2. **After #135 merges:** remove its worktree and run dir. Then **S4a** (catalog server; `reorderItems(categoryId, expected, ids)` like
    `reorderCategories`, DESIGN-019's question; DESIGN-019/020's name lengths) and
    **DESIGN-021** (the POS addition).
 3. **Small:** the code-point lengths cleanup (between slices).
