@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-019]
 owns: [docs/design/**, docs/DESIGN.md]
-status: not-started
+status: review
 cycles: 0
 ---
 # DESIGN-020 — BO-04 Item editor (slice D, second part)
@@ -289,6 +289,21 @@ not restart it.**
    rerun `design020.cjs` after your changes, and the earlier checks only if you change shared files.
 6. Commit everything on `agent/design-020` (path-scoped `git add`), as you finish each step. End the Handoff with `DONE`
    and ping the lead: `herdr agent prompt lead "design020c: DESIGN-020 done — <one line>"`.
+
+## Lead verify (2026-10-22)
+
+At `47963f1`, in this worktree. `git diff --name-only development...HEAD`: the task file and paths under `docs/design/**`
+and `docs/DESIGN.md` only; nothing under `apps/`, `packages/`, `db/`, `e2e/` or `docs/design/tokens/`; `P/item-editor.html`
+untouched. The lead ran every design check on this tree: `design020.cjs` 717/717 (120 states), `design019.cjs` 998/998
+(74), `design018.cjs` 727/727 (130), `design017.cjs` 348/348 (74), `design016.cjs` 399/399, `design014.cjs` 287/287 (24;
+the same 287 on `development`, so the drop from DESIGN-019's 288 is not this branch's), `design013.cjs` 371 checks and
+`design012.cjs` 421 checks (116 states), each with no failures and no page errors. Reviewers cannot run a browser or the
+checks: this note is the evidence for them, and a "blocked" on that alone is ruled clear.
+
+**Authorship, for the reviewer.** Parts A and C were drawn by a Codex designer (`design020`); Part D is Codex's
+(`9b1abbd`); a Claude Opus designer (`design020c`) finished the draft under the owner's exception, and its changes are
+listed in the Handoff's *Finishing pass*. Review the whole: the Codex draft and the Opus finishing pass alike. The
+Handoff's four questions are the lead's to rule after the review.
 
 ## Handoff
 
