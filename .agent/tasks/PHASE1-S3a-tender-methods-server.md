@@ -5,7 +5,7 @@ category: feature
 touches: [boundaries]
 depends_on: [PHASE1-S2a]
 owns: [db/migrations/0012_tender_method.sql, apps/server/src/domain/tender-method.ts, apps/server/src/http/routes/back-office-tender-methods.ts, apps/server/src/http/server.ts, packages/contracts/src/tender-methods.ts, packages/contracts/src/routes.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S3a — Tender methods on the server
@@ -183,6 +183,18 @@ schema names, `TenderMethodView`, the `ConfigApi` exclusion S3b removes, and how
 what was decided and on what evidence; tests changed and why; each red proof (mutation, failure read, reverted); what
 was found and not fixed; the real `verify` output. End with `DONE` or `BLOCKED: <one question>`, then report to the lead
 through Herdr as AGENTS.md says.
+
+## Lead verify (2026-10-22)
+
+At `09e23d9`, in this worktree. `git diff --name-only development...HEAD`: the task file and paths in `owns` only; the
+changed existing tests are the two listed (`schema.test.ts`, `harness-race.test.ts`), plus the two new test files.
+`npm run verify`: 116 files, 4367 tests, green. Read the migration, the domain and the `api.ts` change against the task's
+*The shape* and C2 §4, §5 and §8: no row inserted, the check constraint and partial unique index as ruled, the grants,
+`lockTenderMethod` first in rename, deactivation and reactivation, the no-op returns, `23505` on the named index only is
+`DUPLICATE`, the database error replaced without a cause, no audit entry, and the `ConfigApi` exclusion with its S3b
+comment. `npm run test:e2e:all` is the lead's before merge. Reviewers cannot reach the database or a browser: this note
+is the evidence for the server and browser runs, and a "blocked" on that alone is ruled clear. Sent to review
+(`touches: boundaries`); the owner looks before merge.
 
 ## Handoff
 
