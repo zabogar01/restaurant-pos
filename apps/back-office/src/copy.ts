@@ -92,8 +92,17 @@ export const READ_FAILED: NoticeCopy = {
   title: 'Tables could not be loaded',
   body: 'Try again to read the table list.',
 };
+/**
+ * BO-05's F4 state only: a success while the list read stands failed. "Tables could not be
+ * loaded" is untrue above a list that is drawn (owner, DESIGN-018 question 4). A plain failed
+ * read keeps READ_FAILED.
+ */
+export const LIST_PARTIAL: NoticeCopy = {
+  title: 'The list may be out of date',
+  body: 'Tables could not be read again. The rows below are the ones this page knows, including your latest change. Try again to read the full list.',
+};
 
-export const editTitle = (label: string): string => `Edit ${label}`;
+export const editTitle =(label: string): string => `Edit ${label}`;
 export const CREATE_CONTEXT = 'Choose the label staff will see on the floor.';
 export const RENAME_ACTIVE_CONTEXT = 'Active table. Changes keep this table’s history.';
 export const RENAME_INACTIVE_CONTEXT = 'Inactive table. Saving its label does not reactivate it.';

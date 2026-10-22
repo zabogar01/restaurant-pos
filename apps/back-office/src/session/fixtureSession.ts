@@ -1,3 +1,4 @@
+import type { SettingsReadView } from '@pos/contracts';
 import type { Person, SessionSnapshot, SessionStore } from './types.js';
 
 // FIXTURE MODE ONLY. The manager the Frost shell draws. This module is reached from
@@ -25,7 +26,30 @@ const RESTING: SessionSnapshot = {
 // designed failed-to-load state here. An in-memory fake of the table commands would
 // reimplement uniqueness and no-ops in a second place (consult C2 section 7).
 const unavailable = async () => ({ kind: 'unavailable' as const });
+
+// BO-08 reads one fixture version, so the fixture session draws the settings screen's read
+// view. The values are the Frost artifact's version 4 (settings.js), fixture data and not a
+// seed. A save answers `unavailable` like the table commands: an in-memory fake of the
+// version rule would reimplement it in a second place.
+const FIXTURE_SETTINGS: SettingsReadView = {
+  installation: { currency: 'IDR', minorUnitPrecision: 0 },
+  current: {
+    version: 4,
+    createdAt: '2026-10-12T07:05:00.000Z',
+    createdByName: 'M. Iqbal',
+    taxRatePpm: '100000',
+    serviceChargeRatePpm: '50000',
+    outletName: 'Warung Sederhana',
+    address: 'Jl. Melati No. 12\nKebayoran Baru\nJakarta Selatan 12160',
+    phone: '021 555 0134',
+    npwpd: 'P.2.0012345.07.001',
+    footer: 'Terima kasih atas kunjungan Anda',
+  },
+};
+
 const CONFIG: SessionStore['config'] = {
+  '/api/back-office/config/settings': async () => ({ kind: 'ok' as const, value: FIXTURE_SETTINGS }),
+  '/api/back-office/config/settings/save': unavailable,
   '/api/back-office/config/tables': unavailable,
   '/api/back-office/config/tables/create': unavailable,
   '/api/back-office/config/tables/update': unavailable,

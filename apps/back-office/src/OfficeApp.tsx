@@ -21,7 +21,7 @@ const CLOSED_BY_NONE = { closedby: 'none' } as const;
  * The back office as the session draws it: BO-01 when signed out, the frame when
  * signed in (DESIGN-015, "Successful sign-in"): the top bar says "Back office", shows
  * the manager's name and offers "Log out"; the rail lists the destinations that exist
- * (Tables, under Configuration) and the content pane holds the screen the address
+ * (Tables and Settings, under Configuration) and the content pane holds the screen the address
  * names, or nothing at the landing. There is no business day and no incident, because
  * none of their destinations or routes exists. When the session goes idle the same
  * frame stays, visible and inert, under M-6.

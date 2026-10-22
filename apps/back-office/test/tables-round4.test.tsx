@@ -54,7 +54,9 @@ describe('N1. a failed visit read keeps a success that answered after it began',
 
     expect(rowLabels(host)).toContain('Window 1');
     expect(named(host, 'Edit Window 1 — active')).toBeTruthy();
-    expect(text(host.querySelector('[role="alert"]'))).toBe('Tables could not be loadedTry again to read the table list.Try again');
+    expect(text(host.querySelector('[role="alert"]'))).toBe(
+      'The list may be out of dateTables could not be read again. The rows below are the ones this page knows, including your latest change. Try again to read the full list.Try again'
+    );
     expect(host.querySelector('#table-count')).toBeNull();
     expect(named(host, 'New table').hasAttribute('aria-disabled')).toBe(false);
     expect(document.activeElement).toBe(focused);

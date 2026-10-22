@@ -16,6 +16,7 @@ import {
   LABEL_LONG,
   LABEL_NAME,
   LIST_CAPTION,
+  LIST_PARTIAL,
   LOADING,
   NEW_TABLE,
   OUTCOME_UNKNOWN,
@@ -205,8 +206,8 @@ export function Tables({ model }: { model: TablesModel }) {
           {read === 'failed' && (
             <div id="read-state">
               <div className="office-notice" role="alert">
-                <strong>{READ_FAILED.title}</strong>
-                <p>{READ_FAILED.body}</p>
+                <strong>{(state.partial ? LIST_PARTIAL : READ_FAILED).title}</strong>
+                <p>{(state.partial ? LIST_PARTIAL : READ_FAILED).body}</p>
                 <button type="button" className="office-button" onClick={() => void model.retryRead()}>
                   Try again
                 </button>

@@ -229,4 +229,187 @@ found and not fixed, the real `verify` and `test:e2e:all` output, and **what S3 
 
 ## Handoff
 
-_Not started._
+### What I did
+
+BO-08's settings part is built, with the rail entry, the route, the model, the view, the rate field, the text-field checks, the
+rate confirmation, the stale-draft refusal, the unknown-outcome handling, the `ConfigApi` change, the fixture-mode read, BO-05's
+partial-list alert and the browser spec. It is one commit on `agent/phase1-s2b` (`git log -1` names it; a commit cannot hold its
+own hash). Nothing was pushed. I touched only paths under `owns`, plus this Handoff.
+
+New source, all in `apps/back-office/src/settings/`: `rate.ts` (the rate field: `checkRate`, `percentText`), `fields.ts` (the text
+checks, `checkText`, `checkDrafts`, the field order), `when.ts` (the facts-line date), `copy.ts` (every BO-08 sentence, each a row of
+DESIGN-018's copy table or DESIGN-018b), `model.ts` (the behaviour, apart from how it is drawn) and `Settings.tsx` (the view, the
+rate confirmation and the departure decision). Changed: `routes.ts` (`settings` at `/back-office/settings`), `Rail.tsx` (Settings after
+Tables), `Screens.tsx` (the second model, made once per working-area key beside BO-05's), `session/api.ts` (the `Exclude` removed,
+the two functions in `configApi()`), `session/fixtureSession.ts` (a fixture version, ruling 9), `copy.ts` (`LIST_PARTIAL`),
+`tables/Tables.tsx` (the alert switch), `office.css` (BO-08's rules, ported from Frost's `settings.css`; the payment-methods rules are
+S3's), and a header comment in `OfficeApp.tsx`. New tests: `settings-rate`, `settings-fields`, `settings-when`, `settings`,
+`settings-departure`, `settings-fixture` (and `settings-support.tsx`, their shared helpers); new browser spec
+`e2e/tests/settings.spec.ts`.
+
+### How it works, and what S3 copies
+
+**The model is the screen's.** `settings/model.ts` holds `form`, `command`, `confirm`, `decision` and `page` for the whole screen, as
+DESIGN-018's one form and one command per screen requires. It is made once per working-area key in `Screens.tsx`, so a save already
+sent outlives the manager leaving Settings (Discard drops only the draft; the answer lands silently), exactly as BO-05's does. Its
+`start()` and `setGate()` are wired beside BO-05's.
+
+**How the page registers with the guard.** `Settings.tsx` calls `workGuard.register(model.guard)` once, in an effect, and
+`model.subscribe(workGuard.changed)`. The guard answers `status()` (`clean`, `dirty`, `uncertain`) and `leave(proceed)` for the
+router, the rail and the logout confirmation, unchanged from S1b. **S3 should add its method form and its status commands to the same
+model** (a second `form`-like field or a union, and the same single `command`), not register a second guard: `work/guard.ts` holds
+one registration. The model's `leave()` already routes every opener through the departure decision; S3's openers should call it.
+
+**Where the second part mounts.** `Settings` renders `<h1>`, then one `<section className="settings-part">` (Rates and receipt details),
+then the two dialogs (`RateConfirm`, `Decision`). S3's Payment methods is a second `<section>` after the first, and its own
+dialogs go beside these. `Decision` is copied from BO-05 verbatim (S1b's handoff said a later form copies it); if S3 adds a second
+copy, extract it then.
+
+**What is the screen's state, and what is the part's.** The screen's: `command`, `decision`, `page`, `focus`, `read`. The settings
+part's: `current`, `installation`, `withheld`, `form`, `confirm`. S3's methods list needs its own `read` and rows; its status
+messages share `page` or get a second field, and the waiting sentence stays the screen's.
+
+**The version rules.**
+- `current` is the version in force, the one most recently read or answered. `adopt()` replaces it only with an equal or higher
+  version number, so a read that began before a save was answered never undoes it (a numbered test holds this).
+- `form.base` is the version a draft builds on, a whole `SettingsVersionView`. It moves in exactly three places: a success (the form
+  closes), `keepMine()` and `useCurrent()`. A reread (`reread()`) never touches it. `expectedVersion` is `form.base?.version ?? null`.
+- *Unchanged* is `meaningOf`: an `ok` answer whose `current.version` equals the carried `expected`. A saved answer has a version
+  above it (or any version at the first run).
+- The confirmation compares the draft with `form.base`, not with `current`, so after *Keep my changes* it shows another manager's
+  change being undone ("Service charge from 5,5% to 5%").
+- `form.sent` holds the values of the last save sent from the form; the stale and unknown comparisons ("Now in force: …") use it, so
+  they hold even after the command is gone.
+
+**The rate field.** `rate.ts` follows DESIGN-018's table exactly and never leaves strings: the whole and the fraction go to
+`rateFromPercent`, the bound is `rate > RATE_SCALE` on a bigint, and the request carries `encodeRate`'s string. `percentText` is
+string slicing on the canonical ppm. A source test scans `src/settings/` for `parseFloat`, `parseInt`, `Number(`, `Math.round` and
+`toFixed`.
+
+**Accessible names the browser spec drives:** link `Settings` (group `Configuration`), heading `Settings`, textboxes `Tax rate`,
+`Service charge rate`, `Outlet name`, `Address`, `Phone`, `NPWPD`, `Footer line`, buttons `Enter settings`, `Change tax rate` and the
+six others, `Save`, `Cancel`, `Stay`, `Discard`, `Keep my changes`, `Use current settings`, `Try again`, modal dialogs
+`Save new rates?` (buttons `Back to editing`, `Save new rates`) and `Discard unsaved changes?`.
+
+### What I decided, and on what evidence
+
+1. **Lengths count code points, not UTF-16 units.** DESIGN-018 and S2a's handoff say "UTF-16 units, as zod counts". They are
+   wrong: zod 4.6.5 counts code points (`z.string().max(2).safeParse('😀😀😀')` fails and `…('😀😀')` passes; `min(2)` refuses one
+   emoji), and PostgreSQL's `char_length` does the same. A form that counted units would refuse a 33-emoji outlet name that the
+   contract accepts, under a message that says "64 characters". The pair test caught it on its first run (the two emoji cases failed).
+   `fields.ts` counts `[...value].length` and says why. **The sentence in DESIGN-018 and the S2a comment should be corrected, and BO-05's
+   `tables/label.ts` (`label.length`, units) has the same difference** (see *Found and not fixed*). I followed the contract, which is
+   what refuses, over the design sentence.
+2. **A failed reread after `SETTINGS_CHANGED`.** DESIGN-018 draws no state for it (the table has the stale notice only with the reread
+   in hand). I show the definite general failure ("Something went wrong / Nothing was saved. Your draft is kept. Press Save to try
+   again."), which is true: Save then repeats the explicit save with its own reread. Nothing is sent without the manager's press.
+3. **A failed hidden read does not take away an open form.** A visit read that began while the page was ready, and failed, leaves the
+   page ready if a form is open or an answer was applied after the read began (BO-05's N1 rule, adapted: a settings save requires the
+   form, so there is no separate partial state for settings).
+4. **The fixture session serves a read and answers a save `unavailable`.** Ruling 9 asks for a fixture "holding one version". A fake
+   save would reimplement the version rule in a second place, as BO-05's header comment says of the table commands. In fixture mode
+   a save therefore shows the unknown-outcome notice. The fixture data is in `fixtureSession.ts` only (the built-bundle tests look for
+   `M. Iqbal` and the marker; both are in that module and neither is in the bundle).
+5. **Facts line withheld.** `withheld` is set when an unknown outcome's reread fails and cleared by any successful read or answer.
+   After a discard of that form the read view shows the last version it knows without the facts line until the next read.
+6. **Rate confirmation under the working-area rule.** `RateConfirm` copies `Decision`: wanted open only at `signed-in` or `idle`, `close()` in a
+   layout effect at BO-01 with state kept, reopened with `showModal()` and focus on *Back to editing*, destroyed with the key for another
+   manager. Opening it needs no read-view changes: `save()` sets `confirm`; `confirmSave()` is the only path that sends from it.
+7. **`Save` is `aria-disabled`, never `disabled`.** Playwright waits for an `aria-disabled` button to become enabled; the browser spec's
+   press on the disabled Save uses `click({ force: true })` and says why (the first run of S2 timed out on exactly this).
+
+### Not built on purpose (ruling 8)
+
+The payment-methods part, its heading and any placeholder (S3); the kitchen-emergency sentences in the confirmation and the departure
+decisions (the built frame has no incident action); BO-01's held-draft sentence ("The previous session's unsaved changes are stored on
+this tab…", S10); any business-day indicator. None is drawn and none has a hook.
+
+### Existing tests I changed, and why
+
+- `test/sign-in.test.tsx`: **two** assertions, not one. The rail text is now `ConfigurationTablesSettings` and the hrefs are both
+  paths; the "only link" assertion now lists both rail entries. Neither is weaker: the frame still has no link other than the rail's
+  destinations that exist.
+- `test/routes.test.ts`: the manifest names three screens and the Settings path.
+- `test/config-api.test.tsx`: the run-time key list gains the two settings paths (ruling 9).
+- `test/tables-round2.test.tsx` (the F4 case) and `test/tables-round4.test.tsx` (N1): the assertion on the **partial** state's alert is
+  the new wording (ruling 10). The assertions on the plain failed read (`tables.test.tsx:108`, `:444`, `config-api.test.tsx`, N1's
+  second case) are untouched and still hold.
+- Nothing else existing changed. No assertion was loosened.
+
+### Red proofs (each a mutation I applied, the failure I read, and the revert)
+
+All reverts were byte-checked against copies taken before the first mutation (`diff -r` clean).
+
+1. **AC 1.** `settings` removed from `PATHS`: `routes.test.ts` "lists the landing, Tables and Settings" failed (`expected ['landing','tables']
+   to deeply equal ['landing','settings','tables']`).
+2. **AC 2.** Currency rendered as a read-only input: two tests failed ("shows the facts line, the constants as text…" and "names no
+   input for the currency or the decimal places…", `expected <input> to have a length of 0`).
+3. **AC 3.** The conversion replaced by `Math.round(parseFloat(x) * 10000)`: **only the source test failed** (`expected ['Math.round',
+   'parseFloat'] to deeply equal []`); **no vector failed**, which is exactly why the source test exists.
+4. **AC 4.** `/` allowed in the phone charset: six tests failed, the pair test against `OutletPhone` among them (`"021/555"`,
+   `"021 / 555"`, `phone: too long, then the charset…`, and three UI cases).
+5. **AC 5.** The confirmation opened for every save from a non-first-run form: 19 tests failed; "no confirmation for a save that changes
+   only details" is the named one.
+6. **AC 6.** An answered version equal to the carried one treated as saved: "unchanged: an answered version equal to the one carried is
+   not a save" failed (`expected 'Settings saved as version 4…' to be 'Nothing changed. Version 4 is still in force.'`).
+7. **AC 7.** *Keep my changes* made to send the save. My first mutation (`save()` after the set) failed the notice assertion only,
+   because the draft changed a rate and the call opened a confirmation instead of sending; that proved nothing about "nothing sent". I
+   added a test whose draft needs no confirmation ("Keep my changes sends nothing even when the next Save would need no confirmation");
+   the same mutation then failed on `expected 2 to be 1`.
+8. **AC 8.** A second call after `failed` or `unavailable`: 11 tests failed with `expected 2 to be 1` (the save count).
+9. **AC 9.** The `state.command !== null` guard removed from `save()`: "a second press of Save while one is pending sends nothing" failed
+   (`expected 3 to be 1`).
+10. **AC 10.** The confirmation's `close()` skipped at BO-01: the jsdom test failed (`expected true to be false`), and **so did the browser
+    spec S3 in both Chromium and WebKit**, at BO-01's Username (`toHaveValue('x')`, received `""`): a modal left open in the hidden area
+    blocks BO-01's fields. I rebuilt after the revert.
+11. **AC 11.** The new copy used for the plain failed read too: three tests failed (`expected 'The list may be out of date…' to be
+    'Tables could not be loaded…'`).
+12. **AC 12.** `configApi()` without the two settings functions: the key-list test failed (`expected [ …(5) ] to deeply equal [ …(7) ]`).
+    Removing the `Exclude` is held by the type: the settings screen's calls would not compile otherwise.
+13. **Extra.** `adopt()` taking any read, not only an equal or higher version: "an older version arriving late does not replace a newer
+    one" failed (`expected 'Version 4…' to contain 'Version 5'`).
+
+I wrote the pure modules and their tests in one pass and ran the tests after the modules existed, so for AC 3 and 4 the first red is
+the mutation, not the absent module. The UI tests were also written with the code.
+
+### Found and not fixed
+
+1. **`@pos/money` is not a declared dependency of `@pos/back-office-client`** (`apps/back-office/package.json` lists `@pos/api-client`,
+   `@pos/contracts` and `@pos/tokens`). `rate.ts` imports `rateFromPercent`, `encodeRate` and `RATE_SCALE`, as ruling 3 requires. It resolves
+   and bundles because npm workspaces link every workspace package into the root `node_modules`; typecheck, the tests, the build and the
+   browser suite all pass. It is the same finding as S2a's F2 for the server. `package.json` is not in this task's `owns`. **Proposed fix
+   (the same wording the lead applied to the server):** add `"@pos/money": "*"` under `dependencies` in `apps/back-office/package.json`
+   and the same line under `packages["apps/back-office"].dependencies` in `package-lock.json`, by hand or with `npm install`.
+2. **DESIGN-018's and S2a's "UTF-16 units, as zod counts" is wrong** (decision 1). Proposed wording for DESIGN-018's lengths table intro
+   and S2a's comment: "Lengths are counted in code points, as zod and PostgreSQL's `char_length` count them." **BO-05's
+   `tables/label.ts` counts `label.length` (units)**; a label of 17 to 32 emoji is therefore refused locally though `TableLabel` accepts
+   it. Not changed here (BO-05 is committed work outside my slice).
+3. **DESIGN-018 has no sentence for an unknown outcome at the first run whose reread shows nothing saved.** The table's sentence names
+   "version {n} is in force", and there is none. I put one constant in `settings/copy.ts`, `UNKNOWN_FIRST_RUN_BODY`, with a comment that
+   it is not a row of DESIGN-018: "The outcome could not be confirmed. The settings have been read again; nothing is saved yet. Your
+   draft is kept; nothing was sent again." It is the table's sentence with the version clause replaced. A test holds that it names no
+   version. **This is the one question below.**
+4. **A failed reread after `SETTINGS_CHANGED`** has no designed state (decision 2). The behaviour I chose is true and sends nothing, but a
+   designer might want a stale notice without comparison.
+5. **Process.** I appended the CSS to `office.css` with a shell heredoc (`cat >> … <<EOF`), and ran one no-op heredoc, against the one
+   command per call rule. Nothing outside the worktree was touched; the rest used the file tools. I ran no formatter and no Prettier.
+6. **No person looked at BO-08 served.** No browser window was available to me beyond the Playwright runs, which prove behaviour and
+   accessible names and not appearance. The CSS is ported rule by rule from `settings.css` (the no-invented-values test passes); a look at
+   the two-column split, the textarea and the `Now in force` lines against the Frost artifact is still worth doing.
+
+### Verification
+
+`npm run verify`: typecheck clean for all seven projects; **113 test files, 4316 tests passed** (baseline 107 files, 4007 tests,
+confirmed by running it before I changed anything; +6 files, +309 tests). `npm run test:e2e:all`: **74 passed** in Chromium and WebKit
+(baseline 68; +6: S1, S2 and S3 in each engine). The first run of the new spec failed S2 in both engines on the disabled-Save click
+(decision 7); after the fix the whole suite passed, and I ran it again at the end. The built-bundle tests find no fixture marker. `git
+diff --check` is clean.
+
+### What the next agent needs and does not have
+
+- A ruling on finding 3 (the first-run unknown sentence), and the lead's wording for the `package.json` and lockfile line (finding 1).
+- S3 adds the method list and form to this model and mounts a second section (see *How it works*); the `Decision` and `RateConfirm`
+  dialogs are local to `Settings.tsx`.
+- Server, contracts and the transport core are untouched, as the task required.
+
+BLOCKED: What exact sentence should the settings form show for an unknown save outcome at the first run when the reread shows nothing saved (DESIGN-018's sentence needs a version number); my proposed wording is in finding 3.
