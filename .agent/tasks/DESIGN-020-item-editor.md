@@ -230,4 +230,64 @@ Commit as you finish each part, so work survives an allowance limit. Write the H
     herdr agent prompt lead "design020: DESIGN-020 done — <one line>"
     herdr agent prompt lead "design020: BLOCKED — <question>"
 
+## Handover (lead, 2026-10-22): finish the Codex designer's draft on Claude Opus
+
+**Owner exception** (DECISIONS 2026-10-22): Codex hit its five-hour limit at 19:20, so this task is finished by a Claude
+Opus 5.5 designer (`design020c`). The owner chose this over waiting for the 21:26 reset. The design review that follows is
+still the lead's to route; the other-family rule stands for every other task.
+
+**What the Codex designer (`design020`) did.** Part D is committed (`9b1abbd`: BO-08's `first-run-closed` shows the
+installation money facts above the empty state; the lead ran `design018.cjs`, 724/724, and accepted it on that evidence).
+Parts A and C are drawn but **uncommitted** in this worktree. Modified: `docs/design/checks/design019.cjs`,
+`F/menu.html`, `F/menu.js`, `docs/design/visual-directions/index.html`, `docs/design/visual-directions/manifest.js`. New:
+`docs/design/checks/design020.cjs`, `F/item-editor.html`, `F/item-editor.css`, `F/item-editor.js`,
+`F/item-editor-states.js`. Its own summary: editable option rows, string-based money validation, pending removal with
+Undo, keyboard reorder controls, stale-draft comparisons. **Part B (`D`) and the Handoff are not written. Finish it; do
+not restart it.**
+
+**The lead's check runs on this draft** (19:20): `design020.cjs` **705/706**, 120 states, no page errors;
+`design019.cjs` 998/998 (74 states); `design014.cjs` no failures.
+
+**Lead rulings given to the Codex designer in its pane** (record each in the Handoff, as rulings, not as your choices):
+1. **Return plumbing (Part C).** `editorHref` keeps the existing `item`, `category`, `return=frost-menu`, `returnItem` and
+   `state=new` parameters unchanged. A snapshot of the saved item travels in the URL only (no web storage, cookies or
+   shared state) and holds only the fields the saved return shows. The BO-03 return adapter in `F/menu.js` reads only
+   those parameters, applies the answered item to that one row (or inserts it, for a create), marks it `data-selected`
+   and focuses its Edit; it changes no other row, no count rule, no BO-03 state, and sends nothing. **The originating
+   category** may also travel in the URL (id, name, active flag, order) and is inserted only when no category with that id
+   exists, solely to host the returned item (the B-24 first category → first item → saved return walk); it never replaces
+   or renames a category. A code comment and the Handoff say both are review plumbing, which S4c replaces with the real
+   list read.
+2. **`design019.cjs:57`**: the expected destination suffix changes from `/prototype/back-office/item-editor.html` to
+   `/frost/back-office/item-editor.html` as the Part C link migration; every identity assertion stays.
+3. **Name limits**: item names 1–64 code points, variant and modifier names 1–32, as a name budget of two 32-column lines,
+   not a promise of printer geometry (`D` and `I` state no printer width). In the Handoff: the budget and its reasoning in
+   the rules table; DESIGN-019's 80-character BO-03 fixture now exceeds the item rule and is kept unchanged only as a
+   wrapping stress, so S4c must not copy it as a valid name; and a carry-forward to Phases 3 and 4 that ticket and receipt
+   layout must fit a 64-code-point item name and a 32-code-point option name.
+4. **An option removed meanwhile, in the stale state.** (a) An option the draft did not change follows the current item:
+   if it was removed meanwhile it leaves the draft under either choice, and the comparison shows it as removed. (b) An
+   option the draft changed (name, delta or position) that was removed meanwhile: the comparison shows it removed; before
+   the choice the notice says plainly that *Keep my changes* adds it again as a new option and *Use current item* drops it;
+   after Keep it is a new, unsaved option with no old identity, sent as an added option by the next Save. (c) After Keep,
+   local checks run again over the merged draft: an option whose name an active option of the current item now holds is a
+   local duplicate refusal on that field, and Save stays held until it is fixed. (d) Neither choice sends anything. Draw (b)
+   and (c) as states with their copy, and state (a) to (d) in Part B as behaviour for every form with child rows.
+
+**What the next designer does:**
+1. Read this task file whole. Check the draft against *Rulings that bind this task*, *What to draw*, the four rulings
+   above and the *Acceptance criteria*; finish anything missing and correct anything wrong, saying so in the Handoff.
+2. Fix the one check failure, **"no float parsing or money arithmetic"**: `F/item-editor.js:20`, the `long-N` fixture,
+   puts `Number(id.slice(5))` on the same line as `price`, so the check's regex matches. It is a fixture index, not money;
+   **do not weaken the check**: move the index arithmetic off any line that names a price or delta.
+3. The same `long-N` fixture pads the item name to **80** characters, over the 64 rule, and BO-04 opens it as an editable
+   item. Cap BO-04's copy at 64, or draw it as the local too-long refusal and say so; a saved item over the limit must
+   not look valid.
+4. Write **Part B** in `D` and the **Handoff** (every item of *Reporting* and the *Acceptance criteria*: the state map, the
+   copy table, the rules tables S4a, S4b and S4c can copy, focus, measurements, link counts, questions).
+5. **The lead runs the check scripts.** Ask through `herdr agent prompt lead "design020c: please run <script>"` and wait;
+   rerun `design020.cjs` after your changes, and the earlier checks only if you change shared files.
+6. Commit everything on `agent/design-020` (path-scoped `git add`), as you finish each step. End the Handoff with `DONE`
+   and ping the lead: `herdr agent prompt lead "design020c: DESIGN-020 done — <one line>"`.
+
 ## Handoff
