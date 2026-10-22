@@ -486,6 +486,7 @@ them with the menu draft.
 | Pending / unknown departure | Body | The save may or may not have succeeded. Leaving does not send it again. Stay to keep the draft, or discard it and leave. | same dialog |
 | Ordinary departure | Actions | Stay / Discard | exact buttons; Stay initially focused |
 | Departure opened by Archive or Restore | Body | Your edits have not been saved. Stay to keep editing, or discard them to continue. | same dialog, title and actions |
+| Departure opened by Archive or Restore, save unknown (round 3) | Body | The save may or may not have succeeded. Continuing does not send it again. Stay to keep the draft, or discard it to continue. | same dialog, title and actions; every other uncertain departure keeps DESIGN-018's body |
 | Logout decision | Title / body | Log out and discard your changes? / The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session. | reviewed logout copy |
 | Logout decision | Actions | Keep this draft / Discard changes and log out | exact buttons |
 | Uncertain logout | Additional sentence | The save may or may not have succeeded. Leaving does not send it again. | separate context paragraph |
@@ -802,5 +803,25 @@ leaving. I kept it rather than invent copy, because it is an existing rule.
 **Proposed:** when Archive or Restore opens it, use "The save may or may not
 have succeeded. Continuing does not send it again. Stay to keep the draft, or
 discard it to continue."
+
+DONE
+
+### Round 3 (design019c, 2026-10-22)
+
+The lead's ruling in *Round 3 — the designer's question* is applied as written.
+When Archive or Restore opens the departure decision while the draft's own save
+is unknown, its body reads: "The save may or may not have succeeded. Continuing
+does not send it again. Stay to keep the draft, or discard it to continue." This
+is in `menu.js`, in a new copy-table row and in `D`'s *State commands on grouped
+lists*. Every other uncertain departure (Cancel, Escape, Back, the rail, logout)
+keeps DESIGN-018's body, and nothing else changed.
+
+One assertion is added: "R3 Archive over an unknown save, worded to continue".
+It opens `unknown`, presses Archive on Burger and compares the body exactly.
+`design019.cjs`, run once with the owner's approval: **998 / 998**, 74 states,
+no page errors (evidence in `/tmp/design019-evidence/run4`, outside the
+repository). The new assertion was not run against round 2. It would fail
+there, because round 2 shows DESIGN-018's body in this case, but that was not
+observed. The earlier checks were not rerun, because no shared file changed.
 
 DONE

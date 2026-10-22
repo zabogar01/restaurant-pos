@@ -175,6 +175,8 @@ const check=(passed,name,detail)=>report.checks.push({passed:!!passed,name,...(!
   check(await p.locator('#departure').isVisible()&&await p.locator('#departure-body').innerText()==='Your edits have not been saved. Stay to keep editing, or discard them to continue.','F7 '+target+' asks, worded to continue');
   if(await p.locator('#departure').isVisible())await p.locator('#stay').click();
  }
+ // Round 3: Archive over a draft whose save is unknown continues rather than leaves.
+ await go('unknown');await p.locator('[data-item-state=burger]').click();check(await p.locator('#departure').isVisible()&&await p.locator('#departure-body').innerText()==='The save may or may not have succeeded. Continuing does not send it again. Stay to keep the draft, or discard it to continue.','R3 Archive over an unknown save, worded to continue');if(await p.locator('#departure').isVisible())await p.locator('#stay').click();
  check(report.errors.length===0,'no page errors',report.errors);
  await browser.close();browser=null;
  report.failures=report.checks.filter(x=>!x.passed);fs.writeFileSync(path.join(out,'measurements.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify({passed:report.checks.length-report.failures.length,total:report.checks.length,states:spec.states.length,errors:report.errors,failures:report.failures,measurements:report.measurements},null,2));if(report.failures.length)process.exitCode=1;

@@ -1844,7 +1844,9 @@ editor's base advances with the list and the draft does not go stale; when the
 answer skips a version, the editor keeps its base and meets `CATALOG_CHANGED` on
 Save. Archive and Restore of an item or a category change scopes, so they keep
 going through the departure decision, whose body then reads “Your edits have not
-been saved. Stay to keep editing, or discard them to continue.” While a save of
+been saved. Stay to keep editing, or discard them to continue.” When the draft's
+own save is unknown, that body reads “The save may or may not have succeeded. Continuing does not send it again. Stay to keep the draft, or discard it to continue.”
+While a save of
 the draft is pending, the one-command-per-screen rule holds: 86 is inert until
 the answer arrives.
 
