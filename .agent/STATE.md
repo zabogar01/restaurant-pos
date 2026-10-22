@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-22: `development` at `608f412` (S2a #128, DESIGN-018b #127, lead #129 merged). Dev `pos` migrated to `0011`.
-**S2b complete, PR #130 (owner's look). Running: DESIGN-019 (Codex).** Narrative:
+**Nothing running. Open for the owner: #130 (S2b), #131 (DESIGN-019), the lead PR.** Narrative:
 [journal/2026-10-20.md](journal/2026-10-20.md), [journal/2026-10-21.md](journal/2026-10-21.md).
 
 ## Phase and gates
@@ -56,9 +56,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 - **PHASE1-S2b complete** (PR #130, `53af849`): copy question ruled by the lead (builder's sentence stands); Codex review
   F1-F6 fixed in round 2, lead-reviewed (Codex out of allowance), red 12/15 repeated; verify 114/4331, e2e 74. Owner
-  looks at BO-08 served (the lead cannot sign in). Owed to a designer: `first-run-closed` lacks the money facts. **DESIGN-019** (BO-03, D part 1 of 3;
-  020, 021 next): Codex drafted 74 states uncommitted (check 965/967) and hit its limit; **owner exception** (DECISIONS
-  10-22): Opus finished it (`907a9c8`, 969/969); Opus review: 7 findings, ruled `13ef6c6`; round 2 `w2:p8C`. **Carry-forwards:** plan §5. Design left: F's BO-07 half, E2; G, H later.
+  looks at BO-08 served (the lead cannot sign in). Owed to a designer: `first-run-closed` lacks the money facts. **DESIGN-019 complete**
+  (PR #131, `a096e4d`; BO-03, D part 1 of 3): Codex draft finished by Opus (owner exception), Opus review 7 findings fixed
+  in round 2, one wording in round 3, lead-reviewed; all seven checks green (019 998/998). **Carry-forwards:** plan §5. Design left: F's BO-07 half, E2; G, H later.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -145,6 +145,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **After #130 merges:** fast-forward, `npm ci`; remove the S2b worktree and run dir. **DESIGN-019:** lead reruns its check.
+1. **After #130/#131 merge:** fast-forward, `npm ci`; remove both worktrees and run dirs. S4a gets `reorderItems` (019).
 2. **Then S3** (tender types: server and BO-08's payment methods together; C2 §8; S2b's *What S3 needs*).
-3. **Design:** DESIGN-019 running; then DESIGN-020 (BO-04), DESIGN-021 (POS addition); then F's BO-07 half; E2 (owner's word).
+3. **Design:** DESIGN-020 (BO-04, Codex after its 15:12 reset), DESIGN-021 (POS addition); F's BO-07 half; E2.
