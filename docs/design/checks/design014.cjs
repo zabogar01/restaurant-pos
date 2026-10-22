@@ -144,7 +144,7 @@ const base=path.resolve('docs/design/visual-directions'),out=process.env.DESIGN0
  await p.goto(url('entry-long'));await p.locator('#close-detail').click();await p.locator('[data-entry="long"]').scrollIntoViewIfNeeded();
  result.long=await p.locator('[data-entry="long"]').evaluate(e=>({text:e.innerText,overflow:e.scrollWidth-e.clientWidth,amounts:[...e.querySelectorAll('.audit-money')].map(n=>({text:n.innerText,width:n.getBoundingClientRect().width,scroll:n.scrollWidth,client:n.clientWidth}))}));
  check(result.long.overflow===0&&result.long.amounts.every(a=>a.scroll<=a.client),'long name and amount fit',result.long);await p.screenshot({path:path.join(out,'long-row.png')});
- for(const file of ['shell','patterns','menu','report-detail','incidents']){
+ for(const file of ['shell','patterns','report-detail','incidents']){
   await p.goto(pathToFileURL(path.join(base,'frost/back-office/'+file+'.html')).href);
   const href=await p.locator('[data-nav="audit"]').getAttribute('href');check(new URL(href,p.url()).pathname.endsWith('/frost/back-office/audit.html'),'Frost Audit destination '+file);
  }

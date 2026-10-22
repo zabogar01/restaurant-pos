@@ -700,8 +700,9 @@ failure and outcome unknown* · *partial list — the menu list may be out of da
 list) · *departure decision* · *M-6 over an inert form* · *BO-01 with draft held* ·
 *Phase 4 only: 86 refused while a CheckoutLease holds a quick-sale order carrying
 that item, naming the order* (FR-G13, AC-29; S5 does not build this refusal).
-Creates and state commands never carry the catalog version and cannot be refused
-for a stale catalog. Every committed catalog write, including 86, archive and
+A category create and the state commands never carry the catalog version and
+cannot be refused for a stale catalog. An item create (BO-04) carries none either,
+but is refused `CATALOG_CHANGED` when its category has been archived (C1 §2.3). Every committed catalog write, including 86, archive and
 restore, advances the version. The [Frost BO-03 composition](visual-directions/frost/back-office/menu.html)
 and DESIGN-019 Handoff supply the exact copy and walks, pending design review.
 

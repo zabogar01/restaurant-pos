@@ -14,9 +14,10 @@
     ['fries','Fries','sides','40000',2,0,true,true], ['soda','Soda','drinks','30000',0,0,true,false],
     ['pie','Apple Pie','seasonal','65000',0,0,true,true], ['iced','Spiced Iced Tea','seasonal','35000',0,0,true,false]
   ].map(([id,name,category,price,variants,modifiers,active,available],order)=>({id,name,category,price,variants,modifiers,active,available,order}));
-  let version=12, form=null, pending=null, held=null, gate=null, leaveAction=null, savedDecision=false, otherStep=0;
+  // version is the server's catalog version; listVersion is the version this page's list stands at (F1).
+  let version=12, listVersion=12, form=null, pending=null, held=null, gate=null, leaveAction=null, savedDecision=false, otherStep=0;
   let read='ready', staleRead=false, holder=null, unknownSubject=null, actor='M. Iqbal';
-  const fixture={commands:[],reads:0,get categories(){return categories;},get items(){return items;},get version(){return version;},get form(){return form;},get pending(){return !!pending;}};
+  const fixture={commands:[],reads:0,get categories(){return categories;},get items(){return items;},get version(){return version;},get listVersion(){return listVersion;},otherTab(){version++;},get form(){return form;},get pending(){return !!pending;}};
   window.MenuFixture=fixture;
   const cat=id=>categories.find(x=>x.id===id), item=id=>items.find(x=>x.id===id);
   const byOrder=(a,b)=>a.order-b.order || a.name.localeCompare(b.name,undefined,{sensitivity:'base'}) || a.id.localeCompare(b.id);
@@ -39,7 +40,7 @@
     $('#menu-count').textContent=read==='ready'?categories.length+' categories · '+items.length+' items':'';
     $('#menu-list').hidden=read==='loading'||read==='failed'||!categories.length;
     $('#menu-empty').hidden=read!=='ready'||!!categories.length;
-    $('#reorder-categories').disabled=categories.filter(x=>x.active).length<2||!!pending;
+    $('#reorder-categories').disabled=categories.filter(x=>x.active).length<2||!!pending||read!=='ready';
     $('#new-category').disabled=read==='loading'||!!pending;
     const rows=[];
     for(const c of cats()){
@@ -47,13 +48,14 @@
       rows.push('<tr class="category-row" data-category="'+c.id+'"><td colspan="4"><div class="menu-category"><h2>'+esc(c.name)+(c.active?'':' · Archived category')+'</h2><div class="office-actions">'+button('Rename','data-rename="'+c.id+'"','Rename category '+c.name)+button(c.active?'Archive':'Restore','data-category-state="'+c.id+'"',(c.active?'Archive':'Restore')+' category '+c.name)+(c.active?button('Reorder items','data-reorder="'+c.id+'"','Reorder items in '+c.name)+'<a class="office-button small" data-new-item="'+c.id+'" href="'+esc(editorHref(null,c))+'" aria-label="New item in '+esc(c.name)+'">New item</a>':'')+'</div></div><span class="menu-category-note">'+(c.active?'Archiving this category hides its items from the POS without changing them.':'Hidden from the POS. Item status and availability are kept. Restore this category to show its active, available items again.')+(holder===c.id?' Name in use.':'')+'</span></td></tr>');
       if(!group.length)rows.push('<tr><td colspan="4">No items in this category yet.'+(c.active?' Use New item to add the first one.':' Restore the category before adding an item.')+'</td></tr>');
       for(const r of group){
-        rows.push('<tr data-item="'+r.id+'" data-active="'+r.active+'" data-selected="'+(params.get('item')===r.id)+'"><td>'+esc(r.name)+(r.active?'':' <span class="menu-item-note">Archived item</span>')+'<span class="menu-item-note">'+r.variants+' variants · '+r.modifiers+' modifiers'+(holder===r.id?' · Name in use':'')+'</span></td><td class="num">'+money(r.price)+'</td><td><span class="menu-availability">'+(r.available?'Available':'86 · Unavailable')+'</span>'+button(r.available?'86':'Make available','data-availability="'+r.id+'"',(r.available?'Mark '+r.name+' 86':'Make '+r.name+' available'))+(!r.active||!c.active?'<span class="menu-item-note">Hidden from the POS'+(!c.active?' · category archived':' · item archived')+'</span>':'')+'</td><td><div class="office-actions"><a class="office-button small" data-edit="'+r.id+'" href="'+esc(editorHref(r,c))+'" aria-label="Edit '+esc(r.name)+'">Edit</a>'+button(r.active?'Archive':'Restore','data-item-state="'+r.id+'"',(r.active?'Archive':'Restore')+' item '+r.name)+'</div></td></tr>');
+        rows.push('<tr data-item="'+r.id+'" data-active="'+r.active+'" data-selected="'+(params.get('item')===r.id)+'"><td>'+esc(r.name)+(r.active?'':' <span class="menu-item-note">Archived item</span>')+'<span class="menu-item-note">'+r.variants+' variants · '+r.modifiers+' modifiers'+(holder===r.id?' · Name in use':'')+'</span></td><td class="num">'+money(r.price)+'</td><td><span class="menu-availability">'+(r.available?'Available':'86 · Unavailable')+'</span>'+button(r.available?'86':'Make available','data-availability="'+r.id+'"',(r.available?'Mark '+r.name+' 86':'Make available '+r.name))+(!r.active||!c.active?'<span class="menu-item-note">Hidden from the POS'+(!c.active?' · category archived':' · item archived')+'</span>':'')+'</td><td><div class="office-actions"><a class="office-button small" data-edit="'+r.id+'" href="'+esc(editorHref(r,c))+'" aria-label="Edit '+esc(r.name)+'">Edit</a>'+button(r.active?'Archive':'Restore','data-item-state="'+r.id+'"',(r.active?'Archive':'Restore')+' item '+r.name)+'</div></td></tr>');
       }
     }
     $('#menu-rows').innerHTML=rows.join('');
     $$('#menu-rows button').forEach(b=>b.disabled=!!pending);
     // A scope of fewer than two active items has no order to change, as with Reorder categories.
-    $$('[data-reorder]').forEach(b=>{if(scope({kind:'items',id:b.dataset.reorder}).length<2)b.disabled=true;});
+    // A reorder also needs a complete read (F3).
+    $$('[data-reorder]').forEach(b=>{if(scope({kind:'items',id:b.dataset.reorder}).length<2||read!=='ready')b.disabled=true;});
     $$('#menu-rows a').forEach(a=>{if(pending){a.setAttribute('aria-disabled','true');a.tabIndex=-1;}});
     const load=$('#read-state');load.innerHTML='';
     if(read==='loading')load.innerHTML='<p role="status">Loading menu…</p>';
@@ -72,12 +74,12 @@
     $('#save-menu').setAttribute('aria-describedby',form.stale?'choice-reason':'');
     $('#comparison').hidden=!form.stale||staleRead;
     if(reorder){
-      $('#draft-order').innerHTML=form.order.map((id,i)=>{const r=form.kind==='categories'?cat(id):item(id);return '<li data-order-id="'+id+'"><span class="menu-order-name">'+(i+1)+'. '+esc(r.name)+'</span>'+button('Move up','data-move="'+id+'" data-delta="-1" '+(i===0||pending?'disabled':''),'Move '+r.name+' up')+button('Move down','data-move="'+id+'" data-delta="1" '+(i===form.order.length-1||pending?'disabled':''),'Move '+r.name+' down')+'</li>';}).join('');
+      $('#draft-order').innerHTML=form.order.map((id,i)=>{const r=form.kind==='categories'?cat(id):item(id);return '<li data-order-id="'+id+'"><span class="menu-order-name">'+(i+1)+'. '+esc(r.name)+'</span>'+button('Move up','data-move="'+id+'" data-delta="-1" '+(i===0||pending?'disabled':''),'Move up '+r.name)+button('Move down','data-move="'+id+'" data-delta="1" '+(i===form.order.length-1||pending?'disabled':''),'Move down '+r.name)+'</li>';}).join('');
     }
   }
   function openForm(kind,id,opener){
     clearResult();const r=cat(id),reorder=kind==='categories'||kind==='items';
-    form={kind,id,base:version,title:kind==='create'?'New category':kind==='rename'?'Rename '+r.name:kind==='categories'?'Reorder categories':'Reorder items in '+r.name,opener:opener||'#new-category',initial:kind==='create'?'':r?.name,error:'',stale:false,unknown:false};
+    form={kind,id,base:listVersion,title:kind==='create'?'New category':kind==='rename'?'Rename '+r.name:kind==='categories'?'Reorder categories':'Reorder items in '+r.name,opener:opener||'#new-category',initial:kind==='create'?'':r?.name,error:'',stale:false,unknown:false};
     if(reorder){form.order=scope(form).map(x=>x.id);form.original=[...form.order];}
     $('#menu-name').value=form.initial||'';notice('#form-notice','');$('#name-error').hidden=true;$('#menu-name').removeAttribute('aria-invalid');$('#menu-name').setAttribute('aria-describedby','menu-name-help');staleRead=false;
     renderForm();reorder?focus('#draft-order button:not(:disabled)'):focus('#menu-name');
@@ -88,11 +90,11 @@
     el.hidden=!Office.kitchen;if(!Office.kitchen)return;
     el.className='office-emergency';el.innerHTML='<div><strong>'+esc(Office.kitchenIncident.title)+'</strong><p>'+esc(Office.kitchenIncident.identity)+'</p><p>'+sentence+'</p></div>'+(action?'<button class="office-button" id="gate-incidents">Open print incidents after sign-in</button>':'');
   }
-  function leave(action,logout=false){
+  function leave(action,logout=false,command=false){
     if(!dirty()){if(form)closeForm();action();return;}
     leaveAction=action;
     $('#departure-title').textContent=logout?'Log out and discard your changes?':'Discard unsaved changes?';
-    $('#departure-body').textContent=logout?'The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session.':pending||form.unknown?'The save may or may not have succeeded. Leaving does not send it again. Stay to keep the draft, or discard it and leave.':'Your edits have not been saved. Stay to keep editing, or discard them before leaving.';
+    $('#departure-body').textContent=logout?'The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session.':pending||form.unknown?'The save may or may not have succeeded. Leaving does not send it again. Stay to keep the draft, or discard it and leave.':command?'Your edits have not been saved. Stay to keep editing, or discard them to continue.':'Your edits have not been saved. Stay to keep editing, or discard them before leaving.';
     $('#departure-context').hidden=!logout||!(pending||form.unknown);$('#departure-context').textContent='The save may or may not have succeeded. Leaving does not send it again.';
     $('#stay').textContent=logout?'Keep this draft':'Stay';$('#discard').textContent=logout?'Discard changes and log out':'Discard';
     emergency($('#departure-emergency'),logout?'Decide whether to keep this draft or discard it before opening print incidents.':'Decide whether to stay or discard before opening print incidents.',false);
@@ -106,15 +108,15 @@
     form.stale=true;form.unknown=unknown;const reorder=!!form.order;
     const current=reorder?scope(form).map(x=>x.name).join(' → '):cat(form.id)?.name;
     $('#current-values').textContent=reorder?'Current order: '+current:'Current category name: '+current;
-    notice('#form-notice',unknown?'Outcome not confirmed. The menu has been read again at version '+version+'. It may include this save. Your draft is kept; nothing was sent again. Choose which to keep.':'The menu changed while you were editing. Nothing was saved. The menu has been read again at version '+version+'. Your draft is kept. Choose which to keep.','failure',true);
+    notice('#form-notice',unknown?'Outcome not confirmed. The menu has been read again at version '+listVersion+'. It may include this save. Your draft is kept; nothing was sent again. Choose which to keep.':'The menu changed while you were editing. Nothing was saved. The menu has been read again at version '+listVersion+'. Your draft is kept. Choose which to keep.','failure',true);
     renderForm();
   }
   function chooseCurrent(keep){
     if(!form||staleRead)return;
-    form.base=version;form.stale=false;form.error='';
+    form.base=listVersion;form.stale=false;form.error='';
     if(form.order){form.original=scope(form).map(x=>x.id);if(!keep)form.order=[...form.original];}
     else{form.initial=cat(form.id).name;if(!keep)$('#menu-name').value=form.initial;}
-    notice('#form-notice',keep?'Your changes now build on version '+version+'. Nothing has been saved yet. Press '+(form.order?'Save order':'Save')+' to save them.':'The form now shows version '+version+'. Nothing was saved. Edit it and save, or Cancel to close.');
+    notice('#form-notice',keep?'Your changes now build on version '+listVersion+'. Nothing has been saved yet. Press '+(form.order?'Save order':'Save')+' to save them.':'The form now shows version '+listVersion+'. Nothing was saved. Edit it and save, or Cancel to close.');
     renderForm();keep?focus('#save-menu'):form.order?focus('#draft-order button:not(:disabled)'):focus('#menu-name');
   }
   function submit(){
@@ -132,24 +134,28 @@
     render();if(c.kind==='state')page(pendingText(c));else notice('#form-notice','Saving… Wait for the result. Your draft is kept.','status',true);
     const answer=$('#fixture-response').value;if(answer!=='pending')queueMicrotask(()=>finish(answer));
   }
-  function apply(c){
+  function apply(c,answered=true){
     let changed=true;
     if(c.kind==='state'){const r=record(c.subject,c.id),key=['86','available'].includes(c.action)?'available':'active',value=c.action==='available'||c.action==='restore';changed=r[key]!==value;r[key]=value;}
     else if(c.kind==='create'){c.id='category-'+(categories.length+1);categories.push({id:c.id,name:c.name,active:true,order:Math.max(-1,...categories.map(x=>x.order))+1});c.opener=editSelector('category',c.id);}
     else if(c.kind==='rename'){changed=cat(c.id).name!==c.name;cat(c.id).name=c.name;}
     else{const all=c.kind==='categories'?categories:items;changed=c.order.some((id,i)=>all.find(x=>x.id===id).order!==i);c.order.forEach((id,i)=>all.find(x=>x.id===id).order=i);}
-    if(changed)version++;return changed;
+    if(changed)version++;
+    // A received answer moves the list only when it is this write and nothing else (F1). Only an availability answer
+    // can arrive with an editor open, and the editor's base moves with the list (F7). An unknown outcome moves nothing.
+    if(answered&&version===listVersion+(changed?1:0)){if(c.kind==='state'&&form&&form.base===listVersion)form.base=version;listVersion=version;}
+    return changed;
   }
   function resultText(c,changed){
     if(c.kind==='state'){
-      if(c.action==='86')return c.name+' is now marked 86. At the POS it is disabled in place, not removed.';
+      if(c.action==='86')return c.name+' is now marked 86.'+(!item(c.id).active||!cat(item(c.id).category).active?' It stays hidden from the POS while it or its category is archived.':' At the POS it is disabled in place, not removed.');
       if(c.action==='available')return c.name+' is available again.'+(!item(c.id).active||!cat(item(c.id).category).active?' It stays hidden from the POS while it or its category is archived.':'');
       if(c.subject==='category')return c.name+(c.action==='archive'?' archived. Its items are hidden from the POS; their status and availability are unchanged.':' restored. Its active, available items are shown at the POS again.');
       return c.name+(c.action==='archive'?' archived. It is kept for history.':' restored.')+(!cat(item(c.id).category).active?' Its category is archived, so it stays hidden from the POS.':'');
     }
     return !changed?'Nothing changed. Menu version '+version+' is still current.':c.order?(c.kind==='categories'?'Category order':'Item order in '+cat(c.id).name)+' saved.':c.name+' saved.';
   }
-  function reread(){fixture.reads++;}
+  function reread(succeeded=true){fixture.reads++;if(succeeded)listVersion=version;}
   function finish(answer){
     if(!pending)return;if(gate||$('#departure').open){held=answer;return;}
     const c=pending;pending=null;
@@ -182,11 +188,11 @@
       return;
     }
     if(answer==='stale'){
-      reread();if(version===c.expected){version++;if(c.kind==='rename')cat(c.id).name='Main dishes';else scope(form).reverse().forEach((x,i)=>x.order=i);}
+      if(version===c.expected){version++;if(c.kind==='rename')cat(c.id).name='Main dishes';else scope(form).reverse().forEach((x,i)=>x.order=i);}reread();
       render();stale();return;
     }
     if(answer.startsWith('unknown')){
-      reread();const changed=answer==='unknown-changed';if(changed)apply(c);
+      const changed=answer==='unknown-changed';if(changed)apply(c,false);reread(answer!=='unknown-read-failed');
       if(answer==='unknown-read-failed')read='failed';render();
       if(c.kind==='state'){unknownSubject=c.name;page(c.name+': the outcome could not be confirmed. The menu '+(read==='failed'?'could not be':'has been')+' refreshed. Nothing was sent again.');}
       else{
@@ -233,9 +239,10 @@
     if(b.closest('#menu-rows')&&pending){e.preventDefault();return;}
     if(b.dataset.rename){leave(()=>openForm('rename',b.dataset.rename,'[data-rename="'+b.dataset.rename+'"]'));return;}
     if(b.dataset.reorder){leave(()=>openForm('items',b.dataset.reorder,'[data-reorder="'+b.dataset.reorder+'"]'));return;}
-    if(b.dataset.availability){const id=b.dataset.availability;leave(()=>stateCommand('item',id,item(id).available?'86':'available'));return;}
-    if(b.dataset.categoryState){const id=b.dataset.categoryState;leave(()=>stateCommand('category',id,cat(id).active?'archive':'restore'));return;}
-    if(b.dataset.itemState){const id=b.dataset.itemState;leave(()=>stateCommand('item',id,item(id).active?'archive':'restore'));return;}
+    // Availability never changes a rename or a reorder scope, so it acts at once and the draft stays open (F7).
+    if(b.dataset.availability){const id=b.dataset.availability;stateCommand('item',id,item(id).available?'86':'available');return;}
+    if(b.dataset.categoryState){const id=b.dataset.categoryState;leave(()=>stateCommand('category',id,cat(id).active?'archive':'restore'),false,true);return;}
+    if(b.dataset.itemState){const id=b.dataset.itemState;leave(()=>stateCommand('item',id,item(id).active?'archive':'restore'),false,true);return;}
     if(b.dataset.move){
       const i=form.order.indexOf(b.dataset.move),j=i+Number(b.dataset.delta);[form.order[i],form.order[j]]=[form.order[j],form.order[i]];renderForm();
       const target=$('[data-move="'+b.dataset.move+'"][data-delta="'+b.dataset.delta+'"]');(target.disabled?$('#draft-order [data-move="'+b.dataset.move+'"]:not(:disabled)'):target)?.focus();return;
@@ -256,6 +263,8 @@
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!gate&&!$('#departure').open&&form){e.preventDefault();leave(()=>closeForm());}});
   $('#fixture-idle').onclick=()=>session('idle');$('#fixture-ended').onclick=()=>session('ended');
   $('#fixture-partial').onclick=()=>{read='partial';render();};
+  // A write by another tab that this list has not read: the server's version moves, the list's does not.
+  $('#fixture-other').onclick=()=>fixture.otherTab();
   $('#finish-command').onclick=()=>finish($('#fixture-response').value==='pending'?'saved':$('#fixture-response').value);
   $('#reauth-logout').onclick=()=>leave(()=>{form=null;session('ended');},true);
   $('#other-manager').onclick=()=>{
@@ -272,7 +281,7 @@
   history.replaceState({menu:true},'',location.href);history.pushState({menu:true},'',location.href);
   window.addEventListener('popstate',()=>{if(dirty()){history.pushState({menu:true},'',location.href);leave(()=>{form=null;history.go(-2);});}else history.back();});
   $('.office-day')?.remove();$('#menu-main').setAttribute('role','main');
-  if(state==='empty'){categories.length=0;items.length=0;version=0;}
+  if(state==='empty'){categories.length=0;items.length=0;version=0;listVersion=0;}
   if(state==='loading')read='loading';if(state==='error')read='failed';
   if(state==='overflow'){
     cat('mains').name='Category ABCDEFGHIJKLMNOPQRSTUVW';
@@ -292,7 +301,7 @@
     if(state==='duplicate-rename'){$('#menu-name').value='Sides';directAnswer('duplicate');}
     if(['saving','leave-pending'].includes(state)){$('#fixture-response').value='pending';submit();}
     if(['saved','failure','unknown','unknown-changed','unknown-read-failed'].includes(state))directAnswer(state);
-    if(['stale','stale-read-failed'].includes(state)){directAnswer('stale');if(state==='stale-read-failed'){read='failed';staleRead=true;render();notice('#form-notice','The menu changed while you were editing. Nothing was saved. Your draft is kept, but the current menu could not be read. Try again to read it before choosing.','failure',true);}}
+    if(['stale','stale-read-failed'].includes(state)){directAnswer('stale');if(state==='stale-read-failed'){read='failed';listVersion=version-1;staleRead=true;render();notice('#form-notice','The menu changed while you were editing. Nothing was saved. Your draft is kept, but the current menu could not be read. Try again to read it before choosing.','failure',true);}}
     if(state==='leave-unknown')directAnswer('unknown');
     if(['unsaved','unsaved-logout','leave-pending','leave-unknown','reauth-decision','bo01-decision'].includes(state))leave(()=>state==='unsaved-logout'?session('ended'):closeForm(),state==='unsaved-logout');
     if(['reauth','reauth-decision'].includes(state))session('idle');
@@ -310,6 +319,6 @@
   }
   const reorder=state.match(/^reorder-(categories|items)-(edit|pending|saved|stale|unknown)$/);
   if(reorder){const [,scope,result]=reorder;directForm(scope,scope==='items'?'mains':null);[form.order[0],form.order[1]]=[form.order[1],form.order[0]];renderForm();if(result==='pending'){$('#fixture-response').value='pending';submit();}else if(result!=='edit')directAnswer(result==='unknown'?'unknown-changed':result);}
-  if(state==='partial'){cat('mains').name='Main plates';version++;read='partial';render();page('Main plates saved.','status',false);focus('[data-rename="mains"]');}
+  if(state==='partial'){cat('mains').name='Main plates';version++;listVersion=version;read='partial';render();page('Main plates saved.','status',false);focus('[data-rename="mains"]');}
   document.documentElement.dataset.state=state;
 })();

@@ -1792,7 +1792,8 @@ one complete scope: the active categories, or the active items in one category.
 The list has numbered positions and named Move up / Move down buttons. The
 first row's Move up and last row's Move down are disabled. A scope with fewer
 than two active records has no order to change, so its opener (Reorder
-categories, or a category's Reorder items) is disabled. After a move, focus
+categories, or a category's Reorder items) is disabled. A reorder needs a complete
+read: its openers are disabled while the list is loading, failed or partial. After a move, focus
 stays on that record's move control, or its other move control when it reaches
 the end. Save order sends the entire ordered scope once, carrying the catalog
 version read when the draft opened. Cancel, departure, pending, uncertainty and
@@ -1814,6 +1815,12 @@ uses the same comparison but says that version may include this save. A failed
 reread withholds the comparison and offers a read-only Try again. Focus is on
 the notice, then Save after Keep, or the name / first enabled move control after
 Use current. Reordering does not grant a silent merge of a changed scope.
+BO-03 keeps the version its list stands at. A full read sets it. A command
+answer advances it to the answered version only when that version is exactly the
+standing version plus one, or equal to it for an unchanged answer. Otherwise the
+list keeps its standing version, so the next edit opened from it is refused
+`CATALOG_CHANGED` and rereads. An editor carries the list's standing version at
+the moment it opens.
 
 **State commands on grouped lists — behaviour.** Grouping does not change the
 status-command rule: 86, available again, archive and restore open no form and
@@ -1829,6 +1836,17 @@ never implicitly restores a record. Pending, unknown and definite failure focus
 the page status; success focuses the affected category's Rename or item's Edit.
 No archive confirmation is added: these actions are reversible, and the named
 category control and result explain their scope.
+86 and Make available act at once while an editor holds unsaved changes: no
+departure decision, and the draft is kept. They change availability only, which
+never changes a rename or a reorder scope. Their answer, when it is the list's
+standing version plus one, is the page's own write and nothing else, so the open
+editor's base advances with the list and the draft does not go stale; when the
+answer skips a version, the editor keeps its base and meets `CATALOG_CHANGED` on
+Save. Archive and Restore of an item or a category change scopes, so they keep
+going through the departure decision, whose body then reads “Your edits have not
+been saved. Stay to keep editing, or discard them to continue.” While a save of
+the draft is pending, the one-command-per-screen rule holds: 86 is inert until
+the answer arrives.
 
 **BO-03 copy and composition.** `frost/back-office/menu.html` uses the shared
 frame, table and `tables.css` non-modal panel. A full-width editor above the
@@ -1838,8 +1856,8 @@ New item (the last two on active categories). The global toolbar carries New
 category and Reorder categories. All prices are the stored tax-inclusive base
 price, grouped with dots and without a currency symbol. Names wrap; amounts and
 availability actions remain whole. The Phase 5 business-day fact is absent.
-The shared review rail retains future destinations; it is not the Phase 1
-production route manifest.
+The Phase 1 rail lists Menu, Tables and Settings; `tables.html` and
+`settings.html` now show all three.
 
 Category names are trimmed before validation, 1–32 UTF-16 units, with no Unicode
 Cc control character. Active names are unique case-insensitively; archived names
