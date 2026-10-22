@@ -5,8 +5,8 @@ category: ui
 touches: [boundaries]
 depends_on: [DESIGN-018b]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # DESIGN-019 — BO-03 Menu (slice D, first part)
 
@@ -252,6 +252,54 @@ configuration-form rules. Two things the lead noticed:
    Discount presets, Printing), while `tables.html` and `settings.html` draw the Phase 1 rail (DESIGN-018: "The Phase 1
    rail lists Tables and Settings"). Decide which is right for BO-03's Phase 1 drawing.
 2. **The row control labelled "86".** Check its accessible name, and the available-again control's.
+
+## Round 2 — the review's seven findings (lead rulings, 2026-10-22)
+
+The review (`.agent/reviews/DESIGN-019-review.md`, verdict *findings*, seven) is accepted. Findings 1 to 6 are applied as
+the review proposes, in the words below; finding 7 is the lead's call, ruled below. Apply exactly this, then add a section
+*Round 2* at the end of the Handoff (what changed, each new assertion and the red you observed against round 1, the
+counts), and end it with `DONE`.
+
+- **F1, the version a list edit carries.** Add this rule, word for word, to the Handoff's rules table and to `D`'s
+  DESIGN-019 *Catalog changed during a list edit* paragraph: "BO-03 keeps the version its list stands at. A full read
+  sets it. A command answer advances it to the answered version only when that version is exactly the standing version
+  plus one, or equal to it for an unchanged answer. Otherwise the list keeps its standing version, so the next edit
+  opened from it is refused `CATALOG_CHANGED` and rereads. An editor carries the list's standing version at the moment it
+  opens." Make the fixture keep a separate list version. Add an assertion: after a state command whose answer skips a
+  version, the next rename is refused stale.
+- **F2, the 86 result for a hidden item.** For an item that is archived or whose category is archived, the 86 result
+  reads "`{name} is now marked 86.` It stays hidden from the POS while it or its category is archived." Add the row to the
+  copy table. Assert that 86 on Apple Pie and on Winter Stew does not say "disabled in place".
+- **F3, reorder needs a complete read.** Disable *Reorder categories* and every *Reorder items* unless the read is
+  complete (not while loading, failed or partial). Add to the Handoff's reorder rule and to `D`'s reorder paragraph: "A
+  reorder needs a complete read: its openers are disabled while the list is loading, failed or partial." Assert both
+  openers are disabled in `loading`, `error` and `partial`.
+- **F4, the inventory's create sentence.** Replace `I:703-704` with: "A category create and the state commands never
+  carry the catalog version and cannot be refused for a stale catalog. An item create (BO-04) carries none either, but is
+  refused `CATALOG_CHANGED` when its category has been archived (C1 §2.3)." Add the same line to the Handoff's *For
+  DESIGN-020* paragraph, together with the review's note on names held by items in an archived category (*Cleared*, last
+  bullet).
+- **F5, the Phase 1 rail.** Author the Phase 1 rail in `menu.html`: *Configuration* → *Menu*, *Tables*, *Settings*, in
+  the future rail's order, with Menu current. Add *Menu* to the authored rails of `tables.html` and `settings.html`, as
+  DESIGN-018 added Settings. Replace your `D` sentence ("The shared review rail retains future destinations…") with: "The
+  Phase 1 rail lists Menu, Tables and Settings; `tables.html` and `settings.html` now show all three." Assert the three
+  entries and the walk between them from each of the three pages.
+- **F6, accessible names begin with the visible label.** *Make available* is named "Make available {name}"; *Move up* and
+  *Move down* are named "Move up {name}" and "Move down {name}". *86* keeps "Mark {name} 86" (it contains the visible
+  label and reads well aloud). Update the copy table, and assert each name.
+- **F7, an urgent state command while an editor is open (lead ruling).** *86* and *Make available* **act at once** while
+  a rename or reorder editor holds unsaved changes: no departure decision, and the draft is kept. They change
+  availability only, which never changes a rename or a reorder scope. Under F1's rule, their answer, when it is the
+  standing version plus one, is the page's own write and nothing else, so the open editor's base advances with the list
+  and the draft does not go stale. (When the answer skips a version, the editor keeps its base and meets
+  `CATALOG_CHANGED` on Save, as F1 says.) *Archive* and *Restore* of an item or a category **do** change scopes, so they
+  keep going through the departure decision. That decision's body, when a state command opened it, reads: "Your edits
+  have not been saved. Stay to keep editing, or discard them to continue." Record both rules in the Handoff and in `D`'s
+  *State commands on grouped lists*. While a save of the draft is **pending**, the one-command-per-screen rule still holds:
+  *86* is inert until the answer arrives. Assert: 86 with a dirty rename open acts at once, keeps the draft, and a
+  following Save is accepted; Archive with a dirty rename open opens the decision with the new body.
+- **Checks.** Run `design019.cjs` once, then the six earlier checks once each (F5 changes `tables.html` and
+  `settings.html`). Ask the owner in the pane before each run. Change nothing else.
 
 ## Handoff
 
