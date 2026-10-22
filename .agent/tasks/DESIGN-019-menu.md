@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries]
 depends_on: [DESIGN-018b]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: complete
 cycles: 2
 ---
 # DESIGN-019 — BO-03 Menu (slice D, first part)
@@ -310,6 +310,19 @@ reasoning as F7. Every other use of DESIGN-018's uncertain body is unchanged. Ap
 copy table and to `D`'s *State commands on grouped lists*, and add one assertion: Archive with an unknown save open
 shows this body. Run `design019.cjs` once (ask the owner), commit, add a short *Round 3* section to the Handoff ending
 with `DONE`, and ping the lead. Change nothing else.
+
+## Rounds 2 and 3 lead review and acceptance (2026-10-22)
+
+Both rounds were fully ruled, so the lead reviewed them rather than a second Opus round. The lead read `e80365a` and
+`c0a7113` against the rulings. F1's list version is implemented as written: `listVersion` moves on a full read, or on an
+answer exactly one step ahead (or equal, for an unchanged answer). An editor opens on `listVersion`, and its base moves
+with the list only for a state command, and only when it stood at the list's version (F7). F2 to F6 and the round 3
+copy are as ruled. `design014.cjs`'s only change removes `menu` from its Audit-rail list, which F5 made necessary. The
+designer recorded the red proof for the new assertions (17 red on round 1, then 1 more in round 3). The lead did not
+repeat it, because the assertions are fixture checks that the designer ran against an exported round 1 tree. **Green, run
+by the lead on `c0a7113`:** `design019.cjs` 998/998 (74 states); `design012` 421/421; `design013` 371/371; `design014`
+287/287; `design016` 399/399; `design017` 347/347; `design018` 724/724. The tree is clean, and every path is inside
+`owns`. **Complete.** For S4a, the lead adds `reorderItems(categoryId, expected, ids)` (the designer's open question).
 
 ## Handoff
 
