@@ -54,9 +54,9 @@ payment-methods part), as S1 and S2 were. Narrative: [journal/2026-10-22.md](jou
 ## Running tasks and agents
 
 - **PHASE1-S3a complete** (PR #134, `ec1b9a5`; `0012`): verify 116/4367, e2e:all 74, Codex review clean. Owner looks.
-- **DESIGN-020** (BO-04 item editor, plus BO-08 `first-run-closed`): Codex `design020` in pane `w2:p8E`, hand-opened,
-  briefed; Part D done (lead ran design018: 724/724). Codex weekly allowance 22%, resets 27 Oct 14:18. Meta in
-  `.agent/runs/DESIGN-020/builder/meta.json` (`cli: codex`, so an Opus review). Design left: -021, BO-07 half, E2.
+- **DESIGN-020** (BO-04, plus BO-08 `first-run-closed`): Codex drew A and C (uncommitted), Part D `9b1abbd`; hit its 5h
+  limit 19:20. **Owner exception: Claude Opus `design020c` finishes** (pane `w2:p8G`, handover note `dca5163`). Lead's runs:
+  020 705/706, 019 998/998, 014 and 018 green. Review: route by the lead (Opus-finished draft). Meta `cli: codex`.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
