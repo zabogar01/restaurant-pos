@@ -139,7 +139,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE1-S2b, BO-08's settings section, #130; DESIGN-019, BO-03 Menu (design D part 1), #131.)*
     - *(Done: PHASE1-S3a, tender methods on the server, `0012`, #134; DESIGN-020, BO-04 and BO-08's `first-run-closed`,
       #135; both merged 2026-10-24.)*
-    - **PHASE1-S3b**, BO-08's payment-methods part — depends on S3a — building (dispatched 2026-10-24).
+    - **PHASE1-S3b**, BO-08's payment-methods part (FR-B7 end to end) — depends on S3a — complete, PR #137.
     - **DESIGN-021** the POS addition, G6 (feeds S7b) — after S3b's review — not started.
     - **Code-point lengths cleanup (no ID yet)** — zod 4.6.5 and `char_length` count code points; the "UTF-16 units"
       comments (contracts `tables.ts`, `settings.ts`, `auth.ts`; migrations `0010`, `0011`), `D:1607`, the inventory's sign-in
