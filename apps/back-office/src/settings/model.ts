@@ -292,6 +292,8 @@ export function createSettingsModel(config: ConfigApi) {
   let methodsClock = 0;
   const appliedMethods = new Map<string, { method: TenderMethodView; at: number }>();
   let methodsReadSequence = 0;
+  /** The newest methods read, settled with the outcome of the list on screen. */
+  let newestMethodsRead: Promise<boolean> = Promise.resolve(true);
   /** Numbers both parts' forms, so a command's key names exactly one form on the screen. */
   let formSequence = 0;
   let focusSequence = 0;
@@ -589,7 +591,17 @@ export function createSettingsModel(config: ConfigApi) {
   // A read is a snapshot taken before some command may have answered. A record a command's
   // authoritative answer replaced after the read began is kept (or inserted, if the read lacks
   // it), so an older snapshot arriving late never undoes a newer success.
-  async function loadMethods(visible: boolean): Promise<boolean> {
+  //
+  // What a caller receives describes the list on screen: a read that is no longer the newest
+  // waits for the newest read already in flight and returns that read's outcome, so "refreshed"
+  // and "could not be refreshed" always match what is drawn. It starts no read of its own.
+  function loadMethods(visible: boolean): Promise<boolean> {
+    const run = readMethods(visible);
+    newestMethodsRead = run;
+    return run;
+  }
+
+  async function readMethods(visible: boolean): Promise<boolean> {
     methodsReadSequence += 1;
     const mine = methodsReadSequence;
     const startedAt = methodsClock;
@@ -612,8 +624,9 @@ export function createSettingsModel(config: ConfigApi) {
         // began is on screen, so the known rows stay drawn with the alert and no counts.
         set({ methodsRead: 'failed', methodsPartial: state.methodsPartial || methodsClock > startedAt });
       }
+      return rows !== null;
     }
-    return rows !== null;
+    return newestMethodsRead;
   }
 
   function openMethodEditor(recordId: string | null): void {

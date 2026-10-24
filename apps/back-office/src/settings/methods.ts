@@ -33,8 +33,12 @@ export function orderedMethods(rows: readonly TenderMethodView[]): TenderMethodV
   return [...rows].sort((a, b) => rank(a) - rank(b) || collator.compare(a.name, b.name));
 }
 
-/** Whether two names are the same name to the server's unique index: case-insensitively. */
-export const sameName = (a: string, b: string): boolean => collator.compare(a, b) === 0;
+/**
+ * Whether two names are the same name to the server's unique index, which is on `lower(name)`:
+ * equal after lower-casing, and nothing more. Accents and digits count (`Cafe` and `Café`,
+ * `GoPay 2` and `GoPay 02` are different names). The sort's collator is not used here.
+ */
+export const sameName = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
 
 export const upsertMethod = (rows: readonly TenderMethodView[], method: TenderMethodView): TenderMethodView[] =>
   rows.some((row) => row.tenderMethodId === method.tenderMethodId)

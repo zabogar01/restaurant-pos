@@ -83,6 +83,12 @@ describe('the list’s order', () => {
 describe('sameName', () => {
   it('compares case-insensitively', () => {
     expect(sameName('GoPay', 'gopay')).toBe(true);
+    expect(sameName('QRIS', 'qris')).toBe(true);
     expect(sameName('GoPay', 'GoPay 2')).toBe(false);
+  });
+
+  it('matches the server’s lower(name) index: accents and digits make a different name', () => {
+    expect(sameName('Cafe', 'Café')).toBe(false);
+    expect(sameName('GoPay 2', 'GoPay 02')).toBe(false);
   });
 });

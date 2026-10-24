@@ -131,6 +131,8 @@ export function createTablesModel(config: ConfigApi) {
   let appliedClock = 0;
   const applied = new Map<string, { table: TableView; at: number }>();
   let readSequence = 0;
+  /** The newest list read, settled with the outcome of the list on screen. */
+  let newestRead: Promise<boolean> = Promise.resolve(true);
   let editorSequence = 0;
   let focusSequence = 0;
   /** Where the manager was going when the decision was shown. */
@@ -162,7 +164,17 @@ export function createTablesModel(config: ConfigApi) {
   // A read is a snapshot taken before some command may have answered. A record a command's
   // authoritative answer replaced after the read began is kept (or inserted, if the read
   // lacks it), so an older snapshot arriving late never undoes a newer success.
-  async function load(visible: boolean): Promise<boolean> {
+  //
+  // What a caller receives describes the list on screen: a read that is no longer the newest
+  // waits for the newest read already in flight and returns that read's outcome. It starts no
+  // read of its own.
+  function load(visible: boolean): Promise<boolean> {
+    const run = readList(visible);
+    newestRead = run;
+    return run;
+  }
+
+  async function readList(visible: boolean): Promise<boolean> {
     readSequence += 1;
     const mine = readSequence;
     const startedAt = appliedClock;
@@ -184,8 +196,9 @@ export function createTablesModel(config: ConfigApi) {
         // began is on screen, so the known rows stay drawn with the alert and no counts.
         set({ read: 'failed', partial: state.partial || appliedClock > startedAt });
       }
+      return rows !== null;
     }
-    return rows !== null;
+    return newestRead;
   }
 
   function openEditor(recordId: string | null): void {
