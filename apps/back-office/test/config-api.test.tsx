@@ -40,7 +40,7 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
     expect(true).toBe(true);
   });
 
-  it('holds the five table routes and the two settings routes at run time, and nothing under /auth/', () => {
+  it('holds the five table routes, the two settings routes and the five tender-methods routes at run time, and nothing under /auth/', () => {
     expect(Object.keys(store.config).sort()).toEqual([
       '/api/back-office/config/settings',
       '/api/back-office/config/settings/save',
@@ -49,7 +49,23 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
       '/api/back-office/config/tables/deactivate',
       '/api/back-office/config/tables/reactivate',
       '/api/back-office/config/tables/update',
+      '/api/back-office/config/tender-methods',
+      '/api/back-office/config/tender-methods/create',
+      '/api/back-office/config/tender-methods/deactivate',
+      '/api/back-office/config/tender-methods/reactivate',
+      '/api/back-office/config/tender-methods/update',
     ]);
+  });
+
+  it('the tender-methods routes are typed on the configuration surface', () => {
+    void store.config['/api/back-office/config/tender-methods'];
+    void store.config['/api/back-office/config/tender-methods/create'];
+    void store.config['/api/back-office/config/tender-methods/update'];
+    void store.config['/api/back-office/config/tender-methods/deactivate'];
+    void store.config['/api/back-office/config/tender-methods/reactivate'];
+    // @ts-expect-error: a route that does not exist is not on the surface.
+    void store.config['/api/back-office/config/tender-methods/delete'];
+    expect(true).toBe(true);
   });
 
   it('no module outside session/ names a session route or the API module', () => {

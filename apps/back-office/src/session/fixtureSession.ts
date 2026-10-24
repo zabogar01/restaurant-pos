@@ -55,6 +55,13 @@ const CONFIG: SessionStore['config'] = {
   '/api/back-office/config/tables/update': unavailable,
   '/api/back-office/config/tables/deactivate': unavailable,
   '/api/back-office/config/tables/reactivate': unavailable,
+  // The payment methods answer `unavailable` too: BO-08 then draws its methods read failure
+  // under the fixture settings, and there is no fixture method list to seed.
+  '/api/back-office/config/tender-methods': unavailable,
+  '/api/back-office/config/tender-methods/create': unavailable,
+  '/api/back-office/config/tender-methods/update': unavailable,
+  '/api/back-office/config/tender-methods/deactivate': unavailable,
+  '/api/back-office/config/tender-methods/reactivate': unavailable,
 };
 
 export function createFixtureSession(): SessionStore {

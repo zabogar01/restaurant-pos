@@ -4,20 +4,28 @@ import {
   DEPARTURE_BODY_UNCERTAIN,
   DEPARTURE_TITLE,
   FORM_FAILED,
+  OUTCOME_UNKNOWN,
+  OUTCOME_UNKNOWN_UNREAD,
   SAVING,
   WAITING,
 } from '../copy.js';
 import { useSession } from '../session/useSession.js';
 import { workGuard } from '../work/guard.js';
 import {
+  ALWAYS_OFFERED,
   CANCEL,
   CHANGE,
   CHOOSE_FIRST,
+  COLUMN_ACTIONS,
+  COLUMN_NAME,
+  COLUMN_STATUS,
   CONFIRM_ALSO,
   CONFIRM_BACK,
   CONFIRM_RULE,
   CONFIRM_SAVE,
   CONFIRM_TITLE,
+  DEACTIVATE,
+  EDIT,
   EDIT_CONTEXT,
   EDIT_TITLE,
   ENTER_SETTINGS,
@@ -25,23 +33,46 @@ import {
   FIRST_RUN_BODY,
   FIRST_RUN_CONTEXT,
   FIRST_RUN_TITLE,
+  FIXED_METHODS,
   FIXED_NOTE,
   GROUP_MONEY,
   GROUP_RATES,
   GROUP_RECEIPT,
   KEEP,
   KEPT_BODY,
+  LOADING_METHODS,
   LOADING_SETTINGS,
+  METHODS,
+  METHODS_CAPTION,
+  METHODS_EMPTY,
+  METHODS_LIST_LABEL,
+  METHODS_PARTIAL,
+  METHODS_READ_FAILED,
+  METHOD_ACTIVE_CONTEXT,
+  METHOD_CREATE_CONTEXT,
+  METHOD_HELP,
+  METHOD_INACTIVE_CONTEXT,
+  METHOD_NAME,
+  NAME_CONTROL,
+  NAME_DUPLICATE,
+  NAME_DUPLICATE_REACTIVATE,
+  NAME_EMPTY,
+  NAME_IN_USE,
+  NAME_LONG,
+  NEW_METHOD,
   NOT_SET,
   RATES_AND_RECEIPT,
   RATE_EMPTY,
   RATE_REFUSED,
+  REACTIVATE,
   RECEIPT_NOTE,
   ROW,
   SAVE,
   SETTINGS,
   SETTINGS_READ_FAILED,
   STALE_TITLE,
+  STATUS_ACTIVE,
+  STATUS_INACTIVE,
   TERM_CURRENCY,
   TERM_PRECISION,
   TEXT_REFUSED,
@@ -52,11 +83,25 @@ import {
   USED_BODY,
   USE_CURRENT,
   currencyText,
+  deactivateName,
+  editMethodName,
   factsLine,
   keptTitle,
+  methodCounts,
+  methodDeactivated,
+  methodDeactivating,
+  methodEditTitle,
+  methodFailed,
+  methodReactivated,
+  methodReactivating,
+  methodSaved,
+  methodSessionRefused,
+  methodUnknown,
+  methodUnknownUnread,
   nowInForce,
   precisionText,
   rateChange,
+  reactivateName,
   saved,
   staleBody,
   unchanged,
@@ -65,7 +110,17 @@ import {
   usedTitle,
 } from './copy.js';
 import { FIELD_ORDER, RATE_KEYS, isRate, type FieldError, type FieldKey, type RateKey, type TextKey } from './fields.js';
-import { differences, savedValue, type Form, type PageStatus, type SettingsModel, type SettingsState } from './model.js';
+import {
+  differences,
+  savedValue,
+  type Form,
+  type MethodFieldError,
+  type MethodsPageStatus,
+  type PageStatus,
+  type SettingsModel,
+  type SettingsState,
+} from './model.js';
+import { orderedMethods, sameName } from './methods.js';
 import { percentText } from './rate.js';
 import { whenText } from './when.js';
 
@@ -155,6 +210,12 @@ export function Settings({ model }: { model: SettingsModel }) {
     if (target === 'notice') found = area.querySelector<HTMLElement>('#settings-notice');
     else if (target === 'save') found = area.querySelector<HTMLElement>('#save-settings');
     else if (target === 'confirm') found = area.querySelector<HTMLElement>('#confirm-back');
+    else if (target === 'method-name') found = area.querySelector<HTMLElement>('#method-name');
+    else if (target === 'method-notice') found = area.querySelector<HTMLElement>('#method-notice');
+    else if (target === 'methods-status') found = area.querySelector<HTMLElement>('#methods-status');
+    else if (target === 'new-method') found = area.querySelector<HTMLElement>('#new-method');
+    else if ('edit' in target)
+      found = area.querySelector<HTMLElement>(`[data-edit="${target.edit}"]`) ?? area.querySelector<HTMLElement>('#new-method');
     else if ('field' in target) found = area.querySelector<HTMLElement>(`#${FIELD_ID[target.field]}`);
     else
       found =
@@ -170,7 +231,8 @@ export function Settings({ model }: { model: SettingsModel }) {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented || !live.current) return;
       const now = model.getState();
-      if (now.form === null || now.decision || now.confirm !== null || document.querySelector('dialog[open]')) return;
+      if (now.form === null && now.methodEditor === null) return;
+      if (now.decision || now.confirm !== null || document.querySelector('dialog[open]')) return;
       event.preventDefault();
       model.cancel();
     };
@@ -180,7 +242,8 @@ export function Settings({ model }: { model: SettingsModel }) {
 
   const { form, command, page, read, current, installation } = state;
   const busy = command !== null;
-  const pendingSave = form !== null && command !== null && !command.discarded && command.formKey === form.key;
+  const pendingSave =
+    form !== null && command !== null && command.kind === 'settings' && !command.discarded && command.formKey === form.key;
   const showFacts = read === 'ready' && !state.withheld;
   const firstRunEmpty = read === 'ready' && current === null && form === null;
 
@@ -259,9 +322,255 @@ export function Settings({ model }: { model: SettingsModel }) {
         )}
       </section>
 
+      <Methods state={state} model={model} />
+
       <RateConfirm model={model} state={state} phase={phase} />
       <Decision model={model} state={state} phase={phase} />
     </div>
+  );
+}
+
+const nameText: Record<MethodFieldError, string> = {
+  empty: NAME_EMPTY,
+  long: NAME_LONG,
+  control: NAME_CONTROL,
+  duplicate: NAME_DUPLICATE,
+  'duplicate-reactivate': NAME_DUPLICATE_REACTIVATE,
+};
+
+function methodsPageText(page: MethodsPageStatus): string {
+  switch (page.kind) {
+    case 'saved':
+      return methodSaved(page.name);
+    case 'deactivated':
+      return methodDeactivated(page.name);
+    case 'reactivated':
+      return methodReactivated(page.name);
+    case 'deactivating':
+      return methodDeactivating(page.name);
+    case 'reactivating':
+      return methodReactivating(page.name);
+    case 'failed':
+      return methodFailed(page.name);
+    case 'session':
+      return methodSessionRefused(page.name);
+    case 'unknown':
+      return page.unread ? methodUnknownUnread(page.name) : methodUnknown(page.name);
+    case 'waiting':
+      return WAITING;
+  }
+}
+
+/**
+ * The payment-methods part (PHASE1-S3b): BO-05's list and non-modal panel inside BO-08. The
+ * panel is a named `role="dialog"` with `aria-modal="false"`, so the rail, Log out and the list
+ * stay live while it is open. Cash and card are the first two rows and hold no control.
+ */
+function Methods({ state, model }: { state: SettingsState; model: SettingsModel }) {
+  const { methods, methodsRead: read, methodsPartial: partial, methodEditor: editor, command, methodsPage: page } = state;
+  const busy = command !== null;
+  const pendingSave =
+    editor !== null && command !== null && command.kind === 'method' && !command.discarded && command.editorKey === editor.key;
+  const sorted = orderedMethods(methods);
+  const active = methods.filter((method) => method.isActive).length;
+  // The rows can be drawn when a read succeeded, or when an answer was applied to the rows the
+  // client knew while a read stands failed (the alert stays, the counts are withheld).
+  const usable = read === 'ready' || partial;
+  const holder = (id: string, isActive: boolean, name: string): boolean =>
+    editor !== null &&
+    (editor.error === 'duplicate' || editor.error === 'duplicate-reactivate') &&
+    isActive &&
+    id !== editor.recordId &&
+    sameName(name, editor.draft.trim());
+
+  const notice = (() => {
+    if (editor === null) return null;
+    if (pendingSave) return { kind: 'pending', role: 'status', copy: SAVING } as const;
+    switch (editor.notice) {
+      case null:
+        return null;
+      case 'failure':
+        return { kind: 'failure', role: 'alert', copy: FORM_FAILED } as const;
+      case 'unknown':
+        return { kind: 'unknown', role: 'status', copy: OUTCOME_UNKNOWN } as const;
+      case 'unknown-unread':
+        return { kind: 'unknown', role: 'status', copy: OUTCOME_UNKNOWN_UNREAD } as const;
+    }
+  })();
+
+  return (
+    <section className="settings-methods" id="methods-part" aria-labelledby="methods-title">
+      <header className="settings-part__head">
+        <div>
+          <h2 id="methods-title">{METHODS}</h2>
+          {read === 'ready' && <p id="method-count">{methodCounts(active, methods.length - active)}</p>}
+        </div>
+        <button
+          type="button"
+          id="new-method"
+          className="office-button primary office-push"
+          aria-disabled={!usable || busy ? 'true' : undefined}
+          tabIndex={!usable || busy ? -1 : undefined}
+          onClick={() => model.openNewMethod()}
+        >
+          {NEW_METHOD}
+        </button>
+      </header>
+
+      {page !== null && (
+        <div id="methods-status" tabIndex={-1} className="office-notice settings-status" role="status">
+          {methodsPageText(page)}
+        </div>
+      )}
+
+      <div className={editor === null ? 'tables-workspace' : 'tables-workspace editing'}>
+        <section aria-label={METHODS_LIST_LABEL}>
+          {read === 'loading' && (
+            <div id="methods-read">
+              <div className="office-notice" role="status">
+                {LOADING_METHODS}
+              </div>
+            </div>
+          )}
+          {read === 'failed' && (
+            <div id="methods-read">
+              <div className="office-notice" role="alert">
+                <strong>{(partial ? METHODS_PARTIAL : METHODS_READ_FAILED).title}</strong>
+                <p>{(partial ? METHODS_PARTIAL : METHODS_READ_FAILED).body}</p>
+                <button type="button" className="office-button" onClick={() => void model.retryMethodsRead()}>
+                  {TRY_AGAIN}
+                </button>
+              </div>
+            </div>
+          )}
+          {usable && (
+            <table className="office-table" id="methods-list">
+              <caption>{METHODS_CAPTION}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{COLUMN_NAME}</th>
+                  <th scope="col">{COLUMN_STATUS}</th>
+                  <th scope="col">{COLUMN_ACTIONS}</th>
+                </tr>
+              </thead>
+              <tbody id="method-rows">
+                {FIXED_METHODS.map((fixed) => (
+                  <tr key={fixed} data-fixed={fixed.toLowerCase()}>
+                    <td>{fixed}</td>
+                    <td className="table-status">{ALWAYS_OFFERED}</td>
+                    <td />
+                  </tr>
+                ))}
+                {sorted.map((method) => (
+                  <tr
+                    key={method.tenderMethodId}
+                    data-active={method.isActive}
+                    data-selected={method.tenderMethodId === editor?.recordId}
+                  >
+                    <td>
+                      {method.name}
+                      {holder(method.tenderMethodId, method.isActive, method.name) && (
+                        <span className="table-holder">{NAME_IN_USE}</span>
+                      )}
+                    </td>
+                    <td className="table-status">{method.isActive ? STATUS_ACTIVE : STATUS_INACTIVE}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="office-button small"
+                        data-edit={method.tenderMethodId}
+                        aria-label={editMethodName(method.name, method.isActive)}
+                        aria-disabled={busy ? 'true' : undefined}
+                        tabIndex={busy ? -1 : undefined}
+                        onClick={() => model.openEditMethod(method.tenderMethodId)}
+                      >
+                        {EDIT}
+                      </button>
+                      <button
+                        type="button"
+                        className="office-button small"
+                        aria-label={method.isActive ? deactivateName(method.name) : reactivateName(method.name)}
+                        aria-disabled={busy ? 'true' : undefined}
+                        tabIndex={busy ? -1 : undefined}
+                        onClick={() => model.changeMethodStatus(method.tenderMethodId)}
+                      >
+                        {method.isActive ? DEACTIVATE : REACTIVATE}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {read === 'ready' && methods.length === 0 && <p className="methods-empty">{METHODS_EMPTY}</p>}
+        </section>
+
+        {editor !== null && (
+          <section className="table-editor" id="method-editor" role="dialog" aria-modal="false" aria-labelledby="method-editor-title">
+            <header className="office-dialog__head">
+              <h2 id="method-editor-title">{editor.recordId === null ? NEW_METHOD : methodEditTitle(editor.openedName)}</h2>
+            </header>
+            <form
+              id="method-form"
+              method="post"
+              noValidate
+              onSubmit={(event: FormEvent) => {
+                event.preventDefault();
+                model.saveMethod();
+              }}
+            >
+              <div className="office-dialog__body">
+                <p id="method-context">
+                  {editor.recordId === null ? METHOD_CREATE_CONTEXT : editor.active ? METHOD_ACTIVE_CONTEXT : METHOD_INACTIVE_CONTEXT}
+                </p>
+                {notice !== null && (
+                  <div id="method-notice" tabIndex={-1} className="office-notice" data-kind={notice.kind} role={notice.role}>
+                    <strong>{notice.copy.title}</strong>
+                    <p>{notice.copy.body}</p>
+                  </div>
+                )}
+                <label htmlFor="method-name">{METHOD_NAME}</label>
+                <input
+                  id="method-name"
+                  name="name"
+                  type="text"
+                  className="office-field"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  value={editor.draft}
+                  disabled={pendingSave}
+                  aria-invalid={editor.error === null ? undefined : true}
+                  aria-describedby={editor.error === null ? 'method-help' : 'method-error method-help'}
+                  onChange={(event) => model.setMethodName(event.currentTarget.value)}
+                />
+                {editor.error !== null && (
+                  <span id="method-error" className="office-error">
+                    {nameText[editor.error]}
+                  </span>
+                )}
+                <p id="method-help" className="settings-help">
+                  {METHOD_HELP}
+                </p>
+              </div>
+              <footer className="office-dialog__foot">
+                <button type="button" id="cancel-method" className="office-button" onClick={() => model.cancel()}>
+                  {CANCEL}
+                </button>
+                <button
+                  type="submit"
+                  id="save-method"
+                  className="office-button primary"
+                  aria-disabled={pendingSave ? 'true' : undefined}
+                >
+                  {SAVE}
+                </button>
+              </footer>
+            </form>
+          </section>
+        )}
+      </div>
+    </section>
   );
 }
 
