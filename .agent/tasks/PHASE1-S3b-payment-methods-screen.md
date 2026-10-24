@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries, identity]
 depends_on: [PHASE1-S3a]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/payment-methods.spec.ts, e2e/support/**]
-status: active
+status: complete
 cycles: 0
 ---
 # PHASE1-S3b — BO-08 Payment methods in the back office
@@ -327,6 +327,22 @@ the Handoff (each finding, its test, the red you observed, the counts), and end 
   are the same name; `Cafe` and `Café` are not; `GoPay 2` and `GoPay 02` are not; and on screen, with active `Cafe` and
   `Café`, a `DUPLICATE` for `cafe` marks only `Cafe`.
 - **Then** `npm run verify` and `npm run test:e2e:all`, commit, and report as before. Change nothing else.
+
+## Round 2 lead review and acceptance (2026-10-24)
+
+Round 2 is fully ruled, and both fixes are the ones the review proposed, so the lead reviewed it instead of a Codex
+re-review (owner, this session; the same practice as S1a, S2a and S2b). The lead read the source diff of `f22cee1`
+against the two rulings, and it is what they ask. **F1:** `loadMethods` and BO-05's `load` each record the newest read's
+promise, and a read that finds itself superseded returns that promise, so the caller's refreshed or could-not-be-refreshed
+sentence follows the list on screen. The chain cannot loop, because a read returns the newest promise only when a newer
+read exists, and nothing starts a request. Nothing else in BO-05 changed. **F2/L1:** `sameName` is
+`a.toLowerCase() === b.toLowerCase()`, matching `lower(name)`, and the sort keeps the collator. **Red proof, repeated by
+the lead:** with round 1's `settings/methods.ts`, `settings/model.ts` and `tables/model.ts` in place, the three new and
+extended test files failed **6 of 27**: both F1 orders on BO-08 and on BO-05, `sameName`'s accent and digit case, and the
+on-screen `Cafe`/`Café` marker. The lead restored the three files, and the tree was clean. **Green, run by the lead on
+the final tree:** `npm run verify` 122 files, 4486 tests; `npm run test:e2e:all` 78 passed (Chromium and WebKit).
+**Complete.** `touches: boundaries, identity`: the owner looks at BO-08 served before merge. The lead cannot sign in to
+look, and no agent has seen the ported CSS rendered, so the visual comparison with the Frost artifact is the owner's.
 
 ## Handoff
 
