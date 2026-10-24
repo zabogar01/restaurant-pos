@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-24 (S3b in review): `development` at `8722770` (#134 S3a, #135 DESIGN-020, #136 merged); dev `pos` at `0012`.
-**Running: the S3b Codex review.** No PR open. Narrative: [journal/2026-10-22.md](journal/2026-10-22.md) (*Evening*),
+2026-10-24 (S3b round 2): `development` at `8722770` (#134 S3a, #135 DESIGN-020, #136 merged); dev `pos` at `0012`.
+**Running: S3b round 2.** No PR open. Narrative: [journal/2026-10-22.md](journal/2026-10-22.md) (*Evening*),
 [journal/2026-10-24.md](journal/2026-10-24.md).
 
 ## Phase and gates
@@ -52,8 +52,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Running tasks and agents
 
 - **PHASE1-S3b in review:** builder DONE (`a1e85ae`, Sonnet); lead verify 120/4480, e2e:all 78 (`060ca33`); the
-  builder's DUPLICATE question ruled (stands); lead finding L1 (`sameName` folds accents) for round 2. Codex reviewer
-  (oneshot, pane `PHASE1-S3b-review`) running. `touches: boundaries, identity`: the owner looks before merge.
+  builder's DUPLICATE question ruled (stands). Codex review: two P2 (F1 a superseded reread claims "refreshed", also in
+  BO-05's `load`; F2 = L1). **Round 2 running** (resume 1 of 2), both models fixed. Owner looks before merge.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 - **For later task files** (detail: journal 2026-10-24): S4a's inputs, incl. **DESIGN-020 Q1** (option-name
