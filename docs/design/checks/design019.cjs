@@ -54,7 +54,7 @@ const check=(passed,name,detail)=>report.checks.push({passed:!!passed,name,...(!
  await go();const records=await fx('items');
  for(const r of records){
   await go();const link=new URL(await row(r.id).locator('[data-edit]').getAttribute('href'),p.url());
-  check(link.pathname.endsWith('/prototype/back-office/item-editor.html')&&link.searchParams.get('item')===r.id&&link.searchParams.get('category')===r.category&&link.searchParams.get('returnItem')===r.id,'Edit carries exact subject '+r.id,link.href);
+  check(link.pathname.endsWith('/frost/back-office/item-editor.html')&&link.searchParams.get('item')===r.id&&link.searchParams.get('category')===r.category&&link.searchParams.get('returnItem')===r.id,'Edit carries exact subject '+r.id,link.href);
   await row(r.id).locator('[data-availability]').click();
   check((await named(r.id)).available===!r.available&&(await p.locator('#page-status').innerText()).includes(r.name)&&!(await p.locator('#menu-editor').isVisible()),'availability changes only clicked subject '+r.id);
   check((await fx('items')).filter(x=>x.id!==r.id).every(x=>x.available===records.find(y=>y.id===x.id).available),'other availability unchanged '+r.id);

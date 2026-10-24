@@ -1820,7 +1820,9 @@ answer advances it to the answered version only when that version is exactly the
 standing version plus one, or equal to it for an unchanged answer. Otherwise the
 list keeps its standing version, so the next edit opened from it is refused
 `CATALOG_CHANGED` and rereads. An editor carries the list's standing version at
-the moment it opens.
+the moment it opens. (Clarified by the lead's ruling on DESIGN-020's Question 4:
+this sentence is about BO-03's inline editors. BO-04, a screen of its own, builds
+on its own read of the item and the catalog version when it opens.)
 
 **State commands on grouped lists — behaviour.** Grouping does not change the
 status-command rule: 86, available again, archive and restore open no form and
@@ -1870,3 +1872,170 @@ Handoff. The partial-list title is “The menu list may be out of date”. The
 quick-sale lease refusal is marked Phase 4 and says “Try again when payment is
 no longer in progress.” BO-04 links carry item identity; DESIGN-020 consumes
 that identity and owns the visible editor and return walk.
+
+### Configuration forms — DESIGN-020 additions (awaiting review)
+
+DESIGN-020 (BO-04 Item editor) adds the rules below for every later
+configuration form. Each is marked **behaviour** (binding on every form that
+meets the case) or **BO-04 copy and layout** (BO-04's own words and
+composition). One rule above gains a lead-ruled exception, for child rows only:
+DESIGN-018's “Nothing is resent, merged field by field or chosen for the
+manager” (see *The stale-draft refusal over a form with child rows*). Every other
+rule above is unchanged; each addition applies them to a case they did not yet
+meet.
+
+**The money input — behaviour; BO-07's fixed-amount preset reuses it.** The
+manager types whole minor units of the installation currency (whole rupiah
+for IDR at precision 0). Before checking, trim surrounding spaces. Accepted:
+ASCII digits only (`10000`, leading zeros allowed: `00010`), or digits grouped
+with `.` exactly as the display groups them: one to three digits, then groups
+of exactly three (`10.000`, `99.999.999`). A field that allows a negative value
+(a variant's price change) also accepts one ASCII `+` or `-` directly before the
+digits. Refusals, checked in this order, each placed on the field before
+anything is sent:
+
+| Order | Input | Refused when |
+|---|---|---|
+| 1 | Any | empty after trimming |
+| 2 | A field that allows no negative value | it starts with `-` |
+| 3 | Any | anything else that is not such a number: letters, a space inside, a `,`, a decimal part (`10.00`, `1000.5`), a group that is not three digits (`1.00.000`), a `+` where no sign is allowed, an exponent, a Unicode minus `−`, a space between the sign and the digits, a non-ASCII digit |
+| 4 | Any | outside the field's bounds |
+
+The client converts exactly, on strings: remove every `.`, drop a `+`, drop
+leading zeros (keeping one `0`), and write `-0` as `0`. The result is the
+canonical base-10 integer string that crosses the API (C1 §0); a bound is
+checked on that string as an integer (BigInt, or by length and then digit by
+digit), never through a float (B-1). The field shows a stored or accepted value
+grouped with `.` every three digits from the right, `-` directly before a
+negative change, no `+`, no currency symbol (`100.000`, `-10.000`, `0`). A
+refused value stays exactly as typed; the form never regroups text it has
+refused. The field sits under a read-only installation fact (above) that names
+the currency and its decimal places. Bounds are the field's own (BO-04 below;
+BO-07's preset sets its own).
+
+**A form with two child lists in one save — behaviour.** A record that owns
+child rows of two kinds (an item's variants and modifiers) edits them as two
+separate, named lists inside the one form, never as one mixed list. Every child
+row is a real editable row with its own labelled fields and inline errors.
+
+- *Add.* Each list has its own Add action. A new row goes last in its list,
+  is marked as not saved, and takes focus in its first field.
+- *Remove.* Removing a saved row marks it pending removal: the row collapses to
+  its name, says it will be removed when the form is saved, and offers Undo,
+  which returns it to its place with its draft values and focuses its first
+  field. A pending-removal row leaves the list's validation and order. Removing
+  a new, unsaved row deletes it at once (nothing was saved, and Add makes it
+  again) and focuses the list's Add action. Removal takes effect only on Save;
+  the saved row is then set inactive and leaves the form when the save is
+  answered. A removed row is never restored; adding the same name again later
+  makes a new row. **No confirmation:** before Save, Undo reverses it; after
+  Save, what the floor can sell is restored by adding the row again, and
+  existing orders keep their own snapshots (B-8). Only the row's identity is
+  not restored, which nobody sees (ARCH-002's test).
+- *Order.* Rows are numbered by position among the active rows of their list.
+  Move up and Move down change the draft only, as DESIGN-019's reorder without
+  dragging: the first row's Move up and the last row's Move down are disabled,
+  and focus stays on the moved row's control, or its other move control at an
+  end. The row Move was pressed on counts as touched (below). The order of each
+  list is part of the one save.
+- *Names and labels.* A row's fields are labelled by kind and position
+  (“Variant 2 name”), and its controls are named the same way (“Remove variant
+  2”), so a name never goes stale while the manager types. A pending-removal
+  row, which has no position and cannot be edited, is named by its saved name.
+- *Validation.* On Save, every field of the record and of every active child
+  row is checked; the first invalid field in reading order takes focus (the
+  record's fields, then each list top to bottom, name before amount). A name
+  that must be unique within its list is checked locally, case-insensitively,
+  after trimming, among the list's active rows; the refusal is placed on the
+  later row's name. A pending-removal row's name is free for another row in the
+  same save. A duplicate refusal belongs to its list, not to one field: any name
+  edit, removal or Undo in the list re-runs the duplicate check over the list's
+  active rows and clears each duplicate refusal that no longer holds, so the
+  conflict can be resolved through either row. This adds no new refusal before
+  Save; Save validates afresh.
+- *One save.* Save sends one command for everything on the screen. A create
+  sends the record with both lists in order and carries no version. An edit
+  carries the version the form builds on and an explicit list of what changed
+  (C1 §2.3), never a replacement: the record's changed fields; for each list,
+  the rows added (in order), the rows edited (by id, only their changed
+  fields), the rows removed (by id), and the complete new order of the list's
+  active rows whenever it differs from the opening order, which includes any
+  add or removal. Dirty means the draft differs from its opening value in any
+  field, row or order. Pending disables every field, Add, Remove, Undo and move
+  control, as it disables the fields of any form.
+
+**The stale-draft refusal over a form with child rows — behaviour.** DESIGN-018's
+stale-draft refusal holds as written, with these additions for the child lists
+(lead ruling, DESIGN-020).
+
+- *The comparison* shows the current record's fields, marking each that
+  differs from the draft, and each current list in its current order. Every
+  row the draft's base had that the current record no longer has is listed as
+  removed from the current record.
+- *Keep my changes* follows one principle, a **lead-ruled exception to
+  DESIGN-018's “nothing is merged” sentence, for child rows only** (DESIGN-020,
+  round 2): *a row the draft touched keeps the draft's values, whole; a row the
+  draft did not touch follows the current record.* The record's own fields are
+  one row, which the draft always touches, so they stay the draft's, whole, as
+  DESIGN-018 says. A child row is touched only if the manager added it, edited
+  its name or amount, removed it, or pressed Move up or Move down on it; a row
+  whose position shifted because another row was added, removed or moved is not
+  touched. Nothing is merged field by field inside a row. Each list is rebuilt
+  from the current record's list:
+  (a) an untouched row takes the current record's values; if it was removed
+  meanwhile, it leaves the draft under either choice, and the notice does not
+  mention it;
+  (b) a touched row removed meanwhile is added back as a new, unsaved row with
+  no old identity, sent as an added row by the next Save, and the notice says so
+  before the choice, naming the row by its saved name; a touched row that still
+  exists keeps all the draft's values (a row the draft edited keeps its name and
+  amount even if the current record changed either); a row the draft marked for
+  removal stays pending removal if it still exists, and leaves if it was removed
+  meanwhile; a new draft row stays new;
+  *order:* if the draft moved no row in that list, the list takes the current
+  order, with the draft's added rows last in the order they were added; if the
+  draft moved any row in it, the list takes the draft's order for the rows it
+  holds, with rows the current record added last. A row pending removal keeps its
+  place in that order, so Undo returns it in place and is not a reorder. The
+  next Save's order is exactly this order;
+  (c) the local checks run again over the result, so a row whose name an active
+  row of the current record now holds is refused on that field, and Save stays
+  held, with focus on that field, until it is fixed.
+- *Use current* replaces the fields and both lists with the record just read;
+  the form is clean against it.
+- (d) Neither choice sends anything. Save, the next explicit step, carries the
+  version just read.
+
+**A create refused because its parent was archived — behaviour.** A create
+carries no version, but a create into a parent archived meanwhile is refused
+`CATALOG_CHANGED` (C1 §2.3). Nothing is written, the draft is kept, and the
+parent field is marked with the refusal while still showing the archived parent,
+so the draft is unchanged. Save is held, with a visible reason, until an active
+parent is chosen; focus goes to the parent field. An edit that moves a record
+into a parent archived meanwhile is the ordinary stale-draft refusal, with the
+parent field refused after either choice until an active parent is chosen.
+
+**Name lengths count code points.** BO-04's lengths below are counted in Unicode
+code points, as zod and PostgreSQL count them. (The UTF-16 wording in the BO-05
+and BO-03 rules above is being corrected separately; this addition does not
+change those rules.)
+
+**BO-04 copy and layout.** `frost/back-office/item-editor.html` is the consumer;
+its exact copy, accessible names, focus targets and rules tables are in
+DESIGN-020's Handoff. BO-04 is its own screen in the Phase 1 frame (Menu
+current), not a panel on BO-03. One bordered form holds *Item details* (the
+read-only currency and decimal places, Item name, Category, Base price), then
+*Variants* and *Modifiers* as two sections, each with its Add action, then a
+sticky footer with the save hint, Cancel and Save. In the stale state the form
+narrows to two thirds and *Current item* sits beside it. The heading is the
+item's name with its status as plain facts: “Archived item · ” when archived,
+then “Available” or “86 · Unavailable”, then “ · Hidden from the POS · category
+archived” when its category is archived (BO-03's wording); or “New item” with
+“Not saved yet”. BO-04 offers no 86, available again, archive or restore:
+they are BO-03's row actions. It reads the item and the catalog version itself
+when it opens, and its draft builds on that read (lead ruling, DESIGN-020
+Question 4). Save returns to BO-03 on the
+same row, which announces the result and focuses the row's Edit. Item names are
+1–64 code points; variant and modifier names 1–32; base price 0 to 99.999.999;
+a variant's change −99.999.999 to 99.999.999; a modifier's change 0 to
+99.999.999. No new token is introduced.

@@ -1267,3 +1267,254 @@ window.MOCKUPS.push({path:"back-office/today.html",title:"Today",directions:["fr
 window.MOCKUPS.push({path:"back-office/tables.html",title:"Tables",directions:["frost"],width:1440,height:900,states:[['default','Active and inactive tables'],['empty','No tables — starting state'],['loading','Reading tables'],['load-error','Read failed'],['overflow','Long floor — 32-character label'],['create','New table'],['rename','Edit active table'],['rename-inactive','Edit inactive table'],['invalid-empty','Empty label'],['invalid-long','Label over 32 characters'],['invalid-control','Pasted control character'],['saving','Save pending'],['saved','Saved table'],['duplicate-create','Label in use — create refused'],['duplicate-rename','Label in use — rename refused'],['duplicate-reactivate','Label in use — reactivation refused'],['deactivated','Deactivated table retained'],['reactivated','Reactivated table'],['failure','General failure — draft kept'],['unknown','Outcome unknown — list reread'],['unknown-read-failed','Outcome unknown — reread unavailable'],['pending-deactivate','Deactivation pending'],['unknown-deactivate','Deactivation outcome unknown'],['pending-reactivate','Reactivation pending'],['unknown-reactivate','Reactivation outcome unknown'],['unsaved','Cancel — stay or discard'],['unsaved-escape','Escape — stay or discard'],['unsaved-back','Browser back — stay or discard'],['unsaved-rail','Tables entry — stay or discard'],['unsaved-logout','Log out — stay or discard'],['leave-pending','Leave while saving'],['leave-unknown','Leave after unknown outcome'],['reauth','M-6 over unsaved table'],['bo01-draft','BO-01 — isolated table draft'],['reauth-decision','M-6 over departure decision'],['bo01-decision','BO-01 — departure dialog closed'],['rejected-phase2','Phase 2 only — OPEN order refusal']]});
 
 window.MOCKUPS.push({path:"back-office/settings.html",title:"Settings",directions:["frost"],width:1440,height:900,states:[['default','Version 4 in force'],['first-run','First run — nothing saved, every field empty'],['first-run-closed','First run — form closed'],['loading','Reading settings and methods'],['load-error','Settings read failed'],['longest','Longest stored values'],['edit','Edit — opened from Change tax rate'],['edit-service','Edit — opened from Change service charge rate'],['edit-longest','Edit — longest value in every field'],['invalid-rate-empty','Rate empty'],['invalid-rate-format','Rate not a number'],['invalid-rate-negative','Rate negative'],['invalid-rate-over','Rate over 100'],['invalid-rate-decimals','Rate with five decimal places'],['invalid-required','Required details empty'],['invalid-long','Every detail one character too long'],['invalid-address-lines','Address with a fourth line'],['invalid-control','Pasted control characters'],['invalid-phone','Phone with letters'],['confirm-rates','Rate change — confirmation'],['saving','Save pending'],['saved','Saved — version 5 in force'],['unchanged','Saved with nothing changed'],['stale','Settings changed — draft kept'],['stale-reauth','Settings changed — after M-6'],['stale-own-tab','Settings changed — saved by you in another tab'],['failure','General failure — draft kept'],['unknown','Outcome unknown — version unchanged'],['unknown-changed','Outcome unknown — newer version read'],['unknown-read-failed','Outcome unknown — reread unavailable'],['unsaved','Cancel — stay or discard'],['unsaved-escape','Escape — stay or discard'],['unsaved-back','Browser back — stay or discard'],['unsaved-rail','Rail entry — stay or discard'],['unsaved-logout','Log out — keep or discard'],['unsaved-switch','Open a payment method — stay or discard'],['leave-pending','Leave while saving'],['leave-unknown','Leave after unknown outcome'],['reauth','M-6 over unsaved settings'],['bo01-draft','BO-01 — settings draft held'],['reauth-confirm','M-6 over the rate confirmation'],['bo01-confirm','BO-01 — confirmation closed and held'],['methods-empty','No custom payment methods'],['methods-load-error','Payment methods read failed'],['methods-overflow','Long method list — 32-character name'],['method-create','New payment method'],['method-rename','Edit active method'],['method-rename-inactive','Edit inactive method'],['method-invalid-empty','Method name empty'],['method-invalid-long','Method name over 32 characters'],['method-invalid-control','Method name with control character'],['method-saving','Method save pending'],['method-saved','Method saved'],['method-duplicate-create','Name in use — create refused'],['method-duplicate-rename','Name in use — rename refused'],['method-duplicate-reactivate','Name in use — reactivation refused'],['method-deactivated','Method deactivated'],['method-reactivated','Method reactivated'],['method-pending-deactivate','Deactivation pending'],['method-unknown-deactivate','Deactivation outcome unknown'],['method-failure','Method general failure — draft kept'],['method-unknown','Method outcome unknown — list reread'],['method-partial','Saved while the list read stands failed'],['method-unsaved','Method Cancel — stay or discard'],['method-unsaved-switch','Change a setting — stay or discard']]});
+
+window.MOCKUPS.push({path:"back-office/item-editor.html",title:"Item editor",directions:["frost"],width:1440,height:900,states:[
+  [
+    "default",
+    "Editing an item"
+  ],
+  [
+    "new",
+    "New item in its category"
+  ],
+  [
+    "loading",
+    "Reading the item"
+  ],
+  [
+    "load-error",
+    "Item read failed"
+  ],
+  [
+    "not-found",
+    "Unknown subject"
+  ],
+  [
+    "none",
+    "No variants or modifiers"
+  ],
+  [
+    "archived",
+    "Editing an archived item"
+  ],
+  [
+    "eightysix",
+    "Editing an unavailable item"
+  ],
+  [
+    "archived-eightysix",
+    "Editing an archived, 86’d item"
+  ],
+  [
+    "in-archived-category",
+    "Item in an archived category"
+  ],
+  [
+    "overflow",
+    "Longest names and largest amounts"
+  ],
+  [
+    "floor",
+    "Negative variant floors at zero"
+  ],
+  [
+    "saving",
+    "One save pending"
+  ],
+  [
+    "saved",
+    "Saved item, ready to return"
+  ],
+  [
+    "unchanged",
+    "Nothing changed"
+  ],
+  [
+    "duplicate-create",
+    "New item name in use"
+  ],
+  [
+    "duplicate-rename",
+    "Renamed item name in use"
+  ],
+  [
+    "duplicate-archived-category",
+    "Name held in an archived category"
+  ],
+  [
+    "failure",
+    "Definite failure"
+  ],
+  [
+    "unknown",
+    "Outcome unknown, same version"
+  ],
+  [
+    "unknown-changed",
+    "Outcome unknown, newer version"
+  ],
+  [
+    "unknown-read-failed",
+    "Outcome unknown, reread failed"
+  ],
+  [
+    "stale",
+    "Catalog changed, draft kept"
+  ],
+  [
+    "stale-same",
+    "Catalog changed elsewhere, same item"
+  ],
+  [
+    "stale-read-failed",
+    "Catalog changed, reread failed"
+  ],
+  [
+    "stale-removed",
+    "Changed variant removed elsewhere"
+  ],
+  [
+    "stale-duplicate",
+    "Kept option conflicts with a current name"
+  ],
+  [
+    "create-category-archived",
+    "New item category archived meanwhile"
+  ],
+  [
+    "move-category-archived",
+    "Destination category archived meanwhile"
+  ],
+  [
+    "remove-pending",
+    "Saved option pending removal"
+  ],
+  [
+    "remove-undone",
+    "Removal undone"
+  ],
+  [
+    "reorder",
+    "Options reordered in draft"
+  ],
+  [
+    "unsaved",
+    "Departure decision"
+  ],
+  [
+    "unsaved-logout",
+    "Logout decision"
+  ],
+  [
+    "leave-pending",
+    "Departure while save pending"
+  ],
+  [
+    "leave-unknown",
+    "Departure with unknown outcome"
+  ],
+  [
+    "reauth",
+    "M-6 over an item draft"
+  ],
+  [
+    "bo01-draft",
+    "BO-01 with draft held"
+  ],
+  [
+    "reauth-decision",
+    "M-6 over departure decision"
+  ],
+  [
+    "bo01-decision",
+    "BO-01 with departure held"
+  ],
+  [
+    "invalid-item-empty",
+    "Item name — empty"
+  ],
+  [
+    "invalid-item-long",
+    "Item name — long"
+  ],
+  [
+    "invalid-item-control",
+    "Item name — control"
+  ],
+  [
+    "invalid-variant-empty",
+    "Variant name — empty"
+  ],
+  [
+    "invalid-variant-long",
+    "Variant name — long"
+  ],
+  [
+    "invalid-variant-control",
+    "Variant name — control"
+  ],
+  [
+    "invalid-variant-duplicate",
+    "Variant name — duplicate"
+  ],
+  [
+    "invalid-modifier-empty",
+    "Modifier name — empty"
+  ],
+  [
+    "invalid-modifier-long",
+    "Modifier name — long"
+  ],
+  [
+    "invalid-modifier-control",
+    "Modifier name — control"
+  ],
+  [
+    "invalid-modifier-duplicate",
+    "Modifier name — duplicate"
+  ],
+  [
+    "invalid-base-empty",
+    "Base — empty"
+  ],
+  [
+    "invalid-base-format",
+    "Base — format"
+  ],
+  [
+    "invalid-base-bounds",
+    "Base — bounds"
+  ],
+  [
+    "invalid-base-negative",
+    "Base — negative"
+  ],
+  [
+    "invalid-variant-delta-empty",
+    "Variant-Delta — empty"
+  ],
+  [
+    "invalid-variant-delta-format",
+    "Variant-Delta — format"
+  ],
+  [
+    "invalid-variant-delta-bounds",
+    "Variant-Delta — bounds"
+  ],
+  [
+    "invalid-modifier-delta-empty",
+    "Modifier-Delta — empty"
+  ],
+  [
+    "invalid-modifier-delta-format",
+    "Modifier-Delta — format"
+  ],
+  [
+    "invalid-modifier-delta-bounds",
+    "Modifier-Delta — bounds"
+  ],
+  [
+    "invalid-modifier-delta-negative",
+    "Modifier-Delta — negative"
+  ]
+]});

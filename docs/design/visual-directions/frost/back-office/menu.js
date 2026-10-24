@@ -33,7 +33,10 @@
   function editorHref(r,c){
     const query=new URLSearchParams({item:r?.id||'',category:c.id,return:'frost-menu',returnItem:r?.id||''});
     if(!r)query.set('state','new');
-    return '../../../prototype/back-office/item-editor.html?'+query;
+    // URL-only review plumbing. S4c replaces this snapshot with the real catalog read.
+    if(r)query.set('fixtureItem',JSON.stringify(r));
+    query.set('fixtureCategory',JSON.stringify({id:c.id,name:c.name,active:c.active,order:c.order}));
+    return 'item-editor.html?'+query;
   }
   const button=(text,attr,name)=>'<button class="office-button small" '+attr+' aria-label="'+esc(name)+'">'+text+'</button>';
   function render(){
@@ -287,7 +290,25 @@
     cat('mains').name='Category ABCDEFGHIJKLMNOPQRSTUVW';
     for(let i=0;i<48;i++)items.push({id:'long-'+i,name:('Menu item '+String(i+1).padStart(2,'0')+' ').padEnd(80,'W'),category:'mains',price:'99999999',variants:3,modifiers:2,active:true,available:true,order:20+i});
   }
+  // URL-only review return plumbing, not product behaviour. S4c replaces it with the real list read.
+  // Apply only the answered item. A missing originating category may be inserted solely to host it;
+  // never replace an existing category or change another item. Count rules remain in render().
+  let returned=null;
+  try {
+    const value=JSON.parse(params.get('returnedItem')), host=JSON.parse(params.get('returnedCategory'));
+    if(value&&value.id===params.get('item')&&typeof value.name==='string'&&typeof value.price==='string'){
+      if(!cat(value.category)&&host?.id===value.category)categories.push({id:host.id,name:host.name,active:host.active,order:host.order});
+      if(cat(value.category)){
+        returned={id:value.id,name:value.name,category:value.category,price:value.price,variants:value.variants,modifiers:value.modifiers,active:value.active,available:value.available,order:value.order};
+        const old=item(returned.id);if(old)Object.assign(old,returned);else items.push(returned);
+      }
+    }
+  }catch{/* A malformed review URL never changes the list. */}
   render();
+  // An unchanged answer names the version still in force; it never claims a save. A clean return from a
+  // new item has no record, so focus goes back to its opener (New category if that category is gone).
+  if(returned){if(params.get('saved')==='1')page(returned.name+' saved.','status',false);else if(params.get('saved')==='unchanged'&&/^\d+$/.test(params.get('version')||''))page('Nothing changed. Menu version '+params.get('version')+' is still current.','status',false);focus(editSelector('item',returned.id));}
+  else if(params.has('returnItem')&&!params.get('item')){const opener=$('[data-new-item="'+CSS.escape(params.get('category')||'')+'"]');opener?opener.focus():focus('#new-category');}
   function directForm(kind='rename',id='mains'){openForm(kind,id,kind==='create'?'#new-category':kind==='categories'?'#reorder-categories':kind==='items'?'[data-reorder="'+id+'"]':'[data-rename="'+id+'"]');if(kind==='rename')$('#menu-name').value='Main plates';}
   function directAnswer(answer){$('#fixture-response').value='pending';submit();finish(answer);$('#fixture-response').value='saved';}
   const formStates=['category','rename','rename-archived','category-invalid','invalid-long','invalid-control','saving','saved','duplicate-create','duplicate-rename','failure','unknown','unknown-changed','unknown-read-failed','stale','stale-read-failed','unsaved','unsaved-logout','leave-pending','leave-unknown','reauth','bo01-draft','reauth-decision','bo01-decision'];
