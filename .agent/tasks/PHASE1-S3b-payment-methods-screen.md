@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries, identity]
 depends_on: [PHASE1-S3a]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/payment-methods.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S3b — BO-08 Payment methods in the back office
@@ -302,6 +302,31 @@ add a test that `Cafe` and `Café` are not the same name while `QRIS` and `qris`
 configuration-form rules, S1b's list behaviour (rounds 2 to 4) and S2b's round 2 F2. Above all, check that no method
 command is ever resent, that one command slot covers both parts, that the held result is presented once, and that cash
 and card hold no control in any state.
+
+## Round 2 — the review's F1 and F2 (lead rulings, 2026-10-24)
+
+The Codex review (`.agent/reviews/PHASE1-S3b-review.md`, verdict *findings*, two P2) is accepted in full. Every fix gets a
+test that fails against round 1, which you run and record. Apply exactly this, then add a section *Round 2* at the end of
+the Handoff (each finding, its test, the red you observed, the counts), and end it with `DONE`.
+
+- **F1, a superseded reread must not claim the list was refreshed.** `loadMethods` returns its own response's success
+  even when a newer read has superseded it and its rows were never applied. Fix: the value a caller receives describes
+  **the list on screen**. A read that is still the newest returns whether it succeeded, as now. A read that was
+  superseded waits for the newest read in flight and returns that read's outcome (repeat if that one is superseded in
+  turn), so the refreshed or could-not-be-refreshed sentence always matches what the list shows. The gate and decision
+  recheck after the await (ruling 11) stays where it is, after the final outcome is known, and a held result keeps that
+  outcome. No extra request is sent: the caller waits on a read already in flight, never starts one. Test the
+  reviewer's rail scenario in both completion orders (the older reread succeeds after the newer visit read fails: "could
+  not be refreshed"; the newer visit read succeeds after the older reread fails: "has been refreshed"), with exactly one
+  command sent and no extra read. **BO-05's `load` in `tables/model.ts` has the same defect** (it returns `rows !==
+  null` whether or not `mine === readSequence`), and later forms copy this pattern: apply the same fix there, with the
+  same pair of tests through BO-05's unknown outcome. This widens the slice to one BO-05 function on purpose; change
+  nothing else in BO-05, and list the new BO-05 tests in the Handoff.
+- **F2 and lead finding L1, the holder marker.** `sameName` compares `a.toLowerCase() === b.toLowerCase()`, matching the
+  server's `lower(name)` index; correct its comment. The sort keeps the collator (ruling 5). Tests: `QRIS` and `qris`
+  are the same name; `Cafe` and `Café` are not; `GoPay 2` and `GoPay 02` are not; and on screen, with active `Cafe` and
+  `Café`, a `DUPLICATE` for `cafe` marks only `Cafe`.
+- **Then** `npm run verify` and `npm run test:e2e:all`, commit, and report as before. Change nothing else.
 
 ## Handoff
 
