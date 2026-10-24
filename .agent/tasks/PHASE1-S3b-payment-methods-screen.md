@@ -442,4 +442,36 @@ the baseline before starting: 116 files, 4367 tests.
 
 Nothing is blocking. The development database `pos` was not touched.
 
+### Round 2
+
+Commit `f22cee1`. Both findings applied as ruled; nothing else changed. This supersedes decision 3 above (the collator
+marker comparison).
+
+**F1, a superseded reread must not claim the list was refreshed.** `loadMethods` in `settings/model.ts` is now a thin
+wrapper over the old body (`readMethods`): it records the newest read's promise, and a read that finds itself superseded
+(`mine !== methodsReadSequence`) returns that newest promise instead of its own `rows !== null`. If the newest is
+superseded in turn it does the same, so the value always describes the list on screen. It sends no request. The gate and
+decision recheck after the await is untouched and sits after the final outcome is known, and a held result keeps that
+outcome. BO-05's `load` in `tables/model.ts` had the identical defect and got the identical fix (`load` wrapping
+`readList`, with `newestRead`); nothing else in BO-05 changed.
+*Tests:* `methods-round2.test.tsx` runs the reviewer's rail scenario in both completion orders through an unknown
+deactivate (older reread succeeds after the newer visit read fails, so "The list could not be refreshed."; newer succeeds
+after the older fails, so "The list has been refreshed."), with one deactivate sent and exactly three methods reads.
+**New BO-05 tests:** `tables-round5.test.tsx`, the same pair through an unknown deactivate on Tables, one command, three
+list reads. *Red observed against round 1:* all four fail with the opposite sentence (the first expected "could not be
+refreshed" and got "has been refreshed"; the second the reverse).
+
+**F2 and L1, the holder marker.** `sameName` is now `a.toLowerCase() === b.toLowerCase()`, with its comment corrected; the
+sort keeps the collator. *Tests:* `methods-name.test.ts` gained `QRIS`/`qris` same, and `Cafe`/`Café` and `GoPay 2`/`GoPay 02`
+different; `methods-round2.test.tsx` has the on-screen case (active `Cafe` and `Café`, a `DUPLICATE` for `cafe`, only
+`Cafe` marked). *Red against round 1:* `sameName('Cafe','Café')` returned true, and the screen showed two markers (expected
+1, got 2).
+
+I took the round-1 red by restoring the three source files from `HEAD`, running the new tests (6 failed, 21 passed), then
+re-applying my edits by hand. A first attempt to save the changes as a patch file did not write the file, so one verify
+run during that step failed on the same six tests before the edits went back in; the final run below is of the final tree.
+
+**Counts.** `npm run verify`: **122 files, 4486 tests passed** (round 1: 120 and 4480; +2 files, +6 tests).
+`npm run test:e2e:all`: **78 passed**, unchanged.
+
 DONE
