@@ -170,3 +170,68 @@ export const keptTitle = (version: number): string => `Your changes now build on
 export const KEPT_BODY = 'Nothing has been saved yet. Press Save to save them.';
 export const usedTitle = (version: number): string => `The form now shows version ${version}`;
 export const USED_BODY = 'Nothing was saved. Edit it and save, or Cancel to close.';
+
+// The payment-methods part (PHASE1-S3b), DESIGN-018's rows from "Methods part" to "Method form
+// pending / failure / unknown". The method form's pending, failure and unknown notices, the
+// waiting sentence and the departure decision are BO-05's words, quoted verbatim there
+// (`../copy.js`); they are not repeated here.
+export const METHODS = 'Payment methods';
+export const methodCounts = (active: number, inactive: number): string =>
+  `${active} active · ${inactive} inactive custom methods`;
+export const METHODS_CAPTION = 'Cash and card are always offered · Custom methods: active first, names in order';
+export const METHODS_LIST_LABEL = 'Payment method list';
+export const COLUMN_NAME = 'Name';
+export const COLUMN_STATUS = 'Status';
+export const COLUMN_ACTIONS = 'Actions';
+/** Cash and card are fixed kinds, not records: their display names are client copy (consult C2 section 8). */
+export const FIXED_METHODS = ['Cash', 'Card'] as const;
+export const ALWAYS_OFFERED = 'Always offered';
+export const STATUS_ACTIVE = 'Active';
+export const STATUS_INACTIVE = 'Inactive';
+export const METHODS_EMPTY =
+  'No custom payment methods yet. Use New payment method for any way of paying other than cash or card.';
+export const NEW_METHOD = 'New payment method';
+export const EDIT = 'Edit';
+export const DEACTIVATE = 'Deactivate';
+export const REACTIVATE = 'Reactivate';
+export const editMethodName = (name: string, active: boolean): string => `Edit ${name} — ${active ? 'active' : 'inactive'}`;
+export const deactivateName = (name: string): string => `Deactivate ${name}`;
+export const reactivateName = (name: string): string => `Reactivate ${name}`;
+
+export const LOADING_METHODS = 'Loading payment methods…';
+export const METHODS_READ_FAILED: NoticeCopy = {
+  title: 'Payment methods could not be loaded',
+  body: 'Try again to read the payment methods.',
+};
+/** A success while the list read stands failed (F4): "could not be loaded" is untrue above a drawn list. */
+export const METHODS_PARTIAL: NoticeCopy = {
+  title: 'The list may be out of date',
+  body: 'Payment methods could not be read again. The rows below are the ones this page knows, including your latest change. Try again to read the full list.',
+};
+
+export const methodEditTitle = (name: string): string => `Edit ${name}`;
+export const METHOD_CREATE_CONTEXT = 'Choose the name cashiers will see when they take payment.';
+export const METHOD_ACTIVE_CONTEXT = 'Active method. Changes keep this method’s history.';
+export const METHOD_INACTIVE_CONTEXT = 'Inactive method. Saving its name does not reactivate it.';
+export const METHOD_NAME = 'Method name';
+export const METHOD_HELP = '1–32 characters. Active methods must have different names.';
+export const NAME_EMPTY = 'Enter a method name.';
+export const NAME_LONG = 'Use 32 characters or fewer.';
+export const NAME_CONTROL = 'Remove control characters from the name.';
+export const NAME_DUPLICATE = 'An active payment method already uses this name. Choose another name.';
+export const NAME_DUPLICATE_REACTIVATE =
+  'An active payment method already uses this name. Rename this inactive method, save, then reactivate it.';
+export const NAME_IN_USE = 'Name in use';
+
+export const methodSaved = (name: string): string => `${name} saved.`;
+export const methodDeactivated = (name: string): string => `${name} deactivated. It is kept for history.`;
+export const methodReactivated = (name: string): string => `${name} reactivated.`;
+export const methodDeactivating = (name: string): string => `Deactivating ${name}…`;
+export const methodReactivating = (name: string): string => `Reactivating ${name}…`;
+export const methodUnknown = (name: string): string =>
+  `${name}: the outcome could not be confirmed. The list has been refreshed. Nothing was sent again.`;
+export const methodUnknownUnread = (name: string): string =>
+  `${name}: the outcome could not be confirmed. The list could not be refreshed. Nothing was sent again.`;
+export const methodFailed = (name: string): string =>
+  `Something went wrong. ${name} was not changed. Use its row action to try again.`;
+export const methodSessionRefused = (name: string): string => `${name} was not changed. Use its row action to try again.`;

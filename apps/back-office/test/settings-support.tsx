@@ -11,6 +11,27 @@ export const READ = 'GET /api/back-office/config/settings';
 export const SAVE = 'POST /api/back-office/config/settings/save';
 export const SETTINGS_PATH = '/back-office/settings';
 
+// BO-08's payment-methods part (PHASE1-S3b): the five tender-methods routes and a few methods.
+export const METHODS = 'GET /api/back-office/config/tender-methods';
+export const M_CREATE = 'POST /api/back-office/config/tender-methods/create';
+export const M_UPDATE = 'POST /api/back-office/config/tender-methods/update';
+export const M_DEACTIVATE = 'POST /api/back-office/config/tender-methods/deactivate';
+export const M_REACTIVATE = 'POST /api/back-office/config/tender-methods/reactivate';
+
+export const makeMethod = (n: number, name: string, isActive: boolean) => ({
+  tenderMethodId: `aaaaaaaa-aaaa-4aaa-8aaa-${String(n).padStart(12, '0')}`,
+  name,
+  isActive,
+});
+export const QRIS = makeMethod(1, 'qris', false);
+export const BANK = makeMethod(2, 'Bank transfer', true);
+export const GOPAY2 = makeMethod(3, 'GoPay 2', true);
+export const GOPAY10 = makeMethod(4, 'GoPay 10', true);
+export type MethodRow = typeof QRIS;
+
+export const methodsView = (...rows: MethodRow[]) => ok({ tenderMethods: rows });
+export const methodAnswer = (row: MethodRow) => ok({ tenderMethod: row });
+
 export const INSTALLATION = { currency: 'IDR', minorUnitPrecision: 0 };
 
 /** A clock reading in the browser's own zone, so the facts line reads the same wherever the tests run. */
@@ -49,10 +70,12 @@ export const settingsView = (current: SettingsVersionView | null) => ok({ instal
 /** A harness at BO-08's path, signed in, with the first settings read answered. */
 export async function openSettings(
   h: ReturnType<typeof harness>,
-  first: ReturnType<typeof settingsView> = settingsView(V4)
+  first: ReturnType<typeof settingsView> = settingsView(V4),
+  methods: ReturnType<typeof methodsView> = methodsView()
 ) {
   h.reply(ME, ok(VIEW));
   h.reply(READ, first);
+  h.reply(METHODS, methods);
   const view = mount(h.store, <Screens />);
   await h.settle();
   return view;
@@ -81,6 +104,21 @@ export function typeIn(el: Box, value: string) {
 }
 
 export const fill = (root: ParentNode, label: string, value: string) => typeIn(box(root, label), value);
+
+export const methodNameField = (host: HTMLElement) => host.querySelector<HTMLInputElement>('#method-name');
+export const methodsStatus = (host: HTMLElement) => host.querySelector<HTMLElement>('#methods-status');
+export const methodNotice = (host: HTMLElement) => host.querySelector<HTMLElement>('#method-notice');
+export const methodPanel = (host: HTMLElement) => host.querySelector<HTMLElement>('#method-editor');
+/** The names in the methods table, in the order they are drawn: the two fixed rows, then the custom ones. */
+export const methodRowNames = (host: HTMLElement) =>
+  [...host.querySelectorAll('#methods-list tbody tr')].map((tr) => tr.querySelector('td')!.firstChild!.textContent);
+export const methodRow = (host: HTMLElement, name: string) =>
+  [...host.querySelectorAll<HTMLElement>('#methods-list tbody tr')].find((tr) => tr.querySelector('td')!.firstChild!.textContent === name)!;
+/** The requests of the methods routes, in order. */
+export const methodCalls = (h: ReturnType<typeof harness>) =>
+  h.calls.filter((c) => c.url.startsWith('/api/back-office/config/tender-methods')).map((c) => `${c.method} ${c.url}`);
+export const methodBody = (h: ReturnType<typeof harness>, key: string, n = 0) =>
+  JSON.parse(h.keyed(key)[n]!.body!) as Record<string, unknown>;
 
 export const facts = (host: HTMLElement) => host.querySelector('#version-facts');
 export const notice = (host: HTMLElement) => host.querySelector<HTMLElement>('#settings-notice');

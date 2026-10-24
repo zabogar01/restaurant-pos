@@ -16,13 +16,7 @@ export type OfficeApi = {
   [P in OfficePath]: (...body: ArgsOf<P>) => Promise<ApiResult<ValueOf<P>>>;
 };
 
-// The tender-methods routes are in `OfficeApi` and not yet in `ConfigApi`: PHASE1-S3b
-// adds them to `ConfigApi`, `configApi()`, `fixtureSession.ts` and `config-api.test.tsx`
-// together with the screen that calls them.
-type ConfigPath = Exclude<
-  Extract<keyof OfficeApi, `/api/back-office/config/${string}`>,
-  `/api/back-office/config/tender-methods${string}`
->;
+type ConfigPath = Extract<keyof OfficeApi, `/api/back-office/config/${string}`>;
 
 /**
  * What a screen may call: the configuration routes and no others (consult C2 section 7).
@@ -41,6 +35,11 @@ export function configApi(api: OfficeApi): ConfigApi {
     '/api/back-office/config/tables/reactivate': api['/api/back-office/config/tables/reactivate'],
     '/api/back-office/config/settings': api['/api/back-office/config/settings'],
     '/api/back-office/config/settings/save': api['/api/back-office/config/settings/save'],
+    '/api/back-office/config/tender-methods': api['/api/back-office/config/tender-methods'],
+    '/api/back-office/config/tender-methods/create': api['/api/back-office/config/tender-methods/create'],
+    '/api/back-office/config/tender-methods/deactivate': api['/api/back-office/config/tender-methods/deactivate'],
+    '/api/back-office/config/tender-methods/update': api['/api/back-office/config/tender-methods/update'],
+    '/api/back-office/config/tender-methods/reactivate': api['/api/back-office/config/tender-methods/reactivate'],
   };
 }
 

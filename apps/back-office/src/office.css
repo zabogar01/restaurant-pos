@@ -119,7 +119,7 @@ b, strong { font-weight: var(--frost-weight-semibold); }
  * BO-08 Settings (PHASE1-S2b), ported from Frost's settings.css
  * (docs/design/visual-directions/frost/back-office/settings.css) for the settings part: the
  * part's head, the read view's groups, the one inline form, the "now in force" lines and the
- * rate confirmation's list. The payment-methods rules are S3's.
+ * rate confirmation's list. The payment-methods rules follow, below the settings rules (PHASE1-S3b).
  */
 .settings-part__head { display: flex; align-items: flex-start; gap: var(--frost-space-4); margin-bottom: var(--frost-space-4); }
 .settings-part__head h2 { margin: 0; font-size: var(--frost-text-18); font-weight: var(--frost-weight-medium); }
@@ -173,4 +173,18 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 #settings-read .office-button { margin-top: var(--frost-space-4); }
 
 /* Openers stay focusable for focus return but read as inert while a command is pending. */
-.settings-action button[aria-disabled='true'], #settings-read button[aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }
+.settings-action button[aria-disabled='true'], #settings-read button[aria-disabled='true'], #new-method[aria-disabled='true'], #method-rows button[aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }
+
+/* Payment methods: BO-05's list and panel (`tables-workspace`, `table-editor`, `table-holder`), scoped to this list. */
+.settings-methods { border-top: var(--frost-divider-stroke); margin-top: var(--frost-space-10); padding-top: var(--frost-space-6); }
+#methods-list caption { text-align: left; color: var(--frost-muted); font-size: var(--frost-text-12); padding-bottom: var(--frost-space-3); }
+#methods-list th:last-child, #methods-list td:last-child { text-align: right; }
+#methods-list td:last-child { white-space: nowrap; }
+#methods-list td:last-child button + button { margin-left: var(--frost-space-2); }
+#methods-list tr[data-active='false'] td { color: var(--frost-muted); }
+#methods-list tr[data-selected='true'] { background: var(--frost-group); }
+#methods-list .table-status { white-space: nowrap; }
+.methods-empty { margin: 0; padding: var(--frost-space-4) var(--frost-space-3); background: var(--frost-elevated); border-bottom: var(--frost-divider-stroke); color: var(--frost-muted); }
+#method-editor label { display: block; margin-bottom: var(--frost-space-1); font-size: var(--frost-text-12); color: var(--frost-muted); }
+#method-notice[data-kind='failure'], #methods-read .office-notice { color: var(--frost-warning); background: var(--frost-warning-surface); border-color: var(--frost-warning); }
+#methods-read .office-button { margin-top: var(--frost-space-4); }

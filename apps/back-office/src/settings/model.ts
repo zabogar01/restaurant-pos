@@ -1,10 +1,19 @@
 import type { ApiResult } from '@pos/api-client';
-import { ErrorCode, SaveSettingsRequest, type SettingsReadView, type SettingsVersionView } from '@pos/contracts';
+import {
+  CreateTenderMethodRequest,
+  ErrorCode,
+  SaveSettingsRequest,
+  UpdateTenderMethodRequest,
+  type SettingsReadView,
+  type SettingsVersionView,
+  type TenderMethodView,
+} from '@pos/contracts';
 import { fieldsInError } from '../forms/fieldsInError.js';
 import type { ConfigApi } from '../session/api.js';
 import type { WorkGuard, WorkStatus } from '../work/guard.js';
 import { NOT_SET_IN_FORCE } from './copy.js';
 import { FIELD_ORDER, RATE_KEYS, TEXT_KEYS, checkDrafts, checkText, draftOf, isRate, type Drafts, type FieldError, type FieldKey, type RateKey } from './fields.js';
+import { checkMethodName, methodMeaning, upsertMethod, type MethodAnswer, type NameError } from './methods.js';
 import { checkRate, percentText } from './rate.js';
 
 // BO-08's settings part, apart from how it is drawn (consult C2 section 6, DESIGN-018 and `D`'s
@@ -17,9 +26,15 @@ import { checkRate, percentText } from './rate.js';
 // would overwrite whatever the reread contained (ADR-012 rule 3).
 //
 // **The screen's state is this model's.** The page registers one guard with `work/guard.ts`
-// and the payment-methods part (S3) adds its own form and command to this state, so that
-// DESIGN-018's one form and one command per screen stays one: `form`, `command`, `decision`
-// and `page` are the screen's, not the settings part's.
+// and the payment-methods part (PHASE1-S3b) adds its own form and commands to this state, so
+// that DESIGN-018's one form open and one command in flight per screen stays one: `command`,
+// `decision` and the guard's status are the screen's. At most one of `form` (settings) and
+// `methodEditor` is open; every opener goes through `leave`, which closes a clean one and asks
+// about a dirty or uncertain one; `command` is one slot, whichever part sent it, and every
+// opener is inert while it is full. A later screen with two parts copies this arrangement.
+//
+// The payment-methods part is BO-05's list and panel inside this screen: its list read, its
+// merge of answered records, its F4 partial state and its commands follow `tables/model.ts`.
 //
 // One model belongs to one working area. A different manager's sign-in changes the area's
 // key, React drops the component, and its model goes with it.
@@ -70,7 +85,8 @@ export interface Confirm {
   also: boolean;
 }
 
-interface Command {
+interface SettingsCommand {
+  kind: 'settings';
   formKey: number;
   /** The version the save carried. */
   expected: number | null;
@@ -79,9 +95,58 @@ interface Command {
   discarded: boolean;
 }
 
+type MethodOp = 'save' | 'deactivate' | 'reactivate';
+
+interface MethodCommand {
+  kind: 'method';
+  op: MethodOp;
+  recordId: string | null;
+  /** The name the page speaks of: the submitted one for a save, the row's for a status command. */
+  name: string;
+  editorKey: number | null;
+  /** The manager discarded the form this was sent from. Its answer still lands in the list, silently. */
+  discarded: boolean;
+}
+
+type Command = SettingsCommand | MethodCommand;
+
 export type PageStatus = { kind: 'saved' | 'unchanged'; version: number } | { kind: 'waiting' };
 
-export type FocusTarget = { field: FieldKey } | { change: FieldKey | 'enter' } | 'notice' | 'save' | 'confirm';
+export type MethodFieldError = NameError | 'duplicate' | 'duplicate-reactivate';
+export type MethodNotice = 'failure' | 'unknown' | 'unknown-unread';
+
+/** The method form (BO-05's panel): one name. */
+export interface MethodEditor {
+  /** Which form this is; a command remembers it, so a late answer knows whether its form is still here. */
+  key: number;
+  /** The record being edited, or null for a new method. */
+  recordId: string | null;
+  /** Whether that record was active when the form opened. */
+  active: boolean;
+  /** The name when the form opened, which names the form; empty for a new method. */
+  openedName: string;
+  original: string;
+  draft: string;
+  error: MethodFieldError | null;
+  notice: MethodNotice | null;
+}
+
+export type MethodsPageStatus =
+  | { kind: 'saved' | 'deactivated' | 'reactivated' | 'deactivating' | 'reactivating' | 'failed' | 'session'; name: string }
+  | { kind: 'unknown'; name: string; unread: boolean }
+  | { kind: 'waiting' };
+
+export type FocusTarget =
+  | { field: FieldKey }
+  | { change: FieldKey | 'enter' }
+  | 'notice'
+  | 'save'
+  | 'confirm'
+  | 'method-name'
+  | 'method-notice'
+  | 'methods-status'
+  | 'new-method'
+  | { edit: string };
 
 export interface SettingsState {
   read: 'loading' | 'ready' | 'failed';
@@ -92,9 +157,21 @@ export interface SettingsState {
   withheld: boolean;
   form: Form | null;
   confirm: Confirm | null;
-  /** The command in flight, or being settled; also a discarded save's, until it answers. */
+  /** The command in flight, or being settled; also a discarded save's, until it answers. The screen's one slot. */
   command: Command | null;
   page: PageStatus | null;
+  /** The payment-methods list read. It never depends on the settings read, nor the reverse. */
+  methodsRead: 'loading' | 'ready' | 'failed';
+  /** The custom methods the page knows, in the server's order; the view sorts them. */
+  methods: readonly TenderMethodView[];
+  /**
+   * An authoritative answer was applied while the list read stood failed: the rows are the ones
+   * the client knows, shown with the partial alert, and no count claims they are current. A
+   * successful read clears it.
+   */
+  methodsPartial: boolean;
+  methodEditor: MethodEditor | null;
+  methodsPage: MethodsPageStatus | null;
   /** The stay-or-discard decision is wanted. Whoever draws it keeps it open until it is answered. */
   decision: boolean;
   focus: { target: FocusTarget; n: number } | null;
@@ -105,6 +182,11 @@ type Meaning = 'saved' | 'unchanged' | 'stale' | 'session' | 'general' | 'unknow
 
 const READ = '/api/back-office/config/settings' as const;
 const SAVE = '/api/back-office/config/settings/save' as const;
+const METHODS_READ = '/api/back-office/config/tender-methods' as const;
+const METHOD_CREATE = '/api/back-office/config/tender-methods/create' as const;
+const METHOD_UPDATE = '/api/back-office/config/tender-methods/update' as const;
+const METHOD_DEACTIVATE = '/api/back-office/config/tender-methods/deactivate' as const;
+const METHOD_REACTIVATE = '/api/back-office/config/tender-methods/reactivate' as const;
 
 /**
  * What an answer means for the form (consult C2 section 6). Never the text of an error.
@@ -191,6 +273,11 @@ export function createSettingsModel(config: ConfigApi) {
     confirm: null,
     command: null,
     page: null,
+    methodsRead: 'loading',
+    methods: [],
+    methodsPartial: false,
+    methodEditor: null,
+    methodsPage: null,
     decision: false,
     focus: null,
   };
@@ -201,12 +288,22 @@ export function createSettingsModel(config: ConfigApi) {
   /** Counts the answers applied, so a read can tell whether one came after it began. */
   let appliedClock = 0;
   let readSequence = 0;
+  /** The same for the methods list: its own reads, its own answers. */
+  let methodsClock = 0;
+  const appliedMethods = new Map<string, { method: TenderMethodView; at: number }>();
+  let methodsReadSequence = 0;
+  /** The newest methods read, settled with the outcome of the list on screen. */
+  let newestMethodsRead: Promise<boolean> = Promise.resolve(true);
+  /** Numbers both parts' forms, so a command's key names exactly one form on the screen. */
   let formSequence = 0;
   let focusSequence = 0;
   /** Where the manager was going when the decision was shown. */
   let proceed: (() => void) | null = null;
   /** An answer that arrived while the session was away or a decision was open. */
-  let held: { command: Command; answer: Answer; read?: { view: SettingsReadView | null } } | null = null;
+  let held:
+    | { kind: 'settings'; command: SettingsCommand; answer: Answer; read?: { view: SettingsReadView | null } }
+    | { kind: 'method'; command: MethodCommand; answer: MethodAnswer; read?: { fresh: boolean } }
+    | null = null;
 
   const set = (patch: Partial<SettingsState>): void => {
     state = { ...state, ...patch };
@@ -217,13 +314,23 @@ export function createSettingsModel(config: ConfigApi) {
 
   const pending = (): boolean => {
     const { form, command } = state;
-    return form !== null && command !== null && !command.discarded && command.formKey === form.key;
+    return form !== null && command !== null && command.kind === 'settings' && !command.discarded && command.formKey === form.key;
   };
+  const methodPending = (): boolean => {
+    const { methodEditor: editor, command } = state;
+    return editor !== null && command !== null && command.kind === 'method' && !command.discarded && command.editorKey === editor.key;
+  };
+  // The screen's guard status is the open form's, whichever part it belongs to.
   const dirty = (): boolean => {
-    const { form, confirm } = state;
+    const { form, confirm, methodEditor: editor } = state;
+    if (editor !== null && editor.draft !== editor.original) return true;
     return form !== null && (confirm !== null || FIELD_ORDER.some((key) => form.draft[key] !== form.original[key]));
   };
-  const uncertain = (): boolean => state.form !== null && (pending() || state.form.uncertain);
+  const uncertain = (): boolean => {
+    const { form, methodEditor: editor } = state;
+    if (editor !== null && (methodPending() || editor.notice === 'unknown' || editor.notice === 'unknown-unread')) return true;
+    return form !== null && (pending() || form.uncertain);
+  };
   const status = (): WorkStatus => (uncertain() ? 'uncertain' : dirty() ? 'dirty' : 'clean');
 
   // What the page knows of the version in force. A version number only grows, so a read that
@@ -310,27 +417,40 @@ export function createSettingsModel(config: ConfigApi) {
   function closeForm(): void {
     const { form, command } = state;
     if (form === null) return;
-    if (command !== null && command.formKey === form.key) command.discarded = true;
+    if (command !== null && command.kind === 'settings' && command.formKey === form.key) command.discarded = true;
     set({ form: null, confirm: null, focus: aim({ change: form.opener }) });
   }
 
-  // Leaving: the form closes, a held answer is presented (silently, if its form is gone), and
-  // the destination runs. A save still outstanding says so, until it answers.
+  function closeMethodEditor(): void {
+    const { methodEditor: editor, command } = state;
+    if (editor === null) return;
+    if (command !== null && command.kind === 'method' && command.editorKey === editor.key) command.discarded = true;
+    set({ methodEditor: null, focus: aim(editor.recordId === null ? 'new-method' : { edit: editor.recordId }) });
+  }
+
+  // Leaving: whichever form is open closes, a held answer is presented (silently, if its form
+  // is gone), and the destination runs. A save still outstanding says so, in the status of the
+  // part that sent it, until it answers.
   function depart(next: () => void): void {
     closeForm();
+    closeMethodEditor();
     flush();
     next();
-    if (state.command?.discarded === true) set({ page: { kind: 'waiting' } });
+    const { command } = state;
+    if (command?.discarded === true) {
+      set(command.kind === 'settings' ? { page: { kind: 'waiting' } } : { methodsPage: { kind: 'waiting' } });
+    }
   }
 
   function flush(): void {
     if (held === null || !gate || state.decision) return;
-    const { command, answer, read } = held;
+    const result = held;
     held = null;
-    void present(command, answer, read);
+    if (result.kind === 'settings') void present(result.command, result.answer, result.read);
+    else void presentMethod(result.command, result.answer, result.read);
   }
 
-  function send(command: Command, call: () => Promise<Answer>, patch: Partial<SettingsState>): void {
+  function send(command: SettingsCommand, call: () => Promise<Answer>, patch: Partial<SettingsState>): void {
     set({ ...patch, command });
     void call().then(
       (answer) => answered(command, answer),
@@ -338,7 +458,7 @@ export function createSettingsModel(config: ConfigApi) {
     );
   }
 
-  function answered(command: Command, answer: Answer): void {
+  function answered(command: SettingsCommand, answer: Answer): void {
     if (stopped) return;
     if (meaningOf(answer, command.expected) === 'session') {
       // Refused before the handler: nothing was applied, and nothing is held for the session
@@ -350,7 +470,7 @@ export function createSettingsModel(config: ConfigApi) {
       return;
     }
     if (!gate || state.decision) {
-      held = { command, answer };
+      held = { kind: 'settings', command, answer };
       return;
     }
     void present(command, answer);
@@ -377,7 +497,7 @@ export function createSettingsModel(config: ConfigApi) {
     return { form: { ...form, notice: 'unknown', offered: null, uncertain: true }, focus: aim({ field: 'tax' }) };
   }
 
-  async function present(command: Command, answer: Answer, read?: { view: SettingsReadView | null }): Promise<void> {
+  async function present(command: SettingsCommand, answer: Answer, read?: { view: SettingsReadView | null }): Promise<void> {
     const meaning = meaningOf(answer, command.expected);
     const clearWaiting = (): PageStatus | null => (state.page?.kind === 'waiting' ? null : state.page);
     const done = state.command === command ? null : state.command;
@@ -397,7 +517,7 @@ export function createSettingsModel(config: ConfigApi) {
       if (!gate || state.decision) {
         // The session or a decision took the screen during the reread: hold the finished result and
         // its read, and present them once when the same manager is back. Nothing is read or sent again.
-        held = { command, answer, read: { view: fresh } };
+        held = { kind: 'settings', command, answer, read: { view: fresh } };
         return;
       }
       set({ command: done, ...settleUnknown(form, fresh) });
@@ -432,7 +552,7 @@ export function createSettingsModel(config: ConfigApi) {
         return;
       }
       if (!gate || state.decision) {
-        held = { command, answer, read: { view: fresh } };
+        held = { kind: 'settings', command, answer, read: { view: fresh } };
         return;
       }
       const newer = fresh?.current ?? null;
@@ -458,6 +578,234 @@ export function createSettingsModel(config: ConfigApi) {
     }
     set({ command: done, form: { ...form, notice: 'failure', uncertain: false }, focus: aim({ field: 'tax' }) });
   }
+
+  // ---- The payment-methods part --------------------------------------------------------------
+
+  const methodsUsable = (): boolean => state.methodsRead === 'ready' || state.methodsPartial;
+  const withMethodEditor = (patch: Partial<MethodEditor>): MethodEditor | null =>
+    state.methodEditor === null ? null : { ...state.methodEditor, ...patch };
+
+  // The list read, for the first load, for Try again, and for a reread after a refusal or an
+  // unknown outcome (which does not hide the list while it runs). The latest read decides.
+  //
+  // A read is a snapshot taken before some command may have answered. A record a command's
+  // authoritative answer replaced after the read began is kept (or inserted, if the read lacks
+  // it), so an older snapshot arriving late never undoes a newer success.
+  //
+  // What a caller receives describes the list on screen: a read that is no longer the newest
+  // waits for the newest read already in flight and returns that read's outcome, so "refreshed"
+  // and "could not be refreshed" always match what is drawn. It starts no read of its own.
+  function loadMethods(visible: boolean): Promise<boolean> {
+    const run = readMethods(visible);
+    newestMethodsRead = run;
+    return run;
+  }
+
+  async function readMethods(visible: boolean): Promise<boolean> {
+    methodsReadSequence += 1;
+    const mine = methodsReadSequence;
+    const startedAt = methodsClock;
+    if (visible) set({ methodsRead: 'loading' });
+    let rows: readonly TenderMethodView[] | null = null;
+    try {
+      const answer = await config[METHODS_READ]();
+      if (answer.kind === 'ok') rows = answer.value.tenderMethods;
+    } catch {
+      rows = null;
+    }
+    if (stopped) return rows !== null;
+    if (mine === methodsReadSequence) {
+      if (rows !== null) {
+        let merged = [...rows];
+        for (const { method, at } of appliedMethods.values()) if (at > startedAt) merged = upsertMethod(merged, method);
+        set({ methodsRead: 'ready', methods: merged, methodsPartial: false });
+      } else {
+        // The same reconciliation as a read that succeeded: an answer applied after this read
+        // began is on screen, so the known rows stay drawn with the alert and no counts.
+        set({ methodsRead: 'failed', methodsPartial: state.methodsPartial || methodsClock > startedAt });
+      }
+      return rows !== null;
+    }
+    return newestMethodsRead;
+  }
+
+  function openMethodEditor(recordId: string | null): void {
+    const row = recordId === null ? undefined : state.methods.find((m) => m.tenderMethodId === recordId);
+    if (recordId !== null && row === undefined) return;
+    formSequence += 1;
+    set({
+      methodEditor: {
+        key: formSequence,
+        recordId,
+        active: row?.isActive ?? true,
+        openedName: row?.name ?? '',
+        original: row?.name ?? '',
+        draft: row?.name ?? '',
+        error: null,
+        notice: null,
+      },
+      methodsPage: null,
+      focus: aim('method-name'),
+    });
+  }
+
+  function sendMethod(command: MethodCommand, call: () => Promise<MethodAnswer>, patch: Partial<SettingsState> = {}): void {
+    set({ ...patch, command });
+    void call().then(
+      (answer) => methodAnswered(command, answer),
+      () => methodAnswered(command, { kind: 'invalid-request' })
+    );
+  }
+
+  function methodAnswered(command: MethodCommand, answer: MethodAnswer): void {
+    if (stopped) return;
+    if (methodMeaning(answer) === 'session') {
+      // Refused before the handler: nothing was applied, and nothing is held for the session
+      // to hand back. M-6 or BO-01 is the session's own, and the draft stays where it is.
+      const refused = command.op !== 'save' ? ({ kind: 'session', name: command.name } as const) : null;
+      set({
+        command: state.command === command ? null : state.command,
+        methodsPage: refused ?? (state.methodsPage?.kind === 'waiting' ? null : state.methodsPage),
+      });
+      return;
+    }
+    if (!gate || state.decision) {
+      held = { kind: 'method', command, answer };
+      return;
+    }
+    void presentMethod(command, answer);
+  }
+
+  async function presentMethod(command: MethodCommand, answer: MethodAnswer, read?: { fresh: boolean }): Promise<void> {
+    const meaning = methodMeaning(answer);
+    const clearWaiting = (): MethodsPageStatus | null => (state.methodsPage?.kind === 'waiting' ? null : state.methodsPage);
+    const done = state.command === command ? null : state.command;
+
+    if (meaning === 'unknown') {
+      // The reread comes first and never establishes success: it only makes the list current.
+      const fresh = read !== undefined ? read.fresh : await loadMethods(false);
+      if (stopped) return;
+      if (command.discarded) {
+        set({ command: done, methodsPage: clearWaiting() });
+        return;
+      }
+      if (!gate || state.decision) {
+        // The session or a decision took the screen during the reread: hold the finished result and
+        // its read, and present them once when the same manager is back. Nothing is read or sent again.
+        held = { kind: 'method', command, answer, read: { fresh } };
+        return;
+      }
+      if (command.op === 'save') {
+        set({
+          command: done,
+          methodEditor: withMethodEditor({ notice: fresh ? 'unknown' : 'unknown-unread' }),
+          focus: aim('method-name'),
+        });
+      } else {
+        set({ command: done, methodsPage: { kind: 'unknown', name: command.name, unread: !fresh }, focus: aim('methods-status') });
+      }
+      return;
+    }
+
+    if (meaning === 'ok' && answer.kind === 'ok') {
+      const { tenderMethod: method } = answer.value;
+      methodsClock += 1;
+      appliedMethods.set(method.tenderMethodId, { method, at: methodsClock });
+      const methods = upsertMethod(state.methods, method);
+      // The read stands failed: the rows are the client's own, and the alert stays (F4).
+      const methodsPartial = state.methodsRead === 'failed' ? true : state.methodsPartial;
+      if (command.discarded) {
+        set({ command: done, methods, methodsPartial, methodsPage: clearWaiting() });
+      } else if (command.op === 'save') {
+        set({
+          command: done,
+          methods,
+          methodsPartial,
+          methodEditor: null,
+          methodsPage: { kind: 'saved', name: method.name },
+          focus: aim({ edit: method.tenderMethodId }),
+        });
+      } else {
+        set({
+          command: done,
+          methods,
+          methodsPartial,
+          methodsPage: { kind: command.op === 'deactivate' ? 'deactivated' : 'reactivated', name: method.name },
+          focus: aim({ edit: method.tenderMethodId }),
+        });
+      }
+      return;
+    }
+
+    // A refusal that applied nothing. NOT_FOUND (unreachable in Phase 1: nothing deletes a
+    // method) and DUPLICATE also reread, so the manager sees what the server sees; neither
+    // establishes anything about this command. Nothing is presented after the reread, so there
+    // is nothing for the session gate to hold.
+    if (meaning === 'duplicate' || meaning === 'not-found') void loadMethods(false);    if (command.discarded) {
+      set({ command: done, methodsPage: clearWaiting() });
+      return;
+    }
+    if (meaning === 'duplicate' && command.op === 'save') {
+      set({ command: done, methodEditor: withMethodEditor({ error: 'duplicate', notice: null }), focus: aim('method-name') });
+      return;
+    }
+    if (meaning === 'duplicate' && command.op === 'reactivate') {
+      // The reactivation was refused: open that inactive method's own name for renaming.
+      set({ command: done });
+      openMethodEditor(command.recordId);
+      set({ methodEditor: withMethodEditor({ error: 'duplicate-reactivate' }) });
+      return;
+    }
+    // The definite general failure: draft kept, nothing was saved.
+    if (command.op === 'save') {
+      set({ command: done, methodEditor: withMethodEditor({ notice: 'failure' }), focus: aim('method-name') });
+    } else {
+      set({ command: done, methodsPage: { kind: 'failed', name: command.name }, focus: aim('methods-status') });
+    }
+  }
+
+  function saveMethod(): void {
+    const { methodEditor: editor } = state;
+    if (editor === null || state.command !== null) return;
+    const checked = checkMethodName(editor.draft);
+    const create = editor.recordId === null;
+    const body = create ? { name: checked.name } : { tenderMethodId: editor.recordId, name: checked.name };
+    const fields = fieldsInError(create ? CreateTenderMethodRequest : UpdateTenderMethodRequest, body);
+    if (checked.error !== null) {
+      set({ methodEditor: withMethodEditor({ draft: checked.name, error: checked.error, notice: null }), focus: aim('method-name') });
+      return;
+    }
+    if (fields.length > 0) {
+      // The form's check and the contract disagree: a defect, shown as the general failure.
+      set({ methodEditor: withMethodEditor({ draft: checked.name, error: null, notice: 'failure' }), focus: aim('method-name') });
+      return;
+    }
+    const command: MethodCommand = { kind: 'method', op: 'save', recordId: editor.recordId, name: checked.name, editorKey: editor.key, discarded: false };
+    sendMethod(
+      command,
+      () =>
+        create
+          ? config[METHOD_CREATE]({ name: checked.name })
+          : config[METHOD_UPDATE]({ tenderMethodId: editor.recordId!, name: checked.name }),
+      { methodEditor: withMethodEditor({ draft: checked.name, error: null, notice: null }), methodsPage: null, focus: aim('method-notice') }
+    );
+  }
+
+  function changeMethodStatus(recordId: string): void {
+    const row = state.methods.find((m) => m.tenderMethodId === recordId);
+    if (row === undefined || state.command !== null) return;
+    const op: MethodOp = row.isActive ? 'deactivate' : 'reactivate';
+    set({
+      methodsPage: { kind: op === 'deactivate' ? 'deactivating' : 'reactivating', name: row.name },
+      focus: aim('methods-status'),
+    });
+    const command: MethodCommand = { kind: 'method', op, recordId, name: row.name, editorKey: null, discarded: false };
+    sendMethod(command, () =>
+      op === 'deactivate' ? config[METHOD_DEACTIVATE]({ tenderMethodId: recordId }) : config[METHOD_REACTIVATE]({ tenderMethodId: recordId })
+    );
+  }
+
+  // ---- The settings part ---------------------------------------------------------------------
 
   function save(): void {
     const { form } = state;
@@ -509,7 +857,7 @@ export function createSettingsModel(config: ConfigApi) {
   }
 
   function transmit(form: Form, body: SaveSettingsRequest, values: Values): void {
-    const command: Command = { formKey: form.key, expected: body.expectedVersion, values, discarded: false };
+    const command: SettingsCommand = { kind: 'settings', formKey: form.key, expected: body.expectedVersion, values, discarded: false };
     send(command, () => config[SAVE](body), {
       form: { ...form, errors: {}, notice: null, uncertain: false },
       confirm: null,
@@ -521,7 +869,7 @@ export function createSettingsModel(config: ConfigApi) {
   // Leaving with unsaved work, or a save pending or of unknown outcome, needs the manager's
   // word. A clean form closes without asking.
   function leave(next: () => void): 'left' | 'held' {
-    if (state.form === null || (!dirty() && !uncertain())) {
+    if ((state.form === null && state.methodEditor === null) || (!dirty() && !uncertain())) {
       depart(next);
       return 'left';
     }
@@ -531,7 +879,8 @@ export function createSettingsModel(config: ConfigApi) {
   }
 
   const returnTo = (): FocusTarget => {
-    const { form, confirm } = state;
+    const { form, confirm, methodEditor } = state;
+    if (methodEditor !== null) return methodPending() ? 'method-notice' : 'method-name';
     if (form === null) return { change: 'enter' };
     if (confirm !== null) return 'confirm';
     return pending() ? 'notice' : { field: form.last ?? 'tax' };
@@ -541,7 +890,7 @@ export function createSettingsModel(config: ConfigApi) {
     status,
     leave,
     focus: () => {
-      if (state.form !== null) set({ focus: aim(returnTo()) });
+      if (state.form !== null || state.methodEditor !== null) set({ focus: aim(returnTo()) });
     },
   };
 
@@ -571,14 +920,15 @@ export function createSettingsModel(config: ConfigApi) {
      * the latest read decides, and a version never moves back (see `adopt`).
      */
     shown(): void {
-      if (!loaded) {
-        loaded = true;
-        void load(true);
-      } else {
-        void load(false);
-      }
-      const { page } = state;
+      // Two reads, neither interactive and neither waiting for the other: a failed methods read
+      // never withholds the settings part, and the reverse.
+      const first = !loaded;
+      loaded = true;
+      void load(first);
+      void loadMethods(first);
+      const { page, methodsPage } = state;
       if (page !== null && page.kind !== 'waiting') set({ page: null });
+      if (methodsPage !== null && !['waiting', 'deactivating', 'reactivating'].includes(methodsPage.kind)) set({ methodsPage: null });
     },
     /** Whether answers may be presented: the session is signed in and nothing of the frame's is open. */
     setGate(open: boolean): void {
@@ -599,6 +949,19 @@ export function createSettingsModel(config: ConfigApi) {
       const ok = await load(true);
       if (ok && !stopped) set({ focus: aim({ change: 'enter' }) });
     },
+    /** Try again on a failed methods read: the read only. */
+    async retryMethodsRead(): Promise<void> {
+      const ok = await loadMethods(true);
+      if (!ok || stopped) return;
+      const { methodEditor: editor, methodsPage: page } = state;
+      if (editor !== null && editor.notice === 'unknown-unread') {
+        set({ methodEditor: withMethodEditor({ notice: 'unknown' }), focus: aim('method-name') });
+      } else if (page?.kind === 'unknown' && page.unread) {
+        set({ methodsPage: { ...page, unread: false }, focus: aim('methods-status') });
+      } else {
+        set({ focus: aim('new-method') });
+      }
+    },
     /** After the session's own screen: put focus back in the work. */
     refocus(): void {
       set({ focus: aim(returnTo()) });
@@ -610,6 +973,23 @@ export function createSettingsModel(config: ConfigApi) {
     openChange(key: FieldKey): void {
       if (state.command === null) leave(() => openForm(key));
     },
+    openNewMethod(): void {
+      if (state.command === null && methodsUsable()) leave(() => openMethodEditor(null));
+    },
+    openEditMethod(recordId: string): void {
+      if (state.command === null) leave(() => openMethodEditor(recordId));
+    },
+    /** Deactivate or Reactivate: sent at once, from the row, with no confirmation (DESIGN-018). */
+    changeMethodStatus(recordId: string): void {
+      if (state.command === null) leave(() => changeMethodStatus(recordId));
+    },
+    setMethodName(value: string): void {
+      const { methodEditor: editor } = state;
+      if (editor === null || state.command !== null) return;
+      // Editing clears the field's obsolete error and its holder marker.
+      set({ methodEditor: { ...editor, draft: value, error: null } });
+    },
+    saveMethod,
     setField(key: FieldKey, value: string): void {
       const { form } = state;
       if (form === null || state.command !== null) return;
