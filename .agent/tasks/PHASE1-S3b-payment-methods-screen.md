@@ -275,3 +275,117 @@ another screen would copy from); what was decided and on what evidence; tests ch
 with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
 
 ## Handoff
+
+### What was done
+
+Commit `a1e85ae` on `agent/phase1-s3b` (the Handoff itself is a second commit on the same branch). BO-08 now has a second
+`<section>`, *Payment methods*, below the settings part: the count line, the table (caption, headers, Cash and Card as
+two fixed rows reading *Always offered* with an empty actions cell, then the custom methods), *New payment method*, the
+non-modal method panel, and the methods status. No route, rail entry or page heading changed.
+
+New: `apps/back-office/src/settings/methods.ts` (the pure half: `checkMethodName`, `orderedMethods`, `sameName`,
+`upsertMethod`, `methodMeaning`); `apps/back-office/test/methods.test.tsx`, `methods-departure.test.tsx`,
+`methods-name.test.ts`, `methods-fixture.test.tsx`; `e2e/tests/payment-methods.spec.ts`.
+Changed: `settings/model.ts` (the methods state and commands), `settings/Settings.tsx` (the `Methods` view, the focus
+targets, Escape), `settings/copy.ts` (every DESIGN-018 row from *Methods part* to *Method status, session refusal*),
+`office.css` (the methods rules ported from `settings.css`, tokens only), `session/api.ts` (the `Exclude` removed, five
+functions added to `configApi()`), `session/fixtureSession.ts` (five `unavailable` entries).
+
+### How the methods part sits in the screen model
+
+There is still one model, one `workGuard` registration and one `decision`. `SettingsState` gained `methodsRead`,
+`methods` (rows in the server's order; the view sorts), `methodsPartial` (the F4 flag), `methodEditor` and
+`methodsPage`. **At most one of `form` (settings) and `methodEditor` is open.** `command` is the one slot for the whole
+screen and is now a union (`kind: 'settings'` or `kind: 'method'`); `held` is a union the same way, and `flush()`
+dispatches on `kind`. Every opener goes through `leave(next)`, which closes a clean form and asks about a dirty or
+uncertain one, and every opener tests `state.command === null`, so all are inert while any command is pending. `dirty`,
+`uncertain` and `status` look at whichever form is open, so the guard's status is the open form's. `depart` closes both
+forms, flushes a held result, runs the destination, and puts the waiting sentence in the status of the part that sent the
+discarded command. The numbering of forms (`formSequence`) is shared, so a command's key names exactly one form on the
+screen. The methods list read (`loadMethods`) is `tables/model.ts`'s `load` with its own clock, its own
+applied-record map and its own sequence, so a settings read and a methods read never touch each other's state.
+A later screen with two parts copies this: one state object, one command slot (a union), one `leave`, one held result.
+
+### Decisions, and on what evidence
+
+1. **`DUPLICATE` presents before its reread, not after.** Ruling 11 lists `DUPLICATE` among the rereads after which the
+   gate is rechecked. I followed `tables/model.ts`: the refusal is presented at once and the reread runs behind it
+   (`void loadMethods(false)`). Nothing is presented after that await, so there is nothing for the gate to hold, and the
+   holder marker is derived at render from whichever rows the list holds, so it appears when the reread lands. The gate
+   is already checked in `methodAnswered`, before the refusal is presented. The unknown outcome, which does present after
+   a reread, rechecks the gate and the open decision after it (tests in `methods-departure.test.tsx`). If you meant the
+   `DUPLICATE` presentation to wait for its reread, say so; it is a small change.
+2. **Lengths count code points** with `[...name].length`. The pair test proves `TenderMethodName` does the same: 32 emoji
+   is accepted by the schema and 33 refused.
+3. **The marker comparison** uses the collator with `sensitivity: 'base'`, as ruling 8 says. That also folds accents
+   (`Cafe` and `Café` compare equal), which is wider than the server's `lower(name)` index. The refusal itself always
+   comes from the server; only which row is marked could differ. I left it as ruled.
+4. **`aria-disabled` and `tabIndex={-1}` on inert openers**, as BO-05 does. The artifact's `disabled` on the row's
+   Deactivate is not copied (the project rule says never `disabled`).
+5. **New payment method stays in the header in the empty state**, as the artifact draws it (BO-05 moves it into the empty
+   block). The empty note is a `<p>` under the table, which still lists Cash and Card.
+6. **The `B-1` source guard** in `settings-rate.test.ts` greps every file in `settings/` for `Number(`. My first sort used
+   `Number(isActive)` on a boolean and tripped it. I changed my code (`rank()`), not the guard.
+7. **`Decision` was not extracted.** BO-08 has one `Decision` and the methods part uses it, so no third copy was added.
+
+### Left out on purpose (ruling 14)
+
+The kitchen-emergency sentences of the departure decision (the built frame has no incident action) and BO-01's
+held-draft sentence (S10). `NOT_FOUND` is treated as the general failure with one reread; it is **unreachable today**
+because nothing deletes a method. No new copy was invented.
+
+### Tests changed, and why
+
+- `config-api.test.tsx`: the run-time key list now holds the five tender-methods paths (ruling 12); I also added one
+  typed-surface case showing the five are on `ConfigApi` and a sixth, `…/delete`, is not.
+- `settings-support.tsx`: additions only (the five route keys, four sample methods, helpers), and `openSettings` gained an
+  optional third argument and replies to the methods read with an empty list by default. Every existing settings test runs
+  against it unchanged.
+- Nothing else existing changed. `settings-fixture.test.tsx` and `fixture-session.test.tsx` passed as they are (they do not
+  assert the whole page); the fixture-mode methods assertion is the new `methods-fixture.test.tsx`. No assertion was
+  weakened or scoped.
+
+### Red proofs (mutation, failure read, reverted)
+
+I wrote the pure helpers and their pair test first and ran it green, then proved it red. The screen's code was written
+before its UI tests, so the proof for the UI criteria is the mutation, not a test that failed against missing code.
+Each mutation below was applied, the failure read, and reverted; the final tree holds none of them.
+
+1. *Sort with `a.name < b.name`* (criterion 1): `methods-name.test.ts` (2) and `methods.test.tsx` (3) failed, e.g.
+   `GoPay 10` before `GoPay 2`.
+2. *Withhold the methods part when the settings read fails* (criterion 2): the independence test failed
+   (`expected [] to deeply equal ['Cash', 'Card', …]`).
+3. *Count with `name.length`* (criterion 3): the 32-emoji pair case and the code-point case failed (`expected 'long' to be null`).
+4. *Send `{ id }` on deactivate* (criterion 4): seven tests failed. The transport core's own schema check refuses the
+   body, so no request exists and the body assertion fails at `h.keyed(key)[0].body` ("Cannot read properties of
+   undefined"), then the status and F4 tests fail because the command was never sent.
+5. *Resend the create once after a `DUPLICATE`* (criterion 5): `expected 2 to be 1` on the create count.
+6. *Resend the create once after `failed`/`unavailable`* (criterion 6): six tests failed on the create count (2, and 3 on the
+   explicit-resend case).
+7. *Let the new/edit openers ignore the command slot* (criterion 7): the "every row action is inert" test and the "every
+   method opener is inert while a settings save is pending" test failed (a panel and a decision opened).
+8. *Plain read-failure copy in the partial state* (criterion 8): both F4 cases failed (`Payment methods could not be loaded…`).
+9. *Present while signed out*, in two forms (criterion 9): removing `!gate` from `methodAnswered` failed the M-6 and BO-01
+   held-result tests (`Voucher saved.` shown behind M-6); removing the gate recheck after the unknown outcome's reread failed
+   the three F2 tests (the result was presented while M-6 or the decision was up).
+10. *Leave `deactivate` out of `configApi()`* (criterion 10): the key-list test failed (the path missing).
+
+### Verification
+
+`npm run verify`: typecheck clean; **Test Files 120 passed (120), Tests 4480 passed (4480)** (baseline 116 files, 4367 tests;
++4 files, +113 tests). `npm run test:e2e:all`: **78 passed** (baseline 74; my spec adds M1 and M2 on both engines). I confirmed
+the baseline before starting: 116 files, 4367 tests.
+
+### Found and not fixed
+
+- BO-05's `tables/label.ts` still counts UTF-16 units (the queued cleanup; not touched).
+- I had no screenshot step, so I did not look at the ported CSS in a browser. `no-invented-values.test.ts` passes (tokens
+  only), the e2e cases see the panel and the table, and the structure follows the artifact's markup, but nobody has looked at
+  it at 1440×900. The lead may want a visual pass.
+- Nothing ran a formatter.
+
+### What the next agent needs
+
+Nothing is blocking. The development database `pos` was not touched.
+
+DONE
