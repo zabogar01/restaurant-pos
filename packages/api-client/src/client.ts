@@ -103,6 +103,11 @@ export const ROUTES = {
   tablesReactivate: find('/api/back-office/config/tables/reactivate'),
   settingsRead: find('/api/back-office/config/settings'),
   settingsSave: find('/api/back-office/config/settings/save'),
+  tenderMethodsList: find('/api/back-office/config/tender-methods'),
+  tenderMethodsCreate: find('/api/back-office/config/tender-methods/create'),
+  tenderMethodsUpdate: find('/api/back-office/config/tender-methods/update'),
+  tenderMethodsDeactivate: find('/api/back-office/config/tender-methods/deactivate'),
+  tenderMethodsReactivate: find('/api/back-office/config/tender-methods/reactivate'),
 } as const;
 
 interface View {

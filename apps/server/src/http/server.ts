@@ -19,6 +19,7 @@ import { checkHost, checkOrigin, ownOrigin } from './origin.js';
 import { backOfficeAuthRoutes } from './routes/back-office-auth.js';
 import { backOfficeSettingsRoutes } from './routes/back-office-settings.js';
 import { backOfficeTableRoutes } from './routes/back-office-tables.js';
+import { backOfficeTenderMethodRoutes } from './routes/back-office-tender-methods.js';
 import { healthRoutes } from './routes/health.js';
 import { posAuthRoutes } from './routes/pos-auth.js';
 import { decorateActor, sessionGuard } from './session-guard.js';
@@ -110,6 +111,7 @@ export function buildServer({
       await api.register(backOfficeAuthRoutes);
       await api.register(backOfficeTableRoutes);
       await api.register(backOfficeSettingsRoutes);
+      await api.register(backOfficeTenderMethodRoutes);
       for (const routes of apiRoutes) await api.register(routes);
     },
     { prefix: '/api' }

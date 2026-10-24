@@ -144,6 +144,11 @@ describe('privileges', () => {
         created_by: ['INSERT'],
       },
     },
+    // S3a-1: as dining_table; the application cannot delete a method or change its id.
+    tender_method: {
+      table: ['INSERT', 'SELECT'],
+      columns: { name: ['UPDATE'], is_active: ['UPDATE'] },
+    },
   };
 
   const TABLE_PRIVILEGES = ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE'];
@@ -578,6 +583,76 @@ describe('dining_table', () => {
     await insert('t1', false);
     await insert('T2', false);
     const count = await ownerQuery<{ n: string }>('SELECT count(*) AS n FROM dining_table');
+    expect(only(count).n).toBe('4');
+  });
+});
+
+describe('tender_method', () => {
+  const insert = (name: string, active = true) =>
+    ownerQuery<{ id: string }>('INSERT INTO tender_method (name, is_active) VALUES ($1, $2) RETURNING id', [
+      name,
+      active,
+    ]);
+
+  it('is empty after migration: no cash, no card, no row (B-24) (S3a case 4)', async () => {
+    expect(await ownerQuery('SELECT 1 FROM tender_method')).toEqual([]);
+  });
+
+  it('has exactly the columns written here (S3a case 4)', async () => {
+    const columns = (
+      await ownerQuery<{ column_name: string; data_type: string; is_nullable: string; column_default: string | null }>(
+        `SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns
+          WHERE table_schema = 'public' AND table_name = 'tender_method' ORDER BY ordinal_position`
+      )
+    ).map(
+      (c) =>
+        `${c.column_name} ${c.data_type} ${c.is_nullable === 'YES' ? 'NULL' : 'NOT NULL'} ${c.column_default}`
+    );
+    expect(columns).toEqual([
+      'id uuid NOT NULL gen_random_uuid()',
+      'name text NOT NULL null',
+      'is_active boolean NOT NULL true',
+      'created_at timestamp with time zone NOT NULL now()',
+    ]);
+  });
+
+  it('lets pos_app insert, read and update name and is_active, and refuses DELETE, TRUNCATE and an update of id or created_at (S3a case 4)', async () => {
+    const [row] = await query<{ id: string }>(`INSERT INTO tender_method (name) VALUES ('QRIS') RETURNING id`);
+    await query(`UPDATE tender_method SET name = 'GoPay', is_active = false WHERE id = $1`, [row!.id]);
+    expect(await query('SELECT name, is_active FROM tender_method')).toEqual([{ name: 'GoPay', is_active: false }]);
+
+    for (const sql of [
+      'DELETE FROM tender_method',
+      'TRUNCATE tender_method',
+      `UPDATE tender_method SET id = gen_random_uuid()`,
+      `UPDATE tender_method SET created_at = now()`,
+    ]) {
+      expect((await refusal(query(sql))).code, sql).toBe(PERMISSION_DENIED);
+    }
+  });
+
+  it('refuses a name that is empty, over 32 code points, untrimmed or holding a control character, and accepts 32 emoji (S3a case 11)', async () => {
+    for (const name of ['', 'x'.repeat(33), '😀'.repeat(33), ' QRIS', 'QRIS ', '\tQRIS', 'QRIS\n', 'QR\u001bIS', 'QR\u009bIS', 'QR\u007fIS']) {
+      const failure = await refusal(insert(name));
+      expect(failure.code, JSON.stringify(name)).toBe(CHECK_VIOLATION);
+      expect(failure.constraint, JSON.stringify(name)).toBe('tender_method_name_check');
+    }
+    await insert('x'.repeat(32));
+    await insert('😀'.repeat(32));
+    await insert('Bank transfer');
+  });
+
+  it('holds one active method per name in any case, and any number of inactive ones (S3a case 5)', async () => {
+    await insert('QRIS');
+    for (const name of ['QRIS', 'qris']) {
+      const failure = await refusal(insert(name));
+      expect(failure.code, name).toBe(UNIQUE_VIOLATION);
+      expect(failure.constraint, name).toBe('tender_method_active_name_key');
+    }
+    await insert('QRIS', false);
+    await insert('qris', false);
+    await insert('GoPay', false);
+    const count = await ownerQuery<{ n: string }>('SELECT count(*) AS n FROM tender_method');
     expect(only(count).n).toBe('4');
   });
 });

@@ -42,4 +42,10 @@ export const ROUTE_TABLE = [
   // is a person pressing a control.
   { method: 'GET', path: '/api/back-office/config/settings', interactive: false },
   { method: 'POST', path: '/api/back-office/config/settings/save', interactive: true },
+  // The tender-methods read is not interactive, for the reason the tables list is not.
+  { method: 'GET', path: '/api/back-office/config/tender-methods', interactive: false },
+  { method: 'POST', path: '/api/back-office/config/tender-methods/create', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/tender-methods/update', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/tender-methods/deactivate', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/tender-methods/reactivate', interactive: true },
 ] as const satisfies readonly RouteEntry[];
