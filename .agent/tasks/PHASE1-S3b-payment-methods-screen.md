@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries, identity]
 depends_on: [PHASE1-S3a]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/payment-methods.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S3b — BO-08 Payment methods in the back office
@@ -273,6 +273,35 @@ the methods part sits in the screen model (state, the one command slot, the guar
 another screen would copy from); what was decided and on what evidence; tests changed and why; each red proof
 (mutation, failure read, reverted); what was found and not fixed; the real `verify` and `test:e2e:all` output. End
 with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify and rulings (2026-10-24)
+
+**Verify.** At `cc8a88a` the tree is clean. `git diff --name-only development...HEAD`: the task file and paths inside
+`owns` only; the existing tests changed are the two listed (`config-api.test.tsx`, `settings-support.tsx`, additions
+only), plus four new test files and the new spec; nothing under `e2e/support/` changed. The lead's runs: `npm run verify`
+**120 files, 4480 tests**; `npm run test:e2e:all` **78 passed** (Chromium and WebKit; the new M1 and M2 in both). The
+lead read `settings/methods.ts`, the `session/` diff and the spec's outline against rulings 5, 6, 7, 8 and 12: the sort,
+the code-point name check, the request bodies, the `ConfigApi` inclusion and the fixture entries are as ruled. **For the
+reviewer:** you cannot reach the database or launch a browser. This note is the evidence for both suites, and a
+"blocked" on that alone is ruled clear.
+
+**Ruling on the Handoff's decision 1 (the builder's one question).** It stands: a `DUPLICATE` is presented at once, on
+Method name with focus there, and the list reread runs behind it, as BO-05 does. Nothing is presented after that reread's
+await, so there is nothing for the gate recheck of ruling 11 to hold; the *Name in use* marker is derived at render from
+whatever rows the list holds. Ruling 11's gate recheck applies to the unknown outcome, which presents after its reread,
+and the builder's tests hold it there.
+
+**Lead finding L1, for the next round (with any review findings).** `sameName` in `settings/methods.ts` compares with
+the collator at `sensitivity: 'base'`, which folds accents as well as case (`Cafe` equals `Café`). That is what ruling 8
+said, but ruling 8 was wrong: the server's index is `lower(name)`, which folds case only, so the marker can name a row
+the server would not count as the holder. Fix: compare `a.toLowerCase() === b.toLowerCase()`, correct its comment, and
+add a test that `Cafe` and `Café` are not the same name while `QRIS` and `qris` are. The sort keeps the collator
+(ruling 5). The reviewer may weigh this; it is not a blocker.
+
+**Review against:** the *Lead rulings*, DESIGN-018's method copy, focus and *Two forms on one screen* rules, `D`'s
+configuration-form rules, S1b's list behaviour (rounds 2 to 4) and S2b's round 2 F2. Above all, check that no method
+command is ever resent, that one command slot covers both parts, that the held result is presented once, and that cash
+and card hold no control in any state.
 
 ## Handoff
 
