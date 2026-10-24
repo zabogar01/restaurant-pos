@@ -9,10 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-22 (wrap-up for a fresh session): `development` at `9163584` (S2b #130, DESIGN-019 #131, lead #132 merged).
-`npm ci` done; dev `pos` at `0011` (S2b added no migration). **Nothing is running; no task branch or worktree is open.**
-This wrap-up is on `agent/lead-1022b`. Narrative: [journal/2026-10-21.md](journal/2026-10-21.md),
-[journal/2026-10-22.md](journal/2026-10-22.md).
+2026-10-24 (wrap-up for a fresh session): `development` at `d164a23`; dev `pos` at `0011`. **Nothing is running; no
+agent but the lead.** **Open for the owner: #134 (S3a), #135 (DESIGN-020), #136 (lead record).** Narrative:
+[journal/2026-10-22.md](journal/2026-10-22.md) (*Evening*), [journal/2026-10-24.md](journal/2026-10-24.md).
 
 ## Phase and gates
 
@@ -20,47 +19,46 @@ This wrap-up is on `agent/lead-1022b`. Narrative: [journal/2026-10-21.md](journa
   (`docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`). 11 slices S0-S10. **Done and merged:** S0
   (#115: compose `name:`, `0009`, startup schema check), S1a (#119: tables server, `0010`, `DUPLICATE`), S1b (#123:
   BO-05, the rail, the form pattern), S2a (#128: settings server, `0011`, `SETTINGS_CHANGED`, the rate codec, the
-  installation constants), S2b (#130: BO-08's settings part, the versioned rate form). **Next build:** S3. Consults: C1
-  (with ADR-012, #117), C2 (#116), C3 (#121); C4 (POS catalog) not written; C5 not needed.
+  installation constants), S2b (#130: BO-08's settings part). **Complete, not merged:** S3a (#134). **S3 is split** by the
+  lead into S3a (server) and S3b (BO-08's payment-methods part), as S1 and S2 were. Consults: C1 (with ADR-012, #117), C2
+  (#116), C3 (#121); C4 (POS catalog) not written; C5 not needed.
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by` (owner-confirmed), DESIGN-018 Q1-Q6 (phone without `/`); S3 tender reactivation
   (C2 OQ1), cash and card fixed kinds (C2 §8), a custom name may be "Cash" or "Card" (DESIGN-018 Q1); S7 real items into
   the client stand-in (Q14); S8 Q1, Q6a, Q7-Q11, C3's OQ1 (create audited) and OQ2 (no name correction).
-- **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 reserved, deferred. ADR-012 (versioned
-  configuration) with one catalog counter. ARCHITECTURE §8 carries one lock order (catalog → business day → dining
-  table → order → lease/receipt); §7.2 the users rules (#121).
+- **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. ARCHITECTURE §8: catalog → business day →
+  dining table → order → lease/receipt (TenderMethod not in it: Phase 4's, with an architect); §7.2 users (#121).
 - **Owed, not drafted:** ROADMAP Phase 1's users bullet omits role change (Q1c), its tender bullet "reactivate" (OQ1).
-  Designer: BO-06 inventory and sitemap (E2, C3 *Stale text* 5); BO-07 stale-draft states (F's BO-07 half);
-  `settings.html`'s `first-run-closed` lacks the money facts (S2b F5 built them, per FR-B1 and `D`). The plan's S1 and S8
-  goals predate Q10 and Q1(b) (later consults win; recorded, not edited).
+  Designer: BO-06 inventory and sitemap (E2, C3 *Stale text* 5); BO-07 stale-draft states (F's BO-07 half). The plan's S1
+  and S8 goals predate Q10 and Q1(b) (later consults win; recorded, not edited).
 - **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office: sign-in, provisional BO-01, M-6, the rail, BO-05,
   BO-08's settings part. Pattern later forms copy: `tables/model.ts`, `settings/model.ts` (versioned), `fieldsInError`,
   `work/guard.ts`, `Decision` (S1b, S2b Handoffs). **Frost designed:** A, B, C, I, E1 (BO-05), F's BO-08 half (018, 018b),
-  **D part 1, BO-03 Menu (DESIGN-019, #131)**; D's rest: **DESIGN-020** BO-04 next, **DESIGN-021** POS addition (G6).
+  BO-03 (019, #131), **BO-04 (020, #135, not merged)**; left: DESIGN-021 (POS, G6), F's BO-07 half, E2; G, H later.
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
-- **Last verify by the lead:** S2b (`d9215ed`) verify 114/4331, e2e:all 74; DESIGN-019 (`c0a7113`) seven checks green.
 
 ## Integration branch
 
-- **`development`** at `9163584` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `d164a23` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
-  **before reporting or dispatching**.
-- **Guard hooks** current (`--check` 2026-10-20); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1022b`** (from `9163584`): this wrap-up. The lead pushes and
-  opens PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own step before any follow-up push**.
-- **Task branches and worktrees: none.** All of 10-21/22's are removed with their run dirs. Not the lead's: worktrees
-  `../restaurant-pos-design` and `keen-chebyshev-ccf255`, branch `setting/add-permission`, pane `w2:pE`.
+  **before reporting or dispatching**. #134 lands `0012`.
+- **Guard hooks** current (`--check` 2026-10-22); no agents.yaml or `.githooks/` change since 2026-10-17.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1022c`**, pushed, PR #136 (this wrap-up is on it). The lead pushes
+  and opens PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
+  After #136 merges, cut the next lead branch from the new `development`.
+- **Task worktrees** `../restaurant-pos-wt/PHASE1-S3a`, `DESIGN-020` and their `.agent/runs/` dirs: remove after merge.
+  Not the lead's: worktrees `../restaurant-pos-design`, `keen-chebyshev-ccf255`; branch `setting/add-permission`.
 
 ## Running tasks and agents
 
-- **Live agents: the lead only; no pane but the lead's** (and `w2:pE`, not the lead's). **Carry-forwards:** the plan's §5
-  (Phase 2's stay Phase 2). Design left for Phase 1: DESIGN-020, -021, F's BO-07 half, E2 (BO-06); G and H later.
+- **Nothing running;** Herdr shows only `lead`. **S3a** (#134, `ec1b9a5`): verify 116/4367, e2e:all 74, Codex clean.
+  **DESIGN-020** (#135, `7acdf7a`): Opus review 7 findings fixed, lead red by mutation, all eight checks green.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
-- **For later task files:** S4a gets `reorderItems(categoryId, expected, ids)`, like `reorderCategories` (C1's
-  *Display order* names the scope; its table omits it). S3 reads S2b's Handoff *What S3 needs*.
+- **For later task files** (detail: journal 2026-10-24): S3b's and S4a's inputs, incl. **DESIGN-020 Q1** (option-name
+  swap vs a non-deferrable partial unique index: S4a's, with an architect if needed).
 
 ## Kit facts the next session needs
 
@@ -74,12 +72,12 @@ This wrap-up is on `agent/lead-1022b`. Narrative: [journal/2026-10-21.md](journa
   or the design checks;** the lead's verify note above the Handoff is the evidence (a "blocked" on that is ruled clear).
 - **Lead review instead of a re-review:** trivial changes (`review.trivial_max_lines` 20, no touches flag), or a fully
   ruled fix round whose fixes are the review's own; the lead repeats the red proof and writes the note (S1a, S2a, S2b,
-  DESIGN-017, -018, -019).
+  DESIGN-017 to -020). For a design round, re-do the red by **mutating the new code** (old files may lack fixture hooks).
 - **The browser harness:** `npm run test:e2e` / `test:e2e:all`; not in `verify`. **The lead runs `test:e2e:all` before
   merging any task touching** `apps/`, `packages/api-client`, `packages/contracts` or `db/migrations`. Design checks:
   `PLAYWRIGHT_MODULE="$PWD/node_modules/playwright" node docs/design/checks/designNNN.cjs` in a worktree after `npm ci`
-  (`design014.cjs` takes `DESIGN014_OUTPUT`, the others `DESIGN_EVIDENCE_DIR`). **The lead runs them without approval:
-  doing so for a designer saves its allowance and the owner's approvals** (10-22).
+  (`design014.cjs` takes `DESIGN014_OUTPUT`, the others `DESIGN_EVIDENCE_DIR`). **The lead runs them for the designer**
+  (saves its allowance and the owner's approvals). `design014` is 287 on `development`.
 - **The lead cannot sign in to the back office** (no credentials, never the owner's): a screen's look is the owner's.
   **Close panes once no round is expected;** resume a hand-opened agent with `--resume <session>` (grep "You are <name>"
   in `~/.claude/projects/<worktree-path>/*.jsonl`) in a fresh pane.
@@ -93,11 +91,11 @@ This wrap-up is on `agent/lead-1022b`. Narrative: [journal/2026-10-21.md](journa
   committed there, then `--resume --message` (builder) or a prompt (hand-opened). Widen `owns` in the same commit when a
   finding needs a file outside it (S2a, S2b: the manifests and lockfile, edited by hand, then the lead's `npm ci`).
 - **Codex reviews Claude-built work; Claude Opus reviews Codex- or OpenCode-built work** (owner exceptions, each once:
-  DESIGN-017 r3, -018, -019). **Codex's five-hour allowance, shared by designer and reviewer, ran out 10-21 and 10-22.**
-  Stand-ins: wait, OpenCode `openai/gpt-6-astra` (narrow brief), or an owner exception. Never `gpt-6-luna` in a slice.
-- **Designers are hand-opened** (the dispatcher routes `ui` to the builder; journal 10-06, Claude launch 10-12). **A
-  Codex start stops on its update prompt (the owner's);** a script that waits for it, then briefs, works (10-22). Write
-  `.agent/runs/<ID>/builder/meta.json` before a review (`"cli"` decides the reviewer's family).
+  DESIGN-017 r3, -018, -019, -020). **Allowances:** Codex weekly ~20% on 10-22 (resets 27 Oct 14:18); its 5h limit ran out
+  mid-design twice. Stand-ins: wait, OpenCode `openai/gpt-6-astra`, or an owner exception. Never `gpt-6-luna` in a slice.
+- **Designers are hand-opened** (recipes: journal 2026-10-24). **A Codex start stops on its update prompt (the owner's).**
+  Write `.agent/runs/<ID>/builder/meta.json` before a review (`"cli"` decides the reviewer's family). Handover: a note
+  above the Handoff naming uncommitted files and rulings, commit only it, brief the next designer to finish.
 - **Hand checks serve from the task's worktree** (`build:clients`, `npm run dev -w apps/server`). Never print
   `db/dev.env`. `ask.sh`: Haiku, then luna. Contract: `ALLOW_CONTRACT=1`.
 
@@ -111,17 +109,19 @@ This wrap-up is on `agent/lead-1022b`. Narrative: [journal/2026-10-21.md](journa
   schema check compares migration names, not contents (S0). `npm ci` warns about install scripts. One high npm advisory,
   development-only (PHASE0-008a). **BO-01 provisional** (S10 builds DESIGN-016). **012a/b:** no `makePeople` in `e2e/`.
 - **Lengths are code points** (zod 4.6.5, `char_length`), not the "UTF-16 units" comments, `D:1607` and two client checks
-  say; the client refuses more, never less. Queued cleanup (QUEUE lists every place).
+  say; the client refuses more, never less. Queued cleanup (QUEUE lists every place; S3a's new comments are correct).
 
 ## Questions waiting for the owner
 
 Nothing here is decided. Detail is where each line points.
 
-- **Lead rulings, yours to overturn:** DESIGN-019 F7 (86 and Make available act at once beside an open edit; archive and
-  restore ask first); S2b's first-run unknown sentence (the builder's); the NPWPD without a charset (DESIGN-018 Q2's other
-  half); S1b's nine rulings and two questions; S0's `0009`; C3's acting-manager lock, `OWN_ACCOUNT`/`USER_CHANGED`,
-  `DUPLICATE`'s `{ field }`; the S1a and DESIGN-017 round rulings; PHASE0-004 to 013, DESIGN-011-016, ARCH-006, FE-030-036.
-- **When to start design slice E2 (BO-06 Users)**: every owner answer it waited on is in; lead: after DESIGN-020.
+- **Lead rulings, yours to overturn:** DESIGN-020 (task file *Handover*, *Round 2*): names 1-64/1-32; *Keep* on child
+  rows (touched row keeps the draft whole; an exception to DESIGN-018's no-merge, child rows only); URL-only return
+  plumbing; BO-04's own read; over-maximum variant noted, not refused. The S3 split. DESIGN-019 F7; S2b's first-run
+  unknown sentence; the NPWPD without a charset; S1b's nine rulings and two questions; S0's `0009`; C3's acting-manager
+  lock, `OWN_ACCOUNT`/`USER_CHANGED`, `DUPLICATE`'s `{ field }`; the S1a and DESIGN-017 round rulings; PHASE0-004 to
+  013, DESIGN-011-016, ARCH-006, FE-030-036.
+- **When to start design slice E2 (BO-06 Users)**: every owner answer it waited on is in; lead: after DESIGN-021.
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
   for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
@@ -143,8 +143,8 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S3** (tender types): server and BO-08's payment methods together, from C2 §8 whole, C2's pattern, DESIGN-018's
-   payment-methods rows and S2b's *What S3 needs*. `touches: boundaries`: Codex review, the owner's look.
-2. **DESIGN-020** (BO-04 item editor; Codex, hand-opened; the lead runs its checks), beside S3. Then **S4a** (the catalog
-   server, with `reorderItems` and DESIGN-019/020's name lengths), and **DESIGN-021** (the POS addition).
-3. **Small:** the code-point lengths cleanup; DESIGN-018's `first-run-closed` drawing (ride with DESIGN-020's designer).
+1. **After #134 merges:** fast-forward, `npm run db:migrate` (`0012`), remove S3a's worktree and run dir. Then write and
+   dispatch **S3b** (BO-08's payment-methods part; removes S3a's `ConfigApi` exclusion; `ui`, so Codex reviews).
+2. **After #135 merges:** remove its worktree and run dir. Then **S4a** (the catalog server, from C1 §2 and DESIGN-019/020's
+   rules) and **DESIGN-021** (the POS addition), mindful of the Codex allowance for designer and reviewer alike.
+3. **Small:** the code-point lengths cleanup (between slices).
