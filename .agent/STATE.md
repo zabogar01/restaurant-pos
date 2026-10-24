@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-24 (S3b dispatched): `development` at `8722770` (#134 S3a, #135 DESIGN-020, #136 merged); dev `pos` at `0012`.
-**Running: the S3b builder.** No PR open. Narrative: [journal/2026-10-22.md](journal/2026-10-22.md) (*Evening*),
+2026-10-24 (S3b in review): `development` at `8722770` (#134 S3a, #135 DESIGN-020, #136 merged); dev `pos` at `0012`.
+**Running: the S3b Codex review.** No PR open. Narrative: [journal/2026-10-22.md](journal/2026-10-22.md) (*Evening*),
 [journal/2026-10-24.md](journal/2026-10-24.md).
 
 ## Phase and gates
@@ -51,9 +51,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE1-S3b builder** (`phase1-s3b`, Claude Sonnet, interactive, pane `PHASE1-S3b`), dispatched 2026-10-24 from the
-  kit (background task; the task file lives only in the worktree). `ui`, `touches: boundaries, identity`: Codex reviews,
-  the owner looks before merge. Baseline verify 116/4367, e2e:all 74.
+- **PHASE1-S3b in review:** builder DONE (`a1e85ae`, Sonnet); lead verify 120/4480, e2e:all 78 (`060ca33`); the
+  builder's DUPLICATE question ruled (stands); lead finding L1 (`sameName` folds accents) for round 2. Codex reviewer
+  (oneshot, pane `PHASE1-S3b-review`) running. `touches: boundaries, identity`: the owner looks before merge.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 - **For later task files** (detail: journal 2026-10-24): S4a's inputs, incl. **DESIGN-020 Q1** (option-name
@@ -142,7 +142,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S3b:** verify, `test:e2e:all`, Codex review (allowance resets 27 Oct 14:18), the owner's look at BO-08, merge.
+1. **S3b:** Codex review, round 2 for L1 and any findings (allowance resets 27 Oct 14:18), the owner's look at BO-08, merge.
 2. **Then S4a** (the catalog server, from C1 §2 and DESIGN-019/020's rules) and **DESIGN-021** (the POS addition),
    mindful of the Codex allowance for designer and reviewer alike.
 3. **Small:** the code-point lengths cleanup (between slices).
