@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-24 (wrap-up for a fresh session): `development` at `d164a23`; dev `pos` at `0011`. **Nothing is running; no
-agent but the lead.** **Open for the owner: #134 (S3a), #135 (DESIGN-020), #136 (lead record).** Narrative:
-[journal/2026-10-22.md](journal/2026-10-22.md) (*Evening*), [journal/2026-10-24.md](journal/2026-10-24.md).
+2026-10-24 (S3b dispatched): `development` at `8722770` (#134 S3a, #135 DESIGN-020, #136 merged); dev `pos` at `0012`.
+**Running: the S3b builder.** No PR open. Narrative: [journal/2026-10-22.md](journal/2026-10-22.md) (*Evening*),
+[journal/2026-10-24.md](journal/2026-10-24.md).
 
 ## Phase and gates
 
@@ -19,8 +19,8 @@ agent but the lead.** **Open for the owner: #134 (S3a), #135 (DESIGN-020), #136 
   (`docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`). 11 slices S0-S10. **Done and merged:** S0
   (#115: compose `name:`, `0009`, startup schema check), S1a (#119: tables server, `0010`, `DUPLICATE`), S1b (#123:
   BO-05, the rail, the form pattern), S2a (#128: settings server, `0011`, `SETTINGS_CHANGED`, the rate codec, the
-  installation constants), S2b (#130: BO-08's settings part). **Complete, not merged:** S3a (#134). **S3 is split** by the
-  lead into S3a (server) and S3b (BO-08's payment-methods part), as S1 and S2 were. Consults: C1 (with ADR-012, #117), C2
+  installation constants), S2b (#130: BO-08's settings part), S3a (#134: tender methods server, `0012`). **S3 is split**
+  by the lead into S3a and S3b (BO-08's payment-methods part, **building**), as S1 and S2 were. Consults: C1 (with ADR-012, #117), C2
   (#116), C3 (#121); C4 (POS catalog) not written; C5 not needed.
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by` (owner-confirmed), DESIGN-018 Q1-Q6 (phone without `/`); S3 tender reactivation
@@ -34,30 +34,29 @@ agent but the lead.** **Open for the owner: #134 (S3a), #135 (DESIGN-020), #136 
 - **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office: sign-in, provisional BO-01, M-6, the rail, BO-05,
   BO-08's settings part. Pattern later forms copy: `tables/model.ts`, `settings/model.ts` (versioned), `fieldsInError`,
   `work/guard.ts`, `Decision` (S1b, S2b Handoffs). **Frost designed:** A, B, C, I, E1 (BO-05), F's BO-08 half (018, 018b),
-  BO-03 (019, #131), **BO-04 (020, #135, not merged)**; left: DESIGN-021 (POS, G6), F's BO-07 half, E2; G, H later.
+  BO-03 (019, #131), BO-04 (020, #135); left: DESIGN-021 (POS, G6), F's BO-07 half, E2; G, H later.
 - **Implementation gate: OPEN since 2026-09-14** (roadmap archive L135-180). It approves nothing open in PRD §9.
 
 ## Integration branch
 
-- **`development`** at `d164a23` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `8722770` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
-  **before reporting or dispatching**. #134 lands `0012`.
+  **before reporting or dispatching**. `0012` applied 2026-10-24.
 - **Guard hooks** current (`--check` 2026-10-22); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1022c`**, pushed, PR #136 (this wrap-up is on it). The lead pushes
-  and opens PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
-  After #136 merges, cut the next lead branch from the new `development`.
-- **Task worktrees** `../restaurant-pos-wt/PHASE1-S3a`, `DESIGN-020` and their `.agent/runs/` dirs: remove after merge.
-  Not the lead's: worktrees `../restaurant-pos-design`, `keen-chebyshev-ccf255`; branch `setting/add-permission`.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1024`** (from `8722770`), not pushed yet. The lead pushes and opens
+  PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
+- **Task worktree** `../restaurant-pos-wt/PHASE1-S3b` (`agent/phase1-s3b`); S3a's and DESIGN-020's removed. Not the lead's: worktrees `../restaurant-pos-design`, `keen-chebyshev-ccf255`; branch `setting/add-permission`.
 
 ## Running tasks and agents
 
-- **Nothing running;** Herdr shows only `lead`. **S3a** (#134, `ec1b9a5`): verify 116/4367, e2e:all 74, Codex clean.
-  **DESIGN-020** (#135, `7acdf7a`): Opus review 7 findings fixed, lead red by mutation, all eight checks green.
+- **PHASE1-S3b builder** (`phase1-s3b`, Claude Sonnet, interactive, pane `PHASE1-S3b`), dispatched 2026-10-24 from the
+  kit (background task; the task file lives only in the worktree). `ui`, `touches: boundaries, identity`: Codex reviews,
+  the owner looks before merge. Baseline verify 116/4367, e2e:all 74.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
-- **For later task files** (detail: journal 2026-10-24): S3b's and S4a's inputs, incl. **DESIGN-020 Q1** (option-name
+- **For later task files** (detail: journal 2026-10-24): S4a's inputs, incl. **DESIGN-020 Q1** (option-name
   swap vs a non-deferrable partial unique index: S4a's, with an architect if needed).
 
 ## Kit facts the next session needs
@@ -143,8 +142,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **After #134 merges:** fast-forward, `npm run db:migrate` (`0012`), remove S3a's worktree and run dir. Then write and
-   dispatch **S3b** (BO-08's payment-methods part; removes S3a's `ConfigApi` exclusion; `ui`, so Codex reviews).
-2. **After #135 merges:** remove its worktree and run dir. Then **S4a** (the catalog server, from C1 §2 and DESIGN-019/020's
-   rules) and **DESIGN-021** (the POS addition), mindful of the Codex allowance for designer and reviewer alike.
+1. **S3b:** verify, `test:e2e:all`, Codex review (allowance resets 27 Oct 14:18), the owner's look at BO-08, merge.
+2. **Then S4a** (the catalog server, from C1 §2 and DESIGN-019/020's rules) and **DESIGN-021** (the POS addition),
+   mindful of the Codex allowance for designer and reviewer alike.
 3. **Small:** the code-point lengths cleanup (between slices).
