@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S4b]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/menu.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S4c1 — BO-03 Menu in the back office
@@ -420,6 +420,26 @@ BO-03's reorders. *The owner may overturn it.*
 5. Run `npm run verify` and `npm run test:e2e:all`. Commit on this branch. Append a *Round 2* section to the Handoff (what
    changed, each new test and its observed red, the counts), ending `DONE` or `BLOCKED: <question>`, and report to the
    lead through Herdr.
+
+## Lead verify (2026-10-26)
+
+At `f0d88dc` (round 1 `0ff6a88`, round 2 `8220472`), in this worktree.
+- **Scope.** `git diff --name-only development...HEAD`: the task file and paths in `owns` only. The changed existing tests
+  are `config-api.test.tsx` and `routes.test.ts` (listed), plus `settings.test.tsx` and `sign-in.test.tsx`. In those two,
+  the diff only adds *Menu* to rail assertions (the task's "any existing test that asserts the rail's entries"); nothing
+  is weakened. BO-05's and BO-08's tests and their specs pass unedited with the shared `Decision`.
+- **Runs.** `npm run verify`: 133 files, 4746 tests, green (baseline 125/4593). `npm run test:e2e:all`: 86 passed, in
+  Chromium and WebKit (baseline 78; `menu.spec.ts` adds four per engine).
+- **Round 2 read against its ruling.** The client scope guard is gone. `keepMine` rebuilds a reorder whose scope
+  changed: a draft that moved nothing takes the current order; otherwise it keeps the draft's order for the rows still
+  in the scope and puts new rows last. Nothing is sent. The four new cases had an observed red.
+- **Process deviation.** The builder wrote the screen tests after the code and then applied each mutation; its Handoff
+  names which, and every criterion has an observed red.
+- **Not done by the lead.** The lead cannot sign in to the back office, so it has not walked BO-03 in a real browser;
+  the owner looks before merge. `menu.spec.ts` drives the real routes in both engines.
+- **For the reviewer.** Reviewers cannot reach the database or a browser, so this note is the evidence for those runs,
+  and a "blocked" on that alone is ruled clear. Review against the task, DESIGN-019's Handoff and `D`. Look closely at
+  `menu/model.ts`'s version, held-result and command-lifetime rules, and at the rulings of round 2.
 
 ## Handoff
 
