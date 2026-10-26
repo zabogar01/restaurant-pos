@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries]
 depends_on: [PHASE1-S4a]
 owns: [packages/contracts/src/catalog.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/server/src/http/routes/back-office-catalog.ts, apps/server/src/http/server.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S4b — The catalog routes
@@ -258,6 +258,22 @@ Write the Handoff below in full prose:
 - the real `verify` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify (2026-10-26)
+
+At `6db7d9a`, in this worktree. `git diff --name-only development...HEAD`: the task file and paths in `owns` only. The
+only changed existing test is `error-details.types.ts`, as listed; the new tests are `catalog-routes.test.ts` and
+`packages/contracts/test/catalog.test.ts`. `npm run verify`: 125 files, 4593 tests, green (baseline 123/4540).
+`npm run test:e2e:all`: 78 passed (Chromium and WebKit), unchanged. The lead read `back-office-catalog.ts` and
+`catalog.ts` (contracts) against *The shape*. The eleven routes match the table, with the read `interactive: false`.
+One `answered` helper maps `STALE` to 409 `CATALOG_CHANGED`, `NOT_FOUND` to 404, `DUPLICATE` to bare 409 (the domain's
+`of` is dropped), and `INVALID` to 400 `VALIDATION_FAILED`. Prices are matched by regex in the schema, read with
+`decodeMoney` and written with `encodeMoney`, never `Number`. Every object is strict, `order` a union of two strict
+objects, and `expectedVersion` 0 to 2^31−1. `CATALOG_CHANGED` is bare in `ErrorBody` and placed in both code maps, and
+`ConfigApi` excludes the catalog paths with its S4c comment. **Noted:** the builder wrote the tests with the code and
+applied each red mutation afterwards (its Handoff says so); every criterion has an observed red. Reviewers cannot
+reach the database or a browser: this note is the evidence for the server and browser runs, and a "blocked" on that
+alone is ruled clear. Sent to review (`touches: money, boundaries`); the owner looks before merge.
 
 ## Handoff
 
