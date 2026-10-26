@@ -5,8 +5,8 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S4b]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/menu.spec.ts, e2e/support/**]
-status: active
-cycles: 0
+status: complete
+cycles: 2
 ---
 # PHASE1-S4c1 — BO-03 Menu in the back office
 
@@ -469,6 +469,28 @@ review proposes.**
 3. Run `npm run verify` and `npm run test:e2e:all`. Commit on this branch. Append a *Round 3* section to the Handoff
    (what changed, each new test and its observed red, the counts), ending `DONE` or `BLOCKED: <question>`, and report to
    the lead through Herdr. This is the last fix round this task allows (`max_fix_cycles` 2).
+
+## Round 3 lead review and acceptance (2026-10-26)
+
+Round 3 was a fully ruled fix round whose fixes are the review's own, so the lead reviewed it itself instead of running a
+second Codex round (kit practice). The lead read `05a6e54` against the round 3 rulings:
+- `retryRead` records what asked for it by identity, keeps the completed read's comparison, and holds the presentation
+  in `heldRetry` while the gate is shut or a decision is open;
+- `flush()` presents it once and never reads again;
+- *New category* and `openCreate` are live except while the first read is loading or a command is pending;
+- the complete-read rule stays on the reorder openers.
+
+**Red proofs repeated by the lead.** Each mutation was applied to round 3's `model.ts`, the file was run, and the file
+was restored with `git checkout`:
+- **F1:** the hold replaced by an unconditional present. All four new retry cases in `menu-departure.test.tsx` failed.
+- **F2:** `openCreate` gated on a complete read again. The failed-first-read creation case in `menu.test.tsx` failed
+  (1 of 31).
+
+**Final tree, run by the lead:** `npm run verify` 133 files, 4752 tests, green; `npm run test:e2e:all` 86 passed
+(Chromium and WebKit).
+
+**Complete.** `touches: money, boundaries, identity`, so the owner looks at BO-03 served before merge: the lead cannot
+sign in to the back office. No migration.
 
 ## Handoff
 
