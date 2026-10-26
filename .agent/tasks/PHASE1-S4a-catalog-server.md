@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries]
 depends_on: [PHASE1-S3b]
 owns: [db/migrations/0013_catalog.sql, apps/server/src/domain/catalog.ts, apps/server/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S4a — The catalog on the server
@@ -340,6 +340,22 @@ signature and outcome type, the `DUPLICATE` subjects, the `INVALID` cases, `edit
 and on what evidence (in particular whether rule 6's sequence met any case it could not handle); tests changed and why;
 each red proof (mutation, failure read, reverted); what was found and not fixed; the real `verify` output. End with
 `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify (2026-10-26)
+
+At `5def2e7`, in this worktree. `git diff --name-only development...HEAD`: the task file and paths in `owns` only; the
+changed existing tests are the two listed (`schema.test.ts`, `harness-race.test.ts`), plus the new `catalog.test.ts`.
+`npm run verify`: 123 files, 4540 tests, green (baseline 122/4486). Read `0013_catalog.sql` and `catalog.ts` against
+*The shape*: the seeded row and the +1 trigger; the four tables, checks, partial unique indexes and grants as ruled, no
+`DELETE` and no grant on `item_id`; `catalogWrite` locks `FOR UPDATE` as its first statement, then compares the
+version, then runs the body, and advances only when the body wrote; `UNVERSIONED` is a symbol; refusals roll back by a
+thrown private error; `23505` maps to `DUPLICATE` only on the four named indexes, any other error to a fixed message with
+no cause; `applyList` follows rule 6's six steps in order; `readCatalog` sets `REPEATABLE READ READ ONLY` before its
+first query; money is read with `BigInt` and written with `toString(10)`, never `Number`. Every acceptance criterion has
+a named test; criterion 16's test is stronger than the task's (a no-op archive, and the waiting statement read from
+`pg_stat_activity`). `npm run test:e2e:all` is the lead's before merge. Reviewers cannot reach the database or a browser:
+this note is the evidence for the server runs, and a "blocked" on that alone is ruled clear. Sent to review (`touches:
+money, boundaries`); the owner looks before merge.
 
 ## Handoff
 
