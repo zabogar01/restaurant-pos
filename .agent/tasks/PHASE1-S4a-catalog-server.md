@@ -343,3 +343,84 @@ each red proof (mutation, failure read, reverted); what was found and not fixed;
 
 ## Handoff
 
+**What I did.** Migration `db/migrations/0013_catalog.sql`: `catalog_revision` (singleton key, version check, one seeded row at 0, the `BEFORE UPDATE` trigger `require_catalog_version_step` that refuses any change other than +1, grants `SELECT` and `UPDATE (version)`), the four tables `menu_category`, `menu_item`, `menu_item_variant`, `menu_item_modifier` with exactly C1 §2.2's columns, price checks, order checks, the name checks (32, 64, 32, 32 code points), the four partial unique indexes named as the task says, and C1's grants. Nothing is seeded except the revision row. `apps/server/src/domain/catalog.ts`: `catalogWrite`, the commands and `readCatalog`. Tests: `apps/server/test/schema.test.ts` (privilege map plus `catalog_revision` and `menu catalog` describes), `apps/server/test/harness-race.test.ts` (`MIGRATED_TABLES`), and a new `apps/server/test/catalog.test.ts` (44 cases). The commit is on `agent/phase1-s4a`; its hash is given by `git log` (I cannot put the hash of the commit inside the commit). No route, contract, client, audit, seed or `pool.ts` change.
+
+**What S4b needs.**
+All functions are exported from `apps/server/src/domain/catalog.ts` and return `Promise<CatalogOutcome<R>>`:
+
+```ts
+type CatalogOutcome<R> =
+  | { kind: 'OK'; version: number; record: R }        // wrote; version is the advanced one
+  | { kind: 'UNCHANGED'; version: number; record: R } // nothing to write; current version
+  | { kind: 'STALE' } | { kind: 'NOT_FOUND' } | { kind: 'INVALID' }
+  | { kind: 'DUPLICATE'; of: 'CATEGORY' | 'ITEM' | 'VARIANT' | 'MODIFIER' };
+
+createCategory(name: string): CatalogOutcome<CatalogCategory>
+editCategory(categoryId: string, expected: number, changes: { name: string }): CatalogOutcome<CatalogCategory>
+reorderCategories(expected: number, categoryIds: string[]): CatalogOutcome<CatalogCategory[]>   // record = the ACTIVE categories, new order
+archiveCategory(categoryId) / restoreCategory(categoryId): CatalogOutcome<CatalogCategory>
+createItem(input: CreateItemInput): CatalogOutcome<CatalogItem>
+editItem(itemId: string, expected: number, changes: ItemChanges): CatalogOutcome<CatalogItem>
+reorderItems(categoryId: string, expected: number, itemIds: string[]): CatalogOutcome<CatalogItem[]>  // record = that category's ACTIVE items, new order
+archiveItem(itemId) / restoreItem(itemId): CatalogOutcome<CatalogItem>
+readCatalog(): Promise<CatalogSnapshot>   // { version, categories, items }; throws the fixed Error on a fault
+```
+
+Records: `CatalogCategory { categoryId, name, displayOrder, isActive }`; `CatalogOption { optionId, name, priceDelta: Money(bigint), displayOrder, isActive }`; `CatalogItem { itemId, categoryId, name, basePrice: Money, displayOrder, isAvailable, isActive, variants, modifiers }` (options include removed ones, marked). Parameter shapes follow the task table without refinement, except that I typed `expected` as a plain `number` on versioned commands.
+
+`CreateItemInput { categoryId, name, basePrice: Money, variants: {name, priceDelta: Money}[], modifiers: {...}[] }`.
+`ItemChanges { fields?: { name?, basePrice?: Money, categoryId? }, variants?: OptionListChanges, modifiers?: OptionListChanges }`,
+`OptionListChanges { added?: {key,name,priceDelta}[], edited?: {id, name?, priceDelta?}[], removed?: string[], order?: ({id}|{key})[] }`.
+
+`DUPLICATE` subjects: `CATEGORY` (create, rename, restore), `ITEM` (create, rename, restore), `VARIANT`/`MODIFIER` (create with two options of one list sharing a name, `editItem` rename/add collisions). They come from the constraint name, so a restore of an item is `ITEM`, never anything else.
+
+`INVALID` cases: a reorder list that is not exactly the scope's active ids, each once (missing, extra, archived, unknown, repeated); in `editItem`, an id twice across or within `edited` and `removed`, a `key` repeated within `added`, and an `order` that is not exactly the list's final active set (survivors by `{id}` plus added by `{key}`, each once). `NOT_FOUND`: unknown category, item, or option (including another item's, the other list's, or a removed option). `STALE`: version mismatch (judged first, so even an unknown id is `STALE`), and an archived category as a destination (create, move, reorder of its items). **Order of checks in `editItem`** (the task left it open): version; item `NOT_FOUND`; shape `INVALID`; option `NOT_FOUND`; destination category (`NOT_FOUND`/`STALE`); `order` `INVALID`; then no-op detection. A move whose `categoryId` equals the stored one is not a move and is not checked for archival.
+
+**Reordering with gaps.** A reorder is a no-op only if the list equals the current sequence and the active rows' display orders are strictly increasing (gaps from archived rows are fine; ties are not, since the screens break ties by name, so a save that settles a tie is a change). A write rewrites the scope's active rows to 0…n−1.
+
+**Calling `catalogWrite` (S5, S6a).** `catalogWrite<R>(expected: number | typeof UNVERSIONED, body: (tx) => Promise<{ wrote: boolean; record: R }>)`. A versioned command passes its `expected` number; an unversioned one passes the exported symbol `UNVERSIONED` (a symbol, so a `number` parameter can never be "none" by accident, and version 0 stays a real version). The helper's first statement is `SELECT version FROM catalog_revision FOR UPDATE`; the body gets a client with `.query` only; return `{ wrote: true, record }` after writing, `{ wrote: false, record }` for a no-op. To refuse from inside a body call the exported `refuse('STALE' | 'NOT_FOUND' | 'INVALID')`, which throws a private class, rolls the transaction back and answers that outcome, so a refusal can never leave a half-write. Unique violations on the four named indexes become `DUPLICATE`; any other error becomes `Error('The catalog store failed')` with no cause. S5's 86 commands should be unversioned `catalogWrite` calls writing `is_available` and returning the item (loadItem is not exported; export it, or read it in the body). S6a adds its own table and calls the same helper; its unique index would need its own entry in `DUPLICATE_OF` and in `DuplicateSubject`.
+
+**What I decided, and on what evidence.**
+1. *Rule 6's sequence met no case it could not handle.* Swap of two variant names, case-only rename, remove-and-add of the same name, a mix of remove, rename, reprice and add across both lists, and the real-duplicate refusals all behave as ruled (tests under "one save over option names"). The `edited` entries are split into renamed (name actually differs from the stored one) and price-only; an entry whose values equal the stored ones does nothing, so a case-only rename is a rename and an identical one is not.
+2. *The no-op test for the "lock first" property needed a stronger test than the task's.* The task's mutation, skipping the lock for unversioned commands, would not fail a test that only waits for `createCategory` or a real `archiveItem`: those still block later on the version `UPDATE`, which takes the same row lock. A command that writes nothing is the one that proves the lock is first. So the lock test (criterion 16) includes `archiveItem` of an already archived item, and also asserts that the statement the waiting backend is stuck on is exactly `SELECT version FROM catalog_revision FOR UPDATE` (read from `pg_stat_activity`). Both mutations (drop the `FOR UPDATE`; skip it when unversioned) fail on that assertion.
+3. *Refusals throw.* I made refusals inside a body a thrown private error, not a returned value, so that the transaction rolls back by `withTransaction`'s own mechanism whatever the body had already written.
+4. *Criterion 17 has no red beyond the typing rule, as the task says.*
+5. *Criterion 28 is a guard with no red*: the audit count is unchanged across every command and a refusal.
+6. `readCatalog` is several statements, so criterion 25 uses a `vi.spyOn(pg.Client.prototype, 'query')` wrapper that runs a competing commit (a price change and a version advance, on the owner connection) after the first statement that mentions `catalog_revision`.
+
+**Existing tests changed.** `schema.test.ts` case 1's privilege map gained five tables (listed by the task); `harness-race.test.ts`'s `MIGRATED_TABLES` gained five (listed by the task). No other existing test or assertion changed, none weakened. The case 14 "no float/numeric/money column" test covers the new tables without change and stays green.
+
+**Red proofs** (each: mutation applied, the failure read, reverted; a script in my scratchpad did the apply-run-restore):
+- C-1: `UPDATE (item_id)` granted on `menu_item_variant` → case 1 fails on the privilege map, and the C-4 case fails (`the statement succeeded`).
+- C-2: seed insert dropped → *holds exactly one row* fails (`expected [] to deeply equal [{is_singleton: true, version: 0}]`).
+- C-3: `GRANT UPDATE (version)` dropped → the C-3 case fails on the lock statements (and case 1 on the map).
+- C-4: `GRANT DELETE ON menu_item` → `DELETE FROM menu_item: expected '23503' to be '42501'`.
+- C-5: trigger dropped → the +2 update succeeds (`the statement succeeded; it was expected to be refused`).
+- C-6: modifier check given the variant's bound → −1 is stored.
+- C-7: `[[:cntrl:]]` dropped on `menu_item` → ESC is stored.
+- C-8: `parent_modifier_id` added → `menu_item_modifier: expected [ …(8) ] to deeply equal [ …(7) ]`.
+- C-9: a category seeded → `menu_category: expected [ { '?column?': 1 } ] to deeply equal []`.
+- Criterion 10: variant index on `name` → the case-variant insert is stored.
+- C-10/11: `wrote: !isActive` in the item flag setter (skip the advance on restore) → the `restoreItem` row fails.
+- C-12: advance unconditionally → `editCategory to the identical name: expected 'OK' to be 'UNCHANGED'`.
+- C-13: version comparison removed → `editItem: expected 'OK' to be 'STALE'`, and the unknown-id case gets `NOT_FOUND`.
+- C-14: `FOR UPDATE` dropped → `expected 'OK' to be 'STALE'`.
+- Criterion 16: lock skipped when unversioned → `createCategory waits on the lock, its first statement: …` fails (see decision 2).
+- C-16: only existence checked → `createItem into an archived category: expected 'OK' to be 'STALE'`.
+- C-17: `archiveCategory` also archives items → the items' `xmin` assertion fails.
+- Criterion 20: every `23505` mapped to `ITEM` → `restoreCategory: expected { kind: 'DUPLICATE', of: 'ITEM' } to deeply equal { …'CATEGORY' }`.
+- C-19: options looked up by id alone → `another item's variant, edited: expected 'OK' to be 'NOT_FOUND'`.
+- Criterion 22: subset accepted → `categories: one missing: expected 'OK' to be 'INVALID'`.
+- Criterion 23, three mutations: renames without steps 2 and 4 → the swap answers `DUPLICATE`; additions before removals → `removes Regular and adds a new Regular` answers `DUPLICATE`; step 4 only omitted → the renamed options are left inactive (`isActive` assertion fails).
+- Criterion 24: reorder also shifts archived rows → `expected 101 to be 1`.
+- C-18: `SET TRANSACTION … REPEATABLE READ` removed → `expected 1n to be 25000n`.
+- Criterion 26: `base_price` read through `Number(...)` → `expected 25000 to be 25000n`.
+- Criterion 27: original error rethrown → `expected 'new row for relation "menu_item" viol…' to be 'The catalog store failed'`.
+
+**Found and not fixed.** (a) `DESIGN-019`'s and C2 §4's "UTF-16 units" wording is wrong, as the task says; I wrote none and touched none. (b) `loadItem` and the row readers are not exported; S5 may want an exported `readItem(tx, itemId)`. (c) The unversioned commands carry no expected version by ruling, so a `restoreItem` after a long-open screen can restore into a category that has since been archived; the task allows it, and the item stays hidden at the POS. (d) No formatter touched any file.
+
+**Verify.** `npm run verify`: typecheck clean; `Test Files 123 passed (123)`, `Tests 4540 passed (4540)` (baseline confirmed first at 122 files, 4486 tests; the new file is `catalog.test.ts`, +54 tests). I did not run `npm run test:e2e:all`; the lead does before merge. No browser was needed or used.
+
+**What the next agent needs and does not have.** `npm run db:migrate` on the development database `pos` after the merge (the server will refuse to start until then). S4b needs a decision on what `DUPLICATE`'s subject looks like on the wire, and whether BO-04 needs a single-item read.
+
+DONE

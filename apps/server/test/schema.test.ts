@@ -149,6 +149,32 @@ describe('privileges', () => {
       table: ['INSERT', 'SELECT'],
       columns: { name: ['UPDATE'], is_active: ['UPDATE'] },
     },
+    // S4a-1: the counter is the one updatable column (it is also what lets pos_app lock
+    // the row); the catalog tables allow no DELETE, and no id, created_at or option item_id.
+    catalog_revision: { table: ['SELECT'], columns: { version: ['UPDATE'] } },
+    menu_category: {
+      table: ['INSERT', 'SELECT'],
+      columns: { name: ['UPDATE'], display_order: ['UPDATE'], is_active: ['UPDATE'] },
+    },
+    menu_item: {
+      table: ['INSERT', 'SELECT'],
+      columns: {
+        category_id: ['UPDATE'],
+        name: ['UPDATE'],
+        base_price: ['UPDATE'],
+        display_order: ['UPDATE'],
+        is_available: ['UPDATE'],
+        is_active: ['UPDATE'],
+      },
+    },
+    menu_item_variant: {
+      table: ['INSERT', 'SELECT'],
+      columns: { name: ['UPDATE'], price_delta: ['UPDATE'], display_order: ['UPDATE'], is_active: ['UPDATE'] },
+    },
+    menu_item_modifier: {
+      table: ['INSERT', 'SELECT'],
+      columns: { name: ['UPDATE'], price_delta: ['UPDATE'], display_order: ['UPDATE'], is_active: ['UPDATE'] },
+    },
   };
 
   const TABLE_PRIVILEGES = ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE'];
@@ -654,6 +680,259 @@ describe('tender_method', () => {
     await insert('GoPay', false);
     const count = await ownerQuery<{ n: string }>('SELECT count(*) AS n FROM tender_method');
     expect(only(count).n).toBe('4');
+  });
+});
+
+// S4a: the catalog's coordination row and four tables (consult C1 section 2). The case
+// numbers are C1 section 2.4's.
+describe('catalog_revision', () => {
+  const version = async () => only(await ownerQuery<{ version: number }>('SELECT version FROM catalog_revision')).version;
+
+  it('holds exactly one row, version 0, after migration; a second row is refused (C-2)', async () => {
+    expect(await ownerQuery('SELECT is_singleton, version FROM catalog_revision')).toEqual([
+      { is_singleton: true, version: 0 },
+    ]);
+    expect((await refusal(ownerQuery('INSERT INTO catalog_revision DEFAULT VALUES'))).constraint).toBe(
+      'catalog_revision_pkey'
+    );
+    const falseKey = await refusal(ownerQuery('INSERT INTO catalog_revision (is_singleton) VALUES (false)'));
+    expect(falseKey.constraint).toBe('catalog_revision_singleton_check');
+  });
+
+  it('lets pos_app update and lock the row, and refuses INSERT, DELETE and TRUNCATE (C-3)', async () => {
+    for (const sql of [
+      'INSERT INTO catalog_revision DEFAULT VALUES',
+      'DELETE FROM catalog_revision',
+      'TRUNCATE catalog_revision',
+      'UPDATE catalog_revision SET is_singleton = true',
+    ]) {
+      expect((await refusal(query(sql))).code, sql).toBe(PERMISSION_DENIED);
+    }
+    await query('SELECT version FROM catalog_revision FOR UPDATE');
+    await query('SELECT version FROM catalog_revision FOR SHARE');
+    await query('UPDATE catalog_revision SET version = version + 1');
+    expect(await version()).toBe(1);
+  });
+
+  it('moves forward by one and by nothing else, as the owner too (C-5)', async () => {
+    for (const sql of [
+      'UPDATE catalog_revision SET version = version + 2',
+      'UPDATE catalog_revision SET version = version - 1',
+      'UPDATE catalog_revision SET version = version',
+    ]) {
+      const failure = await refusal(ownerQuery(sql));
+      expect(failure.code, sql).toBe(RAISE_EXCEPTION);
+    }
+    expect(await version()).toBe(0);
+    await ownerQuery('UPDATE catalog_revision SET version = version + 1');
+    expect(await version()).toBe(1);
+  });
+
+  it('has exactly the columns written here (C-8)', async () => {
+    expect(await columnsOf('catalog_revision')).toEqual([
+      'is_singleton boolean NOT NULL true',
+      'version integer NOT NULL 0',
+    ]);
+  });
+});
+
+/** name type nullability default, in column order, as the table has them. */
+async function columnsOf(table: string): Promise<string[]> {
+  const rows = await ownerQuery<{ column_name: string; data_type: string; is_nullable: string; column_default: string | null }>(
+    `SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = $1 ORDER BY ordinal_position`,
+    [table]
+  );
+  return rows.map(
+    (c) => `${c.column_name} ${c.data_type} ${c.is_nullable === 'YES' ? 'NULL' : 'NOT NULL'} ${c.column_default}`
+  );
+}
+
+describe('menu catalog', () => {
+  const TABLES = ['menu_category', 'menu_item', 'menu_item_variant', 'menu_item_modifier'] as const;
+
+  const category = async (name = 'Food', active = true) =>
+    only(
+      await ownerQuery<{ id: string }>(
+        'INSERT INTO menu_category (name, display_order, is_active) VALUES ($1, 0, $2) RETURNING id',
+        [name, active]
+      )
+    ).id;
+  const item = async (categoryId: string, name = 'Soup', price: number | bigint = 100, active = true) =>
+    only(
+      await ownerQuery<{ id: string }>(
+        `INSERT INTO menu_item (category_id, name, base_price, display_order, is_active)
+         VALUES ($1, $2, $3, 0, $4) RETURNING id`,
+        [categoryId, name, String(price), active]
+      )
+    ).id;
+  const option = (table: 'menu_item_variant' | 'menu_item_modifier') =>
+    async (itemId: string, name = 'Large', delta: number | bigint = 0, active = true) =>
+      only(
+        await ownerQuery<{ id: string }>(
+          `INSERT INTO ${table} (item_id, name, price_delta, display_order, is_active)
+           VALUES ($1, $2, $3, 0, $4) RETURNING id`,
+          [itemId, name, String(delta), active]
+        )
+      ).id;
+  const variant = option('menu_item_variant');
+  const modifier = option('menu_item_modifier');
+
+  /** Inserts one row of each table with the given name; the parents are made fresh. */
+  const insertNamed: Record<(typeof TABLES)[number], (name: string) => Promise<string>> = {
+    menu_category: (name) => category(name),
+    menu_item: async (name) => item(await category(`C-${name.length}-${Math.random()}`), name),
+    menu_item_variant: async (name) => variant(await item(await category(`C-${Math.random()}`), `I-${Math.random()}`), name),
+    menu_item_modifier: async (name) => modifier(await item(await category(`C-${Math.random()}`), `I-${Math.random()}`), name),
+  };
+
+  it('has exactly the columns written here: no group, parent, stock, default, image or ex-tax column (C-8)', async () => {
+    expect(await columnsOf('menu_category')).toEqual([
+      'id uuid NOT NULL gen_random_uuid()',
+      'name text NOT NULL null',
+      'display_order integer NOT NULL null',
+      'is_active boolean NOT NULL true',
+      'created_at timestamp with time zone NOT NULL now()',
+    ]);
+    expect(await columnsOf('menu_item')).toEqual([
+      'id uuid NOT NULL gen_random_uuid()',
+      'category_id uuid NOT NULL null',
+      'name text NOT NULL null',
+      'base_price bigint NOT NULL null',
+      'display_order integer NOT NULL null',
+      'is_available boolean NOT NULL true',
+      'is_active boolean NOT NULL true',
+      'created_at timestamp with time zone NOT NULL now()',
+    ]);
+    for (const table of ['menu_item_variant', 'menu_item_modifier']) {
+      expect(await columnsOf(table), table).toEqual([
+        'id uuid NOT NULL gen_random_uuid()',
+        'item_id uuid NOT NULL null',
+        'name text NOT NULL null',
+        'price_delta bigint NOT NULL null',
+        'display_order integer NOT NULL null',
+        'is_active boolean NOT NULL true',
+        'created_at timestamp with time zone NOT NULL now()',
+      ]);
+    }
+  });
+
+  it('is empty after migration (B-24) (C-9)', async () => {
+    for (const table of TABLES) expect(await ownerQuery(`SELECT 1 FROM ${table}`), table).toEqual([]);
+  });
+
+  it('lets pos_app write the granted columns and refuses DELETE, TRUNCATE and an update of id, created_at or an option item_id (C-4)', async () => {
+    const c = await category();
+    const i = await item(c);
+    const v = await variant(i);
+    const m = await modifier(i);
+    const other = await item(c, 'Other');
+    await query(`UPDATE menu_category SET name = 'Drinks', display_order = 1, is_active = false WHERE id = $1`, [c]);
+    await query(
+      `UPDATE menu_item SET category_id = $2, name = 'Stew', base_price = 5, display_order = 1,
+                            is_available = false, is_active = false WHERE id = $1`,
+      [i, c]
+    );
+    await query(`UPDATE menu_item_variant SET name = 'Big', price_delta = -5, display_order = 1, is_active = false WHERE id = $1`, [v]);
+    await query(`UPDATE menu_item_modifier SET name = 'Extra', price_delta = 5, display_order = 1, is_active = false WHERE id = $1`, [m]);
+
+    for (const table of TABLES) {
+      for (const sql of [
+        `DELETE FROM ${table}`,
+        `TRUNCATE ${table}`,
+        `UPDATE ${table} SET id = gen_random_uuid()`,
+        `UPDATE ${table} SET created_at = now()`,
+      ]) {
+        expect((await refusal(query(sql))).code, sql).toBe(PERMISSION_DENIED);
+      }
+    }
+    for (const table of ['menu_item_variant', 'menu_item_modifier']) {
+      const sql = `UPDATE ${table} SET item_id = '${other}'`;
+      expect((await refusal(query(sql))).code, sql).toBe(PERMISSION_DENIED);
+    }
+  });
+
+  it('holds the price bounds on each table (C-6)', async () => {
+    const i = await item(await category());
+    const prices = (name: string, values: Array<[number, boolean]>, insert: (price: number) => Promise<unknown>, constraint: string) =>
+      Promise.all(
+        values.map(async ([price, accepted]) => {
+          if (accepted) {
+            await insert(price);
+          } else {
+            const failure = await refusal(insert(price));
+            expect([name, price, failure.code, failure.constraint]).toEqual([name, price, CHECK_VIOLATION, constraint]);
+          }
+        })
+      );
+    const c = await category('Prices');
+    let n = 0;
+    await prices(
+      'base',
+      [[-1, false], [100000000, false], [0, true], [99999999, true]],
+      (price) => item(c, `P${n++}`, price),
+      'menu_item_base_price_check'
+    );
+    await prices(
+      'variant',
+      [[-100000000, false], [100000000, false], [-99999999, true], [99999999, true]],
+      (price) => variant(i, `V${n++}`, price),
+      'menu_item_variant_delta_check'
+    );
+    await prices(
+      'modifier',
+      [[-1, false], [100000000, false], [0, true], [99999999, true]],
+      (price) => modifier(i, `M${n++}`, price),
+      'menu_item_modifier_delta_check'
+    );
+  });
+
+  it('refuses a name that is blank, untrimmed, over length or holding a control character, and accepts the maximum in emoji (C-7)', async () => {
+    const LIMIT = { menu_category: 32, menu_item: 64, menu_item_variant: 32, menu_item_modifier: 32 } as const;
+    for (const table of TABLES) {
+      const limit = LIMIT[table];
+      const bad = ['', ' ', ' A', 'A ', '\tA', 'A\n', 'x'.repeat(limit + 1), '😀'.repeat(limit + 1), 'A\u001bB', 'A\u009bB', 'A\u007fB'];
+      for (const name of bad) {
+        const failure = await refusal(insertNamed[table](name));
+        expect([table, JSON.stringify(name), failure.code, failure.constraint]).toEqual([
+          table,
+          JSON.stringify(name),
+          CHECK_VIOLATION,
+          `${table}_name_check`,
+        ]);
+      }
+      await insertNamed[table]('x'.repeat(limit));
+      await insertNamed[table]('😀'.repeat(limit));
+    }
+  });
+
+  it('holds one active name per scope in any case, and any number of inactive ones', async () => {
+    const refusedAs = async (insert: Promise<unknown>, constraint: string, label: string) => {
+      const failure = await refusal(insert);
+      expect([label, failure.code, failure.constraint]).toEqual([label, UNIQUE_VIOLATION, constraint]);
+    };
+    const c = await category('Food');
+    await refusedAs(category('FOOD'), 'menu_category_active_name_key', 'category');
+    await category('Food', false);
+    await category('food', false);
+
+    const i = await item(c, 'Soup');
+    await refusedAs(item(c, 'sOUP'), 'menu_item_active_name_key', 'item');
+    const otherCategory = await category('Drinks');
+    await refusedAs(item(otherCategory, 'SOUP'), 'menu_item_active_name_key', 'item, another category');
+    await item(c, 'Soup', 1, false);
+    await item(otherCategory, 'soup', 1, false);
+
+    const j = await item(c, 'Salad');
+    for (const [table, add] of [['menu_item_variant', variant], ['menu_item_modifier', modifier]] as const) {
+      await add(i, 'Large');
+      await refusedAs(add(i, 'LARGE'), `${table}_active_name_key`, table);
+      await add(i, 'Large', 0, false);
+      await add(i, 'large', 0, false);
+      await add(j, 'Large'); // another item may reuse the name
+    }
+    await variant(i, 'Spicy'); // a variant and a modifier of one item may share a name
+    await modifier(i, 'Spicy');
   });
 });
 
