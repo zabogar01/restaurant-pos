@@ -145,7 +145,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       comments (contracts `tables.ts`, `settings.ts`, `auth.ts`; migrations `0010`, `0011`), `D:1607`, the inventory's sign-in
       rows, and the client checks `tables/label.ts`, `SignIn.tsx` (which refuse more than the server) — found by S2b — not written.
     - **PHASE1-S4a**, the catalog on the server (`0013`, `catalogWrite`) — depends on S3b — complete, PR #140.
-    - **S4b-c** (catalog routes, BO-03/BO-04), **S5** (86),
+    - **PHASE1-S4b**, the eleven catalog routes and `CATALOG_CHANGED` — depends on S4a — complete, PR #142.
+    - **S4c** (BO-03, BO-04), **S5** (86),
       **S6** (presets), **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
