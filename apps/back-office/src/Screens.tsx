@@ -1,5 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useScreen } from './router.js';
+import { createMenuModel } from './menu/model.js';
+import { Menu } from './menu/Menu.js';
 import { useConfig, useSession } from './session/useSession.js';
 import { createSettingsModel } from './settings/model.js';
 import { Settings } from './settings/Settings.js';
@@ -15,7 +17,8 @@ import { workGuard } from './work/guard.js';
  * What a screen has in flight belongs to the working area, not to the screen. BO-05's model
  * is made here, once per key, so that leaving Tables for the landing does not stop a command
  * already sent: Discard drops only the draft, and the answer still lands in the list,
- * silently, whether or not Tables is on screen.
+ * silently, whether or not Tables is on screen. BO-08's and BO-03's models are made here for the
+ * same reason.
  */
 export function Screens() {
   const config = useConfig();
@@ -23,17 +26,22 @@ export function Screens() {
   const screen = useScreen();
   const [tables] = useState(() => createTablesModel(config));
   const [settings] = useState(() => createSettingsModel(config));
+  const [menu] = useState(() => createMenuModel(config));
   const frameHolds = useSyncExternalStore(workGuard.subscribe, workGuard.isHeld);
   const signedIn = session.phase === 'signed-in';
 
   useEffect(() => tables.start(), [tables]);
   useEffect(() => settings.start(), [settings]);
+  useEffect(() => menu.start(), [menu]);
   // An answer is presented only while the same manager is signed in and nothing of the
   // frame's is open (a decision, the logout confirmation): nothing is chosen for them.
   useEffect(() => tables.setGate(signedIn && !frameHolds), [tables, signedIn, frameHolds]);
   useEffect(() => settings.setGate(signedIn && !frameHolds), [settings, signedIn, frameHolds]);
+  useEffect(() => menu.setGate(signedIn && !frameHolds), [menu, signedIn, frameHolds]);
 
   switch (screen) {
+    case 'menu':
+      return <Menu model={menu} />;
     case 'tables':
       return <Tables model={tables} />;
     case 'settings':

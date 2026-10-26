@@ -62,6 +62,19 @@ const CONFIG: SessionStore['config'] = {
   '/api/back-office/config/tender-methods/update': unavailable,
   '/api/back-office/config/tender-methods/deactivate': unavailable,
   '/api/back-office/config/tender-methods/reactivate': unavailable,
+  // The catalog answers `unavailable` as well: BO-03 then draws its read failure, and there is
+  // no fixture menu to seed.
+  '/api/back-office/config/catalog': unavailable,
+  '/api/back-office/config/catalog/categories/create': unavailable,
+  '/api/back-office/config/catalog/categories/update': unavailable,
+  '/api/back-office/config/catalog/categories/reorder': unavailable,
+  '/api/back-office/config/catalog/categories/archive': unavailable,
+  '/api/back-office/config/catalog/categories/restore': unavailable,
+  '/api/back-office/config/catalog/items/create': unavailable,
+  '/api/back-office/config/catalog/items/update': unavailable,
+  '/api/back-office/config/catalog/items/reorder': unavailable,
+  '/api/back-office/config/catalog/items/archive': unavailable,
+  '/api/back-office/config/catalog/items/restore': unavailable,
 };
 
 export function createFixtureSession(): SessionStore {
