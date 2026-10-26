@@ -159,7 +159,7 @@ test('M2. a reorder made stale by another write is refused, nothing is saved, an
   await expect(headings(office)).toHaveText([b.name, a.name, `${extra.name} · Archived category`]);
 });
 
-test('M3. when the other write changed the scope itself, Keep my changes never sends an incomplete order', async ({
+test('M3. when the other write added a category to the scope, Keep my changes rebuilds the order with it last and Save order saves it', async ({
   world,
   oneProfile,
 }) => {
@@ -177,13 +177,18 @@ test('M3. when the other write changed the scope itself, Keep my changes never s
   await expect(office.locator('#current-values')).toHaveText(`Current order: ${a.name} → ${b.name} → ${joined.name}`);
   expect(sent(oneProfile, 'categories/reorder')).toBe(1);
 
-  await button(office, 'Keep my changes').click();
-  await button(office, 'Save order').click();
-  await expect(office.locator('#form-notice')).toHaveText(
-    'Something went wrong. Nothing was saved. Your draft is kept. Press Save order to try again.'
-  );
-  expect(sent(oneProfile, 'categories/reorder')).toBe(1);
   expect(await active()).toEqual([a.name, b.name, joined.name]);
+
+  // Keep my changes rebuilds the draft against the reread scope: the new category goes last, and
+  // the merge is visible before Save order. Nothing is sent by Keep.
+  await button(office, 'Keep my changes').click();
+  await expect(office.locator('#draft-order .menu-order-name')).toHaveText([`1. ${b.name}`, `2. ${a.name}`, `3. ${joined.name}`]);
+  expect(sent(oneProfile, 'categories/reorder')).toBe(1);
+  await button(office, 'Save order').click();
+  await expect(status(office)).toHaveText('Category order saved.');
+  expect(sent(oneProfile, 'categories/reorder')).toBe(2);
+  expect(await active()).toEqual([b.name, a.name, joined.name]);
+  await expect(headings(office)).toHaveText([b.name, a.name, joined.name]);
 });
 
 test('M4. an item made through the domain shows its base price with dot grouping and no currency symbol', async ({

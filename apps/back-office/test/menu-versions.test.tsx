@@ -5,7 +5,7 @@ import {
   CATEGORY_ARCHIVE, CATEGORY_CREATE, CATEGORY_REORDER, CATEGORY_RESTORE, CATEGORY_UPDATE, DRINKS,
   ITEM_RESTORE, ITEM_REORDER, MAINS, MENU_ITEMS, READ, SEASONAL, STEW,
   aria, bodyOf, cat, categories, category, catalog, comparison, draftNames, formNotice, harness, headings, item,
-  itemRow, nameError, nameField, named, openMenu, pageStatus, panel, rowText, tap,
+  type Cat, itemRow, nameError, nameField, named, openMenu, pageStatus, panel, rowText, tap,
 } from './menu-support.js';
 import { typeInto } from './tables-support.js';
 
@@ -226,20 +226,44 @@ describe('AC 9. CATALOG_CHANGED on a list edit', () => {
     expect(h.count(ITEM_REORDER)).toBe(1);
   });
 
-  it('a stale reorder whose scope changed is never sent as an incomplete scope', async () => {
-    const host = await open();
-    tap(named(host, 'Reorder categories'));
-    tap(named(host, 'Move down Mains'));
-    h.reply(CATEGORY_REORDER, changed);
-    // Another tab archived Drinks: the active scope is now Mains alone.
-    h.reply(READ, catalog(6, [MAINS, SEASONAL, { ...DRINKS, isActive: false }]));
-    tap(named(host, 'Save order'));
-    await h.settle();
-    tap(named(host, 'Keep my changes'));
-    tap(named(host, 'Save order'));
-    await h.settle();
-    expect(h.count(CATEGORY_REORDER)).toBe(1);
-    expect(text(formNotice(host))).toBe('Something went wrong. Nothing was saved. Your draft is kept. Press Save order to try again.');
+  describe('Keep my changes on a reorder whose scope changed rebuilds the draft against the reread scope', () => {
+    const X = cat(8, 'Extra', 3);
+    const run = async (opts: { moved: boolean; reread: Cat[]; expected: string[]; shown: string[] }) => {
+      const host = await open();
+      tap(named(host, 'Reorder categories'));
+      if (opts.moved) tap(named(host, 'Move down Mains'));
+      h.reply(CATEGORY_REORDER, changed);
+      h.reply(READ, catalog(6, opts.reread));
+      tap(named(host, 'Save order'));
+      await h.settle();
+      tap(named(host, 'Keep my changes'));
+      // The merge is visible before Save order, and nothing was sent by Keep.
+      expect(draftNames(host)).toEqual(opts.shown);
+      expect(h.count(CATEGORY_REORDER)).toBe(1);
+      expect(text(formNotice(host))).toBe('Your changes now build on version 6. Nothing has been saved yet. Press Save order to save them.');
+      h.reply(CATEGORY_REORDER, categories(7, []));
+      tap(named(host, 'Save order'));
+      await h.settle();
+      expect(h.count(CATEGORY_REORDER)).toBe(2);
+      expect(bodyOf(h, CATEGORY_REORDER, 1)).toEqual({ expectedVersion: 6, categoryIds: opts.expected });
+    };
+
+    it('a record added to the scope goes last', async () => {
+      await run({ moved: true, reread: [MAINS, SEASONAL, DRINKS, X], expected: [DRINKS.categoryId, MAINS.categoryId, X.categoryId], shown: ['Drinks', 'Mains', 'Extra'] });
+    });
+
+    it('a record archived out of the scope drops out', async () => {
+      await run({ moved: true, reread: [MAINS, SEASONAL, { ...DRINKS, isActive: false }], expected: [MAINS.categoryId], shown: ['Mains'] });
+    });
+
+    it('one added and one archived at once', async () => {
+      await run({ moved: true, reread: [MAINS, SEASONAL, { ...DRINKS, isActive: false }, X], expected: [MAINS.categoryId, X.categoryId], shown: ['Mains', 'Extra'] });
+    });
+
+    it('a draft that moved nothing takes the current order', async () => {
+      const between = cat(9, 'Between', 1);
+      await run({ moved: false, reread: [MAINS, SEASONAL, DRINKS, between], expected: [MAINS.categoryId, between.categoryId, DRINKS.categoryId], shown: ['Mains', 'Between', 'Drinks'] });
+    });
   });
 
   it('a stale rename whose reread fails has no comparison, a read-only Try again, and Save stays off until the read lands', async () => {

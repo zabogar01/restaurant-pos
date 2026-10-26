@@ -343,14 +343,6 @@ export function createMenuModel(config: ConfigApi) {
   };
   const status = (): WorkStatus => (uncertain() ? 'uncertain' : dirty() ? 'dirty' : 'clean');
 
-  /** The reorder scope the list holds now, for the editor's kind. */
-  const scopeNow = (editor: Editor): string[] =>
-    editor.kind === 'categories'
-      ? scopeOfCategories(state.categories)
-      : editor.recordId === null || state.categories.find((c) => c.categoryId === editor.recordId)?.isActive !== true
-        ? []
-        : activeItemScope(state.items, editor.recordId);
-
   // The list read, for the first load, for Try again, and for a reread after a refusal or an
   // unknown outcome (which does not hide the list while it runs). The latest read decides.
   //
@@ -782,10 +774,11 @@ export function createMenuModel(config: ConfigApi) {
       return;
     }
 
-    // A reorder sends the complete active scope in the draft's order. A draft whose scope is no
-    // longer the list's (another tab archived or restored a record) is never sent: it would be an
-    // incomplete scope, and a reorder never silently merges a changed scope.
-    if (editor.base === null || !sameSet(editor.order, scopeNow(editor))) {
+    // A reorder sends the draft's order, and the server judges it. A scope can only change through
+    // a committed write, which advances the version, so a draft built on an older scope carries an
+    // older `expectedVersion` and is refused `CATALOG_CHANGED` before the list is looked at.
+    // `base` is never null for a reorder (it opens on the standing version); this narrows the type.
+    if (editor.base === null) {
       set({ editor: { ...editor, notice: 'failure', uncertain: false }, focus: aim(draftTarget(editor)) });
       return;
     }
@@ -1026,7 +1019,20 @@ export function createMenuModel(config: ConfigApi) {
     keepMine(): void {
       const { editor } = state;
       if (editor === null || editor.offered === null) return;
-      set({ editor: { ...editor, base: editor.offered.version, offered: null, notice: 'kept' }, focus: aim('save') });
+      const { offered } = editor;
+      let order = editor.order;
+      let originalOrder = editor.originalOrder;
+      if (isReorder(editor) && !sameSet(editor.order, offered.order)) {
+        // The scope changed. The panel shows the rebuilt list before Save order: a draft that moved
+        // nothing takes the current order; otherwise the records it holds that are still in the scope
+        // keep its order, and the records new to the scope follow in their current order.
+        const moved = !sameIds(editor.order, editor.originalOrder);
+        order = moved
+          ? [...editor.order.filter((id) => offered.order.includes(id)), ...offered.order.filter((id) => !editor.order.includes(id))]
+          : [...offered.order];
+        originalOrder = [...offered.order];
+      }
+      set({ editor: { ...editor, base: offered.version, offered: null, order, originalOrder, notice: 'kept' }, focus: aim('save') });
     },
     /** Use current menu: the editor takes the current values; nothing is sent. */
     useCurrent(): void {
