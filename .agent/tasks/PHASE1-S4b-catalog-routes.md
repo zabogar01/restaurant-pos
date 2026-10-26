@@ -261,3 +261,73 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ## Handoff
 
+### What was done
+
+The eleven catalog routes are built on S4a's domain, unchanged, with the catalog contracts and `CATALOG_CHANGED`.
+
+- `packages/contracts/src/catalog.ts` (new): the name schemas, the three price schemas, `CatalogVersion`, the views, the responses and the ten requests. Exported from `index.ts`.
+- `packages/contracts/src/errors.ts`: `CATALOG_CHANGED` in `ErrorCode` and as a `bare(...)` entry in `ErrorBody`.
+- `packages/contracts/src/routes.ts`: eleven `ROUTE_TABLE` entries, with a one-line comment on the read.
+- `apps/server/src/http/routes/back-office-catalog.ts` (new) and its registration in `server.ts` after the tender-methods routes.
+- `packages/api-client/src/client.ts` and `specs.ts`: eleven `ROUTES` names and `SPECS` entries.
+- `apps/back-office/src/session/api.ts`: eleven `officeApi()` functions, and `ConfigApi` excludes the catalog paths with a comment saying S4c adds them to `ConfigApi`, `configApi()`, `fixtureSession.ts` and `config-api.test.tsx`.
+- Both `realSession.ts` maps place `CATALOG_CHANGED` in the general-failure group beside `SETTINGS_CHANGED`.
+- Tests: `apps/server/test/catalog-routes.test.ts` (34 cases), `packages/contracts/test/catalog.test.ts` (19 cases), and a `CATALOG_CHANGED` block in `apps/server/test/error-details.types.ts`.
+
+Commit: one commit on `agent/phase1-s4b` (hash in `git log`; it cannot be written inside the commit itself).
+
+### What S4c needs
+
+Paths, all under `/api/back-office/config/catalog`: `GET` the base path; `POST` `/categories/{create,update,reorder,archive,restore}` and `/items/{create,update,reorder,archive,restore}`. `ROUTES` names: `catalogRead`, `catalogCategoriesCreate|Update|Reorder|Archive|Restore`, `catalogItemsCreate|Update|Reorder|Archive|Restore`. Schemas exported from `@pos/contracts`: `CatalogResponse`, `CategoryResponse`, `CategoriesResponse`, `ItemResponse`, `ItemsResponse`, `CreateCategoryRequest`, `UpdateCategoryRequest`, `ReorderCategoriesRequest`, `ArchiveCategoryRequest`, `RestoreCategoryRequest`, `CreateItemRequest`, `UpdateItemRequest`, `ReorderItemsRequest`, `ArchiveItemRequest`, `RestoreItemRequest`, plus `ItemChanges`, `VariantChanges`, `ModifierChanges`, `CategoryName`, `ItemName`, `OptionName`, `BasePrice`, `VariantPriceChange`, `ModifierPriceChange`, `CatalogVersion`.
+
+Views: `CategoryView { categoryId, name, displayOrder, isActive }`; `VariantView { variantId, name, priceDelta, displayOrder, isActive }`; `ModifierView { modifierId, name, priceDelta, displayOrder, isActive }`; `ItemView { itemId, categoryId, name, basePrice, displayOrder, isAvailable, isActive, variants, modifiers }`. Prices are canonical strings of minor units; decode with `decodeMoney` and encode with `encodeMoney`. Responses carry `version` beside `category`, `categories`, `item` or `items`; the read carries `version`, `categories`, `items`, archived and removed rows included and marked.
+
+Refusals: stale or an archived destination category is 409 `{"error":{"code":"CATALOG_CHANGED"}}`; unknown id is 404 `NOT_FOUND`; a held name is 409 `DUPLICATE`, bare on every route (ruling 1, so the screen cannot tell an option duplicate from an item duplicate by the response); a list that is not the whole scope is 400 `VALIDATION_FAILED`. None carries details. *Unchanged* is read from an answered `version` equal to the version the client stood at; the answer does not say whether the command wrote. Creates, archive and restore carry no version, so for them the client compares with the version of its last read, and an equal answer means nothing was written. `reorder` answers only the active rows of its scope, not the whole catalog.
+
+The `ConfigApi` exclusion S4c removes is in `apps/back-office/src/session/api.ts` (`type ConfigPath = Exclude<...>`), together with adding the eleven paths to `configApi()`.
+
+### What was decided, and on what evidence
+
+- The `answered` helper is generic over the record and takes a small response builder, because the five response shapes differ by record name. `DUPLICATE` ignores the domain's `of` (ruling 1).
+- Rules 1, 2 and 3 of the lead's rulings were followed as written; I did not overturn any.
+- `UpdateItemRequest.changes` and its parts are the zod schemas in `catalog.ts`; the route rebuilds the domain's `ItemChanges` with absent fields left absent, so the domain sees only what changed.
+- The tsconfig has no `exactOptionalPropertyTypes`, so the conditional spreads in the route are only for clarity, not for the compiler.
+
+### Tests changed
+
+No existing test was edited except `apps/server/test/error-details.types.ts`, which the task lists. `route-table.test.ts`, `access.test.ts` and `packages/contracts/test/routes.test.ts` pass unedited through their data. `catalog.test.ts` and `schema.test.ts` are untouched.
+
+### Red proofs
+
+Honest note first: I wrote the contracts, routes and tests together and ran them green, then applied each mutation afterwards, rather than running every test against absent code. Each mutation below was applied, its failure read, and the mutation reverted by reverse edit.
+
+1. Removed `items/reorder` from `ROUTE_TABLE`: `route-table.test.ts` case 8 failed twice ("registered but not in the table", and the interactive check), and my case 1 failed.
+2. Appended `?x` to `items/archive`: `routes.test.ts` case 2 failed on that path.
+3. Declared `categories/create` as `{ session: 'OPTIONAL', audience: 'BACK_OFFICE' }`: my case 3 failed with 200 where 401 was expected, on "no cookie".
+4. Mapped `STALE` to `DUPLICATE`: three case-4 tests failed on the code.
+5. Accepted `z.union([string-regex, z.number()])` for `BasePrice`: four tests failed (the contracts number case, create, change, and the route test, which got 500 where 400 was expected because the number reached the domain).
+6. Dropped the trim refinement from `ItemName`: four tests failed. At the route the untrimmed item was not 400; it was 500 from the database's own check. That is a failure for the stated reason (the schema no longer refuses it); the 500 is the database constraint answering a value the schema should have caught.
+7. Made the `edited` entry non-strict: the contracts and route extra-key cases failed (200 where 400).
+8. Mapped `INVALID` to 409 `CATALOG_CHANGED` (together with `NOT_FOUND` to 400 in one run): both case 8 tests failed on status, and both case 10 tests failed on status.
+9. Added `details: { of }` to the `DUPLICATE` refusal (with `as never`, since `ErrorBody` refuses it by type): all five tests that assert the bare body failed, showing `"details":{"of":"CATEGORY"}` and the like.
+10. Answered a hand-built category without `displayOrder` on `categories/update`: case 11 failed on the missing `displayOrder`.
+11. Loosened `VariantPriceChange` to `/^-?[0-9]+$/`: the contracts variant test failed on `'01'`.
+12. Case 13: I logged the parsed request body in the `items/create` handler, not the database error's `detail`. The marker appeared in the log lines and the test failed. This is a mutation of the "log the request body" kind the task names; I did not also mutate the database-detail path, because `catalogWrite` in `catalog.ts` is outside my paths.
+13. Left `CATALOG_CHANGED` out of the POS map: `tsc -p apps/pos` failed at the exhaustive `never` ("Type '{ code: "CATALOG_CHANGED" ... }' is not assignable to type 'never'").
+
+Criterion 15 (no audit) is a guard and has no red, as the task says.
+
+### Found and not fixed
+
+- The comments in `tables.ts` and `settings.ts` saying "UTF-16 units" are wrong (code points); left for the queued cleanup. `catalog.ts` says code points.
+- A name that the schema fails to refuse reaches the database, whose check then makes it a 500 `INTERNAL`. That is existing behavior for every route, not new, but it means the schema is the only line that produces a 400.
+
+### Verify
+
+`npm run verify`: typecheck clean; 125 test files, 4593 tests passed. That is two files and 53 tests more than the lead's baseline of 123 files and 4540 tests (34 route cases and 19 contract cases). I did not run the baseline separately before starting; the arithmetic matches the lead's figure. I did not run `npm run test:e2e:all`; the lead runs it before merge. No browser was used. No formatter was run.
+
+### What the next agent needs and does not have
+
+Nothing is missing. The e2e run is the lead's.
+
+DONE

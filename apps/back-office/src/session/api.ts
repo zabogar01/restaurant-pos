@@ -16,7 +16,12 @@ export type OfficeApi = {
   [P in OfficePath]: (...body: ArgsOf<P>) => Promise<ApiResult<ValueOf<P>>>;
 };
 
-type ConfigPath = Extract<keyof OfficeApi, `/api/back-office/config/${string}`>;
+// The catalog routes are not on `ConfigApi` yet: S4c adds them to `ConfigApi`, `configApi()`,
+// `fixtureSession.ts` and `config-api.test.tsx` together with BO-03 and BO-04.
+type ConfigPath = Exclude<
+  Extract<keyof OfficeApi, `/api/back-office/config/${string}`>,
+  `/api/back-office/config/catalog${string}`
+>;
 
 /**
  * What a screen may call: the configuration routes and no others (consult C2 section 7).
@@ -67,5 +72,21 @@ export function officeApi(client: ApiClient): OfficeApi {
       client.request(ROUTES.tenderMethodsDeactivate, body),
     '/api/back-office/config/tender-methods/reactivate': (body) =>
       client.request(ROUTES.tenderMethodsReactivate, body),
+    '/api/back-office/config/catalog': () => client.request(ROUTES.catalogRead),
+    '/api/back-office/config/catalog/categories/create': (body) =>
+      client.request(ROUTES.catalogCategoriesCreate, body),
+    '/api/back-office/config/catalog/categories/update': (body) =>
+      client.request(ROUTES.catalogCategoriesUpdate, body),
+    '/api/back-office/config/catalog/categories/reorder': (body) =>
+      client.request(ROUTES.catalogCategoriesReorder, body),
+    '/api/back-office/config/catalog/categories/archive': (body) =>
+      client.request(ROUTES.catalogCategoriesArchive, body),
+    '/api/back-office/config/catalog/categories/restore': (body) =>
+      client.request(ROUTES.catalogCategoriesRestore, body),
+    '/api/back-office/config/catalog/items/create': (body) => client.request(ROUTES.catalogItemsCreate, body),
+    '/api/back-office/config/catalog/items/update': (body) => client.request(ROUTES.catalogItemsUpdate, body),
+    '/api/back-office/config/catalog/items/reorder': (body) => client.request(ROUTES.catalogItemsReorder, body),
+    '/api/back-office/config/catalog/items/archive': (body) => client.request(ROUTES.catalogItemsArchive, body),
+    '/api/back-office/config/catalog/items/restore': (body) => client.request(ROUTES.catalogItemsRestore, body),
   };
 }

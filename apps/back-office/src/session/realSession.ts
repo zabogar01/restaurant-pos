@@ -92,6 +92,7 @@ function meaningOf(body: ErrorBody, context: Context): Meaning {
     case ErrorCode.APPROVAL_THROTTLED:
     case ErrorCode.DUPLICATE:
     case ErrorCode.SETTINGS_CHANGED:
+    case ErrorCode.CATALOG_CHANGED:
       return { kind: 'general-failure' };
     default: {
       const unplaced: never = error;

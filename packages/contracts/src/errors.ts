@@ -22,6 +22,7 @@ export const ErrorCode = {
   APPROVAL_THROTTLED: 'APPROVAL_THROTTLED',
   DUPLICATE: 'DUPLICATE',
   SETTINGS_CHANGED: 'SETTINGS_CHANGED',
+  CATALOG_CHANGED: 'CATALOG_CHANGED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -97,6 +98,7 @@ export const ErrorBody = z.union([
   WITH_DETAILS.APPROVAL_THROTTLED,
   bare(ErrorCode.DUPLICATE),
   bare(ErrorCode.SETTINGS_CHANGED),
+  bare(ErrorCode.CATALOG_CHANGED),
 ]);
 
 // Both directions at compile time: a code added to ErrorCode and not above, or a
