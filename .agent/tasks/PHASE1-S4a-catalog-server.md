@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries]
 depends_on: [PHASE1-S3b]
 owns: [db/migrations/0013_catalog.sql, apps/server/src/domain/catalog.ts, apps/server/test/**]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE1-S4a — The catalog on the server
@@ -356,6 +356,15 @@ a named test; criterion 16's test is stronger than the task's (a no-op archive, 
 `pg_stat_activity`). `npm run test:e2e:all` is the lead's before merge. Reviewers cannot reach the database or a browser:
 this note is the evidence for the server runs, and a "blocked" on that alone is ruled clear. Sent to review (`touches:
 money, boundaries`); the owner looks before merge.
+
+## Review and acceptance (lead, 2026-10-26)
+
+Codex (`gpt-6-astra`, high) reviewed `d1cd90a`: **clean, no findings** (`.agent/reviews/PHASE1-S4a-review.md`). It
+could not reach the database (EPERM), as the lead verify note anticipates; it ran the typecheck and the client project
+(89 files, 3736 tests) itself, confirmed the server and migration files are unchanged since the lead's run at
+`5def2e7`, and relied on the lead's run for the server tests. The lead's `npm run test:e2e:all` on this tree: 78 passed
+(Chromium and WebKit), unchanged from the baseline, with the harness migrating `0013`. Complete; `touches: money,
+boundaries`, so the owner looks before merge. After merge the lead runs `npm run db:migrate` for `0013`.
 
 ## Handoff
 
