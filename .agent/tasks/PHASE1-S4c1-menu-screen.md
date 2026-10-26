@@ -581,3 +581,25 @@ Code commit `8220472` on `agent/phase1-s4c1`; the hash of this section's own com
 **Still open.** Finding 3 to 7 of the first Handoff are as written there. Nothing new was found.
 
 DONE
+
+### Round 3 (the review's F1 and F2, the lead's rulings of 2026-10-26)
+
+Code commit `05a6e54` on `agent/phase1-s4c1`; the hash of this section's own commit is in `git log`.
+
+**What changed**, in `apps/back-office/src/menu/model.ts` and `Menu.tsx`:
+
+1. **F1. `retryRead()` presents through the gates.** It records what the retry is about by identity (the editor and its notice, or the page result) before the read, keeps what the completed read showed beside the draft (`offered`), and then either presents or holds. If the session gate is shut or the departure decision is open, the finished result goes into `heldRetry` and `flush()` presents it once, with its focus, when the same manager resumes (`setGate`) or presses *Stay*. It never reads again and never resends. At presentation time the result is dropped if the editor is gone, was replaced, or no longer carries the notice that asked (for example the manager discarded it), and likewise for a page result that is no longer the one on screen. The three outcomes are unchanged: an unknown-outcome retry settles to the plain notice or the newer-version comparison, a stale retry shows the comparison or, if nothing newer is shown, the definite failure, and a plain failed read says *The menu has been refreshed.*
+2. **F2. *New category* stays live after a failed read.** The opener's condition, in both the view and `openCreate`, is now "the first read is not loading and no command is pending". The complete-read restriction stays on the two reorder openers only. A create that succeeds after a failed read is applied by the existing `apply`, which marks the list partial because the read stands failed, so the partial alert, withheld counts and off reorder openers follow without new code. The model's now-unused `usable()` is removed; the view keeps its own for drawing the table.
+
+**Tests and the red observed.**
+
+- `menu.test.tsx`: the failed-read test's assertion about *New category* flips from inert to live (the one existing assertion changed, because the ruling reverses it). New: "after a failed first read New category opens its panel; Create sends one { name } and the partial state follows with its copy" (panel opens with focus on the field; one request with `{ name: 'Specials' }`; *Specials saved.*; one heading; the alert reads DESIGN-019's *Partial list* copy; no count; *Reorder categories* off; no extra read). New: "New category is inert while the first read is loading".
+  **Red** (the opener's `usable` gate restored): the failed-first-read test failed at `expect(panelName(host)).toBe('New category')` with `null`; the panel does not open.
+- `menu-departure.test.tsx`, a new group "an explicit retry of a reread presents through the gates (round 3, F1)": four cases, an unknown outcome and a stale refusal, each with M-6 opening while the retry read is outstanding, and with the departure decision open. Each starts from a rename whose reread failed, presses the notice's *Try again* with its read held, then asserts that nothing is presented behind the gate (the notice still says the menu could not be read, and no comparison), that on return (*Continue* or *Stay*) the result is presented once with the comparison and, for *Stay*, with focus on the notice, and that the read and the update request counts are unchanged.
+  **Red** (the gate check in `retryRead` dropped): all four failed; the result was presented behind the gate (for example the unknown case showed *…read again at version 6. It may include this save…* while M-6 was up). Reverted; all 32 tests of the file pass.
+
+**Counts.** `npm run verify`: typecheck clean; **133 files, 4752 tests** (up 6 from Round 2: two in `menu.test.tsx`, four in `menu-departure.test.tsx`). `npm run test:e2e:all`: **86 passed**, Chromium and WebKit. No formatter was run, and no file outside `apps/back-office/src/menu/` and the two test files changed.
+
+**Still open.** The same as after Round 2. This is the last fix round the task allows.
+
+DONE
