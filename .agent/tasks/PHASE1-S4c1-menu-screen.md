@@ -384,6 +384,43 @@ more than one commit is fine if it reads better. Write the Handoff below in full
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
 
+## Round 2 — the Handoff's finding 1 (lead ruling, 2026-10-26)
+
+The builder's finding 1 is accepted, and so is its finding 2: the task's browser scenario (b) was the lead's error,
+because a `createCategory` changes the active scope. M2, which keeps the scope, stays as written. The ruling below takes
+the answer DESIGN-020 already reviewed for the same case on BO-04's option lists (round 2, F2), and applies it to
+BO-03's reorders. *The owner may overturn it.*
+
+1. **Remove the client-side scope guard** in `save()` (`model.ts`, the `sameSet(editor.order, scopeNow(editor))`
+   branch). It shows a definite failure for a request that was never sent, which is a fabricated result. A scope can only
+   change through a committed write, and every committed write advances the version. So a draft built on an older
+   scope always carries an older `expectedVersion`, and the server refuses it `CATALOG_CHANGED` before it judges the
+   list (S4a's check order: version first). Send the draft, and let the server decide. Keep the
+   `editor.base === null` part of the guard only if it is still reachable; say which in the Handoff.
+2. ***Keep my changes* on a reorder whose scope changed** rebuilds the draft against the reread scope. The order is:
+   - **if the draft moved no row:** the current order;
+   - **otherwise:** the draft's order for the records it holds that are still in the current active scope, followed by
+     the records new to the scope, in their current order.
+   Records that left the scope (archived, or no longer active) drop out. The base moves to the reread version, as
+   today. Nothing is sent. The rebuilt list is what the panel shows, so the merge is visible before *Save order* and is
+   not the "silent merge" `D` forbids. When the scope did not change, *Keep my changes* behaves exactly as today.
+3. **No new copy.** The stale notice, the comparison (*Current order: …*), the after-Keep notice (*Your changes now
+   build on version {n}. Nothing has been saved yet. Press Save order to save them.*) and *Use current menu* are
+   DESIGN-019's, unchanged. An unknown outcome whose reread shows a newer version reaches the same comparison and the
+   same rule.
+4. **Tests.**
+   - A unit test, in `menu-versions.test.tsx` or beside it, covers each of these cases: a record added to the scope
+     (added last); a record archived out of the scope (dropped); both at once; and a draft that moved nothing (takes
+     the current order). After Keep, *Save order* sends exactly the rebuilt list with the reread version.
+   - **M3** in `e2e/tests/menu.spec.ts` becomes the real-database walk of the added case: the panel is open, a domain
+     `createCategory` runs, and *Save order* gets the stale notice with exactly one request. *Keep my changes* shows the
+     new category last. *Save order* then saves, and the database order equals the panel's.
+   *Red:* restore the old *Keep* (base only, order untouched). The added-record test fails, because the sent list is
+   not the whole scope.
+5. Run `npm run verify` and `npm run test:e2e:all`. Commit on this branch. Append a *Round 2* section to the Handoff (what
+   changed, each new test and its observed red, the counts), ending `DONE` or `BLOCKED: <question>`, and report to the
+   lead through Herdr.
+
 ## Handoff
 
 ### What was done
