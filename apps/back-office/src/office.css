@@ -188,3 +188,40 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 #method-editor label { display: block; margin-bottom: var(--frost-space-1); font-size: var(--frost-text-12); color: var(--frost-muted); }
 #method-notice[data-kind='failure'], #methods-read .office-notice { color: var(--frost-warning); background: var(--frost-warning-surface); border-color: var(--frost-warning); }
 #methods-read .office-button { margin-top: var(--frost-space-4); }
+
+/*
+ * BO-03 Menu (PHASE1-S4c1), ported from Frost's menu.css
+ * (docs/design/visual-directions/frost/back-office/menu.css): the grouped table, the category
+ * header, and the full-width non-modal panel with the draft beside its result. It composes
+ * BO-05's panel, table and notice rules above.
+ */
+.menu-intro { max-width: var(--frost-office-modal-width); color: var(--frost-muted); }
+.menu-toolbar { margin-bottom: var(--frost-space-6); }
+.menu-editor { position: static; margin-bottom: var(--frost-space-6); max-height: none; }
+.menu-editor .office-dialog__body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--frost-space-6); }
+.menu-editor .office-dialog__body > * { min-width: 0; }
+.menu-editor p { margin-top: 0; }
+.menu-table { table-layout: fixed; }
+.menu-table .item-col { width: 34%; }
+.menu-table .price-col { width: 14%; }
+.menu-table .availability-col { width: 27%; }
+.menu-table .actions-col { width: 25%; }
+.menu-table .num { text-align: right; }
+.menu-table .category-row td { background: var(--frost-surface); padding-top: var(--frost-space-6); }
+.menu-category { display: flex; align-items: baseline; gap: var(--frost-space-4); flex-wrap: wrap; }
+.menu-category h2 { margin: 0 auto 0 0; font-size: var(--frost-text-18); font-weight: var(--frost-weight-medium); overflow-wrap: anywhere; }
+.menu-category-note, .menu-item-note { display: block; margin-top: var(--frost-space-2); color: var(--frost-muted); font-size: var(--frost-text-12); font-weight: var(--frost-weight-regular); }
+.menu-table td { overflow-wrap: anywhere; }
+.menu-table .office-actions { gap: var(--frost-space-2); }
+.menu-table tr[data-active='false'] td { color: var(--frost-muted); }
+.menu-availability { display: block; margin-bottom: var(--frost-space-2); }
+.menu-table caption { text-align: left; font-size: var(--frost-text-12); color: var(--frost-muted); padding-bottom: var(--frost-space-3); }
+.menu-table [aria-disabled='true'] { color: var(--frost-unavailable-text); background: var(--frost-unavailable); cursor: default; }
+.menu-reorder { list-style: none; padding: 0; margin: 0; }
+.menu-reorder li { display: flex; gap: var(--frost-space-3); align-items: center; padding-block: var(--frost-space-3); border-bottom: var(--frost-divider-stroke); }
+.menu-reorder .menu-order-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.menu-reorder button { flex: none; }
+#current-values { overflow-wrap: anywhere; }
+#page-status[data-kind='failure'] { color: var(--frost-warning); background: var(--frost-warning-surface); border-color: var(--frost-warning); }
+#menu-name-help { font-size: var(--frost-text-12); margin-top: var(--frost-space-3); }
+#new-category[aria-disabled='true'], #reorder-categories[aria-disabled='true'], .menu-reorder [aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }

@@ -40,8 +40,19 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
     expect(true).toBe(true);
   });
 
-  it('holds the five table routes, the two settings routes and the five tender-methods routes at run time, and nothing under /auth/', () => {
+  it('holds the five table routes, the two settings routes, the five tender-methods routes and the eleven catalog routes at run time, and nothing under /auth/', () => {
     expect(Object.keys(store.config).sort()).toEqual([
+      '/api/back-office/config/catalog',
+      '/api/back-office/config/catalog/categories/archive',
+      '/api/back-office/config/catalog/categories/create',
+      '/api/back-office/config/catalog/categories/reorder',
+      '/api/back-office/config/catalog/categories/restore',
+      '/api/back-office/config/catalog/categories/update',
+      '/api/back-office/config/catalog/items/archive',
+      '/api/back-office/config/catalog/items/create',
+      '/api/back-office/config/catalog/items/reorder',
+      '/api/back-office/config/catalog/items/restore',
+      '/api/back-office/config/catalog/items/update',
       '/api/back-office/config/settings',
       '/api/back-office/config/settings/save',
       '/api/back-office/config/tables',
@@ -65,6 +76,23 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
     void store.config['/api/back-office/config/tender-methods/reactivate'];
     // @ts-expect-error: a route that does not exist is not on the surface.
     void store.config['/api/back-office/config/tender-methods/delete'];
+    expect(true).toBe(true);
+  });
+
+  it('the catalog routes are typed on the configuration surface', () => {
+    void store.config['/api/back-office/config/catalog'];
+    void store.config['/api/back-office/config/catalog/categories/create'];
+    void store.config['/api/back-office/config/catalog/categories/update'];
+    void store.config['/api/back-office/config/catalog/categories/reorder'];
+    void store.config['/api/back-office/config/catalog/categories/archive'];
+    void store.config['/api/back-office/config/catalog/categories/restore'];
+    void store.config['/api/back-office/config/catalog/items/create'];
+    void store.config['/api/back-office/config/catalog/items/update'];
+    void store.config['/api/back-office/config/catalog/items/reorder'];
+    void store.config['/api/back-office/config/catalog/items/archive'];
+    void store.config['/api/back-office/config/catalog/items/restore'];
+    // @ts-expect-error: a route that does not exist is not on the surface.
+    void store.config['/api/back-office/config/catalog/items/delete'];
     expect(true).toBe(true);
   });
 

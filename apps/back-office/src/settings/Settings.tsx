@@ -2,13 +2,13 @@ import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type FormEven
 import {
   DEPARTURE_BODY,
   DEPARTURE_BODY_UNCERTAIN,
-  DEPARTURE_TITLE,
   FORM_FAILED,
   OUTCOME_UNKNOWN,
   OUTCOME_UNKNOWN_UNREAD,
   SAVING,
   WAITING,
 } from '../copy.js';
+import { Decision } from '../forms/Decision.js';
 import { useSession } from '../session/useSession.js';
 import { workGuard } from '../work/guard.js';
 import {
@@ -325,7 +325,12 @@ export function Settings({ model }: { model: SettingsModel }) {
       <Methods state={state} model={model} />
 
       <RateConfirm model={model} state={state} phase={phase} />
-      <Decision model={model} state={state} phase={phase} />
+      <Decision
+        open={state.decision}
+        body={model.guard.status() === 'uncertain' ? DEPARTURE_BODY_UNCERTAIN : DEPARTURE_BODY}
+        onStay={() => model.stay()}
+        onDiscard={() => model.discard()}
+      />
     </div>
   );
 }
@@ -965,70 +970,3 @@ function RateConfirm({
   );
 }
 
-function Decision({
-  model,
-  state,
-  phase,
-}: {
-  model: SettingsModel;
-  state: SettingsState;
-  phase: ReturnType<typeof useSession>['phase'];
-}) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const stay = useRef<HTMLButtonElement>(null);
-  // Wanted open only while the frame is shown. At BO-01 it is closed, and its state kept.
-  const wanted = state.decision && (phase === 'signed-in' || phase === 'idle');
-  const meant = useRef(wanted);
-  meant.current = wanted;
-
-  useLayoutEffect(() => {
-    const element = dialog.current;
-    if (element === null) return;
-    if (wanted && !element.open) {
-      element.showModal();
-      stay.current?.focus();
-    } else if (!wanted && element.open) {
-      element.close();
-    }
-  }, [wanted]);
-
-  const uncertain = model.guard.status() === 'uncertain';
-  return (
-    <dialog
-      ref={dialog}
-      className="office-dialog"
-      aria-labelledby="departure-title"
-      aria-describedby="departure-copy"
-      {...CLOSED_BY_NONE}
-      onCancel={(event) => {
-        // Escape means Stay.
-        event.preventDefault();
-        if (meant.current) model.stay();
-      }}
-      onClose={() => {
-        // Closed by anything but this component (a second Escape in some engines): reopen it.
-        // Closed by this component at BO-01, `wanted` is false and nothing is done.
-        const element = dialog.current;
-        if (meant.current && element !== null && !element.open) {
-          element.showModal();
-          stay.current?.focus();
-        }
-      }}
-    >
-      <header className="office-dialog__head">
-        <h2 id="departure-title">{DEPARTURE_TITLE}</h2>
-      </header>
-      <div className="office-dialog__body">
-        <p id="departure-copy">{uncertain ? DEPARTURE_BODY_UNCERTAIN : DEPARTURE_BODY}</p>
-      </div>
-      <footer className="office-dialog__foot">
-        <button ref={stay} type="button" id="departure-stay" className="office-button" onClick={() => model.stay()}>
-          Stay
-        </button>
-        <button type="button" className="office-button danger final" onClick={() => model.discard()}>
-          Discard
-        </button>
-      </footer>
-    </dialog>
-  );
-}

@@ -16,12 +16,7 @@ export type OfficeApi = {
   [P in OfficePath]: (...body: ArgsOf<P>) => Promise<ApiResult<ValueOf<P>>>;
 };
 
-// The catalog routes are not on `ConfigApi` yet: S4c adds them to `ConfigApi`, `configApi()`,
-// `fixtureSession.ts` and `config-api.test.tsx` together with BO-03 and BO-04.
-type ConfigPath = Exclude<
-  Extract<keyof OfficeApi, `/api/back-office/config/${string}`>,
-  `/api/back-office/config/catalog${string}`
->;
+type ConfigPath = Extract<keyof OfficeApi, `/api/back-office/config/${string}`>;
 
 /**
  * What a screen may call: the configuration routes and no others (consult C2 section 7).
@@ -45,6 +40,17 @@ export function configApi(api: OfficeApi): ConfigApi {
     '/api/back-office/config/tender-methods/deactivate': api['/api/back-office/config/tender-methods/deactivate'],
     '/api/back-office/config/tender-methods/update': api['/api/back-office/config/tender-methods/update'],
     '/api/back-office/config/tender-methods/reactivate': api['/api/back-office/config/tender-methods/reactivate'],
+    '/api/back-office/config/catalog': api['/api/back-office/config/catalog'],
+    '/api/back-office/config/catalog/categories/create': api['/api/back-office/config/catalog/categories/create'],
+    '/api/back-office/config/catalog/categories/update': api['/api/back-office/config/catalog/categories/update'],
+    '/api/back-office/config/catalog/categories/reorder': api['/api/back-office/config/catalog/categories/reorder'],
+    '/api/back-office/config/catalog/categories/archive': api['/api/back-office/config/catalog/categories/archive'],
+    '/api/back-office/config/catalog/categories/restore': api['/api/back-office/config/catalog/categories/restore'],
+    '/api/back-office/config/catalog/items/create': api['/api/back-office/config/catalog/items/create'],
+    '/api/back-office/config/catalog/items/update': api['/api/back-office/config/catalog/items/update'],
+    '/api/back-office/config/catalog/items/reorder': api['/api/back-office/config/catalog/items/reorder'],
+    '/api/back-office/config/catalog/items/archive': api['/api/back-office/config/catalog/items/archive'],
+    '/api/back-office/config/catalog/items/restore': api['/api/back-office/config/catalog/items/restore'],
   };
 }
 

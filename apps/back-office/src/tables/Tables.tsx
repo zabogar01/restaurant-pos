@@ -1,9 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type FormEvent } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type FormEvent } from 'react';
 import {
   CREATE_CONTEXT,
   DEPARTURE_BODY,
   DEPARTURE_BODY_UNCERTAIN,
-  DEPARTURE_TITLE,
   EMPTY_BODY,
   EMPTY_TITLE,
   FORM_FAILED,
@@ -39,9 +38,10 @@ import {
   statusUnknown,
   statusUnknownUnread,
 } from '../copy.js';
+import { Decision } from '../forms/Decision.js';
 import { useSession } from '../session/useSession.js';
 import { workGuard } from '../work/guard.js';
-import { ordered, type FieldError, type PageStatus, type TablesModel, type TablesState } from './model.js';
+import { ordered, type FieldError, type PageStatus, type TablesModel } from './model.js';
 
 // BO-05, as DESIGN-017 draws it (docs/design/visual-directions/frost/back-office/tables.html):
 // the list, and beside it a non-modal panel for the one form. The panel is a named
@@ -51,8 +51,6 @@ import { ordered, type FieldError, type PageStatus, type TablesModel, type Table
 // only while the frame is shown, closed with `close()` and its state kept when the session
 // reaches BO-01, reopened with `showModal()` and focus on Stay when the same manager signs
 // in again, left open behind M-6, and destroyed with the area's key for anyone else.
-
-const CLOSED_BY_NONE = { closedby: 'none' } as const;
 
 const fieldText: Record<FieldError, string> = {
   empty: LABEL_EMPTY,
@@ -362,75 +360,12 @@ export function Tables({ model }: { model: TablesModel }) {
         )}
       </div>
 
-      <Decision model={model} state={state} phase={phase} />
+      <Decision
+        open={state.decision}
+        body={model.guard.status() === 'uncertain' ? DEPARTURE_BODY_UNCERTAIN : DEPARTURE_BODY}
+        onStay={() => model.stay()}
+        onDiscard={() => model.discard()}
+      />
     </div>
-  );
-}
-
-function Decision({
-  model,
-  state,
-  phase,
-}: {
-  model: TablesModel;
-  state: TablesState;
-  phase: ReturnType<typeof useSession>['phase'];
-}) {
-  const dialog = useRef<HTMLDialogElement>(null);
-  const stay = useRef<HTMLButtonElement>(null);
-  // Wanted open only while the frame is shown. At BO-01 it is closed, and its state kept.
-  const wanted = state.decision && (phase === 'signed-in' || phase === 'idle');
-  const meant = useRef(wanted);
-  meant.current = wanted;
-
-  useLayoutEffect(() => {
-    const element = dialog.current;
-    if (element === null) return;
-    if (wanted && !element.open) {
-      element.showModal();
-      stay.current?.focus();
-    } else if (!wanted && element.open) {
-      element.close();
-    }
-  }, [wanted]);
-
-  const uncertain = model.guard.status() === 'uncertain';
-  return (
-    <dialog
-      ref={dialog}
-      className="office-dialog"
-      aria-labelledby="departure-title"
-      aria-describedby="departure-copy"
-      {...CLOSED_BY_NONE}
-      onCancel={(event) => {
-        // Escape means Stay.
-        event.preventDefault();
-        if (meant.current) model.stay();
-      }}
-      onClose={() => {
-        // Closed by anything but this component (a second Escape in some engines): reopen it.
-        // Closed by this component at BO-01, `wanted` is false and nothing is done.
-        const element = dialog.current;
-        if (meant.current && element !== null && !element.open) {
-          element.showModal();
-          stay.current?.focus();
-        }
-      }}
-    >
-      <header className="office-dialog__head">
-        <h2 id="departure-title">{DEPARTURE_TITLE}</h2>
-      </header>
-      <div className="office-dialog__body">
-        <p id="departure-copy">{uncertain ? DEPARTURE_BODY_UNCERTAIN : DEPARTURE_BODY}</p>
-      </div>
-      <footer className="office-dialog__foot">
-        <button ref={stay} type="button" id="departure-stay" className="office-button" onClick={() => model.stay()}>
-          Stay
-        </button>
-        <button type="button" className="office-button danger final" onClick={() => model.discard()}>
-          Discard
-        </button>
-      </footer>
-    </dialog>
   );
 }

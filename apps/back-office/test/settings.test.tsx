@@ -48,7 +48,7 @@ describe('AC 1. navigation', () => {
   it('the rail shows Settings after Tables in Configuration, and a press opens BO-08 and reads', async () => {
     const host = await open(undefined, '/back-office/');
     const rail = host.querySelector<HTMLElement>('.bonav')!;
-    expect(text(rail)).toBe('ConfigurationTablesSettings');
+    expect(text(rail)).toBe('ConfigurationMenuTablesSettings');
     expect(host.querySelector('h1')).toBeNull();
     expect(h.count(READ)).toBe(0);
 
