@@ -386,3 +386,91 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ## Handoff
 
+### What was done
+
+BO-03 Menu is built, in one code commit on `agent/phase1-s4c1`: `0ff6a88` (the hash of this Handoff's own commit is in `git log`; a commit cannot name itself). A signed-in manager opens **Menu** from the rail (`/back-office/menu`) and sees the catalog grouped by category: active categories first, then archived ones, every item with its base price and availability text, archived items after active ones. They create and rename categories, reorder the categories and the items of one category with *Move up*, *Move down* and *Save order*, and archive and restore categories and items. Everything goes through the S4b routes, and every product word comes from DESIGN-019's copy table.
+
+Paths, all under `apps/back-office/` unless noted:
+
+- `src/menu/model.ts` (new): the one screen model. One `workGuard` registration, one `command` slot over eight command kinds, one `decision`, one held result, one `leave(next, continuing)` that every opener goes through. Its list read, applied-record maps and read sequence are copied from `tables/model.ts` as S3b copied them; its version rules are copied from `settings/model.ts`.
+- `src/menu/Menu.tsx` (new): the view, with the non-modal editor panel above the table.
+- `src/menu/copy.ts`, `name.ts`, `money.ts`, `group.ts` (new): copy, the category name check, price text, and grouping, order, reorder scopes and the hidden-reason precedence.
+- `src/forms/Decision.tsx` (new): the shared stay-or-discard dialog. `src/tables/Tables.tsx` and `src/settings/Settings.tsx` drop their local copies and use it.
+- `src/routes.ts`, `src/Rail.tsx`, `src/Screens.tsx`, `src/office.css`: the `menu` screen, the rail order Menu, Tables, Settings, the model made once per working-area key, and the ported Frost rules.
+- `src/session/api.ts`, `src/session/fixtureSession.ts`: the `Exclude` of the catalog paths is removed, the eleven functions are in `configApi()`, and the eleven paths answer `unavailable` in fixture mode.
+- Tests: `test/menu.test.tsx`, `menu-versions.test.tsx`, `menu-departure.test.tsx`, `menu-fixture.test.tsx`, `menu-group.test.ts`, `menu-name.test.ts`, `menu-money.test.ts`, `decision.test.ts`, with `menu-support.tsx` as their shared fixtures. Browser: `e2e/tests/menu.spec.ts`. No file under `e2e/support/`, `packages/`, `apps/server`, `db/` or `docs/` was touched. No formatter was run.
+
+### What S4c2 needs
+
+- **Where Edit and New item attach.** The item row's Actions cell in `Menu.tsx` is `<div className="office-actions">` and today holds only the Archive/Restore button (`data-item-state`). Edit goes in front of it. The category header's `office-actions` holds *Rename*, *Archive/Restore* and, for an active category, *Reorder items*; *New item* goes after *Reorder items*, and is absent in an archived category (the empty-category rows already say so). The *Empty category* row already names New item, as ruling 1 required.
+- **Focus.** An item's state-command success and a failed or unknown item command focus `{ itemAction: id }`, which `Menu.tsx` resolves to `[data-item-state="id"]`. When Edit exists, change the resolver in `Menu.tsx` and the one `itemAction` case in `resultOf` in `model.ts` so it takes `[data-edit="id"]`, as DESIGN-019 says. Nothing else needs to move.
+- **How the model would receive an item answered by BO-04.** `apply(applied)` in `model.ts` is private and takes `{ version, categories, items }`; an item answer is `{ version, categories: [], items: [item] }`. It upserts the item, keeps the applied-record map so an older read never undoes it, marks the list partial if the read stands failed, and advances the standing version only by the one-step rule. I did not add a public method because nothing calls it; S4c2 should add `receiveItem(item, version)` that calls `apply`, then sets the page result and focus.
+- **The version an editor opened from BO-03 would carry.** `state.version`, the list's standing version at the moment the editor opens, read inside the opener's `leave` callback (see `openRename`). A BO-04 editor opened from this screen should do the same, and `null` means no editor can open (the opener is inert), exactly as the rename opener behaves.
+- **The shared `Decision`.** `forms/Decision.tsx` takes `{ open, body, onStay, onDiscard }` and reads the session phase itself. The caller chooses the body. `Menu.tsx` shows the three bodies (ordinary, uncertain, and the two "continue" ones) by `state.continuing` and `model.guard.status()`.
+- **Accessible names the browser spec drives.** Rail link *Menu*; heading *Menu*; `#menu-count`; buttons *New category*, *Reorder categories*, *Create*, *Save*, *Save order*, *Cancel*, *Keep my changes*, *Use current menu*, *Try again*; textbox *Category name*; dialogs *New category*, *Rename {name}*, *Reorder categories*, *Reorder items in {name}*; row controls *Rename category {name}*, *Archive category {name}*, *Restore category {name}*, *Reorder items in {name}*, *Archive item {name}*, *Restore item {name}*, *Move up {name}*, *Move down {name}*. Page status is `#page-status` and the form notice `#form-notice`; category headings are `#menu-rows h2`; item rows are `tr[data-item]`, category rows `tr[data-category]`, the price cell `td.num`.
+
+### What was decided, and on what evidence
+
+- **Disabled is `aria-disabled` + `tabIndex={-1}` everywhere**, including the end-of-list move controls and the reorder openers below two rows. BO-05 and BO-08 never use `disabled`, and the artifact's `disabled` on those controls is the review fixture's. Playwright's `toBeDisabled()` reads `aria-disabled`, so a browser assertion on "disabled" still holds. Every opener's model method also guards, so a press on an inert one sends nothing.
+- **New category and Rename are inert when the standing version is `null`** (the first read failed, so there is no version to carry), and New category is inert when the read has failed and no answer was applied. This follows BO-05/BO-08 (`usable` gates the openers); the artifact keeps New category live in its error state. A command that succeeds while the read stands failed makes the list `partial`, in which New category is live and both reorder openers stay off.
+- **A full read sets the standing version, except** when an answer adopted after that read began is ahead of what the read saw: then the answer's version stays. That is the version twin of the applied-record merge ("a read that began before a command was answered never undoes the answered record").
+- **A session refusal of a form save** sets a form notice (*Nothing was saved. Your draft is kept. Press {Save/Create/Save order} to try again.*) and aims focus at the draft control. DESIGN-019 has the row; BO-05 and BO-08 draw none. The focus aim is needed: without it, the Saving notice's queued focus request fired after M-6 and landed on the new session notice instead of the draft (found by `menu-departure.test.tsx`, fixed in `model.ts`).
+- **Success sentences for failure kinds** are one text each, not a title plus a body: DESIGN-019's table gives one sentence per row, and the tests compare to it exactly.
+- **The category-restore and item-restore duplicate** are page results with `role="alert"` and focus on `#page-status`; the holder is derived in the view from the reread list (`holderOf` in `model.ts`) once the one reread has landed, so there is nothing to clear.
+- **`NOT_FOUND` and `VALIDATION_FAILED`** are the definite failure of the command with one reread. Both are unreachable today: this client names only records it has read and sends only whole scopes.
+- **Lengths count code points** (`[...name].length`); DESIGN-019's "UTF-16 units" sentence is not copied into any comment.
+
+### Tests changed, and why
+
+Only the tests the task lists, and every one gains the new entry without weakening:
+
+- `config-api.test.tsx`: the runtime key list gains the eleven catalog paths, and a new type test names them (with a `@ts-expect-error` on a nonexistent one).
+- `routes.test.ts`: the manifest is `landing, menu, settings, tables` and `PATHS.menu` is `/back-office/menu`.
+- `sign-in.test.tsx`: two assertions about the rail (its text, hrefs and links) gain *Menu* first.
+- `settings.test.tsx:51`: the rail's text `ConfigurationTablesSettings` becomes `ConfigurationMenuTablesSettings`. The task's list does not name this file, but it says any existing test that asserts the rail's entries gains Menu; this is the one I found beyond the listed ones, by running the suite.
+
+BO-05's and BO-08's own tests (`tables*.test.tsx`, `methods*.test.tsx`, `settings*.test.tsx` apart from the one line above) and `e2e/tests/tables.spec.ts`, `settings.spec.ts` and `payment-methods.spec.ts` pass unedited, with the shared `Decision`.
+
+### Red proofs
+
+**Order of work, honestly.** Written red first, against absent code, and observed failing: `menu-name.test.ts`, `menu-money.test.ts` and `menu-group.test.ts` (modules missing); `decision.test.ts` (two definitions, in `settings/Settings.tsx` and `tables/Tables.tsx`); the edited `routes.test.ts`, `sign-in.test.tsx` and `config-api.test.tsx` (four failures: the manifest, the rail text, the links, the key list). Written **after** the code they cover, with each mutation applied afterwards: `menu.test.tsx`, `menu-versions.test.tsx`, `menu-departure.test.tsx` and `menu-fixture.test.tsx`, and `e2e/tests/menu.spec.ts`. Each mutation below was applied, its failure read, and the mutation reverted by reverse edit; the final tree has none (I ran the back-office suite and `npm run verify` after the last revert).
+
+1. Menu last in the rail: `menu.test.tsx` "lists Menu, Tables and Settings in that order" failed (`'ConfigurationTablesSettingsMenu'` for `'ConfigurationMenuTablesSettings'`).
+2. Tie-break by `a.name < b.name`: `menu.test.tsx` "draws the active categories first…" failed (`Item 10` before `Item 2`), and `menu-group.test.ts` "breaks a display-order tie by name, naturally" failed.
+3. `Number(price).toLocaleString('id-ID')`: only `menu-money.test.ts` "money.ts calls no parseFloat, parseInt, Number(…" failed (`['Number(']`). The display test passes with it, because 99999999 is a safe double; the source test is the guard, as the task says.
+4. Reorder categories live in the partial state: **the first test survived.** It archived Mains, which left one active category, so the opener was off for that reason anyway. I rewrote the test to use an item archive (two categories stay active, two items stay active in Mains), reran the mutation, and it failed at "Reorder categories is aria-disabled in the partial state".
+5. `name.length` for `[...name].length`: `menu-name.test.ts` (32 emoji and "counts code points") and `menu.test.tsx` "accepts a name of 32 emoji locally" failed (`Use 32 characters or fewer.`).
+6. `{ id }` instead of `{ categoryId }` on archive: `menu.test.tsx` "Archive category sends { categoryId }…" failed, though earlier than the body assertion: the client's own request schema refuses `{ id }`, so nothing was sent and the page showed the failure sentence instead of *Archiving Mains…*. The body assertion itself was not reached.
+7. Reorder sends only the moved rows: **survived on Reorder categories**, because swapping two categories moves both. Applied to Reorder items instead (Burger stays put), `menu.test.tsx` "Reorder items sends the category, the version and the whole active scope" failed on the missing Burger id.
+8. Always adopt the answered version: `menu-versions.test.tsx` "an answer that skips a version…" (7 for 5) and "a state command that skips a version…" (8 for 5) failed.
+9. Remove the guard that keeps Save off before a choice: the two stale-rename tests failed (`CATEGORY_UPDATE` count 2 for 1).
+10. Resend once after an unknown outcome: six tests of AC 10 failed with the command count 2.
+11. Open the rename form on a category-restore refusal: "a refused category restore is a page result…" failed (the page result was gone).
+12. Let *Archive category* bypass `leave`: **the first assertion was too weak.** The closed dialog is always in the DOM, so my body check saw `ORDINARY` and failed for the wrong reason. I added `expect(decision()).not.toBeNull()` before each body check; the rerun then failed four tests at "expected null not to be null".
+13. Present while the session is away (drop `!gate` in `answered`): `menu-departure.test.tsx` "a command result arriving while M-6 is up is held…" failed (the page said *Main plates saved.* behind M-6).
+14. A local `function Decision()` in `Tables.tsx`: `decision.test.ts` failed (`['forms/Decision.tsx', 'tables/Tables.tsx']`).
+15. One function left out of `configApi()`: `config-api.test.tsx` failed (the key list lacked `items/restore`).
+
+### What was left out on purpose (ruling 1)
+
+86 and Make available (the controls, the `eightysix` and `available` states, the eight page-result states for them, and F7's availability-over-an-open-editor rule): S5. The Availability column shows each item's availability as text only. Edit and New item, BO-04 and the way between: S4c2. The kitchen-emergency sentences and the `kitchen` state, BO-01's held-draft sentence, and `leaserejected`: not built.
+
+### What I found and did not fix
+
+1. **A changed reorder scope has no designed way out, so I added a guard and one more e2e case; this needs a ruling.** If another write adds, archives or restores a record in the reorder's scope, the draft no longer matches the scope. The server would refuse the list (`VALIDATION_FAILED`). The client never sends it: `save()` compares the draft with the current scope first and, on a mismatch, shows the definite-failure notice (*Something went wrong. Nothing was saved. Your draft is kept. Press Save order to try again.*) without a request. The manager's only exit is Cancel, Discard and reopening. DESIGN-019 says a reorder never silently merges a changed scope but draws no copy for this case. **Proposed resolution:** a notice (new copy row) saying the order list changed, with *Use current menu* kept offered, or have Keep my changes rebuild only when the sets are equal and otherwise stay on the comparison. `e2e/tests/menu.spec.ts` M3 documents today's behaviour against the real database.
+2. **The task's browser scenario (b) cannot work as written.** A `createCategory` made through the domain adds an *active* category, which changes the scope. After Keep my changes the client would have to send a list that is not the whole scope. M2 is the variant that keeps the scope: the other write is `createCategory` followed by `archiveCategory`, so the version advances by two and the active scope is unchanged; the stale notice, one reorder request, the unchanged database order, Keep my changes and the final save all hold. M3 is the literal `createCategory` case, ending at finding 1.
+3. **Copy names controls that do not exist yet.** The item-restore duplicate sentence says *Rename this archived item in the item editor*, and the empty-category row says *Use New item*; both are DESIGN-019's words and stay as drawn until S4c2 adds Edit and New item, as ruling 1 allows for the second.
+4. **The holder test uses the collator at `sensitivity: 'base'`** (ruling 11), which treats accents as equal, while the server's unique index is on `lower(name)`. After a DUPLICATE refusal the real holder always matches the collator, but an accent variant (*Cafe*, *Café*) could be marked too. Harmless today; worth one sentence if a ruling wants the exact rule.
+5. **Try again after a failed read uses a visible read** (`load(true)`, as BO-05 does), so the list is replaced by *Loading menu…* for the moment of the retry, including above an open editor.
+6. **Singular counts** read `1 categories · 1 items`, as drawn.
+7. **Comments saying "UTF-16 units"** in `tables.ts`, `settings.ts` and DESIGN-019 itself are wrong (code points); left for the queued cleanup. `tables/label.ts` is untouched.
+
+### Verify output
+
+`npm run verify`: typecheck clean across server, money, contracts, api-client, pos, back-office and e2e; **133 test files, 4743 tests passed** (baseline 125 files, 4593 tests: +8 files, +150 tests). `npm run test:e2e:all`: **86 passed** in 1.0 minute, Chromium and WebKit (baseline 78: +8, four new cases in each engine). A browser was available and used. The back-office client project alone is 40 files, 966 tests.
+
+### What the next agent needs and does not have
+
+The lead's ruling on finding 1 (it decides S4c2's and S5's reorder copy too) and whether M3 stays as written. S4c2 needs nothing else from this slice; the attach points are above. I did not run a review pass, and nothing here is audited (owner Q11).
+
+DONE
