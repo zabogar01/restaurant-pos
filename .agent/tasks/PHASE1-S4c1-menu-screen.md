@@ -511,3 +511,24 @@ BO-05's and BO-08's own tests (`tables*.test.tsx`, `methods*.test.tsx`, `setting
 The lead's ruling on finding 1 (it decides S4c2's and S5's reorder copy too) and whether M3 stays as written. S4c2 needs nothing else from this slice; the attach points are above. I did not run a review pass, and nothing here is audited (owner Q11).
 
 DONE
+
+### Round 2 (finding 1, the lead's ruling of 2026-10-26)
+
+Code commit `8220472` on `agent/phase1-s4c1`; the hash of this section's own commit is in `git log`.
+
+**What changed**, all in `apps/back-office/src/menu/model.ts`:
+
+1. **The client-side scope guard is removed** from `save()`, together with `scopeNow`, which only it used. A reorder now sends the draft and the server decides, as the ruling says: a draft built on an older scope carries an older `expectedVersion` and is refused `CATALOG_CHANGED` before the list is judged. The `editor.base === null` part of the guard is kept. It is **not reachable**: a reorder opens only on a non-null standing version (`openReorderCategories` and `openReorderItems` return when it is null), and `base` is only ever replaced by a version number. It stays so the type narrows to `number` for the request body, and the comment says so.
+2. **Keep my changes on a reorder whose scope changed rebuilds the draft** against the reread scope (`keepMine`). The test for "changed" is whether the draft's ids and the reread scope's ids are the same set. If they are not: a draft that moved no row takes the current order; otherwise the draft's order for the records still in the scope comes first, followed by the records new to the scope in their current order, and records that left the scope drop out. The base moves to the reread version, the draft's baseline becomes the current order (so leaving still asks only if the merged draft differs from it), nothing is sent, and focus goes to Save order. When the scope did not change, and for a rename, Keep behaves exactly as before. An unknown outcome whose reread shows a newer version reaches the same `keepMine`, so it gets the same rule. No new copy: the stale notice, the comparison, the after-Keep notice and *Use current menu* are unchanged.
+
+**New tests, and the red observed.**
+
+- `menu-versions.test.tsx`, replacing the old "never sent as an incomplete scope" test (which asserted the fabricated failure): four cases under "Keep my changes on a reorder whose scope changed rebuilds the draft against the reread scope". Each opens *Reorder categories*, gets `CATALOG_CHANGED`, rereads, presses Keep, asserts the panel shows the rebuilt list and that Keep sent nothing, then presses *Save order* and asserts the one request carries exactly the rebuilt list with the reread version 6. The cases are: a category added to the scope (goes last); one archived out (drops out); one added and one archived at once; and a draft that moved nothing, which takes the current order (the added category sits between the two).
+- **Red:** I restored the old Keep (base only, order untouched) by making the rebuild branch unreachable. All four failed at the rebuilt list (for example `['Drinks', 'Mains']` for `['Drinks', 'Mains', 'Extra']`, and `['Drinks', 'Mains']` for `['Mains']`), as the ruling predicted: the list that would have been sent is not the whole scope. Reverted; all 28 tests of the file pass.
+- `e2e/tests/menu.spec.ts` M3 is now the real-database walk of the added case: the panel is open, a domain `createCategory` runs, *Save order* gets the stale notice with exactly one reorder request and the database order unchanged, *Keep my changes* shows the new category last (`1. Bravo`, `2. Alpha`, `3. Joined`) with still one request, *Save order* saves (two requests), and the database order equals the panel's. M2 is unchanged.
+
+**Counts.** `npm run verify`: typecheck clean; **133 files, 4746 tests** (3 more than before: the old test became four). `npm run test:e2e:all`: **86 passed**, Chromium and WebKit. No existing test other than the replaced one was changed; no formatter was run.
+
+**Still open.** Finding 3 to 7 of the first Handoff are as written there. Nothing new was found.
+
+DONE
