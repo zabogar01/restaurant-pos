@@ -255,7 +255,7 @@ export function Menu({ model }: { model: MenuModel }) {
           type="button"
           id="new-category"
           className="office-button primary"
-          {...inertProps(!usable || busy)}
+          {...inertProps(read === 'loading' || busy)}
           onClick={() => model.openCreate()}
         >
           {NEW_CATEGORY}

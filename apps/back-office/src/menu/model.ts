@@ -313,6 +313,8 @@ export function createMenuModel(config: ConfigApi) {
   let proceed: (() => void) | null = null;
   /** An answer that arrived while the session was away or a decision was open, with its reread if it made one. */
   let held: { command: Command; answer: Answer; read?: Reread } | null = null;
+  /** The finished result of an explicit retry of a reread, held the same way. */
+  let heldRetry: (() => void) | null = null;
 
   const set = (patch: Partial<MenuState>): void => {
     state = { ...state, ...patch };
@@ -496,10 +498,17 @@ export function createMenuModel(config: ConfigApi) {
   }
 
   function flush(): void {
-    if (held === null || !gate || state.decision) return;
-    const result = held;
-    held = null;
-    void present(result.command, result.answer, result.read);
+    if (!gate || state.decision) return;
+    if (held !== null) {
+      const result = held;
+      held = null;
+      void present(result.command, result.answer, result.read);
+    }
+    if (heldRetry !== null) {
+      const result = heldRetry;
+      heldRetry = null;
+      result();
+    }
   }
 
   function send(command: Command, request: () => Promise<Answer>, patch: Partial<MenuState> = {}): void {
@@ -886,10 +895,6 @@ export function createMenuModel(config: ConfigApi) {
     },
   };
 
-  // The page can be drawn when a read succeeded, or when an answer was applied to the rows the
-  // client knew while a read stands failed (the alert stays, the counts are withheld).
-  const usable = (): boolean => state.read === 'ready' || state.partial;
-
   return {
     getState: (): MenuState => state,
     subscribe(listener: () => void): () => void {
@@ -933,23 +938,37 @@ export function createMenuModel(config: ConfigApi) {
     },
     /** Try again: the read only. After an unknown or stale outcome whose reread failed, it is that reread. */
     async retryRead(): Promise<void> {
+      // What the retry is about, by identity: the editor whose notice asked for it, or the page
+      // result, or neither (a plain failed read).
+      const asked = state.editor;
+      const askedPage = state.page;
       const fresh = await load(true);
       if (!fresh || stopped) return;
-      const { editor, page } = state;
-      if (editor !== null && editor.notice === 'unknown-unread') {
-        set(settleUnknown(editor, { fresh: true, offered: offeredFor(kindOf(editor), editor.recordId) }));
-      } else if (editor !== null && editor.notice === 'stale-unread') {
-        const offered = offeredFor(kindOf(editor), editor.recordId);
-        if (offered !== null && editor.base !== null && offered.version > editor.base) {
-          set({ editor: { ...editor, notice: 'stale', offered }, focus: aim('notice') });
+      // What the completed read shows beside the draft is kept now, with the read: presenting it
+      // later never reads again.
+      const offered = asked === null ? null : offeredFor(kindOf(asked), asked.recordId);
+      const present = (): void => {
+        const { editor, page } = state;
+        if (asked !== null && (asked.notice === 'unknown-unread' || asked.notice === 'stale-unread')) {
+          // Gone, discarded or changed meanwhile: the result is not for what is on screen.
+          if (editor === null || editor.key !== asked.key || editor.notice !== asked.notice) return;
+          if (asked.notice === 'unknown-unread') {
+            set(settleUnknown(editor, { fresh: true, offered }));
+          } else if (offered !== null && editor.base !== null && offered.version > editor.base) {
+            set({ editor: { ...editor, notice: 'stale', offered }, focus: aim('notice') });
+          } else {
+            set({ editor: { ...editor, notice: 'failure', offered: null }, focus: aim(draftTarget(editor)) });
+          }
+        } else if (askedPage?.kind === 'unknown' && askedPage.unread) {
+          if (page === askedPage) set({ page: { ...askedPage, unread: false }, focus: aim('status') });
         } else {
-          set({ editor: { ...editor, notice: 'failure', offered: null }, focus: aim(draftTarget(editor)) });
+          set({ page: { kind: 'refreshed' }, focus: aim('status') });
         }
-      } else if (page?.kind === 'unknown' && page.unread) {
-        set({ page: { ...page, unread: false }, focus: aim('status') });
-      } else {
-        set({ page: { kind: 'refreshed' }, focus: aim('status') });
-      }
+      };
+      // The session or a decision took the screen during the read: hold the finished result and
+      // present it once, with its focus, when the same manager is back. Nothing is read again.
+      if (!gate || state.decision) heldRetry = present;
+      else present();
     },
     /** After the session's own screen: put focus back in the work. */
     refocus(): void {
@@ -957,7 +976,8 @@ export function createMenuModel(config: ConfigApi) {
     },
     // One command at a time: while one is pending these are inert, whatever pressed them.
     openCreate(): void {
-      if (state.command === null && usable()) leave(() => openEditor({ kind: 'create', recordId: null, active: true, openedName: '', base: null, name: '', order: [], opener: 'new-category' }));
+      // Creation carries no version, so it is live after a failed read too (DESIGN-019's error state).
+      if (state.command === null && state.read !== 'loading') leave(() => openEditor({ kind: 'create', recordId: null, active: true, openedName: '', base: null, name: '', order: [], opener: 'new-category' }));
     },
     openRename(categoryId: string): void {
       if (state.command !== null || state.version === null) return;

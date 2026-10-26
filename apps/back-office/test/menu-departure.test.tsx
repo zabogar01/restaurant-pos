@@ -541,6 +541,68 @@ describe('AC 13. the decision, M-6 and BO-01', () => {
   });
 });
 
+describe('an explicit retry of a reread presents through the gates (round 3, F1)', () => {
+  const UNREAD = {
+    unknown: 'Outcome not confirmed. The menu could not be refreshed. Your draft is kept; nothing was sent again.',
+    stale:
+      'The menu changed while you were editing. Nothing was saved. Your draft is kept, but the current menu could not be read. Try again to read it before choosing.',
+  } as const;
+  const PRESENTED = {
+    unknown:
+      'Outcome not confirmed. The menu has been read again at version 6. It may include this save. Your draft is kept; nothing was sent again. Choose which to keep.',
+    stale:
+      'The menu changed while you were editing. Nothing was saved. The menu has been read again at version 6. Your draft is kept. Choose which to keep.',
+  } as const;
+
+  /** A rename whose outcome needs a reread that failed; Try again is pressed and its read is held. */
+  async function retrying(kind: 'unknown' | 'stale') {
+    const host = await open();
+    dirtyRename(host);
+    h.reply(CATEGORY_UPDATE, kind === 'unknown' ? failure : refusal('CATALOG_CHANGED', undefined, 409));
+    h.reply(READ, failure);
+    tap(named(host, 'Save'));
+    await h.settle();
+    expect(text(formNotice(host)!.querySelector('p'))).toBe(UNREAD[kind]);
+    h.reply(READ, catalog(6, [{ ...MAINS, name: 'Main dishes' }, SEASONAL, DRINKS]));
+    const retry = h.hold(READ);
+    tap(host.querySelector<HTMLElement>('#retry-menu-read')!);
+    await h.settle();
+    return { host, retry, reads: h.count(READ) };
+  }
+
+  it.each(['unknown', 'stale'] as const)('%s: M-6 opening during the retry read holds the result; it is presented once on return, with no new request', async (kind) => {
+    const { host, retry, reads } = await retrying(kind);
+    await goIdle(host);
+    retry.deliver(catalog(6, [{ ...MAINS, name: 'Main dishes' }, SEASONAL, DRINKS]));
+    await h.settle();
+    expect(text(formNotice(host)!.querySelector('p'))).toBe(UNREAD[kind]);
+    expect(comparison(host)).toBeNull();
+
+    await resume(host);
+    expect(text(formNotice(host)!.querySelector('p'))).toBe(PRESENTED[kind]);
+    expect(text(comparison(host)!.querySelector('#current-values'))).toBe('Current category name: Main dishes');
+    expect(h.count(READ)).toBe(reads);
+    expect(h.count(CATEGORY_UPDATE)).toBe(1);
+  });
+
+  it.each(['unknown', 'stale'] as const)('%s: the departure decision open during the retry read holds the result; Stay presents it once, with no new request', async (kind) => {
+    const { host, retry, reads } = await retrying(kind);
+    tap(named(host, 'Cancel'));
+    expect(decision()).not.toBeNull();
+    retry.deliver(catalog(6, [{ ...MAINS, name: 'Main dishes' }, SEASONAL, DRINKS]));
+    await h.settle();
+    expect(text(formNotice(host)!.querySelector('p'))).toBe(UNREAD[kind]);
+    expect(comparison(host)).toBeNull();
+
+    tap(named(decision()!, 'Stay'));
+    expect(text(formNotice(host)!.querySelector('p'))).toBe(PRESENTED[kind]);
+    expect(comparison(host)).not.toBeNull();
+    expect(document.activeElement).toBe(formNotice(host));
+    expect(h.count(READ)).toBe(reads);
+    expect(h.count(CATEGORY_UPDATE)).toBe(1);
+  });
+});
+
 describe('the catalog read on a visit', () => {
   it('rereads on every visit without hiding the rows already held', async () => {
     const host = await open(undefined, '/back-office/menu');

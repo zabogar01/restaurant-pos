@@ -172,7 +172,8 @@ describe('AC 4. empty, loading, failed and partial', () => {
     expect(text(alert)).toBe(`${READ_FAILED.title}${READ_FAILED.body}Try again`);
     expect(count(host)).toBeNull();
     expect(aria(named(host, 'Reorder categories'))).toBe(true);
-    expect(aria(named(host, 'New category'))).toBe(true);
+    // Creation carries no version, so it stays live after a failed read (DESIGN-019's error state).
+    expect(aria(named(host, 'New category'))).toBe(false);
     // Try again repeats the read only.
     h.reply(READ, catalog(5));
     tap(named(host, 'Try again'));
@@ -181,6 +182,38 @@ describe('AC 4. empty, loading, failed and partial', () => {
     expect(host.querySelector('#read-state')).toBeNull();
     expect(text(count(host))).toBe('3 categories · 7 items');
     expect(aria(named(host, 'Reorder categories'))).toBe(false);
+  });
+
+  it('after a failed first read New category opens its panel; Create sends one { name } and the partial state follows with its copy', async () => {
+    const host = await open(failure);
+    tap(named(host, 'New category'));
+    expect(panelName(host)).toBe('New category');
+    expect(document.activeElement).toBe(nameField(host));
+    h.reply(CATEGORY_CREATE, category(6, cat(4, 'Specials', 3)));
+    typeInto(nameField(host)!, 'Specials');
+    tap(named(host, 'Create'));
+    await h.settle();
+
+    expect(h.count(CATEGORY_CREATE)).toBe(1);
+    expect(bodyOf(h, CATEGORY_CREATE)).toEqual({ name: 'Specials' });
+    expect(text(pageStatus(host))).toBe('Specials saved.');
+    expect(headings(host)).toEqual(['Specials']);
+    expect(text(host.querySelector('#read-state [role="alert"]')!)).toBe(`${LIST_PARTIAL.title}${LIST_PARTIAL.body}Try again`);
+    expect(count(host)).toBeNull();
+    expect(aria(named(host, 'Reorder categories'))).toBe(true);
+    expect(h.count(READ)).toBe(1);
+  });
+
+  it('New category is inert while the first read is loading', async () => {
+    h = harness();
+    const opened = await openMenuHeld(h);
+    view = opened.view;
+    expect(aria(named(view.host, 'New category'))).toBe(true);
+    tap(named(view.host, 'New category'));
+    expect(panel(view.host)).toBeNull();
+    opened.held.deliver(catalog(5));
+    await h.settle();
+    expect(aria(named(view.host, 'New category'))).toBe(false);
   });
 
   it('a command that succeeds while the read stands failed shows the partial state with the answered record applied', async () => {
