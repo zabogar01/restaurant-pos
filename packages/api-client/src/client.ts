@@ -108,6 +108,17 @@ export const ROUTES = {
   tenderMethodsUpdate: find('/api/back-office/config/tender-methods/update'),
   tenderMethodsDeactivate: find('/api/back-office/config/tender-methods/deactivate'),
   tenderMethodsReactivate: find('/api/back-office/config/tender-methods/reactivate'),
+  catalogRead: find('/api/back-office/config/catalog'),
+  catalogCategoriesCreate: find('/api/back-office/config/catalog/categories/create'),
+  catalogCategoriesUpdate: find('/api/back-office/config/catalog/categories/update'),
+  catalogCategoriesReorder: find('/api/back-office/config/catalog/categories/reorder'),
+  catalogCategoriesArchive: find('/api/back-office/config/catalog/categories/archive'),
+  catalogCategoriesRestore: find('/api/back-office/config/catalog/categories/restore'),
+  catalogItemsCreate: find('/api/back-office/config/catalog/items/create'),
+  catalogItemsUpdate: find('/api/back-office/config/catalog/items/update'),
+  catalogItemsReorder: find('/api/back-office/config/catalog/items/reorder'),
+  catalogItemsArchive: find('/api/back-office/config/catalog/items/archive'),
+  catalogItemsRestore: find('/api/back-office/config/catalog/items/restore'),
 } as const;
 
 interface View {

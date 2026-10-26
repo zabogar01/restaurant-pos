@@ -48,4 +48,17 @@ export const ROUTE_TABLE = [
   { method: 'POST', path: '/api/back-office/config/tender-methods/update', interactive: true },
   { method: 'POST', path: '/api/back-office/config/tender-methods/deactivate', interactive: true },
   { method: 'POST', path: '/api/back-office/config/tender-methods/reactivate', interactive: true },
+  // The catalog read is not interactive, for the reason the tables list is not; every
+  // catalog command is a person pressing a control.
+  { method: 'GET', path: '/api/back-office/config/catalog', interactive: false },
+  { method: 'POST', path: '/api/back-office/config/catalog/categories/create', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/categories/update', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/categories/reorder', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/categories/archive', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/categories/restore', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/items/create', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/items/update', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/items/reorder', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/items/archive', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/items/restore', interactive: true },
 ] as const satisfies readonly RouteEntry[];

@@ -191,6 +191,20 @@ export function neverCalled(cause: Error, text: string): void {
   const settings_changedObject: ErrorBody = { error: { code: ErrorCode.SETTINGS_CHANGED, details: { any: 'object' } } };
   void [settings_changedText, settings_changedObject];
 
+  // @ts-expect-error a string
+  new AppError(ErrorCode.CATALOG_CHANGED, 409, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.CATALOG_CHANGED, 409, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.CATALOG_CHANGED, 409, new Error('x'));
+  // @ts-expect-error an undeclared object
+  new AppError(ErrorCode.CATALOG_CHANGED, 409, { any: 'object' });
+  // @ts-expect-error a string in the body
+  const catalog_changedText: ErrorBody = { error: { code: ErrorCode.CATALOG_CHANGED, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const catalog_changedObject: ErrorBody = { error: { code: ErrorCode.CATALOG_CHANGED, details: { any: 'object' } } };
+  void [catalog_changedText, catalog_changedObject];
+
   // The two codes that carry details (009b): a number PostgreSQL computed, and
   // nothing else. A string, an exception's message, an exception and an object of
   // another shape (a parse error's issues among them) do not compile.

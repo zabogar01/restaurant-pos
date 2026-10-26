@@ -17,6 +17,7 @@ import {
 import { loggerOptions } from './log.js';
 import { checkHost, checkOrigin, ownOrigin } from './origin.js';
 import { backOfficeAuthRoutes } from './routes/back-office-auth.js';
+import { backOfficeCatalogRoutes } from './routes/back-office-catalog.js';
 import { backOfficeSettingsRoutes } from './routes/back-office-settings.js';
 import { backOfficeTableRoutes } from './routes/back-office-tables.js';
 import { backOfficeTenderMethodRoutes } from './routes/back-office-tender-methods.js';
@@ -112,6 +113,7 @@ export function buildServer({
       await api.register(backOfficeTableRoutes);
       await api.register(backOfficeSettingsRoutes);
       await api.register(backOfficeTenderMethodRoutes);
+      await api.register(backOfficeCatalogRoutes);
       for (const routes of apiRoutes) await api.register(routes);
     },
     { prefix: '/api' }
