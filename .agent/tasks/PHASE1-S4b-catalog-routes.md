@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries]
 depends_on: [PHASE1-S4a]
 owns: [packages/contracts/src/catalog.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/server/src/http/routes/back-office-catalog.ts, apps/server/src/http/server.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE1-S4b — The catalog routes
@@ -274,6 +274,14 @@ objects, and `expectedVersion` 0 to 2^31−1. `CATALOG_CHANGED` is bare in `Erro
 applied each red mutation afterwards (its Handoff says so); every criterion has an observed red. Reviewers cannot
 reach the database or a browser: this note is the evidence for the server and browser runs, and a "blocked" on that
 alone is ruled clear. Sent to review (`touches: money, boundaries`); the owner looks before merge.
+
+## Review and acceptance (lead, 2026-10-26)
+
+Codex (`gpt-6-astra`, high) reviewed `8f59450`: **clean, no findings** (`.agent/reviews/PHASE1-S4b-review.md`). It
+could not reach the database (EPERM), as the lead verify note anticipates. It ran the typecheck and the client project
+(90 files, 3755 tests) itself, probed the price schemas with line-ending characters (all refused), confirmed the code
+is unchanged since the lead's run at `6db7d9a`, and relied on the lead's run for the server and browser tests. Complete.
+`touches: money, boundaries`, so the owner looks before merge. No migration, so nothing to apply after merge.
 
 ## Handoff
 
