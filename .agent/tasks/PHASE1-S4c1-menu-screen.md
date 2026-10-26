@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S4b]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/menu.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S4c1 — BO-03 Menu in the back office
@@ -440,6 +440,35 @@ At `f0d88dc` (round 1 `0ff6a88`, round 2 `8220472`), in this worktree.
 - **For the reviewer.** Reviewers cannot reach the database or a browser, so this note is the evidence for those runs,
   and a "blocked" on that alone is ruled clear. Review against the task, DESIGN-019's Handoff and `D`. Look closely at
   `menu/model.ts`'s version, held-result and command-lifetime rules, and at the rulings of round 2.
+
+## Round 3 — the review's F1 and F2 (lead rulings, 2026-10-26)
+
+Codex reviewed `ca09d8d` (`.agent/reviews/PHASE1-S4c1-review.md`) and found two P2 issues. **Both are accepted, as the
+review proposes.**
+
+1. **F1. An explicit retry of a reread presents through the gates.** Give `retryRead()` the same gated completion as
+   the automatic reread: keep the completed read and the identity of the originating editor or result, and recheck the
+   session gate and the open departure decision before presenting. If presentation is not permitted, hold the result
+   and present it once, with its focus, when the same manager resumes or presses *Stay*. Never repeat the read or the
+   command. Ruling 14 already requires this; the retry path missed it.
+   *Tests:* delayed-retry cases for an unknown outcome and for a stale refusal, each with M-6 opening while the retry
+   read is outstanding, and with the departure decision open. Each asserts nothing is presented behind the gate, the
+   result is presented once on return, and the request count is unchanged.
+   *Red:* drop the gate check in `retryRead`; the M-6 retry case presents behind M-6.
+2. **F2. *New category* stays live after a failed read.** DESIGN-019's `error` state and the artifact (`menu.js:47`)
+   keep it live, and ruling 1 builds every drawn state. The lead had let the Handoff's BO-05 reading stand; that was
+   wrong. Give creation its own condition in the view and the model: inert while the first read is loading or while any
+   command is pending, live otherwise, failed read included. The complete-read restriction stays on the two reorder
+   openers only.
+   A create that succeeds after a failed read applies the answered category and takes the **partial** composition
+   (ruling 4): the counts are withheld, the alert reads DESIGN-019's *Partial list* copy, and the reorder openers stay
+   off.
+   *Tests:* a failed first read then *New category* opens the panel; *Create* sends one `{ name }`; the partial state
+   follows, with its copy.
+   *Red:* restore the `usable` gate on the opener; the panel does not open.
+3. Run `npm run verify` and `npm run test:e2e:all`. Commit on this branch. Append a *Round 3* section to the Handoff
+   (what changed, each new test and its observed red, the counts), ending `DONE` or `BLOCKED: <question>`, and report to
+   the lead through Herdr. This is the last fix round this task allows (`max_fix_cycles` 2).
 
 ## Handoff
 
