@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-27 (S4c2 split; **S4c2a dispatched**): `development` at `826a401`; dev `pos` at `0013`. Builder `phase1-s4c2a`
-(Sonnet, interactive) running. Narrative: [journal/2026-10-27.md](journal/2026-10-27.md).
+complete, branch not pushed (see Running tasks). Narrative: [journal/2026-10-27.md](journal/2026-10-27.md).
 
 ## Phase and gates
 
@@ -52,8 +52,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE1-S4c2a building** (Herdr `phase1-s4c2a`, Sonnet; Codex reviews). Rulings 1 (split: 40 states here, 22 to
-  S4c2b) and 3 (subject in client state; path `/back-office/menu/item`; no subject shows *Choose an item on Menu*).
+- **PHASE1-S4c2a complete** at `1dd6755` (two rounds; Codex F1, F2 fixed in r2, lead-reviewed, reds repeated; verify
+  138/5034, e2e:all 92). **Not pushed:** the push and PR were refused by the permission classifier, so they are the
+  owner's. Owner looks at BO-03/BO-04 served, then merges (no migration). S4c2b reads its Handoff, *What S4c2b needs*.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -143,7 +144,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S4c2a** running: verify, `test:e2e:all`, Codex review; the owner looks at BO-03 and BO-04 served before merge.
-   Then write **S4c2b** (variants and modifiers) from S4c2a's Handoff, *What S4c2b needs*.
+1. **S4c2a** complete: owner pushes/opens the PR (or allows the lead to), looks at BO-03 and BO-04, merges. Then write
+   **S4c2b** (variants and modifiers) from S4c2a's Handoff, *What S4c2b needs*; remove S4c2a's worktree and run dir.
 2. **Then S5** (86 and Make available on BO-03, DESIGN-019's F7, S4a's `catalogWrite` unversioned), **DESIGN-021** (POS
    addition, G6; Codex hand-opened, lead runs checks) beside it. **Small:** the code-point cleanup between slices.

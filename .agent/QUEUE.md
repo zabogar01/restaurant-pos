@@ -148,7 +148,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - **PHASE1-S4b**, the eleven catalog routes and `CATALOG_CHANGED` — depends on S4a — complete, PR #142.
     - **PHASE1-S4c1**, BO-03 Menu (no 86, no Edit/New item) — depends on S4b — complete, PR #144.
     - **PHASE1-S4c2a**, BO-04 for the item's own fields (create, edit, the version rules) and BO-03's Edit and New
-      item — depends on S4c1 — dispatched 2026-10-27.
+      item — depends on S4c1 — complete 2026-10-27, branch `agent/phase1-s4c2a` not pushed.
     - **PHASE1-S4c2b**, BO-04's variants and modifiers (the two lists, DESIGN-020 round 2's Keep rules) — depends on
       S4c2a — not written.
     - **S5** (86),
