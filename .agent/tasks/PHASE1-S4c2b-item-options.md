@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries]
 depends_on: [PHASE1-S4c2a]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/item-editor.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S4c2b — BO-04's variants and modifiers
@@ -345,6 +345,36 @@ more than one commit is fine if it reads better. Write the Handoff below in full
 - the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify (2026-10-27)
+
+At `a441b25`, in this worktree:
+- **`npm run verify`:** typecheck clean; **141 files, 5174 tests**.
+- **`npm run test:e2e:all`:** **98 passed** (1.2 minutes), Chromium and WebKit.
+- **Paths:** every changed path is inside `owns`.
+- **Changed tests:** `item.test.tsx` (the button list is now the exact nine names) and `item-versions.test.tsx` (the
+  comparison text gains the two lists). Both are listed under *Tests expected to change*, and both are stronger, not
+  weaker. I1 to I3 in the spec are unchanged.
+- **Not checked by the lead:** the drawn layout. The owner looks at BO-04 served before merge.
+
+## Rulings on the Handoff's findings (lead, 2026-10-27)
+
+1. **The decision that a pending-removal row collapses to the draft's name is overturned.** `D` `:1941` binds: "A
+   pending-removal row … is named by its saved name". The artifact's drawing does not override `D`. A saved row
+   pending removal shows its **saved** name, and its Undo is *Undo removal of variant {saved name}*. A new row is never
+   pending removal, so the saved name always exists.
+   - **This is a code change, held for round 2 together with whatever the review finds.** It is not to be made
+     alone.
+   - **Test:** rename a saved row, then remove it; the collapsed row and its Undo name the saved name.
+   - **Red:** use the draft's name.
+2. **Finding 2 stands as built.** `moved` outlives a Keep. The manager did press Move on that row, and the draft's
+   order is now theirs against the new `original`, so a second stale round keeps it (F2). No change.
+3. **Finding 3 is closed by the server's code.** `editItem` checks `order` only when it is present (`catalog.ts:544`,
+   `:592`) and writes it only when present (`:632`). Removing every option with no `order` is valid, so omitting an
+   empty `order` is right.
+4. **Finding 4 is noted;** focus falls back to Item name. **Finding 5 (process):** the shell use outside the role's
+   list is recorded for the kit question in STATE (builder `grep`/`python3`/`sed`). It did not change what was
+   committed.
 
 ## Handoff
 
