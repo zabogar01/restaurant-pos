@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-27 (S4c2 split; **S4c2a complete, PR #147**): `development` at `826a401`; dev `pos` at `0013`. Nothing
-running. **Open for the owner: #147 (look at BO-03/BO-04 served) and this lead branch's PR.** Journal: 2026-10-27.
+2026-10-27 (#147 S4c2a and #148 merged; **S4c2b dispatched**): `development` at `95193c1`; dev `pos` at `0013`.
+Builder `phase1-s4c2b` (Sonnet, interactive) running. Journal: 2026-10-27.
 
 ## Phase and gates
 
@@ -19,8 +19,8 @@ running. **Open for the owner: #147 (look at BO-03/BO-04 served) and this lead b
   (#115: `0009`, startup schema check), S1a (#119: tables server, `0010`), S1b (#123: BO-05, the rail, the form
   pattern), S2a (#128: settings server, `0011`, `SETTINGS_CHANGED`, the rate codec), S2b (#130: BO-08 settings), S3a
   (#134: tender methods server, `0012`), S3b (#137: BO-08 payment methods), **S4a (#140: catalog domain, `0013`,
-  `catalogWrite`), S4b (#142: eleven catalog routes, `CATALOG_CHANGED`), S4c1 (#144: BO-03 Menu)**. **Building: S4c2a**
-  (BO-04's own fields, BO-03's Edit/New item); then S4c2b (the option lists), S5 (86). Consults: C1-C3 done; C4 not written.
+  `catalogWrite`), S4b (#142: eleven catalog routes, `CATALOG_CHANGED`), S4c1 (#144: BO-03 Menu), S4c2a (#147: BO-04's
+  own fields, BO-03's Edit/New item)**. **Building: S4c2b** (the option lists); then S5 (86). C1-C3 done; C4 not written.
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14); S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
@@ -29,32 +29,32 @@ running. **Open for the owner: #147 (look at BO-03/BO-04 served) and this lead b
 - **Owed, not drafted:** ROADMAP Phase 1's users bullet omits role change (Q1c), its tender bullet "reactivate" (OQ1).
   Designer: BO-06 inventory and sitemap (E2, C3 *Stale text* 5); BO-07 stale-draft states (F's BO-07 half).
 - **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office: sign-in, provisional BO-01, M-6, the rail (Menu,
-  Tables, Settings), BO-05, BO-08 whole, **BO-03 without 86, Edit or New item**. Shared: `forms/Decision.tsx` (extracted
-  in S4c1), `fieldsInError`, `work/guard.ts`; models `tables/model.ts`, `settings/model.ts`, `menu/model.ts`. **Frost
+  Tables, Settings), BO-05, BO-08 whole, **BO-03 without 86; BO-04 without options**. Shared: `forms/Decision.tsx`,
+  `forms/answer.ts`, `fieldsInError`, `work/guard.ts`; models `tables/`, `settings/`, `menu/`, `item/model.ts`. **Frost
   designed:** A, B, C, I, E1, F's BO-08 half, BO-03 (019), BO-04 (020); left: DESIGN-021 (POS, G6), F's BO-07 half, E2.
-- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** S4c1 final tree (`05a6e54`)
-  verify 133 files / 4752 tests, e2e:all 86.
+- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** S4c2a final tree (`1dd6755`)
+  verify 138 files / 5034 tests, e2e:all 92.
 
 ## Integration branch
 
-- **`development`** at `826a401` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `95193c1` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
   **before reporting or dispatching**. `0013` applied 2026-10-26; no lockfile change since.
 - **Guard hooks** current (`--check` 2026-10-27); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1027b`** (from `826a401`), pushed with its PR. Cut each
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1027c`** (from `95193c1`, not pushed). Cut each
   new lead branch from `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`. The lead
   pushes task and lead branches and opens PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own
   step before any follow-up push.**
-- **Task worktree** `../restaurant-pos-wt/PHASE1-S4c2a` (pushed; remove with its run dir after merge). Not the lead's:
+- **Task worktree** `../restaurant-pos-wt/PHASE1-S4c2b` (S4c2a's removed 10-27). Not the lead's:
   `../restaurant-pos-design`, `keen-chebyshev-ccf255`, branch `setting/add-permission`.
 
 ## Running tasks and agents
 
-- **PHASE1-S4c2a complete** at `1dd6755` (two rounds; Codex F1, F2 fixed in r2, lead-reviewed, reds repeated; verify
-  138/5034, e2e:all 92), **PR #147**. Owner looks at BO-03/BO-04 served, then merges (no migration). S4c2b reads its
-  Handoff, *What S4c2b needs*. A push first refused by the classifier went through on the owner's word.
+- **PHASE1-S4c2b building** (Herdr `phase1-s4c2b`, Sonnet; Codex reviews): BO-04's 22 option states, the change list,
+  DESIGN-020 round 2's child-row Keep. Ruled: option uniqueness by `toLowerCase()` (the index's `lower(name)`), not
+  the collator; inactive options never shown. The owner looks at BO-04 with options served before merge.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -97,7 +97,7 @@ running. **Open for the owner: #147 (look at BO-03/BO-04 served) and this lead b
 
 ## Live bugs and known defects
 
-- **Owner to see in a browser, then close:** BO-03 (S4c1, if not seen before #144); BO-08's methods part (S3b, if not
+- **Owner to see in a browser, then close:** BO-03 and BO-04 (S4c1, S4c2a, if not seen before #144, #147); BO-08's methods part (S3b, if not
   seen before #137); the Burger-tile fix (FE-021 `7268943`, L257-262); POS-03 Add (L353).
 - **Money, not filed (ARCH-003, 9.6):** `closeOrder` (`close.ts:74–101`) accepts any drafts; only the Add gate
   (`tender.ts:39–41`) keeps a card under the balance (B-5). Unreachable today; own task, architect consult.
@@ -144,7 +144,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **After #147 merges:** fast-forward, remove S4c2a's worktree and run dir; write **S4c2b** (variants and modifiers)
-   from S4c2a's Handoff, *What S4c2b needs*.
+1. **S4c2b** running: verify, `test:e2e:all`, Codex review, then PR; the owner looks at BO-04 served before merge.
 2. **Then S5** (86 and Make available on BO-03, DESIGN-019's F7, S4a's `catalogWrite` unversioned), **DESIGN-021** (POS
    addition, G6; Codex hand-opened, lead runs checks) beside it. **Small:** the code-point cleanup between slices.
