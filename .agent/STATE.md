@@ -9,9 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-27 (wrap-up for a fresh session): `development` at `1503d53` (#144 S4c1 and #145 merged); dev `pos` at `0013`.
-**Nothing running; no agent but the lead; no task worktree; no open lead PR.** Narrative:
-[journal/2026-10-26.md](journal/2026-10-26.md) (S4a to S4c1), [journal/2026-10-27.md](journal/2026-10-27.md).
+2026-10-27 (S4c2 split; **S4c2a complete, PR #147**): `development` at `826a401`; dev `pos` at `0013`. Nothing
+running. **Open for the owner: #147 (look at BO-03/BO-04 served) and this lead branch's PR.** Journal: 2026-10-27.
 
 ## Phase and gates
 
@@ -20,8 +19,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   (#115: `0009`, startup schema check), S1a (#119: tables server, `0010`), S1b (#123: BO-05, the rail, the form
   pattern), S2a (#128: settings server, `0011`, `SETTINGS_CHANGED`, the rate codec), S2b (#130: BO-08 settings), S3a
   (#134: tender methods server, `0012`), S3b (#137: BO-08 payment methods), **S4a (#140: catalog domain, `0013`,
-  `catalogWrite`), S4b (#142: eleven catalog routes, `CATALOG_CHANGED`), S4c1 (#144: BO-03 Menu)**. **Next: S4c2**
-  (BO-04 and the BO-03 links), then S5 (86). Consults: C1 (with ADR-012), C2, C3 done; C4 (POS catalog) not written.
+  `catalogWrite`), S4b (#142: eleven catalog routes, `CATALOG_CHANGED`), S4c1 (#144: BO-03 Menu)**. **Building: S4c2a**
+  (BO-04's own fields, BO-03's Edit/New item); then S4c2b (the option lists), S5 (86). Consults: C1-C3 done; C4 not written.
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14); S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
@@ -38,24 +37,24 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Integration branch
 
-- **`development`** at `1503d53` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `826a401` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
   **before reporting or dispatching**. `0013` applied 2026-10-26; no lockfile change since.
 - **Guard hooks** current (`--check` 2026-10-27); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1027`** (from `1503d53`): this wrap-up, pushed with its PR. Cut each
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1027b`** (from `826a401`), pushed with its PR. Cut each
   new lead branch from `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`. The lead
   pushes task and lead branches and opens PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own
   step before any follow-up push.**
-- **Task worktrees: none** (S4c1's removed 10-27). Not the lead's: `../restaurant-pos-design`, `keen-chebyshev-ccf255`,
-  branch `setting/add-permission`.
+- **Task worktree** `../restaurant-pos-wt/PHASE1-S4c2a` (pushed; remove with its run dir after merge). Not the lead's:
+  `../restaurant-pos-design`, `keen-chebyshev-ccf255`, branch `setting/add-permission`.
 
 ## Running tasks and agents
 
-- **Nothing running;** Herdr shows only `lead`.
-- **For S4c2's task file:** inputs and the open identity-in-client-state point are in
-  [journal/2026-10-27.md](journal/2026-10-27.md), *What S4c2's task file needs*.
+- **PHASE1-S4c2a complete** at `1dd6755` (two rounds; Codex F1, F2 fixed in r2, lead-reviewed, reds repeated; verify
+  138/5034, e2e:all 92), **PR #147**. Owner looks at BO-03/BO-04 served, then merges (no migration). S4c2b reads its
+  Handoff, *What S4c2b needs*. A push first refused by the classifier went through on the owner's word.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -113,7 +112,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
-- **Lead rulings, yours to overturn:** S4c1 (task file, rulings 1, 6, 15, *Round 2*: split by screen; 86 to S5; the
+- **Lead rulings, yours to overturn:** S4c2a (task file, rulings 1-3, 9, 10: the split; `/back-office/menu/item` with the
+  item held in client state; BO-04's own read; the top bar stays *Back office*; one command across BO-03/BO-04). S4c1 (task file, rulings 1, 6, 15, *Round 2*: split by screen; 86 to S5; the
   counts; `Decision` extracted; *Keep* on a changed reorder scope rebuilds as DESIGN-020 F2). S4b (*The shape* 1, 2:
   bare `DUPLICATE`; no single-item read). S4a (*The shape* 4, 6: the option swap by temporary deactivation, no
   architect; an archived destination `STALE`). S3b (one screen model; client sort; `DUPLICATE` before its reread; BO-05's
@@ -144,7 +144,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S4c2** (BO-04 Item editor, BO-03's Edit and New item): write from the inputs above, rule the identity-in-state
-   point, dispatch (Sonnet builder, Codex review); the owner looks at BO-03 and BO-04 served before merge.
+1. **After #147 merges:** fast-forward, remove S4c2a's worktree and run dir; write **S4c2b** (variants and modifiers)
+   from S4c2a's Handoff, *What S4c2b needs*.
 2. **Then S5** (86 and Make available on BO-03, DESIGN-019's F7, S4a's `catalogWrite` unversioned), **DESIGN-021** (POS
    addition, G6; Codex hand-opened, lead runs checks) beside it. **Small:** the code-point cleanup between slices.
