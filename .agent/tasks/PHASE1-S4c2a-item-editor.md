@@ -5,8 +5,8 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S4c1]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/item-editor.spec.ts, e2e/support/**]
-status: active
-cycles: 0
+status: complete
+cycles: 1
 ---
 # PHASE1-S4c2a — BO-04 Item editor: the item's own fields
 
@@ -524,6 +524,30 @@ lead read both places in the code (`menu/model.ts` `receiveItem`; `item/model.ts
 **What to do.** Fix both and add the tests above, weakening no existing assertion. Run `npm run verify` and `npm run
 test:e2e:all`. Commit on this branch. Append a *Round 2* section to the Handoff: for each finding, what changed, the
 red you observed, and the new counts. End it `DONE` or `BLOCKED: <question>`, then ping the lead.
+
+## Round 2 lead review and acceptance (2026-10-27)
+
+At `2f15d6e`, round 2 changed only `item/model.ts`, `menu/model.ts` and two test files, adding tests and editing none.
+I read the diff against the rulings:
+- **F1.** `host()` inserts BO-04's category only when Menu holds no category with that id. The inserted category is
+  not in the applied map and moves no version. `receiveItem` and `releaseFromSave` both call it.
+- **The builder's addition, the `hosted` flag, is accepted.** A failed visit read after a hosted insert keeps the
+  known rows as a partial list. Without the flag, S4c1's `clock > startedAt` test misses this case, because that read
+  began after the answer was applied. A successful read clears the flag.
+- **F2.** The duplicate reread holds its holder in the `heldRetry` slot when the gate is shut or the decision is
+  open, and `flush()` presents it once. `showHolder`'s identity check drops it after Discard or an edit. The comment
+  is corrected.
+
+**The red proofs, repeated by the lead.** I applied each mutation to round 2's code, ran the file, then restored it
+with `git checkout`:
+- **F1:** `host(category)` disabled in `receiveItem`. Both *Round 2, F1* cases in `item-versions.test.tsx` failed.
+- **F2:** the gate check replaced by `if (false)`. The M-6 and decision cases in `item-departure.test.tsx` failed.
+
+**Checks on this tree, run by the lead:** `npm run verify` 138 files, 5034 tests; `npm run test:e2e:all` 92 passed.
+
+This is a fully ruled fix round whose fixes are the review's own, so the lead reviewed it instead of a second review
+round (kit practice). **Complete.** `touches: money, boundaries, identity`: the owner looks at BO-03 and BO-04 served
+before merge. No one has yet seen the layout (Handoff finding 6).
 
 ## Handoff
 
