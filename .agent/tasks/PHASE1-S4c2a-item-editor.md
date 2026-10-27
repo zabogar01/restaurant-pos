@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S4c1]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/item-editor.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S4c2a — BO-04 Item editor: the item's own fields
@@ -479,6 +479,51 @@ These need no code change, so they spend no round.
 3. **Finding 4 stands as built.** *Keep my changes* after an unknown outcome leaves the draft "uncertain", as BO-03
    does, so leaving asks with the uncertain body. That save's outcome is still unknown, so the body is true.
 4. **Findings 3, 5, 7 and 8** are noted. Finding 7 is the resolver's fallback for a case BO-03 cannot reach today.
+
+## Round 2 — the review's F1 and F2 (lead rulings, 2026-10-27)
+
+Codex reviewed `54a6cc0` (`.agent/reviews/PHASE1-S4c2a-review.md`) and found two P2 defects. **Both are accepted.** The
+lead read both places in the code (`menu/model.ts` `receiveItem`; `item/model.ts` the `duplicate` branch and
+`showHolder`). The fixes stay inside `owns`.
+
+1. **F1: a saved item must have a category on Menu to sit in.** The defect: BO-04 reads the catalog on its own, so it
+   can save an item into a category that BO-03's last read does not hold. `receiveItem` applies `categories: []`, so
+   the item has no group, and Menu's focus request falls back to *New category* before the visit read lands.
+   - **The fix.** `receiveItem` also takes the destination category as BO-04's read holds it (a `CategoryView`). Menu
+     inserts that category **only when it holds no category with that id**, solely to host the returned item. This is
+     DESIGN-020's lead ruling 1 (the B-24 walk): "inserted only when no category with that id exists, solely to host
+     the returned item".
+   - A category Menu already holds is never replaced from BO-04's read, because Menu's copy may be newer. The inserted
+     category is **not** an answered record: it does not enter the applied-record map, and it does not move the
+     standing version. Only the item's answer does, by the one-step rule. The visit read that follows replaces it as
+     any read does.
+   - The same holds for `releaseFromSave`'s `ok` answer, and for a create into a category BO-03 has not read.
+   - **Tests:** a screen test where BO-03's first read and BO-04's read hold different categories. BO-04 saves into
+     the category only it knows, with Menu's return read held. Assert that the row is drawn in that category, that its
+     Edit has focus, and that the page result is *{name} saved.*. Then let the visit read land and assert that the row
+     and the category stay, with no second focus move. Add one case where the held visit read fails: the hosted
+     category and row stay, under the partial state's copy.
+   - **Red:** pass `categories: []` again. The focus assertion fails, with focus on *New category*.
+   - Do not change the focus effect's "consume once" rule; with the category hosted, the target exists.
+2. **F2: the duplicate reread's holder is a finished result and goes through the gates.** `showHolder` runs whenever
+   the reread lands, and checks neither the session gate nor the open departure decision. So the holder line, *View
+   item on Menu* and the archived-category error copy can appear behind M-6, at BO-01, or under the decision. Ruling
+   5 names `DUPLICATE` among the rereads that must be held.
+   - **The fix.** When the reread lands and presentation is not permitted, hold the result with its read in the same
+     held slot the stale and unknown results use. Present it once, when the same manager resumes or presses *Stay*,
+     with no second read and no second save.
+   - Drop the held result if the form was replaced or discarded, or if the duplicate error was cleared by an edit
+     meanwhile (`showHolder`'s existing identity check).
+   - Correct the comment above the branch: the duplicate reread does present something.
+   - **Tests:** M-6 opening while the reread is held, then *Continue* as the same manager; the departure decision open
+     while it lands, then *Stay*, and then separately *Discard*; and a different manager's sign-in. Each asserts that
+     the holder line is absent behind the gate, that it appears once on return (not at all after Discard or a
+     different manager), and that the read and update counts are unchanged.
+   - **Red:** drop the gate check. The M-6 case shows the holder line behind M-6.
+
+**What to do.** Fix both and add the tests above, weakening no existing assertion. Run `npm run verify` and `npm run
+test:e2e:all`. Commit on this branch. Append a *Round 2* section to the Handoff: for each finding, what changed, the
+red you observed, and the new counts. End it `DONE` or `BLOCKED: <question>`, then ping the lead.
 
 ## Handoff
 
