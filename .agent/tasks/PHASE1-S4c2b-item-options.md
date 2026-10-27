@@ -484,3 +484,17 @@ BO-04 now draws the item's **Variants** and **Modifiers** as two lists, saves bo
 The lead's eye on finding 1, a look at BO-04 drawn with real options in `npm run dev`, and a ruling on findings 2 and 3 if they matter. I ran no review pass, and nothing here is audited (owner Q11).
 
 DONE
+
+### Round 2 (the review's F1 and F2, the lead's rulings of 2026-10-27)
+
+Code commit `9757209` on `agent/phase1-s4c2b`; the hash of this section's own commit is in `git log`. Files: `src/item/model.ts`, `src/item/OptionSections.tsx` and `test/item-options.test.tsx`. F3 is rejected and nothing changed for it.
+
+**F1. A pending-removal row shows its saved name.** The collapsed row and its Undo's accessible name now take the name from the matching row of `form.original`; the draft row keeps the manager's edit, so Undo restores it. This also overturns my Round 1 decision that the row shows the draft's name. *Tests* (`item-options.test.tsx`, *Round 2. F1*), both kinds: rename a saved row, remove it, and read the collapsed row and `Undo removal of variant Large` (or `modifier Cheese`); Undo brings back the draft's new name. *Red:* naming the row from the draft failed both tests (the row read `Grande` and `Cheddar`, so the Undo name was not found).
+
+**F2. Editing the refused row keeps a duplicate that still holds.** In `setOptionName`, an `empty`, `long` or `control` refusal on the edited row still clears; a `duplicate` refusal is kept through the list's recheck, which clears it only when no other active row shares the trimmed, lower-cased name. A row with no duplicate refusal still gets none before Save. *Tests* (*Round 2. F2*): a case-only edit, surrounding spaces, and another name an active row holds each keep the refusal with Save `aria-disabled`; a unique name clears it and enables Save; a row refused `empty` and edited into a duplicate shows no error until Save. *Red:* clearing the edited row's duplicate first, as before, failed the three keep cases; the clear and no-new-refusal cases passed, as they should.
+
+Both mutations were applied, read and reverted by reverse edit before the final runs.
+
+**Counts.** `npm run verify`: typecheck clean; **141 files, 5181 tests** (up 7: two F1 cases, five F2 cases; baseline for this round 5174). `npm run test:e2e:all`: **98 passed**, Chromium and WebKit, run after both mutations were reverted. No existing test was edited and no formatter was run. Shell use this round stayed within `cat >>` for the test append and `grep`/`tail`.
+
+DONE
