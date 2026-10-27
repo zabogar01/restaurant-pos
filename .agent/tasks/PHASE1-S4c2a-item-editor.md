@@ -618,3 +618,21 @@ The 22 states of S4c2b and the Variants and Modifiers sections with everything t
 The lead's rulings on findings 1 (the category after *Use current item*) and 2 (Save held on an error), and a look at the drawn page (finding 6). S4c2b needs nothing else from this slice; the attach points are above. I did not run a review pass, and nothing here is audited (owner Q11).
 
 DONE
+
+### Round 2 (the review's F1 and F2, the lead's rulings of 2026-10-27)
+
+Code commit `2e23d04` on `agent/phase1-s4c2a`; the hash of this section's own commit is in `git log`.
+
+**F1. A saved item has a category on Menu to sit in.** `receiveItem(item, version, unchanged, category?)` and `releaseFromSave`'s `ok` outcome now take the destination category as BO-04's read holds it (`item/model.ts` passes `state.categories.find(...)`). A new private `host()` in `menu/model.ts` inserts it only when Menu's list holds no category with that id, so a category Menu already holds is never replaced from BO-04's read. The inserted category is not an answered record: it is not in the applied map and moves no version; only the item's answer does, by the one-step rule. One addition beyond the ruling, needed for its failure test: a `hosted` flag, set by `host()` and cleared by a successful read, makes a failed visit read leave the known rows drawn as a partial list. Without it the visit read starts after the answer was applied, so S4c1's `clock > startedAt` test does not mark the list partial and the table would vanish. The focus effect's consume-once rule is untouched.
+
+*Tests* (`item-versions.test.tsx`, *Round 2, F1*): Menu's first read holds three categories; BO-04's read also holds *Specials*; Burger is moved there and saved with Menu's return read held. The first case asserts the hosted category's heading and the row, focus on *Edit Burger*, and *Burger saved.*; then the visit read lands with both and the row, category, focus and sentence stay. The second lets the held visit read fail: the category and row stay under *The menu list may be out of date*. *Red:* passing no category again failed both cases, at the hosted category row being absent (the first assertion, before the focus one the ruling expected; the category is what the focus needs).
+
+**F2. The refused name's holder goes through the gates.** In the `duplicate` branch of `present`, when the reread lands and `!gate || state.decision`, the result is held in the existing held-retry slot (`heldRetry = () => showHolder(command)`) and `flush()` presents it once on *Continue* or *Stay*, with no second read and no second save. `showHolder`'s identity check (same form key, error still `duplicate`) drops it after Discard, after an edit that cleared the error, and a different manager's sign-in destroys the model. I used `heldRetry` rather than `held` because `held` carries a command's answer, which the duplicate branch has already presented; both slots are drained by the same `flush()`. The comment above the branch now says the reread does present something.
+
+*Tests* (`item-departure.test.tsx`, *Round 2, F2*): a create of a held name is refused with its reread held; M-6 opens, the read lands (no holder), *Continue* shows it, `READ` and `ITEM_CREATE` counts unchanged; the departure decision open while it lands (absent), then *Stay* (present, counts unchanged); the decision answered *Discard* (never shown, BO-03 reached); a different manager's sign-in (never shown, the no-subject sentence). *Red:* showing the holder at once failed the M-6 case (holder behind M-6) and the decision case (holder under the decision).
+
+**Counts.** `npm run verify`: typecheck clean; **138 files, 5034 tests** (up 6: two F1 cases, four F2 cases). `npm run test:e2e:all`: **92 passed**, Chromium and WebKit. No existing test was edited; no formatter was run.
+
+**Still open.** Findings 6 (the drawn layout, which no one has seen) and 7 of the first Handoff, as the lead noted.
+
+DONE
