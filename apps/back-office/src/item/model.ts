@@ -2,7 +2,6 @@ import {
   CreateItemRequest,
   UpdateItemRequest,
   type CategoryView,
-  type ItemChanges,
   type ItemView,
 } from '@pos/contracts';
 import { call, meaningOf, type Answered, type Meaning } from '../forms/answer.js';
@@ -15,15 +14,23 @@ import { router } from '../router.js';
 import type { ConfigApi } from '../session/api.js';
 import type { WorkGuard, WorkStatus } from '../work/guard.js';
 import { checkCategory, type CategoryFault } from './categories.js';
-import { checkItemName } from './name.js';
+import { createLists, editChanges } from './changes.js';
+import { keepRows } from './keep.js';
+import { checkItemName, checkOptionName, duplicateKeys } from './name.js';
+import { listKey, plainRows, rowsOf, type OptionKind, type Row } from './options.js';
 import { checkPrice, shownPrice, type PriceError } from './price.js';
 
 // BO-04's behaviour, apart from how it is drawn: the item's own fields (name, category, base
 // price) read, edited and saved as one command through the S4b routes (PHASE1-S4c2a). It copies
 // the configuration-form rules S1b to S4c1 built, as BO-03's model does. It sends a command once
 // and never again: a resend is the manager's own press of Save. It never infers success from a
-// reread. Nothing of the variants and modifiers is here (PHASE1-S4c2b): an edit sends no
-// `variants` or `modifiers` key, and a create sends two empty lists.
+// reread.
+//
+// **The two option lists** (PHASE1-S4c2b) are part of the draft, as two arrays of rows in `Fields`
+// (`options.ts`). The whole screen is one command: a create sends both lists in order, an edit
+// sends an explicit change list (`changes.ts`). Keep my changes rebuilds each list by DESIGN-020
+// round 2's principle (`keep.ts`): a row the draft touched keeps the draft's values whole, a row it
+// did not touch follows the current item.
 //
 // **Which item this edits is client state, never the address** (ruling 3). The subject is set by
 // Menu alone (`open`), lives as long as the working area, and is cleared by leaving BO-04 in any
@@ -43,6 +50,8 @@ import { checkPrice, shownPrice, type PriceError } from './price.js';
 
 export type FieldKey = 'name' | 'category' | 'price';
 export type NameFault = NameError | 'duplicate';
+/** A variant's or modifier's name is refused for the item name's reasons, or for repeating another row's. */
+export type OptionFault = NameError | 'duplicate';
 export type FormNotice =
   | 'failure'
   | 'session'
@@ -55,13 +64,21 @@ export type FormNotice =
   | 'used'
   | 'category-archived';
 
-export type FocusTarget = FieldKey | 'notice' | 'save' | 'return' | 'retry-load';
+/** An element of one option row, or a list's Add. A row that is no longer there sends focus to Item name. */
+export interface OptionTarget {
+  kind: OptionKind;
+  key: string | null;
+  part: 'name' | 'change' | 'up' | 'down' | 'remove' | 'undo' | 'add';
+}
+export type FocusTarget = FieldKey | 'notice' | 'save' | 'return' | 'retry-load' | OptionTarget;
 
-/** The item's own fields. A price is canonical in `original` and as typed in `draft`. */
+/** The item's fields and its two lists. A price or change is canonical in `original` and as typed in `draft`. */
 export interface Fields {
   name: string;
   categoryId: string;
   price: string;
+  variants: Row[];
+  modifiers: Row[];
 }
 
 /** The current item as a reread showed it, beside a draft waiting for the manager's choice. */
@@ -70,10 +87,19 @@ export interface Offered {
   item: ItemView;
 }
 
+/** The refusals on one option row; a row with none has no entry. */
+export interface RowErrors {
+  name: OptionFault | null;
+  change: PriceError | null;
+}
+export type OptionErrors = Readonly<Record<string, RowErrors>>;
+
 export interface FieldErrors {
   name: NameFault | null;
   category: CategoryFault | null;
   price: PriceError | null;
+  variants: OptionErrors;
+  modifiers: OptionErrors;
 }
 
 export interface Form {
@@ -102,7 +128,7 @@ export interface Form {
   /** An unknown outcome is open: leaving asks, whatever the draft holds. */
   uncertain: boolean;
   /** The field last edited or focused, where focus returns. */
-  lastField: FieldKey;
+  lastField: FieldKey | (OptionTarget & { part: 'name' | 'change' });
 }
 
 interface Command {
@@ -153,7 +179,23 @@ const READ = '/api/back-office/config/catalog' as const;
 const ITEM_CREATE = '/api/back-office/config/catalog/items/create' as const;
 const ITEM_UPDATE = '/api/back-office/config/catalog/items/update' as const;
 
-const fieldsOf = (item: ItemView): Fields => ({ name: item.name, categoryId: item.categoryId, price: item.basePrice });
+/** The item as the form compares against it: every price and change canonical. */
+export const fieldsOf = (item: ItemView): Fields => ({
+  name: item.name,
+  categoryId: item.categoryId,
+  price: item.basePrice,
+  variants: rowsOf(item, 'variant', false),
+  modifiers: rowsOf(item, 'modifier', false),
+});
+
+/** The item as a draft opens on it: prices and changes grouped for reading. */
+const draftOf = (item: ItemView): Fields => ({
+  name: item.name,
+  categoryId: item.categoryId,
+  price: priceText(item.basePrice),
+  variants: rowsOf(item, 'variant', true),
+  modifiers: rowsOf(item, 'modifier', true),
+});
 
 /** A price as the form compares it: canonical when it is a price, otherwise exactly as typed. */
 const priceKey = (typed: string): string => {
@@ -161,10 +203,23 @@ const priceKey = (typed: string): string => {
   return checked.error === null ? checked.value : typed;
 };
 
-const hasErrors = (errors: FieldErrors): boolean =>
-  errors.name !== null || errors.category !== null || errors.price !== null;
+export const hasErrors = (errors: FieldErrors): boolean =>
+  errors.name !== null ||
+  errors.category !== null ||
+  errors.price !== null ||
+  Object.keys(errors.variants).length > 0 ||
+  Object.keys(errors.modifiers).length > 0;
 
-const NO_ERRORS: FieldErrors = { name: null, category: null, price: null };
+const NO_ERRORS: FieldErrors = { name: null, category: null, price: null, variants: {}, modifiers: {} };
+
+/**
+ * The values of a form, for comparing a draft with what it opened from or with the current item:
+ * the fields, then each list's rows as identity, trimmed name, canonical change and removal. A
+ * flag that is not a value (`moved`) is left out, so a row moved down and back up is clean again
+ * (DESIGN-020 round 2, the note on `plain()`).
+ */
+export const plainFields = (f: Fields): string =>
+  JSON.stringify([f.name.trim(), f.categoryId, priceKey(f.price), plainRows(f.variants, 'variant'), plainRows(f.modifiers, 'modifier')]);
 
 /**
  * Who holds the name a refused save asked for, once the reread has shown it: the active item
@@ -208,6 +263,9 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
   let formSequence = 0;
   let focusSequence = 0;
   let readSequence = 0;
+  /** Names a new option row; unique within a list, never visible text (S4b's `OptionKey`). */
+  let optionSequence = 0;
+  const freshKey = (): string => `new-${(optionSequence += 1)}`;
   /** The newest reread, settled with the outcome of the catalog on screen. */
   let newestRead: Promise<boolean> = Promise.resolve(true);
   /** Where the manager was going when the decision was shown. */
@@ -233,12 +291,7 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
   };
   const dirty = (): boolean => {
     const { form } = state;
-    if (form === null) return false;
-    return (
-      form.draft.name.trim() !== form.original.name ||
-      form.draft.categoryId !== form.original.categoryId ||
-      priceKey(form.draft.price) !== form.original.price
-    );
+    return form !== null && plainFields(form.draft) !== plainFields(form.original);
   };
   const uncertain = (): boolean => {
     const { form } = state;
@@ -283,11 +336,11 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
         stored: item,
         base: snapshot.version,
         original: fieldsOf(item),
-        draft: { ...fieldsOf(item), price: priceText(item.basePrice) },
+        draft: draftOf(item),
       };
     }
     if (!snapshot.categories.some((c) => c.categoryId === subject.categoryId)) return null;
-    const blank: Fields = { name: '', categoryId: subject.categoryId, price: '' };
+    const blank: Fields = { name: '', categoryId: subject.categoryId, price: '', variants: [], modifiers: [] };
     return { ...base, kind: 'create', stored: null, base: null, original: blank, draft: blank };
   }
 
@@ -592,15 +645,47 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
 
   // ---- The draft and Save --------------------------------------------------------------------
 
-  /** Every field checked, in reading order: the first that is not valid is where focus goes. */
-  function checkAll(form: Form): { errors: FieldErrors; name: string; price: string | null; first: FieldKey | null } {
+  /**
+   * One list checked, row by row: a row's name before its change. A repeated name is refused on the
+   * later row. A row pending removal is left out, as it is from `order`.
+   */
+  function checkList(kind: OptionKind, rows: readonly Row[]): { errors: OptionErrors; first: OptionTarget | null } {
+    const repeated = new Set(duplicateKeys(rows));
+    const errors: Record<string, RowErrors> = {};
+    let first: OptionTarget | null = null;
+    for (const row of rows) {
+      if (row.removed) continue;
+      const name = checkOptionName(row.name).error ?? (repeated.has(row.key) ? 'duplicate' : null);
+      const change = checkPrice(row.change, kind).error;
+      if (name === null && change === null) continue;
+      errors[row.key] = { name, change };
+      first ??= { kind, key: row.key, part: name !== null ? 'name' : 'change' };
+    }
+    return { errors, first };
+  }
+
+  /** Every field checked, in reading order: the item's three, then each list top to bottom. The first that is not valid is where focus goes. */
+  function checkAll(form: Form): { errors: FieldErrors; name: string; price: string | null; first: FocusTarget | null } {
     const name = checkItemName(form.draft.name);
     const category = checkCategory(state.categories, form.draft.categoryId, form.stored?.categoryId ?? null);
     const price = checkPrice(form.draft.price, 'base');
-    const errors: FieldErrors = { name: name.error, category, price: price.error };
-    const first = name.error !== null ? 'name' : category !== null ? 'category' : price.error !== null ? 'price' : null;
+    const variants = checkList('variant', form.draft.variants);
+    const modifiers = checkList('modifier', form.draft.modifiers);
+    const errors: FieldErrors = {
+      name: name.error,
+      category,
+      price: price.error,
+      variants: variants.errors,
+      modifiers: modifiers.errors,
+    };
+    const first: FocusTarget | null =
+      name.error !== null ? 'name' : category !== null ? 'category' : price.error !== null ? 'price' : variants.first ?? modifiers.first;
     return { errors, name: name.name, price: price.value, first };
   }
+
+  /** A list as a send leaves it in the draft: names trimmed, changes grouped when accepted and as typed when not. */
+  const settle = (rows: readonly Row[], kind: OptionKind): Row[] =>
+    rows.map((r) => ({ ...r, name: r.name.trim(), change: shownPrice(r.change, kind) }));
 
   function save(): void {
     const { form } = state;
@@ -612,7 +697,18 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
     const checked = checkAll(form);
     if (checked.first !== null || checked.price === null) {
       set({
-        form: { ...form, draft: { ...form.draft, name: checked.name }, errors: checked.errors, reread: false, notice: null },
+        form: {
+          ...form,
+          draft: {
+            ...form.draft,
+            name: checked.name,
+            variants: form.draft.variants.map((r) => ({ ...r, name: r.name.trim() })),
+            modifiers: form.draft.modifiers.map((r) => ({ ...r, name: r.name.trim() })),
+          },
+          errors: checked.errors,
+          reread: false,
+          notice: null,
+        },
         focus: aim(checked.first ?? 'price'),
       });
       return;
@@ -625,12 +721,12 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
       ...(form.draft.categoryId !== form.original.categoryId ? { categoryId: form.draft.categoryId } : {}),
     };
     // A clean Save still sends, as `changes: {}`: an edit equal to the stored item is answered
-    // *unchanged* (DESIGN-018). No `variants` or `modifiers` key: they stay as they are.
-    const changes: ItemChanges = Object.keys(fields).length === 0 ? {} : { fields };
+    // *unchanged* (DESIGN-018). A list key is present only when that list changed (`changes.ts`).
+    const lists = { variants: form.draft.variants, modifiers: form.draft.modifiers };
     const itemId = form.stored?.itemId ?? null;
     const body = create
-      ? { categoryId: form.draft.categoryId, name: checked.name, basePrice: price, variants: [], modifiers: [] }
-      : { itemId: itemId ?? '', expectedVersion: form.base ?? -1, changes };
+      ? { categoryId: form.draft.categoryId, name: checked.name, basePrice: price, ...createLists(lists) }
+      : { itemId: itemId ?? '', expectedVersion: form.base ?? -1, changes: editChanges(fields, form.original, lists) };
     const wrong = create ? fieldsInError(CreateItemRequest, body) : fieldsInError(UpdateItemRequest, body);
     if (wrong.length > 0 || (!create && (itemId === null || form.base === null))) {
       // The form's check and the contract disagree: a defect, shown as the general failure.
@@ -646,7 +742,13 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
     };
     const next: Form = {
       ...form,
-      draft: { ...form.draft, name: checked.name, price: shownPrice(form.draft.price, 'base') },
+      draft: {
+        ...form.draft,
+        name: checked.name,
+        price: shownPrice(form.draft.price, 'base'),
+        variants: settle(form.draft.variants, 'variant'),
+        modifiers: settle(form.draft.modifiers, 'modifier'),
+      },
       errors: NO_ERRORS,
       reread: false,
       notice: null,
@@ -660,6 +762,134 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
           : call(config[ITEM_UPDATE](body as Parameters<(typeof config)[typeof ITEM_UPDATE]>[0]), (v) => ({ version: v.version, item: v.item })),
       { form: next, focus: aim('notice') }
     );
+  }
+
+  // ---- The option rows -----------------------------------------------------------------------
+
+  // Every method below guards on a pending save, so a press on an inert control sends nothing and
+  // changes nothing. They change the draft only; Save is what sends.
+
+  /** The form, if an edit may be made to it now: open, and no save outstanding. */
+  const editable = (): Form | null => {
+    const { form } = state;
+    return form === null || state.command !== null ? null : form;
+  };
+
+  /** A list's rows replaced, with its refusals adjusted by `errors`. */
+  function withList(form: Form, kind: OptionKind, rows: Row[], errors: OptionErrors = form.errors[listKey(kind)]): Form {
+    return {
+      ...form,
+      draft: { ...form.draft, [listKey(kind)]: rows },
+      errors: { ...form.errors, [listKey(kind)]: errors },
+    };
+  }
+
+  /** One row's refusals cleared: all of them, or only `part`'s. */
+  function without(errors: OptionErrors, key: string, part?: 'name' | 'change'): OptionErrors {
+    const current = errors[key];
+    if (current === undefined) return errors;
+    const { [key]: _gone, ...rest } = errors;
+    if (part === undefined) return rest;
+    const left: RowErrors = { ...current, [part]: null };
+    return left.name === null && left.change === null ? rest : { ...rest, [key]: left };
+  }
+
+  /**
+   * A duplicate refusal belongs to its list (DESIGN-020 round 2, F4): after a name edit, a removal
+   * or an Undo, each duplicate refusal whose name no other active row shares is cleared. It adds
+   * none; Save checks afresh.
+   */
+  function recheck(rows: readonly Row[], errors: OptionErrors): OptionErrors {
+    const active = rows.filter((r) => !r.removed);
+    const same = (r: Row): boolean =>
+      active.some((x) => x !== r && x.name.trim().toLowerCase() === r.name.trim().toLowerCase());
+    let next = errors;
+    for (const row of active) {
+      if (next[row.key]?.name === 'duplicate' && !same(row)) next = without(next, row.key, 'name');
+    }
+    return next;
+  }
+
+  const rowOf = (form: Form, kind: OptionKind, key: string): Row | undefined =>
+    form.draft[listKey(kind)].find((r) => r.key === key);
+
+  function addOption(kind: OptionKind): void {
+    const form = editable();
+    if (form === null) return;
+    const row: Row = { id: null, key: freshKey(), name: '', change: '0', removed: false, moved: false };
+    set({
+      form: {
+        ...withList(form, kind, [...form.draft[listKey(kind)], row]),
+        lastField: { kind, key: row.key, part: 'name' },
+      },
+      focus: aim({ kind, key: row.key, part: 'name' }),
+    });
+  }
+
+  function setOptionName(kind: OptionKind, key: string, value: string): void {
+    const form = editable();
+    if (form === null || rowOf(form, kind, key) === undefined) return;
+    const rows = form.draft[listKey(kind)].map((r) => (r.key === key ? { ...r, name: value } : r));
+    // Editing clears the row's own empty, long or control refusal. A duplicate refusal is the list's:
+    // it stays until the recheck finds the name no longer matches another active row.
+    const own = form.errors[listKey(kind)][key]?.name;
+    const kept = own === 'duplicate' ? form.errors[listKey(kind)] : without(form.errors[listKey(kind)], key, 'name');
+    const errors = recheck(rows, kept);
+    set({ form: { ...withList(form, kind, rows, errors), lastField: { kind, key, part: 'name' } } });
+  }
+
+  function setOptionChange(kind: OptionKind, key: string, value: string): void {
+    const form = editable();
+    if (form === null || rowOf(form, kind, key) === undefined) return;
+    const rows = form.draft[listKey(kind)].map((r) => (r.key === key ? { ...r, change: value } : r));
+    // Like the base price, the field keeps the text as typed until it loses focus.
+    set({ form: { ...withList(form, kind, rows, without(form.errors[listKey(kind)], key, 'change')), lastField: { kind, key, part: 'change' } } });
+  }
+
+  function removeOption(kind: OptionKind, key: string): void {
+    const form = editable();
+    const row = form === null ? undefined : rowOf(form, kind, key);
+    if (form === null || row === undefined || row.removed) return;
+    // A saved row is marked and keeps its place; a new row is deleted, and is never pending removal.
+    const rows =
+      row.id === null
+        ? form.draft[listKey(kind)].filter((r) => r.key !== key)
+        : form.draft[listKey(kind)].map((r) => (r.key === key ? { ...r, removed: true } : r));
+    const errors = recheck(rows, without(form.errors[listKey(kind)], key));
+    set({
+      form: withList(form, kind, rows, errors),
+      focus: aim(row.id === null ? { kind, key: null, part: 'add' } : { kind, key, part: 'undo' }),
+    });
+  }
+
+  function undoOption(kind: OptionKind, key: string): void {
+    const form = editable();
+    const row = form === null ? undefined : rowOf(form, kind, key);
+    if (form === null || row === undefined || !row.removed) return;
+    const rows = form.draft[listKey(kind)].map((r) => (r.key === key ? { ...r, removed: false } : r));
+    set({
+      form: { ...withList(form, kind, rows, recheck(rows, form.errors[listKey(kind)])), lastField: { kind, key, part: 'name' } },
+      focus: aim({ kind, key, part: 'name' }),
+    });
+  }
+
+  /**
+   * Move up and Move down swap the row with the previous or next *active* row; a row pending
+   * removal keeps its place. Only the pressed row is marked `moved` (DESIGN-020 round 2, F1).
+   */
+  function moveOption(kind: OptionKind, key: string, direction: 'up' | 'down'): void {
+    const form = editable();
+    if (form === null) return;
+    const rows = [...form.draft[listKey(kind)]];
+    const active = rows.flatMap((r, i) => (r.removed ? [] : [i]));
+    const at = active.findIndex((i) => rows[i]!.key === key);
+    const to = direction === 'up' ? at - 1 : at + 1;
+    if (at < 0 || to < 0 || to >= active.length) return;
+    const [a, b] = [active[at]!, active[to]!];
+    [rows[a], rows[b]] = [rows[b]!, { ...rows[a]!, moved: true }];
+    // Focus stays on the pressed control, or goes to the row's other move control when it is now at an end.
+    const atEnd = direction === 'up' ? to === 0 : to === active.length - 1;
+    set({ form: withList(form, kind, rows), focus: aim({ kind, key, part: atEnd ? (direction === 'up' ? 'down' : 'up') : direction }) });
   }
 
   // ---- Leaving -------------------------------------------------------------------------------
@@ -821,6 +1051,30 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
       // The field keeps the text as typed: it is regrouped when it loses focus, never under the caret.
       set({ form: { ...form, draft: { ...form.draft, price: value }, errors: { ...form.errors, price: null }, lastField: 'price' } });
     },
+    addOption,
+    setOptionName,
+    setOptionChange,
+    removeOption,
+    undoOption,
+    moveOption,
+    /** An option field was focused: it is where focus returns. */
+    noteOption(kind: OptionKind, key: string, part: 'name' | 'change'): void {
+      const { form } = state;
+      if (form === null || rowOf(form, kind, key) === undefined) return;
+      const last = form.lastField;
+      if (typeof last === 'object' && last.kind === kind && last.key === key && last.part === part) return;
+      set({ form: { ...form, lastField: { kind, key, part } } });
+    },
+    /** An option's change field lost focus: an accepted value is regrouped, a refused one stays as typed. */
+    blurOptionChange(kind: OptionKind, key: string): void {
+      const { form } = state;
+      const row = form === null ? undefined : rowOf(form, kind, key);
+      if (form === null || row === undefined) return;
+      const shown = shownPrice(row.change, kind);
+      if (shown !== row.change) {
+        set({ form: withList(form, kind, form.draft[listKey(kind)].map((r) => (r.key === key ? { ...r, change: shown } : r))) });
+      }
+    },
     /** The price field lost focus: an accepted value is regrouped, a refused one stays as typed. */
     blurPrice(): void {
       const { form } = state;
@@ -838,7 +1092,20 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
       const { form } = state;
       if (form === null || form.offered === null) return;
       const { offered } = form;
-      const rebuilt: Form = { ...form, stored: offered.item, base: offered.version, original: fieldsOf(offered.item), offered: null };
+      // Each list is rebuilt from the current item by the child-row principle (`keep.ts`); `original`
+      // then becomes the current item, so the next Save's change list is computed against it.
+      const rebuilt: Form = {
+        ...form,
+        stored: offered.item,
+        base: offered.version,
+        original: fieldsOf(offered.item),
+        draft: {
+          ...form.draft,
+          variants: keepRows('variant', form.original.variants, form.draft.variants, rowsOf(offered.item, 'variant', true), freshKey),
+          modifiers: keepRows('modifier', form.original.modifiers, form.draft.modifiers, rowsOf(offered.item, 'modifier', true), freshKey),
+        },
+        offered: null,
+      };
       const checked = checkAll(rebuilt);
       set({
         form: { ...rebuilt, errors: checked.errors, notice: 'kept', keptClean: checked.first === null, categoryRefused: false, destinationArchived: false },
@@ -850,14 +1117,13 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
       const { form } = state;
       if (form === null || form.offered === null) return;
       const { offered } = form;
-      const fields = fieldsOf(offered.item);
       set({
         form: {
           ...form,
           stored: offered.item,
           base: offered.version,
-          original: fields,
-          draft: { ...fields, price: priceText(offered.item.basePrice) },
+          original: fieldsOf(offered.item),
+          draft: draftOf(offered.item),
           errors: NO_ERRORS,
           reread: false,
           categoryRefused: false,

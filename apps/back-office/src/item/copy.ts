@@ -4,10 +4,11 @@
 // `../copy.ts`). Braces in the table are the values here; a zod message, a server text, an error
 // code or a submitted value never becomes visible text.
 //
-// Left out on purpose (ruling 1): the Variants and Modifiers rows and their notes, the standalone
-// *saved* and *unchanged* rows with *Return to menu*, the kitchen-emergency sentences, BO-01's
-// held-draft sentence. The ordinary context sentence keeps DESIGN-020's words, which speak of the
-// variants and modifiers, although those lists arrive in PHASE1-S4c2b.
+// The two option lists, with their own rows, are at the end of this file (PHASE1-S4c2b). Left out
+// on purpose (S4c2a ruling 1): the standalone *saved* and *unchanged* rows with *Return to menu*,
+// the kitchen-emergency sentences, BO-01's held-draft sentence.
+
+import type { OptionKind } from './options.js';
 
 export type NoticeCopy = { title: string; body: string };
 
@@ -109,13 +110,13 @@ const SAME_VALUES = ' The current item has the same values as your draft.';
 const CHOOSE_WHICH = ' Choose which to keep.';
 export const MOVE_ARCHIVED =
   ' The destination category was archived. Choose another category after deciding which version to keep.';
-export const unknownNewer = (version: number, same: boolean): NoticeCopy => ({
+export const unknownNewer = (version: number, same: boolean, lost = ''): NoticeCopy => ({
   title: 'Outcome not confirmed',
-  body: `The menu has been read again at version ${version}. It may include this save. Your draft is kept; nothing was sent again.${same ? SAME_VALUES : ''}${CHOOSE_WHICH}`,
+  body: `The menu has been read again at version ${version}. It may include this save. Your draft is kept; nothing was sent again.${same ? SAME_VALUES : ''}${lost}${CHOOSE_WHICH}`,
 });
-export const stale = (version: number, same: boolean, destinationArchived: boolean): NoticeCopy => ({
+export const stale = (version: number, same: boolean, destinationArchived: boolean, lost = ''): NoticeCopy => ({
   title: 'The menu changed while you were editing',
-  body: `Nothing was saved. The menu has been read again at version ${version}. Your draft is kept.${same ? SAME_VALUES : ''}${CHOOSE_WHICH}${destinationArchived ? MOVE_ARCHIVED : ''}`,
+  body: `Nothing was saved. The menu has been read again at version ${version}. Your draft is kept.${same ? SAME_VALUES : ''}${lost}${CHOOSE_WHICH}${destinationArchived ? MOVE_ARCHIVED : ''}`,
 });
 export const STALE_UNREAD: NoticeCopy = {
   title: 'The menu changed while you were editing',
@@ -144,3 +145,59 @@ export const DIFFERS = 'Differs from your draft';
 export const CHOOSE_FIRST = 'Choose Keep my changes or Use current item before saving.';
 export const KEEP = 'Keep my changes';
 export const USE_CURRENT = 'Use current item';
+
+// The two option lists (PHASE1-S4c2b). Each row is a line of DESIGN-020's copy table: *Variants*,
+// *Modifiers*, *Lists*, *Empty list*, *Option row*, *New option*, *Variant preview*, *Floor*,
+// *Over the line maximum*, *Preview not computable*, *Pending removal*, *Removal*, the
+// *Variant name invalid* and *Modifier name invalid* rows, and *Money invalid*'s two columns.
+
+export const VARIANTS = 'Variants';
+export const VARIANTS_NOTE = 'Single-select · one choice, with a positive or negative price change.';
+export const VARIANTS_HELP = 'Names: 1–32 characters. Type a minus sign for a reduction, such as -10.000.';
+export const VARIANTS_FLOOR = 'The final unit price includes selected modifiers, then floors at zero.';
+export const MODIFIERS = 'Modifiers';
+export const MODIFIERS_NOTE = 'Multi-select · any number of choices, each adding zero or more.';
+export const MODIFIERS_HELP = 'Names: 1–32 characters. Price changes: 0–99.999.999; whole rupiah.';
+export const REMOVAL_NOTE =
+  'Removed variants and modifiers stay on existing orders. After saving, they cannot be restored; adding the name again creates a new one.';
+export const NEW_OPTION = 'New · not saved yet';
+export const WILL_BE_REMOVED = 'Will be removed when you save.';
+export const UNDO = 'Undo';
+export const MOVE_UP = 'Move up';
+export const MOVE_DOWN = 'Move down';
+export const REMOVE = 'Remove';
+
+const cap = (kind: OptionKind): string => (kind === 'variant' ? 'Variant' : 'Modifier');
+export const addLabel = (kind: OptionKind): string => `Add ${kind}`;
+export const emptyList = (kind: OptionKind): string => `No ${kind}s yet. Use Add ${kind} to add the first one.`;
+export const nameLabel = (kind: OptionKind, n: number): string => `${cap(kind)} ${n} name`;
+export const changeLabel = (kind: OptionKind, n: number): string => `${cap(kind)} ${n} price change`;
+export const moveUpName = (kind: OptionKind, n: number): string => `Move up ${kind} ${n}`;
+export const moveDownName = (kind: OptionKind, n: number): string => `Move down ${kind} ${n}`;
+export const removeName = (kind: OptionKind, n: number): string => `Remove ${kind} ${n}`;
+export const undoName = (kind: OptionKind, name: string): string => `Undo removal of ${kind} ${name}`;
+
+export const optionNameEmpty = (kind: OptionKind): string => `Enter a ${kind} name.`;
+export const OPTION_NAME_LONG = 'Use 32 characters or fewer.';
+export const optionNameControl = (kind: OptionKind): string => `Remove control characters from the ${kind} name.`;
+export const optionNameDuplicate = (kind: OptionKind): string => `Another ${kind} uses this name. Choose another name.`;
+
+export const CHANGE_EMPTY = 'Enter a price change.';
+export const CHANGE_NEGATIVE = 'Use 0 or more.';
+export const changeFormat = (kind: OptionKind): string =>
+  kind === 'variant' ? 'Enter whole rupiah, such as 10.000 or -10.000.' : 'Enter whole rupiah, such as 10.000.';
+export const changeBounds = (kind: OptionKind): string =>
+  kind === 'variant' ? 'Use a price change from -99.999.999 to 99.999.999.' : 'Use 99.999.999 or less.';
+
+// The per-variant price without modifiers; the apostrophe is the table's.
+export const withoutModifiers = (price: string): string => `Without modifiers: ${price}`;
+export const PREVIEW_FLOOR =
+  'Without modifiers: 0 · Base price plus this change is below zero, so the price floors at 0.';
+export const previewOver = (price: string): string =>
+  `Without modifiers: ${price} · More than the largest line total, 99.999.999.`;
+export const PREVIEW_UNKNOWN = 'Enter a valid base price and price change to see this variant’s price.';
+
+// The comparison's lists.
+export const currentOrder = (kind: OptionKind): string => `${kind === 'variant' ? 'Variants' : 'Modifiers'} · current order`;
+export const noneCurrent = (kind: OptionKind): string => `No ${kind}s.`;
+export const REMOVED_FROM_CURRENT = 'Removed from the current item.';

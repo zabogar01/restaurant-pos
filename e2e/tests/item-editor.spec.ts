@@ -1,6 +1,13 @@
 import { randomBytes } from 'node:crypto';
 import type { Page } from '@playwright/test';
-import { createCategory, editItem, readCatalog, type CatalogCategory } from '../../apps/server/src/domain/catalog.js';
+import {
+  createCategory,
+  createItem,
+  editItem,
+  readCatalog,
+  type CatalogCategory,
+  type CatalogItem,
+} from '../../apps/server/src/domain/catalog.js';
 import { expect, signInAtBackOffice, test, type Person, type Profile } from '../support/fixtures.js';
 
 // BO-04 Item editor, the item's own fields, in a real browser (PHASE1-S4c2a, consult C2 section 6,
@@ -163,4 +170,160 @@ test('I3. a reload on the item editor leaves no subject: the sentence, Return to
   await office.getByRole('link', { name: 'Return to menu', exact: true }).click();
   await expect(office).toHaveURL(/\/back-office\/menu$/);
   await expect(office.getByRole('heading', { name: 'Menu', exact: true, level: 1 })).toBeVisible();
+});
+
+// ---- the Variants and Modifiers (PHASE1-S4c2b) -----------------------------------------------
+// The two option lists in a real browser. The database is read through `readCatalog`, which marks a
+// removed option inactive; what is compared is each list's active options in display order, as
+// names and exact price-change values.
+
+const textbox = (page: Page, name: string) => page.getByRole('textbox', { name, exact: true });
+
+/** The item's options of one list that are still active, in display order. */
+async function optionsOf(name: string, list: 'variants' | 'modifiers') {
+  const item = await stored(name);
+  return (item?.[list] ?? [])
+    .filter((o) => o.isActive)
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .map((o) => [o.name, o.priceDelta] as const);
+}
+
+/** An item made through the domain, with its options, for the specs that start from an existing one. */
+async function madeItem(
+  category: CatalogCategory,
+  name: string,
+  variants: Array<[string, bigint]>,
+  modifiers: Array<[string, bigint]> = []
+): Promise<CatalogItem> {
+  const outcome = await createItem({
+    categoryId: category.categoryId,
+    name,
+    basePrice: 40000n,
+    variants: variants.map(([n, priceDelta]) => ({ name: n, priceDelta })),
+    modifiers: modifiers.map(([n, priceDelta]) => ({ name: n, priceDelta })),
+  });
+  if (outcome.kind !== 'OK') throw new Error(`could not make item ${name}`);
+  return outcome.record;
+}
+
+test('I4. a manager makes an item with variants and a modifier, then edits the lists in one save, and the database agrees', async ({
+  world,
+  oneProfile,
+}) => {
+  const manager = await world.people.manager();
+  const { office } = oneProfile;
+  const category = await made(unique('Mains'));
+  const name = unique('Burger');
+  await openMenu(office, manager);
+
+  // (a) Create: Regular (0) and Large (5.000), and the modifier Cheese (3.000).
+  await button(office, `New item in ${category.name}`).click();
+  await expect(nameField(office)).toBeFocused();
+  await nameField(office).fill(name);
+  await priceField(office).fill('40.000');
+  await button(office, 'Add variant').click();
+  await expect(textbox(office, 'Variant 1 name')).toBeFocused();
+  await textbox(office, 'Variant 1 name').fill('Regular');
+  await button(office, 'Add variant').click();
+  await textbox(office, 'Variant 2 name').fill('Large');
+  await textbox(office, 'Variant 2 price change').fill('5.000');
+  await button(office, 'Add modifier').click();
+  await textbox(office, 'Modifier 1 name').fill('Cheese');
+  await textbox(office, 'Modifier 1 price change').fill('3.000');
+  await expect(office.getByText('Without modifiers: 45.000')).toBeVisible();
+  await button(office, 'Save').click();
+  await expect(office).toHaveURL(/\/back-office\/menu$/);
+  expect(sent(oneProfile, 'items/create')).toBe(1);
+  expect(await optionsOf(name, 'variants')).toEqual([['Regular', 0n], ['Large', 5000n]]);
+  expect(await optionsOf(name, 'modifiers')).toEqual([['Cheese', 3000n]]);
+
+  // (b) Edit: rename Regular to Small at -2.000, remove Cheese, add Egg (4.000), move Large up.
+  await button(office, `Edit ${name}`).click();
+  await expect(office).toHaveURL(/\/back-office\/menu\/item$/);
+  await expect(textbox(office, 'Variant 1 name')).toHaveValue('Regular');
+  await textbox(office, 'Variant 1 name').fill('Small');
+  await textbox(office, 'Variant 1 price change').fill('-2.000');
+  await expect(office.getByText('Without modifiers: 38.000')).toBeVisible();
+  await button(office, 'Remove modifier 1').click();
+  await expect(button(office, 'Undo removal of modifier Cheese')).toBeFocused();
+  await button(office, 'Add modifier').click();
+  // The removed row is not numbered, so the new row is the first active modifier.
+  await expect(textbox(office, 'Modifier 1 name')).toBeFocused();
+  await textbox(office, 'Modifier 1 name').fill('Egg');
+  await textbox(office, 'Modifier 1 price change').fill('4.000');
+  await button(office, 'Move up variant 2').click();
+  // Large is now first, so its Move up is off and focus goes to the row's other move control.
+  await expect(button(office, 'Move down variant 1')).toBeFocused();
+  await expect(textbox(office, 'Variant 1 name')).toHaveValue('Large');
+  await button(office, 'Save').click();
+  await expect(office).toHaveURL(/\/back-office\/menu$/);
+  expect(sent(oneProfile, 'items/update')).toBe(1);
+
+  expect(await optionsOf(name, 'variants')).toEqual([['Large', 5000n], ['Small', -2000n]]);
+  expect(await optionsOf(name, 'modifiers')).toEqual([['Egg', 4000n]]);
+  const item = await stored(name);
+  expect(item?.modifiers.find((o) => o.name === 'Cheese')?.isActive).toBe(false);
+});
+
+test('I5. swapping the names of two variants in one save succeeds, and the database agrees', async ({
+  world,
+  oneProfile,
+}) => {
+  const manager = await world.people.manager();
+  const { office } = oneProfile;
+  const category = await made(unique('Mains'));
+  const name = unique('Noodles');
+  await madeItem(category, name, [['Regular', 0n], ['Large', 5000n]]);
+  await openMenu(office, manager);
+
+  await button(office, `Edit ${name}`).click();
+  await expect(textbox(office, 'Variant 2 name')).toHaveValue('Large');
+  await textbox(office, 'Variant 1 name').fill('Large');
+  await textbox(office, 'Variant 2 name').fill('Regular');
+  await button(office, 'Save').click();
+  await expect(office).toHaveURL(/\/back-office\/menu$/);
+  expect(sent(oneProfile, 'items/update')).toBe(1);
+  expect(await optionsOf(name, 'variants')).toEqual([['Large', 0n], ['Regular', 5000n]]);
+});
+
+test('I6. a variant added meanwhile: the save is refused, the comparison lists it, and Keep my changes then Save keeps both', async ({
+  world,
+  oneProfile,
+}) => {
+  const manager = await world.people.manager();
+  const { office } = oneProfile;
+  const category = await made(unique('Mains'));
+  const name = unique('Pasta');
+  const made_ = await madeItem(category, name, [['Regular', 0n]], [['Cheese', 3000n]]);
+  await openMenu(office, manager);
+
+  await button(office, `Edit ${name}`).click();
+  await expect(textbox(office, 'Modifier 1 price change')).toHaveValue('3.000');
+  const version = (await readCatalog()).version;
+
+  // Another tab adds a variant; the version advances.
+  const other = await editItem(made_.itemId, version, {
+    variants: { added: [{ key: 'other', name: 'Large', priceDelta: 5000n }], order: [{ id: made_.variants[0]!.optionId }, { key: 'other' }] },
+  });
+  expect(other.kind).toBe('OK');
+
+  await textbox(office, 'Modifier 1 price change').fill('3.500');
+  await button(office, 'Save').click();
+  await expect(office.locator('#form-notice')).toContainText('Nothing was saved.');
+  await expect(office.locator('#form-notice')).toBeFocused();
+  expect(sent(oneProfile, 'items/update')).toBe(1);
+  await expect(office.locator('#current-values')).toContainText('Variants · current order');
+  await expect(office.locator('#current-values')).toContainText('Large · 5.000');
+  expect(await optionsOf(name, 'modifiers')).toEqual([['Cheese', 3000n]]);
+
+  await button(office, 'Keep my changes').click();
+  await expect(button(office, 'Save')).toBeFocused();
+  // The current item's new variant joins the draft, and nothing was sent.
+  await expect(textbox(office, 'Variant 2 name')).toHaveValue('Large');
+  expect(sent(oneProfile, 'items/update')).toBe(1);
+  await button(office, 'Save').click();
+  await expect(office).toHaveURL(/\/back-office\/menu$/);
+  expect(sent(oneProfile, 'items/update')).toBe(2);
+  expect(await optionsOf(name, 'variants')).toEqual([['Regular', 0n], ['Large', 5000n]]);
+  expect(await optionsOf(name, 'modifiers')).toEqual([['Cheese', 3500n]]);
 });

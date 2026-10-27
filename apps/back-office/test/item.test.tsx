@@ -489,7 +489,14 @@ describe('AC 17. the status and the facts', () => {
     expect(text(q(host, '.item-money'))).toBe('CurrencyIDR · Indonesian rupiahDecimal places0 · amounts are whole rupiah');
     expect(host.textContent).toContain('Fixed for this installation. Prices include tax.');
     expect(facts(host)).toBe('Menu version 5 · Availability and archive status are managed on Menu.');
-    expect(host.querySelectorAll('#item-form button:not([type="submit"])')).toHaveLength(1);
+    // Cancel, and (S4c2b) the controls of the two lists; never a state command.
+    expect(
+      [...host.querySelectorAll('#item-form button:not([type="submit"])')].map((b) => b.getAttribute('aria-label') ?? b.textContent)
+    ).toEqual([
+      'Add variant', 'Move up variant 1', 'Move down variant 1', 'Remove variant 1',
+      'Add modifier', 'Move up modifier 1', 'Move down modifier 1', 'Remove modifier 1',
+      'Cancel',
+    ]);
     expect(host.textContent).not.toMatch(/Archive item|Restore item|Make available/);
   });
 });

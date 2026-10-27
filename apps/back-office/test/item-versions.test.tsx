@@ -112,7 +112,10 @@ describe('AC 11. CATALOG_CHANGED on an edit', () => {
     expect(focused()).toBe(notice(host));
     expect(notice(host)!.getAttribute('role')).toBe('alert');
     expect(priceInput(host).value).toBe('50.000');
-    expect(text(currentValues(host))).toBe('Item nameBurgerCategoryMainsBase price110.000Differs from your draftStatusAvailable');
+    expect(text(currentValues(host))).toBe(
+      'Item nameBurgerCategoryMainsBase price110.000Differs from your draftStatusAvailable' +
+        'Variants · current orderLarge · 0Modifiers · current orderCheese · 0'
+    );
     expect(aria(save(host))).toBe(true);
     expect(hint(host)).toBe('Choose which version to keep before saving.');
     expect(text(q(host, '#choice-reason'))).toBe('Choose Keep my changes or Use current item before saving.');
