@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-27 (#147 S4c2a and #148 merged; **S4c2b dispatched**): `development` at `95193c1`; dev `pos` at `0013`.
-Builder `phase1-s4c2b` (Sonnet, interactive) running. Journal: 2026-10-27.
+**S4c2b complete, not pushed** (the push waits on the owner's word). Journal: 2026-10-27.
 
 ## Phase and gates
 
@@ -52,9 +52,9 @@ Builder `phase1-s4c2b` (Sonnet, interactive) running. Journal: 2026-10-27.
 
 ## Running tasks and agents
 
-- **PHASE1-S4c2b building** (Herdr `phase1-s4c2b`, Sonnet; Codex reviews): BO-04's 22 option states, the change list,
-  DESIGN-020 round 2's child-row Keep. Ruled: option uniqueness by `toLowerCase()` (the index's `lower(name)`), not
-  the collator; inactive options never shown. The owner looks at BO-04 with options served before merge.
+- **PHASE1-S4c2b complete** at `3fd82db` (two rounds; Codex F1, F2 fixed in r2, lead-reviewed, reds repeated; F3
+  rejected per `D:1518`; verify 141/5181, e2e:all 98). **Not pushed:** the classifier refuses a push without the
+  owner's word each time. Owner looks at BO-04 with options served, then merges (no migration).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -144,6 +144,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S4c2b** running: verify, `test:e2e:all`, Codex review, then PR; the owner looks at BO-04 served before merge.
+1. **S4c2b** complete: push and PR on the owner's word; after merge remove its worktree and run dir, then S5 (86).
 2. **Then S5** (86 and Make available on BO-03, DESIGN-019's F7, S4a's `catalogWrite` unversioned), **DESIGN-021** (POS
    addition, G6; Codex hand-opened, lead runs checks) beside it. **Small:** the code-point cleanup between slices.
