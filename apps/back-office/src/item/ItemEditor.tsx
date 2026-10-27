@@ -31,6 +31,8 @@ import {
   ITEM_EDITOR,
   KEEP,
   LOADING,
+  REMOVAL_NOTE,
+  REMOVED_FROM_CURRENT,
   MONEY_NOTE,
   NAME_CONTROL,
   NAME_DUPLICATE,
@@ -66,7 +68,9 @@ import {
   USE_CURRENT,
   VIEW_ITEM,
   archivedCategoryOption,
+  currentOrder,
   holderLine,
+  noneCurrent,
   kept,
   stale,
   unknownNewer,
@@ -75,7 +79,10 @@ import {
   type NoticeCopy,
 } from './copy.js';
 import { contextText, itemFacts, statusText } from './facts.js';
-import { holderOf, type FieldKey, type Form, type ItemModel, type ItemState } from './model.js';
+import { lostRows, lostSentence } from './keep.js';
+import { fieldsOf, hasErrors, holderOf, plainFields, type FieldKey, type Form, type ItemModel, type ItemState } from './model.js';
+import { OptionSection } from './OptionSections.js';
+import { KINDS, listKey, optionId, rowsOf } from './options.js';
 import type { PriceError } from './price.js';
 import { checkPrice } from './price.js';
 import type { NameError } from '../menu/name.js';
@@ -85,7 +92,7 @@ import type { NameError } from '../menu/name.js';
 // price) and a sticky footer; in the stale state the form narrows and *Current item* sits beside
 // it. It draws what the working area's model holds (made in `Screens`) and keeps nothing of its
 // own. An off action is `aria-disabled`, never `disabled`; the fields are inert while a save is
-// pending. The Variants and Modifiers sections arrive with PHASE1-S4c2b.
+// pending. The Variants and Modifiers sections are `OptionSections.tsx` (PHASE1-S4c2b).
 
 const nameText: Record<NameError | 'duplicate', string> = {
   empty: NAME_EMPTY,
@@ -112,7 +119,8 @@ const goMenu = (go: () => void) => (event: MouseEvent<HTMLAnchorElement>) => {
 function noticeOf(form: Form, pending: boolean): { kind: string; role: 'status' | 'alert'; copy: NoticeCopy } | null {
   if (pending) return { kind: 'pending', role: 'status', copy: SAVING };
   const version = form.offered?.version ?? form.base ?? 0;
-  const same = form.offered !== null && sameValues(form, form.offered.item);
+  const same = form.offered !== null && plainFields(form.draft) === plainFields(fieldsOf(form.offered.item));
+  const lost = form.offered === null ? '' : lostSentence(KINDS.flatMap((kind) => lostRows(form.original[listKey(kind)], form.draft[listKey(kind)], rowsOf(form.offered!.item, kind, false), kind)));
   switch (form.notice) {
     case null:
       return null;
@@ -125,9 +133,9 @@ function noticeOf(form: Form, pending: boolean): { kind: string; role: 'status' 
     case 'unknown-unread':
       return { kind: 'unknown', role: 'status', copy: UNKNOWN_UNREAD };
     case 'unknown-newer':
-      return { kind: 'stale', role: 'alert', copy: unknownNewer(version, same) };
+      return { kind: 'stale', role: 'alert', copy: unknownNewer(version, same, lost) };
     case 'stale':
-      return { kind: 'stale', role: 'alert', copy: stale(version, same, form.destinationArchived) };
+      return { kind: 'stale', role: 'alert', copy: stale(version, same, form.destinationArchived, lost) };
     case 'stale-unread':
       return { kind: 'stale', role: 'alert', copy: STALE_UNREAD };
     case 'kept':
@@ -137,17 +145,6 @@ function noticeOf(form: Form, pending: boolean): { kind: string; role: 'status' 
     case 'category-archived':
       return { kind: 'failure', role: 'alert', copy: CATEGORY_ARCHIVED_NOTICE };
   }
-}
-
-/** The current item has every value the draft has (the item's own fields, as the draft would send them). */
-function sameValues(form: Form, item: { name: string; categoryId: string; basePrice: string }): boolean {
-  const price = checkPrice(form.draft.price, 'base');
-  return (
-    form.draft.name.trim() === item.name &&
-    form.draft.categoryId === item.categoryId &&
-    price.error === null &&
-    price.value === item.basePrice
-  );
 }
 
 /** The view of the working area's BO-04 model (made in `Screens`); it draws what the model holds. */
@@ -187,20 +184,24 @@ export function ItemEditor({ model }: { model: ItemModel }) {
     handled.current = focus.n;
     const area = root.current;
     const pick = (selector: string) => area.querySelector<HTMLElement>(selector);
+    const target = focus.target;
+    // An option's control that is no longer there (a row Use current item dropped) sends focus to Item name.
     const found =
-      focus.target === 'name'
-        ? pick('#item-name')
-        : focus.target === 'category'
-          ? pick('#item-category')
-          : focus.target === 'price'
-            ? pick('#item-price')
-            : focus.target === 'notice'
-              ? pick('#form-notice')
-              : focus.target === 'save'
-                ? pick('#save-item')
-                : focus.target === 'retry-load'
-                  ? pick('#retry-load')
-                  : pick('#return-menu');
+      typeof target === 'object'
+        ? (area.querySelector<HTMLElement>(`[id="${optionId(target.kind, target.key, target.part)}"]`) ?? pick('#item-name'))
+        : target === 'name'
+          ? pick('#item-name')
+          : target === 'category'
+            ? pick('#item-category')
+            : target === 'price'
+              ? pick('#item-price')
+              : target === 'notice'
+                ? pick('#form-notice')
+                : target === 'save'
+                  ? pick('#save-item')
+                  : target === 'retry-load'
+                    ? pick('#retry-load')
+                    : pick('#return-menu');
     found?.focus();
   }, [focus, signedIn]);
 
@@ -291,7 +292,7 @@ export function ItemEditor({ model }: { model: ItemModel }) {
   const notice = noticeOf(form, pending);
   const choosing = form.offered !== null;
   const readOnlyRetry = form.notice === 'stale-unread' || form.notice === 'unknown-unread';
-  const errorsShown = form.errors.name !== null || form.errors.category !== null || form.errors.price !== null;
+  const errorsShown = hasErrors(form.errors);
   const saveOff = pending || choosing || form.notice === 'stale-unread' || errorsShown;
   const hint = pending
     ? HINT_PENDING
@@ -458,6 +459,9 @@ export function ItemEditor({ model }: { model: ItemModel }) {
                   </div>
                 </div>
               </section>
+              <OptionSection kind="variant" form={form} model={model} pending={pending} />
+              <OptionSection kind="modifier" form={form} model={model} pending={pending} />
+              <p className="item-removal-note">{REMOVAL_NOTE}</p>
             </div>
             {form.offered !== null && <Comparison form={form} offered={form.offered} state={state} model={model} />}
           </div>
@@ -511,6 +515,28 @@ function Comparison({ form, offered, state, model }: { form: Form; offered: NonN
             </div>
           ))}
         </dl>
+        {KINDS.map((kind) => {
+          const now = rowsOf(item, kind, true);
+          // What the draft opened from that the current item no longer has, by the name it was saved under.
+          const gone = form.original[listKey(kind)].filter((o) => !now.some((c) => c.id === o.id));
+          return (
+            <div key={kind} data-list={kind}>
+              <h3>{currentOrder(kind)}</h3>
+              {now.length > 0 ? (
+                <ol>
+                  {now.map((r) => (
+                    <li key={r.key}>{`${r.name} · ${r.change}`}</li>
+                  ))}
+                </ol>
+              ) : (
+                <p>{noneCurrent(kind)}</p>
+              )}
+              {gone.map((o) => (
+                <p key={o.key}>{`${o.name} · ${REMOVED_FROM_CURRENT}`}</p>
+              ))}
+            </div>
+          );
+        })}
       </div>
       <p id="choice-reason">{CHOOSE_FIRST}</p>
       <div className="office-actions">
