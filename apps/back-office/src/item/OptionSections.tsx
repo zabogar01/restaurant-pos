@@ -142,9 +142,8 @@ export function OptionSection({ kind, form, model, pending }: SectionProps) {
 }
 
 function Removed({ kind, row, form, model, pending }: { kind: OptionKind; row: Row; form: Form; model: ItemModel; pending: boolean }) {
-  // The saved row's own name, unless the draft renamed it to something readable.
-  const saved = form.original[listKey(kind)].find((o) => o.id === row.id)?.name ?? '';
-  const name = row.name.trim() === '' ? saved : row.name.trim();
+  // A saved row pending removal is named by its saved name (DESIGN.md); Undo brings back the draft's.
+  const name = form.original[listKey(kind)].find((o) => o.id === row.id)?.name ?? row.name.trim();
   return (
     <div className="item-option" data-kind={kind} data-option={row.key} data-removed="true">
       <p>

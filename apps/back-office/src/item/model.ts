@@ -830,8 +830,11 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
     const form = editable();
     if (form === null || rowOf(form, kind, key) === undefined) return;
     const rows = form.draft[listKey(kind)].map((r) => (r.key === key ? { ...r, name: value } : r));
-    // Editing clears the row's own refusal; the rest of the list is rechecked.
-    const errors = recheck(rows, without(form.errors[listKey(kind)], key, 'name'));
+    // Editing clears the row's own empty, long or control refusal. A duplicate refusal is the list's:
+    // it stays until the recheck finds the name no longer matches another active row.
+    const own = form.errors[listKey(kind)][key]?.name;
+    const kept = own === 'duplicate' ? form.errors[listKey(kind)] : without(form.errors[listKey(kind)], key, 'name');
+    const errors = recheck(rows, kept);
     set({ form: { ...withList(form, kind, rows, errors), lastField: { kind, key, part: 'name' } } });
   }
 

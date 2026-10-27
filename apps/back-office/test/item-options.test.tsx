@@ -830,3 +830,61 @@ describe('AC 12. dirty compares values only', () => {
     expect(rows(host, 'variant')).toEqual(['Regular=0', 'Large=5.000', 'Small=-2.000', 'Jumbo=9.000']);
   });
 });
+
+describe('Round 2. F1: a pending-removal row shows its saved name', () => {
+  it('a renamed variant, then removed: the row and its Undo name the saved name; Undo restores the draft’s', async () => {
+    const host = await edit(await open());
+    type(host, 'Variant 2 name', 'Grande');
+    await press(host, 'Remove variant 2');
+    expect(rows(host, 'variant')).toEqual(['Regular=0', '(Large)', 'Small=-2.000']);
+    expect(focused()).toBe(named(host, 'Undo removal of variant Large'));
+    await press(host, 'Undo removal of variant Large');
+    expect(rows(host, 'variant')).toEqual(['Regular=0', 'Grande=5.000', 'Small=-2.000']);
+  });
+
+  it('the same for a modifier', async () => {
+    const host = await edit(await open());
+    type(host, 'Modifier 1 name', 'Cheddar');
+    await press(host, 'Remove modifier 1');
+    expect(rows(host, 'modifier')).toEqual(['(Cheese)', 'Egg=4.000']);
+    await press(host, 'Undo removal of modifier Cheese');
+    expect(rows(host, 'modifier')).toEqual(['Cheddar=3.000', 'Egg=4.000']);
+  });
+});
+
+describe('Round 2. F2: editing the refused row keeps a duplicate that still holds', () => {
+  const refused = async () => {
+    const host = await edit(await open());
+    type(host, 'Variant 3 name', 'Large');
+    await press(host, 'Save');
+    expect(errorOf(host, 'Variant 3 name')).toBe('Another variant uses this name. Choose another name.');
+    return host;
+  };
+
+  it.each([['a case-only edit', 'large'], ['surrounding spaces', ' Large '], ['another name an active row holds', 'Regular']])(
+    '%s keeps the refusal, with Save held',
+    async (_what, typed) => {
+      const host = await refused();
+      type(host, 'Variant 3 name', typed);
+      expect(errorOf(host, 'Variant 3 name')).toBe('Another variant uses this name. Choose another name.');
+      expect(aria(save(host))).toBe(true);
+    }
+  );
+
+  it('a unique name clears it', async () => {
+    const host = await refused();
+    type(host, 'Variant 3 name', 'Medium');
+    expect(errorOf(host, 'Variant 3 name')).toBeNull();
+    expect(aria(save(host))).toBe(false);
+  });
+
+  it('a row refused empty and edited into a duplicate shows no error until Save', async () => {
+    const host = await edit(await open());
+    type(host, 'Variant 3 name', '');
+    await press(host, 'Save');
+    expect(errorOf(host, 'Variant 3 name')).toBe('Enter a variant name.');
+    type(host, 'Variant 3 name', 'Large');
+    expect(errorOf(host, 'Variant 3 name')).toBeNull();
+    expect(aria(save(host))).toBe(false);
+  });
+});
