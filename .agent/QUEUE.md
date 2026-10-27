@@ -148,9 +148,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - **PHASE1-S4b**, the eleven catalog routes and `CATALOG_CHANGED` — depends on S4a — complete, PR #142.
     - **PHASE1-S4c1**, BO-03 Menu (no 86, no Edit/New item) — depends on S4b — complete, PR #144.
     - **PHASE1-S4c2a**, BO-04 for the item's own fields (create, edit, the version rules) and BO-03's Edit and New
-      item — depends on S4c1 — complete 2026-10-27, PR #147.
+      item — depends on S4c1 — complete, merged 2026-10-27 as PR #147.
     - **PHASE1-S4c2b**, BO-04's variants and modifiers (the two lists, DESIGN-020 round 2's Keep rules) — depends on
-      S4c2a — not written.
+      S4c2a — complete 2026-10-27, PR #149.
     - **S5** (86),
       **S6** (presets), **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
