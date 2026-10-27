@@ -23,6 +23,7 @@ import {
   CURRENT_MENU,
   DEPARTURE_CONTINUE,
   DEPARTURE_CONTINUE_UNCERTAIN,
+  EDIT,
   EMPTY_BODY,
   EMPTY_CATEGORY,
   EMPTY_CATEGORY_ARCHIVED,
@@ -45,6 +46,7 @@ import {
   NAME_LABEL,
   NAME_LONG,
   NEW_CATEGORY,
+  NEW_ITEM,
   READ_FAILED,
   REFRESHED,
   RENAME,
@@ -74,6 +76,7 @@ import {
   counts,
   currentName,
   currentOrder,
+  editItemName,
   formFailed,
   formSessionRefused,
   itemArchived,
@@ -83,6 +86,7 @@ import {
   keptNotice,
   moveDownName,
   moveUpName,
+  newItemName,
   optionsLine,
   orderRow,
   renameCategoryName,
@@ -202,7 +206,8 @@ export function Menu({ model }: { model: MenuModel }) {
     else if (target === 'reorder-categories') found = pick('#reorder-categories');
     else if ('move' in target) found = pick(`#draft-order [data-move="${target.move}"][data-delta="${target.delta}"]`);
     else if ('rename' in target) found = pick(`[data-rename="${target.rename}"]`) ?? pick('#new-category');
-    else if ('itemAction' in target) found = pick(`[data-item-state="${target.itemAction}"]`) ?? pick('#new-category');
+    else if ('itemAction' in target) found = pick(`[data-edit="${target.itemAction}"]`) ?? pick('#new-category');
+    else if ('newItem' in target) found = pick(`[data-new-item="${target.newItem}"]`) ?? pick('#new-category');
     else found = pick(`[data-reorder="${target.reorderItems}"]`) ?? pick('#new-category');
     found?.focus();
   }, [focus, signedIn]);
@@ -223,7 +228,8 @@ export function Menu({ model }: { model: MenuModel }) {
   }, [model]);
 
   const { editor, command, page, read, categories, items } = state;
-  const busy = command !== null;
+  // BO-04's save, left outstanding by Discard, takes the screen's one command slot too.
+  const busy = command !== null || state.external;
   // The rows can be drawn when a read succeeded, or when an answer was applied to the rows the
   // client knew while a read stands failed (the alert stays, the counts are withheld).
   const usable = read === 'ready' || state.partial;
@@ -374,6 +380,18 @@ export function Menu({ model }: { model: MenuModel }) {
                                 {REORDER_ITEMS}
                               </button>
                             )}
+                            {category.isActive && (
+                              <button
+                                type="button"
+                                className="office-button small"
+                                data-new-item={id}
+                                aria-label={newItemName(category.name)}
+                                {...inertProps(read === 'loading' || busy)}
+                                onClick={() => model.openItemEditor({ kind: 'new', categoryId: id })}
+                              >
+                                {NEW_ITEM}
+                              </button>
+                            )}
                           </div>
                         </div>
                         <span className="menu-category-note">{category.isActive ? ACTIVE_NOTE : ARCHIVED_NOTE}</span>
@@ -390,7 +408,12 @@ export function Menu({ model }: { model: MenuModel }) {
                       const variants = item.variants.filter((v) => v.isActive).length;
                       const modifiers = item.modifiers.filter((m) => m.isActive).length;
                       return (
-                        <tr key={item.itemId} data-item={item.itemId} data-active={item.isActive}>
+                        <tr
+                          key={item.itemId}
+                          data-item={item.itemId}
+                          data-active={item.isActive}
+                          data-selected={state.selected === item.itemId ? 'true' : undefined}
+                        >
                           <td>
                             {item.name}
                             {!item.isActive && <span className="menu-item-note">{ARCHIVED_ITEM}</span>}
@@ -408,6 +431,16 @@ export function Menu({ model }: { model: MenuModel }) {
                           </td>
                           <td>
                             <div className="office-actions">
+                              <button
+                                type="button"
+                                className="office-button small"
+                                data-edit={item.itemId}
+                                aria-label={editItemName(item.name)}
+                                {...inertProps(read === 'loading' || busy)}
+                                onClick={() => model.openItemEditor({ kind: 'edit', itemId: item.itemId })}
+                              >
+                                {EDIT}
+                              </button>
                               <button
                                 type="button"
                                 className="office-button small"

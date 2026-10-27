@@ -4,9 +4,9 @@
 // text, an error code or a submitted value never becomes visible text. The departure and logout
 // decisions and M-6 stay the one source in `../copy.ts`.
 //
-// Left out on purpose (PHASE1-S4c1 ruling 1): the 86 and Make available rows (S5), the Edit and
-// New item rows (S4c2), the kitchen-emergency sentences, BO-01's held-draft sentence and the
-// Phase 4 lease refusal.
+// Left out on purpose (PHASE1-S4c1 ruling 1): the 86 and Make available rows (S5), the
+// kitchen-emergency sentences, BO-01's held-draft sentence and the Phase 4 lease refusal. The Edit
+// and New item rows arrived with BO-04 (PHASE1-S4c2a).
 
 export type NoticeCopy = { title: string; body: string };
 
@@ -37,12 +37,16 @@ export const renameCategoryName = (name: string): string => `Rename category ${n
 export const archiveCategoryName = (name: string): string => `Archive category ${name}`;
 export const restoreCategoryName = (name: string): string => `Restore category ${name}`;
 export const reorderItemsName = (name: string): string => `Reorder items in ${name}`;
+export const NEW_ITEM = 'New item';
+export const newItemName = (name: string): string => `New item in ${name}`;
 export const EMPTY_CATEGORY = 'No items in this category yet. Use New item to add the first one.';
 export const EMPTY_CATEGORY_ARCHIVED = 'No items in this category yet. Restore the category before adding an item.';
 
 // An item's row.
 export const optionsLine = (variants: number, modifiers: number): string =>
   `${variants} variants · ${modifiers} modifiers`;
+export const EDIT = 'Edit';
+export const editItemName = (name: string): string => `Edit ${name}`;
 export const ARCHIVED_ITEM = 'Archived item';
 export const AVAILABLE = 'Available';
 export const UNAVAILABLE = '86 · Unavailable';

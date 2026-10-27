@@ -107,10 +107,21 @@ describe('AC 2. grouping, order and counts', () => {
     );
   });
 
-  it('has no 86, Make available, Edit or New item control yet (S5 and S4c2)', async () => {
+  it('has no 86 or Make available control yet (S5); Edit and New item arrived with BO-04', async () => {
     const host = await open();
     const names = [...host.querySelectorAll('button, a')].map((el) => el.getAttribute('aria-label') ?? el.textContent ?? '');
-    expect(names.filter((n) => /\b86\b|Make available|^Edit|New item/.test(n))).toEqual([]);
+    expect(names.filter((n) => /\b86\b|Make available/.test(n))).toEqual([]);
+    expect(names.filter((n) => /^Edit |^New item/.test(n))).toEqual([
+      'New item in Mains',
+      'Edit Burger',
+      'Edit Item 2',
+      'Edit Item 10',
+      'Edit Apple',
+      'New item in Drinks',
+      'Edit Soda',
+      'Edit Pie',
+      'Edit Stew',
+    ]);
   });
 
   it('shows an empty category’s row with DESIGN-019’s copy', async () => {
@@ -405,7 +416,7 @@ describe('AC 6. create, rename, archive and restore', () => {
     expect(document.activeElement).toBe(named(host, 'Rename category Seasonal'));
   });
 
-  it('Archive item and Restore item send { itemId } and focus the row action now shown', async () => {
+  it('Archive item and Restore item send { itemId } and focus the row’s Edit (DESIGN-019)', async () => {
     const host = await open();
     h.reply(ITEM_ARCHIVE, itemAnswer(6, { ...BURGER, isActive: false }));
     tap(named(host, 'Archive item Burger'));
@@ -414,14 +425,14 @@ describe('AC 6. create, rename, archive and restore', () => {
     expect(text(pageStatus(host))).toBe('Burger archived. It is kept for history.');
     // The archived set follows the active one: Apple and Burger tie on their order, so the name decides.
     expect(itemNames(host, MAINS.categoryId)).toEqual(['Item 2', 'Item 10', 'Apple', 'Burger']);
-    expect(document.activeElement).toBe(named(host, 'Restore item Burger'));
+    expect(document.activeElement).toBe(named(host, 'Edit Burger'));
 
     h.reply(ITEM_RESTORE, itemAnswer(7, { ...APPLE, isActive: true }));
     tap(named(host, 'Restore item Apple'));
     await h.settle();
     expect(bodyOf(h, ITEM_RESTORE)).toEqual({ itemId: APPLE.itemId });
     expect(text(pageStatus(host))).toBe('Apple restored.');
-    expect(document.activeElement).toBe(named(host, 'Archive item Apple'));
+    expect(document.activeElement).toBe(named(host, 'Edit Apple'));
   });
 
   it('a restored item in an archived category says it stays hidden', async () => {

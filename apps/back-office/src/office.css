@@ -225,3 +225,37 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 #page-status[data-kind='failure'] { color: var(--frost-warning); background: var(--frost-warning-surface); border-color: var(--frost-warning); }
 #menu-name-help { font-size: var(--frost-text-12); margin-top: var(--frost-space-3); }
 #new-category[aria-disabled='true'], #reorder-categories[aria-disabled='true'], .menu-reorder [aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }
+#menu-list tr[data-selected='true'] { background: var(--frost-group); }
+
+/*
+ * BO-04 Item editor (PHASE1-S4c2a), ported from Frost's item-editor.css
+ * (docs/design/visual-directions/frost/back-office/item-editor.css) for the item's own fields: the
+ * heading and status, the form with its money facts and fields, the current item beside it in the
+ * stale state, and the sticky footer. It composes BO-08's form, field and notice rules above. The
+ * option rows (variants and modifiers) arrive with PHASE1-S4c2b.
+ */
+#item-title { overflow-wrap: anywhere; min-width: 0; }
+#item-status { flex: none; }
+#item-context { color: var(--frost-muted); margin-bottom: var(--frost-space-6); }
+.item-work { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--frost-space-6); }
+.item-work:has(.item-current) { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.item-draft, .item-current { min-width: 0; }
+.item-section-title, .item-current h2 { margin: 0 0 var(--frost-space-2); font-size: var(--frost-text-18); font-weight: var(--frost-weight-medium); }
+.item-money { display: flex; gap: var(--frost-space-8); flex-wrap: wrap; margin: var(--frost-space-4) 0 var(--frost-space-2); }
+.item-money dt { font-size: var(--frost-text-12); color: var(--frost-muted); }
+.item-money dd { margin: var(--frost-space-1) 0 0; }
+.item-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--frost-space-6); margin-top: var(--frost-space-6); }
+.item-name-field { grid-column: 1 / -1; }
+.item-current { background: var(--frost-group); padding: var(--frost-space-4); align-self: start; overflow-wrap: anywhere; }
+.item-current dl { margin: 0; }
+.item-current dt { color: var(--frost-muted); font-size: var(--frost-text-12); margin-top: var(--frost-space-3); }
+.item-current dd { margin: 0; }
+.item-current dd[data-differs='true'] { font-weight: var(--frost-weight-medium); }
+.item-current dd span { display: block; color: var(--frost-muted); font-size: var(--frost-text-12); font-weight: var(--frost-weight-regular); }
+.item-footer { position: sticky; bottom: calc(-1 * var(--frost-office-content-padding)); z-index: 1; flex-wrap: wrap; }
+#form-notice[data-kind='stale'] { background: var(--frost-warning-surface); color: var(--frost-warning); border-color: var(--frost-warning); }
+#form-notice .office-button { margin-top: var(--frost-space-3); }
+#version-facts { margin-bottom: var(--frost-space-5); }
+#duplicate-holder { margin-top: var(--frost-space-2); font-size: var(--frost-text-13); }
+#item-form [aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }
+.menu-table [data-edit][aria-disabled='true'], .menu-table [data-new-item][aria-disabled='true'] { border-style: dashed; }
