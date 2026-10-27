@@ -7,7 +7,8 @@ import { SETTINGS } from './settings/copy.js';
 
 // The rail lists only destinations that exist (DESIGN-016 Part B 4): Menu (S4c), Tables (S1b)
 // and Settings (S2b), in that order (DESIGN-019 round 2, F5), under a group labelled
-// Configuration. The landing is reached by browser Back, not by an entry.
+// Configuration. The landing is reached by browser Back, not by an entry. BO-04, the item editor,
+// has no entry of its own: Menu is current on it, as on BO-03.
 const GROUPS: ReadonlyArray<{ label: string; entries: ReadonlyArray<{ screen: Screen; label: string }> }> = [
   {
     label: CONFIGURATION,
@@ -39,7 +40,7 @@ export function Rail() {
             <a
               key={entry.screen}
               href={PATHS[entry.screen]}
-              aria-current={current === entry.screen ? 'page' : undefined}
+              aria-current={current === entry.screen || (entry.screen === 'menu' && current === 'item') ? 'page' : undefined}
               onClick={go(entry.screen)}
             >
               {entry.label}

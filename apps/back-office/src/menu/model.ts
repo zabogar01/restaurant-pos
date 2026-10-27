@@ -1,13 +1,12 @@
-import type { ApiResult } from '@pos/api-client';
 import {
   CreateCategoryRequest,
-  ErrorCode,
   ReorderCategoriesRequest,
   ReorderItemsRequest,
   UpdateCategoryRequest,
   type CategoryView,
   type ItemView,
 } from '@pos/contracts';
+import { call, meaningOf, type Answered } from '../forms/answer.js';
 import { fieldsInError } from '../forms/fieldsInError.js';
 import type { ConfigApi } from '../session/api.js';
 import type { WorkGuard, WorkStatus } from '../work/guard.js';
@@ -26,7 +25,14 @@ import { checkCategoryName, type NameError } from './name.js';
 // most one editor is open: the category form (create or rename), or a reorder (of the
 // categories, or of the items of one category). Every opener goes through `leave`, which closes
 // a clean editor and asks about a dirty or uncertain one, and every opener is inert while the
-// slot is full. 86 and Make available, Edit and New item are not here (S5 and S4c2).
+// slot is full. 86 and Make available are not here (S5).
+//
+// **BO-04 is a screen of its own** (PHASE1-S4c2a). *Edit* and *New item* go through `leave` once,
+// hand BO-04 its subject (`openItemEditor`), and BO-04 builds on its own read. BO-04 hands back an
+// answered item (`receiveItem`), or a way back with the focus to restore (`stageArrival`); both
+// are presented when Menu is next on screen, since a request made while it is not is not for it.
+// A BO-04 save still outstanding when BO-04 is left holds this screen's openers inert and shows
+// *Waiting for an earlier save…* (`holdForSave`) until it answers (`releaseFromSave`).
 //
 // **The version.** `version` is the one the list stands at (DESIGN-019 round 2, F1). A full
 // read sets it. A command's answer advances it only when the answered version is exactly one
@@ -73,7 +79,19 @@ export type FocusTarget =
   | { move: string; delta: -1 | 1 }
   | { rename: string }
   | { itemAction: string }
+  | { newItem: string }
   | { reorderItems: string };
+
+/** Which item BO-04 is opened for: an existing item, or a new one in a category. Client state, never the address. */
+export type ItemSubject = { kind: 'edit'; itemId: string } | { kind: 'new'; categoryId: string };
+
+/** What BO-04 hands back for Menu to present the next time it is on screen. */
+export interface Arrival {
+  page?: PageStatus;
+  focus?: FocusTarget;
+  /** The row to mark `data-selected`, as BO-03's return marks it. */
+  selected?: string;
+}
 
 export interface Editor {
   /** Which editor this is; a command remembers it, so a late answer knows whether its editor is still here. */
@@ -161,6 +179,10 @@ export interface MenuState {
   /** The decision was opened by Archive or Restore: the draft is being continued from, not left. */
   continuing: boolean;
   focus: { target: FocusTarget; n: number } | null;
+  /** BO-04's save, left behind by Discard, has not answered: the screen's one command slot is taken. */
+  external: boolean;
+  /** The item row BO-04 returned to, marked `data-selected` until Menu is next shown. */
+  selected: string | null;
 }
 
 /** What an ok answer carries into the list. */
@@ -170,9 +192,7 @@ interface Applied {
   items: readonly ItemView[];
 }
 
-type Failure = Exclude<ApiResult<never>, { kind: 'ok' }>;
-type Answer = { kind: 'ok'; applied: Applied } | Failure;
-type Meaning = 'saved' | 'unchanged' | 'stale' | 'duplicate' | 'gone' | 'session' | 'general' | 'unknown';
+type Answer = Answered<Applied>;
 
 /** A reread's outcome, with what it showed beside the draft; held with a finished result. */
 interface Reread {
@@ -189,51 +209,6 @@ const CATEGORY_RESTORE = '/api/back-office/config/catalog/categories/restore' as
 const ITEM_REORDER = '/api/back-office/config/catalog/items/reorder' as const;
 const ITEM_ARCHIVE = '/api/back-office/config/catalog/items/archive' as const;
 const ITEM_RESTORE = '/api/back-office/config/catalog/items/restore' as const;
-
-/**
- * What an answer means (consult C2 section 6). Never the text of an error. An edit's `ok` is read
- * against the version it carried: equal is *unchanged*, one ahead is *saved*, anything behind is
- * not an answer to this command. The commands that carry no version are *saved* when ok.
- */
-function meaningOf(answer: Answer, expected: number | null): Meaning {
-  switch (answer.kind) {
-    case 'ok': {
-      if (expected === null) return 'saved';
-      const { version } = answer.applied;
-      if (version === expected) return 'unchanged';
-      return version > expected ? 'saved' : 'unknown';
-    }
-    case 'failed':
-    case 'unavailable':
-      return 'unknown';
-    case 'session-gone':
-      return 'session';
-    case 'invalid-request':
-      return 'general';
-    case 'refused':
-      switch (answer.body.error.code) {
-        case ErrorCode.CATALOG_CHANGED:
-          return 'stale';
-        case ErrorCode.DUPLICATE:
-          return 'duplicate';
-        // Unreachable today: this client names only records it has read and sends whole scopes.
-        // Each is the definite failure of the command, with the list reread once.
-        case ErrorCode.NOT_FOUND:
-        case ErrorCode.VALIDATION_FAILED:
-          return 'gone';
-        case ErrorCode.SESSION_IDLE:
-        case ErrorCode.UNAUTHENTICATED:
-        case ErrorCode.FORBIDDEN:
-          return 'session';
-        default:
-          return 'general';
-      }
-  }
-}
-
-function call<T>(request: Promise<ApiResult<T>>, applied: (value: T) => Applied): Promise<Answer> {
-  return request.then((answer) => (answer.kind === 'ok' ? { kind: 'ok' as const, applied: applied(answer.value) } : answer));
-}
 
 function upsertCategories(rows: readonly CategoryView[], record: CategoryView): CategoryView[] {
   return rows.some((row) => row.categoryId === record.categoryId)
@@ -293,9 +268,19 @@ export function createMenuModel(config: ConfigApi) {
     decision: false,
     continuing: false,
     focus: null,
+    external: false,
+    selected: null,
   };
   const listeners = new Set<() => void>();
   let gate = false;
+  /** Menu is on screen. */
+  let visible = false;
+  /** A category was inserted from BO-04's read; a failed read then leaves the known rows drawn, as a partial list. */
+  let hosted = false;
+  /** What BO-04 handed back, waiting for Menu to be on screen. */
+  let arrival: Arrival | null = null;
+  /** BO-04's way of opening itself for a subject, bound by its model. */
+  let openItem: ((subject: ItemSubject) => void) | null = null;
   let stopped = true;
   let loaded = false;
   /** Counts the answers applied and the versions adopted, so a read can tell which came after it began. */
@@ -330,6 +315,8 @@ export function createMenuModel(config: ConfigApi) {
   /** Where focus goes to take up the draft again. */
   const draftTarget = (editor: Editor): FocusTarget => (isReorder(editor) ? 'first-move' : 'name');
 
+  /** The screen's one command slot is taken: its own command, or BO-04's save left outstanding. */
+  const busy = (): boolean => state.command !== null || state.external;
   const pendingSave = (): boolean => {
     const { editor, command } = state;
     return editor !== null && command !== null && !command.discarded && command.editorKey === editor.key;
@@ -381,6 +368,7 @@ export function createMenuModel(config: ConfigApi) {
         let items = [...snapshot.items];
         for (const { record, at } of appliedCategories.values()) if (at > startedAt) categories = upsertCategories(categories, record);
         for (const { record, at } of appliedItems.values()) if (at > startedAt) items = upsertItems(items, record);
+        hosted = false;
         const ahead = state.version !== null && standingAt > startedAt && state.version > snapshot.version;
         set({
           read: 'ready',
@@ -392,7 +380,7 @@ export function createMenuModel(config: ConfigApi) {
       } else {
         // The same reconciliation as a read that succeeded: an answer applied after this read
         // began is on screen, so the known rows stay drawn with the alert and no counts.
-        set({ read: 'failed', partial: state.partial || clock > startedAt });
+        set({ read: 'failed', partial: state.partial || clock > startedAt || hosted });
       }
       return snapshot !== null;
     }
@@ -509,6 +497,35 @@ export function createMenuModel(config: ConfigApi) {
       heldRetry = null;
       result();
     }
+  }
+
+  /**
+   * The category BO-04's own read holds for a returned item, inserted only when this list holds no
+   * category with that id, solely to host the item (DESIGN-020 lead ruling 1, the B-24 walk). It is
+   * not an answered record: it is not in the applied map and moves no version, and the next read
+   * replaces it as it replaces any row. A category already held is never replaced from BO-04's read.
+   */
+  function host(category: CategoryView | undefined): void {
+    if (category === undefined || state.categories.some((c) => c.categoryId === category.categoryId)) return;
+    hosted = true;
+    set({ categories: [...state.categories, category] });
+  }
+
+  /** What BO-04 handed back is presented when Menu is on screen, never to a mount that has not happened. */
+  function presentArrival(): void {
+    const next = arrival;
+    arrival = null;
+    if (next === null) return;
+    set({
+      ...(next.page === undefined ? {} : { page: next.page }),
+      selected: next.selected ?? null,
+      ...(next.focus === undefined ? {} : { focus: aim(next.focus) }),
+    });
+  }
+
+  function stageArrival(next: Arrival): void {
+    arrival = next;
+    if (visible) presentArrival();
   }
 
   function send(command: Command, request: () => Promise<Answer>, patch: Partial<MenuState> = {}): void {
@@ -729,7 +746,7 @@ export function createMenuModel(config: ConfigApi) {
             name: item?.name ?? command.name,
             hidden: owner?.isActive === false,
           },
-          // Edit takes this focus when S4c2 adds it; until then it is the row action now shown.
+          // The row's Edit, as DESIGN-019 says: it is live on active and archived items alike.
           focus: aim({ itemAction: command.recordId! }),
         };
       }
@@ -740,7 +757,7 @@ export function createMenuModel(config: ConfigApi) {
 
   function save(): void {
     const { editor } = state;
-    if (editor === null || state.command !== null) return;
+    if (editor === null || busy()) return;
     // A choice comes first: neither Keep my changes nor Use current menu has been made, or the
     // comparison could not be read.
     if (editor.offered !== null || editor.notice === 'stale-unread') return;
@@ -828,7 +845,7 @@ export function createMenuModel(config: ConfigApi) {
 
   function changeCategoryState(categoryId: string): void {
     const row = state.categories.find((c) => c.categoryId === categoryId);
-    if (row === undefined || state.command !== null) return;
+    if (row === undefined || busy()) return;
     const archive = row.isActive;
     set({ page: { kind: 'pending', action: archive ? 'archive' : 'restore', name: row.name }, focus: aim('status') });
     const command: Command = {
@@ -849,7 +866,7 @@ export function createMenuModel(config: ConfigApi) {
 
   function changeItemState(itemId: string): void {
     const row = state.items.find((i) => i.itemId === itemId);
-    if (row === undefined || state.command !== null) return;
+    if (row === undefined || busy()) return;
     const archive = row.isActive;
     set({ page: { kind: 'pending', action: archive ? 'archive' : 'restore', name: row.name }, focus: aim('status') });
     const command: Command = {
@@ -921,7 +938,8 @@ export function createMenuModel(config: ConfigApi) {
      * earlier one is out: the latest read decides. A read is not interactive, so a development
      * double effect that sends one more is harmless.
      */
-    shown(): void {
+    shown(): () => void {
+      visible = true;
       if (!loaded) {
         loaded = true;
         void load(true);
@@ -929,7 +947,15 @@ export function createMenuModel(config: ConfigApi) {
         void load(false);
       }
       const { page } = state;
-      if (page !== null && page.kind !== 'waiting' && page.kind !== 'pending') set({ page: null });
+      set({
+        selected: null,
+        ...(page !== null && page.kind !== 'waiting' && page.kind !== 'pending' ? { page: null } : {}),
+      });
+      // What BO-04 handed back replaces the page result just cleared, with its focus.
+      presentArrival();
+      return () => {
+        visible = false;
+      };
     },
     /** Whether answers may be presented: the session is signed in and nothing of the frame's is open. */
     setGate(open: boolean): void {
@@ -977,10 +1003,10 @@ export function createMenuModel(config: ConfigApi) {
     // One command at a time: while one is pending these are inert, whatever pressed them.
     openCreate(): void {
       // Creation carries no version, so it is live after a failed read too (DESIGN-019's error state).
-      if (state.command === null && state.read !== 'loading') leave(() => openEditor({ kind: 'create', recordId: null, active: true, openedName: '', base: null, name: '', order: [], opener: 'new-category' }));
+      if (!busy() && state.read !== 'loading') leave(() => openEditor({ kind: 'create', recordId: null, active: true, openedName: '', base: null, name: '', order: [], opener: 'new-category' }));
     },
     openRename(categoryId: string): void {
-      if (state.command !== null || state.version === null) return;
+      if (busy() || state.version === null) return;
       leave(() => {
         // The version is the list's standing one at the moment the editor opens.
         const row = state.categories.find((c) => c.categoryId === categoryId);
@@ -990,7 +1016,7 @@ export function createMenuModel(config: ConfigApi) {
       });
     },
     openReorderCategories(): void {
-      if (state.command !== null || state.read !== 'ready' || state.version === null) return;
+      if (busy() || state.read !== 'ready' || state.version === null) return;
       if (scopeOfCategories(state.categories).length < 2) return;
       leave(() => {
         // The scope and the version are read when the editor opens, after a clean editor closed.
@@ -999,7 +1025,7 @@ export function createMenuModel(config: ConfigApi) {
       });
     },
     openReorderItems(categoryId: string): void {
-      if (state.command !== null || state.read !== 'ready' || state.version === null) return;
+      if (busy() || state.read !== 'ready' || state.version === null) return;
       const row = state.categories.find((c) => c.categoryId === categoryId);
       if (row === undefined || !row.isActive || activeItemScope(state.items, categoryId).length < 2) return;
       leave(() => {
@@ -1009,11 +1035,65 @@ export function createMenuModel(config: ConfigApi) {
     },
     /** Archive or Restore of a category: sent at once from the header, with no confirmation. */
     changeCategoryState(categoryId: string): void {
-      if (state.command === null) leave(() => changeCategoryState(categoryId), true);
+      if (!busy()) leave(() => changeCategoryState(categoryId), true);
     },
     /** Archive or Restore of an item: sent at once from the row, with no confirmation. */
     changeItemState(itemId: string): void {
-      if (state.command === null) leave(() => changeItemState(itemId), true);
+      if (!busy()) leave(() => changeItemState(itemId), true);
+    },
+    /**
+     * Edit on an item row, or New item on an active category's header: BO-04 is opened for that
+     * subject. The opener goes through `leave` once, so a dirty inline editor meets the departure
+     * decision first; BO-04 then arrives without asking a second time.
+     */
+    openItemEditor(subject: ItemSubject): void {
+      if (busy() || state.read === 'loading' || openItem === null) return;
+      if (subject.kind === 'edit') {
+        if (!state.items.some((i) => i.itemId === subject.itemId)) return;
+      } else if (state.categories.find((c) => c.categoryId === subject.categoryId)?.isActive !== true) {
+        return;
+      }
+      leave(() => openItem?.(subject));
+    },
+    /** BO-04's model binds how an item subject is opened and shown. */
+    bindItemEditor(open: (subject: ItemSubject) => void): () => void {
+      openItem = open;
+      return () => {
+        if (openItem === open) openItem = null;
+      };
+    },
+    /**
+     * BO-04 answered a save: the answered item joins the list through the same `apply` a command's
+     * answer takes, so an older read never undoes it and the one-step version rule holds. The
+     * sentence and the focus are Menu's to present when it is next on screen.
+     */
+    receiveItem(item: ItemView, version: number, unchanged = false, category?: CategoryView): void {
+      host(category);
+      apply({ version, categories: [], items: [item] });
+      stageArrival({
+        page: unchanged ? { kind: 'unchanged', version } : { kind: 'saved', name: item.name },
+        focus: { itemAction: item.itemId },
+        selected: item.itemId,
+      });
+    },
+    /** A way back from BO-04 with the focus to restore, presented when Menu is next on screen. */
+    stageArrival,
+    /** BO-04 was left with its save outstanding: this screen waits for the answer, and sends nothing. */
+    holdForSave(): void {
+      set({ external: true, page: { kind: 'waiting' } });
+    },
+    /**
+     * That save answered. An `ok` answer lands in the list with no sentence and no focus move; an
+     * unknown outcome rereads once; anything else presents nothing (the draft was discarded).
+     */
+    releaseFromSave(
+      outcome: { kind: 'ok'; item: ItemView; version: number; category?: CategoryView } | { kind: 'unknown' } | { kind: 'other' }
+    ): void {
+      if (stopped) return;
+      set({ external: false, page: state.page?.kind === 'waiting' ? null : state.page });
+      if (outcome.kind === 'ok') host(outcome.category);
+      if (outcome.kind === 'ok') apply({ version: outcome.version, categories: [], items: [outcome.item] });
+      else if (outcome.kind === 'unknown') void load(false);
     },
     setDraft(value: string): void {
       const { editor } = state;
