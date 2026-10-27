@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S4c1]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/item-editor.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S4c2a — BO-04 Item editor: the item's own fields
@@ -447,6 +447,38 @@ more than one commit is fine if it reads better. Write the Handoff below in full
 - the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify (2026-10-27)
+
+At `9fcdb94`, in this worktree:
+- **`npm run verify`:** typecheck clean; **138 files, 5028 tests** passed.
+- **`npm run test:e2e:all`:** **92 passed** (1.1 minutes), Chromium and WebKit. This is the lead's run after the
+  builder's mutations were reverted, so the builder's untested gap is closed.
+- **Baseline:** the lead reran `npm run verify` on `development` (`826a401`): 133 files, 4752 tests, as the task file
+  says. The 32 tests the builder could not place come from `no-invented-values.test.ts`, which runs one case per
+  ported CSS value: it goes from 154 cases to 186 with the new `office.css` rules. The five new files hold 244, as the
+  Handoff says (145, 20, 38, 24, 17, each counted by the lead). This is not a defect.
+- **Paths:** every changed path is inside `owns`. The changed tests are `routes.test.ts` and `menu.test.tsx`, both
+  listed under *Tests expected to change*. The menu test's three assertions are listed in the Handoff, and none is
+  weakened.
+- **Read by the lead:** `item/price.ts` uses patterns and BigInt, and no float (`\d` without the `u` flag matches ASCII
+  digits only). `routes.ts` and `Rail.tsx` match rulings 2 and 3. Every `href` in BO-04 is `PATHS.menu`.
+- **Not checked by the lead:** the drawn layout. The lead cannot sign in to the back office, so the owner's look at
+  BO-03 and BO-04 served is the check, before merge (finding 6).
+
+## Rulings on the Handoff's findings (lead, 2026-10-27)
+
+These need no code change, so they spend no round.
+1. **Finding 1 is accepted, and ruling 11's last clause is corrected.** After *Keep my changes*, the destination
+   category is refused until an active one is chosen. After *Use current item*, the form shows the current item and
+   nothing is refused. The built behaviour, which follows the artifact's `chooseCurrent(false)`, stands. The
+   task-file sentence "the category refused after either choice" was the lead's error.
+2. **Finding 2 is accepted.** Save is held, `aria-disabled`, while any field error shows, with *Correct the marked
+   fields before saving.* That footer hint is one of DESIGN-020's own rows (*Footer, Hint … errors*), which only means
+   something if Save is held. Editing a field clears its error.
+3. **Finding 4 stands as built.** *Keep my changes* after an unknown outcome leaves the draft "uncertain", as BO-03
+   does, so leaving asks with the uncertain body. That save's outcome is still unknown, so the body is true.
+4. **Findings 3, 5, 7 and 8** are noted. Finding 7 is the resolver's fallback for a case BO-03 cannot reach today.
 
 ## Handoff
 
