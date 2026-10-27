@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries]
 depends_on: [PHASE1-S4c2a]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/item-editor.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S4c2b — BO-04's variants and modifiers
@@ -375,6 +375,42 @@ At `a441b25`, in this worktree:
 4. **Finding 4 is noted;** focus falls back to Item name. **Finding 5 (process):** the shell use outside the role's
    list is recorded for the kit question in STATE (builder `grep`/`python3`/`sed`). It did not change what was
    committed.
+
+## Round 2 — the review's F1 to F3 (lead rulings, 2026-10-27)
+
+Codex reviewed `01789fe` (`.agent/reviews/PHASE1-S4c2b-review.md`): one P2 and two P3. **F1 and F2 are accepted. F3
+is rejected.** The fixes stay inside `owns`.
+
+1. **F1 (accepted): a pending-removal row shows its saved name.** This is the lead's ruling 1 above, confirmed by the
+   review.
+   - **The fix.** The collapsed row and its Undo's accessible name (*Undo removal of variant {name}*) take the name
+     from the matching row in `form.original`. The draft row keeps the draft's name, so Undo restores the manager's
+     edit.
+   - **Tests, for both kinds:** rename a saved row, then remove it. The collapsed row and its Undo name the saved name.
+     Undo brings the row back showing the draft's new name.
+   - **Red:** use the draft's name again.
+2. **F2 (accepted): editing the refused row keeps a duplicate that still holds.** `setOptionName` clears the edited
+   row's refusal before the recheck, and the recheck never adds, so a case-only edit (*Large* to *large*) loses a
+   refusal that still holds. Save then goes live.
+   - **The fix.** On a name edit, an `empty`, `long` or `control` refusal on that row still clears, as now. A
+     **duplicate** refusal on that row is kept through the list's recheck, and cleared only when the edited name no
+     longer matches another active row (trimmed, `toLowerCase()`).
+   - A row that had **no** duplicate refusal still gets none before Save: the recheck adds nothing (F4).
+   - **Tests:** a case-only edit keeps the refusal, with Save held. Surrounding spaces keep it. Changing to another
+     name an active row holds keeps it. Changing to a unique name clears it. A row refused `empty` that is edited
+     into a duplicate shows no error until Save.
+   - **Red:** clear the edited row's duplicate first, as now. The case-only test fails.
+3. **F3 (rejected): the option inputs keep native `disabled` while a save is pending.** `docs/DESIGN.md` `:1518`
+   ("During pending, Save is inert and fields are disabled") sets the field rule. BO-08's settings fields
+   (`settings/Settings.tsx:547`) and S4c2a's own three fields (`item/ItemEditor.tsx:378`, `:411`, `:444`) use
+   `disabled={pending}`, and both were reviewed and merged. The task file's *Rules* sentence ("on inert controls,
+   never `disabled`") meant buttons and openers, as S4c1's and S4c2a's rules did. Its wording was the lead's
+   looseness. The option inputs stay as built, matching the item's own fields. No change.
+
+**What to do.** Fix F1 and F2 and add the tests above, weakening no existing assertion. Run `npm run verify` and `npm
+run test:e2e:all` after the last mutation is reverted. Commit on this branch. Append a *Round 2* section to the
+Handoff: for each fix, what changed, the red you observed, and the new counts. End it `DONE` or `BLOCKED: <question>`,
+then ping the lead.
 
 ## Handoff
 
