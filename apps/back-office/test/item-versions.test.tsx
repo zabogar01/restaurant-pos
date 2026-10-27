@@ -469,3 +469,45 @@ describe('AC 14. a name an active item already holds', () => {
     expect(h.count(ITEM_CREATE)).toBe(1);
   });
 });
+
+describe('Round 2, F1. a saved item has a category on Menu to sit in', () => {
+  const SPECIALS = { categoryId: '00000000-0000-4000-8000-000000000009', name: 'Specials', displayOrder: 3, isActive: true };
+  const moved = { ...BURGER, categoryId: SPECIALS.categoryId };
+
+  /** Menu knows three categories; BO-04's read also holds Specials, and Burger is saved into it with Menu's return read held. */
+  async function savedIntoSpecials() {
+    const host = await open();
+    h.reply(READ, catalog(6, [...CATS, SPECIALS]));
+    await editFrom(h, host, 'Burger');
+    choose(categorySelect(host), SPECIALS.categoryId);
+    h.reply(ITEM_UPDATE, itemAnswer(7, moved));
+    const visit = h.hold(READ);
+    tap(named(host, 'Save'));
+    await h.settle();
+    return { host, visit };
+  }
+
+  it('hosts the category only BO-04 knows: the row is in it, Edit has focus, and the sentence names the save', async () => {
+    const { host, visit } = await savedIntoSpecials();
+    expect(window.location.pathname).toBe('/back-office/menu');
+    expect(host.querySelector('tr[data-category="' + SPECIALS.categoryId + '"] h2')!.textContent).toBe('Specials');
+    expect(itemRow(host, BURGER.itemId)).not.toBeNull();
+    expect(document.activeElement).toBe(named(host, 'Edit Burger'));
+    expect(text(pageStatus(host))).toBe('Burger saved.');
+    // The visit read lands holding both: the row and the category stay, and focus does not move again.
+    visit.deliver(catalog(7, [...CATS, SPECIALS], MENU_ITEMS.map((i) => (i.itemId === BURGER.itemId ? moved : i))));
+    await h.settle();
+    expect(host.querySelector('tr[data-category="' + SPECIALS.categoryId + '"]')).not.toBeNull();
+    expect(document.activeElement).toBe(named(host, 'Edit Burger'));
+    expect(text(pageStatus(host))).toBe('Burger saved.');
+  });
+
+  it('when the held visit read fails, the hosted category and the row stay under the partial list’s copy', async () => {
+    const { host, visit } = await savedIntoSpecials();
+    visit.deliver(failure);
+    await h.settle();
+    expect(host.querySelector('tr[data-category="' + SPECIALS.categoryId + '"]')).not.toBeNull();
+    expect(itemRow(host, BURGER.itemId)).not.toBeNull();
+    expect(text(q(host, '#read-state'))).toContain('The menu list may be out of date');
+  });
+});

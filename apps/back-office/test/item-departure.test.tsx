@@ -395,3 +395,72 @@ describe('AC 16. M-6 and BO-01', () => {
     expect(q(host, '#item-context')!.textContent).toBe('Choose an item on Menu to edit it.');
   });
 });
+
+describe('Round 2, F2. the refused name’s holder goes through the gates', () => {
+  /** A create of a name Burger holds, refused; its reread is held until the test lands it. */
+  async function refused(host: HTMLElement) {
+    await newIn(h, host, 'Drinks');
+    typeInto(nameInput(host), 'Burger');
+    typeInto(priceInput(host), '12.500');
+    h.reply(ITEM_CREATE, refusal('DUPLICATE', undefined, 409));
+    const reread = h.hold(READ);
+    tap(named(host, 'Save'));
+    await h.settle();
+    return reread;
+  }
+  const holder = (host: HTMLElement) => q(host, '#duplicate-holder');
+
+  it('M-6 opening while the reread is out: no holder behind it, the holder once on Continue, no second read or save', async () => {
+    const host = await open();
+    const reread = await refused(host);
+    await goIdle(host);
+    const reads = h.count(READ);
+    reread.deliver(catalog(5));
+    await h.settle();
+    expect(holder(host)).toBeNull();
+    await resume(host);
+    expect(holder(host)!.textContent).toBe('Name held by Burger in Mains. View item on Menu');
+    expect(h.count(READ)).toBe(reads);
+    expect(h.count(ITEM_CREATE)).toBe(1);
+  });
+
+  it('the decision open while it lands: absent under it, present on Stay', async () => {
+    const host = await open();
+    const reread = await refused(host);
+    tap(named(host, 'Cancel'));
+    expect(decision()).not.toBeNull();
+    const reads = h.count(READ);
+    reread.deliver(catalog(5));
+    await h.settle();
+    expect(holder(host)).toBeNull();
+    tap(named(decision()!, 'Stay'));
+    expect(holder(host)).not.toBeNull();
+    expect(h.count(READ)).toBe(reads);
+    expect(h.count(ITEM_CREATE)).toBe(1);
+  });
+
+  it('the decision answered Discard: the holder is never shown, and BO-03 is left as it is', async () => {
+    const host = await open();
+    const reread = await refused(host);
+    tap(named(host, 'Cancel'));
+    reread.deliver(catalog(5));
+    await h.settle();
+    tap(named(decision()!, 'Discard'));
+    await h.settle();
+    expect(window.location.pathname).toBe('/back-office/menu');
+    expect(holder(host)).toBeNull();
+    expect(h.count(ITEM_CREATE)).toBe(1);
+  });
+
+  it('a different manager’s sign-in leaves no holder', async () => {
+    const host = await open();
+    const reread = await refused(host);
+    await endSession(host);
+    h.reply(ME, ok(OTHER));
+    await signInAgain(host, ok(OTHER), 'r.ayu');
+    reread.deliver(catalog(5));
+    await h.settle();
+    expect(holder(host)).toBeNull();
+    expect(q(host, '#item-context')!.textContent).toBe('Choose an item on Menu to edit it.');
+  });
+});

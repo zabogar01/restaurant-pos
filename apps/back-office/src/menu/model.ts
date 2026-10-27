@@ -275,6 +275,8 @@ export function createMenuModel(config: ConfigApi) {
   let gate = false;
   /** Menu is on screen. */
   let visible = false;
+  /** A category was inserted from BO-04's read; a failed read then leaves the known rows drawn, as a partial list. */
+  let hosted = false;
   /** What BO-04 handed back, waiting for Menu to be on screen. */
   let arrival: Arrival | null = null;
   /** BO-04's way of opening itself for a subject, bound by its model. */
@@ -366,6 +368,7 @@ export function createMenuModel(config: ConfigApi) {
         let items = [...snapshot.items];
         for (const { record, at } of appliedCategories.values()) if (at > startedAt) categories = upsertCategories(categories, record);
         for (const { record, at } of appliedItems.values()) if (at > startedAt) items = upsertItems(items, record);
+        hosted = false;
         const ahead = state.version !== null && standingAt > startedAt && state.version > snapshot.version;
         set({
           read: 'ready',
@@ -377,7 +380,7 @@ export function createMenuModel(config: ConfigApi) {
       } else {
         // The same reconciliation as a read that succeeded: an answer applied after this read
         // began is on screen, so the known rows stay drawn with the alert and no counts.
-        set({ read: 'failed', partial: state.partial || clock > startedAt });
+        set({ read: 'failed', partial: state.partial || clock > startedAt || hosted });
       }
       return snapshot !== null;
     }
@@ -494,6 +497,18 @@ export function createMenuModel(config: ConfigApi) {
       heldRetry = null;
       result();
     }
+  }
+
+  /**
+   * The category BO-04's own read holds for a returned item, inserted only when this list holds no
+   * category with that id, solely to host the item (DESIGN-020 lead ruling 1, the B-24 walk). It is
+   * not an answered record: it is not in the applied map and moves no version, and the next read
+   * replaces it as it replaces any row. A category already held is never replaced from BO-04's read.
+   */
+  function host(category: CategoryView | undefined): void {
+    if (category === undefined || state.categories.some((c) => c.categoryId === category.categoryId)) return;
+    hosted = true;
+    set({ categories: [...state.categories, category] });
   }
 
   /** What BO-04 handed back is presented when Menu is on screen, never to a mount that has not happened. */
@@ -1052,7 +1067,8 @@ export function createMenuModel(config: ConfigApi) {
      * answer takes, so an older read never undoes it and the one-step version rule holds. The
      * sentence and the focus are Menu's to present when it is next on screen.
      */
-    receiveItem(item: ItemView, version: number, unchanged = false): void {
+    receiveItem(item: ItemView, version: number, unchanged = false, category?: CategoryView): void {
+      host(category);
       apply({ version, categories: [], items: [item] });
       stageArrival({
         page: unchanged ? { kind: 'unchanged', version } : { kind: 'saved', name: item.name },
@@ -1070,9 +1086,12 @@ export function createMenuModel(config: ConfigApi) {
      * That save answered. An `ok` answer lands in the list with no sentence and no focus move; an
      * unknown outcome rereads once; anything else presents nothing (the draft was discarded).
      */
-    releaseFromSave(outcome: { kind: 'ok'; item: ItemView; version: number } | { kind: 'unknown' } | { kind: 'other' }): void {
+    releaseFromSave(
+      outcome: { kind: 'ok'; item: ItemView; version: number; category?: CategoryView } | { kind: 'unknown' } | { kind: 'other' }
+    ): void {
       if (stopped) return;
       set({ external: false, page: state.page?.kind === 'waiting' ? null : state.page });
+      if (outcome.kind === 'ok') host(outcome.category);
       if (outcome.kind === 'ok') apply({ version: outcome.version, categories: [], items: [outcome.item] });
       else if (outcome.kind === 'unknown') void load(false);
     },

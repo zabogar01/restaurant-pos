@@ -379,7 +379,8 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
   function settleDiscarded(command: Command, answer: Answer, meaning: Meaning): void {
     set({ command: state.command === command ? null : state.command });
     if ((meaning === 'saved' || meaning === 'unchanged') && answer.kind === 'ok') {
-      menu.releaseFromSave({ kind: 'ok', item: answer.applied.item, version: answer.applied.version });
+      const { item, version } = answer.applied;
+      menu.releaseFromSave({ kind: 'ok', item, version, category: state.categories.find((c) => c.categoryId === item.categoryId) });
     } else {
       menu.releaseFromSave({ kind: meaning === 'unknown' ? 'unknown' : 'other' });
     }
@@ -457,7 +458,9 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
     if (meaning === 'saved' || meaning === 'unchanged') {
       if (answer.kind !== 'ok') return;
       // Back to Menu, on the same row, which announces the result and focuses the row's Edit.
-      menu.receiveItem(answer.applied.item, answer.applied.version, meaning === 'unchanged');
+      // The category is BO-04's read of it: Menu hosts it only if its own list holds none (the B-24 walk).
+      const { item, version } = answer.applied;
+      menu.receiveItem(item, version, meaning === 'unchanged', state.categories.find((c) => c.categoryId === item.categoryId));
       leaveForMenu(done());
       return;
     }
@@ -529,12 +532,16 @@ export function createItemModel(config: ConfigApi, menu: MenuModel) {
     }
 
     // A refusal that applied nothing. The refused and the gone also reread, so the manager sees
-    // what the server sees; neither establishes anything about this command. Nothing is
-    // presented after the reread, so there is nothing for the session gate to hold.
+    // what the server sees; neither establishes anything about this command. A refused name's
+    // reread does present something (the holder line, its link and the archived-category copy), so
+    // when it lands behind M-6, BO-01 or the decision the finished result is held and presented
+    // once when the same manager is back. Nothing is read or sent again.
     if (meaning === 'duplicate' || meaning === 'gone') {
       void reread().then((fresh) => {
         if (stopped || !fresh) return;
-        if (meaning === 'duplicate') showHolder(command);
+        if (meaning !== 'duplicate') return;
+        if (!gate || state.decision) heldRetry = () => showHolder(command);
+        else showHolder(command);
       });
     }
     if (meaning === 'duplicate') {
