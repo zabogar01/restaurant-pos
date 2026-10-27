@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-27 (S4c2 split; **S4c2a dispatched**): `development` at `826a401`; dev `pos` at `0013`. Builder `phase1-s4c2a`
-complete, branch not pushed (see Running tasks). Narrative: [journal/2026-10-27.md](journal/2026-10-27.md).
+2026-10-27 (S4c2 split; **S4c2a complete, PR #147**): `development` at `826a401`; dev `pos` at `0013`. Nothing
+running. **Open for the owner: #147 (look at BO-03/BO-04 served) and this lead branch's PR.** Journal: 2026-10-27.
 
 ## Phase and gates
 
@@ -43,18 +43,18 @@ complete, branch not pushed (see Running tasks). Narrative: [journal/2026-10-27.
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
   **before reporting or dispatching**. `0013` applied 2026-10-26; no lockfile change since.
 - **Guard hooks** current (`--check` 2026-10-27); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1027b`** (from `826a401`, not pushed). Cut each
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1027b`** (from `826a401`), pushed with its PR. Cut each
   new lead branch from `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`. The lead
   pushes task and lead branches and opens PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own
   step before any follow-up push.**
-- **Task worktree** `../restaurant-pos-wt/PHASE1-S4c2a` (`agent/phase1-s4c2a`). Not the lead's: `../restaurant-pos-design`,
-  `keen-chebyshev-ccf255`, branch `setting/add-permission`.
+- **Task worktree** `../restaurant-pos-wt/PHASE1-S4c2a` (pushed; remove with its run dir after merge). Not the lead's:
+  `../restaurant-pos-design`, `keen-chebyshev-ccf255`, branch `setting/add-permission`.
 
 ## Running tasks and agents
 
 - **PHASE1-S4c2a complete** at `1dd6755` (two rounds; Codex F1, F2 fixed in r2, lead-reviewed, reds repeated; verify
-  138/5034, e2e:all 92). **Not pushed:** the push and PR were refused by the permission classifier, so they are the
-  owner's. Owner looks at BO-03/BO-04 served, then merges (no migration). S4c2b reads its Handoff, *What S4c2b needs*.
+  138/5034, e2e:all 92), **PR #147**. Owner looks at BO-03/BO-04 served, then merges (no migration). S4c2b reads its
+  Handoff, *What S4c2b needs*. A push first refused by the classifier went through on the owner's word.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -144,7 +144,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S4c2a** complete: owner pushes/opens the PR (or allows the lead to), looks at BO-03 and BO-04, merges. Then write
-   **S4c2b** (variants and modifiers) from S4c2a's Handoff, *What S4c2b needs*; remove S4c2a's worktree and run dir.
+1. **After #147 merges:** fast-forward, remove S4c2a's worktree and run dir; write **S4c2b** (variants and modifiers)
+   from S4c2a's Handoff, *What S4c2b needs*.
 2. **Then S5** (86 and Make available on BO-03, DESIGN-019's F7, S4a's `catalogWrite` unversioned), **DESIGN-021** (POS
    addition, G6; Codex hand-opened, lead runs checks) beside it. **Small:** the code-point cleanup between slices.
