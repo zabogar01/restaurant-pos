@@ -5,8 +5,8 @@ category: ui
 touches: [money, boundaries]
 depends_on: [PHASE1-S4c2a]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/item-editor.spec.ts, e2e/support/**]
-status: active
-cycles: 0
+status: complete
+cycles: 1
 ---
 # PHASE1-S4c2b — BO-04's variants and modifiers
 
@@ -411,6 +411,26 @@ is rejected.** The fixes stay inside `owns`.
 run test:e2e:all` after the last mutation is reverted. Commit on this branch. Append a *Round 2* section to the
 Handoff: for each fix, what changed, the red you observed, and the new counts. End it `DONE` or `BLOCKED: <question>`,
 then ping the lead.
+
+## Round 2 lead review and acceptance (2026-10-27)
+
+At `b92ae09`, round 2 changed only `OptionSections.tsx` (one line), `model.ts` (`setOptionName`) and
+`item-options.test.tsx`, adding tests and editing none. I read the diff against the rulings:
+- **F1.** The collapsed row takes its name from `form.original`.
+- **F2.** A duplicate refusal on the edited row is kept through the recheck, while `empty`, `long` and `control` still
+  clear.
+
+**The red proofs, repeated by the lead.** I applied each mutation to round 2's code, ran the file, then restored it
+with `git checkout`:
+- **F1:** `name = row.name.trim()`. The variant and modifier rename-then-remove cases failed.
+- **F2:** always clear the edited row's refusal first. The case-only, surrounding-spaces and other-held-name cases
+  failed.
+
+**Checks on this tree, run by the lead:** `npm run verify` 141 files, 5181 tests; `npm run test:e2e:all` 98 passed.
+
+This is a fully ruled fix round whose fixes are the review's own, so the lead reviewed it instead of a second review
+round. **Complete.** `touches: money, boundaries`: the owner looks at BO-04 with options served before merge. No one
+has yet seen the layout.
 
 ## Handoff
 
