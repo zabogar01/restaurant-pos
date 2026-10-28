@@ -152,7 +152,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - **PHASE1-S4c2b**, BO-04's variants and modifiers (the two lists, DESIGN-020 round 2's Keep rules) — depends on
       S4c2a — complete, merged 2026-10-28 as PR #149.
     - **PHASE1-S5**, the 86 toggle: two domain commands and routes, BO-03's row action (C1 §3, DESIGN-019 F2, F7) —
-      depends on S4c2b — dispatched 2026-10-28.
+      depends on S4c2b — complete 2026-10-28, not pushed.
     - **S6** (presets), **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),

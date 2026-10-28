@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-28 (#149 S4c2b and #150 merged; **S5 round 2**): `development` at `cf685d1`; dev `pos` at `0013`. Builder
-`phase1-s5` resumed for the review's F1. Journal: 2026-10-27.
+2026-10-28 (#149 S4c2b and #150 merged; **S5 complete, not pushed**): `development` at `cf685d1`; dev `pos` at
+`0013`. Nothing running. The push waits on the owner's word. Journal: 2026-10-27.
 
 ## Phase and gates
 
@@ -52,9 +52,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE1-S5 round 2 building.** R1 `9c67317` after one BLOCKED (`contracts/src/index.ts` ruled into `owns`); lead
-  verify 142/5223, e2e 100. Codex F1 (editor controls look live under a pending 86) accepted, ruled (`1ec7ca7`). C1's S5-5 red was imprecise; the builder's
-  writer-side mutation accepted. The classifier refuses a push without the owner's word each time: ask.
+- **PHASE1-S5 complete** at `d1f6daf` (two rounds; one BLOCKED ruled, `contracts/src/index.ts` into `owns`; Codex F1,
+  editor controls live under a pending 86, fixed in r2, lead-reviewed, red repeated; verify 142/5226, e2e:all 100). C1's
+  S5-5 red was imprecise. **Not pushed:** ask the owner. Owner looks at BO-03's 86 served, then merges (no migration).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -144,6 +144,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S5** running: verify, `test:e2e:all`, Codex review, PR on the owner's word; the owner looks at BO-03's 86 served.
+1. **S5** complete: push and PR on the owner's word; after merge remove its worktree and run dir.
 2. **Then S6** (presets; C1 §4), **DESIGN-021** (POS addition, G6; Codex hand-opened, lead runs checks) beside it.
    **Small:** the code-point cleanup between slices.
