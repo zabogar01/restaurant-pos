@@ -182,3 +182,6 @@ export const ReorderItemsRequest = z.strictObject({
 });
 export const ArchiveItemRequest = z.strictObject({ itemId: z.uuid() });
 export const RestoreItemRequest = z.strictObject({ itemId: z.uuid() });
+// The 86 and its reversal are state commands (ADR-012 rule 13): no version, so never CATALOG_CHANGED.
+export const MarkItemUnavailableRequest = z.strictObject({ itemId: z.uuid() });
+export const MarkItemAvailableRequest = z.strictObject({ itemId: z.uuid() });

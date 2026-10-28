@@ -5,6 +5,8 @@ import {
   CreateCategoryRequest,
   CreateItemRequest,
   ErrorCode,
+  MarkItemAvailableRequest,
+  MarkItemUnavailableRequest,
   ReorderCategoriesRequest,
   ReorderItemsRequest,
   RestoreCategoryRequest,
@@ -32,6 +34,8 @@ import {
   createItem,
   editCategory,
   editItem,
+  markItemAvailable,
+  markItemUnavailable,
   readCatalog,
   reorderCategories,
   reorderItems,
@@ -237,5 +241,15 @@ export const backOfficeCatalogRoutes: FastifyPluginAsync = async (api) => {
   api.post(`${BASE}/items/restore`, command, async (request): Promise<ItemResponse> => {
     const { itemId } = parseBody(RestoreItemRequest, request.body);
     return answered(await restoreItem(itemId), (version, item) => ({ version, item: itemView(item) }));
+  });
+
+  api.post(`${BASE}/items/mark-unavailable`, command, async (request): Promise<ItemResponse> => {
+    const { itemId } = parseBody(MarkItemUnavailableRequest, request.body);
+    return answered(await markItemUnavailable(itemId), (version, item) => ({ version, item: itemView(item) }));
+  });
+
+  api.post(`${BASE}/items/mark-available`, command, async (request): Promise<ItemResponse> => {
+    const { itemId } = parseBody(MarkItemAvailableRequest, request.body);
+    return answered(await markItemAvailable(itemId), (version, item) => ({ version, item: itemView(item) }));
   });
 };

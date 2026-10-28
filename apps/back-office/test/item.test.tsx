@@ -512,9 +512,10 @@ describe('AC 18. BO-03’s two new controls', () => {
       'New item in Mains',
     ]);
     expect(controls(categoryRow(host, SEASONAL.categoryId))).toEqual(['Rename category Seasonal', 'Restore category Seasonal']);
-    expect(controls(itemRow(host, BURGER.itemId))).toEqual(['Edit Burger', 'Archive item Burger']);
-    expect(controls(itemRow(host, APPLE.itemId))).toEqual(['Edit Apple', 'Restore item Apple']);
-    expect(controls(itemRow(host, STEW.itemId))).toEqual(['Edit Stew', 'Restore item Stew']);
+    // The availability control (PHASE1-S5) sits in the Availability cell, ahead of the Actions cell.
+    expect(controls(itemRow(host, BURGER.itemId))).toEqual(['Mark Burger 86', 'Edit Burger', 'Archive item Burger']);
+    expect(controls(itemRow(host, APPLE.itemId))).toEqual(['Mark Apple 86', 'Edit Apple', 'Restore item Apple']);
+    expect(controls(itemRow(host, STEW.itemId))).toEqual(['Mark Stew 86', 'Edit Stew', 'Restore item Stew']);
     // Each is a button that names no record in an address, never a link.
     expect([...host.querySelectorAll('[data-edit], [data-new-item]')].map((el) => el.tagName)).toEqual(
       Array(host.querySelectorAll('[data-edit], [data-new-item]').length).fill('BUTTON')

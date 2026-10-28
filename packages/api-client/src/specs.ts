@@ -14,6 +14,8 @@ import {
   DeactivateTenderMethodRequest,
   ItemResponse,
   ItemsResponse,
+  MarkItemAvailableRequest,
+  MarkItemUnavailableRequest,
   PosLoginRequest,
   ReactivateTableRequest,
   ReactivateTenderMethodRequest,
@@ -127,6 +129,11 @@ export const SPECS = {
   '/api/back-office/config/catalog/items/reorder': { body: ReorderItemsRequest, response: ItemsResponse },
   '/api/back-office/config/catalog/items/archive': { body: ArchiveItemRequest, response: ItemResponse },
   '/api/back-office/config/catalog/items/restore': { body: RestoreItemRequest, response: ItemResponse },
+  '/api/back-office/config/catalog/items/mark-unavailable': {
+    body: MarkItemUnavailableRequest,
+    response: ItemResponse,
+  },
+  '/api/back-office/config/catalog/items/mark-available': { body: MarkItemAvailableRequest, response: ItemResponse },
 } as const satisfies Record<RoutePath, Spec>;
 
 type Specs = typeof SPECS;

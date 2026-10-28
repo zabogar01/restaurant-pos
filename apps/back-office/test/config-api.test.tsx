@@ -40,7 +40,7 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
     expect(true).toBe(true);
   });
 
-  it('holds the five table routes, the two settings routes, the five tender-methods routes and the eleven catalog routes at run time, and nothing under /auth/', () => {
+  it('holds the five table routes, the two settings routes, the five tender-methods routes and the thirteen catalog routes at run time, and nothing under /auth/', () => {
     expect(Object.keys(store.config).sort()).toEqual([
       '/api/back-office/config/catalog',
       '/api/back-office/config/catalog/categories/archive',
@@ -50,6 +50,8 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
       '/api/back-office/config/catalog/categories/update',
       '/api/back-office/config/catalog/items/archive',
       '/api/back-office/config/catalog/items/create',
+      '/api/back-office/config/catalog/items/mark-available',
+      '/api/back-office/config/catalog/items/mark-unavailable',
       '/api/back-office/config/catalog/items/reorder',
       '/api/back-office/config/catalog/items/restore',
       '/api/back-office/config/catalog/items/update',
@@ -91,6 +93,8 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
     void store.config['/api/back-office/config/catalog/items/reorder'];
     void store.config['/api/back-office/config/catalog/items/archive'];
     void store.config['/api/back-office/config/catalog/items/restore'];
+    void store.config['/api/back-office/config/catalog/items/mark-unavailable'];
+    void store.config['/api/back-office/config/catalog/items/mark-available'];
     // @ts-expect-error: a route that does not exist is not on the surface.
     void store.config['/api/back-office/config/catalog/items/delete'];
     expect(true).toBe(true);

@@ -75,6 +75,8 @@ const CONFIG: SessionStore['config'] = {
   '/api/back-office/config/catalog/items/reorder': unavailable,
   '/api/back-office/config/catalog/items/archive': unavailable,
   '/api/back-office/config/catalog/items/restore': unavailable,
+  '/api/back-office/config/catalog/items/mark-unavailable': unavailable,
+  '/api/back-office/config/catalog/items/mark-available': unavailable,
 };
 
 export function createFixtureSession(): SessionStore {

@@ -8,6 +8,8 @@ import {
   createItem,
   editCategory,
   editItem,
+  markItemAvailable,
+  markItemUnavailable,
   readCatalog,
   reorderCategories,
   reorderItems,
@@ -811,6 +813,113 @@ describe('audit', () => {
     await restoreCategory(m.drinks.categoryId);
     await createCategory('Mains');
     await archiveItem(UNKNOWN_ID);
+    await markItemUnavailable(m.soup.itemId);
+    await markItemAvailable(m.soup.itemId);
+    await markItemUnavailable(UNKNOWN_ID);
     expect(await count()).toBe(before);
   });
+});
+
+// ---- PHASE1-S5: the 86 toggle (C1 section 3, ADR-012 rules 10, 13, 14) -------------------------
+
+describe('the 86 commands', () => {
+  it('S5-1: marking an available item unavailable writes the flag and advances the version by one; marking it available advances it again', async () => {
+    const m = await menu();
+    const v = await version();
+    expect(m.soup.isAvailable).toBe(true);
+    const marked = await markItemUnavailable(m.soup.itemId);
+    expect(marked).toMatchObject({ kind: 'OK', version: v + 1 });
+    expect((await itemNow(m.soup.itemId)).isAvailable).toBe(false);
+    expect(await version()).toBe(v + 1);
+    const back = await markItemAvailable(m.soup.itemId);
+    expect(back).toMatchObject({ kind: 'OK', version: v + 2 });
+    expect((await itemNow(m.soup.itemId)).isAvailable).toBe(true);
+    expect(await version()).toBe(v + 2);
+  });
+
+  it('S5-2: marking an unavailable item unavailable, or an available one available, writes nothing and advances nothing', async () => {
+    const m = await menu();
+    await markItemUnavailable(m.soup.itemId);
+    const v = await version();
+    const before = await stateOf();
+    const again = await markItemUnavailable(m.soup.itemId);
+    expect(again).toMatchObject({ kind: 'UNCHANGED', version: v });
+    const already = await markItemAvailable(m.salad.itemId);
+    expect(already).toMatchObject({ kind: 'UNCHANGED', version: v });
+    expect(await stateOf()).toBe(before);
+  });
+
+  it('answers the item as stored, with its options untouched', async () => {
+    const m = await menu();
+    const result = await markItemUnavailable(m.soup.itemId);
+    if (result.kind !== 'OK') throw new Error(`expected OK, got ${JSON.stringify(result)}`);
+    expect(result.record).toEqual({ ...m.soup, isAvailable: false });
+  });
+
+  it('S5-3: an editItem built before an 86 of a different item is refused STALE afterwards', async () => {
+    const m = await menu();
+    const built = await version();
+    expect((await markItemUnavailable(m.salad.itemId)).kind).toBe('OK');
+    const before = await stateOf();
+    expect((await editItem(m.soup.itemId, built, { fields: { basePrice: 1n } })).kind).toBe('STALE');
+    expect(await stateOf()).toBe(before);
+  });
+
+  it('S5-4: succeeds after other catalog edits the caller never read, in either direction', async () => {
+    const m = await menu();
+    for (let i = 0; i < 3; i++) await editCategory(m.food.categoryId, await version(), { name: `Food ${i}` });
+    expect((await markItemUnavailable(m.soup.itemId)).kind).toBe('OK');
+    for (let i = 3; i < 6; i++) await editCategory(m.food.categoryId, await version(), { name: `Food ${i}` });
+    expect((await markItemAvailable(m.soup.itemId)).kind).toBe('OK');
+  });
+
+  it.each([['markItemUnavailable', markItemUnavailable], ['markItemAvailable', markItemAvailable]])(
+    'S5-5: %s waits for a holder of the row FOR SHARE, then completes',
+    async (_name, run) => {
+      const m = await menu();
+      if (run === markItemAvailable) await markItemUnavailable(m.soup.itemId);
+      const start = await version();
+      const owner = await ownerClient();
+      let settled = false;
+      let result: Promise<CatalogOutcome<CatalogItem>> | undefined;
+      try {
+        await owner.query('BEGIN');
+        await owner.query('SELECT version FROM catalog_revision FOR SHARE');
+        result = run(m.soup.itemId).finally(() => { settled = true; });
+        expect(await untilWaiting(), 'the 86 was waiting').toBeGreaterThanOrEqual(1);
+        expect(await waitingStatements()).toEqual(['SELECT version FROM catalog_revision FOR UPDATE']);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        expect(settled, 'the 86 returned before the holder committed').toBe(false);
+        await owner.query('COMMIT');
+        expect(await result).toMatchObject({ kind: 'OK', version: start + 1 });
+      } finally {
+        await owner.query('ROLLBACK').catch(() => undefined);
+        await owner.end();
+        await result?.catch(() => undefined);
+      }
+    }
+  );
+
+  it('S5-6: an archived item, or one in an archived category, may be marked either way, and the flag is kept through a restore', async () => {
+    const m = await menu();
+    await archiveItem(m.salad.itemId);
+    await archiveCategory(m.food.categoryId);
+    const v = await version();
+    expect(await markItemUnavailable(m.salad.itemId)).toMatchObject({ kind: 'OK', version: v + 1 });
+    expect(await markItemUnavailable(m.soup.itemId)).toMatchObject({ kind: 'OK', version: v + 2 });
+    expect((await itemNow(m.salad.itemId)).isActive).toBe(false);
+    await restoreItem(m.salad.itemId);
+    expect((await itemNow(m.salad.itemId)).isAvailable).toBe(false);
+    expect(await markItemAvailable(m.soup.itemId)).toMatchObject({ kind: 'OK' });
+  });
+
+  it.each([['markItemUnavailable', markItemUnavailable], ['markItemAvailable', markItemAvailable]])(
+    '%s of an unknown id is NOT_FOUND, and nothing advances or is created',
+    async (_name, run) => {
+      await menu();
+      const before = await stateOf();
+      expect(await run(UNKNOWN_ID)).toEqual({ kind: 'NOT_FOUND' });
+      expect(await stateOf()).toBe(before);
+    }
+  );
 });

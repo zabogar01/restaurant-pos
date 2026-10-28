@@ -51,6 +51,8 @@ export function configApi(api: OfficeApi): ConfigApi {
     '/api/back-office/config/catalog/items/reorder': api['/api/back-office/config/catalog/items/reorder'],
     '/api/back-office/config/catalog/items/archive': api['/api/back-office/config/catalog/items/archive'],
     '/api/back-office/config/catalog/items/restore': api['/api/back-office/config/catalog/items/restore'],
+    '/api/back-office/config/catalog/items/mark-unavailable': api['/api/back-office/config/catalog/items/mark-unavailable'],
+    '/api/back-office/config/catalog/items/mark-available': api['/api/back-office/config/catalog/items/mark-available'],
   };
 }
 
@@ -94,5 +96,9 @@ export function officeApi(client: ApiClient): OfficeApi {
     '/api/back-office/config/catalog/items/reorder': (body) => client.request(ROUTES.catalogItemsReorder, body),
     '/api/back-office/config/catalog/items/archive': (body) => client.request(ROUTES.catalogItemsArchive, body),
     '/api/back-office/config/catalog/items/restore': (body) => client.request(ROUTES.catalogItemsRestore, body),
+    '/api/back-office/config/catalog/items/mark-unavailable': (body) =>
+      client.request(ROUTES.catalogItemsMarkUnavailable, body),
+    '/api/back-office/config/catalog/items/mark-available': (body) =>
+      client.request(ROUTES.catalogItemsMarkAvailable, body),
   };
 }

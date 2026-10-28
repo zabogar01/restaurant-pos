@@ -210,3 +210,42 @@ test('M4. an item made through the domain shows its base price with dot grouping
   await expect(row).toContainText('0 variants · 0 modifiers');
   expect((await counts(office)).items).toBeGreaterThanOrEqual(1);
 });
+
+test('M5. a manager marks an item 86 and makes it available again from its row, at once, with one request each, and the database agrees', async ({
+  world,
+  oneProfile,
+}) => {
+  const manager = await world.people.manager();
+  const { office } = oneProfile;
+  const owner = await made(unique('Mains'));
+  const name = unique('Soup');
+  const outcome = await createItem({ categoryId: owner.categoryId, name, basePrice: 25000n, variants: [], modifiers: [] });
+  if (outcome.kind !== 'OK') throw new Error(`could not make item ${name}`);
+  const itemId = outcome.record.itemId;
+  const stored = async () => {
+    const snapshot = await readCatalog();
+    return { version: snapshot.version, isAvailable: snapshot.items.find((i) => i.itemId === itemId)!.isAvailable };
+  };
+  await openMenu(office, manager);
+  const row = office.locator('tr[data-item]', { hasText: name });
+  await expect(row).toContainText('Available');
+  const before = await stored();
+  expect(before.isAvailable).toBe(true);
+
+  // 86: no form, no confirmation, one request; the row says so and focus lands on its Edit.
+  await button(office, `Mark ${name} 86`).click();
+  await expect(status(office)).toHaveText(`${name} is now marked 86. At the POS it is disabled in place, not removed.`);
+  await expect(row).toContainText('86 · Unavailable');
+  await expect(button(office, `Edit ${name}`)).toBeFocused();
+  expect(sent(oneProfile, 'items/mark-unavailable')).toBe(1);
+  expect(await stored()).toEqual({ version: before.version + 1, isAvailable: false });
+
+  // Make available: the reverse, one request, and the version moves again.
+  await button(office, `Make available ${name}`).click();
+  await expect(status(office)).toHaveText(`${name} is available again.`);
+  await expect(row).toContainText('Available');
+  await expect(button(office, `Edit ${name}`)).toBeFocused();
+  expect(sent(oneProfile, 'items/mark-available')).toBe(1);
+  expect(sent(oneProfile, 'items/mark-unavailable')).toBe(1);
+  expect(await stored()).toEqual({ version: before.version + 2, isAvailable: true });
+});

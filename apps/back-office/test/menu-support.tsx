@@ -14,6 +14,8 @@ export const CATEGORY_RESTORE = 'POST /api/back-office/config/catalog/categories
 export const ITEM_REORDER = 'POST /api/back-office/config/catalog/items/reorder';
 export const ITEM_ARCHIVE = 'POST /api/back-office/config/catalog/items/archive';
 export const ITEM_RESTORE = 'POST /api/back-office/config/catalog/items/restore';
+export const ITEM_86 = 'POST /api/back-office/config/catalog/items/mark-unavailable';
+export const ITEM_AVAILABLE = 'POST /api/back-office/config/catalog/items/mark-available';
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
