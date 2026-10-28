@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-28 (#149 S4c2b and #150 merged; **S5 complete, not pushed**): `development` at `cf685d1`; dev `pos` at
-`0013`. Nothing running. The push waits on the owner's word. Journal: 2026-10-27.
+2026-10-28 (#149 S4c2b and #150 merged; **S5 complete, PR #151**): `development` at `cf685d1`; dev `pos` at `0013`.
+Nothing running. **Open for the owner: #151 (look at BO-03's 86 served) and this lead branch's PR.** Journal: 2026-10-27.
 
 ## Phase and gates
 
@@ -43,18 +43,18 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
   **before reporting or dispatching**. `0013` applied 2026-10-26; no lockfile change since.
 - **Guard hooks** current (`--check` 2026-10-27); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1027d`** (from `cf685d1`, not pushed). Cut each
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1027d`** (from `cf685d1`), pushed with its PR. Cut each
   new lead branch from `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`. The lead
   pushes task and lead branches and opens PRs (owner, DECISIONS 10-21). **Run `gh pr view <n> --json state` as its own
   step before any follow-up push.**
-- **Task worktree** `../restaurant-pos-wt/PHASE1-S5` (S4c2b's removed 10-28). Not the lead's:
+- **Task worktree** `../restaurant-pos-wt/PHASE1-S5` (pushed; remove with its run dir after merge). Not the lead's:
   `../restaurant-pos-design`, `keen-chebyshev-ccf255`, branch `setting/add-permission`.
 
 ## Running tasks and agents
 
 - **PHASE1-S5 complete** at `d1f6daf` (two rounds; one BLOCKED ruled, `contracts/src/index.ts` into `owns`; Codex F1,
   editor controls live under a pending 86, fixed in r2, lead-reviewed, red repeated; verify 142/5226, e2e:all 100). C1's
-  S5-5 red was imprecise. **Not pushed:** ask the owner. Owner looks at BO-03's 86 served, then merges (no migration).
+  S5-5 red was imprecise. **PR #151.** Owner looks at BO-03's 86 served, then merges (no migration). Ask before pushing.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -144,6 +144,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S5** complete: push and PR on the owner's word; after merge remove its worktree and run dir.
+1. **After #151 merges:** fast-forward, remove S5's worktree and run dir; write S6 (presets).
 2. **Then S6** (presets; C1 §4), **DESIGN-021** (POS addition, G6; Codex hand-opened, lead runs checks) beside it.
    **Small:** the code-point cleanup between slices.
