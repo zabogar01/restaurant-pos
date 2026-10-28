@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-28 (#149 S4c2b and #150 merged; **S5 dispatched**): `development` at `cf685d1`; dev `pos` at `0013`. Builder
-`phase1-s5` (Sonnet, interactive) running. Journal: 2026-10-27, 2026-10-28.
+2026-10-28 (#149 S4c2b and #150 merged; **S5 round 2**): `development` at `cf685d1`; dev `pos` at `0013`. Builder
+`phase1-s5` resumed for the review's F1. Journal: 2026-10-27.
 
 ## Phase and gates
 
@@ -52,9 +52,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE1-S5 building** (Herdr `phase1-s5`, Sonnet; Codex reviews): two domain commands and routes (C1 §3, its six
-  cases), BO-03's 86/Make available with F2, F7. Routes `items/mark-unavailable`, `items/mark-available` (lead ruling).
-  The classifier refuses a push without the owner's word each time: ask before pushing.
+- **PHASE1-S5 round 2 building.** R1 `9c67317` after one BLOCKED (`contracts/src/index.ts` ruled into `owns`); lead
+  verify 142/5223, e2e 100. Codex F1 (editor controls look live under a pending 86) accepted, ruled (`1ec7ca7`). C1's S5-5 red was imprecise; the builder's
+  writer-side mutation accepted. The classifier refuses a push without the owner's word each time: ask.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
