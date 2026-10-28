@@ -61,4 +61,6 @@ export const ROUTE_TABLE = [
   { method: 'POST', path: '/api/back-office/config/catalog/items/reorder', interactive: true },
   { method: 'POST', path: '/api/back-office/config/catalog/items/archive', interactive: true },
   { method: 'POST', path: '/api/back-office/config/catalog/items/restore', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/items/mark-unavailable', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/items/mark-available', interactive: true },
 ] as const satisfies readonly RouteEntry[];

@@ -107,10 +107,32 @@ describe('AC 2. grouping, order and counts', () => {
     );
   });
 
-  it('has no 86 or Make available control yet (S5); Edit and New item arrived with BO-04', async () => {
+  it('has one availability control on every item row, archived and hidden ones included, beside Edit and New item', async () => {
     const host = await open();
     const names = [...host.querySelectorAll('button, a')].map((el) => el.getAttribute('aria-label') ?? el.textContent ?? '');
-    expect(names.filter((n) => /\b86\b|Make available/.test(n))).toEqual([]);
+    expect(names.filter((n) => /\b86\b|Make available/.test(n))).toEqual([
+      'Mark Burger 86',
+      'Mark Item 2 86',
+      'Mark Item 10 86',
+      'Mark Apple 86',
+      'Make available Soda',
+      'Mark Pie 86',
+      'Mark Stew 86',
+    ]);
+    // Exactly one per item row, a button, labelled for its state and named to begin with the label.
+    for (const item of MENU_ITEMS) {
+      const controls = itemRow(host, item.itemId).querySelectorAll<HTMLElement>('[data-availability]');
+      expect(controls.length, item.name).toBe(1);
+      const control = controls[0]!;
+      expect(control.tagName).toBe('BUTTON');
+      expect(control.getAttribute('data-availability')).toBe(item.itemId);
+      expect(control.textContent).toBe(item.isAvailable ? '86' : 'Make available');
+      expect(control.getAttribute('aria-label')).toBe(
+        item.isAvailable ? `Mark ${item.name} 86` : `Make available ${item.name}`
+      );
+      expect(control.getAttribute('aria-disabled')).toBeNull();
+      expect(control.hasAttribute('disabled')).toBe(false);
+    }
     expect(names.filter((n) => /^Edit |^New item/.test(n))).toEqual([
       'New item in Mains',
       'Edit Burger',

@@ -19,6 +19,8 @@ import {
   ModifierView,
   OptionName,
   ReorderCategoriesRequest,
+  MarkItemAvailableRequest,
+  MarkItemUnavailableRequest,
   ReorderItemsRequest,
   RestoreCategoryRequest,
   RestoreItemRequest,
@@ -123,6 +125,8 @@ describe('the requests', () => {
     expect(accepts(ReorderItemsRequest, { categoryId: ID, expectedVersion: 1, itemIds: [ID2] })).toBe(true);
     expect(accepts(ArchiveItemRequest, { itemId: ID })).toBe(true);
     expect(accepts(RestoreItemRequest, { itemId: ID })).toBe(true);
+    expect(accepts(MarkItemUnavailableRequest, { itemId: ID })).toBe(true);
+    expect(accepts(MarkItemAvailableRequest, { itemId: ID })).toBe(true);
   });
 
   it('7. an extra key at the top level of each request is refused', () => {
@@ -137,6 +141,8 @@ describe('the requests', () => {
       [ReorderItemsRequest, { categoryId: ID, expectedVersion: 1, itemIds: [ID2] }],
       [ArchiveItemRequest, { itemId: ID }],
       [RestoreItemRequest, { itemId: ID }],
+      [MarkItemUnavailableRequest, { itemId: ID }],
+      [MarkItemAvailableRequest, { itemId: ID }],
     ];
     for (const [schema, body] of bodies) {
       expect(accepts(schema, body)).toBe(true);
@@ -146,6 +152,11 @@ describe('the requests', () => {
 
   it('7. a malformed uuid, and a version that is negative, fractional, a string or missing, are refused', () => {
     expect(accepts(ArchiveItemRequest, { itemId: 'not-a-uuid' })).toBe(false);
+    for (const schema of [MarkItemUnavailableRequest, MarkItemAvailableRequest]) {
+      expect(accepts(schema, { itemId: 'not-a-uuid' })).toBe(false);
+      expect(accepts(schema, {})).toBe(false);
+      expect(accepts(schema, { itemId: ID, expectedVersion: 1 })).toBe(false);
+    }
     expect(accepts(ReorderCategoriesRequest, { expectedVersion: 1, categoryIds: ['nope'] })).toBe(false);
     for (const expectedVersion of [-1, 1.5, '1']) {
       expect(accepts(UpdateCategoryRequest, { categoryId: ID, expectedVersion, name: 'x' })).toBe(false);

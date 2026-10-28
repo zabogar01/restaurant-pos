@@ -14,7 +14,7 @@ import { activeItemScope, sameName, scopeOfCategories } from './group.js';
 import { checkCategoryName, type NameError } from './name.js';
 
 // BO-03's behaviour, apart from how it is drawn: the grouped list, the category form, the two
-// reorders, the four state commands, and what each answer does (consult C2 section 6, DESIGN-019
+// reorders, the six state commands, and what each answer does (consult C2 section 6, DESIGN-019
 // and `D`'s configuration-form rules, copied from BO-05's and BO-08's models). It sends a
 // command once and never again: a resend is the manager's own press of Save, Create, Save order
 // or a row action. It never infers success from a reread. The record a command answers is applied
@@ -25,7 +25,9 @@ import { checkCategoryName, type NameError } from './name.js';
 // most one editor is open: the category form (create or rename), or a reorder (of the
 // categories, or of the items of one category). Every opener goes through `leave`, which closes
 // a clean editor and asks about a dirty or uncertain one, and every opener is inert while the
-// slot is full. 86 and Make available are not here (S5).
+// slot is full. 86 and Make available (PHASE1-S5) are the exception: they act at once, over an open
+// editor and its draft too (DESIGN-019 round 2, F7), and so never go through `leave`; they are
+// still inert while the slot is full.
 //
 // **BO-04 is a screen of its own** (PHASE1-S4c2a). *Edit* and *New item* go through `leave` once,
 // hand BO-04 its subject (`openItemEditor`), and BO-04 builds on its own read. BO-04 hands back an
@@ -39,7 +41,10 @@ import { checkCategoryName, type NameError } from './name.js';
 // step ahead, or equal. Otherwise it keeps the standing version, so the next edit opened from
 // the list is refused `CATALOG_CHANGED` and rereads. An editor carries the standing version at
 // the moment it opens (`base`). A reread alone never moves it: only an answer, an unchanged
-// answer, Keep my changes or Use current menu does (ADR-012 rule 3).
+// answer, Keep my changes or Use current menu does (ADR-012 rule 3). The one exception is this
+// screen's own 86: when its answer is exactly the standing version plus one, an open editor whose
+// `base` was that standing version advances with the list, so the draft does not go stale on its
+// own page's 86.
 //
 // One model belongs to one working area. A different manager's sign-in changes the area's
 // key, React drops the component, and its model goes with it: nothing of it is announced or
@@ -129,7 +134,9 @@ type CommandKind =
   | 'archive-category'
   | 'restore-category'
   | 'archive-item'
-  | 'restore-item';
+  | 'restore-item'
+  | 'eighty-six-item'
+  | 'make-available-item';
 
 interface Command {
   kind: CommandKind;
@@ -150,8 +157,9 @@ export type PageStatus =
   | { kind: 'order-saved'; scope: 'categories' }
   | { kind: 'order-saved'; scope: 'items'; category: string }
   | { kind: 'unchanged'; version: number }
-  | { kind: 'pending'; action: 'archive' | 'restore'; name: string }
+  | { kind: 'pending'; action: 'archive' | 'restore' | 'eighty-six' | 'make-available'; name: string }
   | { kind: 'archived' | 'restored'; subject: 'category' | 'item'; name: string; hidden: boolean }
+  | { kind: 'eighty-sixed' | 'made-available'; name: string; hidden: boolean }
   | { kind: 'failed' | 'session'; name: string }
   | { kind: 'unknown'; name: string; unread: boolean }
   | { kind: 'duplicate'; subject: 'category' | 'item'; id: string; name: string; reread: boolean }
@@ -209,6 +217,8 @@ const CATEGORY_RESTORE = '/api/back-office/config/catalog/categories/restore' as
 const ITEM_REORDER = '/api/back-office/config/catalog/items/reorder' as const;
 const ITEM_ARCHIVE = '/api/back-office/config/catalog/items/archive' as const;
 const ITEM_RESTORE = '/api/back-office/config/catalog/items/restore' as const;
+const ITEM_86 = '/api/back-office/config/catalog/items/mark-unavailable' as const;
+const ITEM_AVAILABLE = '/api/back-office/config/catalog/items/mark-available' as const;
 
 function upsertCategories(rows: readonly CategoryView[], record: CategoryView): CategoryView[] {
   return rows.some((row) => row.categoryId === record.categoryId)
@@ -614,7 +624,9 @@ export function createMenuModel(config: ConfigApi) {
     if (meaning === 'saved' || meaning === 'unchanged') {
       if (answer.kind !== 'ok') return;
       const { applied } = answer;
+      const standing = state.version;
       apply(applied);
+      carryBase(command, standing, applied.version);
       const editor = editorOf(command);
       if (form && editor === null) {
         set({ command: done, page: clearWaiting() });
@@ -710,6 +722,19 @@ export function createMenuModel(config: ConfigApi) {
     }
   }
 
+  /**
+   * An 86 or Make available is this page's own write and touches neither a rename nor a reorder
+   * scope. When its answer is exactly the standing version plus one, an open editor that built on
+   * the standing version moves with the list; otherwise the editor keeps its base and its Save
+   * meets `CATALOG_CHANGED` (DESIGN-019 round 2, F7).
+   */
+  function carryBase(command: Command, standing: number | null, answered: number): void {
+    if (command.kind !== 'eighty-six-item' && command.kind !== 'make-available-item') return;
+    const { editor } = state;
+    if (standing === null || answered !== standing + 1 || editor === null || editor.base !== standing) return;
+    set({ editor: { ...editor, base: answered } });
+  }
+
   /** The page's sentence and focus for a command that was answered, and applied to the list. */
   function resultOf(command: Command, applied: Applied, meaning: 'saved' | 'unchanged'): Partial<MenuState> {
     const category = applied.categories[0];
@@ -747,6 +772,19 @@ export function createMenuModel(config: ConfigApi) {
             hidden: owner?.isActive === false,
           },
           // The row's Edit, as DESIGN-019 says: it is live on active and archived items alike.
+          focus: aim({ itemAction: command.recordId! }),
+        };
+      }
+      case 'eighty-six-item':
+      case 'make-available-item': {
+        const owner = item === undefined ? undefined : state.categories.find((c) => c.categoryId === item.categoryId);
+        return {
+          page: {
+            kind: command.kind === 'eighty-six-item' ? 'eighty-sixed' : 'made-available',
+            name: item?.name ?? command.name,
+            // Hidden from the POS by its own archive or its category's (F2).
+            hidden: item?.isActive === false || owner?.isActive === false,
+          },
           focus: aim({ itemAction: command.recordId! }),
         };
       }
@@ -880,6 +918,28 @@ export function createMenuModel(config: ConfigApi) {
     send(command, () =>
       call(
         archive ? config[ITEM_ARCHIVE]({ itemId }) : config[ITEM_RESTORE]({ itemId }),
+        (v) => ({ version: v.version, categories: [], items: [v.item] })
+      )
+    );
+  }
+
+  /** 86 or Make available: no version is sent, and an open editor is not asked about. */
+  function changeItemAvailability(itemId: string): void {
+    const row = state.items.find((i) => i.itemId === itemId);
+    if (row === undefined || busy() || state.decision) return;
+    const eightySix = row.isAvailable;
+    set({ page: { kind: 'pending', action: eightySix ? 'eighty-six' : 'make-available', name: row.name }, focus: aim('status') });
+    const command: Command = {
+      kind: eightySix ? 'eighty-six-item' : 'make-available-item',
+      recordId: itemId,
+      name: row.name,
+      editorKey: null,
+      expected: null,
+      discarded: false,
+    };
+    send(command, () =>
+      call(
+        eightySix ? config[ITEM_86]({ itemId }) : config[ITEM_AVAILABLE]({ itemId }),
         (v) => ({ version: v.version, categories: [], items: [v.item] })
       )
     );
@@ -1041,6 +1101,11 @@ export function createMenuModel(config: ConfigApi) {
     changeItemState(itemId: string): void {
       if (!busy()) leave(() => changeItemState(itemId), true);
     },
+    /**
+     * 86 or Make available, from the item's row: sent at once, with no confirmation, over an open
+     * editor and its draft too. It does not go through `leave`.
+     */
+    changeItemAvailability,
     /**
      * Edit on an item row, or New item on an active category's header: BO-04 is opened for that
      * subject. The opener goes through `leave` once, so a dirty inline editor meets the departure

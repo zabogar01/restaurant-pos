@@ -15,6 +15,8 @@ export {
   ItemResponse,
   ItemView,
   ItemsResponse,
+  MarkItemAvailableRequest,
+  MarkItemUnavailableRequest,
   ModifierChanges,
   ModifierPriceChange,
   ModifierView,

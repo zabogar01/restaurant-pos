@@ -4,9 +4,9 @@
 // text, an error code or a submitted value never becomes visible text. The departure and logout
 // decisions and M-6 stay the one source in `../copy.ts`.
 //
-// Left out on purpose (PHASE1-S4c1 ruling 1): the 86 and Make available rows (S5), the
-// kitchen-emergency sentences, BO-01's held-draft sentence and the Phase 4 lease refusal. The Edit
-// and New item rows arrived with BO-04 (PHASE1-S4c2a).
+// Left out on purpose (PHASE1-S4c1 ruling 1): the kitchen-emergency sentences, BO-01's held-draft
+// sentence and the Phase 4 lease refusal. The Edit and New item rows arrived with BO-04
+// (PHASE1-S4c2a), the 86 and Make available rows with PHASE1-S5.
 
 export type NoticeCopy = { title: string; body: string };
 
@@ -52,6 +52,10 @@ export const AVAILABLE = 'Available';
 export const UNAVAILABLE = '86 · Unavailable';
 export const archiveItemName = (name: string): string => `Archive item ${name}`;
 export const restoreItemName = (name: string): string => `Restore item ${name}`;
+export const EIGHTY_SIX = '86';
+export const MAKE_AVAILABLE = 'Make available';
+export const eightySixName = (name: string): string => `Mark ${name} 86`;
+export const makeAvailableName = (name: string): string => `Make available ${name}`;
 export const HIDDEN_CATEGORY = 'Hidden from the POS · category archived';
 export const HIDDEN_ITEM = 'Hidden from the POS · item archived';
 
@@ -142,6 +146,13 @@ export const itemArchived = (name: string, categoryArchivedToo: boolean): string
   `${name} archived. It is kept for history.${categoryArchivedToo ? ITEM_IN_ARCHIVED_CATEGORY : ''}`;
 export const itemRestored = (name: string, categoryArchivedToo: boolean): string =>
   `${name} restored.${categoryArchivedToo ? ITEM_IN_ARCHIVED_CATEGORY : ''}`;
+export const eightySixing = (name: string): string => `Marking ${name} 86…`;
+export const makingAvailable = (name: string): string => `Making ${name} available…`;
+const STAYS_HIDDEN = 'It stays hidden from the POS while it or its category is archived.';
+export const eightySixed = (name: string, hidden: boolean): string =>
+  `${name} is now marked 86. ${hidden ? STAYS_HIDDEN : 'At the POS it is disabled in place, not removed.'}`;
+export const availableAgain = (name: string, hidden: boolean): string =>
+  `${name} is available again.${hidden ? ` ${STAYS_HIDDEN}` : ''}`;
 export const stateUnknown = (name: string): string =>
   `${name}: the outcome could not be confirmed. The menu has been refreshed. Nothing was sent again.`;
 export const stateUnknownUnread = (name: string): string =>

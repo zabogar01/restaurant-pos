@@ -24,6 +24,7 @@ import {
   DEPARTURE_CONTINUE,
   DEPARTURE_CONTINUE_UNCERTAIN,
   EDIT,
+  EIGHTY_SIX,
   EMPTY_BODY,
   EMPTY_CATEGORY,
   EMPTY_CATEGORY_ARCHIVED,
@@ -35,6 +36,7 @@ import {
   LIST_LABEL,
   LIST_PARTIAL,
   LOADING,
+  MAKE_AVAILABLE,
   MENU,
   MOVE_DOWN,
   MOVE_UP,
@@ -69,6 +71,7 @@ import {
   archiveCategoryName,
   archiveItemName,
   archiving,
+  availableAgain,
   categoryArchived,
   categoryHeading,
   categoryRestoreDuplicate,
@@ -77,6 +80,9 @@ import {
   currentName,
   currentOrder,
   editItemName,
+  eightySixName,
+  eightySixed,
+  eightySixing,
   formFailed,
   formSessionRefused,
   itemArchived,
@@ -84,6 +90,8 @@ import {
   itemRestoreDuplicate,
   itemRestored,
   keptNotice,
+  makeAvailableName,
+  makingAvailable,
   moveDownName,
   moveUpName,
   newItemName,
@@ -133,7 +141,17 @@ function pageText(page: PageStatus): string {
     case 'unchanged':
       return unchanged(page.version);
     case 'pending':
-      return page.action === 'archive' ? archiving(page.name) : restoring(page.name);
+      return page.action === 'archive'
+        ? archiving(page.name)
+        : page.action === 'restore'
+          ? restoring(page.name)
+          : page.action === 'eighty-six'
+            ? eightySixing(page.name)
+            : makingAvailable(page.name);
+    case 'eighty-sixed':
+      return eightySixed(page.name, page.hidden);
+    case 'made-available':
+      return availableAgain(page.name, page.hidden);
     case 'archived':
       return page.subject === 'category' ? categoryArchived(page.name) : itemArchived(page.name, page.hidden);
     case 'restored':
@@ -425,6 +443,16 @@ export function Menu({ model }: { model: MenuModel }) {
                           <td className="num">{priceText(item.basePrice)}</td>
                           <td>
                             <span className="menu-availability">{item.isAvailable ? AVAILABLE : UNAVAILABLE}</span>
+                            <button
+                              type="button"
+                              className="office-button small"
+                              data-availability={item.itemId}
+                              aria-label={item.isAvailable ? eightySixName(item.name) : makeAvailableName(item.name)}
+                              {...inertProps(busy)}
+                              onClick={() => model.changeItemAvailability(item.itemId)}
+                            >
+                              {item.isAvailable ? EIGHTY_SIX : MAKE_AVAILABLE}
+                            </button>
                             {reason !== null && (
                               <span className="menu-item-note">{reason === 'category' ? HIDDEN_CATEGORY : HIDDEN_ITEM}</span>
                             )}

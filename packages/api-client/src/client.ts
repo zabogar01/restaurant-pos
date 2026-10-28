@@ -119,6 +119,8 @@ export const ROUTES = {
   catalogItemsReorder: find('/api/back-office/config/catalog/items/reorder'),
   catalogItemsArchive: find('/api/back-office/config/catalog/items/archive'),
   catalogItemsRestore: find('/api/back-office/config/catalog/items/restore'),
+  catalogItemsMarkUnavailable: find('/api/back-office/config/catalog/items/mark-unavailable'),
+  catalogItemsMarkAvailable: find('/api/back-office/config/catalog/items/mark-available'),
 } as const;
 
 interface View {

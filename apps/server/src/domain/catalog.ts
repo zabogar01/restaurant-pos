@@ -739,3 +739,25 @@ export const archiveItem = (itemId: string) => setItemActive(itemId, false);
  * is restored.
  */
 export const restoreItem = (itemId: string) => setItemActive(itemId, true);
+
+async function setItemAvailable(itemId: string, isAvailable: boolean): Promise<CatalogOutcome<CatalogItem>> {
+  return catalogWrite(UNVERSIONED, async (tx) => {
+    const current = (await loadItems(tx, 'id = $1', [itemId]))[0];
+    if (current === undefined) return refuse('NOT_FOUND');
+    // FR-G13's check (refuse an 86 of an item on a pending line of a quick-sale order
+    // holding an active CheckoutLease) goes here in Phase 4, after the lock and before the
+    // write (consult C1 section 3.1). Nothing is placed between them that it would move.
+    if (current.isAvailable === isAvailable) return { wrote: false, record: current };
+    await tx.query('UPDATE menu_item SET is_available = $2 WHERE id = $1', [itemId, isAvailable]);
+    return { wrote: true, record: await loadItem(tx, itemId) };
+  });
+}
+
+/**
+ * An 86 (ADR-012 rule 13): carries no version, is never `STALE`. An archived item, or one in
+ * an archived category, may be marked; the flag is kept for when it is restored.
+ */
+export const markItemUnavailable = (itemId: string) => setItemAvailable(itemId, false);
+
+/** The reversal of an 86, on the same terms. */
+export const markItemAvailable = (itemId: string) => setItemAvailable(itemId, true);

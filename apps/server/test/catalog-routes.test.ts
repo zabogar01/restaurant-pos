@@ -175,6 +175,8 @@ describe('the eleven routes', () => {
       `POST ${BASE}/items/reorder true`,
       `POST ${BASE}/items/archive true`,
       `POST ${BASE}/items/restore true`,
+      `POST ${BASE}/items/mark-unavailable true`,
+      `POST ${BASE}/items/mark-available true`,
     ]);
   });
 
@@ -1010,6 +1012,83 @@ describe('the audit trail', () => {
     await post('categories/create', { name: '' });
     await post('categories/update', { categoryId: category.categoryId, expectedVersion: 0, name: 'Stale' });
     await post('items/archive', { itemId: UNKNOWN_ID });
+    await post('items/mark-unavailable', { itemId: item.itemId });
+    await post('items/mark-available', { itemId: item.itemId });
+    await post('items/mark-unavailable', { itemId: UNKNOWN_ID });
     expect(await auditCount()).toBe(before);
+  });
+});
+
+// ---- PHASE1-S5: the 86 routes ---------------------------------------------------------------------
+
+describe('the 86 routes', () => {
+  const ROUTES_86 = [
+    ['items/mark-unavailable', false],
+    ['items/mark-available', true],
+  ] as const;
+
+  it.each(ROUTES_86)('%s answers { version, item } with isAvailable as asked, and the following read holds the item', async (path, asked) => {
+    const category = await madeCategory('Mains');
+    const item = await madeItem(category.categoryId, 'Soup');
+    if (asked) expect((await post('items/mark-unavailable', { itemId: item.itemId })).statusCode).toBe(200);
+    const v = await versionNow();
+    const res = await post(path, { itemId: item.itemId });
+    expect(res.statusCode, res.body).toBe(200);
+    const body = res.json() as { version: number; item: Item };
+    expect(body.version).toBe(v + 1);
+    expect(body.item).toMatchObject({ itemId: item.itemId, isAvailable: asked });
+    const read_ = catalogOf(await read());
+    expect(read_.version).toBe(v + 1);
+    expect(read_.items.find((i) => i.itemId === item.itemId)).toEqual(body.item);
+  });
+
+  it.each(ROUTES_86)('%s as a no-op answers 200 with the version unchanged and writes nothing', async (path, asked) => {
+    const category = await madeCategory('Mains');
+    const item = await madeItem(category.categoryId, 'Soup');
+    if (!asked) expect((await post('items/mark-unavailable', { itemId: item.itemId })).statusCode).toBe(200);
+    const v = await versionNow();
+    const before = await whole();
+    const res = await post(path, { itemId: item.itemId });
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json()).toMatchObject({ version: v, item: { itemId: item.itemId, isAvailable: asked } });
+    expect(await whole()).toEqual(before);
+  });
+
+  it.each(ROUTES_86)('%s carries no version: it succeeds after other edits, and an extra key or a missing itemId is 400', async (path) => {
+    const category = await madeCategory('Mains');
+    const item = await madeItem(category.categoryId, 'Soup');
+    for (let i = 0; i < 2; i++) {
+      const edit = await post('categories/update', { categoryId: category.categoryId, expectedVersion: await versionNow(), name: `Mains ${i}` });
+      expect(edit.statusCode).toBe(200);
+    }
+    const before = await whole();
+    for (const payload of [{ itemId: item.itemId, extra: 1 }, { itemId: item.itemId, expectedVersion: 1 }, {}, { itemId: 'x' }]) {
+      const res = await post(path, payload);
+      expect([res.statusCode, res.body], JSON.stringify(payload)).toEqual([400, VALIDATION]);
+    }
+    expect(await whole()).toEqual(before);
+    expect((await post(path, { itemId: item.itemId })).statusCode).toBe(200);
+  });
+
+  it.each(ROUTES_86)('%s of an unknown id is 404 with a bare body, and writes nothing', async (path) => {
+    await madeRichItem();
+    const before = await whole();
+    const res = await post(path, { itemId: UNKNOWN_ID });
+    expect([res.statusCode, res.body]).toEqual([404, NOT_FOUND]);
+    expect(await whole()).toEqual(before);
+  });
+
+  it.each(ROUTES_86)('%s without a back-office session is 401, and writes nothing', async (path) => {
+    const category = await madeCategory('Mains');
+    const item = await madeItem(category.categoryId, 'Soup');
+    const before = await whole();
+    const res = await inject(app, {
+      method: 'POST',
+      url: `${BASE}/${path}`,
+      payload: { itemId: item.itemId },
+      headers: { 'x-rpos-csrf': 'x'.repeat(43) },
+    });
+    expect([res.statusCode, res.body]).toEqual([401, UNAUTHENTICATED]);
+    expect(await whole()).toEqual(before);
   });
 });
