@@ -519,3 +519,30 @@ The lead's decision on `packages/contracts/src/index.ts`. Everything else is in 
 The lead ruled `packages/contracts/src/index.ts` into owns, and the staged work is now committed as 9c67317 on `agent/phase1-s5` with no further change.
 
 DONE
+
+### Round 2 — the review's F1
+
+**What changed.** `apps/back-office/src/menu/Menu.tsx`, `EditorPanel`: a new `held = command !== null || state.external`
+now governs the draft's controls. The name input is natively `disabled={held}`; the Move up and Move down buttons use
+`inertProps(first/last || held)`; and Save and Save order use `inertProps(saveOff)` with `saveOff = held || chooses ||
+stale-unread`, so they are `aria-disabled` **and** `tabIndex={-1}` (before, only `aria-disabled`, and only on the
+editor's own pending save). `pendingSave` stays for the *Saving…* notice and its focus. No model change: `save` and
+`setDraft` already refused while a command was in flight; the view now shows it.
+
+**Tests** (added to `menu-availability.test.tsx`, none edited): a rename under a held 86 (input disabled, Save
+`aria-disabled` with `tabindex` -1, a press sends nothing; after the answer both are live, the draft is `Main plates`,
+and one Save sends exactly once); a reorder of items under a held Make available (the moves and Save order inert, a press
+on Save order and a move sends nothing, all live after the answer); and a BO-04 case. **The BO-04 case cannot show
+inert editor controls:** `external` is set only after BO-04 is left, which closes any BO-03 editor, and every opener is
+inert while it holds, so no editor can be open with `external` true. The test asserts that instead (the Rename opener
+opens no panel). The `|| state.external` in the view is therefore defensive and has no case of its own; say if you want
+it dropped.
+
+**Red observed.** Before the fix, which is the same state as restoring `pendingSave` as the condition: the rename case
+failed on `disabled` (false, expected true) and the reorder case on Save order's `aria-disabled` (null, expected
+`'true'`). After the fix all pass. No existing assertion changed; the existing tests that touched Save's
+`aria-disabled` still pass with `tabIndex` -1 added.
+
+**Counts.** `npm run verify`: 142 files, 5226 tests (was 5223, +3 cases). `npm run test:e2e:all`: 100 passed.
+
+DONE

@@ -375,6 +375,74 @@ describe('F7. over an open editor', () => {
     await h.settle();
   });
 
+  it('round 2 F1: a rename under a held 86 has its input disabled and Save inert, then live with the draft unchanged', async () => {
+    const host = await open();
+    dirtyRename(host);
+    const held = h.hold(ITEM_86);
+    tap(named(host, mark86('Burger')));
+    await h.settle();
+    expect(nameField(host)!.disabled).toBe(true);
+    const save = named(host, 'Save');
+    expect(save.getAttribute('aria-disabled')).toBe('true');
+    expect(save.getAttribute('tabindex')).toBe('-1');
+    tap(save);
+    await h.settle();
+    expect(h.count(CATEGORY_UPDATE)).toBe(0);
+
+    held.deliver(itemAnswer(6, { ...BURGER, isAvailable: false }));
+    await h.settle();
+    expect(nameField(host)!.disabled).toBe(false);
+    expect(nameField(host)!.value).toBe('Main plates');
+    expect(named(host, 'Save').getAttribute('aria-disabled')).toBeNull();
+    h.reply(CATEGORY_UPDATE, category(7, { ...MAINS, name: 'Main plates' }));
+    tap(named(host, 'Save'));
+    await h.settle();
+    expect(h.count(CATEGORY_UPDATE)).toBe(1);
+  });
+
+  it('round 2 F1: a reorder of items under a held Make available has Save order and the moves inert, then live', async () => {
+    const host = await open();
+    tap(named(host, 'Reorder items in Mains'));
+    const held = h.hold(ITEM_AVAILABLE);
+    tap(named(host, makeAvailable('Soda')));
+    await h.settle();
+    for (const name of ['Move down Burger', 'Move up Item 2', 'Move down Item 2', 'Move up Item 10']) {
+      expect(aria(named(host, name)), name).toBe(true);
+    }
+    const saveOrder = named(host, 'Save order');
+    expect(saveOrder.getAttribute('aria-disabled')).toBe('true');
+    expect(saveOrder.getAttribute('tabindex')).toBe('-1');
+    tap(saveOrder);
+    tap(named(host, 'Move down Burger'));
+    await h.settle();
+    expect(h.count('POST /api/back-office/config/catalog/items/reorder')).toBe(0);
+
+    held.deliver(itemAnswer(6, { ...SODA, isAvailable: true }));
+    await h.settle();
+    expect(aria(named(host, 'Move down Burger'))).toBe(false);
+    expect(aria(named(host, 'Save order'))).toBe(false);
+  });
+
+  it('round 2 F1: with BO-04’s save outstanding no editor can be opened to show live controls', async () => {
+    const host = await open();
+    await editFrom(h, host, 'Item 10');
+    typeInto(nameInput(host), 'Ten');
+    const save = h.hold(ITEM_UPDATE);
+    tap(named(host, 'Save'));
+    await h.settle();
+    const visit = h.hold(READ);
+    tap(named(host, 'Cancel'));
+    tap(named(decision()!, 'Discard'));
+    await h.settle();
+    tap(named(host, 'Rename category Mains'));
+    await h.settle();
+    // The opener is inert while BO-04's save is outstanding, so no editor is open to show it.
+    expect(panel(host)).toBeNull();
+    save.deliver(itemAnswer(6, { ...ITEM_10, name: 'Ten' }));
+    visit.deliver(catalog(6));
+    await h.settle();
+  });
+
   it('Archive with a dirty rename still opens the decision', async () => {
     const host = await open();
     dirtyRename(host);

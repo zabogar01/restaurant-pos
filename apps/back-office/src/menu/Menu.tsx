@@ -531,7 +531,11 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: MenuStat
   const pendingSave = command !== null && !command.discarded && command.editorKey === editor.key;
   const chooses = editor.offered !== null;
   const readOnlyRetry = editor.notice === 'stale-unread' || editor.notice === 'unknown-unread';
-  const saveOff = pendingSave || chooses || editor.notice === 'stale-unread';
+  // The screen has one command slot: any command in flight, or BO-04's save left outstanding,
+  // holds the draft's controls, not only this editor's own save. `pendingSave` stays for the
+  // Saving notice.
+  const held = command !== null || state.external;
+  const saveOff = held || chooses || editor.notice === 'stale-unread';
   const notice = noticeOf(editor, pendingSave);
   const nameOf = (id: string): string =>
     (editor.kind === 'categories' ? categories.find((c) => c.categoryId === id)?.name : items.find((i) => i.itemId === id)?.name) ?? '';
@@ -580,7 +584,7 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: MenuStat
                   autoCapitalize="none"
                   spellCheck={false}
                   value={editor.draft}
-                  disabled={pendingSave}
+                  disabled={held}
                   aria-invalid={editor.error === null ? undefined : true}
                   aria-describedby={editor.error === null ? 'menu-name-help' : 'name-error menu-name-help'}
                   onChange={(event) => model.setDraft(event.currentTarget.value)}
@@ -608,7 +612,7 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: MenuStat
                         data-move={id}
                         data-delta="-1"
                         aria-label={moveUpName(name)}
-                        {...inertProps(first || command !== null)}
+                        {...inertProps(first || held)}
                         onClick={() => model.move(id, -1)}
                       >
                         {MOVE_UP}
@@ -619,7 +623,7 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: MenuStat
                         data-move={id}
                         data-delta="1"
                         aria-label={moveDownName(name)}
-                        {...inertProps(last || command !== null)}
+                        {...inertProps(last || held)}
                         onClick={() => model.move(id, 1)}
                       >
                         {MOVE_DOWN}
@@ -670,7 +674,7 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: MenuStat
             type="submit"
             id="save-menu"
             className="office-button primary"
-            aria-disabled={saveOff ? 'true' : undefined}
+            {...inertProps(saveOff)}
             aria-describedby={chooses ? 'choice-reason' : editor.notice === 'stale-unread' ? 'form-notice' : undefined}
           >
             {editor.kind === 'create' ? CREATE : reorder ? SAVE_ORDER : SAVE}
