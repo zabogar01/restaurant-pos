@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries]
 depends_on: [PHASE1-S4c2b]
 owns: [apps/server/src/domain/catalog.ts, apps/server/src/http/routes/back-office-catalog.ts, apps/server/test/**, packages/contracts/src/catalog.ts, packages/contracts/src/index.ts, packages/contracts/src/routes.ts, packages/contracts/test/**, packages/api-client/src/client.ts, packages/api-client/src/specs.ts, apps/back-office/src/**, apps/back-office/test/**, e2e/tests/menu.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S5 — The 86 toggle
@@ -319,6 +319,45 @@ The lead accepts it. C1's red line for S5-5 is noted as imprecise; it is not edi
 document.
 
 **Not checked by the lead:** BO-03's look with the new control. The owner looks before merge.
+
+## Round 2 — the review's F1 (lead ruling, 2026-10-28)
+
+Codex reviewed `01d9621` (`.agent/reviews/PHASE1-S5-review.md`) and found one P2. **It is accepted.**
+
+**The defect.** `EditorPanel` (`Menu.tsx:531`) disables the name input and makes Save inert only on `pendingSave`, that
+is, a command belonging to this editor. An availability command over an open editor has `editorKey: null`, so while it
+is pending:
+- the name input takes focus but `setDraft` discards the typing;
+- Save and Save order look live but `save` sends nothing.
+
+The one-command rule (ruling 5) is right. The controls simply do not show it. The artifact disables both controls for
+any pending command (`menu.js:74`, `:76`).
+
+**The fix.**
+1. In `EditorPanel`, the controls follow the screen's busy state. The name input and every move control are inert
+   while **any** command is pending or BO-04's save is outstanding: `command !== null || state.external`, or
+   `model.busy()` if that is what the view already reads. Save and Save order are inert on the same condition.
+2. Keep `pendingSave` for what is the editor's own: the *Saving…* notice and its focus.
+3. The patterns, as already ruled:
+   - the name input uses native `disabled`, as BO-03's field already does while its own save is pending (the S4c2b
+     round 2 F3 ruling: fields use `disabled`);
+   - Save, Save order and the move controls use `aria-disabled` and `tabIndex={-1}`.
+4. When the availability answer lands, the controls come back, the draft is unchanged, and the editor's base follows
+   ruling 6.
+
+**Tests** (`menu-availability.test.tsx`; add, edit none):
+- **A rename under a held 86:** the input is disabled and Save is `aria-disabled` with `tabIndex` -1. After the answer,
+  both are live, the draft is unchanged, and a Save sends once.
+- **A reorder of items under a held Make available:** Save order and the move controls are inert, then live after the
+  answer. Pressing Save order while the command is held sends nothing.
+- **BO-04's outstanding save** (`external`) with a rename open: the same controls are inert.
+
+**Red:** restore `pendingSave` as the condition. The rename and reorder cases fail.
+
+**What to do.** Fix it and add the tests, weakening no assertion. Run `npm run verify` and `npm run test:e2e:all` after
+the last mutation is reverted. Commit on this branch. Append a *Round 2* section to the Handoff: what changed, the red
+observed, and the new counts. End it `DONE` or `BLOCKED: <question>`, then ping the lead. Use only the file tools for
+edits.
 
 ## Handoff
 
