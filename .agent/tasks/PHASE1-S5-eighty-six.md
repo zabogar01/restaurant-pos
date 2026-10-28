@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries]
 depends_on: [PHASE1-S4c2b]
 owns: [apps/server/src/domain/catalog.ts, apps/server/src/http/routes/back-office-catalog.ts, apps/server/test/**, packages/contracts/src/catalog.ts, packages/contracts/src/index.ts, packages/contracts/src/routes.ts, packages/contracts/test/**, packages/api-client/src/client.ts, packages/api-client/src/specs.ts, apps/back-office/src/**, apps/back-office/test/**, e2e/tests/menu.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S5 — The 86 toggle
@@ -293,6 +293,33 @@ the lead's omission. The staged change is exactly the two names `MarkItemAvailab
 
 No other change is wanted.
 
+## Lead verify (2026-10-28)
+
+At `9c67317`, in this worktree:
+- **`npm run verify`:** typecheck clean; **142 files, 5223 tests**.
+- **`npm run test:e2e:all`:** **100 passed** (1.3 minutes), Chromium and WebKit.
+
+**Paths and tests.**
+- Every changed path is inside `owns`, as widened by the ruling above.
+- The changed existing tests are `menu.test.tsx:110`, `config-api.test.tsx` and `catalog-routes.test.ts` test 1. All
+  three are listed or anticipated, and each now asserts more than before.
+- `item.test.tsx` AC 18 is the anticipated "exact list of controls" case. The row now begins with *Mark {name} 86*,
+  and the Edit-before-Archive order is still asserted.
+
+**Read by the lead.** `setItemAvailable` follows C1 §3.1:
+- it goes through `catalogWrite(UNVERSIONED, …)`;
+- an unknown id is `NOT_FOUND`;
+- it writes only when the flag differs;
+- the FR-G13 comment sits after the lock and before the write.
+
+**The S5-5 red.** C1's suggested mutation (the holder taking `FOR KEY SHARE`) cannot fail the test: the writer's `FOR
+UPDATE` still conflicts with `FOR KEY SHARE`. The builder's substitute, weakening the writer's own lock in
+`catalogWrite` to `FOR KEY SHARE`, is the mutation that shows ADR-012 rule 14's hazard, and both cases failed under it.
+The lead accepts it. C1's red line for S5-5 is noted as imprecise; it is not edited, because it is the architect's
+document.
+
+**Not checked by the lead:** BO-03's look with the new control. The owner looks before merge.
+
 ## Handoff
 
 **Status: the slice is built and verified in the working tree, but it is not committed, because the pre-commit guard
@@ -450,4 +477,6 @@ driven beyond the Playwright suite.
 
 The lead's decision on `packages/contracts/src/index.ts`. Everything else is in the tree.
 
-BLOCKED: should `packages/contracts/src/index.ts` be added to PHASE1-S5's owned paths so the two request-schema re-exports can be committed?
+The lead ruled `packages/contracts/src/index.ts` into owns, and the staged work is now committed as 9c67317 on `agent/phase1-s5` with no further change.
+
+DONE
