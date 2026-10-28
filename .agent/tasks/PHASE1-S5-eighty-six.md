@@ -5,8 +5,8 @@ category: ui
 touches: [boundaries]
 depends_on: [PHASE1-S4c2b]
 owns: [apps/server/src/domain/catalog.ts, apps/server/src/http/routes/back-office-catalog.ts, apps/server/test/**, packages/contracts/src/catalog.ts, packages/contracts/src/index.ts, packages/contracts/src/routes.ts, packages/contracts/test/**, packages/api-client/src/client.ts, packages/api-client/src/specs.ts, apps/back-office/src/**, apps/back-office/test/**, e2e/tests/menu.spec.ts, e2e/support/**]
-status: active
-cycles: 0
+status: complete
+cycles: 1
 ---
 # PHASE1-S5 — The 86 toggle
 
@@ -358,6 +358,26 @@ any pending command (`menu.js:74`, `:76`).
 the last mutation is reverted. Commit on this branch. Append a *Round 2* section to the Handoff: what changed, the red
 observed, and the new counts. End it `DONE` or `BLOCKED: <question>`, then ping the lead. Use only the file tools for
 edits.
+
+## Round 2 lead review and acceptance (2026-10-28)
+
+At `e926a77`, round 2 changed only `Menu.tsx` (`EditorPanel`) and `menu-availability.test.tsx`, adding three cases and
+editing none. Read against the ruling:
+- `held = command !== null || state.external` governs the name input (native `disabled`), the move controls and
+  Save/Save order (`inertProps`, so `aria-disabled` and `tabIndex` -1);
+- `pendingSave` keeps the Saving notice.
+
+**The BO-04 case.** The builder's finding is accepted. BO-04 is reached only through BO-03's `leave`, which closes any
+BO-03 editor, and every opener is inert while `external` holds. So no editor can be open with `external` true. The test
+asserts that instead, and `|| state.external` stays as a harmless defence.
+
+**The red proof, repeated by the lead:** `held = pendingSave`. The rename and reorder cases failed. Restored with
+`git checkout`.
+
+**Checks on this tree, run by the lead:** `npm run verify` 142 files, 5226 tests; `npm run test:e2e:all` 100 passed.
+
+This is a fully ruled fix round whose fix is the review's own, so the lead reviewed it instead of a second review
+round. **Complete.** `touches: boundaries`: the owner looks at BO-03's 86 and Make available served before merge.
 
 ## Handoff
 
