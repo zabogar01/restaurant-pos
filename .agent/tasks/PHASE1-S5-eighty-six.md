@@ -4,7 +4,7 @@ title: The 86 toggle — mark an item unavailable or available again, server com
 category: ui
 touches: [boundaries]
 depends_on: [PHASE1-S4c2b]
-owns: [apps/server/src/domain/catalog.ts, apps/server/src/http/routes/back-office-catalog.ts, apps/server/test/**, packages/contracts/src/catalog.ts, packages/contracts/src/routes.ts, packages/contracts/test/**, packages/api-client/src/client.ts, packages/api-client/src/specs.ts, apps/back-office/src/**, apps/back-office/test/**, e2e/tests/menu.spec.ts, e2e/support/**]
+owns: [apps/server/src/domain/catalog.ts, apps/server/src/http/routes/back-office-catalog.ts, apps/server/test/**, packages/contracts/src/catalog.ts, packages/contracts/src/index.ts, packages/contracts/src/routes.ts, packages/contracts/test/**, packages/api-client/src/client.ts, packages/api-client/src/specs.ts, apps/back-office/src/**, apps/back-office/test/**, e2e/tests/menu.spec.ts, e2e/support/**]
 status: not-started
 cycles: 0
 ---
@@ -279,6 +279,175 @@ more than one commit is fine if it reads better. Write the Handoff below in full
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
 
+## Lead ruling on the BLOCKED question (2026-10-28)
+
+**Yes.** `packages/contracts/src/index.ts` is added to `owns`. Ruling 2 put the two request schemas in `@pos/contracts`,
+and that package re-exports its catalog schemas by name from `index.ts`, as S4b did. Leaving the file out of `owns` was
+the lead's omission. The staged change is exactly the two names `MarkItemAvailableRequest` and
+`MarkItemUnavailableRequest`, which the lead read. This commit widens `owns` and nothing else.
+
+**What to do.**
+- Commit the staged work on this branch, now that the hook allows the path.
+- Replace the Handoff's final `BLOCKED:` line with `DONE`, and add a sentence saying the commit followed this ruling.
+- Ping the lead.
+
+No other change is wanted.
+
 ## Handoff
 
-*(The builder writes this section.)*
+**Status: the slice is built and verified in the working tree, but it is not committed, because the pre-commit guard
+refuses one path the task does not list.** Details under *Blocked* below.
+
+### What I did
+
+Server (red first, then code):
+- `apps/server/src/domain/catalog.ts`: `markItemUnavailable(itemId)` and `markItemAvailable(itemId)`, both over one
+  private `setItemAvailable` that goes through `catalogWrite(UNVERSIONED, …)` as `setItemActive` does. It reads the item
+  (`NOT_FOUND` through `refuse` if unknown), returns `wrote: false` with the current record when the flag already
+  matches, and otherwise updates `menu_item.is_available` and returns `wrote: true`, so the version advances exactly
+  once and only then. One comment names where FR-G13's lease check goes in Phase 4 (after the lock, before the write);
+  nothing is built there and nothing sits between the lock and the write.
+- `apps/server/src/http/routes/back-office-catalog.ts`: `POST …/items/mark-unavailable` and `…/items/mark-available`,
+  strict `{ itemId }`, answer `ItemResponse`, declared with the same `command` access object as `items/archive`.
+- `packages/contracts/src/catalog.ts`: `MarkItemUnavailableRequest` and `MarkItemAvailableRequest`;
+  `packages/contracts/src/routes.ts`: the two `ROUTE_TABLE` entries (interactive); `packages/contracts/src/index.ts`:
+  their re-export (see *Blocked*).
+- `packages/api-client/src/client.ts` (`ROUTES.catalogItemsMarkUnavailable` / `catalogItemsMarkAvailable`) and
+  `specs.ts` (`SPECS` entries).
+
+Client:
+- `apps/back-office/src/session/api.ts` (both in `officeApi()` and `configApi()`) and `fixtureSession.ts` (both answer
+  `unavailable`).
+- `apps/back-office/src/menu/copy.ts`: `EIGHTY_SIX`, `MAKE_AVAILABLE`, `eightySixName`, `makeAvailableName`,
+  `eightySixing`, `makingAvailable`, `eightySixed(name, hidden)`, `availableAgain(name, hidden)`; each is a row of
+  DESIGN-019's copy table. The unknown, failed and session sentences reuse S4c1's `stateUnknown`, `stateUnknownUnread`,
+  `stateFailed` and `stateSessionRefused`, which are the same table rows.
+- `apps/back-office/src/menu/model.ts`: two `CommandKind`s, `eighty-six-item` and `make-available-item`; a new
+  `changeItemAvailability(itemId)` (public, and it does **not** go through `leave`); page statuses `eighty-sixed` and
+  `made-available` (with `hidden`) and two new `pending` actions; `resultOf` cases that focus the item's Edit; and
+  `carryBase`, which moves an open editor's `base` with the list when the answer is exactly the standing version plus
+  one and the editor's `base` was that standing version.
+- `apps/back-office/src/menu/Menu.tsx`: the `<button type="button" className="office-button small"
+  data-availability="{itemId}">` after the Availability text, labelled *86* or *Make available*, named *Mark {name} 86*
+  or *Make available {name}*, `aria-disabled` and `tabIndex={-1}` when `busy`, on every item row.
+
+### What I decided, and on what evidence
+
+- **Hidden means archived item or archived category.** The 86 and Make available sentences use
+  `item.isActive === false || category.isActive === false` (ruling 5 and DESIGN-019 F2). Archive/Restore's existing
+  `hidden` only checks the category, because its own sentence already says the item is archived.
+- **No `state.decision` ambiguity:** `changeItemAvailability` also returns when `state.decision` is open, so a press
+  while the modal is up (which jsdom cannot make inert) sends nothing.
+- **`carryBase` is limited to the two availability kinds.** Archive and Restore keep going through `leave`, so an open
+  editor never reaches their answer. It reads the standing version at present time, not at send time, so a reread that
+  moved the standing version between press and answer is judged on the version actually standing.
+- **A no-op answer (version equal) announces the same sentence**, and `adopt` leaves the standing version where it is.
+- **Fixture mode** answers `unavailable`, as S4c1 did for the other eleven.
+
+### Tests I changed, and why
+
+- `apps/back-office/test/menu.test.tsx`, *has no 86 or Make available control yet (S5)…*: flipped to the assertion of
+  the seven names in drawn order plus one `[data-availability]` button per item row, its visible label, accessible name,
+  and no `aria-disabled`/`disabled` while idle. The Edit/New item list is unchanged. Renamed *has one availability
+  control on every item row, archived and hidden ones included, beside Edit and New item*.
+- `apps/back-office/test/config-api.test.tsx`: key list and type test gain the two paths; the title says *thirteen*.
+- `apps/back-office/test/item.test.tsx` (BO-04's file, **one assertion, outside the task's list**): AC 18, *Edit goes in
+  front of Archive/Restore on every item…*, asserts each item row's exact `button` list. The availability button sits in
+  the Availability cell ahead of the Actions cell, so `['Edit Burger', 'Archive item Burger']` became `['Mark Burger 86',
+  'Edit Burger', 'Archive item Burger']`, and the same for Apple and Stew. This is the "any test that asserts an item
+  row's exact list of controls" the task anticipates, but it lives in BO-04's file, so I name it here. Nothing was
+  loosened: the order Edit-before-Archive is still asserted.
+- `apps/server/test/catalog-routes.test.ts`, test 1 (*are the eleven of the route table*): it lists the route table's
+  catalog entries verbatim; it now lists the two new paths after `items/restore`. The describe name still says
+  "eleven routes"; I did not rename it. `route-table.test.ts`, `access.test.ts` and `packages/contracts/test/routes.test.ts`
+  are unedited and pass.
+- Additions only elsewhere: `catalog.test.ts` (a `describe('the 86 commands')` with S5-1 to S5-6 and NOT_FOUND, and the
+  two 86 commands added to the existing no-audit test), `catalog-routes.test.ts` (a `describe('the 86 routes')`, and the
+  two routes added to the no-audit test), `packages/contracts/test/catalog.test.ts` (accept, strict, malformed),
+  `menu-support.tsx` (`ITEM_86`, `ITEM_AVAILABLE`), a new `menu-availability.test.tsx` (22 cases), and `e2e/tests/menu.spec.ts`
+  case M5. `e2e/support/**` is untouched.
+
+### Red proofs (mutation, failure read, reverted)
+
+Written test first, observed red, then code: all server cases, the route cases, the flipped `menu.test.tsx` control test
+(received `[]`), and `menu-availability.test.tsx` (20 of 22 red before the code; the other two, the fixture-mode case and
+*Archive with a dirty rename still opens the decision*, already held, because I had added the fixture paths first and
+Archive was unchanged).
+
+Mutations, each reverted:
+1. **S5-1** (skip the advance, `wrote: false` after the update): S5-1, S5-3, S5-4, S5-5 and S5-6 fail on `UNCHANGED`
+   where `OK` was expected, and the "answers the item as stored" case.
+2. **S5-2** (advance on a no-op, `wrote: true`): only S5-2 fails, `OK` 279 where `UNCHANGED` 278 was expected.
+3. **S5-5.** The task's mutation (the holder takes `FOR KEY SHARE`) cannot show the hazard: `FOR UPDATE` conflicts with
+   `FOR KEY SHARE`, so the 86 still waits. The hazard is on the writer's side, so I weakened the writer's own lock in
+   `catalogWrite` to `FOR KEY SHARE`, which does not conflict with the holder's `FOR SHARE`. Both S5-5 cases fail: the
+   86 was not waiting on the lock statement (it waited on the later `UPDATE catalog_revision`). Reverted.
+4. **S5-6** (refuse an archived item) and **unknown id** (create a row instead of `NOT_FOUND`, applied together): S5-6
+   fails (`NOT_FOUND` where `OK` was expected); both unknown-id cases fail. My "create a row" mutation was crude: it
+   raised a database fault (`The catalog store failed`) rather than inserting a row, so that test proved the
+   `NOT_FOUND` expectation, not row creation specifically.
+5. **Routes** (declare `mark-unavailable` `OPTIONAL`): the 401 case in test 3 and my own 401 case fail with 200.
+6. **Control** (omit the control on archived items): the flipped `menu.test.tsx` test, `every item row carries the
+   control` and the two hidden-item sentence cases fail.
+7. **F2** (always say "disabled in place"): the F2 case fails. It first looked masked by mutation 6 when I applied both
+   together, so I re-ran it alone.
+8. **Resend after `failed`** (a second request when the first is `failed`): three unknown-outcome cases fail with
+   `ITEM_86` count 2.
+9. **Route 86 through `leave`**: all four F7 cases fail (the decision opens; the editor closes).
+10. **`carryBase` disabled**: *a following Save carries the advanced base* fails (`expectedVersion` 5, expected 6).
+11. **Leave one path out of `configApi()`**: the key-list test fails with the 24 keys of 25.
+12. **e2e M5** (written after its code): skip the advance on the server; M5 fails on both engines (`version` 2, expected 3).
+
+Tests written after their code: the `packages/contracts` additions, `menu-availability.test.tsx`'s fixture-mode case,
+and e2e M5. The contracts additions have no mutation of their own (the route tests would fail on a lax schema because the
+extra-key case reaches the schema).
+
+### Found and not fixed
+
+- **`NOT_FOUND` and `VALIDATION_FAILED` from these two routes are unreachable today:** the button is built from a listed
+  item and sends a uuid, so the model's definite-failure path for them is covered only by a test that injects the
+  refusal.
+- The "answers the item as stored" test in `catalog.test.ts` builds its failure message with `JSON.stringify` over a record
+  holding `bigint`, so a failure would throw `Do not know how to serialize a BigInt` instead of showing the outcome. It
+  only matters when it fails (the existing `ok` helper has the same pattern with a record). I saw it during mutation 1.
+- `catalog-routes.test.ts`'s `describe('the eleven routes')` and `config-api.test.tsx`'s older titles still say
+  "eleven" in places I did not need to edit.
+
+### Blocked
+
+**BLOCKED: `packages/contracts/src/index.ts` is not in this task's `owns`, and the pre-commit guard refuses it.** The
+task says to add the requests to `@pos/contracts`, and lists `packages/contracts/src/catalog.ts` and `routes.ts`, but
+the server route, the api-client specs and the tests import them from `@pos/contracts`, which only exposes what
+`index.ts` re-exports. The only change I made there is two names in the existing `export { … } from './catalog.js'` block
+(`MarkItemAvailableRequest`, `MarkItemUnavailableRequest`, alphabetically after `ItemsResponse`). Proposed resolution:
+add `packages/contracts/src/index.ts` to this task's `owns:` (S4b's task must have had it) and resume this session,
+or tell me to commit with it excluded (the commit would then not typecheck). Nothing else is blocked. The working tree
+holds the complete, verified change. All of it, `index.ts` included, is staged by path; the one `git commit` I tried
+was refused by the guard and nothing was committed. Once the path is allowed the commit is a single `git commit`.
+
+### Verification, with the real output
+
+`npm run verify` on the final tree (after the last mutation was reverted): typecheck clean across all seven projects,
+`Test Files 142 passed (142)`, `Tests 5223 passed (5223)` (baseline 141 files and 5181 tests, so +1 file, +42 tests).
+`npm run test:e2e:all` on the same tree: `100 passed (1.3m)` (baseline 98; M5 on both engines).
+`npm run db:up` was already up; the development database `pos` was not touched. No formatter was run. No browser was
+driven beyond the Playwright suite.
+
+### What S7 needs
+
+- **The version.** An 86 or its reversal advances the one `catalog_revision.version` by exactly one, and only when it
+  changed `is_available`. The answer's `version` is the new version.
+- **A no-op** answers 200 with `{ version, item }` where `version` is the unchanged current version and the item is as
+  stored. The route answer does not say whether it wrote; a client reads "unchanged" from a version equal to the one it
+  stood at.
+- **Where the POS would read `isAvailable`:** every `ItemView` carries `isAvailable` (and `isActive`); the only read
+  today is the back-office `GET /api/back-office/config/catalog`, which returns archived records too. S7's POS read is
+  its own route (consult C4) and must hide an item that is archived or in an archived category regardless of the flag,
+  and show an `isAvailable: false` item disabled in place.
+- The lease refusal (FR-G13, Phase 4) goes in `setItemAvailable` after the lock and before the write.
+
+### What the next agent needs and does not have
+
+The lead's decision on `packages/contracts/src/index.ts`. Everything else is in the tree.
+
+BLOCKED: should `packages/contracts/src/index.ts` be added to PHASE1-S5's owned paths so the two request-schema re-exports can be committed?
