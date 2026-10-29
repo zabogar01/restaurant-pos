@@ -9,7 +9,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-29 (#153 merged; **S6a dispatched, DESIGN-022 opened**): `development` at `a6e682d`; dev `pos` at `0013`.
+2026-10-29 (#153 merged; **S6a complete; DESIGN-022 in progress**): `development` at `a6e682d`; dev `pos` at `0013`.
 Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](journal/2026-10-29.md).
 
 ## Phase and gates
@@ -20,7 +20,7 @@ Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](jo
   server, `0011`, `SETTINGS_CHANGED`), S2b (#130: BO-08 settings), S3a (#134: tender methods, `0012`), S3b (#137: BO-08
   methods), S4a (#140: catalog domain, `0013`, `catalogWrite`), S4b (#142: catalog routes, `CATALOG_CHANGED`), S4c1
   (#144: BO-03), S4c2a (#147) and S4c2b (#149: BO-04 whole), **S5 (#151: the 86 toggle, server and BO-03)**. S4 and S5
-  are done. **Building: S6a** (presets server, C1 §4, `0014`); S6b (BO-07) waits on DESIGN-022. C4 not written (S7).
+  are done. **S6a complete** (presets server, `0014`, not merged); S6b (BO-07) waits on DESIGN-022. C4 not written (S7).
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14); S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
@@ -52,8 +52,8 @@ Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](jo
 
 ## Running tasks and agents
 
-- **PHASE1-S6a** builder (Sonnet, interactive, pane `PHASE1-S6a`), dispatched 10-29; rulings 1-10 in its task file
-  (no display order; name 1-32; whole-preset edit; own read route). touches money: owner looks before merge.
+- **PHASE1-S6a complete** at `4850fc9` (Codex F1, ruling 10's `FOR KEY SHARE`, fixed in r2 `2ec29a3`; lead-reviewed; verify
+  144/5270, e2e:all 100). C1 §4.1's SQL has a NULL hole (`0014` fixed it). **Owner looks, then push and PR (ask).**
 - **DESIGN-022** (BO-07, Codex `design022`, pane `w2:p98`), hand-opened 10-29; task file committed `acd9cc8` in its
   worktree. Started on Codex's update prompt (owner's); brief once it is gone. Lead runs its checks; Opus reviews.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
@@ -116,7 +116,8 @@ Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](jo
 
 Nothing here is decided. Detail is where each line points.
 
-- **Lead rulings, yours to overturn** (each in its task file): S5 (route names; a no-op 86 announces the reached
+- **Lead rulings, yours to overturn** (each in its task file): S6a (*The shape* 1-10: no display order or reorder;
+  name 1-32; whole-preset edit; its own read route); S5 (route names; a no-op 86 announces the reached
   state); S4c2b (option uniqueness by `lower(name)`; saved name on removal; F3 rejected); S4c2a (the split; the item in
   client state at `/back-office/menu/item`; BO-04's own read; top bar kept; one command across BO-03/BO-04); S4c1; S4b
   (bare `DUPLICATE`); S4a (option swap by temporary deactivation); S3b; DESIGN-020; DESIGN-019 F7; S2b; S1b; S0; C3;
@@ -145,5 +146,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S6a** verify, Codex review, owner's look; **DESIGN-022** brief, checks, Opus review. Then **S6b** (BO-07),
+1. **S6a**: owner's look, push and PR. **DESIGN-022**: checks, Opus review. Then **S6b** (BO-07),
    **DESIGN-021** (POS addition, G6), **C4** (for S7). **Small:** the code-point cleanup between slices.
