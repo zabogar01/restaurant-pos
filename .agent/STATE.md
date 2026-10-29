@@ -54,8 +54,9 @@ Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](jo
 
 - **PHASE1-S6a complete** at `4850fc9` (Codex F1, ruling 10's `FOR KEY SHARE`, fixed in r2 `2ec29a3`; lead-reviewed; verify
   144/5270, e2e:all 100). C1 §4.1's SQL has a NULL hole (`0014` fixed it). **Owner looks, then push and PR (ask).**
-- **DESIGN-022** (BO-07, Codex `design022`, pane `w2:p98`), hand-opened 10-29; task file committed `acd9cc8` in its
-  worktree. Started on Codex's update prompt (owner's); brief once it is gone. Lead runs its checks; Opus reviews.
+- **DESIGN-022** (BO-07): Codex `design022` drew Parts A-C (`1a8ef8e`, `618c89f`, `531b09d`; run 2 design022 683/683,
+  017, 019 green), then hit its limit; **Opus `design022c` finishes** (owner exception, DECISIONS 10-29; handover
+  `f7f83a8`), pane `w2:p9C`. Lead runs its checks. Review: Codex after 15:57, or ask the owner.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
