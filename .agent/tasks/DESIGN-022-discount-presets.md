@@ -555,7 +555,14 @@ run 2 after them, and the final run on the finished branch.
   fourth entry; see ruling 1 below. `npm run verify`: 142 files, 5226 tests.
 - **Run 2** (`…/design022-r2`): `design022.cjs` 683/683 over 58 states, no
   page errors; `design017` 349/349; `design019` 998/998.
-- **Final run**: recorded below.
+- **Final run** at `0d8cd31` (`…/design022-r3`): `design022.cjs` 683/683 over
+  58 states; `design012` (421 checks) and `design013` (371 checks) with no
+  failures; `design014` 287/287; `design016` 399/399; `design017` 349/349;
+  `design018` 730/730; `design019` 998/998; `design020` 754/754. No page error
+  in any script. `npm run verify`: 142 files, 5226 tests passed. The Impeccable
+  detector on `presets.html` exits 2 with the same eight `[cramped-padding]`
+  findings as run 1, each accounted for below. Nothing under
+  `docs/design/tokens/` changed, and no token was registered.
 
 **Measurements (run 2, through `design022.cjs`).** At 1440×900 and at
 1920×1080, for every one of the 58 states, the document's scroll width equals
@@ -589,22 +596,32 @@ which passed in every state at both sizes. Subject-correct walks are
 subject` and `save focuses Edit` for all six fixture rows, both kinds among
 them.
 
-**The Impeccable detector** (run 1, on `presets.html`) reported eight
-`[cramped-padding]` findings. None belongs to BO-07: all eight are shared
-containers that `presets.html` uses unchanged, and the detector is static, so
-it judges a container by its own padding and its direct children without
-following the inset one level further down. Measured padding, the same at both
-widths:
+**The Impeccable detector** on `presets.html` reported the same eight
+`[cramped-padding]` findings in run 1 and in the final run. None belongs to
+BO-07: all eight are shared containers that `presets.html` uses unchanged. The
+detector is static. It judges a container by its own padding and by whether
+its direct children touch the container's edge. It does not follow the inset
+one level further down, and it reports the incident sections, which are
+`hidden` until a kitchen incident is open, as if they were laid out. Measured
+padding from the final run's `measurements.json`, identical at 1440 and 1920:
 
-| Finding | Shared from | Own padding | Where the inset is |
-|---|---|---|---|
-| `section.table-editor` ×1 (`#preset-editor`) | `tables.css`, DESIGN-019; also used by Tables, Menu and Settings | 0px | header `16px 20px`; the form has 0px, and its `.office-dialog__body` and `.office-dialog__foot` carry the inset (`20px`, `16px 20px`; the final run records this level) |
-| `dialog.office-dialog` ×3 (`#deactivate-confirm`, `#departure`, `#presets-reauth`) | `office.css`, DESIGN-012 | 0px | header `16px 20px`, body `20px`, footer `16px 20px` |
-| `section.office-emergency` ×3 (one per dialog) | `office.css`, DESIGN-012 | `12px 20px` | its own padding |
-| `section.office-notice` ×1 | `office.css`, DESIGN-012 | `12px 16px` | its own padding (`#read-state`, `#form-notice` and `#page-status` all measure `12px 16px`) |
+| # | Finding | Element in `presets.html` | Shared from | Own padding | Measured inset of its content |
+|---|---|---|---|---|---|
+| 1 | `section.table-editor` | `#preset-editor` (state `create-percent`) | `tables.css`, DESIGN-019; also Tables, Menu and Settings | 0px | header `16px 20px`; the form is 0px, and inside it `.office-dialog__body` is `20px` and `.office-dialog__foot` `16px 20px` |
+| 2 | `dialog.office-dialog` | `#deactivate-confirm` (`deactivate`) | `office.css`, DESIGN-012 | 0px | header `16px 20px`, incident section `12px 20px`, body `20px`, footer `16px 20px` |
+| 3 | `dialog.office-dialog` | `#departure` (`unsaved`) | `office.css`, DESIGN-012 | 0px | header `16px 20px`, incident section `12px 20px`, body `20px`, footer `16px 20px` |
+| 4 | `dialog.office-dialog` | `#presets-reauth` (`reauth`) | `office.css`, DESIGN-012 | 0px | header `16px 20px`, incident section `12px 20px`, form body `20px`, footer `16px 20px` |
+| 5 | `section.office-emergency` | `#deactivate-emergency` | `office.css`, DESIGN-012 | `12px 20px` | its own padding |
+| 6 | `section.office-emergency` | `#departure-emergency` | `office.css`, DESIGN-012 | `12px 20px` | its own padding |
+| 7 | `section.office-emergency` | `#reauth-emergency` | `office.css`, DESIGN-012 | `12px 20px` | its own padding |
+| 8 | `section.office-notice` | the BO-01 held-draft notice in `#presets-login` (`bo01-draft`), the page's only `<section class="office-notice">` | `office.css`, DESIGN-012; the same composition as `F/login.html` | `12px 16px` | its own padding; its children are 0px. The page's other notices (`#read-state`, `#form-notice`, `#page-status`) also measure `12px 16px` |
 
-So nothing is cramped as rendered, and changing any of these would change a
-shared pattern that earlier checks guard. Nothing was changed.
+So nothing is cramped as rendered: every boundary has at least 12px of inset
+between it and its text. Changing any of these would change a shared pattern
+that the earlier checks guard, so nothing was changed. If the detector is to
+run clean on back-office pages, it needs to be taught to follow the inset one
+level down and to skip hidden elements; that is a tooling question, not a
+BO-07 one.
 
 ### Lead rulings given during this task
 
@@ -635,3 +652,5 @@ on existing orders, and accept the fixed subtotal cap at application time.
 A BO-07 edit can be stale because any menu row changed. Do not infer a new
 POS approval gate from this desktop deactivation confirmation. The zero-valued
 presets are valid and should not disappear merely because they change no total.
+
+DONE
