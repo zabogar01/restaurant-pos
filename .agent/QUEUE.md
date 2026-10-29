@@ -154,7 +154,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - **PHASE1-S5**, the 86 toggle: two domain commands and routes, BO-03's row action (C1 §3, DESIGN-019 F2, F7) —
       depends on S4c2b — complete, merged 2026-10-28 as PR #151.
     - **PHASE1-S6a**, discount presets on the server (C1 §4, `0014`) — depends on S5 — complete, PR #154.
-    - **DESIGN-022**, design F's BO-07 half (the presets screen) — feeds S6b — complete 2026-10-29, not yet pushed.
+    - **DESIGN-022**, design F's BO-07 half (the presets screen) — feeds S6b — complete 2026-10-29, PR #156.
     - **PHASE1-S6b**, BO-07 — depends on S6a and that design — not written.
     - **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.

@@ -9,7 +9,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-29 (#153 merged; **S6a PR #154; DESIGN-022 complete**): `development` at `a6e682d`; dev `pos` at `0013`.
+2026-10-29 (#153 merged; **S6a PR #154; DESIGN-022 PR #156**): `development` at `a6e682d`; dev `pos` at `0013`.
 Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](journal/2026-10-29.md).
 
 ## Phase and gates
@@ -55,7 +55,7 @@ Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](jo
   144/5270, e2e:all 100). C1 §4.1's SQL has a NULL hole (`0014` fixed it). **PR #154: owner looks, merges; then `db:migrate`.**
 - **DESIGN-022 complete** at `30e715d` (Codex drew, Opus finished and reviewed: owner exceptions). Opus F1 (BO-07 list
   needs DESIGN-019's standing version) + F2, F3 fixed in r2; red repeated (684/688 on r1); final 688/688, eight earlier
-  checks green, verify 142/5226. **Not pushed: ask.** Owner looks at `F/presets.html`.
+  checks green, verify 142/5226. **PR #156:** owner looks at `F/presets.html`, merges.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -146,5 +146,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **#154** merge, then `db:migrate`. **DESIGN-022**: push, PR. Then **S6b** (BO-07),
+1. **#154** merge, then `db:migrate`. **#156** merge. Then **S6b** (BO-07),
    **DESIGN-021** (POS addition, G6), **C4** (for S7). **Small:** the code-point cleanup between slices.
