@@ -228,4 +228,325 @@ with `DONE` or `BLOCKED: <one question>`. Then run exactly one of:
     herdr agent prompt lead "design022: DESIGN-022 done — <one line>"
     herdr agent prompt lead "design022: BLOCKED — <question>"
 
+## Handover (lead, 2026-10-29): finish the Codex designer's draft on Claude Opus
+
+**Owner exception** (DECISIONS 2026-10-29). Codex hit its usage limit at about 11:50, and it resets at 15:57. The owner
+asked to continue on Claude Opus rather than wait, so a Claude Opus 5.5 designer (`design022c`) finishes this task, as
+DESIGN-020 was finished on 2026-10-22. The lead routes the design review that follows; the other-family rule stands for
+every other task.
+
+**What the Codex designer (`design022`) did.**
+- **Committed:** Part A as `1a8ef8e` (`F/presets.html` and its states), Part B as `618c89f` (`D`'s kind-switch rule),
+  and Part C as `531b09d` (navigation, the gallery and the link migration).
+- **Uncommitted** in this worktree when it stopped:
+  - `docs/design/checks/design019.cjs`: the authorised rail change below;
+  - `docs/design/checks/design022.cjs`: its extended run 2 checks;
+  - **the Handoff below, a draft of about 280 lines**, committed by the lead with this section as-is.
+
+**Finish it; do not restart it.** Read the draft Handoff whole, check it against the artifact and the acceptance
+criteria, complete what is missing, and correct what is wrong. Commit the two check scripts first.
+
+**The lead's check runs.**
+- **Run 1** (evidence `/Users/fajars/.claude/jobs/3f069013/tmp/design022-r1`):
+  - `design022.cjs`: 672/672, 58 states.
+  - The earlier checks: `design012`, `013`, `014` (287/287), `016` (399/399), `018` (730/730) and `020` (754/754)
+    passed; `design017` failed one check, F7, on the sitemap's `[ACTION]` tag; `design019` failed three, the F5 rails.
+  - `npm run verify`: 142 files, 5226 tests passed.
+  - The Impeccable detector on `presets.html` and `presets.css`: 8 `[cramped-padding]` findings
+    (`section.table-editor`; the shared `office-dialog` ×3, `office-emergency` ×3, `office-notice` ×1).
+- **Run 2** (evidence `…/design022-r2`): `design022.cjs` 683/683, 58 states; `design017` 349/349; `design019`
+  998/998; no page errors.
+
+**Lead rulings given to the Codex designer in its pane.** Record each in the Handoff as a ruling, not as your choice:
+1. **`design019.cjs`, F5:** *Discount presets* is added to the three exact expected rail arrays (menu, tables,
+   settings), in its drawn position. Nothing else there changes, and no assertion is weakened.
+2. **The detector findings:** fix what belongs to BO-07. For any that is a shared pattern, the Handoff says why it is a
+   false positive for a static detector, quoting the measured padding (`design022.cjs` now measures all eight).
+
+**Checks.** The lead runs every check script, as *Constraints* says. Ask with `herdr agent prompt lead "design022c:
+please run <script>"`, and run a final full set (`design022.cjs`, the eight earlier ones and `npm run verify`) before
+you report done.
+
 ## Handoff
+
+Implemented BO-07 as a Frost list with the existing 3:2 list/editor composition,
+shared 40px fields, 36px form actions, 28px row actions, neutral result notices
+and amber refusals. `presets.html` imports `office.css`, `tables.css`,
+`settings.css` and `entry.css`; its small stylesheet only composes existing
+tokens. The fixture runtime is local review plumbing, not production behavior,
+authentication, persistence or seed configuration. No new token is registered.
+
+The task's server facts take precedence over C1's sketch: there is no display
+order control, edits send the whole name/kind/value, and inactive records may
+be edited. No product document, architecture decision, server, client,
+contract, database or production test is changed. The prescribed independent
+design review still follows this handoff; this is not an owner acceptance.
+
+### Parts and testable rules for S6b
+
+| Part or ruling | Settled rule and evidence |
+|---|---|
+| A: empty, read, list | `empty`, `loading`, `load-error`, `default`. A fresh installation has zero rows. Read failure withholds counts and version facts; Try again repeats only the read. |
+| List order and grouping | One table: active first, inactive second, preserving the server's oldest-created-first order within each group. The fixture preserves array order, including after a rename; it never sorts by name or exposes reorder. Every row has Edit and its applicable state action. |
+| Overflow | `overflow`: 48 rows, 36 active and 12 inactive; a 32-code-point unbroken name, 100%, 12,3456% and 99.999.999. `.bocontent` owns list scrolling and its table header sticks to that content edge. The editor has its own bounded scrolling and sticky action footer. |
+| Name | Trim surrounding spaces, then check empty, over 32 Unicode code points, Unicode Cc control character, in that order. No maxlength truncation. Native single-line inputs strip line breaks before receipt; the control fixture uses U+0007, which survives. Active names are unique without regard to case; inactive names may repeat. Duplicate comes from the authoritative command and rereads the list. |
+| Percentage | DESIGN-018's parser unchanged: trim, remove one trailing percent sign and trim again; ASCII digits, comma or dot decimal separator, leading/trailing separator allowed with at least one digit. Refuse empty, leading minus, malformed number, more than four typed fraction digits, then more than 100. Exact conversion to canonical ppm string; no floating-point arithmetic. Display decimal comma and no trailing zeros, with `%` outside the input and after the value in the list. `invalid-percent-*` shows every refusal. |
+| Fixed amount | DESIGN-020's unsigned parser: trim, accept ASCII digits or one-to-three digits followed by dot groups of three; refuse empty, leading minus, malformed number, then above 99.999.999. Convert by string/BigInt to a canonical integer string. No sign, exponent, decimal fraction, grouping space, comma or non-ASCII digit. Refused text remains as typed. `invalid-amount-*` shows every refusal. |
+| Zero and upper bounds | Accept 0 silently for both kinds; the server permits it and no owner ruling grants a local refusal. Both first-create walks save zero. Percentage maximum 100; fixed maximum 99.999.999. The amount hint explains the later application-time subtotal cap, so a large stored amount is not confused with an invalid preset. |
+| Kind switch | `kind-switch` and the interaction walk. Each kind keeps its own exact typed buffer while open; first switch starts the other buffer empty. No conversion between kinds. Switch clears old value errors and focuses the newly visible value input. Only selected kind/value is validated and sent. Dirty compares name and selected kind/value with the opening record. Clean Cancel or Discard drops both buffers; reopening reads the saved record. Stay and same-manager recovery keep both. Use current replaces the whole draft and clears the unused buffer; Keep retains both. |
+| Command versions | Create, deactivate and reactivate carry no catalog version. Edit carries the version read when the form opened and the whole `{name, value}` with its selected kind. Every committed change advances the catalog version; an unchanged edit still checks its base and returns the unchanged version. The form base moves only on an answered save/unchanged or the manager's explicit stale choice. A reread alone never rebases. |
+| Snapshots | Standing editor copy says only discounts chosen afterwards change. No apply-to-open-orders action, approval gate or rate-change confirmation. Existing orders retain their name/kind/value snapshots. Configuration writes have no audit claim. |
+| Deactivation | Confirmation is warranted because this action removes a choice from staff at the POS. `deactivate` names its subject, explains the picker and existing-order effects, and focuses Keep active. Escape keeps it active. Final action is destructive. `deactivated` announces the affected name; Reactivate acts without confirmation and `reactivated` announces it. Both commands have no version. |
+| Reactivation name conflict | `duplicate-reactivate` rereads and opens the right inactive preset's editor, focusing its name. Saving the new name leaves it inactive; the separate Reactivate row action must then be pressed. This applies the DESIGN-018 payment-method recovery precedent. |
+| Stale edit | `stale` shows current name and value beside the differing fields. `stale-menu` shows no difference and explicitly says the current preset has the same values. Save is held until Keep my changes or Use current preset. Both choices send nothing. The title says catalog, because a menu change can be the cause. `stale-reauth` uses the same words after M-6. `stale-read-failed` keeps the draft and holds Save until a successful read and choice. |
+| Known/unknown results | `saving`, `saved`, `unchanged`, `failure`, `not-found`, `unknown`, `unknown-changed`, `unknown-read-failed`, `partial`. Unknown rereads once and never infers success, even from a matching row. A newer version combines uncertainty with explicit stale choices. Try again repeats a failed read only. Success inserts/replaces only the answered row, without a reread. Partial success keeps known rows, withholds counts and explains the list may be out of date. |
+| State-command results | `pending-deactivate`, `pending-reactivate`, `unknown-deactivate`, `unknown-reactivate`, `status-failure`. No status editor or resend control; the ordinary row action remains the explicit command path after settlement. Successful state changes focus that row's Edit. |
+| One form and one command | Another record/New/state action goes through departure if the open draft is dirty, pending or unknown. Pending makes every opener inert, including after the draft is discarded. Clean form handover closes the old form. Log out, rail and print incidents remain available through their normal decisions. |
+| Departure | `unsaved`, `unsaved-switch`, `unsaved-logout`, `leave-pending`, `leave-unknown`; control walks also cover Escape, rail and browser Back. Stay is initial focus and Escape means Stay. Discard drops the local draft, not the sent command. A held response never chooses departure for the manager. A late authoritative answer after Discard updates the row silently, without reopening, announcing or moving focus. No beforeunload handler. |
+| Session gates | `reauth`, `bo01-draft`, `reauth-confirm`, `bo01-confirm`, `reauth-decision`, `bo01-decision`. M-6 keeps work visible and inert. BO-01 closes working-area dialogs while retaining their mounted state. The same manager reopens a held dialog before focus returns; a different manager destroys the draft and pending presentation. Recovery never submits a command. |
+| Shared incidents | Kitchen identity repeats inside deactivation/departure decisions and M-6. Routine non-modal editing does not defer the incident link. M-6 queues its incident destination after sign-in; dirty work still requires its departure decision. |
+| B | Appended DESIGN-022 additions to D; no existing rule changed. Reusable behavior is the kind-switch buffer rule. BO-07-specific names, bounds, list order, copy and deactivation choice are marked BO-07 copy and composition. |
+| C | `office.js` resolves presets to Frost and adds the entry to authored Phase 1 rails; the existing authored report rail now links to Frost. `manifest.js` registers all states and the gallery scope names BO-07. Inventory, sitemap and historical wireframe changes are reproduced below. |
+| I permission-denied (n/a) | Removed the non-state: BO-07 is manager-only inside the session guard, and has no preset permission refusal or approval gate. Access loss uses the shared BO-01 mapping, not a new preset state. |
+| B-21, B-22 and FR-F2 | No scheduling, date, time, trigger, minimum spend, stacking, precedence, automatic application, scope or approval control; no POS operation or reorder. |
+
+### Every registered state
+
+`?state=` accepts the following 58 entries; the artifact and manifest declare
+identical lists. The gallery labels explain their review purpose.
+
+| Group | States |
+|---|---|
+| Read/list | `default`, `empty`, `loading`, `load-error`, `overflow` |
+| Forms | `create-percent`, `create-fixed`, `edit-percent`, `edit-fixed`, `kind-switch`, `edit-inactive` |
+| Name validation | `invalid-name-empty`, `invalid-name-long`, `invalid-name-control` |
+| Percentage validation | `invalid-percent-empty`, `invalid-percent-negative`, `invalid-percent-format`, `invalid-percent-decimals`, `invalid-percent-over` |
+| Amount validation | `invalid-amount-empty`, `invalid-amount-negative`, `invalid-amount-format`, `invalid-amount-over` |
+| Command results | `saving`, `saved`, `unchanged`, `failure`, `not-found`, `unknown`, `unknown-changed`, `unknown-read-failed`, `partial` |
+| Name conflict | `duplicate-create`, `duplicate-edit`, `duplicate-reactivate` |
+| Stale draft | `stale`, `stale-menu`, `stale-reauth`, `stale-read-failed` |
+| State changes | `deactivate`, `deactivated`, `reactivated`, `pending-deactivate`, `pending-reactivate`, `unknown-deactivate`, `unknown-reactivate`, `status-failure` |
+| Departure | `unsaved`, `unsaved-switch`, `unsaved-logout`, `leave-pending`, `leave-unknown` |
+| Identity | `reauth`, `bo01-draft`, `reauth-confirm`, `bo01-confirm`, `reauth-decision`, `bo01-decision` |
+
+### Exact product copy and accessible names
+
+Braces are returned record values, never error keys or raw server messages.
+All buttons have their visible text as their accessible name unless a name is
+specified in the last column. The fixture's response chooser and simulation
+controls are outside the product and must not be built in S6b.
+
+| State | Element | Exact text | Accessible name / semantics |
+|---|---|---|---|
+| All frame states | Rail / top title / heading | Discount presets | link `Discount presets`; selected rail has `aria-current=page` |
+| All frame states | Create | New preset | button `New preset` |
+| List | Standing context | Named discounts staff choose at the POS. Existing orders keep the name and value applied to them. | paragraph |
+| List | Facts | `{active} active · {inactive} inactive · Catalog version {version}` | withheld on failed read |
+| List | Caption | Active first · Oldest created first within each status · Fixed amounts in IDR | table caption |
+| List | Headers | Name · Discount · Status · Actions | column headers |
+| List | Kind / status | Percentage · Fixed amount / Active · Inactive | plain text |
+| List | Row actions | Edit · Deactivate · Reactivate | `Edit {name} — active`, `Edit {name} — inactive`, `Deactivate {name}`, `Reactivate {name}` |
+| Empty | Title / body | No presets yet / Use New preset to create the first discount staff can choose. | empty collection |
+| Loading | Status | Loading discount presets… | status; unread rows and counts withheld |
+| Read failed | Title / body / action | Discount presets could not be loaded / Try again to read the discount presets. / Try again | alert; button `Try again`, repeats read only |
+| Partial success | Title / body / action | The preset list may be out of date / The rows below are the ones this page knows, including your latest change. Try again to read the full list. / Try again | alert; button `Try again` |
+| Create / edit | Title | New preset / `Edit {opening name}` | non-modal dialog labelled by title |
+| Create | Context prefix | Choose the name staff will see at the POS. | followed by shared editor context |
+| Inactive edit | Context prefix | Inactive preset. Saving does not reactivate it. | followed by shared editor context |
+| Every form | Shared editor context | Changes apply only to discounts chosen afterwards. Orders already carrying this preset keep their saved name and value. | paragraph |
+| Every form | Version | `Catalog version {version}` | latest read/answered version; withheld after read failure |
+| Every form | Name / help | Preset name / 1–32 characters. Active presets must have different names. | textbox `Preset name` |
+| Every form | Kind choices | Discount kind / Percentage / Fixed amount | fieldset `Discount kind`; native radios `Percentage`, `Fixed amount` |
+| Percentage | Field / suffix / help | Percentage / % / 0 to 100, up to four decimal places. | textbox `Percentage`; suffix decorative |
+| Fixed | Installation facts | Currency / IDR · Indonesian rupiah / Decimal places / 0 · amounts are whole rupiah / Fixed for this installation. | term/value rows, never controls |
+| Fixed | Field / help | Fixed amount / 0–99.999.999; whole rupiah. When applied, the discount is capped at the order subtotal. | textbox `Fixed amount` |
+| Every form | Footer / actions | Nothing is sent until you save. / Cancel / Save | buttons `Cancel`, `Save` |
+| Invalid name | Empty / length / control | Enter a preset name. / Use 32 characters or fewer. / Remove control characters from the name. | inline; input `aria-invalid`, error in `aria-describedby` |
+| Invalid percentage | Empty / negative / format / precision / ceiling | Enter a percentage. / Use 0 or more. / Enter a number, such as 10 or 10,5. / Use at most four decimal places. / Use 100 or less. | same inline semantics |
+| Invalid amount | Empty / negative / format / ceiling | Enter a fixed amount. / Use 0 or more. / Enter whole rupiah, such as 10.000. / Use 99.999.999 or less. | same inline semantics |
+| Duplicate create/edit | Name error | An active preset already uses this name. Choose another name. | name field; holder row says `Name in use` |
+| Duplicate reactivate | Name error | An active preset already uses this name. Rename this inactive preset, save, then reactivate it. | name field in that inactive preset's editor |
+| Pending save | Title / body / footer | Saving… / Wait for the result. Your draft is kept. / Wait for the save result. | focusable form status; inputs and Save disabled |
+| Saved | Result | `{name} saved.` | page status, named record only |
+| Unchanged | Result | `{name}: nothing changed. Catalog version {version} is still current.` | page status; no write claim |
+| Stale, including after M-6 | Title / body | The catalog changed while you were editing / `Nothing was saved. The catalog has been read again at version {version}. Your draft is kept. Choose which values to keep.` | focusable alert |
+| Stale with differences | Current field values | `Current name: {name} · Differs from your draft` / `Current kind: {kind} · Differs from your draft` / `Current value: {value} · Differs from your draft` | beside the corresponding field; fixed current value includes ` · IDR` |
+| Stale without differences | Comparison | The current preset has the same values as your draft. | explicit acknowledgement still required |
+| Stale | Status / choices / footer | `Current status: {Active or Inactive}.` / Keep my changes / Use current preset / Choose Keep my changes or Use current preset before saving. | buttons `Keep my changes`, `Use current preset`; Save disabled until choice |
+| Stale read failed | Body / footer | The current preset could not be read. Your draft is kept. Try again reads the list; nothing is sent again. / Read the current preset before choosing which values to keep. | choices withheld; list's Try again reads only |
+| Definite failure / NOT_FOUND | Title / body | Something went wrong / Nothing was saved. Your draft is kept. Press Save to try again. | alert; draft kept; NOT_FOUND additionally rereads |
+| Unknown | Title / body | Outcome not confirmed / The outcome could not be confirmed. The list has been refreshed. Your draft is kept; nothing was sent again. | status; no resend action |
+| Unknown failed read | Body | The outcome could not be confirmed. The list could not be refreshed. Your draft is kept; nothing was sent again. | version and count withheld |
+| Unknown newer version | Body | `The catalog has been read again at version {version}. It may include this save. Your draft is kept; nothing was sent again. Choose which values to keep.` | stale comparison plus uncertainty; no success claim |
+| Unknown after choice | Body | `Your draft now builds on catalog version {version}. The earlier save is still unconfirmed. Nothing was sent again.` | explicit Save remains the next command |
+| Deactivation confirmation | Title / body | `Deactivate “{name}”?` / It will disappear from the POS picker. Orders that already carry it keep its name and value as applied. You can reactivate it later. | native modal, named title |
+| Deactivation confirmation | Actions | Keep active / Deactivate | `Keep active — {name}`, `Deactivate {name}` |
+| State pending | Result | `Deactivating {name}…` / `Reactivating {name}…` | focusable page status |
+| Deactivated | Result | `{name} deactivated. It is hidden from the POS picker; existing orders keep it.` | page status |
+| Reactivated | Result | `{name} reactivated. Staff can choose it at the POS.` | page status |
+| State unknown | Result | `{name}: the outcome could not be confirmed. The list has been refreshed. Nothing was sent again.` | failed read replaces middle sentence with `The list could not be refreshed.` |
+| State definite failure | Result | `Something went wrong. {name} was not changed. Use its row action to try again.` | page status |
+| State session refusal | Result | `{name} was not changed. Use its row action to try again.` | after the same manager resumes |
+| Departure | Title / body / actions | Discard unsaved changes? / Your edits have not been saved. Stay to keep editing, or discard them before leaving. / Stay / Discard | modal; buttons `Stay`, `Discard` |
+| Pending/unknown departure | Body | The save may or may not have succeeded. Leaving does not send it again. Stay to keep the draft, or discard it and leave. | replaces normal departure body |
+| Logout departure | Title / body / actions | Log out and discard your changes? / The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session. / Keep this draft / Discard changes and log out | exact shared logout copy |
+| Pending/unknown logout | Additional context | The save may or may not have succeeded. Leaving does not send it again. | added separately |
+| Discarded pending save | Page status | Waiting for an earlier save to finish. Nothing will be sent again. | clears silently on answer |
+| M-6 | Title / body | Your session timed out / Your unsaved changes are kept. Continue as m.iqbal to resume them. | modal; work inert |
+| M-6 | Fields / actions | Username / Password / Sign in as a different manager / Log out / Continue | username readonly; password secret; visible action names |
+| Other-manager acknowledgement | Title / body / actions | Sign in as a different manager? / The current manager’s unsaved changes will not be available to the manager signing in. / Stay with current manager / Continue to sign-in | starts on Stay with current manager |
+| Other-manager sign-in | Title / body / actions | Sign in as a different manager / Enter your own username and password. The current manager’s unsaved changes will not be available to you. / Back to m.iqbal / Log out / Sign in | editable Username and Password; Back clears credentials |
+| BO-01 | Title / introduction | Back office / Sign in with your manager username and password. | shared sign-in composition |
+| BO-01 held draft | Title / body / additional sentence | Your session has ended / Sign in again to continue. / The previous session’s unsaved changes are stored on this tab and are not submitted automatically. | protected work hidden |
+| BO-01 | Fields / errors / action | Username / Password / Enter your username. / Enter your password. / Sign in | labelled inputs; button `Sign in` |
+| M-6 local required password | Error | Enter your password. | password field |
+| Shared frame | Actor / logout | M. Iqbal · Manager / Log out | different-manager fixture uses Ratna Ayu · Manager |
+| Kitchen in deactivation | Deferred context | Decide whether to keep or deactivate this preset before opening print incidents. | repeats shared incident title and identity |
+| Kitchen in departure | Deferred context | Decide whether to stay or discard before opening print incidents. | repeats shared incident title and identity |
+| Kitchen in M-6 | Context / action | Continue your session to open print incidents. / Open print incidents after sign-in | button with visible name |
+| M-6 queued incident | Body | Continue as m.iqbal to open print incidents. Your unsaved changes are kept. | password takes focus |
+
+### Focus contract
+
+| Moment | Target |
+|---|---|
+| Create, active edit or inactive edit opens | Preset name |
+| Local validation failure | First invalid visible input in form order: name, then selected value |
+| Name in use | Preset name, including reactivation recovery |
+| Kind changes | Newly visible Percentage or Fixed amount input |
+| Save pending | Focusable Saving notice |
+| CATALOG_CHANGED or unknown with newer version | Form notice; choices follow in reading/tab order |
+| Keep my changes / Use current preset | Save / Preset name |
+| Definite form failure or plain unknown | Preset name |
+| Saved / unchanged | Returned record's Edit; New preset if the opener no longer exists |
+| Clean Cancel / Discard | Original Edit or New preset opener |
+| Deactivation opens / Escape or Keep | Keep active / that row's Deactivate |
+| State pending / unknown / definite failure | Page status |
+| Deactivated / reactivated | That row's Edit, even if it moved between status groups |
+| Departure opens / Escape or Stay | Stay (Keep this draft for logout) / Preset name, or Saving notice while pending |
+| Same manager restores a form | Preset name holding the draft; retained name selection restored when available |
+| Same manager restores confirmation / departure | Reopen first, then Keep active / Stay |
+| Different manager signs in | New preset; previous draft cleared |
+
+### Link ledger and inventory changes
+
+Counts below use the same definition as `grep -c "prototype/"`: number of
+matching source lines. A new artifact's before count is zero (file absent).
+The common runtime retains its generic fallback for the remaining historical
+screens; `presets` is now a Frost destination.
+
+| Changed artifact | Before | After |
+|---|---:|---:|
+| `F/office.js` | 1 | 1 |
+| `F/report-detail.html` | 5 | 4 |
+| `F/presets.html` | 0 | 0 |
+| `F/presets.js` | 0 | 0 |
+| `F/presets.css` | 0 | 0 |
+| `F/presets-states.js` | 0 | 0 |
+| `visual-directions/manifest.js` | 0 | 0 |
+| `visual-directions/index.html` | 0 | 0 |
+| `P/presets.html` | 0 | 0 |
+
+Tests changed: `design014.cjs`'s authored report-detail link count is 5 to 4.
+By the lead's explicit ruling of 2026-10-29, `design019.cjs`'s F5 exact rail
+expectation now includes Discount presets between Tables and Settings; the
+same assertion checks menu, tables and settings. Nothing else in that script
+is changed. No assertion is weakened. The new check asserts every relevant
+rendered rail reaches Frost and no Frost HTML/JS still names
+`prototype/back-office/presets.html`.
+
+The exact inventory, sitemap and wireframe diff follows.
+
+```diff
+diff --git a/docs/design/SCREEN-INVENTORY.md b/docs/design/SCREEN-INVENTORY.md
+index 697c3c2..70022a8 100644
+--- a/docs/design/SCREEN-INVENTORY.md
++++ b/docs/design/SCREEN-INVENTORY.md
+@@ -850,9 +850,19 @@ that user's POS session on its next authenticated request* (FR-B3, AC-32) ·
+ 
+ **Reached by / from.** Manager, from navigation.
+ 
+-**States.** *empty* · *loading* · *error* · *permission-denied* (n/a) ·
+-*overflow* · *deactivated preset — hidden from the POS picker but still
+-readable on orders carrying it* (FR-F5, AC-17).
++**States.** *empty* · *loading* · *failed read with Try again* · *overflow* ·
++*create and edit — percentage or fixed amount, including a kind switch* ·
++*invalid name, percentage or fixed amount* · *saving* · *saved* · *unchanged* ·
++*name in use — create, active edit or reactivation* · *stale draft refused
++(CATALOG_CHANGED), including after M-6 and when only the menu changed* ·
++*deactivation confirmation* · *deactivated preset — hidden from the POS picker
++but still readable on orders carrying it* (FR-F5, AC-17) · *reactivated* (Q10) ·
++*inactive edit* · *definite failure with draft kept* · *outcome unknown with a
++reread and no resend* · *success while the list read stands failed*. Forms also
++show the departure decision, M-6 over inert work and BO-01 with the draft held.
++
++The Frost artifact is `visual-directions/frost/back-office/presets.html`;
++DESIGN-022's Handoff fixes its words, focus targets and testable field rules.
+ 
+ **Requirements.** FR-B5, FR-F2, FR-F4, FR-F5.
+ 
+@@ -860,8 +870,9 @@ readable on orders carrying it* (FR-F5, AC-17).
+ - A preset is the **constrained common path**: any authenticating staff member
+   applies it with no prompt (FR-F2, principle 3). Presets are not approval-gated
+   here or at the POS.
+-- Discounts are 0–100%; a fixed discount is capped at the subtotal; no order
+-  reaches a negative total (FR-M5).
++- Percentages accept 0–100%, up to four decimal places. Fixed amounts accept
++  0–99.999.999 whole rupiah; the subtotal cap applies when the discount is
++  applied to an order, not when the preset is stored (FR-M5).
+ - **No scheduling, no auto-apply, no date or time triggers** (FR-F7, B-21).
+   This is the promotions boundary; a "valid from / valid to" field crosses it.
+ - One discount per order (B-22) — no stacking rules, no precedence editor.
+diff --git a/docs/design/SITEMAP.md b/docs/design/SITEMAP.md
+index 89a5ef7..8ac223d 100644
+--- a/docs/design/SITEMAP.md
++++ b/docs/design/SITEMAP.md
+@@ -303,8 +303,11 @@ reports and audit.
+ │   └── [MODAL] Deactivate — invalidates POS session ..... FR-B3
+ │
+ ├── BO-07 [SCREEN] Discount presets ...................... FR-B5, F5
+-│   ├── [MODAL] Preset create / edit .................... FR-B5
+-│   └── [MODAL] Deactivate — stays readable on orders ... FR-F5, C8
++│   ├── [INLINE] Preset create / edit — non-modal panel . FR-B5
++│   │   ├── [INLINE] Name in use — draft kept ........... FR-B5
++│   │   └── [INLINE] Stale draft — choose, then Save .... ADR-012 rule 13
++│   ├── [MODAL] Deactivate — stays readable on orders .... FR-F5
++│   └── [INLINE] Reactivate; name in use opens edit ..... FR-B5, Q10
+ │
+ ├── BO-08 [SCREEN] Settings ......................... FR-B1, B7, M1, M5, G1
+ │   ├── [INLINE] Currency + precision — fixed, shown only .. FR-B1, M1
+diff --git a/docs/design/prototype/back-office/presets.html b/docs/design/prototype/back-office/presets.html
+index 235bd80..a5b9332 100644
+--- a/docs/design/prototype/back-office/presets.html
++++ b/docs/design/prototype/back-office/presets.html
+@@ -105,6 +105,8 @@
+ </div></div><div class="device__caption">Back office &mdash; 1440 wide</div></div>
+ 
+ <aside class="rail">
++  <h2>Frost composition</h2>
++  <div class="ann"><p><a href="../../visual-directions/frost/back-office/presets.html">BO-07 in Frost</a> supersedes this historical drawing: both kinds, validation, reactivation, preserved drafts and stale-draft recovery. See <a href="../../visual-directions/frost/back-office/presets.html?state=stale">the stale draft</a> and <a href="../../visual-directions/frost/back-office/presets.html?state=deactivate">deactivation confirmation</a>.</p></div>
+   <h2>Purpose</h2>
+   <div class="ann"><p>Define the named discounts staff may apply without approval.</p></div>
+   <h2>Fixed by the PRD</h2>
+```
+
+### Verification and remaining work
+
+The lead is running the browser matrix, earlier regression checks, verify and
+the Impeccable detector. Measurements and observed results will be recorded
+here after the returned evidence is read. I did not run the check scripts.
+
+### Questions and downstream notes
+
+No unanswered product or server question was needed to draw this slice.
+The task delegated the zero, kind-switch, grouping and confirmation choices;
+the rules and their reasons are above. S6b must use real command responses,
+records and the catalog version, not this fixture runtime. It must preserve
+the shared general failure and session copy for the real authentication
+responses; these drawings exercise local session lifetime, not credentials.
+
+DESIGN-021 must show only active presets in the POS picker, preserve snapshots
+on existing orders, and accept the fixed subtotal cap at application time.
+A BO-07 edit can be stale because any menu row changed. Do not infer a new
+POS approval gate from this desktop deactivation confirmation. The zero-valued
+presets are valid and should not disappear merely because they change no total.
