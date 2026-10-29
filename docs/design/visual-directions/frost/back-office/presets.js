@@ -11,12 +11,13 @@
   const kindLabel=k=>k==='PERCENTAGE'?'Percentage':'Fixed amount';
   const valueLabel=r=>r.value.kind==='PERCENTAGE'?percent(r.value.ratePpm)+'%':money(r.value.amount);
   let records=[['staff','Staff meal','PERCENTAGE','100000',true],['regular','Regular customer','PERCENTAGE','50000',true],['recovery','Service recovery','FIXED','25000',true],['comp','Comp','PERCENTAGE','1000000',true],['opening','Opening week','PERCENTAGE','150000',false],['old-recovery','Service recovery','FIXED','5000',false]].map(([presetId,name,kind,n,isActive])=>({presetId,name,value:kind==='PERCENTAGE'?{kind,ratePpm:n}:{kind,amount:n},isActive}));
-  let server=clone(records), version=12, facts=12, read='ready', partial=false, failRead=false;
+  // facts is the version most recently read or answered (shown); listVersion is the version the list's rows stand at (D:1818-1823).
+  let server=clone(records), version=12, facts=12, listVersion=12, read='ready', partial=false, failRead=false;
   let editor=null, pending=null, held=null, decision=null, confirmation=null, gate='active', heldDecision=false, heldConfirm=false, queuedIncident=false, lastField=null, selection=null, otherMode=false, seq=0;
   const commands=[], errors=new Map();let reads=0;
   const find=id=>records.find(r=>r.presetId===id), serverRow=id=>server.find(r=>r.presetId===id);
   const response=()=>$('#fixture-response').value;
-  window.PresetFixture={commands,get reads(){return reads;},get rows(){return records;},get draft(){return editor&&clone(editor.draft);},get base(){return editor?.base;},get version(){return version;},get pending(){return !!pending;},get stale(){return !!editor?.stale;},get unknown(){return !!editor?.unknown;},parsePercent,parseMoney,other(change){if(change)change(server);version++;},failRead(){failRead=true;},finish:r=>finish(r)};
+  window.PresetFixture={commands,get reads(){return reads;},get rows(){return records;},get draft(){return editor&&clone(editor.draft);},get base(){return editor?.base;},get version(){return version;},get listVersion(){return listVersion;},get pending(){return !!pending;},get stale(){return !!editor?.stale;},get unknown(){return !!editor?.unknown;},parsePercent,parseMoney,other(change){if(change)change(server);version++;},failRead(){failRead=true;},finish:r=>finish(r)};
   function parsePercent(raw){
     const s=raw.trim().replace(/%$/,'').trim();if(!s)return {error:'Enter a percentage.'};
     if(s.startsWith('-'))return {error:'Use 0 or more.'};
@@ -76,11 +77,11 @@
   function render(){renderList();renderForm();}
   function openEditor(id=null,opener=null){
     const r=id?find(id):null;if(id&&!r)return;
-    const d=draftFor(r);editor={id,active:r?.isActive??true,draft:d,opening:clone(d),base:facts,opener:opener||(id?'[data-edit="'+id+'"]':'#new-preset'),unknown:false,stale:false,current:null,holder:null};
+    const d=draftFor(r);editor={id,active:r?.isActive??true,draft:d,opening:clone(d),base:listVersion,opener:opener||(id?'[data-edit="'+id+'"]':'#new-preset'),unknown:false,stale:false,current:null,holder:null};
     clearErrors();notice();status();render();lastField=$('#preset-name');focus('#preset-name');set(id?(r.isActive?(r.value.kind==='FIXED'?'edit-fixed':'edit-percent'):'edit-inactive'):'create-percent');
   }
   function closeEditor(restore=true){const opener=editor?.opener;editor=null;clearErrors();notice();render();if(restore&&opener)focus(opener);}
-  function reread(){reads++;if(failRead){failRead=false;read='failed';partial=false;return false;}records=clone(server);facts=version;read='ready';partial=false;return true;}
+  function reread(){reads++;if(failRead){failRead=false;read='failed';partial=false;return false;}records=clone(server);facts=version;listVersion=version;read='ready';partial=false;return true;}
   function staleNotice(){
     const current=editor.id&&find(editor.id);editor.current=current?clone(current):null;
     const body=read==='failed'?'The current preset could not be read. Your draft is kept. Try again reads the list; nothing is sent again.':editor.unknown?'The catalog has been read again at version '+facts+'. It may include this save. Your draft is kept; nothing was sent again. Choose which values to keep.':'Nothing was saved. The catalog has been read again at version '+facts+'. Your draft is kept. Choose which values to keep.';
@@ -102,7 +103,7 @@
     if(!unchanged)version++;
     return {row:clone(r),version,unchanged};
   }
-  function applyAnswer(answer){const at=records.findIndex(r=>r.presetId===answer.row.presetId);if(at<0)records.push(clone(answer.row));else records[at]=clone(answer.row);facts=answer.version;if(read==='failed')partial=true;}
+  function applyAnswer(answer){const at=records.findIndex(r=>r.presetId===answer.row.presetId);if(at<0)records.push(clone(answer.row));else records[at]=clone(answer.row);facts=answer.version;if(read==='ready'&&answer.version===listVersion+(answer.unchanged?0:1))listVersion=answer.version;if(read==='failed')partial=true;}
   function finish(result,cmd=pending){
     if(!cmd)return;
     if(gate!=='active'||decision){held={result,cmd,sessionRefused:gate!=='active'&&(result==='idle'||result==='ended')};return;}
@@ -223,11 +224,11 @@
   window.addEventListener('popstate',()=>{if(dirty()){history.pushState({presetWork:true},'',entryURL);leave(()=>{editor=null;history.go(-2);},'back');}});
 
   /* Review states are reached through the same controls and responses as the walks. */
-  if(state==='empty'){records=[];server=[];version=0;facts=0;}
+  if(state==='empty'){records=[];server=[];version=0;facts=0;listVersion=0;}
   if(state==='overflow'){
     records=Array.from({length:48},(_,i)=>({presetId:'long-'+i,name:i===0?'W'.repeat(32):'Preset '+String(i+1).padStart(2,'0'),value:i%3===0?{kind:'FIXED',amount:'99999999'}:{kind:'PERCENTAGE',ratePpm:i%3===1?'1000000':'123456'},isActive:i<36}));server=clone(records);
   }
-  if(state==='loading')read='loading';if(state==='load-error')read='failed';render();
+  if(state==='loading'||state==='load-error')listVersion=null;if(state==='loading')read='loading';if(state==='load-error')read='failed';render();
   const listStates=['default','empty','loading','load-error','overflow'];
   if(!listStates.includes(state)){
     if(['deactivate','deactivated','reactivated','pending-deactivate','pending-reactivate','unknown-deactivate','unknown-reactivate','status-failure','duplicate-reactivate','reauth-confirm','bo01-confirm'].includes(state)){

@@ -2056,6 +2056,13 @@ Reopening starts from the saved record. A same-manager session recovery keeps
 both buffers. Use current replaces the whole draft and clears the unused buffer;
 Keep my changes keeps both and sends nothing, as the stale-draft rule requires.
 
+**BO-07's standing list version — behaviour.** BO-07's list, like BO-03's, keeps
+the version its rows stand at and follows DESIGN-019's standing-version rule
+(*Catalog changed during a list edit*, `D:1818-1823`): a full read sets it, a
+command answer advances it only when the answered version is exactly the
+standing version plus one, or equal to it for an unchanged answer, and an
+editor opened from the list carries it.
+
 **BO-07 copy and composition.** `frost/back-office/presets.html` uses the shared
 list and non-modal panel, with native radio choices for Percentage and Fixed
 amount. The list places active presets first and inactive presets second,
@@ -2068,7 +2075,11 @@ names may repeat. Both value fields accept zero without a warning, because it
 is in the permitted range. The percentage field uses DESIGN-018 unchanged;
 the fixed amount uses DESIGN-020's unsigned money input, bounded 0–99.999.999.
 The amount hint explains that the subtotal cap applies when chosen on an order,
-so a manager does not mistake that cap for a preset-storage limit.
+so a manager does not mistake that cap for a preset-storage limit. The currency
+and precision beside the fixed-amount field are input-format context taken from
+the shared-code constants (ADR-012 rule 5), not values of the preset read, so,
+unlike BO-08's installation facts (`D:1721-1726`), they are not withheld while
+that read is loading or has failed.
 
 BO-07 confirms deactivation because it removes a choice from the POS picker.
 The confirmation names the preset, starts on Keep active, and explains that
