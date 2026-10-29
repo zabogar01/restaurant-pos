@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries]
 depends_on: [PHASE1-S5]
 owns: [db/migrations/0014_discount_preset.sql, apps/server/src/domain/discount-preset.ts, apps/server/src/domain/catalog.ts, apps/server/src/http/routes/back-office-presets.ts, apps/server/src/http/server.ts, packages/contracts/src/discount-presets.ts, packages/contracts/src/routes.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S6a — Discount presets on the server
@@ -253,6 +253,21 @@ the Handoff below in full prose:
 - what was found and not fixed; the real `verify` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify (2026-10-29)
+
+The lead ran these in this worktree, on `f812952`:
+- `npm run verify`: 144 files, 5270 tests passed;
+- `npm run test:e2e:all`: 100 passed.
+
+Every changed path is inside `owns`. The one existing test changed and not listed, `catalog-routes.test.ts`'s filter,
+is reported with its reason in the Handoff and keeps its assertions. The lead accepts it.
+
+**The builder's fix to ruling 3's SQL is accepted.** A CHECK passes on NULL, so the lead's value check accepted a row
+with neither column set. The explicit `IS NOT NULL` terms close that, and criterion 3's "either kind with neither" case
+proves it. C1 is the architect's document and is not edited; the point is noted in STATE.
+
+Reviewer: the database, the browser and the e2e harness are out of your reach. This note is the evidence for them.
 
 ## Handoff
 
