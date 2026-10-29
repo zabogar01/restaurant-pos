@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-020]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: review
 cycles: 0
 ---
 # DESIGN-022 — BO-07 Discount presets (slice F, BO-07 half)
@@ -266,6 +266,22 @@ criteria, complete what is missing, and correct what is wrong. Commit the two ch
 **Checks.** The lead runs every check script, as *Constraints* says. Ask with `herdr agent prompt lead "design022c:
 please run <script>"`, and run a final full set (`design022.cjs`, the eight earlier ones and `npm run verify`) before
 you report done.
+
+## Lead verify (2026-10-29)
+
+The lead ran the final set in this worktree at `0d8cd31` (evidence `/Users/fajars/.claude/jobs/3f069013/tmp/design022-r3`).
+`9b470c5` changes only this Handoff.
+- **`design022.cjs`:** 683/683, 58 states.
+- **The earlier checks:** `design012` (421 checks), `013` (371), `014` (287/287), `016` (399/399), `017` (349/349),
+  `018` (730/730), `019` (998/998) and `020` (754/754) passed, all without failures or page errors.
+- **`npm run verify`:** 142 files, 5226 tests passed.
+- **The Impeccable detector on `presets.html`:** exit 2, eight `[cramped-padding]` findings. These are the shared
+  `office-dialog` ×3, `office-emergency` ×3 and `office-notice`, and BO-05's `table-editor`, all inherited. The
+  Handoff accounts for each with the measured inset (at least 12px), which `design022.cjs` asserts.
+
+Every changed path is inside `owns`. The one earlier check script changed, `design019.cjs`, follows the lead's ruling 1.
+
+Reviewer: you cannot reach the browser or run the checks. This note is the evidence for them.
 
 ## Handoff
 
