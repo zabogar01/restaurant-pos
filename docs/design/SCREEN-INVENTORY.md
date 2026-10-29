@@ -872,7 +872,8 @@ DESIGN-022's Handoff fixes its words, focus targets and testable field rules.
   here or at the POS.
 - Percentages accept 0–100%, up to four decimal places. Fixed amounts accept
   0–99.999.999 whole rupiah; the subtotal cap applies when the discount is
-  applied to an order, not when the preset is stored (FR-M5).
+  applied to an order, not when the preset is stored; no order reaches a
+  negative total (FR-M5).
 - **No scheduling, no auto-apply, no date or time triggers** (FR-F7, B-21).
   This is the promotions boundary; a "valid from / valid to" field crosses it.
 - One discount per order (B-22) — no stacking rules, no precedence editor.
