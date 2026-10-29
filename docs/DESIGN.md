@@ -2039,3 +2039,45 @@ same row, which announces the result and focuses the row's Edit. Item names are
 1–64 code points; variant and modifier names 1–32; base price 0 to 99.999.999;
 a variant's change −99.999.999 to 99.999.999; a modifier's change 0 to
 99.999.999. No new token is introduced.
+
+### Configuration forms — DESIGN-022 additions (awaiting review)
+
+**Switching between value kinds — behaviour.** A form whose record has one of
+several value kinds keeps one local typed value per kind while the form stays
+open. Switching kind changes the visible value field and focuses it; the first
+visit to another kind starts empty. Returning to a kind restores its exact typed
+text. It never converts a percentage into money or money into a percentage.
+Only the selected kind and its value are validated and sent. Switching clears
+obsolete value-field errors; Save validates the newly selected kind afresh.
+Dirty compares the name, selected kind and selected value with the opening
+record; an unused local value is not part of that record. Cancel on a clean
+form, or explicit Discard on a dirty one, drops both local value buffers.
+Reopening starts from the saved record. A same-manager session recovery keeps
+both buffers. Use current replaces the whole draft and clears the unused buffer;
+Keep my changes keeps both and sends nothing, as the stale-draft rule requires.
+
+**BO-07 copy and composition.** `frost/back-office/presets.html` uses the shared
+list and non-modal panel, with native radio choices for Percentage and Fixed
+amount. The list places active presets first and inactive presets second,
+preserving the server's creation order within each status. It exposes no
+reordering. The column titled Discount shows the value above its kind; the
+caption labels fixed amounts as IDR. Counts include every row and are withheld
+when the read fails. The name is trimmed, 1–32 Unicode code points, with no
+Unicode Cc character. Active names must differ case-insensitively; inactive
+names may repeat. Both value fields accept zero without a warning, because it
+is in the permitted range. The percentage field uses DESIGN-018 unchanged;
+the fixed amount uses DESIGN-020's unsigned money input, bounded 0–99.999.999.
+The amount hint explains that the subtotal cap applies when chosen on an order,
+so a manager does not mistake that cap for a preset-storage limit.
+
+BO-07 confirms deactivation because it removes a choice from the POS picker.
+The confirmation names the preset, starts on Keep active, and explains that
+orders already carrying it keep its name and value. Reactivation has no
+confirmation. A refused reactivation opens the inactive preset's editor on its
+name, as the payment-method precedent does; saving does not reactivate it.
+No preset edit has a rate-change confirmation or approval prompt. The editor
+says changes reach only discounts chosen afterwards. The stale title names the
+catalog, because an unrelated menu change can cause it; the no-difference case
+adds “The current preset has the same values as your draft.” The copy is the
+same after M-6. The exact words and focus targets are in DESIGN-022's Handoff.
+No token is added or changed.
