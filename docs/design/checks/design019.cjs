@@ -154,7 +154,7 @@ const check=(passed,name,detail)=>report.checks.push({passed:!!passed,name,...(!
  const phase1=[['menu','Menu'],['tables','Tables'],['settings','Settings']];
  for(const [from] of phase1)for(const [to,label] of phase1){
   await p.goto(pathToFileURL(path.join(base,'frost/back-office',from+'.html')).href);await p.waitForFunction(()=>!!document.querySelector('.bonav [aria-current=page]'));
-  if(to==='menu')check(JSON.stringify(await p.locator('.bonav a').evaluateAll(a=>a.map(x=>x.textContent)))==='["Menu","Tables","Settings"]','F5 Phase 1 rail on '+from,await p.locator('.bonav a').evaluateAll(a=>a.map(x=>x.textContent)));
+  if(to==='menu')check(JSON.stringify(await p.locator('.bonav a').evaluateAll(a=>a.map(x=>x.textContent)))==='["Menu","Tables","Discount presets","Settings"]','F5 Phase 1 rail on '+from,await p.locator('.bonav a').evaluateAll(a=>a.map(x=>x.textContent)));
   const link=p.locator('.bonav [data-nav='+to+']');if(!await link.count()){check(false,'F5 walk '+from+' → '+to,'no entry');continue;}
   await link.click();await p.waitForFunction(f=>location.pathname.endsWith('/'+f+'.html')&&!!document.querySelector('.bonav [aria-current=page]'),to,{timeout:5000}).catch(()=>{});
   check(new URL(p.url()).pathname.endsWith('/frost/back-office/'+to+'.html')&&await p.locator('.bonav [aria-current=page]').innerText()===label,'F5 walk '+from+' → '+to);

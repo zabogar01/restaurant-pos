@@ -18,10 +18,16 @@
       heading.className = 'bonav__sec'; heading.textContent = section; nav.append(heading);
       entries.forEach(([label, file, key]) => {
         const a = document.createElement('a'); a.textContent = label;
-        a.href = ['menu','incidents','audit','today','tables','settings'].includes(key) ? file : '../../../prototype/back-office/' + file;
+        a.href = ['menu','incidents','audit','today','tables','presets','settings'].includes(key) ? file : '../../../prototype/back-office/' + file;
         a.dataset.nav = key; nav.append(a);
       });
     });
+  }
+  // Phase 1 authored rails gain BO-07 when their configuration destinations exist.
+  if (!phase0 && nav.querySelector('[data-nav="settings"]') && !nav.querySelector('[data-nav="presets"]')) {
+    const presets = document.createElement('a'); presets.href = 'presets.html';
+    presets.dataset.nav = 'presets'; presets.textContent = 'Discount presets';
+    nav.querySelector('[data-nav="settings"]').before(presets);
   }
   const active = nav.querySelector(`[data-nav="${window.WF.nav}"]`);
   if (active) active.setAttribute('aria-current','page');
