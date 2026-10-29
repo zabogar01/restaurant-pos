@@ -31,6 +31,18 @@ export {
   VariantPriceChange,
   VariantView,
 } from './catalog.js';
+export {
+  CreatePresetRequest,
+  DeactivatePresetRequest,
+  DiscountAmount,
+  PresetName,
+  PresetResponse,
+  PresetValue,
+  PresetView,
+  PresetsResponse,
+  ReactivatePresetRequest,
+  UpdatePresetRequest,
+} from './discount-presets.js';
 export { ErrorBody, ErrorCode } from './errors.js';
 export type { ErrorDetailsByCode, ErrorDetailsOf } from './errors.js';
 export { CSRF_HEADER } from './headers.js';

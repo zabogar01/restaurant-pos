@@ -121,6 +121,11 @@ export const ROUTES = {
   catalogItemsRestore: find('/api/back-office/config/catalog/items/restore'),
   catalogItemsMarkUnavailable: find('/api/back-office/config/catalog/items/mark-unavailable'),
   catalogItemsMarkAvailable: find('/api/back-office/config/catalog/items/mark-available'),
+  presetsList: find('/api/back-office/config/catalog/presets'),
+  presetsCreate: find('/api/back-office/config/catalog/presets/create'),
+  presetsUpdate: find('/api/back-office/config/catalog/presets/update'),
+  presetsDeactivate: find('/api/back-office/config/catalog/presets/deactivate'),
+  presetsReactivate: find('/api/back-office/config/catalog/presets/reactivate'),
 } as const;
 
 interface View {

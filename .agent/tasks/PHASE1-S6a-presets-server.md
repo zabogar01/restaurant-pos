@@ -255,3 +255,48 @@ the Handoff below in full prose:
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
 
 ## Handoff
+
+**What I did.** Built the server half of discount presets on `agent/phase1-s6a` (one commit, hash in `git log`):
+- `db/migrations/0014_discount_preset.sql`: the table, from C1 §4.1 without `display_order`, with the case-insensitive active-name unique index and `SELECT, INSERT` plus column `UPDATE (name, kind, rate_ppm, amount, is_active)` for `pos_app`. No row inserted.
+- `apps/server/src/domain/discount-preset.ts`: `listPresets`, `createPreset`, `editPreset`, `deactivatePreset`, `reactivatePreset`, and an exported `readPreset(db, presetId)`. Every write goes through `catalogWrite`; the edit passes `expected`, the other three pass `UNVERSIONED`.
+- `apps/server/src/domain/catalog.ts`: exactly the two lines the task allows (`'PRESET'` in `DuplicateSubject`, `discount_preset_active_name_key` in `DUPLICATE_OF`).
+- `apps/server/src/http/routes/back-office-presets.ts`, registered in `server.ts` after the catalog routes. It maps outcomes as `back-office-catalog.ts` does and uses `encodeRate`/`decodeRate`/`encodeMoney`/`decodeMoney`; no percent is parsed on the server.
+- `packages/contracts/src/discount-presets.ts` (`PresetName`, `DiscountAmount`, `PresetValue`, `PresetView`, the four requests, `PresetResponse`, `PresetsResponse`), all re-exported from `index.ts`; five entries in `ROUTE_TABLE`.
+- `packages/api-client`: five `SPECS` entries, five `ROUTES` names (`presetsList`, `presetsCreate`, `presetsUpdate`, `presetsDeactivate`, `presetsReactivate`). `apps/back-office/src/session/api.ts`: five `officeApi()` functions, and `ConfigPath` now `Exclude`s `/api/back-office/config/catalog/presets${string}` with a comment that S6b adds them to `ConfigApi`, `configApi()`, `fixtureSession.ts` and `config-api.test.tsx`.
+- Tests: new `apps/server/test/discount-presets.test.ts` (26 cases) and `packages/contracts/test/discount-presets.test.ts` (12); a new `describe('discount_preset')` and the privilege-map entry in `schema.test.ts`; `discount_preset` in `harness-race.test.ts`'s `MIGRATED_TABLES`.
+
+**A defect in the task's migration SQL, which I fixed.** The `discount_preset_value_check` as written in ruling 3 accepts a row with neither value column set. `rate_ppm BETWEEN 0 AND 1000000` on a NULL is NULL, a CHECK passes on NULL, so `PERCENTAGE` with both columns NULL satisfied the first branch's other terms and the whole check. Criterion 3 requires "either kind with neither" to be refused, and my test caught the SQL as written (the statement succeeded). I added an explicit `rate_ppm IS NOT NULL` and `amount IS NOT NULL` to each branch, with a comment saying why. The range and mutual-exclusion semantics are otherwise exactly the task's. The lead may want to correct C1 §4.1's SQL, which has the same hole; I did not touch it.
+
+**Existing tests changed.** `schema.test.ts` (privilege map `EXPECTED` gains `discount_preset`) and `harness-race.test.ts` (`MIGRATED_TABLES`), both listed. One not listed: `catalog-routes.test.ts`'s `entries` filter (`startsWith(BASE)`) now also matches the five preset paths, which sit under `/config/catalog/`, and its "are the eleven of the route table" assertion failed. I excluded the `${BASE}/presets` prefix so the case sees the same 13 entries as before; its assertions are unchanged. Its truncation list did not need the new table, since the preset test file truncates `discount_preset` itself. `route-table.test.ts`, `access.test.ts`, `routes.test.ts`, `boundaries.test.tsx` and `config-api.test.tsx` are unedited and pass.
+
+**What S6b needs.** Routes: `GET /api/back-office/config/catalog/presets` (answers `PresetsResponse`, every preset, active and inactive, in creation order, with the catalog version from one `REPEATABLE READ READ ONLY` snapshot) and `POST` to `/create`, `/update`, `/deactivate`, `/reactivate` under the same base, each answering `PresetResponse { version, preset }`. Schemas from `@pos/contracts`: `PresetView { presetId, name, value, isActive }`, `PresetValue` = `{ kind: 'PERCENTAGE', ratePpm: string } | { kind: 'FIXED', amount: string }`, `CreatePresetRequest { name, value }`, `UpdatePresetRequest { presetId, expectedVersion, name, value }` (the whole preset), `DeactivatePresetRequest`/`ReactivatePresetRequest { presetId }`, `PresetName` (1 to 32 code points), `DiscountAmount`, `RatePpm` (already exported). `ConfigApi` currently excludes the five paths; remove the `Exclude` in `apps/back-office/src/session/api.ts`, then the compile errors list `configApi()`, the fixture session and `config-api.test.tsx`. `CATALOG_CHANGED` arrives only from `/update`, as 409 `{ "error": { "code": "CATALOG_CHANGED" } }`; deactivate, reactivate and create never carry a version. `DUPLICATE` is a bare 409 from create, from update of an active preset into a held name, and from reactivate into a held name. `NOT_FOUND` is a 404 from update, deactivate and reactivate on an unknown id. A no-op answers 200 with the unchanged version, so the client reads "unchanged" from a version equal to the one it stood at. An inactive preset can be edited, which is the way out of a refused reactivation (tested).
+
+**What Phase 2 can reuse (ruling 10).** `readPreset(db, presetId)` in `apps/server/src/domain/discount-preset.ts` reads one preset (or null) inside any transaction and takes no lock of its own, so Phase 2's apply can take `catalog_revision` `FOR KEY SHARE` first and then call it. It returns the domain value (bigint rate or amount), not the wire view. I exported it because the edit and the state commands needed it anyway; I added no new function for Phase 2.
+
+**Decided, and on what evidence.** No `display_order` and no reorder (ruling 1). The lock the concurrency case holds is `SELECT version FROM catalog_revision FOR UPDATE` on the owner connection, per criterion 8, not S1a's table lock. The zero amount and zero rate are accepted (C1 §4.1). The route's `answered` handles `INVALID` as `VALIDATION_FAILED` for exhaustiveness although no preset command can produce it.
+
+**Red proofs** (each: mutation applied, failure read, reverted; the working tree shows none of them):
+1. Criterion 1: granted `DELETE` to `pos_app`: the privilege-map case and the "lets pos_app insert, read and update" case failed (the map diff). Inserted a `'Seed'` row in the migration: "is empty after migration" failed (and two cases that assume an empty table).
+2. Criterion 2: added `valid_from date`: "has exactly the columns written here" failed.
+3. Criterion 3: loosened to `rate_ppm >= 0`: "refuses a value that does not match its kind or is out of range" failed with "the statement succeeded". The NULL hole above was found by the same test on the task's original SQL.
+4. Criterion 4: `wrote: true` unconditionally in `setPresetActive`'s no-op branch: "a no-op edit, deactivating an inactive preset…" failed, `[200, 8]` against `[200, 7]`.
+5. Criterion 5: `editPreset` passing `UNVERSIONED`: both stale cases answered 200 instead of 409.
+6. Criterion 6: `deactivatePreset` deleting the row: three cases failed (the delete is refused with a 500, since `pos_app` has no `DELETE`, as the task predicted).
+7. Criterion 7: indexed `name` instead of `lower(name)`: the schema case and the three route cases for create, edit and reactivate failed.
+8. Criterion 8: made the index non-unique: the barrier case failed, `[200, 200]` against `[200, 409]`.
+9. Criterion 9: `DiscountAmount` widened to accept a number: the contract cases and the route wire case failed.
+10. Criterion 10: ordered the list by `name`: the creation-order case failed.
+11. Criterion 11: declared `deactivate` `{ session: 'OPTIONAL', audience: 'BACK_OFFICE' }`: the access loop failed at that route with no cookie (200, expected 401).
+12. Criterion 12: removed the `reactivate` entry from `ROUTE_TABLE`: `route-table.test.ts` failed twice ("registered but not in the table").
+13. Criterion 13: first tried `console.log` of the error's `detail` in `catalogWrite`, which passed (vitest intercepts `console.log`, so it never reached `process.stdout.write`, which the test captures); that mutation missed the path. Then `process.stdout.write(detail)`: the case failed, the marker appearing in the log line. Reverted.
+14. Criterion 14 is a guard with no red, as the task says.
+
+**Found and not fixed.** C1 §4.1's SQL has the NULL hole described above. Nothing else.
+
+**Browser:** none used, no screen in this slice.
+
+**Verify.** `npm run verify`: Test Files 144 passed (144), Tests 5270 passed (5270), against the baseline of 142 files and 5226 tests (+2 files, +44 tests: 26 server, 12 contracts, 6 schema). I did not run `npm run test:e2e:all` (the lead runs it before merge). No formatter was run. The development database `pos` was not migrated.
+
+**What the next agent needs and does not have.** The lead runs `db:migrate` on `pos` after merge (the server refuses to start until then). C1 §4.1's SQL should be corrected to match `0014`.
+
+DONE

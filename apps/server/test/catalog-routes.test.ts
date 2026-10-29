@@ -160,7 +160,8 @@ async function whole(): Promise<string[]> {
 // ---- 1 and 2 are route-table.test.ts and routes.test.ts, unedited. 3: the guard ----------
 
 describe('the eleven routes', () => {
-  const entries = ROUTE_TABLE.filter((e) => e.path.startsWith(BASE));
+  // The preset routes sit under the catalog's path and are discount-presets.test.ts's.
+  const entries = ROUTE_TABLE.filter((e) => e.path.startsWith(BASE) && !e.path.startsWith(`${BASE}/presets`));
 
   it('1. are the eleven of the route table, with the interactive the table gives', () => {
     expect(entries.map((e) => `${e.method} ${e.path} ${e.interactive}`)).toEqual([

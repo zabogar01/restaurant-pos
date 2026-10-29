@@ -10,6 +10,8 @@ import {
   CreateItemRequest,
   CreateTableRequest,
   CreateTenderMethodRequest,
+  CreatePresetRequest,
+  DeactivatePresetRequest,
   DeactivateTableRequest,
   DeactivateTenderMethodRequest,
   ItemResponse,
@@ -17,6 +19,9 @@ import {
   MarkItemAvailableRequest,
   MarkItemUnavailableRequest,
   PosLoginRequest,
+  PresetResponse,
+  PresetsResponse,
+  ReactivatePresetRequest,
   ReactivateTableRequest,
   ReactivateTenderMethodRequest,
   ReauthenticateRequest,
@@ -34,6 +39,7 @@ import {
   TenderMethodsResponse,
   UpdateCategoryRequest,
   UpdateItemRequest,
+  UpdatePresetRequest,
   UpdateTableRequest,
   UpdateTenderMethodRequest,
 } from '@pos/contracts';
@@ -134,6 +140,11 @@ export const SPECS = {
     response: ItemResponse,
   },
   '/api/back-office/config/catalog/items/mark-available': { body: MarkItemAvailableRequest, response: ItemResponse },
+  '/api/back-office/config/catalog/presets': { response: PresetsResponse },
+  '/api/back-office/config/catalog/presets/create': { body: CreatePresetRequest, response: PresetResponse },
+  '/api/back-office/config/catalog/presets/update': { body: UpdatePresetRequest, response: PresetResponse },
+  '/api/back-office/config/catalog/presets/deactivate': { body: DeactivatePresetRequest, response: PresetResponse },
+  '/api/back-office/config/catalog/presets/reactivate': { body: ReactivatePresetRequest, response: PresetResponse },
 } as const satisfies Record<RoutePath, Spec>;
 
 type Specs = typeof SPECS;

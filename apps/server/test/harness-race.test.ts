@@ -10,6 +10,7 @@ const MIGRATED_TABLES = [
   'catalog_revision',
   'client_instance',
   'dining_table',
+  'discount_preset',
   'menu_category',
   'menu_item',
   'menu_item_modifier',
