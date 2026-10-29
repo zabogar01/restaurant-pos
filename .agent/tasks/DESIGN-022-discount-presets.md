@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-020]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
+status: active
 cycles: 0
 ---
 # DESIGN-022 — BO-07 Discount presets (slice F, BO-07 half)
@@ -282,6 +282,51 @@ The lead ran the final set in this worktree at `0d8cd31` (evidence `/Users/fajar
 Every changed path is inside `owns`. The one earlier check script changed, `design019.cjs`, follows the lead's ruling 1.
 
 Reviewer: you cannot reach the browser or run the checks. This note is the evidence for them.
+
+## Round 2 (lead rulings, 2026-10-29), from the review
+
+The review is `.agent/reviews/DESIGN-022-review.md` (Claude Opus, the owner's exception). All three findings are
+accepted. The fixes are the review's own, so the lead reviews round 2 itself: it repeats the red for F1 by running the
+new walk against round 1's `presets.js`, and runs every check.
+
+**F1 (high), accepted: BO-07's list keeps a standing version, as BO-03's does.** BO-07 has BO-03's shape: one list read,
+editors opened from the list, and the one shared catalog version. So `D:1818-1823`, DESIGN-019's standing-version rule,
+applies to it, and the lead's DESIGN-020 clarification does not take BO-07 out of it (that clarification concerns
+BO-04, which builds on its own read). In this round:
+1. **`presets.js`:** keep a standing list version beside `facts`, as `menu.js` keeps `listVersion`.
+   - A full read sets it.
+   - A command answer advances it only when the answered version is exactly the standing version plus one, or equal to
+     it for an unchanged answer; otherwise it stays.
+   - `openEditor` takes `base` from the standing version.
+   - The facts line keeps naming the version most recently read or answered (`D:1663-1666`), never the standing one.
+   - In `partial` (the list read failed), the standing version stays at the last full read, or unset if there was none.
+     An editor opened from such a list carries it, and a save is refused `CATALOG_CHANGED` and rereads. State which in
+     the Handoff.
+2. **`D`, *DESIGN-022 additions*:** one sentence saying that BO-07's list follows `D:1818-1823`, marked as behaviour.
+   Do not edit the DESIGN-019 or DESIGN-020 text itself.
+3. **The Handoff:** in the *Command versions* row, state the standing-version rule as a rule S6b can test.
+4. **`design022.cjs`:** add the review's walk, run from the `default` state:
+   - another tab changes *Regular customer* (`PresetFixture.other`);
+   - this tab deactivates *Staff meal*, which answers version 14 while the list stands at 12;
+   - this tab opens *Edit Regular customer*, renames it only, and saves.
+
+   Expect `CATALOG_CHANGED`, the current 20% shown beside the draft, no write (the fixture's stored value is still the
+   other tab's), and the facts line naming 14. Add the plus-one case too: no other tab, deactivate (answer 13), then an
+   edit from the list saves without refusal.
+
+**F2 (low), accepted.** In `I` BO-07's second *Must not invent* bullet, restore FR-M5's invariant at the end: "…; no
+order reaches a negative total (FR-M5)."
+
+**F3 (low), accepted. The lead's choice: shared constants, always shown.** On BO-07 the currency and precision beside
+the fixed-amount field are input-format context. They come from the shared-code constants (ADR-012 rule 5), not from
+the preset read, which does not carry them. So they are **not** withheld when that read is loading or has failed.
+`D:1721-1726` stays as written for BO-08, where the facts belong to the settings read and are withheld with it. Say
+this in one sentence in *DESIGN-022 additions* (BO-07 copy and composition) and in the Handoff's *Installation
+facts* row. Do not change `item-editor.html`. Name the same inherited pattern there in *Questions and downstream
+notes* for S6b and BO-04.
+
+Change nothing else. Ask the lead for the full check set when done (`design022.cjs`, the eight earlier ones and
+`npm run verify`). Add a *Round 2* section at the end of the Handoff, and end it with `DONE`.
 
 ## Handoff
 
