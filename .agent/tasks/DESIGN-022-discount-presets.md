@@ -269,6 +269,14 @@ you report done.
 
 ## Handoff
 
+The Codex designer (`design022`) drew Parts A to C and drafted this Handoff;
+the Claude Opus designer (`design022c`) finished it under the lead's handover
+above. `design022c` checked the draft against the artifact, the run evidence
+and the acceptance criteria, committed the two check scripts, extended the
+padding measurement by one level, and wrote *Verification* and *Lead rulings*.
+It changed no drawing, copy or rule, because the draft and the run evidence
+agreed.
+
 Implemented BO-07 as a Frost list with the existing 3:2 list/editor composition,
 shared 40px fields, 36px form actions, 28px row actions, neutral result notices
 and amber refusals. `presets.html` imports `office.css`, `tables.css`,
@@ -451,7 +459,9 @@ Tests changed: `design014.cjs`'s authored report-detail link count is 5 to 4.
 By the lead's explicit ruling of 2026-10-29, `design019.cjs`'s F5 exact rail
 expectation now includes Discount presets between Tables and Settings; the
 same assertion checks menu, tables and settings. Nothing else in that script
-is changed. No assertion is weakened. The new check asserts every relevant
+is changed. No assertion is weakened. `design022.cjs` also records the computed
+padding of the editor, the dialogs and the notices, down to the editor form's
+children, as evidence only; it asserts nothing about them. The new check asserts every relevant
 rendered rail reaches Frost and no Frost HTML/JS still names
 `prototype/back-office/presets.html`.
 
@@ -530,15 +540,90 @@ index 235bd80..a5b9332 100644
    <h2>Fixed by the PRD</h2>
 ```
 
-### Verification and remaining work
+### Verification
 
-The lead is running the browser matrix, earlier regression checks, verify and
-the Impeccable detector. Measurements and observed results will be recorded
-here after the returned evidence is read. I did not run the check scripts.
+Neither designer ran a check script; the lead ran every one, and the evidence
+stays outside the repository. Run 1 was taken before the three Part commits,
+run 2 after them, and the final run on the finished branch.
+
+- **Run 1** (`/Users/fajars/.claude/jobs/3f069013/tmp/design022-r1`):
+  `design022.cjs` 672/672 over 58 states; `design012`, `013`, `014` (287/287),
+  `016` (399/399), `018` (730/730) and `020` (754/754) passed. `design017`
+  failed F7 (*sitemap uses defined node tags*) because the draft sitemap used an
+  undefined `[ACTION]` tag; the committed sitemap uses the defined `[INLINE]`
+  tag. `design019` failed its three F5 rail checks, because the rail now has a
+  fourth entry; see ruling 1 below. `npm run verify`: 142 files, 5226 tests.
+- **Run 2** (`…/design022-r2`): `design022.cjs` 683/683 over 58 states, no
+  page errors; `design017` 349/349; `design019` 998/998.
+- **Final run**: recorded below.
+
+**Measurements (run 2, through `design022.cjs`).** At 1440×900 and at
+1920×1080, for every one of the 58 states, the document's scroll width equals
+its client width (1440 and 1920) and `.bocontent`'s scroll width equals its
+client width (1220), so nothing overflows horizontally. Every table cell's
+scroll width fits its client width in every state with the list visible,
+including `overflow`: 48 rows (36 active, 12 inactive), the 32-code-point
+name `WWWW…W`, 100%, 12,3456% and 99.999.999, in a 1172px table. With the
+editor open the list is 689px and the editor 459px wide at both sizes (the
+content column is capped at 1220px). Focus as measured: `kind-switch` on
+`preset-amount`, `stale` on `form-notice`, `deactivate` on `keep-active`,
+`reauth` on `resume-password`.
+
+**Acceptance criterion 4, shown in the browser** (check names in run 2's
+`report.json`, screenshots beside it):
+
+| Shown | Checks | Screenshot |
+|---|---|---|
+| `CATALOG_CHANGED`, preset changed, draft kept | `stale held stale`, `changed fields show current values stale`, `Keep rebases without sending stale`, `explicit Save uses chosen version stale` | `stale-*.png`, `stale-choices-*.png` |
+| `CATALOG_CHANGED`, only the menu changed | `stale held stale-menu`, `matching preset still needs explicit choice`, `real menu-only version conflict on fixed amount` | `stale-menu-*.png` |
+| `CATALOG_CHANGED` after M-6 | `stale held stale-reauth`, `save after real M-6 cycle refuses stale draft` | — |
+| Name in use on create, edit and reactivation | `duplicate kept, reread and holder duplicate-create / -edit / -reactivate`, `explicit reactivation after rename` | `duplicate-reactivate-*.png` |
+| Kind switch | `first kind switch starts empty and focuses value`, `kind switch restores percentage`, `kind switch restores amount`, `kind edit sends whole selected value` | `kind-switch-*.png` |
+| Deactivate, then reactivate | `named confirmation`, `cancel deactivation`, `deactivate state command`, `reactivate without confirmation` (for a percentage and a fixed amount) | `deactivate-*.png` |
+| M-6 over the form, inert | `M-6 inert work reauth`, `M-6 cannot Escape reauth`, `same-manager draft retained reauth` | `reauth-*.png` |
+| BO-01 with the draft held | `BO-01 closes working dialogs bo01-draft`, `same-manager draft retained bo01-draft`, `both buffers survive same-manager BO-01` | `bo01-draft-*.png` |
+
+Acceptance criterion 5 is the check `no invented control {state} {width}`,
+which passed in every state at both sizes. Subject-correct walks are
+`subject-correct open`, `clean Cancel returns to subject`, `save changes only
+subject` and `save focuses Edit` for all six fixture rows, both kinds among
+them.
+
+**The Impeccable detector** (run 1, on `presets.html`) reported eight
+`[cramped-padding]` findings. None belongs to BO-07: all eight are shared
+containers that `presets.html` uses unchanged, and the detector is static, so
+it judges a container by its own padding and its direct children without
+following the inset one level further down. Measured padding, the same at both
+widths:
+
+| Finding | Shared from | Own padding | Where the inset is |
+|---|---|---|---|
+| `section.table-editor` ×1 (`#preset-editor`) | `tables.css`, DESIGN-019; also used by Tables, Menu and Settings | 0px | header `16px 20px`; the form has 0px, and its `.office-dialog__body` and `.office-dialog__foot` carry the inset (`20px`, `16px 20px`; the final run records this level) |
+| `dialog.office-dialog` ×3 (`#deactivate-confirm`, `#departure`, `#presets-reauth`) | `office.css`, DESIGN-012 | 0px | header `16px 20px`, body `20px`, footer `16px 20px` |
+| `section.office-emergency` ×3 (one per dialog) | `office.css`, DESIGN-012 | `12px 20px` | its own padding |
+| `section.office-notice` ×1 | `office.css`, DESIGN-012 | `12px 16px` | its own padding (`#read-state`, `#form-notice` and `#page-status` all measure `12px 16px`) |
+
+So nothing is cramped as rendered, and changing any of these would change a
+shared pattern that earlier checks guard. Nothing was changed.
+
+### Lead rulings given during this task
+
+These were ruled by the lead in the Codex designer's pane on 2026-10-29. They
+are recorded as rulings, not as the designer's choices.
+
+1. **`design019.cjs`, F5.** *Discount presets* is added to the three exact
+   expected rail arrays (from menu, tables and settings), in its drawn position
+   between Tables and Settings. Nothing else in that script changes, and no
+   assertion is weakened. Committed as `8781a0e`.
+2. **The detector findings.** Fix what belongs to BO-07; for any that is a
+   shared pattern, say why it is a false positive for a static detector,
+   quoting the measured padding. Answered in *Verification* above: all eight
+   are shared, and none was changed.
 
 ### Questions and downstream notes
 
-No unanswered product or server question was needed to draw this slice.
+No unanswered product or server question was needed to draw this slice, and
+no question is left open.
 The task delegated the zero, kind-switch, grouping and confirmation choices;
 the rules and their reasons are above. S6b must use real command responses,
 records and the catalog version, not this fixture runtime. It must preserve
