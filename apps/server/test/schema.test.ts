@@ -175,6 +175,17 @@ describe('privileges', () => {
       table: ['INSERT', 'SELECT'],
       columns: { name: ['UPDATE'], price_delta: ['UPDATE'], display_order: ['UPDATE'], is_active: ['UPDATE'] },
     },
+    // S6a-1: no DELETE, and no id or created_at.
+    discount_preset: {
+      table: ['INSERT', 'SELECT'],
+      columns: {
+        name: ['UPDATE'],
+        kind: ['UPDATE'],
+        rate_ppm: ['UPDATE'],
+        amount: ['UPDATE'],
+        is_active: ['UPDATE'],
+      },
+    },
   };
 
   const TABLE_PRIVILEGES = ['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE'];
@@ -933,6 +944,103 @@ describe('menu catalog', () => {
     }
     await variant(i, 'Spicy'); // a variant and a modifier of one item may share a name
     await modifier(i, 'Spicy');
+  });
+});
+
+// S6a: discount presets (consult C1 section 4.1). The case numbers are the task's.
+describe('discount_preset', () => {
+  const insert = (name: string, kind: string, rate: string | null, amount: string | null, active = true) =>
+    ownerQuery<{ id: string }>(
+      'INSERT INTO discount_preset (name, kind, rate_ppm, amount, is_active) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+      [name, kind, rate, amount, active]
+    );
+  const percentage = (name: string, rate = '100000', active = true) => insert(name, 'PERCENTAGE', rate, null, active);
+
+  it('is empty after migration (B-24) (S6-1)', async () => {
+    expect(await ownerQuery('SELECT 1 FROM discount_preset')).toEqual([]);
+  });
+
+  it('has exactly the columns written here: no date, time, trigger, schedule, order, stacking or minimum column (B-21, B-22) (S6-3)', async () => {
+    expect(await columnsOf('discount_preset')).toEqual([
+      'id uuid NOT NULL gen_random_uuid()',
+      'name text NOT NULL null',
+      'kind text NOT NULL null',
+      'rate_ppm bigint NULL null',
+      'amount bigint NULL null',
+      'is_active boolean NOT NULL true',
+      'created_at timestamp with time zone NOT NULL now()',
+    ]);
+  });
+
+  it('lets pos_app insert, read and update the granted columns, and refuses DELETE, TRUNCATE and an update of id or created_at (S6-1)', async () => {
+    const [row] = await query<{ id: string }>(
+      `INSERT INTO discount_preset (name, kind, rate_ppm) VALUES ('Staff', 'PERCENTAGE', 100000) RETURNING id`
+    );
+    await query(
+      `UPDATE discount_preset SET name = 'Promo', kind = 'FIXED', rate_ppm = NULL, amount = 5000, is_active = false WHERE id = $1`,
+      [row!.id]
+    );
+    expect(await query('SELECT name, kind, rate_ppm, amount, is_active FROM discount_preset')).toEqual([
+      { name: 'Promo', kind: 'FIXED', rate_ppm: null, amount: '5000', is_active: false },
+    ]);
+
+    for (const sql of [
+      'DELETE FROM discount_preset',
+      'TRUNCATE discount_preset',
+      `UPDATE discount_preset SET id = gen_random_uuid()`,
+      `UPDATE discount_preset SET created_at = now()`,
+    ]) {
+      expect((await refusal(query(sql))).code, sql).toBe(PERMISSION_DENIED);
+    }
+  });
+
+  it('refuses a value that does not match its kind or is out of range, and accepts the bounds (S6-2)', async () => {
+    const refused: Array<[string, string | null, string | null, string]> = [
+      ['PERCENTAGE', null, '5000', 'a percentage with an amount'],
+      ['PERCENTAGE', '100000', '5000', 'a percentage with both'],
+      ['FIXED', '100000', null, 'a fixed amount with a rate'],
+      ['FIXED', '100000', '5000', 'a fixed amount with both'],
+      ['PERCENTAGE', null, null, 'a percentage with neither'],
+      ['FIXED', null, null, 'a fixed amount with neither'],
+      ['PERCENTAGE', '1000001', null, 'a rate of 1000001'],
+      ['PERCENTAGE', '-1', null, 'a rate of -1'],
+      ['FIXED', null, '-1', 'an amount of -1'],
+      ['FIXED', null, '100000000', 'an amount of 100000000'],
+      ['PERCENT', '100000', null, 'the kind PERCENT'],
+    ];
+    for (const [kind, rate, amount, what] of refused) {
+      const failure = await refusal(insert('Refused', kind, rate, amount));
+      expect(failure.code, what).toBe(CHECK_VIOLATION);
+      expect(failure.constraint?.startsWith('discount_preset_'), what).toBe(true);
+    }
+    await insert('Rate zero', 'PERCENTAGE', '0', null);
+    await insert('Rate full', 'PERCENTAGE', '1000000', null);
+    await insert('Amount zero', 'FIXED', null, '0');
+    await insert('Amount full', 'FIXED', null, '99999999');
+  });
+
+  it('refuses a name that is empty, over 32 code points, untrimmed or holding a control character, and accepts 32 emoji (S6-2)', async () => {
+    for (const name of ['', 'x'.repeat(33), '😀'.repeat(33), ' Staff', 'Staff ', '\tStaff', 'Staff\n', 'St\u001baff', 'St\u009baff', 'St\u007faff']) {
+      const failure = await refusal(percentage(name));
+      expect(failure.code, JSON.stringify(name)).toBe(CHECK_VIOLATION);
+      expect(failure.constraint, JSON.stringify(name)).toBe('discount_preset_name_check');
+    }
+    await percentage('x'.repeat(32));
+    await percentage('😀'.repeat(32));
+  });
+
+  it('holds one active preset per name in any case, and any number of inactive ones', async () => {
+    await percentage('Staff');
+    for (const name of ['Staff', 'staff', 'STAFF']) {
+      const failure = await refusal(percentage(name));
+      expect(failure.code, name).toBe(UNIQUE_VIOLATION);
+      expect(failure.constraint, name).toBe('discount_preset_active_name_key');
+    }
+    await percentage('Staff', '100000', false);
+    await percentage('staff', '100000', false);
+    await percentage('Promo', '100000', false);
+    const count = await ownerQuery<{ n: string }>('SELECT count(*) AS n FROM discount_preset');
+    expect(only(count).n).toBe('4');
   });
 });
 

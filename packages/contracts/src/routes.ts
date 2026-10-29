@@ -63,4 +63,12 @@ export const ROUTE_TABLE = [
   { method: 'POST', path: '/api/back-office/config/catalog/items/restore', interactive: true },
   { method: 'POST', path: '/api/back-office/config/catalog/items/mark-unavailable', interactive: true },
   { method: 'POST', path: '/api/back-office/config/catalog/items/mark-available', interactive: true },
+  // The presets read is not interactive, for the reason the tables list is not; every
+  // preset command is a person pressing a control. A preset is a catalog row (ADR-012
+  // rule 10), so its writes advance the catalog version.
+  { method: 'GET', path: '/api/back-office/config/catalog/presets', interactive: false },
+  { method: 'POST', path: '/api/back-office/config/catalog/presets/create', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/presets/update', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/presets/deactivate', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/catalog/presets/reactivate', interactive: true },
 ] as const satisfies readonly RouteEntry[];

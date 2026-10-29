@@ -58,7 +58,7 @@ export interface CatalogSnapshot {
 // ---- the outcomes -----------------------------------------------------------------
 
 /** Which record's name an active row already holds. */
-export type DuplicateSubject = 'CATEGORY' | 'ITEM' | 'VARIANT' | 'MODIFIER';
+export type DuplicateSubject = 'CATEGORY' | 'ITEM' | 'VARIANT' | 'MODIFIER' | 'PRESET';
 
 export type CatalogOutcome<R> =
   /** Wrote; `version` is the advanced one. */
@@ -112,6 +112,7 @@ const DUPLICATE_OF: Record<string, DuplicateSubject> = {
   menu_item_active_name_key: 'ITEM',
   menu_item_variant_active_name_key: 'VARIANT',
   menu_item_modifier_active_name_key: 'MODIFIER',
+  discount_preset_active_name_key: 'PRESET',
 };
 
 // A PostgreSQL error's `detail` quotes the offending row, so a database error on these

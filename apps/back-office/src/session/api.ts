@@ -16,7 +16,12 @@ export type OfficeApi = {
   [P in OfficePath]: (...body: ArgsOf<P>) => Promise<ApiResult<ValueOf<P>>>;
 };
 
-type ConfigPath = Extract<keyof OfficeApi, `/api/back-office/config/${string}`>;
+// The preset routes are in `OfficeApi` and not yet in `ConfigApi`: PHASE1-S6b adds them to
+// `ConfigApi`, `configApi()`, `fixtureSession.ts` and `config-api.test.tsx` with BO-07.
+type ConfigPath = Exclude<
+  Extract<keyof OfficeApi, `/api/back-office/config/${string}`>,
+  `/api/back-office/config/catalog/presets${string}`
+>;
 
 /**
  * What a screen may call: the configuration routes and no others (consult C2 section 7).
@@ -100,5 +105,10 @@ export function officeApi(client: ApiClient): OfficeApi {
       client.request(ROUTES.catalogItemsMarkUnavailable, body),
     '/api/back-office/config/catalog/items/mark-available': (body) =>
       client.request(ROUTES.catalogItemsMarkAvailable, body),
+    '/api/back-office/config/catalog/presets': () => client.request(ROUTES.presetsList),
+    '/api/back-office/config/catalog/presets/create': (body) => client.request(ROUTES.presetsCreate, body),
+    '/api/back-office/config/catalog/presets/update': (body) => client.request(ROUTES.presetsUpdate, body),
+    '/api/back-office/config/catalog/presets/deactivate': (body) => client.request(ROUTES.presetsDeactivate, body),
+    '/api/back-office/config/catalog/presets/reactivate': (body) => client.request(ROUTES.presetsReactivate, body),
   };
 }
