@@ -72,7 +72,7 @@ const sameValue = (a: PresetValue, b: PresetValue): boolean =>
 /**
  * One preset, or null when there is none. Within a catalog write the version lock is
  * already held, so this takes no second lock. Phase 2's apply, which takes
- * `catalog_revision` `FOR KEY SHARE` first (ADR-012 rule 14), reads the preset it applies
+ * `catalog_revision` `FOR SHARE` first (ADR-012 rule 14), reads the preset it applies
  * with this.
  */
 export async function readPreset(db: CatalogTx, presetId: string): Promise<DiscountPreset | null> {

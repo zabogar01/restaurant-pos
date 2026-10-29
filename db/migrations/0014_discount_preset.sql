@@ -38,4 +38,5 @@ CREATE UNIQUE INDEX discount_preset_active_name_key
   WHERE is_active;
 
 -- No DELETE, and no grant on id or created_at.
-GRANT SELECT, INSERT ON discount_preset TO pos_app;GRANT UPDATE (name, kind, rate_ppm, amount, is_active) ON discount_preset TO pos_app;
+GRANT SELECT, INSERT ON discount_preset TO pos_app;
+GRANT UPDATE (name, kind, rate_ppm, amount, is_active) ON discount_preset TO pos_app;
