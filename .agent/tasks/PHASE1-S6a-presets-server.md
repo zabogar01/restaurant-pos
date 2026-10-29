@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries]
 depends_on: [PHASE1-S5]
 owns: [db/migrations/0014_discount_preset.sql, apps/server/src/domain/discount-preset.ts, apps/server/src/domain/catalog.ts, apps/server/src/http/routes/back-office-presets.ts, apps/server/src/http/server.ts, packages/contracts/src/discount-presets.ts, packages/contracts/src/routes.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S6a — Discount presets on the server
@@ -138,8 +138,8 @@ to 100 percent, held as parts per million) or a fixed amount (minor units, 0 to 
    S3a excluded the tender-method paths: an `Exclude` on `ConfigPath` with a comment saying S6b adds them to
    `ConfigApi`, `configApi()`, `fixtureSession.ts` and `config-api.test.tsx` with the screen. No back-office screen,
    test or `realSession.ts` change (no new code).
-10. **Not decided here, and left alone:** Phase 2's apply takes `catalog_revision` `FOR KEY SHARE` first (ADR-012
-    rule 14) and reads the preset; say in the Handoff which domain function Phase 2 can reuse to read one preset under
+10. **Not decided here, and left alone:** Phase 2's apply takes `catalog_revision` `FOR SHARE` first (ADR-012
+    rule 14; corrected in round 2, see below) and reads the preset; say in the Handoff which domain function Phase 2 can reuse to read one preset under
     that lock, without adding it.
 
 ## Acceptance criteria, each with its red proof
@@ -268,6 +268,26 @@ with neither column set. The explicit `IS NOT NULL` terms close that, and criter
 proves it. C1 is the architect's document and is not edited; the point is noted in STATE.
 
 Reviewer: the database, the browser and the e2e harness are out of your reach. This note is the evidence for them.
+
+## Round 2 (lead rulings, 2026-10-29), from the review
+
+The review is `.agent/reviews/PHASE1-S6a-review.md`. Its *blocked* verdict rests only on the review environment
+refusing PostgreSQL connections. The lead's verify note above is the evidence for the database-backed tests, so that
+part is ruled clear.
+
+**F1 (P2) is accepted. The lead's ruling 10 was wrong.** ADR-012 rule 14 (`docs/decisions/ADR-012-versioned-
+configuration.md:380-387`) requires Phase 2's preset-discount apply to take `catalog_revision` **`FOR SHARE`**, and
+forbids `FOR KEY SHARE` by name. Ruling 10 is corrected above. In this round:
+1. Correct `readPreset`'s comment in `apps/server/src/domain/discount-preset.ts` to say `FOR SHARE` (ADR-012 rule 14).
+   Do not add a lock, and do not change any write.
+2. Correct the Handoff's *What Phase 2 can reuse* paragraph to match. Edit it in place, and add a one-line *Round 2*
+   note at the end of the Handoff.
+3. **The lead's nit:** in `db/migrations/0014_discount_preset.sql`, the two `GRANT` statements share one line. Put the
+   second on its own line.
+
+Change nothing else. No red proof applies (two comments and one line break). Re-run `npm run verify`, commit, and end
+the Handoff with `DONE`. The lead reviews this round itself, without a re-review: the fixes are the review's own and
+fully ruled.
 
 ## Handoff
 
