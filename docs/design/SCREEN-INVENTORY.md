@@ -850,9 +850,19 @@ that user's POS session on its next authenticated request* (FR-B3, AC-32) ·
 
 **Reached by / from.** Manager, from navigation.
 
-**States.** *empty* · *loading* · *error* · *permission-denied* (n/a) ·
-*overflow* · *deactivated preset — hidden from the POS picker but still
-readable on orders carrying it* (FR-F5, AC-17).
+**States.** *empty* · *loading* · *failed read with Try again* · *overflow* ·
+*create and edit — percentage or fixed amount, including a kind switch* ·
+*invalid name, percentage or fixed amount* · *saving* · *saved* · *unchanged* ·
+*name in use — create, active edit or reactivation* · *stale draft refused
+(CATALOG_CHANGED), including after M-6 and when only the menu changed* ·
+*deactivation confirmation* · *deactivated preset — hidden from the POS picker
+but still readable on orders carrying it* (FR-F5, AC-17) · *reactivated* (Q10) ·
+*inactive edit* · *definite failure with draft kept* · *outcome unknown with a
+reread and no resend* · *success while the list read stands failed*. Forms also
+show the departure decision, M-6 over inert work and BO-01 with the draft held.
+
+The Frost artifact is `visual-directions/frost/back-office/presets.html`;
+DESIGN-022's Handoff fixes its words, focus targets and testable field rules.
 
 **Requirements.** FR-B5, FR-F2, FR-F4, FR-F5.
 
@@ -860,8 +870,9 @@ readable on orders carrying it* (FR-F5, AC-17).
 - A preset is the **constrained common path**: any authenticating staff member
   applies it with no prompt (FR-F2, principle 3). Presets are not approval-gated
   here or at the POS.
-- Discounts are 0–100%; a fixed discount is capped at the subtotal; no order
-  reaches a negative total (FR-M5).
+- Percentages accept 0–100%, up to four decimal places. Fixed amounts accept
+  0–99.999.999 whole rupiah; the subtotal cap applies when the discount is
+  applied to an order, not when the preset is stored (FR-M5).
 - **No scheduling, no auto-apply, no date or time triggers** (FR-F7, B-21).
   This is the promotions boundary; a "valid from / valid to" field crosses it.
 - One discount per order (B-22) — no stacking rules, no precedence editor.

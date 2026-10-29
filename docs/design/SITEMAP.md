@@ -303,8 +303,11 @@ reports and audit.
 │   └── [MODAL] Deactivate — invalidates POS session ..... FR-B3
 │
 ├── BO-07 [SCREEN] Discount presets ...................... FR-B5, F5
-│   ├── [MODAL] Preset create / edit .................... FR-B5
-│   └── [MODAL] Deactivate — stays readable on orders ... FR-F5, C8
+│   ├── [INLINE] Preset create / edit — non-modal panel . FR-B5
+│   │   ├── [INLINE] Name in use — draft kept ........... FR-B5
+│   │   └── [INLINE] Stale draft — choose, then Save .... ADR-012 rule 13
+│   ├── [MODAL] Deactivate — stays readable on orders .... FR-F5
+│   └── [INLINE] Reactivate; name in use opens edit ..... FR-B5, Q10
 │
 ├── BO-08 [SCREEN] Settings ......................... FR-B1, B7, M1, M5, G1
 │   ├── [INLINE] Currency + precision — fixed, shown only .. FR-B1, M1
