@@ -9,7 +9,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-29 (#153 merged; **S6a complete; DESIGN-022 done, awaiting review**): `development` at `a6e682d`; dev `pos` at `0013`.
+2026-10-29 (#153 merged; **S6a PR #154; DESIGN-022 in Opus review**): `development` at `a6e682d`; dev `pos` at `0013`.
 Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](journal/2026-10-29.md).
 
 ## Phase and gates
@@ -52,10 +52,10 @@ Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](jo
 ## Running tasks and agents
 
 - **PHASE1-S6a complete** at `4850fc9` (Codex F1, ruling 10's `FOR KEY SHARE`, fixed in r2 `2ec29a3`; lead-reviewed; verify
-  144/5270, e2e:all 100). C1 §4.1's SQL has a NULL hole (`0014` fixed it). **Owner looks, then push and PR (ask).**
+  144/5270, e2e:all 100). C1 §4.1's SQL has a NULL hole (`0014` fixed it). **PR #154: owner looks, merges; then `db:migrate`.**
 - **DESIGN-022** (BO-07) **done, awaiting review** at `bf38ea9`: Codex `design022` drew A-C, Opus `design022c` finished
   (owner exception, DECISIONS 10-29). Lead verify: design022 683/683, the eight earlier checks green, verify 142/5226;
-  8 detector findings are shared containers (≥12px inset). Review: Codex after 15:57, or Opus by exception (ask).
+  8 detector findings are shared containers (≥12px inset). **Opus review dispatched** (exception; hand-written run record, journal).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -133,7 +133,7 @@ Nothing here is decided. Detail is where each line points.
   FR-J3/AC-18 for a refused void; §9 question 2; C3's optional AC-18 sentence; ADR-012's optional FR-C7/FR-B1.
 - **Kit:** a permission rule for `git push` and `gh pr create`, so the lead need not ask each time? Builder
   `grep`/`python3`/`sed`/`node -e`? `BLOCKED ON APPROVAL` ping? A reviewer CLI override? Dispatchable designers? Exempt
-  a `--resume` after a 529 from the round count? The round watcher as a kit script?
+  a `--resume` after a 529 from the round count? The round watcher as a kit script? A run record for hand-opened designers?
 - **§3.2 gate, owner-accepted risks:** same-class PIN reset, username discovery, lockout, cookie jar, the two-tab
   case, saved passwords, sign-in without a pre-session token, the PIN-in-use refusal (C3).
 - **FR-M3 / B-2 wording:** "half-up" below zero; the code rounds half away from zero (settle before Phase 2's totals).
@@ -146,5 +146,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S6a**: owner's look, push and PR. **DESIGN-022**: review. Then **S6b** (BO-07),
+1. **#154** merge, then `db:migrate`. **DESIGN-022**: review, PR. Then **S6b** (BO-07),
    **DESIGN-021** (POS addition, G6), **C4** (for S7). **Small:** the code-point cleanup between slices.
