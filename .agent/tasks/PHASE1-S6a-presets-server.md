@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries]
 depends_on: [PHASE1-S5]
 owns: [db/migrations/0014_discount_preset.sql, apps/server/src/domain/discount-preset.ts, apps/server/src/domain/catalog.ts, apps/server/src/http/routes/back-office-presets.ts, apps/server/src/http/server.ts, packages/contracts/src/discount-presets.ts, packages/contracts/src/routes.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/back-office/src/session/api.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: active
+status: complete
 cycles: 0
 ---
 # PHASE1-S6a — Discount presets on the server
@@ -288,6 +288,21 @@ forbids `FOR KEY SHARE` by name. Ruling 10 is corrected above. In this round:
 Change nothing else. No red proof applies (two comments and one line break). Re-run `npm run verify`, commit, and end
 the Handoff with `DONE`. The lead reviews this round itself, without a re-review: the fixes are the review's own and
 fully ruled.
+
+## Round 2 lead review and acceptance (2026-10-29)
+
+Round 2 is `2ec29a3`. The builder's first round 2 ended `DONE` with the edits uncommitted, so the
+lead resumed it once, only to commit them. That was the third and last round, and it did no other work. The diff
+against `28a0bd0` is exactly the three ruled items:
+- `readPreset`'s comment says `FOR SHARE`;
+- the Handoff's Phase 2 paragraph says `FOR SHARE`;
+- the second `GRANT` in `0014` has its own line.
+
+No lock and no write changed, and no red proof applies. The lead ran these on `2ec29a3`:
+- `npm run verify`: 144 files, 5270 tests passed;
+- `npm run test:e2e:all`: 100 passed.
+
+The review's F1 is closed. The task is **complete**. It touches money, so the owner looks before merge.
 
 ## Handoff
 
