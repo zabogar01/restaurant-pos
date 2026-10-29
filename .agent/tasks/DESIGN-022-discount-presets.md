@@ -5,8 +5,8 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-020]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
-cycles: 0
+status: complete
+cycles: 1
 ---
 # DESIGN-022 — BO-07 Discount presets (slice F, BO-07 half)
 
@@ -327,6 +327,28 @@ notes* for S6b and BO-04.
 
 Change nothing else. Ask the lead for the full check set when done (`design022.cjs`, the eight earlier ones and
 `npm run verify`). Add a *Round 2* section at the end of the Handoff, and end it with `DONE`.
+
+## Round 2 lead review and acceptance (2026-10-29)
+
+Round 2 is `04c2fd9`, `78ff867` and `44a186b`. The diff against `cb36143` is exactly the ruled items:
+- F1: a standing `listVersion` in `presets.js`, the *BO-07's standing list version* rule in `D`, the Handoff's
+  *Command versions* rule, and the skipped-answer and plus-one walks in `design022.cjs`;
+- F2: FR-M5's negative-total clause restored in `I`;
+- F3: the shared-constants sentence in `D` and the Handoff.
+
+**The red, repeated by the lead.** Round 2's `design022.cjs` run against round 1's `presets.js` (from `cb36143`,
+restored afterwards) gave 684/688. The four failures were "skipped answer names 14, list stands at 12", "editor carries
+the standing version", "edit after skipped answer refused, no write" and "plus-one answer advances the list". The new
+walks detect F1.
+
+**The lead's final set** at `44a186b` (evidence `/Users/fajars/.claude/jobs/3f069013/tmp/design022-r4`):
+- `design022.cjs`: 688/688, 58 states;
+- `design012` (421 checks), `013` (371), `014` (287/287), `016` (399/399), `017` (349/349), `018` (730/730), `019`
+  (998/998) and `020` (754/754): all passed, with no page errors;
+- `npm run verify`: 142 files, 5226 tests passed.
+
+The review's three findings are closed, and the task is **complete**. The look of BO-07 is the owner's (`F/presets.html`
+in the gallery). S6b is written from this Handoff.
 
 ## Handoff
 
