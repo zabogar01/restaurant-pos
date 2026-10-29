@@ -9,9 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-28 (wrap-up for a fresh session): `development` at `beda531` (#151 S5 and #152 merged); dev `pos` at `0013`.
-**Nothing running; no agent but the lead; no task worktree.** Lead branch `agent/lead-1028` holds this wrap-up, **not
-pushed** (ask the owner). Narrative: [journal/2026-10-27.md](journal/2026-10-27.md), [journal/2026-10-28.md](journal/2026-10-28.md).
+2026-10-29 (#153 merged; **S6a PR #154; DESIGN-022 PR #156**): `development` at `a6e682d`; dev `pos` at `0013`.
+Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](journal/2026-10-29.md).
 
 ## Phase and gates
 
@@ -21,8 +20,7 @@ pushed** (ask the owner). Narrative: [journal/2026-10-27.md](journal/2026-10-27.
   server, `0011`, `SETTINGS_CHANGED`), S2b (#130: BO-08 settings), S3a (#134: tender methods, `0012`), S3b (#137: BO-08
   methods), S4a (#140: catalog domain, `0013`, `catalogWrite`), S4b (#142: catalog routes, `CATALOG_CHANGED`), S4c1
   (#144: BO-03), S4c2a (#147) and S4c2b (#149: BO-04 whole), **S5 (#151: the 86 toggle, server and BO-03)**. S4 and S5
-  are done. **Next: S6a** (presets server, C1 §4); S6b (BO-07) waits on design F's BO-07 half. C4 (POS catalog) not
-  written; S7 needs it.
+  are done. **S6a complete** (presets server, `0014`, not merged); S6b (BO-07) waits on DESIGN-022. C4 not written (S7).
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14); S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
@@ -39,22 +37,25 @@ pushed** (ask the owner). Narrative: [journal/2026-10-27.md](journal/2026-10-27.
 
 ## Integration branch
 
-- **`development`** at `beda531` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `a6e682d` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
   **before reporting or dispatching**. `0013` applied 2026-10-26; no lockfile or migration change since.
-- **Guard hooks** current (`--check` 2026-10-28); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1028`** (from `beda531`). Cut each new lead branch from
+- **Guard hooks** current (`--check` 2026-10-29); no agents.yaml or `.githooks/` change since 2026-10-17.
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1029`** (from `a6e682d`). Cut each new lead branch from
   `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (the classifier refuses it otherwise; LESSONS). Ask, then push the task
   and lead branches together. **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
-- **Task worktrees: none** (S5's removed 10-28). Not the lead's: `../restaurant-pos-design`, `keen-chebyshev-ccf255`,
-  branch `setting/add-permission`.
+- **Task worktrees:** `wt/PHASE1-S6a`, `wt/DESIGN-022`. Not the lead's: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **Nothing running;** Herdr shows only `lead`.
+- **PHASE1-S6a complete** at `4850fc9` (Codex F1, ruling 10's `FOR KEY SHARE`, fixed in r2 `2ec29a3`; lead-reviewed; verify
+  144/5270, e2e:all 100). C1 §4.1's SQL has a NULL hole (`0014` fixed it). **PR #154: owner looks, merges; then `db:migrate`.**
+- **DESIGN-022 complete** at `30e715d` (Codex drew, Opus finished and reviewed: owner exceptions). Opus F1 (BO-07 list
+  needs DESIGN-019's standing version) + F2, F3 fixed in r2; red repeated (684/688 on r1); final 688/688, eight earlier
+  checks green, verify 142/5226. **PR #156:** owner looks at `F/presets.html`, merges.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -115,7 +116,8 @@ pushed** (ask the owner). Narrative: [journal/2026-10-27.md](journal/2026-10-27.
 
 Nothing here is decided. Detail is where each line points.
 
-- **Lead rulings, yours to overturn** (each in its task file): S5 (route names; a no-op 86 announces the reached
+- **Lead rulings, yours to overturn** (each in its task file): S6a (*The shape* 1-10: no display order or reorder;
+  name 1-32; whole-preset edit; its own read route); S5 (route names; a no-op 86 announces the reached
   state); S4c2b (option uniqueness by `lower(name)`; saved name on removal; F3 rejected); S4c2a (the split; the item in
   client state at `/back-office/menu/item`; BO-04's own read; top bar kept; one command across BO-03/BO-04); S4c1; S4b
   (bare `DUPLICATE`); S4a (option swap by temporary deactivation); S3b; DESIGN-020; DESIGN-019 F7; S2b; S1b; S0; C3;
@@ -131,7 +133,7 @@ Nothing here is decided. Detail is where each line points.
   FR-J3/AC-18 for a refused void; §9 question 2; C3's optional AC-18 sentence; ADR-012's optional FR-C7/FR-B1.
 - **Kit:** a permission rule for `git push` and `gh pr create`, so the lead need not ask each time? Builder
   `grep`/`python3`/`sed`/`node -e`? `BLOCKED ON APPROVAL` ping? A reviewer CLI override? Dispatchable designers? Exempt
-  a `--resume` after a 529 from the round count? The round watcher as a kit script?
+  a `--resume` after a 529 from the round count? The round watcher as a kit script? A run record for hand-opened designers?
 - **§3.2 gate, owner-accepted risks:** same-class PIN reset, username discovery, lockout, cookie jar, the two-tab
   case, saved passwords, sign-in without a pre-session token, the PIN-in-use refusal (C3).
 - **FR-M3 / B-2 wording:** "half-up" below zero; the code rounds half away from zero (settle before Phase 2's totals).
@@ -144,7 +146,5 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S6a** (presets server, plan S6; C1 §4 verbatim; `0014`; touches money): write and dispatch. Beside it, **design F's
-   BO-07 half** (Codex hand-opened; the lead runs the checks), which S6b needs.
-2. **Then S6b** (BO-07), **DESIGN-021** (POS addition, G6), **C4** (the POS catalog consult, for S7). **Small:** the
-   code-point cleanup between slices.
+1. **#154** merge, then `db:migrate`. **#156** merge. Then **S6b** (BO-07),
+   **DESIGN-021** (POS addition, G6), **C4** (for S7). **Small:** the code-point cleanup between slices.
