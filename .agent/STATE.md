@@ -47,8 +47,7 @@ Lead branch `agent/lead-1029`, not pushed. Narrative: [journal/2026-10-29.md](jo
   `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (the classifier refuses it otherwise; LESSONS). Ask, then push the task
   and lead branches together. **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
-- **Task worktrees:** `../restaurant-pos-wt/PHASE1-S6a`, `../restaurant-pos-wt/DESIGN-022` (`npm ci` done). Not the lead's: `../restaurant-pos-design`, `keen-chebyshev-ccf255`,
-  branch `setting/add-permission`.
+- **Task worktrees:** `wt/PHASE1-S6a`, `wt/DESIGN-022`. Not the lead's: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
