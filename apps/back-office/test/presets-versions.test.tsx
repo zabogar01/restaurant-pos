@@ -4,7 +4,7 @@ import { mount, refusal, text } from './session-harness.js';
 import { dialogNamed } from './tables-support.js';
 import {
   ANNIVERSARY, BIRTHDAY, P_CREATE, P_DEACTIVATE, P_REACTIVATE, P_UPDATE, READ, REGULAR, STAFF,
-  amountField, aria, bodyOf, byId, facts, fixed, formNotice, harness, nameField, named, newPercentDraft, openPresets,
+  amountField, aria, bodyOf, byId, discountOf, facts, fixed, formNotice, harness, nameField, named, newPercentDraft, openPresets,
   pageStatus, panel, panelName, percent, percentField, preset, presetAnswer, presetCalls, presetList, reachPartial,
   rowNames, rowOf, tap, typeInto,
 } from './presets-support.js';
@@ -161,6 +161,81 @@ describe('AC 8. the standing version', () => {
     await h.settle();
     expect(bodyOf(h, P_DEACTIVATE)).toEqual({ presetId: STAFF.presetId });
     expect(bodyOf(h, P_CREATE)).not.toHaveProperty('expectedVersion');
+  });
+});
+
+describe('AC 8 (round 3, F1). a read and a command that overlap are reconciled by the version, not the arrival', () => {
+  // Staff meal is inactive at 10% at version 12. The manager presses Reactivate, then leaves and
+  // revisits BO-07 through the real rail while the command is outstanding: the revisit's read is
+  // out too. Both responses are deferred, so the test chooses the order they arrive in.
+  const asked = { ...STAFF, isActive: false, value: percent('100000') };
+  const rows = (staff: typeof STAFF) => [staff, REGULAR, BIRTHDAY, ANNIVERSARY];
+
+  async function overlapping(read: ReturnType<typeof presetList>, order: 'answer-first' | 'read-first') {
+    const host = await open(presetList(12, rows(asked)));
+    h.reply(P_REACTIVATE, presetAnswer(13, { ...asked, isActive: true }));
+    const command = h.hold(P_REACTIVATE);
+    tap(named(host, 'Reactivate Staff meal'));
+    h.reply(READ, read);
+    const reread = h.hold(READ);
+    tap(named(host.querySelector<HTMLElement>('.bonav')!, 'Tables'));
+    await h.settle();
+    tap(named(host.querySelector<HTMLElement>('.bonav')!, 'Discount presets'));
+    await h.settle();
+    const answer = async () => {
+      command.deliver(presetAnswer(13, { ...asked, isActive: true }));
+      await h.settle();
+    };
+    const snapshot = async () => {
+      reread.deliver(read);
+      await h.settle();
+    };
+    if (order === 'answer-first') {
+      await answer();
+      await snapshot();
+    } else {
+      await snapshot();
+      await answer();
+    }
+    return host;
+  }
+
+  const newer = presetList(14, rows({ ...asked, isActive: true, value: percent('200000') }));
+
+  const renameAndSave = async (host: HTMLElement) => {
+    h.reply(P_UPDATE, presetAnswer(15, { ...asked, isActive: true, name: 'Staff lunch', value: percent('200000') }));
+    renamingStaff(host);
+    tap(named(host, 'Save'));
+    await h.settle();
+  };
+
+  it('(a) the answer (13) arrives first, then the read (14, 20%): the row shows 20% and the edit carries 14 and 20%', async () => {
+    const host = await overlapping(newer, 'answer-first');
+    expect(discountOf(host, STAFF.presetId)).toEqual(['20%', 'Percentage']);
+    expect(text(facts(host))).toContain('Catalog version 14');
+    await renameAndSave(host);
+    expect(bodyOf(h, P_UPDATE)).toMatchObject({ expectedVersion: 14, value: { kind: 'PERCENTAGE', ratePpm: '200000' } });
+  });
+
+  it('(b) the read (14, 20%) arrives first, then the answer (13): the row still shows 20%, the facts name 14, and the edit carries 14 and 20%', async () => {
+    const host = await overlapping(newer, 'read-first');
+    expect(discountOf(host, STAFF.presetId)).toEqual(['20%', 'Percentage']);
+    expect(text(facts(host))).toContain('Catalog version 14');
+    // The answer is still announced.
+    expect(text(pageStatus(host))).toBe('Staff meal reactivated. Staff can choose it at the POS.');
+    await renameAndSave(host);
+    expect(bodyOf(h, P_UPDATE)).toMatchObject({ expectedVersion: 14, value: { kind: 'PERCENTAGE', ratePpm: '200000' } });
+  });
+
+  it('(c) the older snapshot (12, inactive) arriving after the answer (13, active) keeps the newer result: the row is active, the standing version 13, and the edit carries 13', async () => {
+    const host = await overlapping(presetList(12, rows(asked)), 'answer-first');
+    expect(rowOf(host, STAFF.presetId).getAttribute('data-active')).toBe('true');
+    expect(text(facts(host))).toContain('Catalog version 13');
+    h.reply(P_UPDATE, presetAnswer(14, { ...asked, isActive: true, name: 'Staff lunch' }));
+    renamingStaff(host);
+    tap(named(host, 'Save'));
+    await h.settle();
+    expect(bodyOf(h, P_UPDATE).expectedVersion).toBe(13);
   });
 });
 

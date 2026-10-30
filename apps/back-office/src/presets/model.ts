@@ -215,7 +215,10 @@ export function createPresetsModel(config: ConfigApi) {
   let loaded = false;
   /** Counts the answers applied and the versions adopted, so a read can tell which came after it began. */
   let clock = 0;
-  const applied = new Map<string, { record: PresetView; at: number }>();
+  /** A record a command answered, with the catalog version of that answer and when it was applied. */
+  const applied = new Map<string, { record: PresetView; at: number; version: number }>();
+  /** The catalog version each row on screen was taken from: its snapshot's, or its answer's. */
+  const rowVersion = new Map<string, number>();
   /** When the standing version, and the latest one, were last moved by an answer. */
   let standingAt = 0;
   let latestAt = 0;
@@ -258,11 +261,13 @@ export function createPresetsModel(config: ConfigApi) {
   // The list read, for the first load, for Try again, and for a reread after a refusal or an
   // unknown outcome (which does not hide the list while it runs). The latest read decides.
   //
-  // A read is a snapshot taken before some command may have answered. A record a command's
-  // authoritative answer replaced after the read began is kept (or inserted, if the read lacks
-  // it), so an older snapshot arriving late never undoes a newer success. The same holds for the
-  // standing and the latest version: an answer adopted after the read began, ahead of what the read
-  // saw, stays.
+  // A read is a snapshot taken before or after some command committed, and arrival order does not
+  // say which. Every row therefore carries the catalog version it was taken from (`rowVersion`),
+  // and the version decides: a record a command answered after the read began is kept (or
+  // inserted) only when the answer's version is greater than the snapshot's; at the snapshot's
+  // version or older the snapshot's row stands. A command answer likewise replaces a row only when
+  // the row's version is lower. The standing and the latest version: an answer adopted after the
+  // read began, ahead of what the read saw, stays.
   //
   // What a caller receives describes the list on screen: a read that is no longer the newest
   // waits for the newest read already in flight and returns that read's outcome. It starts no
@@ -289,7 +294,17 @@ export function createPresetsModel(config: ConfigApi) {
     if (mine === readSequence) {
       if (snapshot !== null) {
         let presets = [...snapshot.presets];
-        for (const { record, at } of applied.values()) if (at > startedAt) presets = upsert(presets, record);
+        rowVersion.clear();
+        for (const row of presets) rowVersion.set(row.presetId, snapshot.version);
+        // The version decides, not the arrival: an answer applied after the read began is kept only
+        // when it is newer than the snapshot. At the snapshot's version or older, the snapshot's row
+        // stands (it may include a later edit by someone else).
+        for (const { record, at, version } of applied.values()) {
+          if (at > startedAt && version > snapshot.version) {
+            presets = upsert(presets, record);
+            rowVersion.set(record.presetId, version);
+          }
+        }
         const standingAhead = state.version !== null && standingAt > startedAt && state.version > snapshot.version;
         const latestAhead = state.latest !== null && latestAt > startedAt && state.latest > snapshot.version;
         set({
@@ -336,12 +351,25 @@ export function createPresetsModel(config: ConfigApi) {
     clock += 1;
     let { presets } = state;
     for (const record of answer.presets) {
-      applied.set(record.presetId, { record, at: clock });
-      presets = upsert(presets, record);
+      const kept = applied.get(record.presetId);
+      if (kept === undefined || kept.version <= answer.version) {
+        applied.set(record.presetId, { record, at: clock, version: answer.version });
+      }
+      // A row a newer read (or answer) already established keeps its values.
+      const have = rowVersion.get(record.presetId);
+      if (have === undefined || have < answer.version) {
+        presets = upsert(presets, record);
+        rowVersion.set(record.presetId, answer.version);
+      }
     }
     latestAt = clock;
-    // The read stands failed: the rows are the client's own, and the alert stays.
-    set({ presets, latest: answer.version, partial: state.read === 'failed' ? true : state.partial });
+    // The read stands failed: the rows are the client's own, and the alert stays. The latest
+    // version never moves backwards.
+    set({
+      presets,
+      latest: Math.max(state.latest ?? 0, answer.version),
+      partial: state.read === 'failed' ? true : state.partial,
+    });
     adopt(answer.version);
   }
 
