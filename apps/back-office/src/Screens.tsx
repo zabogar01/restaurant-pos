@@ -4,6 +4,8 @@ import { createItemModel } from './item/model.js';
 import { ItemEditor } from './item/ItemEditor.js';
 import { createMenuModel } from './menu/model.js';
 import { Menu } from './menu/Menu.js';
+import { createPresetsModel } from './presets/model.js';
+import { Presets } from './presets/Presets.js';
 import { useConfig, useSession } from './session/useSession.js';
 import { createSettingsModel } from './settings/model.js';
 import { Settings } from './settings/Settings.js';
@@ -19,7 +21,7 @@ import { workGuard } from './work/guard.js';
  * What a screen has in flight belongs to the working area, not to the screen. BO-05's model
  * is made here, once per key, so that leaving Tables for the landing does not stop a command
  * already sent: Discard drops only the draft, and the answer still lands in the list,
- * silently, whether or not Tables is on screen. BO-08's, BO-03's and BO-04's models are made here
+ * silently, whether or not Tables is on screen. BO-08's, BO-03's, BO-04's and BO-07's models are made here
  * for the same reason. BO-04's also holds which item it edits (never part of the address), so a
  * different manager's sign-in destroys the subject with the area's key.
  */
@@ -31,6 +33,7 @@ export function Screens() {
   const [settings] = useState(() => createSettingsModel(config));
   const [menu] = useState(() => createMenuModel(config));
   const [item] = useState(() => createItemModel(config, menu));
+  const [presets] = useState(() => createPresetsModel(config));
   const frameHolds = useSyncExternalStore(workGuard.subscribe, workGuard.isHeld);
   const signedIn = session.phase === 'signed-in';
 
@@ -38,12 +41,14 @@ export function Screens() {
   useEffect(() => settings.start(), [settings]);
   useEffect(() => menu.start(), [menu]);
   useEffect(() => item.start(), [item]);
+  useEffect(() => presets.start(), [presets]);
   // An answer is presented only while the same manager is signed in and nothing of the
   // frame's is open (a decision, the logout confirmation): nothing is chosen for them.
   useEffect(() => tables.setGate(signedIn && !frameHolds), [tables, signedIn, frameHolds]);
   useEffect(() => settings.setGate(signedIn && !frameHolds), [settings, signedIn, frameHolds]);
   useEffect(() => menu.setGate(signedIn && !frameHolds), [menu, signedIn, frameHolds]);
   useEffect(() => item.setGate(signedIn && !frameHolds), [item, signedIn, frameHolds]);
+  useEffect(() => presets.setGate(signedIn && !frameHolds), [presets, signedIn, frameHolds]);
 
   switch (screen) {
     case 'menu':
@@ -52,6 +57,8 @@ export function Screens() {
       return <ItemEditor model={item} />;
     case 'tables':
       return <Tables model={tables} />;
+    case 'presets':
+      return <Presets model={presets} />;
     case 'settings':
       return <Settings model={settings} />;
     case 'landing':

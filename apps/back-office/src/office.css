@@ -280,3 +280,34 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 #duplicate-holder { margin-top: var(--frost-space-2); font-size: var(--frost-text-13); }
 #item-form [aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }
 .menu-table [data-edit][aria-disabled='true'], .menu-table [data-new-item][aria-disabled='true'] { border-style: dashed; }
+
+/*
+ * BO-07 Discount presets (PHASE1-S6b), ported from Frost's presets.css
+ * (docs/design/visual-directions/frost/back-office/presets.css) and the radio group of its
+ * office.css: the one table, the kind choice, the money facts beside a fixed amount, and the
+ * sticky footer. It composes BO-05's list and panel and BO-08's field and notice rules above.
+ */
+.office-radio[aria-invalid='true'] { border: var(--frost-invalid-border); }
+.office-radio:disabled { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; opacity: 1; }
+.office-radio { margin: 0; padding: var(--frost-space-3); border: var(--frost-control-stroke); border-radius: var(--frost-radius-surface); min-width: 0; }
+.office-radio legend { font-size: var(--frost-text-12); padding: 0 var(--frost-space-1); }
+.office-radio label { display: inline-flex; align-items: center; gap: var(--frost-space-2); margin-right: var(--frost-space-5); }
+.office-radio input { accent-color: var(--frost-primary); margin: 0; }
+.office-table .num { text-align: right; font-variant-numeric: var(--frost-numeric-variant); white-space: nowrap; }
+#presets-list caption { text-align: left; color: var(--frost-muted); font-size: var(--frost-text-12); padding-bottom: var(--frost-space-3); }
+#presets-list th:last-child, #presets-list td:last-child { text-align: right; white-space: nowrap; }
+#presets-list td:last-child button + button { margin-left: var(--frost-space-2); }
+#presets-list td:nth-child(3) { white-space: nowrap; }
+#presets-list tr[data-active='false'] { color: var(--frost-muted); }
+#presets-list tr[data-selected='true'] { background: var(--frost-group); }
+.preset-kind { display: block; font-size: var(--frost-text-12); color: var(--frost-muted); }
+.preset-value, #preset-percent, #preset-amount { font-variant-numeric: var(--frost-numeric-variant); }
+.preset-money { margin: var(--frost-space-4) 0 var(--frost-space-1); font-size: var(--frost-text-12); }
+.preset-money div { display: flex; gap: var(--frost-space-3); }
+.preset-money dd { margin: 0; }
+#preset-editor .office-radio label { display: inline-flex; color: var(--frost-text); }
+.preset-footer { flex-wrap: wrap; position: sticky; bottom: 0; }
+.preset-footer .settings-foot-hint { flex-basis: 100%; }
+#preset-editor .settings-rate { grid-template-columns: minmax(0, 1fr) auto; }
+#form-notice[data-kind='failure'], #form-notice[data-kind='stale'] { background: var(--frost-warning-surface); border-color: var(--frost-warning); color: var(--frost-warning); }
+#preset-rows button[aria-disabled='true'], #new-preset[aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }

@@ -5,7 +5,7 @@
 // record id, no draft, no query string. Nothing here or anywhere in src reads the
 // address bar's query or hash, in either build (a test scans for it).
 
-export type Screen = 'landing' | 'menu' | 'item' | 'tables' | 'settings';
+export type Screen = 'landing' | 'menu' | 'item' | 'tables' | 'presets' | 'settings';
 
 /**
  * One row per screen: a screen added to the type stops compiling until it has a path. `item` is
@@ -17,6 +17,7 @@ export const PATHS = {
   menu: '/back-office/menu',
   item: '/back-office/menu/item',
   tables: '/back-office/tables',
+  presets: '/back-office/presets',
   settings: '/back-office/settings',
 } as const satisfies Record<Screen, string>;
 

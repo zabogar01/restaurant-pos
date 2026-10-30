@@ -77,6 +77,13 @@ const CONFIG: SessionStore['config'] = {
   '/api/back-office/config/catalog/items/restore': unavailable,
   '/api/back-office/config/catalog/items/mark-unavailable': unavailable,
   '/api/back-office/config/catalog/items/mark-available': unavailable,
+  // The discount presets answer `unavailable` as well: BO-07 then draws its read failure, and
+  // there is no fixture preset list to seed.
+  '/api/back-office/config/catalog/presets': unavailable,
+  '/api/back-office/config/catalog/presets/create': unavailable,
+  '/api/back-office/config/catalog/presets/update': unavailable,
+  '/api/back-office/config/catalog/presets/deactivate': unavailable,
+  '/api/back-office/config/catalog/presets/reactivate': unavailable,
 };
 
 export function createFixtureSession(): SessionStore {

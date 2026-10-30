@@ -40,7 +40,7 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
     expect(true).toBe(true);
   });
 
-  it('holds the five table routes, the two settings routes, the five tender-methods routes and the thirteen catalog routes at run time, and nothing under /auth/', () => {
+  it('holds the five table routes, the two settings routes, the five tender-methods routes, the thirteen catalog routes and the five preset routes at run time, and nothing under /auth/', () => {
     expect(Object.keys(store.config).sort()).toEqual([
       '/api/back-office/config/catalog',
       '/api/back-office/config/catalog/categories/archive',
@@ -55,6 +55,11 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
       '/api/back-office/config/catalog/items/reorder',
       '/api/back-office/config/catalog/items/restore',
       '/api/back-office/config/catalog/items/update',
+      '/api/back-office/config/catalog/presets',
+      '/api/back-office/config/catalog/presets/create',
+      '/api/back-office/config/catalog/presets/deactivate',
+      '/api/back-office/config/catalog/presets/reactivate',
+      '/api/back-office/config/catalog/presets/update',
       '/api/back-office/config/settings',
       '/api/back-office/config/settings/save',
       '/api/back-office/config/tables',
@@ -97,6 +102,17 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
     void store.config['/api/back-office/config/catalog/items/mark-available'];
     // @ts-expect-error: a route that does not exist is not on the surface.
     void store.config['/api/back-office/config/catalog/items/delete'];
+    expect(true).toBe(true);
+  });
+
+  it('the preset routes are typed on the configuration surface', () => {
+    void store.config['/api/back-office/config/catalog/presets'];
+    void store.config['/api/back-office/config/catalog/presets/create'];
+    void store.config['/api/back-office/config/catalog/presets/update'];
+    void store.config['/api/back-office/config/catalog/presets/deactivate'];
+    void store.config['/api/back-office/config/catalog/presets/reactivate'];
+    // @ts-expect-error: a route that does not exist is not on the surface (nothing deletes a preset).
+    void store.config['/api/back-office/config/catalog/presets/delete'];
     expect(true).toBe(true);
   });
 

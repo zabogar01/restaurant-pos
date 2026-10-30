@@ -44,7 +44,7 @@ describe('fixture mode, BO-03', () => {
     await act(async () => {});
 
     expect(host.getAttribute('data-session')).toBe('signed-in');
-    expect(host.querySelector('.bonav')!.textContent).toBe('ConfigurationMenuTablesSettings');
+    expect(host.querySelector('.bonav')!.textContent).toBe('ConfigurationMenuTablesDiscount presetsSettings');
     expect(host.querySelector('h1')!.textContent).toBe('Menu');
     expect(host.querySelector('[role="alert"]')!.textContent).toBe('Menu could not be loadedTry again to read the menu.Try again');
     expect(host.querySelector('#menu-count')).toBeNull();

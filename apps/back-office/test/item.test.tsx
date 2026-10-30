@@ -47,11 +47,11 @@ describe('AC 1. the route and the rail', () => {
     await editFrom(h, host, 'Burger');
     expect(window.location.pathname).toBe('/back-office/menu/item');
     expect(title(host)).toBe('Burger');
-    expect(text(rail(host))).toBe('ConfigurationMenuTablesSettings');
+    expect(text(rail(host))).toBe('ConfigurationMenuTablesDiscount presetsSettings');
     expect(named(rail(host), 'Menu').getAttribute('aria-current')).toBe('page');
     expect(named(rail(host), 'Tables').hasAttribute('aria-current')).toBe(false);
     expect(named(rail(host), 'Settings').hasAttribute('aria-current')).toBe(false);
-    expect(host.querySelectorAll('.bonav a')).toHaveLength(3);
+    expect(host.querySelectorAll('.bonav a')).toHaveLength(4);
   });
 });
 
