@@ -5,8 +5,8 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-022]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # DESIGN-021 — The POS addition: the served menu, M-2 for any item, the served preset picker
 
@@ -483,6 +483,57 @@ The lead did not walk the states by hand; the owner's look follows the review. T
 was Codex). C4's *For DESIGN-021* (above) is the authority for every former **(C4)** item; R1 stands; OQ1 is open with
 the owner, and the drawn picker states follow its recommended yes. The lead accepted the designer's 86-stepper reading
 (stepper live within its bounds, Add alone blocked).
+
+## Round 2 (lead rulings, 2026-10-30), from the review
+
+The review is `.agent/reviews/DESIGN-021-review.md` (Claude Opus, at `0298f5e`): verdict *findings*, eleven. The reviewer
+could not run a browser, so F1 to F5 are inferred; its section 3 lists a probe for each. **Every finding is accepted.**
+Fix them as below, in this order, and commit as you go. Do not change anything the review cleared (its section 4).
+
+1. **F1 and F2, the sheet's notice and footer.** Move `#served-sheet-notice` out of the scroll owner into a fixed band
+   between the body and the footer; the body shrinks and keeps its scrollTop, so no option moves. Keep the line total
+   (what Add will add) in the fixed area too. Reserve one line for `#served-add-reason` in the footer at all times, so the
+   footer's height never changes while the sheet is open. Draw a new picture: many options, scrolled to the end, with a
+   selected modifier removed. Say it in `D`'s data-driven sheet rule.
+2. **F3, focus under a poll.** In served mode, Add, Update and the quantity keys turn off with `aria-disabled` and the
+   off class, as tiles do, never the native `disabled`; the handlers already guard. Focus stays on a focused Add when it
+   turns off, and Escape still closes the sheet.
+3. **F4, long category names.** A served category row grows: `min-height` 72 with `height: auto`, padding from registered
+   tokens. Add one line to *DESIGN-021 additions* saying 72 is a minimum for a wrapped served name; `D`'s *Category row*
+   is otherwise unchanged.
+4. **F5, the menu status.** Make the status region a fixed-height band reserved at the menu's bottom edge, always present
+   and always in the accessibility tree (visually empty when idle), so neither its appearance nor its clearing changes the
+   grid's height; drop the `:empty` rule. **State the availability status's lifetime** as a rule S7b can test, with a
+   reason; the lead's lean is that it stays until the next change or until the cashier leaves POS-03, not two seconds,
+   so that it can be read. Remove the unreachable `if(!stale)` branch, or say why the check is partial. Apply the same
+   always-present treatment to the sheet's notice band if F1's band would otherwise enter the tree with its text.
+5. **F6, the fire refusal. Ruled: `fire.ts`'s form stands.** The reviewed singular (`order.html:405`, `fire.ts`: *Cannot
+   send to the kitchen* / *1 pending line is no longer available: **Steak**.* / *Void that line or ask a manager to put
+   the item back on.*) does not change; this task did not mark it as changing, and *existing pictures stay*. Drop the
+   Handoff's new singular row. Give the **plural in that form** (title, a lead with the count, the bold names, a
+   resolution), replacing `fire.ts`'s provisional plural, and define **one item on several lines**: the count counts lines,
+   the names are deduplicated, and the resolution's "item" or "items" follows the number of distinct items. Draw the
+   plural and that case. The DESIGN-007 `fireblocked` picture's older wording is a pre-existing difference: name it in the
+   Handoff as a note, do not redraw it.
+6. **F7, checks that cannot fail.** Make `design021.cjs` assert what it claims: the price and 86 tag boxes inside the
+   tile's box (on an 86'd largest-price tile, which you draw); the long order line's quantity and amount boxes intact; every
+   `.cat`'s `scrollHeight <= clientHeight`. Drop the `#preset-change` assertion and the element. **Add the review's five
+   probes (section 3, F1 to F5) as assertions.** For *earlier states render as before*, add a DOM-text comparison of every
+   pre-existing `order.html` state against `development`; the lead will run it once.
+7. **F8, the picker's unexpected failure.** Add the second row to the copy table, reusing the menu's words, and let
+   `served-error-order` and `served-loading-order` reach the picker's matching state.
+8. **F9, focus on a failed read. Ruled, the review's rule:** on a failure, focus moves to *Try again* only if focus is on
+   the body or on the control the read just removed; otherwise it stays where it is. Mark the picture's `.focus()` as the
+   fresh-mount case, and stop focusing `#preset-retry` when the picker opens (it opens on its heading).
+9. **F10, the empty catalog.** Cite ruling C-1 (inert in place, never absent) in rule 2. When no menu is held, use a
+   read-neutral reason such as *No items on this order yet.*; keep *Add an item first.* for a held menu.
+10. **F11, housekeeping:** all five items as the review lists them (focus to the selected category, not the first; remove
+    `.served-removed-slot`, `.served-preset-cap`, `#preset-change` and `aboutToChoose`; fix the "archive leaves a hole"
+    comment; match `served-item-removed` and `served-item-changed` exactly, not by suffix).
+
+Then update the Handoff in place (rules, copy table, focus, states, verification), mark what is new as round 2, ask the
+lead for a check run (`design021.cjs`, and the DOM-text comparison), and report done. This is round 2 of at most three.
+The lead reviews the round against these rulings; there is no second full review unless a fix goes beyond them.
 
 ## Handoff
 
