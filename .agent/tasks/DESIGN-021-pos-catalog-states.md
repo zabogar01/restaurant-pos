@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-022]
 owns: [docs/design/**, docs/DESIGN.md]
-status: not-started
+status: review
 cycles: 0
 ---
 # DESIGN-021 — The POS addition: the served menu, M-2 for any item, the served preset picker
@@ -457,6 +457,32 @@ Draw nothing that promises a duration. *Loading* needs no second stage for the l
 throughout, and a hung server on the same machine is rare. A separate 10-second timer in the catalog store would put
 the state on a second clock, ahead of a result the core has not returned yet, and the late answer would then have to be
 reconciled. Rejected.
+
+## Lead verify (2026-10-30)
+
+At `6fdfa1b`, the tree clean. `git diff --name-only ad8276b...HEAD`: this task file, `docs/DESIGN.md`,
+`docs/design/SCREEN-INVENTORY.md`, `docs/design/SITEMAP.md`, `docs/design/checks/design021.cjs`, and in
+`docs/design/visual-directions/` `frost-order-flow.js`, `frost-served-catalog.css`, `frost-served-catalog.js`,
+`frost/pos/order.html`, `index.html` and `manifest.js`. All are within `owns`; nothing under `apps/`, `packages/`, `db/` or
+`e2e/`, and nothing under `docs/design/tokens/`, so `npm run verify` is not required (AC 6). `git diff --check` is clean.
+
+The lead ran the checks in this worktree after `npm ci`, with `PLAYWRIGHT_MODULE` from it and evidence outside the
+repository (`../restaurant-pos-wt/evidence/DESIGN-021/`):
+
+- **run2** (`fe71f6a` plus the designer's then-uncommitted edits): `design021.cjs` 58 states, 352/352; and the earlier
+  checks, each exit 0 with no failures or errors: `design012` 421 checks / 116 states, `design013` 371 / 41, `design014`
+  287/287 (the `development` baseline), `design016` 399/399, `design017` 349/349, `design018` 730/730, `design019`
+  998/998, `design020` 754/754, `design022` 688/688.
+- **run3** (the final source): `design021.cjs` exit 0, 58 states, 360/360, no failures or errors. Its recorded source
+  hashes (`frost-order-flow.js` `b1cc252b`, `frost-served-catalog.js` `9df0b612`, `frost-served-catalog.css` `033abec1`,
+  `frost/pos/order.html` `607c0fc2`, `manifest.js` `4c3db5a8`) equal `shasum -a 256` of the committed files at `6fdfa1b`.
+  The earlier checks were not re-run after run2; the files changed since then are this task's own POS files and the
+  inventory, sitemap and `D` text, which those checks do not read except through `manifest.js` and `index.html`.
+
+The lead did not walk the states by hand; the owner's look follows the review. The reviewer is Claude Opus (the designer
+was Codex). C4's *For DESIGN-021* (above) is the authority for every former **(C4)** item; R1 stands; OQ1 is open with
+the owner, and the drawn picker states follow its recommended yes. The lead accepted the designer's 86-stepper reading
+(stepper live within its bounds, Add alone blocked).
 
 ## Handoff
 
