@@ -9,8 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-30 (**#157 S6b and #158 merged; FE-037 complete, PR open**): `development` at `b258bfa`; dev `pos` at `0014`.
-Lead branch `agent/lead-1030b`, pushed with FE-037. Narrative: [journal/2026-10-29.md](journal/2026-10-29.md), [journal/2026-10-30.md](journal/2026-10-30.md).
+2026-10-30 (wrap-up for a fresh session): #157 S6b, #158, #159 FE-037 and #160 merged; `development` at `44f31ad`;
+dev `pos` at `0014`. **Nothing running; no agent but the lead; no task worktree.** Lead branch `agent/lead-1030c`, not
+pushed. Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
 
 ## Phase and gates
 
@@ -20,7 +21,7 @@ Lead branch `agent/lead-1030b`, pushed with FE-037. Narrative: [journal/2026-10-
   server, `0011`, `SETTINGS_CHANGED`), S2b (#130: BO-08 settings), S3a (#134: tender methods, `0012`), S3b (#137: BO-08
   methods), S4a (#140: catalog domain, `0013`, `catalogWrite`), S4b (#142: catalog routes, `CATALOG_CHANGED`), S4c1
   (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04 whole), S5 (#151: the 86 toggle), S6a (#154: presets server,
-  `0014`), **S6b (#157: BO-07)**. S6 is done. **Next: S7** (needs C4, not written; DESIGN-021 feeds it).
+  `0014`), **S6b (#157: BO-07)**. S0-S6 done. **Next: S7** (POS catalog; needs consult C4, not written, and DESIGN-021).
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14); S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
@@ -28,31 +29,29 @@ Lead branch `agent/lead-1030b`, pushed with FE-037. Narrative: [journal/2026-10-
   dining table → order → lease/receipt (TenderMethod not in it: Phase 4's, with an architect).
 - **Owed, not drafted:** ROADMAP Phase 1's users bullet omits role change (Q1c), its tender bullet "reactivate" (OQ1).
   Designer: BO-06 inventory and sitemap (E2, C3 *Stale text* 5).
-- **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office: sign-in, provisional BO-01, M-6, the rail (Menu,
-  Tables, Discount presets, Settings), BO-05, BO-08 whole, BO-03 whole (86 included), BO-04 whole, **BO-07 whole**. Shared: `forms/Decision.tsx`,
-  `forms/answer.ts`, `fieldsInError`, `work/guard.ts`; models `tables/`, `settings/`, `menu/`, `item/`. **Frost
-  designed:** A, B, C, I, E1, F whole (018 BO-08, **022 BO-07**), BO-03 (019), BO-04 (020); left: DESIGN-021 (POS, G6), E2.
-- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** S6b final tree (`ddddb98`)
-  verify 149 files / 5448 tests, e2e:all 108.
+- **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office: sign-in, provisional BO-01, M-6, the rail, and
+  BO-05, BO-08, BO-03, BO-04, **BO-07** whole. BO-03 and BO-07 merge reads and answers by catalog version (FE-037, S6b
+  r3). **Frost designed:** A, B, C, I, E1, F (018, 022), BO-03 (019), BO-04 (020); left: DESIGN-021 (POS, G6), E2.
+- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** FE-037 final tree
+  (`3dd51d5`) verify 149 files / 5453 tests, e2e:all 108.
 
 ## Integration branch
 
-- **`development`** at `b258bfa` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `44f31ad` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
-  **before reporting or dispatching**. `0014` applied 2026-10-30; no lockfile change since 10-26.
+  **before reporting or dispatching**. `0014` applied; no lockfile change since 10-26.
 - **Guard hooks** current (`--check` 2026-10-30); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1030b`** (from `b258bfa`). Cut each new lead branch from
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1030c`** (from `44f31ad`). Cut each new lead branch from
   `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (the classifier refuses it otherwise; LESSONS). Ask, then push the task
   and lead branches together. **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
-- **Task worktrees:** `wt/FE-037`. Not the lead's: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
+- **Task worktrees: none.** Not the lead's: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **FE-037 complete** at `1e4af5a` (BO-03 merges by version, S6b F1; r2 ruled `<=` in `apply()`; Codex clean; verify
-  149/5453, e2e:all 108). **PR open: owner merges**, then remove `wt/FE-037` and `runs/FE-037`.
+- **Nothing running;** Herdr shows only `lead` (and the owner's own shell pane).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -64,41 +63,40 @@ Lead branch `agent/lead-1030b`, pushed with FE-037. Narrative: [journal/2026-10-
   branch.** Preflight reads `depends_on` from the **kit's** task files; a new task's `status:` is `not-started`.
 - **Preflight refuses when STATE.md is over its cap**, even by one line. **`max_builders` is 1;** reviewers and
   designers do not count; server and e2e test runs from different worktrees queue on their own locks.
-- **Task files** copy the consult verbatim, then rulings, tests, ACs; see LESSONS *Lead* (10-27/28) for `owns`, the
-  inert wording and builder shell use. **Reviewers cannot reach the database, a browser or the design checks;** the
-  lead runs `verify` and `test:e2e:all` in the worktree before review, and its note above the Handoff is the evidence.
+- **Task files** copy the consult verbatim, then rulings, tests, ACs; see LESSONS *Lead* for `owns`, the inert wording
+  and builder shell use. **Reviewers cannot reach the database, a browser or the design checks;** the lead runs
+  `verify` and `test:e2e:all` in the worktree before review, and its note above the Handoff is the evidence.
 - **Lead review instead of a re-review:** trivial changes (`review.trivial_max_lines` 20, no touches flag), or a fully
   ruled fix round whose fixes are the review's own. The lead repeats the red proof by mutating the new code (`sed`, run
-  the file, `git checkout --` it) and writes the note. Done this way: S4c2a, S4c2b and S5 round 2.
+  the file, `git checkout --` it) and writes the note. Done this way: S4c2a, S4c2b, S5 r2, S6a r2, **S6b r3**.
 - **The browser harness:** `npm run test:e2e` / `test:e2e:all`; not in `verify`. **The lead runs `test:e2e:all` before
   merging any task touching** `apps/`, `packages/api-client`, `packages/contracts` or `db/migrations`. Design checks:
   `PLAYWRIGHT_MODULE="$PWD/node_modules/playwright" node docs/design/checks/designNNN.cjs` in a worktree after `npm ci`
   (`design014.cjs` takes `DESIGN014_OUTPUT`, the others `DESIGN_EVIDENCE_DIR`). **The lead runs them for the designer.**
 - **The lead cannot sign in to the back office** (no credentials, never the owner's): a screen's look is the owner's.
-  **Close panes once no round is expected;** resume a hand-opened agent with `--resume <session>` (grep "You are <name>"
-  in `~/.claude/projects/<worktree-path>/*.jsonl`) in a fresh pane.
+  **Close panes once no round is expected** (if the classifier refuses, ask the owner). Resume a hand-opened agent
+  with `--resume <session>` (grep "You are <name>" in `~/.claude/projects/<worktree-path>/*.jsonl`) in a fresh pane.
 - **Background commands die at two hours;** read a report whole even on exit 1. Approvals are the owner's, in the pane;
   **`herdr agent prompt` is refused while an agent shows a question.** The auto-mode classifier sometimes gives no
   verdict on a Bash or Edit call; retry once, or do read-only work and come back.
 - **A `--resume` restarts the CLI and re-sends the brief once if it is not working within a minute;** a resumed round
   with no task-file or HEAD change is refused as no verdict. A BLOCKED question the lead can rule without code is ruled
   above the Handoff, committed in the worktree with `git commit -- <task file>` (leaves the builder's staging alone),
-  then `--resume --message`.
+  then `--resume --message`. Every resume counts as a round, an idle-stop resume too (LESSONS).
 - **`max_fix_cycles` is 2** (three rounds in all). A lead ruling for a round goes above the Handoff in the worktree,
   committed there, then `--resume --message` (builder). Widen `owns` in the same commit when a finding needs a file
   outside it.
 - **Codex reviews Claude-built work; Claude Opus reviews Codex- or OpenCode-built work** (owner exceptions, each once:
-  DESIGN-017 r3, -018, -019, -020, -022 finish and review). **Allowances:** Codex weekly reset 27 Oct 14:18; four reviews
-  since; its 5h limit ran out mid-design three times (10-29 ~11:50). Stand-ins: wait, OpenCode, or an owner exception.
-  **A hand-opened task's reviewer:** write `runs/<ID>/builder/meta.json` with the designer's `cli` (journal 10-29).
+  DESIGN-017 r3, -018 to -020, -022). **Codex allowance:** weekly reset 27 Oct 14:18, six reviews since; its 5h limit
+  ran out mid-design three times. Stand-ins: wait, OpenCode, or an owner exception. Hand-opened: write `meta.json`.
 - **Designers are hand-opened** (recipes: journal 10-24; a Codex start stops on its update prompt, the owner's). **Hand
   checks** serve from the task's worktree. Never print `db/dev.env`. `ask.sh`: Haiku, then luna.
 
 ## Live bugs and known defects
 
-- **Owner to see in a browser, then close:** BO-03 (with 86) and BO-04 (S4c1, S4c2a/b, S5: none was confirmed seen
-  before merge); BO-07 built (#157; 48-row overflow unmeasured); BO-08's methods part (S3b, if not seen before #137); the Burger-tile fix (FE-021 `7268943`, L257-262);
-  POS-03 Add (L353).
+- **Owner to see in a browser, then close:** BO-03 (with 86) and BO-04 (S4c1, S4c2a/b, S5: none confirmed seen before
+  merge); BO-07 (#157; the 48-row overflow unmeasured by any test); BO-08's methods part (S3b, if not seen before
+  #137); the Burger-tile fix (FE-021 `7268943`, L257-262); POS-03 Add (L353).
 - **Money, not filed (ARCH-003, 9.6):** `closeOrder` (`close.ts:74–101`) accepts any drafts; only the Add gate
   (`tender.ts:39–41`) keeps a card under the balance (B-5). Unreachable today; own task, architect consult.
 - **Must not become a guarantee:** optional `OrderLine.itemId` (L1787); the in-memory refund and change walk.
@@ -107,20 +105,21 @@ Lead branch `agent/lead-1030b`, pushed with FE-037. Narrative: [journal/2026-10-
   development-only (PHASE0-008a). **BO-01 provisional** (S10 builds DESIGN-016). **012a/b:** no `makePeople` in `e2e/`.
 - **Lengths are code points** (zod 4.6.5, `char_length`), not the "UTF-16 units" comments (`tables.ts`, `settings.ts`,
   `0010`, `0011`), `D:1607`, DESIGN-019 and two client checks say; the client refuses more, never less. Queued cleanup.
-- **Noted, not filed:** C1 §3.2's S5-5 line; stale "eleven" test titles (10-28); `item-editor.html`'s money facts (022 F3).
+- **Noted, not filed:** C1 §3.2's S5-5 line; stale "eleven" test titles; `item-editor.html`'s money facts (022 F3);
+  third copies of the dialog lifecycle and the name check (extract); `menu-availability.test.tsx:168`'s fixture (FE-037).
 
 ## Questions waiting for the owner
 
 Nothing here is decided. Detail is where each line points.
 
-- **Lead rulings, yours to overturn** (each in its task file): S6b (path `/back-office/presets`; creation order per
-  group; BO-03's name check reused; round 3's version-provenance merge); DESIGN-022 (*Round 2*: BO-07 keeps a standing version;
-  F3 shared constants; the `design019` rail change); S6a (*The shape* 1-10: no display order or reorder; name 1-32;
-  whole-preset edit; its own read route); S5 (route names; a no-op 86 announces the reached
-  state); S4c2b (option uniqueness by `lower(name)`; saved name on removal; F3 rejected); S4c2a (the split; the item in
-  client state at `/back-office/menu/item`; BO-04's own read; top bar kept; one command across BO-03/BO-04); S4c1; S4b
-  (bare `DUPLICATE`); S4a (option swap by temporary deactivation); S3b; DESIGN-020; DESIGN-019 F7; S2b; S1b; S0; C3;
-  S1a; DESIGN-017; PHASE0-004-013; DESIGN-011-016; ARCH-006; FE-030-036.
+- **Lead rulings, yours to overturn** (each in its task file): FE-037 (r2: `apply()` replaces on equal versions); S6b
+  (path `/back-office/presets`; creation order per group; BO-03's name check reused; r3's version-provenance merge);
+  DESIGN-022 (*Round 2*: BO-07 keeps a standing version; F3 shared constants; the `design019` rail change); S6a (*The
+  shape* 1-10: no display order or reorder; name 1-32; whole-preset edit; its own read route); S5 (route names; a no-op
+  86 announces the reached state); S4c2b (option uniqueness by `lower(name)`; saved name on removal; F3 rejected);
+  S4c2a (the split; the item in client state at `/back-office/menu/item`; BO-04's own read; top bar kept; one command
+  across BO-03/BO-04); S4c1; S4b (bare `DUPLICATE`); S4a (option swap by temporary deactivation); S3b; DESIGN-020;
+  DESIGN-019 F7; S2b; S1b; S0; C3; S1a; DESIGN-017; PHASE0-004-013; DESIGN-011-016; ARCH-006; FE-030-036.
 - **When to start design slice E2 (BO-06 Users):** every owner answer it waited on is in. Lead: after DESIGN-021.
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
@@ -131,7 +130,8 @@ Nothing here is decided. Detail is where each line points.
   FR-J3/AC-18 for a refused void; §9 question 2; C3's optional AC-18 sentence; ADR-012's optional FR-C7/FR-B1.
 - **Kit:** a permission rule for `git push` and `gh pr create`, so the lead need not ask each time? Builder
   `grep`/`python3`/`sed`/`node -e`? `BLOCKED ON APPROVAL` ping? A reviewer CLI override? Dispatchable designers? Exempt
-  a `--resume` after a 529 from the round count? The round watcher as a kit script? A run record for hand-opened designers?
+  a `--resume` after a 529 or an idle stop from the round count? The round watcher as a kit script? Let the lead close
+  a finished task's leftover shell pane?
 - **§3.2 gate, owner-accepted risks:** same-class PIN reset, username discovery, lockout, cookie jar, the two-tab
   case, saved passwords, sign-in without a pre-session token, the PIN-in-use refusal (C3).
 - **FR-M3 / B-2 wording:** "half-up" below zero; the code rounds half away from zero (settle before Phase 2's totals).
@@ -141,10 +141,10 @@ Nothing here is decided. Detail is where each line points.
 
 - **`floor.html:48`** draws `dayclosed` as *closed · 25 Sep*; the build follows 2026-09-30. Owed to the designer.
 - **DESIGN-007 on `fireerror`** (`:365`/`:407` vs `:578`): you ruled `:578` (L349); the file is unchanged.
-- **After a different manager signs in**, `OfficeApp.tsx` focuses Log out; DESIGN-022 says New preset (queued, designer).
+- **After a different manager signs in**, `OfficeApp.tsx` focuses Log out; DESIGN-022 says New preset (QUEUE; designer).
 
 ## Next up
 
-1. **FE-037 PR** to merge. Then **DESIGN-021** (POS addition, G6; Codex hand-opened, the lead
-   runs the checks) and **C4** (for S7).
-2. **Small:** the code-point cleanup between slices.
+1. **DESIGN-021** (the POS addition, G6; feeds S7): write the task file, hand-open a Codex designer (Claude Opus
+   reviews), the lead runs the checks. Beside it, **consult C4** (for S7) with the architect. Then **S7**.
+2. **Small, between slices:** the code-point cleanup; the frame-focus question; the dialog and name-check extraction.

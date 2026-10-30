@@ -42,6 +42,9 @@ duplicates, drop a rule once a test or hook enforces it. The stories are in the
 - When opening a Codex designer by hand in a worktree, pass `-c sandbox_workspace_write.writable_roots=["<main checkout>/.git"]` as the dispatcher does, because a worktree's index lock lives under the main checkout's `.git` and DESIGN-009's designer could not commit without it (2026-09-30).
 - After a hand-opened task, write `.agent/runs/<ID>/builder/meta.json` with the author's `cli` before dispatching its review, because without it the dispatcher assumes the builder role's default CLI and picks a reviewer from the author's own family (DESIGN-009, 2026-09-30).
 - Before dispatching a task that cites a consult report, make the report reachable from the task branch (merged into `development`, or committed on the task branch as an identical copy before the round that needs it), because PHASE0-003a's reviewer blocked on ARCH-006, which existed only uncommitted in the lead's worktree (2026-10-05).
+- Commit a ruling in a separate call, only after the Edit that writes it has returned success, because on FE-037 the Edit was refused (the file had not been read) while the chained commit still ran and recorded only the builder's Handoff under a message claiming a ruling (journal 2026-10-30).
+- Count an interactive builder's resume-to-finish as a round when sizing what is left, because PHASE1-S6b's builder stopped on an approval prompt and went idle uncommitted; the resume that finished it was round 2, so the review's F1 had to be fixed in the last round (journal 2026-10-30).
+- When a review finds a defect in a pattern a task copied from merged code, grep the source for the same pattern before closing, because S6b's F1 (merge by arrival order) was copied from BO-03's `menu/model.ts`, which had it too (FE-037, journal 2026-10-30).
 
 ## Builder
 
