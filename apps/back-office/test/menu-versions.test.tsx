@@ -2,10 +2,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { mount, refusal, text } from './session-harness.js';
 import {
-  CATEGORY_ARCHIVE, CATEGORY_CREATE, CATEGORY_REORDER, CATEGORY_RESTORE, CATEGORY_UPDATE, DRINKS,
-  ITEM_RESTORE, ITEM_REORDER, MAINS, MENU_ITEMS, READ, SEASONAL, STEW,
+  BURGER, CATEGORY_ARCHIVE, CATEGORY_CREATE, CATEGORY_REORDER, CATEGORY_RESTORE, CATEGORY_UPDATE, DRINKS,
+  ITEM_86, ITEM_RESTORE, ITEM_REORDER, MAINS, MENU_ITEMS, READ, SEASONAL, STEW,
   aria, bodyOf, cat, categories, category, catalog, comparison, draftNames, formNotice, harness, headings, item,
-  type Cat, itemRow, nameError, nameField, named, openMenu, pageStatus, panel, rowText, tap,
+  itemAnswer, type Cat, itemRow, nameError, nameField, named, openMenu, pageStatus, panel, rail, rowText, tap,
 } from './menu-support.js';
 import { typeInto } from './tables-support.js';
 
@@ -113,6 +113,109 @@ describe('AC 8. the version the list stands at', () => {
     tap(named(host, 'Save order'));
     await h.settle();
     expect(bodyOf(h, CATEGORY_REORDER).expectedVersion).toBe(5);
+  });
+});
+
+describe('AC 8 (FE-037). a read and a command that overlap are reconciled by the version, not the arrival', () => {
+  // The list reads 12. The manager presses a row command, then leaves and revisits BO-03 through
+  // the real rail while the command is outstanding: the revisit's read is out too. Both responses
+  // are deferred, so the test chooses the order they arrive in.
+  const drinksArchived = { ...DRINKS, isActive: false };
+  const beverages = { ...DRINKS, name: 'Beverages' };
+  const burger86 = { ...BURGER, isAvailable: false };
+  const bigBurger = { ...BURGER, name: 'Big burger' };
+
+  async function overlapping(
+    command: { key: string; press: string; answer: ReturnType<typeof category> | ReturnType<typeof itemAnswer> },
+    read: ReturnType<typeof catalog>,
+    order: 'answer-first' | 'read-first'
+  ) {
+    const host = await open(catalog(12));
+    h.reply(command.key, command.answer);
+    const sent = h.hold(command.key);
+    tap(named(host, command.press));
+    h.reply(READ, read);
+    const reread = h.hold(READ);
+    tap(named(rail(host), 'Tables'));
+    await h.settle();
+    tap(named(rail(host), 'Menu'));
+    await h.settle();
+    const answer = async () => {
+      sent.deliver(command.answer);
+      await h.settle();
+    };
+    const snapshot = async () => {
+      reread.deliver(read);
+      await h.settle();
+    };
+    if (order === 'answer-first') {
+      await answer();
+      await snapshot();
+    } else {
+      await snapshot();
+      await answer();
+    }
+    return host;
+  }
+
+  const archiveDrinks = { key: CATEGORY_ARCHIVE, press: 'Archive category Drinks', answer: category(13, drinksArchived) };
+  const newerDrinks = catalog(14, [MAINS, SEASONAL, beverages]);
+
+  const renameAndSave = async (host: HTMLElement, from: string) => {
+    h.reply(CATEGORY_UPDATE, category(15, { ...beverages, name: 'Cold drinks' }));
+    tap(named(host, `Rename category ${from}`));
+    typeInto(nameField(host)!, 'Cold drinks');
+    tap(named(host, 'Save'));
+    await h.settle();
+  };
+
+  it('(a) the answer (13) arrives first, then the read (14, renamed by another tab): the row shows the read’s record and a rename carries 14', async () => {
+    const host = await overlapping(archiveDrinks, newerDrinks, 'answer-first');
+    expect(headings(host)).toContain('Beverages');
+    expect(headings(host)).not.toContain('Drinks · Archived category');
+    await renameAndSave(host, 'Beverages');
+    expect(bodyOf(h, CATEGORY_UPDATE)).toEqual({ categoryId: DRINKS.categoryId, expectedVersion: 14, name: 'Cold drinks' });
+  });
+
+  it('(b) the read (14) arrives first, then the answer (13): the row still shows the read’s record, the answer is still announced, and a rename carries 14', async () => {
+    const host = await overlapping(archiveDrinks, newerDrinks, 'read-first');
+    expect(headings(host)).toContain('Beverages');
+    expect(headings(host)).not.toContain('Drinks · Archived category');
+    expect(text(pageStatus(host))).toContain('Drinks archived.');
+    await renameAndSave(host, 'Beverages');
+    expect(bodyOf(h, CATEGORY_UPDATE)).toEqual({ categoryId: DRINKS.categoryId, expectedVersion: 14, name: 'Cold drinks' });
+  });
+
+  it('(c) the older snapshot (12) arriving after the answer (13) keeps the answered record, the standing version is 13, and a rename carries 13', async () => {
+    const host = await overlapping(archiveDrinks, catalog(12), 'answer-first');
+    expect(headings(host)).toContain('Drinks · Archived category');
+    h.reply(CATEGORY_UPDATE, category(14, { ...drinksArchived, name: 'Cold drinks' }));
+    tap(named(host, 'Rename category Drinks'));
+    typeInto(nameField(host)!, 'Cold drinks');
+    tap(named(host, 'Save'));
+    await h.settle();
+    expect(bodyOf(h, CATEGORY_UPDATE).expectedVersion).toBe(13);
+  });
+
+  describe('(d) items', () => {
+    const toggle86 = { key: ITEM_86, press: 'Mark Burger 86', answer: itemAnswer(13, burger86) };
+    const newerBurger = catalog(14, undefined, MENU_ITEMS.map((i) => (i.itemId === BURGER.itemId ? bigBurger : i)));
+
+    it('the read (14, renamed and still available) arrives first, then the 86 answer (13): the row shows the read’s record', async () => {
+      const host = await overlapping(toggle86, newerBurger, 'read-first');
+      const row = rowText(itemRow(host, BURGER.itemId));
+      expect(row).toContain('Big burger');
+      expect(row).not.toContain('86 · Unavailable');
+      // The answer is still announced.
+      expect(text(pageStatus(host))).toContain('Burger is now marked 86.');
+    });
+
+    it('the 86 answer (13) arrives first, then the read (14): the row shows the read’s record', async () => {
+      const host = await overlapping(toggle86, newerBurger, 'answer-first');
+      const row = rowText(itemRow(host, BURGER.itemId));
+      expect(row).toContain('Big burger');
+      expect(row).not.toContain('86 · Unavailable');
+    });
   });
 });
 
