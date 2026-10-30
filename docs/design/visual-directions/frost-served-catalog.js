@@ -31,6 +31,14 @@
   const api = window.ServedCatalogFixture = {items,base:emptyOrder?'empty':quick?'quick':'default',start,refresh,escape,fmt};
   function start(bridge) {
     flow = bridge;
+    api.orderRendered=()=>{
+      if(!flow.getModel().length)return;
+      const actions=$$('.orderpanel .actions').find(e=>!e.hidden);
+      if(!actions?.querySelector('#served-action-reason'))return;
+      actions.removeAttribute('aria-label');
+      actions.innerHTML='<a class="btn" href="order.html?state=served-presets">Discount</a><a class="btn btn--destructive" href="order.html?state=sheet-voidorder">Void order</a>'+(!quick?'<button type="button" class="btn">Send to kitchen</button>':'')+`<a class="btn btn--primary ${quick?'btn--wide':''}" href="settlement.html?state=partial">${quick?'Settle — sends the order to the kitchen':'Settle'}</a>`;
+      flow.wireFire();
+    };
     $('.pos').classList.add('served-catalog');
     if (quick) {
       $$('.pos__bar h1').filter(e=>!e.hidden).forEach(e=>e.textContent='Quick sale');
