@@ -81,6 +81,7 @@
     const service=half(net,20n), tax=half(net,11n);
     return {subtotal,disc,net,service,tax,total:net+service};
   };
+  const ceiling = (unit,q,list) => unit*BigInt(q)>99999999n?'Line total cannot exceed 99.999.999.':figures(list).total>99999999n?'Order total cannot exceed 99.999.999.':'';
   const totals = (list, preview=false) => {
     const f=figures(list);
     return `${preview?'<span class="label">After update · not saved yet</span>':''}<div class="t"><span>Subtotal</span><span class="mono">${fmt(f.subtotal)}</span></div>${discount?`<div class="t"><span>${discount.name} ${discount.value}%</span><span class="mono">−${fmt(f.disc)}</span></div>`:''}<div class="t"><span>Service charge 5%</span><span class="mono">${fmt(f.service)}</span></div><div class="t t--grand"><span>Total</span><span class="mono">${fmt(f.total)}</span></div><div class="t t--incl"><span>Includes tax 10%</span><span class="mono">${fmt(f.tax)}</span></div>`;
@@ -137,7 +138,7 @@
     if(served) {served.sheetRefresh=null;$('.pos__body').inert=false;$('.pos__bar').inert=false;}
     $$('.tile--selected').forEach(e=>e.classList.remove('tile--selected'));
     if(opener?.isConnected)opener.focus();
-    else if(served)$('.cat:not([hidden])')?.focus();
+    else if(served)($(`[data-item="${served.sheetItemId}"]`)||$('.cat:not([hidden])'))?.focus();
   }
   function shell(name,price,secondary,source) {
     dismiss();opener=source;
@@ -179,31 +180,29 @@
     const body=shell(line.name+' — pending',line.unit,'<button class="btn" data-cancel>Back</button><button class="btn btn--destructive" data-remove-current>Remove line</button>',source);
     body.innerHTML=`<div class="muted">${quick?'Nothing on a counter sale goes to the kitchen until settlement.':'This line has not been sent to the kitchen.'} Back discards changes.</div><div class="flow-line-total"><span>Line total</span><b class="mono" data-line-total></b></div><div class="muted" data-arithmetic></div><div class="totals flow-preview"></div>`;
     $('[data-remove-current]',drawer).onclick=()=>{model.splice(index,1);renderOrder();dismiss();};
+    const limit=q=>served?ceiling(line.unit,q,model.map((l,i)=>i===index?{...l,q}:l)):'';
+    if(served){$('.flow-bound',drawer).insertAdjacentHTML('beforebegin','<div id="served-add-reason" class="muted" aria-live="polite"></div>');$('.flow-save',drawer).setAttribute('aria-describedby','served-add-reason');}
     stepper(draft??line.q,line.q,q=>{line.q=q;renderOrder();},q=>{
       $('[data-line-total]',body).textContent=fmt(line.unit*BigInt(q));
       $('[data-arithmetic]',body).textContent=`${fmt(line.unit)} × ${q} = ${fmt(line.unit*BigInt(q))}`;
       $('.flow-preview',body).innerHTML=totals(model.map((l,i)=>i===index?{...l,q}:l),true);
-    });
+      if(served){$('#served-add-reason',drawer).textContent=limit(q);if(q<99&&limit(q+1))$('.flow-bound',drawer).textContent='Cannot increase quantity. '+limit(q+1);}
+    },q=>!!limit(q),false,q=>!limit(q));
   }
   function openItem(id,source,initial=1,unavailable=false) {
     const item=items[id];
     if(!item)return;
     const groups=structuredClone(item.groups);
+    if(item.served)groups.forEach((g,i)=>g.options.forEach((o,j)=>o[2]='option-'+i+'-'+j));
     const body=shell(item.name,item.price,'<button class="btn" data-cancel>Cancel</button>',source);
     source?.classList.add('tile--selected');
-    let archived=false, unit, repaint;
-    const missing=()=>item.served&&groups.some(g=>!g.many&&!g.selected.length);
+    let archived=false, unit, repaint, changeNotice='';
+    const missing=()=>item.served&&groups.some(g=>!g.many&&g.options.length&&!g.selected.length);
     const resolvedUnit=()=>{const n=BigInt(item.price)+groups.flatMap(g=>g.selected.map(j=>g.options[j][1])).reduce((sum,p)=>sum+BigInt(p),0n);return n<0n?0n:n;};
-    const limit=q=>{
-      if(!item.served)return '';
-      const price=resolvedUnit();
-      if(price*BigInt(q)>99999999n)return 'Line total cannot exceed 99.999.999.';
-      if(figures([...model,{unit:price,q}]).total>99999999n)return 'Order total cannot exceed 99.999.999.';
-      return '';
-    };
+    const limit=q=>item.served?ceiling(resolvedUnit(),q,[...model,{unit:resolvedUnit(),q}]):'';
     body.innerHTML=(item.served?'<div class="notice flow-unavailable" id="served-sheet-notice" role="status" hidden></div><div class="served-option-groups"></div><div class="served-unit"><span>Unit price</span><b class="mono" id="served-unit"></b></div>':(unavailable?'<div class="notice flow-unavailable"><div class="notice__t">Burger is no longer available</div><div>A manager marked it 86 while you were choosing. Your selections are kept so you can note them, but it cannot be added.</div></div>':''))+'<div class="flow-line-total"><span>Line total</span><b class="mono" data-line-total></b></div><div class="muted" data-arithmetic></div>';
     function options() {
-      const html=groups.map((g,i)=>`<span class="label" id="option-group-${i}" tabindex="-1">${esc(g.name)} — choose ${g.many?'any':'one'}</span><div class="flow-options ${id==='burger'&&i===1?'flow-extras':''}" role="group" aria-label="${esc(g.name)}">${g.options.map(([n,p],j)=>`<button type="button" class="btn ${g.selected.includes(j)?'btn--primary':''}" aria-pressed="${g.selected.includes(j)}" data-group="${i}" data-option="${j}">${esc(n)}${id==='burger'&&i===1?' ':'<br>'}${signed(p)}</button>`).join('')}</div>`).join('');
+      const html=groups.map((g,i)=>!g.options.length?'':`<span class="label" id="option-group-${i}" tabindex="-1">${esc(g.name)} — choose ${g.many?'any':'one'}</span><div class="flow-options ${id==='burger'&&i===1?'flow-extras':''}" role="group" aria-label="${esc(g.name)}">${g.options.map(([n,p],j)=>`<button type="button" class="btn ${g.selected.includes(j)?'btn--primary':''}" aria-pressed="${g.selected.includes(j)}" data-group="${i}" data-option="${j}" data-option-id="${esc(g.options[j][2]||j)}">${esc(n)}${id==='burger'&&i===1?' ':'<br>'}${signed(p)}</button>`).join('')}</div>`).join('');
       if(item.served)$('.served-option-groups',body).innerHTML=html;
       else $('.flow-line-total',body).insertAdjacentHTML('beforebegin',html);
       $$('[data-option]',body).forEach(b=>b.onclick=()=>{
@@ -231,27 +230,36 @@
         if(q<99&&limit(q+1))$('.flow-bound',drawer).textContent='Cannot increase quantity. '+limit(q+1);
       }
     },q=>unavailable||archived||missing()||!!limit(q),true,q=>!limit(q));
-    if(item.served)served.sheetRefresh=kind=>{
-      const notice=$('#served-sheet-notice',body);notice.hidden=false;
-      if(kind==='86'){unavailable=true;notice.textContent=`${item.name} is no longer available. A manager marked it 86. Your choices are kept, but it cannot be added.`;}
-      if(kind==='archived'){archived=true;notice.textContent=`${item.name} is no longer on the menu. Your choices are kept, but it cannot be added.`;}
-      if(kind==='price'){item.price=50000;$('.flow-price',drawer).textContent=fmt(item.price);notice.textContent='The price changed. Check the updated figures before adding.';}
-      if(kind==='options'){
-        groups[1].options.push(['Crispy shallots',3000]);
-        notice.textContent='The options changed. Check your choices before adding.';
-        const focused=document.activeElement,group=focused.dataset.group,option=focused.dataset.option;
-        options();if(group!==undefined)$(`[data-group="${group}"][data-option="${option}"]`,body)?.focus();
+    if(item.served) {served.sheetItemId=id;served.sheetRefresh=kind=>{
+      const notice=$('#served-sheet-notice',body);
+      const focused=document.activeElement,focusId=focused.dataset.optionId,focusGroup=focused.dataset.group;
+      let redraw=false;
+      if(kind==='86')unavailable=true;
+      if(kind==='restore'){unavailable=false;archived=false;}
+      if(kind==='archived')archived=true;
+      if(kind==='price'||kind==='changed'){
+        item.price=50000;
+        if(kind==='changed'){item.name='Nasi Goreng Spesial';groups[1].options[0][1]=7000;$('#flow-title',drawer).textContent=item.name;redraw=true;}
+        $('.flow-price',drawer).textContent=fmt(item.price);
+        changeNotice='This item changed while you were choosing. Check the updated choices and prices before adding.';
       }
-      if(kind==='removed'){
-        const g=groups[0],removed=g.options[0][0];
-        const focused=document.activeElement,wasOption=focused.hasAttribute('data-option'),group=focused.dataset.group,option=Number(focused.dataset.option);
-        g.options.shift();g.selected=[];
-        notice.textContent=`${removed} was removed from the menu and deselected. Choose a variant before adding.`;
-        options();
-        if(wasOption){if(group==='0'&&option===0)$('#option-group-0',body).focus();else $(`[data-group="${group}"][data-option="${group==='0'?option-1:option}"]`,body)?.focus();}
+      if(kind==='options'){groups[1].options.push(['Crispy shallots',3000,'new-modifier']);redraw=true;}
+      if(kind==='reorder'){
+        groups.forEach(g=>{const selectedIds=g.selected.map(j=>g.options[j][2]);g.options.reverse();g.selected=g.options.flatMap((o,j)=>selectedIds.includes(o[2])?[j]:[]);});redraw=true;
       }
+      if(kind==='removed'||kind==='modifier-removed'){
+        const g=groups[kind==='removed'?0:1],removed=g.options[0][0];
+        g.options.shift();g.selected=g.selected.filter(j=>j!==0).map(j=>j-1);
+        changeNotice=`This item changed while you were choosing. ${removed} was removed and deselected.`;
+        redraw=true;
+      }
+      if(redraw){options();if(focusId!==undefined){const target=$(`[data-option-id="${focusId}"]`,body);(target||$('#option-group-'+focusGroup,body)||$('#flow-title',drawer)).focus();}}
+      const availability=archived?`${item.name} is no longer on the menu. Your choices are kept, but it cannot be added.`:unavailable?`${item.name} is no longer available. A manager marked it 86. Your choices are kept, but it cannot be added.`:'';
+      const text=[availability,changeNotice].filter(Boolean).join(' ');
+      notice.hidden=!text;if(notice.textContent!==text)notice.textContent=text;
       repaint();
-    };
+    };}
+
   }
   if(isItem || isEdit) {
     if(isItem) {

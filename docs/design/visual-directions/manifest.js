@@ -51,6 +51,21 @@ window.MOCKUPS = [
       ["served-presets-removed", "Served presets — deactivated before selection"],
       ["served-item-line-bound", "Served M-2 — quantity limited by money"],
       ["served-item-order-bound", "Served M-2 — order maximum blocks Add"],
+      ["served-category-empty", "Served menu — active category with no items"],
+      ["served-item-restored", "Served M-2 — available again"],
+      ["served-item-reappeared", "Served M-2 — back on the menu"],
+      ["served-item-changed", "Served M-2 — name and option delta changed"],
+      ["served-item-modifier-removed", "Served M-2 — chosen modifier removed"],
+      ["served-item-reorder", "Served M-2 — options reordered"],
+      ["served-item-choice-bound", "Served M-2 — choice exceeds line maximum at 1"],
+      ["served-line-bound", "Pending-line editor — money ceiling"],
+      ["quick-served-line-bound", "Counter line editor — money ceiling"],
+      ["served-presets-loading", "Served presets — first read"],
+      ["served-presets-error", "Served presets — first read failed"],
+      ["served-presets-changed", "Served presets — value changed"],
+      ["served-fireblocked", "Served pending lines — plural 86 refusal"],
+      ["served-loading-order", "First read — existing order stays live"],
+      ["served-error-order", "First read failed — existing order stays live"],
       [
         "empty",
         "Table order — no lines"
@@ -1807,3 +1822,6 @@ window.MOCKUPS.push({
     ]
   ]
 });
+
+// DESIGN-021 states have no Paper counterpart.
+window.MOCKUPS[0].paperStates = window.MOCKUPS[0].states.filter(([state]) => !state.includes('served'));

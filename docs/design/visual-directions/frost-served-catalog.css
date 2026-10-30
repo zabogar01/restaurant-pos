@@ -39,3 +39,10 @@
 .served-preset-empty { padding:var(--frost-space-5); }
 .served-drawer .sheet__foot:has(#served-preset-cancel) { display:block; }
 #served-preset-cancel { width:100%; }
+/* Notices occupy the bottom edge: adding one never moves a tile's top-left. */
+.served-catalog .served-grid { flex:1; order:1; }
+.served-status { order:2; flex:none; }
+.served-category-empty { grid-column:1 / -1; padding:var(--frost-space-4); color:var(--frost-muted); }
+#preset-retry { margin-top:var(--frost-space-4); width:100%; }
+.served-fire-notice { flex:none; margin:0; border-inline:0; }
+#served-show-blocked { margin-top:var(--frost-space-2); }

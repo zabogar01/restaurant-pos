@@ -8,7 +8,7 @@
   const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt = n => BigInt(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   const quick = state.startsWith('quick');
-  const emptyOrder = /empty$|loading|error/.test(state);
+  const emptyOrder = !state.endsWith('-order')&&!state.includes('presets')&&!state.includes('category')&&/empty$|loading|error/.test(state);
   const items = {
     nasi: {name:'Nasi Goreng',price:45000,groups:[],served:true},
     tea: {name:'Jasmine Tea',price:18000,groups:[],served:true},
@@ -28,18 +28,20 @@
   items.floor={name:'Nasi Goreng',price:45000,groups:[{...variants(),options:[['Small',-99999999]],selected:[0]}],served:true};
   items.lineBound={name:'Nasi Goreng banquet',price:60000000,groups:[],served:true};
   items.orderBound={name:'Nasi Goreng banquet',price:99999999,groups:[],served:true};
-  let flow, selected = 'meals', stale = false, pointer = false, heldArchive = null;
+  let flow, selected = 'meals', failures = 0, stale = false;
   let categories = [{id:'meals',name:'Meals',ids:['nasi','tea','water']}];
   const api = window.ServedCatalogFixture = {items,base:emptyOrder?'empty':quick?'quick':'default',start,refresh,escape,fmt};
   function start(bridge) {
     flow = bridge;
     api.orderRendered=()=>{
+      renderFireNotice();
+      wirePresets();
       if(!flow.getModel().length)return;
       const actions=$$('.orderpanel .actions').find(e=>!e.hidden);
       if(!actions?.querySelector('#served-action-reason'))return;
       actions.removeAttribute('aria-label');
       actions.innerHTML='<a class="btn" href="order.html?state=served-presets">Discount</a><a class="btn btn--destructive" href="order.html?state=sheet-voidorder">Void order</a>'+(!quick?'<button type="button" class="btn">Send to kitchen</button>':'')+`<a class="btn btn--primary ${quick?'btn--wide':''}" href="settlement.html?state=partial">${quick?'Settle — sends the order to the kitchen':'Settle'}</a>`;
-      flow.wireFire();
+      flow.wireFire();wirePresets();
     };
     $('.pos').classList.add('served-catalog');
     if (quick) {
@@ -63,32 +65,51 @@
     selected=categories[0].id;
     const rail=$('.catrail');rail.hidden=false;rail.setAttribute('aria-label','Menu categories');
     $('.menuarea').innerHTML='<div id="served-status" class="served-status" role="status" aria-live="polite"></div><div id="served-read"></div><div class="menugrid served-grid" aria-label="Menu items"></div>';
-    const grid=$('.served-grid');
-    grid.addEventListener('pointerdown',()=>pointer=true);
-    const release=()=>{pointer=false;if(heldArchive){const id=heldArchive;heldArchive=null;archive(id);}};
-    window.addEventListener('pointerup',release);window.addEventListener('pointercancel',release);
-    renderCategories();renderGrid();
-    if(state.includes('empty')) showRead('empty');
-    if(state.includes('loading')) showRead('loading');
-    if(state.includes('error')) showRead(state.endsWith('internal')?'internal':'error');
-    if(state.includes('stale')) refresh('failed');
+
+    renderCategories();renderGrid();wirePresets();
+    if(state.includes('empty')&&!state.includes('category')&&!state.includes('presets')) showRead('empty');
+    if(state==='served-category-empty'){categories[0].ids=[];renderGrid();}
+    if(state.includes('loading')&&!state.includes('presets')) showRead('loading');
+    if(state.includes('error')&&!state.includes('presets')) showRead(state.endsWith('internal')?'internal':'error');
+    if(state.includes('stale')) for(let i=0;i<2;i++)refresh('failed');
     if(state==='served-86') refresh('86');
+    if(state==='served-fireblocked'){flow.setModel([{id:'nasi',name:'Nasi Goreng',unit:45000n,q:1,detail:'',round:0},{id:'tea',name:'Jasmine Tea',unit:18000n,q:1,detail:'',round:0}]);refresh('86','nasi');refresh('86','tea');}
     if(state==='served-restored') {refresh('86');refresh('restore');}
     if(state==='served-archived') refresh('archive');
     if(state==='served-price') {flow.setModel([{id:'nasi',name:'Nasi Goreng',unit:45000n,q:1,detail:'',round:0}]);refresh('price');}
     if(state.startsWith('served-item-')||state.startsWith('quick-served-item-')) {
       const suffix=state.split('item-')[1];
-      const id=({none:'nasi',variants:'variants',modifiers:'modifiers',both:'both',many:'many',extremes:'extreme',floor:'floor',long:'long',indonesian:'longReal','line-bound':'lineBound','order-bound':'orderBound'})[suffix]||'both';
-      if(['86','archived','price','options','removed'].includes(suffix))items[id].groups.forEach(g=>g.selected=[0]);
-      flow.openItem(id,$('[data-item]'));
-      if(['86','archived','price','options','removed'].includes(suffix))api.sheetRefresh(suffix);
+      const id=({none:'nasi',variants:'variants',modifiers:'modifiers',both:'both',many:'many',extremes:'extreme',floor:'floor',long:'long',indonesian:'longReal','line-bound':'lineBound','order-bound':'orderBound','choice-bound':'extreme'})[suffix]||'both';
+      if(['86','restored','archived','reappeared','price','changed','options','reorder','removed','modifier-removed','choice-bound'].includes(suffix))items[id].groups.forEach(g=>g.selected=[0]);
+      categories[0].ids=[id,'tea','water'];renderGrid();
+      if(suffix==='order-bound')flow.setModel([{id:'banquet',name:'Banquet order',unit:10000000n,q:1,detail:'',round:0}]);
+      flow.openItem(id,$(`[data-item="${id}"]`));
+      if(suffix==='86')refresh('86',id);
+      else if(suffix==='archived')refresh('archive',id);
+      else if(suffix==='restored'){refresh('86',id);refresh('restore',id);}
+      else if(suffix==='reappeared'){refresh('archive',id);refresh('reappear',id);}
+      else if(suffix==='choice-bound'){document.querySelector('[data-group="0"][data-option="1"]').click();}
+      else if(['price','changed','options','reorder','removed','modifier-removed'].includes(suffix))api.sheetRefresh(suffix);
     }
     if(state.includes('served-presets'))openPresets();
-    if(state==='served-line-long'||state==='served-line-indonesian'||state==='quick-served-line') {
-      const item=items[state==='served-line-indonesian'?'longReal':state==='quick-served-line'?'nasi':'long'];
+    if(state==='served-line-long'||state==='served-line-indonesian'||state==='quick-served-line'||state==='served-line-bound'||state==='quick-served-line-bound') {
+      const item=items[state.endsWith('line-bound')?'lineBound':state==='served-line-indonesian'?'longReal':state==='quick-served-line'?'nasi':'long'];
       flow.setModel([{id:'served-line',name:item.name,unit:BigInt(item.price),q:1,detail:'',round:0}]);
-      if(state==='quick-served-line')flow.openEdit(0,$('[data-edit]'),3);
+      if(state==='quick-served-line'||state.endsWith('line-bound'))flow.openEdit(0,$('[data-edit]'),state.endsWith('bound')?2:3);
     }
+  }
+  function wirePresets() {
+    $$('.orderpanel .actions a').filter(e=>!e.hidden&&e.textContent.trim()==='Discount').forEach(a=>a.onclick=e=>{e.preventDefault();openPresets();});
+  }
+  function renderFireNotice() {
+    if(quick)return;
+    const blocked=flow.getModel().filter(l=>!l.round&&!l.voided&&l.unavailable);
+    let notice=$('.served-fire-notice');
+    if(!blocked.length){notice?.remove();return;}
+    if(!notice){notice=document.createElement('div');notice.className='notice served-fire-notice';$('.lines').after(notice);}
+    const names=blocked.map(l=>l.name).join(', ');
+    notice.innerHTML=`<div class="notice__t">Cannot send to the kitchen</div><div>${escape(names)} ${blocked.length===1?'is':'are'} 86’d. Remove ${blocked.length===1?'the pending line':'their pending lines'} or ask a manager to restore ${blocked.length===1?'the item':'the items'}.</div><button type="button" class="btn btn--sm" id="served-show-blocked">Show unavailable lines</button>`;
+    $('#served-show-blocked').onclick=()=>{const i=flow.getModel().findIndex(l=>l.unavailable&&!l.round),line=$(`[data-flow-line="${i}"]`);if(line){line.tabIndex=-1;line.focus();line.scrollIntoView({block:'nearest'});}};
   }
   function openPresets() {
     const subtotal=flow.getModel().reduce((sum,l)=>sum+(l.voided?0n:l.unit*BigInt(l.q)),0n);
@@ -105,15 +126,15 @@
     const source=$$('.actions .btn').find(e=>!e.hidden&&e.textContent==='Discount');
     const body=flow.shell('Discount',subtotal,'<button class="btn" data-cancel>Cancel</button>',source);
     $('.flow-price').remove();
-    $('.sheet__head').insertAdjacentHTML('beforeend','<span class="muted">One per order</span>');
-    $('.sheet__foot').innerHTML='<button type="button" class="btn" id="served-preset-cancel">Cancel</button>';
+    $('.served-drawer .sheet__head').insertAdjacentHTML('beforeend','<span class="muted">One per order</span>');
+    $('.served-drawer .sheet__foot').innerHTML='<button type="button" class="btn" id="served-preset-cancel">Cancel</button>';
     $('#served-preset-cancel').onclick=flow.dismiss;
     body.innerHTML='<div id="preset-change" class="notice" role="status" hidden></div><span class="label" id="preset-heading" tabindex="-1">Presets — no approval needed</span><div id="served-presets" class="served-presets"></div><span class="label">Anything else</span><a class="btn served-freeform" href="order.html?state=sheet-freeform">Other amount — needs a manager</a>';
     const value=p=>p.kind==='fixed'?fmt(p.value)+' off':(String(Math.floor(p.value/10000))+(p.value%10000?','+String(p.value%10000).padStart(4,'0').replace(/0+$/,''):'')+'%');
     function render() {
       $('#served-presets').innerHTML=presets.length?presets.map(p=>{
-        const capped=p.kind==='fixed'&&BigInt(p.value)>subtotal;
-        return `<button type="button" class="btn served-preset" data-preset="${p.id}" aria-label="${escape(p.name)} — ${value(p)}${capped?'. Applies '+fmt(subtotal)+' at this subtotal.':''}"><span>${escape(p.name)}</span><span class="mono">${value(p)}</span>${capped?`<span class="muted served-preset-cap">Applies ${fmt(subtotal)} at this subtotal.</span>`:''}</button>`;
+
+        return `<button type="button" class="btn served-preset" data-preset="${p.id}" aria-label="${escape(p.name)} — ${value(p)}"><span>${escape(p.name)}</span><span class="mono">${value(p)}</span></button>`;
       }).join(''):'<div class="empty served-preset-empty">No active presets. A manager can add or activate a preset in the back office.</div>';
       $$('[data-preset]').forEach(b=>b.onclick=()=>{
         const p=presets.find(p=>p.id===b.dataset.preset);
@@ -128,11 +149,16 @@
       presets=presets.filter(p=>p.id!==id);
       $(`[data-preset="${id}"]`)?.remove();
       if(!presets.length)render();
-      $('#preset-change').hidden=false;
-      $('#preset-change').textContent=`${p.name} is no longer available.${aboutToChoose?' Nothing was applied. Choose another preset.':''}`;
+
       if(focused)$('#preset-heading').focus();
     };
-    if(state.endsWith('removed'))api.deactivatePreset('regular',true);
+    api.editPreset=()=>{const p=presets.find(p=>p.id==='regular');p.name='Returning guest';p.value=125000;const b=$('[data-preset=regular]');b.setAttribute('aria-label',p.name+' — '+value(p));b.firstElementChild.textContent=p.name;b.lastElementChild.textContent=value(p);};
+    api.retryPresets=()=>{const focused=document.activeElement.id==='preset-retry';render();if(focused)$('#preset-heading').focus();};
+    if(state.endsWith('removed'))api.deactivatePreset('regular');
+    if(state.endsWith('changed'))api.editPreset();
+    if(state.endsWith('loading'))$('#served-presets').innerHTML='<div class="loadinglabel" role="status">LOADING PRESETS</div>';
+    if(state.endsWith('error')){ $('#served-presets').innerHTML='<div class="notice" role="alert"><div class="notice__t">The system is unavailable</div><div>Wait a moment, then try again.</div><button type="button" class="btn" id="preset-retry">Try again</button></div>';$('#preset-retry').onclick=api.retryPresets;$('#preset-retry').focus(); }
+
   }
   function status(text) { $('#served-status').textContent=text; }
   function renderCategories() {
@@ -140,10 +166,12 @@
     $$('[data-category]').forEach(b=>b.onclick=()=>{selected=b.dataset.category;renderCategories();renderGrid();$(`[data-category="${selected}"]`).focus();});
   }
   function renderGrid() {
-    $('.served-grid').innerHTML=(categories.find(c=>c.id===selected)?.ids||[]).map(id=>{
+    const ids=categories.find(c=>c.id===selected)?.ids||[];
+    $('.served-grid').innerHTML=ids.map(id=>{
       const item=items[id], off=!!item.unavailable;
       return `<button type="button" class="tile ${off?'tile--off':''}" data-item="${id}" aria-disabled="${off}" aria-label="${escape(item.name)}, ${fmt(item.price)}${off?', unavailable, 86':''}"><span class="served-tile-name">${escape(item.name)}</span><span class="served-tile-bottom"><span class="tile__p">${fmt(item.price)}</span>${off?'<span class="tag tag--86">86</span>':''}</span></button>`;
     }).join('');
+    if(!ids.length)$('.served-grid').innerHTML='<div class="served-category-empty">No items in this category yet.</div>';
     $$('[data-item]').forEach(b=>b.onclick=()=>{if(!items[b.dataset.item].unavailable)flow.openItem(b.dataset.item,b);});
   }
   function showRead(kind) {
@@ -159,19 +187,25 @@
   }
   function archive(id) {
     const button=$(`[data-item="${id}"]`), focused=document.activeElement===button;
-    // A blank slot survives the current category visit; remaining hit targets never move.
-    if(button) {button.replaceWith(Object.assign(document.createElement('div'),{className:'served-removed-slot'}));}
+    // Only 86 holds a slot. Items absent from the current projection reflow.
     categories.forEach(c=>c.ids=c.ids.filter(x=>x!==id));
-    status(`${items[id].name} is no longer on the menu.`);
+    button?.remove();
+    if(!categories.find(c=>c.id===selected)?.ids.length)renderGrid();
     if(focused)$(`[data-category="${selected}"]`).focus();
   }
   function refresh(kind,id='nasi') {
-    if(kind==='failed') {stale=true;status('The menu may be out of date. You can keep taking orders.');return;}
-    if(kind==='success') {stale=false;status('');$('#served-read').innerHTML='';$('.catrail').hidden=false;$('.served-grid').hidden=false;return;}
-    if(kind==='archive') {if(pointer){heldArchive=id;return;}archive(id);return;}
+    if(kind==='failed') {failures++;if(failures>=2){stale=true;status('The menu may be out of date. You can keep taking orders.');}return;}
+    if(kind==='success') {const lost=document.activeElement.id==='served-retry';failures=0;stale=false;status('');$('#served-read').innerHTML='';$('.catrail').hidden=false;$('.served-grid').hidden=false;if(lost)$('.cat').focus();return;}
+    if(api.sheetRefresh&&api.sheetItemId===id)api.sheetRefresh(kind==='archive'?'archived':kind==='reappear'?'restore':kind);
+    if(kind==='archive') {archive(id);return;}
+    if(kind==='reappear'){categories[0].ids.unshift(id);renderGrid();return;}
+    if(kind==='category-removed'){const lost=document.activeElement.dataset.category===selected||document.activeElement.hasAttribute('data-item');categories=[{id:'drinks',name:'Drinks',ids:['tea','water']}];selected='drinks';renderCategories();renderGrid();if(lost)$('.cat').focus();return;}
     const b=$(`[data-item="${id}"]`), item=items[id];
     if(kind==='86'||kind==='restore') {
       item.unavailable=kind==='86';
+      const affected=flow.getModel().filter(l=>l.id===id&&!l.round);
+      affected.forEach(l=>l.unavailable=item.unavailable);
+      if(affected.length)flow.renderOrder();else flow.wireFire();
       if(b){b.classList.toggle('tile--off',item.unavailable);b.setAttribute('aria-disabled',String(item.unavailable));b.setAttribute('aria-label',`${item.name}, ${fmt(item.price)}${item.unavailable?', unavailable, 86':''}`);$('.tag',b)?.remove();if(item.unavailable)$('.served-tile-bottom',b).insertAdjacentHTML('beforeend','<span class="tag tag--86">86</span>');}
       if(!stale)status('Menu availability updated.');
     }
