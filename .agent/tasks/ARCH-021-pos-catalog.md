@@ -173,6 +173,23 @@ and S7b. End with `DONE` or `BLOCKED: <one question>`. Then run exactly one of:
     herdr agent prompt lead "architect21: ARCH-021 done — <one line>"
     herdr agent prompt lead "architect21: BLOCKED — <question>"
 
+## Questions relayed from DESIGN-021 (lead, 2026-10-30)
+
+Answer both in *For DESIGN-021*. The designer is drawing the lead's provisional answer meanwhile.
+
+- **D1. FR-M5's ceilings in the Phase 1 stand-in.** A legal served item can exceed 99.999.999 per line: a base price of
+  99.999.999 plus a positive variant or modifier delta, or any price times a quantity up to 99. FR-M5 caps a line total
+  and an order total at 99.999.999 minor units. The client order store does not check either today (fixture prices are
+  small; only `SINGLE_TENDER_LIMIT` exists, `apps/pos/src/tender.ts:7`). Does the stand-in's Add enforce the line and
+  order ceilings in Phase 1, and if so where (M-2's Add and quantity keys, the store, both)? Raised first by DESIGN-020.
+  *Lead's provisional answer:* yes, in both: M-2 disables Add, and the plus key at the bound, with a plain reason when
+  the line or the order would pass 99.999.999, as the quantity keys already do at 99; the store refuses the same, as
+  item 7's `addLine` check does under a lock.
+- **D2. The first read with no response.** What bounded wait moves POS-03 from *loading* to *first read failed* when
+  the server does not answer? *Lead's provisional answer:* no new timer; the transport core's default request timeout
+  (`DEFAULT_TIMEOUT_MS`, 10 seconds, `packages/api-client/src/client.ts:82`) ends the read, and its failure enters the
+  state, with *Try again*.
+
 ## Handoff
 
 *(architect21 writes here.)*
