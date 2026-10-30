@@ -192,4 +192,44 @@ Answer both in *For DESIGN-021*. The designer is drawing the lead's provisional 
 
 ## Handoff
 
-*(architect21 writes here.)*
+The report is `.agent/reviews/ARCH-021-pos-catalog.md`. *For DESIGN-021* went first, at `2e33a81`, with the relayed D1 and D2
+answered in it; the lead was told. The rest of the report followed. No code, ADR, ARCHITECTURE or contract text changed.
+
+**What I decided, and why.** The POS gets two routes, `GET /api/pos/catalog/revision` and `GET /api/pos/catalog/menu`, both
+an active POS session and not interactive, so polling never extends the 90 seconds. They are separate so that the two-second
+poll reads one number and the whole menu is read only when it changes. The menu is one snapshot holding only what the POS
+may show, filtered in SQL, so an archived name never leaves the server. A client store above the routes runs one cycle at a
+time while signed in and visible, on every screen, because a quick sale's close on POS-04 reads availability as well. A menu
+already shown stays usable while refreshes fail; two failed checks in a row show a doubt, because that is past the
+three-second budget. Served and fixture menus come through the one constant in `session/source.ts`, with one screen path over
+both. Add snapshots names, deltas and the floored unit but no option ids. `addLine` refuses under a lock, for an 86'd item and
+past FR-M5's ceilings, as a stand-in. The sheet renders the live item, so what is displayed is what Add adds. The version
+lives in one immutable store object beside the contents, so Phase 2 can read it with no reshaping, and no line carries it now.
+
+**Where I differed from the lead's provisional answers.** D1: agreed, adding that a choice alone can pass the bound at
+quantity 1, that the order figure is the panel's `total`, and that the line editor needs the same check or the rule is walked
+around. D2: agreed there is no new timer, but the bound is up to 20 seconds, not 10, because a timed-out read asks health under
+its own ten-second timer (`client.ts:299`).
+
+**Question for the owner, with a proposed answer.** OQ1: may the served discount picker show real presets in Phase 1? Q14 does
+not cover it. Proposed yes; it blocks S7b3 only. The designer is drawing that answer meanwhile.
+
+**Found and not fixed.** `ItemSheet`'s comment says an 86'd sheet draws no stepper, and the code draws one; DESIGN-021 should
+draw which it means. The report's *Stale text found* lists five small items; no contract document needs a change, and ADR-011
+needs no change (item 6 says why).
+
+**Not verified: I ran no test, build or browser**; this consult is reading only, and the only check I ran is the one below.
+Four things are explicitly left for a builder to confirm, each named where it applies: that Fastify's per-route `logLevel`
+silences a poll's lines (I inferred from finding no `disableRequestLogging` that those lines are written at all); that
+`clock.resume` and `pauseAt` behave as the idle helper needs; that the page clock flows after `install()`, where the librarian
+found the docs and source in conflict and I rely on `idle.spec.ts:24` in a suite recorded green; and that neither engine reports
+a two-profile page as hidden. That Rollup drops the fixture module is also unconfirmed from its docs, which is why the marker
+test is the proof.
+
+**What the lead needs for the task files.** *For the lead* gives S7a, S7b1, S7b2 and S7b3 each a scope, `owns`, acceptance criteria
+with red proofs, tests expected to change and `touches`. I recommend splitting S7b into three, in that order. Two things to
+carry: `e2e/tests/idle.spec.ts` B6 and B8 will flake unless S7b1 changes them, because a poll and the deadline read race for the
+verdict; and after S7b1 merges, an available tile does nothing in served mode until S7b2 does, which the owner should hear in
+advance. DESIGN-021's review comes before S7b1.
+
+DONE
