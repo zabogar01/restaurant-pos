@@ -5,7 +5,7 @@ category: feature
 touches: []
 depends_on: [PHASE1-S6b]
 owns: [apps/back-office/src/menu/model.ts, apps/back-office/test/menu-versions.test.tsx, apps/back-office/test/menu-support.tsx]
-status: not-started
+status: review
 cycles: 0
 ---
 # FE-037 — BO-03 merges by catalog version, not by arrival order
@@ -130,9 +130,23 @@ In this round:
 5. Commit `model.ts` and `menu-versions.test.tsx` with path-scoped `git add`.
 6. Confirm that `git status` shows nothing but the task file, then end with `DONE`.
 
+## Lead verify (2026-10-30)
+
+The lead ran these in this worktree, on `3dd51d5`:
+- `npm run verify`: 149 files, 5453 tests passed;
+- `npm run test:e2e:all`: 108 passed, both engines.
+
+The diff against `development` touches only `menu/model.ts`, `menu-versions.test.tsx` and this file, all inside `owns`.
+No existing test changed. The lead read the model diff against both rulings:
+- `readList()` overlays an applied record only when its answer is newer than the snapshot (strict `>`);
+- `apply()` replaces a row only when the row is not newer than the answer (`<=`, round 2);
+- a hosted category carries no provenance.
+
+Reviewer: the browser and the e2e harness are out of your reach. This note is the evidence for them.
+
 ## Handoff
 
-**Status: BLOCKED, nothing committed.** The working tree holds the change as ruled (uncommitted, `npm run verify` red on one existing test). One ruling conflicts with an existing test I may not edit.
+**Status: DONE after Round 2.** Round 1 below is kept as written: it was blocked on ruling 3's strict `<`, which the lead amended to `<=` (see *Round 2* at the end).
 
 ### What I did
 
@@ -160,4 +174,12 @@ Proposed resolution (needs your ruling, since it changes ruling 3's wording): in
 
 The lead's ruling on `<` vs `<=`. If `<=`: change the two lines in `apply()`, update the comment (it says "lower"), re-run `npm run verify` and `npm run test:e2e:all`, and commit `apps/back-office/src/menu/model.ts` and `apps/back-office/test/menu-versions.test.tsx` with path-scoped `git add`.
 
-BLOCKED: Should `apply()` replace a row when its version is less than *or equal to* the answer's (`<=`, which keeps the existing menu-availability no-op test green), rather than strictly less (ruling 3)?
+### Round 2
+
+The lead ruled `<=` in `apply()`. I changed both lines (category and item) from `have < applied.version` to `have <= applied.version`, and rewrote the comment above `load()` to say a command answer replaces a row when the row's version is "lower or equal", with the reason: two records at one version describe one committed state, and a no-op command answers the standing version with the current record. `readList()` keeps the strict `>`; `presets/model.ts` was not touched.
+
+Mutation rerun on the `<=` model: replacing both `apply()` conditions with `if (true)` failed exactly (b) (`expected [ 'Mains', …(2) ] to include 'Beverages'`) and (d) read-first (the Burger row read `86 · Unavailable` with no `Big burger`); 2 failed, 31 passed. Reverted to `<=` afterwards.
+
+Final runs on the committed tree. `npm run verify`: typecheck clean; 149 files passed, 5453 tests passed (baseline 5448 plus my five new cases). `npm run test:e2e:all`: 108 passed (chromium and webkit). No existing test was edited. `item/model.ts`: no finding, as I did not read it beyond what the task named. Committed `apps/back-office/src/menu/model.ts` and `apps/back-office/test/menu-versions.test.tsx` on `agent/fe-037`; this task file is the only other change and is left for the lead.
+
+DONE
