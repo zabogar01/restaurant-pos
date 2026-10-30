@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S6a]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/presets.spec.ts, e2e/support/**]
-status: active
+status: complete
 cycles: 0
 ---
 # PHASE1-S6b — BO-07 Discount presets in the back office
@@ -447,6 +447,31 @@ Do not touch `menu/`. The 48-row overflow and the frame's focus stay as recorded
 Then run `npm run verify` and `npm run test:e2e:all`, update the Handoff in place (the *How it works* standing-version
 bullet, the red proofs, the counts) and add a *Round 3* paragraph at its end. **Commit with path-scoped `git add`, check
 that `git status` is clean, and only then** end the Handoff with `DONE` and report.
+
+## Round 3 lead review and acceptance (2026-10-30)
+
+Round 3 is `ddddb98`. Its diff against `7b7f21f` touches exactly `presets/model.ts`, `presets-versions.test.tsx` and
+this Handoff. The model change is the ruling: each row carries the version it came from (`rowVersion`); a read overlays
+an applied record only when that answer is newer than its snapshot; an answer replaces a row only when the row is older;
+`latest` takes the greater value. `adopt()`, `standingAhead`, `latestAhead` and the partial state are unchanged.
+
+**The reds, repeated by the lead.**
+- `readList()`'s condition set to `version > -1`: test (a) failed. Reverted.
+- `apply()`'s condition set to `true`: test (b) failed. Reverted.
+
+The tree was clean after each revert.
+
+**The lead's final runs** on `ddddb98`:
+- `npm run verify`: 149 files, 5448 tests passed;
+- `npm run test:e2e:all`: 108 passed.
+
+The review's F1 is closed without a re-review: the fix is the review's own and fully ruled. The task is **complete**.
+It touches money, so the owner looks before merge. The 48-row overflow and the screen's look are unchecked, and the
+owner's look covers them.
+
+Two follow-ups are queued, not this task's:
+- BO-03's identical arrival-order merge (`menu/model.ts:379-380`);
+- the frame's focus after a different manager signs in.
 
 ## Handoff
 
