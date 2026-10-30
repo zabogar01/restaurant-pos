@@ -35,12 +35,13 @@ const open = async (first?: Parameters<typeof openMenu>[1], path?: string) => {
 const focusedName = () => document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.textContent ?? null;
 
 describe('AC 1. the rail and the route', () => {
-  it('lists Menu, Tables and Settings in that order under Configuration, Menu current on BO-03', async () => {
+  it('lists Menu, Tables, Discount presets and Settings in that order under Configuration, Menu current on BO-03', async () => {
     const host = await open();
-    expect(text(rail(host))).toBe('ConfigurationMenuTablesSettings');
+    expect(text(rail(host))).toBe('ConfigurationMenuTablesDiscount presetsSettings');
     expect([...rail(host).querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual([
       '/back-office/menu',
       '/back-office/tables',
+      '/back-office/presets',
       '/back-office/settings',
     ]);
     expect(named(rail(host), 'Menu').getAttribute('aria-current')).toBe('page');

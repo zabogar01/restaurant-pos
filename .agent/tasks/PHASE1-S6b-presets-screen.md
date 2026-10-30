@@ -378,3 +378,55 @@ the Handoff below in full prose:
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
 
 ## Handoff
+
+**What I did.** BO-07 Discount presets, built on `agent/phase1-s6b` in one commit (hash in `git log`).
+- New folder `apps/back-office/src/presets/`: `model.ts` (the one screen model), `Presets.tsx` (the view and the deactivation confirmation), `value.ts` (the draft, the checks, order, counts, value text), `copy.ts` (DESIGN-022's copy table).
+- Wiring: `routes.ts` (`presets` at `/back-office/presets`), `Rail.tsx` (Menu, Tables, Discount presets, Settings), `Screens.tsx` (model made once per working-area key, gate and start effects), `session/api.ts` (the `Exclude` removed, five functions added to `configApi()`), `session/fixtureSession.ts` (five paths answer `unavailable`), `office.css` (ported from Frost `presets.css` plus the `.office-radio` rules and `.office-table .num`, tokens only).
+- Tests: `presets-value.test.ts` (the three pair tests, conversions, order, counts, float scan), `presets.test.tsx`, `presets-versions.test.tsx`, `presets-departure.test.tsx`, `presets-fixture.test.tsx`, helpers `presets-support.tsx` and `presets-data.ts`; browser spec `e2e/tests/presets.spec.ts` (P1 to P4). No change to `e2e/support/**`, `packages/`, `apps/server`, `db/` or `docs/`.
+
+**How it works.**
+- State (`PresetsState`): `presets` held in server order (new record appended, changed record replaced in place; `inOrder` groups for display only, never sorts by name); `version` is the standing version; `latest` is the version most recently read or answered (facts line and form version line only); `partial`; one `editor`; one `command` slot; `page`; `confirm`; `decision`; `focus`.
+- Standing version: a full read sets it (unless an answer adopted after the read began is ahead). `adopt()` advances it only when the read stands `ready`, it is non-null, and the answered version is standing+1 or equal. So in the partial state answers do not move it, and Edit is inert while it is null. An editor's `base` is the standing version at open and moves only on an answered save, Keep my changes, or Use current preset. `latest` follows every answer.
+- Command slot: `command` is set by `send()` and cleared when the answer is presented. Every opener (`openCreate`, `openEdit`, `openDeactivate`, `reactivate`) returns at once if `busy()`, and goes through `leave()` (departure decision if the form is dirty or uncertain, else it closes the form). A discarded save keeps the slot until it answers.
+- Rereading outcomes (unknown, stale, `DUPLICATE`, `NOT_FOUND`) reread once, then check `open()` (gate, no decision, no confirmation) before presenting; otherwise the finished result is held with its read (`held`) and presented once on return. An explicit *Try again* is held the same way (`heldRetry`).
+- A later list screen with a version copies: `adopt`/`apply`/`readList` merge, `settle`/`held`, and `Decision` plus the confirmation lifecycle.
+
+**Decisions and evidence.**
+1. `DUPLICATE` rereads first, then presents (error, holder mark, and for reactivation the opened editor), as the artifact does; the holder is matched case-insensitively on `toLowerCase()`.
+2. New preset is inert unless the list can be drawn (artifact: `known`), so also after a failed first read. Edit is inert while the standing version is null.
+3. Dirty compares trimmed name, selected kind, and the canonical selected value (so `50,0` equals `50`); the unused buffer never counts.
+4. A plain *Try again* success has no sentence (DESIGN-022 draws none); focus goes to Preset name if a form is open, else New preset. A session refusal of a save shows no notice and returns focus to Preset name (artifact). After a stale or unknown choice with an unconfirmed save the notice is "Unknown after choice"; otherwise none.
+5. `NOT_FOUND` and `VALIDATION_FAILED` are the definite failure with one reread (unreachable today).
+6. Deactivation confirmation is a third copy of the working-area dialog lifecycle (`Decision`, `RateConfirm`, now `DeactivateConfirm`). I copied it as ruling 14 allows; a shared component is now due at the third copy. Leaving the screen with the confirmation open closes it (Keep active).
+7. **Divergences, accepted by the lead:** e2e (b) follows DESIGN-022 (a renamed draft shows `Current name … Differs from your draft`; the same-values sentence shows only when the draft equals the current preset). P2 covers the rename case, P3 the same-values case. After a different manager signs in, the frame puts focus on Log out (`OfficeApp.tsx`), not New preset as DESIGN-022's focus contract says; I did not touch the frame and no test asserts New preset there.
+8. Ruling 21, left out on purpose: kitchen-emergency sentences, M-6's queued incident, BO-01's held-draft sentence, the artifact's response chooser and simulation controls.
+
+**DESIGN-022 states to tests** (file `presets.test.tsx` unless named): default, empty, loading, load-error: AC 2/3. create-percent, create-fixed, edit-percent, edit-fixed, edit-inactive, kind-switch: AC 5/6 and the zero tests. invalid-name-*, invalid-percent-*, invalid-amount-*: AC 4. saving, saved, unchanged: AC 6. partial: AC 13. failure, not-found, unknown, unknown-changed, unknown-read-failed, duplicate-*, stale, stale-menu, stale-read-failed: `presets-versions.test.tsx` AC 9 to 11. stale-reauth: `presets-departure.test.tsx` (a stale refusal held behind M-6, presented once on return; not the case of a refusal first met after an M-6 cycle). deactivate, deactivated, reactivated, pending-*: AC 6/7/12. unknown-deactivate/reactivate, status-failure: AC 11. unsaved, unsaved-switch, unsaved-logout, leave-pending, leave-unknown, reauth, bo01-draft, reauth-confirm, bo01-confirm, reauth-decision, bo01-decision: `presets-departure.test.tsx`. **overflow (48 rows) has no test; I did not measure the layout.**
+
+**Existing tests changed.** `routes.test.ts` (manifest gains `presets`, `PATHS.presets`); rail expectations in `sign-in.test.tsx`, `settings.test.tsx`, `menu.test.tsx` (text and hrefs), `item.test.tsx`, `menu-fixture.test.tsx`; `config-api.test.tsx` (key list, title, a new typed-surface case). One not listed: `item.test.tsx` `toHaveLength(3)` on the rail links became 4. Only expected lists changed; no assertion weakened. `fixture-session.test.tsx` needed no change.
+
+**Red proofs** (mutation, failure read, reverted; `diff` against backups shows every file restored):
+1. Rail entry after Settings: rail-order case failed (received `…SettingsDiscount presets`).
+2. Each group sorted by name: 9 failures across order cases.
+3. Facts line shown on a failed read: the failed-read case failed (`0 active · 0 inactive · Catalog version 0` present).
+4. Name counted with `.length`: the 32-emoji cases failed in the pair test and the screen test. Percentage 0 refused locally: "a create of 0% sends one request" failed (count 0).
+5. One buffer shared by both kinds: restore case failed (`5.000` instead of `10`).
+6. Deactivate sends `{ id }`: body assertion failed (no request is sent, the client's schema refuses it).
+7. Deactivate sent from the row press without the dialog: the dialog cases failed (no dialog).
+8. Any answer moves the standing version: 4 failures, case (a) sends `expectedVersion` 14.
+9. Reread rebases and drops the choice: 7 failures, Keep/Use buttons and the held Save gone.
+10. Create resent once after `DUPLICATE`'s reread: call list shows a second create. (My first attempt looped forever; I replaced it with a single resend.)
+11. Create resent once after `failed`: `count(P_CREATE)` 2.
+12. Reactivate ignoring the command slot: 3 failures.
+13. Plain read-failure copy in the partial state: failed.
+14. Presenting a held result while the session is away (`gate` ignored): 6 failures.
+15. `reactivate` left out of `configApi()`: the key-list case failed.
+16. `<input type="date">` added to the form: the no-invented-control case failed.
+
+**Found, not fixed.** The third dialog-lifecycle copy (decision 6). `OfficeApp` puts focus on Log out after a different manager signs in; DESIGN-022 says New preset (decision 7). BO-04's installation-facts question is untouched, as ruled out of scope.
+
+**Output.** `npm run verify`: typecheck clean, Test Files 149 passed (149), Tests 5445 passed (5445), against the 144 files / 5270 tests baseline I confirmed before starting. `npm run test:e2e:all`: 108 passed (1.4m), both engines (baseline 100, +8 for P1 to P4 on two engines). No formatter was run. A browser was available through the Playwright harness only; I did no manual visual pass.
+
+**Next agent.** Needs a visual and overflow check of `/back-office/presets` at 48 rows, and the lead's call on the Log-out focus versus DESIGN-022's New preset.
+
+DONE
