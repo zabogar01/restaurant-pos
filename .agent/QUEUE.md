@@ -143,7 +143,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - **PHASE1-S3b**, BO-08's payment-methods part (FR-B7 end to end) — depends on S3a — complete, PR #137.
     - **DESIGN-021** the POS addition, G6: the served menu, M-2 from data, the served preset picker (feeds S7b) — runs
       beside ARCH-021 — started 2026-10-30.
-    - **ARCH-021**, consult C4, the POS catalog (feeds S7a and S7b) — started 2026-10-30.
+    - **ARCH-021**, consult C4, the POS catalog (feeds S7a, S7b1-3) — complete 2026-10-30, PR not opened.
     - **Code-point lengths cleanup (no ID yet)** — zod 4.6.5 and `char_length` count code points; the "UTF-16 units"
       comments (contracts `tables.ts`, `settings.ts`, `auth.ts`; migrations `0010`, `0011`), `D:1607`, the inventory's sign-in
       rows, and the client checks `tables/label.ts`, `SignIn.tsx` (which refuse more than the server) — found by S2b — not written.
@@ -163,7 +163,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       ADR-012 rule 13) — depends on S6b — complete, merged 2026-10-30 as PR #159.
     - **The frame's focus after a different manager signs in (no ID yet)** — `OfficeApp.tsx` focuses Log out; DESIGN-022's
       focus contract says New preset on BO-07 — decide per screen or in `D`, with the designer — not written.
-    - **S7a/S7b** (POS catalog, from C4 and DESIGN-021), **S8a-c** (users, from C3; S8c needs design E2), **S9**
+    - **S7a** (POS catalog routes, from C4; can start now), **S7b1-3** (after DESIGN-021's review; S7b3 needs OQ1), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
     post-close corrections (before Phase 5), permitted tax and service-charge range (before
