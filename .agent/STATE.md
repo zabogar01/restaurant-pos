@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-30 (**S6b complete, PR open**): `development` at `8a35a82`; dev `pos` at `0014`. Lead branch
-`agent/lead-1030`, pushed with S6b. Narrative: [journal/2026-10-29.md](journal/2026-10-29.md), [journal/2026-10-30.md](journal/2026-10-30.md).
+2026-10-30 (**#157 S6b and #158 merged; FE-037 complete, PR open**): `development` at `b258bfa`; dev `pos` at `0014`.
+Lead branch `agent/lead-1030b`, pushed with FE-037. Narrative: [journal/2026-10-29.md](journal/2026-10-29.md), [journal/2026-10-30.md](journal/2026-10-30.md).
 
 ## Phase and gates
 
@@ -19,8 +19,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   (#115: `0009`), S1a (#119: tables server, `0010`), S1b (#123: BO-05, the rail, the form pattern), S2a (#128: settings
   server, `0011`, `SETTINGS_CHANGED`), S2b (#130: BO-08 settings), S3a (#134: tender methods, `0012`), S3b (#137: BO-08
   methods), S4a (#140: catalog domain, `0013`, `catalogWrite`), S4b (#142: catalog routes, `CATALOG_CHANGED`), S4c1
-  (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04 whole), S5 (#151: the 86 toggle), **S6a (#154: presets server,
-  `0014`, five routes)**. **Next: S6b** (BO-07, from DESIGN-022, #156). C4 not written (S7 needs it).
+  (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04 whole), S5 (#151: the 86 toggle), S6a (#154: presets server,
+  `0014`), **S6b (#157: BO-07)**. S6 is done. **Next: S7** (needs C4, not written; DESIGN-021 feeds it).
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14); S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
@@ -29,31 +29,30 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **Owed, not drafted:** ROADMAP Phase 1's users bullet omits role change (Q1c), its tender bullet "reactivate" (OQ1).
   Designer: BO-06 inventory and sitemap (E2, C3 *Stale text* 5).
 - **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office: sign-in, provisional BO-01, M-6, the rail (Menu,
-  Tables, Settings), BO-05, BO-08 whole, **BO-03 whole (86 included), BO-04 whole**. Shared: `forms/Decision.tsx`,
+  Tables, Discount presets, Settings), BO-05, BO-08 whole, BO-03 whole (86 included), BO-04 whole, **BO-07 whole**. Shared: `forms/Decision.tsx`,
   `forms/answer.ts`, `fieldsInError`, `work/guard.ts`; models `tables/`, `settings/`, `menu/`, `item/`. **Frost
   designed:** A, B, C, I, E1, F whole (018 BO-08, **022 BO-07**), BO-03 (019), BO-04 (020); left: DESIGN-021 (POS, G6), E2.
-- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** S6a final tree (`4850fc9`)
-  verify 144 files / 5270 tests, e2e:all 100.
+- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** S6b final tree (`ddddb98`)
+  verify 149 files / 5448 tests, e2e:all 108.
 
 ## Integration branch
 
-- **`development`** at `8a35a82` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `b258bfa` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
   **before reporting or dispatching**. `0014` applied 2026-10-30; no lockfile change since 10-26.
 - **Guard hooks** current (`--check` 2026-10-30); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1030`** (from `8a35a82`). Cut each new lead branch from
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1030b`** (from `b258bfa`). Cut each new lead branch from
   `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (the classifier refuses it otherwise; LESSONS). Ask, then push the task
   and lead branches together. **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
-- **Task worktrees:** `wt/PHASE1-S6b`. Not the lead's: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
+- **Task worktrees:** `wt/FE-037`. Not the lead's: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **PHASE1-S6b complete** at `968b047` (F1 fixed r3 `ddddb98`, lead-reviewed; verify 149/5448, e2e:all 108). **PR open:
-  owner looks (money; 48-row overflow and the look unchecked), merges.** BO-03 has F1's merge too: queued.
-- **Leftover pane `w2:p99`** (S6a's reviewer shell, cwd deleted): close refused to the lead; the owner closes it.
+- **FE-037 complete** at `1e4af5a` (BO-03 merges by version, S6b F1; r2 ruled `<=` in `apply()`; Codex clean; verify
+  149/5453, e2e:all 108). **PR open: owner merges**, then remove `wt/FE-037` and `runs/FE-037`.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -98,7 +97,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Live bugs and known defects
 
 - **Owner to see in a browser, then close:** BO-03 (with 86) and BO-04 (S4c1, S4c2a/b, S5: none was confirmed seen
-  before merge); BO-07's design (`F/presets.html`, #156); BO-08's methods part (S3b, if not seen before #137); the Burger-tile fix (FE-021 `7268943`, L257-262);
+  before merge); BO-07 built (#157; 48-row overflow unmeasured); BO-08's methods part (S3b, if not seen before #137); the Burger-tile fix (FE-021 `7268943`, L257-262);
   POS-03 Add (L353).
 - **Money, not filed (ARCH-003, 9.6):** `closeOrder` (`close.ts:74–101`) accepts any drafts; only the Add gate
   (`tender.ts:39–41`) keeps a card under the balance (B-5). Unreachable today; own task, architect consult.
@@ -108,14 +107,14 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   development-only (PHASE0-008a). **BO-01 provisional** (S10 builds DESIGN-016). **012a/b:** no `makePeople` in `e2e/`.
 - **Lengths are code points** (zod 4.6.5, `char_length`), not the "UTF-16 units" comments (`tables.ts`, `settings.ts`,
   `0010`, `0011`), `D:1607`, DESIGN-019 and two client checks say; the client refuses more, never less. Queued cleanup.
-- **Noted, not filed:** C1 §3.2's S5-5 red line is imprecise; stale "eleven" test titles (journal 10-28); C1 §4.1's
-  value check passes a row with neither value (NULL; `0014` fixed); `item-editor.html`'s static money facts (DESIGN-022 F3).
+- **Noted, not filed:** C1 §3.2's S5-5 line; stale "eleven" test titles (10-28); `item-editor.html`'s money facts (022 F3).
 
 ## Questions waiting for the owner
 
 Nothing here is decided. Detail is where each line points.
 
-- **Lead rulings, yours to overturn** (each in its task file): DESIGN-022 (*Round 2*: BO-07 keeps a standing version;
+- **Lead rulings, yours to overturn** (each in its task file): S6b (path `/back-office/presets`; creation order per
+  group; BO-03's name check reused; round 3's version-provenance merge); DESIGN-022 (*Round 2*: BO-07 keeps a standing version;
   F3 shared constants; the `design019` rail change); S6a (*The shape* 1-10: no display order or reorder; name 1-32;
   whole-preset edit; its own read route); S5 (route names; a no-op 86 announces the reached
   state); S4c2b (option uniqueness by `lower(name)`; saved name on removal; F3 rejected); S4c2a (the split; the item in
@@ -142,9 +141,10 @@ Nothing here is decided. Detail is where each line points.
 
 - **`floor.html:48`** draws `dayclosed` as *closed · 25 Sep*; the build follows 2026-09-30. Owed to the designer.
 - **DESIGN-007 on `fireerror`** (`:365`/`:407` vs `:578`): you ruled `:578` (L349); the file is unchanged.
+- **After a different manager signs in**, `OfficeApp.tsx` focuses Log out; DESIGN-022 says New preset (queued, designer).
 
 ## Next up
 
-1. **S6b PR**: owner looks, merges; then remove `wt/PHASE1-S6b` and `runs/PHASE1-S6b`. Next: **BO-03 merge fix**
-   (small), **DESIGN-021** (POS addition, G6; Codex hand-opened, the lead runs the checks), then **C4** (for S7).
+1. **FE-037 PR** to merge. Then **DESIGN-021** (POS addition, G6; Codex hand-opened, the lead
+   runs the checks) and **C4** (for S7).
 2. **Small:** the code-point cleanup between slices.
