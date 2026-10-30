@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S6a]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/presets.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S6b — BO-07 Discount presets in the back office
@@ -376,6 +376,30 @@ the Handoff below in full prose:
 - what was found and not fixed; the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify (2026-10-30)
+
+The lead ran these in this worktree, on `583c30b`:
+- `npm run verify`: 149 files, 5445 tests passed;
+- `npm run test:e2e:all`: 108 passed, both engines.
+
+Every changed path is inside `owns`, and the tree was clean. The one existing test changed and not listed,
+`item.test.tsx`'s rail-link `toHaveLength(3)` becoming 4, is the same rail change the task names, and the lead accepts
+it.
+
+**Round 1 ran twice.** The builder stopped once on a `sed -i` approval prompt, which the owner answered, and then went
+idle before committing. The lead resumed it once, only to finish, rerun the suites, write the Handoff and commit.
+
+**Divergences the lead accepted in that resume.** First, AC 17(b) was miswritten: a renamed draft shows *Current name
+… Differs from your draft*, and the same-values sentence shows only when the draft equals the current preset
+(DESIGN-022). P2 covers the rename and P3 the same-values case. Second, after a different manager signs in, the
+existing frame (`OfficeApp.tsx`, outside `owns`) puts focus on Log out, not on New preset as DESIGN-022's focus contract
+says. That is recorded as a live conflict for the lead, not as a defect of this slice.
+
+**Not checked by anyone yet:** the 48-row overflow layout (no test measures it), and the look of the screen. The owner
+looks before merge (the task touches money).
+
+Reviewer: the database, the browser and the e2e harness are out of your reach. This note is the evidence for them.
 
 ## Handoff
 
