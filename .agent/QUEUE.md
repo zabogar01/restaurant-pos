@@ -158,7 +158,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - **DESIGN-022**, design F's BO-07 half (the presets screen) — feeds S6b — complete, merged 2026-10-29 as PR #156.
     - **PHASE1-S6b**, BO-07 — depends on S6a and DESIGN-022 (both merged) — complete, merged 2026-10-30 as PR #157.
     - **FE-037**, BO-03 merges a read and a command answer by catalog version, not arrival order (S6b review F1;
-      ADR-012 rule 13) — depends on S6b — complete 2026-10-30, PR open.
+      ADR-012 rule 13) — depends on S6b — complete, merged 2026-10-30 as PR #159.
     - **The frame's focus after a different manager signs in (no ID yet)** — `OfficeApp.tsx` focuses Log out; DESIGN-022's
       focus contract says New preset on BO-07 — decide per screen or in `D`, with the designer — not written.
     - **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**
