@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S6a]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/presets.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S6b — BO-07 Discount presets in the back office
@@ -400,6 +400,53 @@ says. That is recorded as a live conflict for the lead, not as a defect of this 
 looks before merge (the task touches money).
 
 Reviewer: the database, the browser and the e2e harness are out of your reach. This note is the evidence for them.
+
+## Round 3 (lead rulings, 2026-10-30), from the review
+
+The review is `.agent/reviews/PHASE1-S6b-review.md` (Codex). **This is the last round** (`max_fix_cycles` 2; round 1
+and its resume were rounds 1 and 2). Change only what this section says.
+
+**F1 (high), accepted.** `readList()` overlays every record applied after the read began, whatever that answer's
+version, and `apply()` replaces a row whatever version the row came from. A read that started before a command was
+answered can still take its snapshot after that command and after another tab's edit, so arrival order does not tell
+which is newer. Either order can leave a row holding an older value beside a newer standing version, and an edit then
+sends stale values with a current `expectedVersion` (ADR-012 rule 13). The reviewer reproduced both orders against the
+real model. Ruling 18's "a read that began before a command was answered never undoes the answered record" holds only
+when the read's snapshot is older than the answer; the version decides, not the arrival.
+
+In this round, in `apps/back-office/src/presets/model.ts`:
+1. **Provenance.** Keep, for every row, the catalog version it was taken from: the snapshot's version for a row from a
+   full read, the answer's version for a row from a command answer. The `applied` entries carry their answer's version.
+2. **A full read at version V** starts from the snapshot's rows, then overlays an applied record (applied after the read
+   began) **only when its answer's version is greater than V**. A record whose answer's version is V or less is
+   superseded by the snapshot's row. The standing version keeps its current rule (`standingAhead`): it stays at an
+   adopted answer's version only when that is ahead of V, and is otherwise V.
+3. **A command answer at version A** replaces or inserts its record **only when the row's provenance version is less
+   than A** (or the record is new to the list). A row a newer read already established keeps the read's values. The
+   answer is still announced, with its sentence and focus, as today. `adopt(A)` is unchanged.
+4. **The latest version never moves backwards.** The facts line and the form's version line take the greater of the
+   current `latest` and an answer's version. A read keeps its current `latestAhead` rule.
+5. **The partial state** is unchanged: with the read standing failed, an answer is applied and its version is not
+   adopted.
+
+Tests, in `presets-versions.test.tsx`, each driven with deferred configuration responses and the revisit **through the
+real rail** (Tables, then Discount presets) while a command is outstanding:
+- (a) **Answer first:** the list reads 12 with `Staff meal` inactive at 10%; Reactivate; revisit; the reactivation
+  answers 13, then the read answers 14 with `Staff meal` at 20%. The row shows 20%; Edit, rename only, Save sends
+  `expectedVersion: 14` and `ratePpm: '200000'`.
+- (b) **Read first:** the same, but the read (14, 20%) arrives before the answer (13). The row still shows 20%, the facts
+  line names 14 (not 13), and the save sends `14` and `'200000'`.
+- (c) **The inverse:** the read's snapshot is older (12, inactive, 10%) and arrives after the answer (13, active). The
+  row is active, the standing version is 13, and an edit carries 13.
+- *Red:* restore the unconditional overlay in `readList()`: (a) fails; restore the unconditional replacement in
+  `apply()`: (b) fails. Record both, reverted.
+
+**Not in this round.** BO-03's `menu/model.ts` (`:379-380`) merges the same way; the lead queues that as its own task.
+Do not touch `menu/`. The 48-row overflow and the frame's focus stay as recorded in the lead's note.
+
+Then run `npm run verify` and `npm run test:e2e:all`, update the Handoff in place (the *How it works* standing-version
+bullet, the red proofs, the counts) and add a *Round 3* paragraph at its end. **Commit with path-scoped `git add`, check
+that `git status` is clean, and only then** end the Handoff with `DONE` and report.
 
 ## Handoff
 
