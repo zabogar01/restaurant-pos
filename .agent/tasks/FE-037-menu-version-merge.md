@@ -5,7 +5,7 @@ category: feature
 touches: []
 depends_on: [PHASE1-S6b]
 owns: [apps/back-office/src/menu/model.ts, apps/back-office/test/menu-versions.test.tsx, apps/back-office/test/menu-support.tsx]
-status: review
+status: complete
 cycles: 0
 ---
 # FE-037 — BO-03 merges by catalog version, not by arrival order
