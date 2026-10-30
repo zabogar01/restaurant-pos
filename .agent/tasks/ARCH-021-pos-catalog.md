@@ -5,7 +5,7 @@ category: arch
 touches: [money, boundaries, identity]
 depends_on: []
 owns: [.agent/reviews/ARCH-021-*.md]
-status: not-started
+status: complete
 cycles: 0
 ---
 # ARCH-021 — Consult C4: the POS catalog
@@ -189,6 +189,27 @@ Answer both in *For DESIGN-021*. The designer is drawing the lead's provisional 
   the server does not answer? *Lead's provisional answer:* no new timer; the transport core's default request timeout
   (`DEFAULT_TIMEOUT_MS`, 10 seconds, `packages/api-client/src/client.ts:82`) ends the read, and its failure enters the
   state, with *Try again*.
+
+## Lead review (2026-10-30)
+
+At `9eb34dd`. `git diff --name-only ad8276b`: the report and this task file; `git diff --check` clean. The four acceptance
+criteria are met: all twelve items are answered with alternatives and reasons; *For DESIGN-021* went first (`2e33a81`)
+and was relayed to the designer, with D1 and D2 answered in it; *For the lead* gives S7a, S7b1, S7b2 and S7b3 each a
+scope, `owns`, acceptance criteria with red proofs, tests expected to change and `touches`; nothing contradicts the
+contract, an accepted ADR or a DECISIONS line, and no ADR wording changes (item 6's reading of ADR-011's *Not decided
+here* is accepted). The lead checked the D2 correction against `packages/api-client/src/client.ts` (the ten-second
+default, then the health read on a fault) and the decimal comma against `docs/DESIGN.md:1715`.
+
+The lead accepts, as its own reading and the owner's to overturn: the split of S7b into three (S7b1, S7b2, S7b3, in that
+order, all after DESIGN-021's review); the revision route opting out of the client-instance hook; a per-route log level
+on the revision route, subject to the librarian's confirmation in S7a; the poll running on every signed-in POS screen and
+pausing when hidden; no backoff; no option ids in a stand-in line; D1's three additions; and S7a building `presets` into
+the projection whatever OQ1's answer, since the field is one line to remove. **To the owner:** OQ1 (real presets in the
+Phase 1 picker; architect and lead: yes), and the interim between S7b1 and S7b2, when an available served tile opens
+nothing. **For DESIGN-021, relayed:** the 86'd sheet's stepper (*Found and not fixed*) and the inventory's "twelve menu
+tiles" (*Stale text* 3). **For the S7b1 task file:** `idle.spec.ts` B6 and B8 must change, or they flake. Four library
+facts are left to builders (the log level, `clock.resume` and `pauseAt`, the page clock after `install()`, a hidden
+two-profile page), each named where it applies. Complete.
 
 ## Handoff
 
