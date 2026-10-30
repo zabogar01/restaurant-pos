@@ -110,4 +110,54 @@ cases and the reds (mutation, failure read, reverted), any finding in `item/mode
 `test:e2e:all` output. End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md
 says.
 
+## Round 2 (lead ruling, 2026-10-30), on the builder's BLOCKED question
+
+**Ruling 3 is amended: `apply()` replaces a row when its provenance version is less than or equal to the answer's
+(`<=`).** Two records at one catalog version describe one committed state, so replacing on equality never shows an
+older value. The F1 cases still hold: an answer older than the row (cases b and d read-first) is refused by `<=` exactly
+as by `<`. `readList()` keeps the strict `>` of ruling 2. This keeps `menu-availability.test.tsx:168`, which pins S5's
+no-op 86 announcement, green and unedited. (Its fixture answers another tab's 86 at the unchanged version 5, which a
+real server would answer at 6; the expectation stands either way, and rewriting it is not this task's.)
+
+`presets/model.ts` keeps its strict `<`: on BO-07 an equal-version answer is an unchanged edit, whose record already
+equals the row. Do not touch it.
+
+In this round:
+1. Apply `<=` on the category and item lines in `apply()`, and make the comment say "lower or equal" and why.
+2. Rerun the mutation for `apply()`. It must still fail case (b) and case (d) read-first.
+3. Run `npm run verify` and `npm run test:e2e:all`.
+4. Update the Handoff in place, with a *Round 2* paragraph at its end.
+5. Commit `model.ts` and `menu-versions.test.tsx` with path-scoped `git add`.
+6. Confirm that `git status` shows nothing but the task file, then end with `DONE`.
+
 ## Handoff
+
+**Status: BLOCKED, nothing committed.** The working tree holds the change as ruled (uncommitted, `npm run verify` red on one existing test). One ruling conflicts with an existing test I may not edit.
+
+### What I did
+
+- `apps/back-office/src/menu/model.ts`: added `categoryVersion` and `itemVersion` maps (the catalog version each row on screen was taken from) and a `version` on each `appliedCategories` / `appliedItems` entry. `readList()` fills the maps from the snapshot's version, then overlays an applied record only when `at > startedAt && version > snapshot.version` (ruling 2). `apply()` replaces or inserts a record only when the row has no provenance or `have < applied.version` (ruling 3), and records the applied entry unless a newer answer already holds it (`kept.version <= applied.version`, copied from `presets/model.ts`). `host()` writes no provenance (ruling 1), `adopt()` and the standing-version rule are untouched, and the answer is still announced because `present()` is untouched. The comment above `load()` was rewritten to describe the version rule.
+- `apps/back-office/test/menu-versions.test.tsx`: new `describe('AC 8 (FE-037)…')` with five cases, driven by deferred responses (`h.hold`) as BO-07's round-3 cases are. I used a revisit through the real rail (Tables, then Menu) while a row command is outstanding. Commands: archive of the Drinks category (a, b, c) and the 86 toggle on Burger (d). The list reads at 12 first. In every case the answered and the snapshot record differ in a shown field: (a, b) the answer archives Drinks, the version-14 read has Drinks renamed *Beverages* and active; (d) the answer marks Burger 86, the 14 read has it renamed *Big burger* and available. Cases: (a) answer 13 then read 14: heading is Beverages, a rename carries `expectedVersion: 14`. (b) read 14 then answer 13: same, and the page still says "Drinks archived." (c) read 12 after answer 13: Drinks stays archived, rename carries 13. (d) the item row shows the read's record, in both orders (the answer-first item case is mine, added because it is the only one that exercises the item overlay in `readList()`).
+- `menu-support.tsx` was not changed. No formatter was run.
+
+### Red proofs (each reverted afterwards)
+
+Against the unchanged model, before the fix: (a), (b), (d)-read-first and (d)-answer-first failed (for example `expected [ 'Mains', …(2) ] to include 'Beverages'`, and the Burger row read `86 · Unavailable` with no `Big burger`); (c) passed, since it guards behaviour that already held. With the fix: all 33 tests in the file passed. Mutations on the fixed model: dropping `&& version > snapshot.version` from the category overlay failed (a); dropping it from the item overlay failed (d) answer-first; making the `apply()` replacement unconditional (both maps) failed (b) and (d) read-first. Each was reverted and the file re-run.
+
+### The block
+
+`npm run verify`: typecheck clean; vitest 148 files passed, 1 failed; 5452 tests passed, 1 failed (5453). The failure is an existing test, which I did not edit:
+
+`apps/back-office/test/menu-availability.test.tsx:168`, *a no-op answer (the version unchanged) announces the same sentence*: the list reads at 5, 86 on Burger is answered at version 5 (the server wrote nothing; it returns the record at the standing version), and the test expects the row to show `86 · Unavailable`. Ruling 3 replaces a row only when the row's version is *less than* the answer's, and the row came from the snapshot at 5, so the strict `<` leaves the row available.
+
+Proposed resolution (needs your ruling, since it changes ruling 3's wording): in `apply()` replace when `have <= answer.version` (two characters, `<` to `<=`, on the category and item lines). An answer at the row's own version is authoritative for that version (a no-op command returns the current record), and a snapshot at the same version holds the same data in practice, so equal versions need no tie to the read. `readList()` keeps the strict `>` for the overlay (ruling 2), so a late snapshot at the answer's version still stands. I tried exactly this: `npx vitest run apps/back-office` gave 54 files, 1612 tests, all passing, including the new five and the existing no-op test; then I reverted to the strict `<` so the tree is as ruled. Note `presets/model.ts` `apply()` has the same strict `<`; I did not check whether BO-07 has a no-op case that would hit it and did not touch it.
+
+### Not done, and why
+
+`npm run test:e2e:all` was not run: verify is red, and I will not commit. Nothing was found in `item/model.ts` (I did not read it beyond what the task named).
+
+### Next agent needs
+
+The lead's ruling on `<` vs `<=`. If `<=`: change the two lines in `apply()`, update the comment (it says "lower"), re-run `npm run verify` and `npm run test:e2e:all`, and commit `apps/back-office/src/menu/model.ts` and `apps/back-office/test/menu-versions.test.tsx` with path-scoped `git add`.
+
+BLOCKED: Should `apply()` replace a row when its version is less than *or equal to* the answer's (`<=`, which keeps the existing menu-availability no-op test green), rather than strictly less (ruling 3)?
