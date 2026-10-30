@@ -295,8 +295,15 @@ export function createMenuModel(config: ConfigApi) {
   let loaded = false;
   /** Counts the answers applied and the versions adopted, so a read can tell which came after it began. */
   let clock = 0;
-  const appliedCategories = new Map<string, { record: CategoryView; at: number }>();
-  const appliedItems = new Map<string, { record: ItemView; at: number }>();
+  /** A record a command answered, with the catalog version of that answer and when it was applied. */
+  const appliedCategories = new Map<string, { record: CategoryView; at: number; version: number }>();
+  const appliedItems = new Map<string, { record: ItemView; at: number; version: number }>();
+  /**
+   * The catalog version each row on screen was taken from: its snapshot's, or its answer's. A
+   * hosted category has none, so the next read or answer replaces it.
+   */
+  const categoryVersion = new Map<string, number>();
+  const itemVersion = new Map<string, number>();
   /** When the standing version was last moved by an answer. */
   let standingAt = 0;
   let readSequence = 0;
@@ -345,10 +352,15 @@ export function createMenuModel(config: ConfigApi) {
   // The list read, for the first load, for Try again, and for a reread after a refusal or an
   // unknown outcome (which does not hide the list while it runs). The latest read decides.
   //
-  // A read is a snapshot taken before some command may have answered. A record a command's
-  // authoritative answer replaced after the read began is kept (or inserted, if the read lacks
-  // it), so an older snapshot arriving late never undoes a newer success. The same holds for the
-  // standing version: an answer adopted after the read began, ahead of what the read saw, stays.
+  // A read is a snapshot taken before or after some command committed, and arrival order does not
+  // say which. Every row therefore carries the catalog version it was taken from, and the version
+  // decides: a record a command answered after the read began is kept (or inserted) only when the
+  // answer's version is greater than the snapshot's; at the snapshot's version or older the
+  // snapshot's row stands. A command answer replaces a row only when the row's version is lower or
+  // equal: two records at one version describe one committed state, so replacing on equality never
+  // shows an older value (and a no-op command answers the standing version with the current
+  // record). The standing version: an answer adopted after the read began, ahead of what the read
+  // saw, stays.
   //
   // What a caller receives describes the list on screen: a read that is no longer the newest
   // waits for the newest read already in flight and returns that read's outcome. It starts no
@@ -376,8 +388,22 @@ export function createMenuModel(config: ConfigApi) {
       if (snapshot !== null) {
         let categories = [...snapshot.categories];
         let items = [...snapshot.items];
-        for (const { record, at } of appliedCategories.values()) if (at > startedAt) categories = upsertCategories(categories, record);
-        for (const { record, at } of appliedItems.values()) if (at > startedAt) items = upsertItems(items, record);
+        categoryVersion.clear();
+        itemVersion.clear();
+        for (const row of categories) categoryVersion.set(row.categoryId, snapshot.version);
+        for (const row of items) itemVersion.set(row.itemId, snapshot.version);
+        for (const { record, at, version } of appliedCategories.values()) {
+          if (at > startedAt && version > snapshot.version) {
+            categories = upsertCategories(categories, record);
+            categoryVersion.set(record.categoryId, version);
+          }
+        }
+        for (const { record, at, version } of appliedItems.values()) {
+          if (at > startedAt && version > snapshot.version) {
+            items = upsertItems(items, record);
+            itemVersion.set(record.itemId, version);
+          }
+        }
         hosted = false;
         const ahead = state.version !== null && standingAt > startedAt && state.version > snapshot.version;
         set({
@@ -432,12 +458,27 @@ export function createMenuModel(config: ConfigApi) {
     clock += 1;
     let { categories, items } = state;
     for (const record of applied.categories) {
-      appliedCategories.set(record.categoryId, { record, at: clock });
-      categories = upsertCategories(categories, record);
+      const kept = appliedCategories.get(record.categoryId);
+      if (kept === undefined || kept.version <= applied.version) {
+        appliedCategories.set(record.categoryId, { record, at: clock, version: applied.version });
+      }
+      // A row a newer read (or answer) already established keeps its values.
+      const have = categoryVersion.get(record.categoryId);
+      if (have === undefined || have <= applied.version) {
+        categories = upsertCategories(categories, record);
+        categoryVersion.set(record.categoryId, applied.version);
+      }
     }
     for (const record of applied.items) {
-      appliedItems.set(record.itemId, { record, at: clock });
-      items = upsertItems(items, record);
+      const kept = appliedItems.get(record.itemId);
+      if (kept === undefined || kept.version <= applied.version) {
+        appliedItems.set(record.itemId, { record, at: clock, version: applied.version });
+      }
+      const have = itemVersion.get(record.itemId);
+      if (have === undefined || have <= applied.version) {
+        items = upsertItems(items, record);
+        itemVersion.set(record.itemId, applied.version);
+      }
     }
     // The read stands failed: the rows are the client's own, and the alert stays (F4).
     set({ categories, items, partial: state.read === 'failed' ? true : state.partial });
