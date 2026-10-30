@@ -246,6 +246,28 @@ with `DONE` or `BLOCKED: <one question>`. Then run exactly one of:
     herdr agent prompt lead "design021: DESIGN-021 done — <one line>"
     herdr agent prompt lead "design021: BLOCKED — <question>"
 
+## Lead rulings during the task
+
+**R1 (2026-10-30), long tile names.** The designer's proposal is accepted: the ruled 150×96 tile is kept; a name wraps
+and is ellipsized after two lines; type does not shrink and the tile does not reflow; the full name is the tile's
+accessible name and M-2's heading. Four conditions, each to be stated as a rule S7b can test:
+
+1. **The price line is never truncated, wrapped away or pushed out of the tile**, at the longest name and the largest
+   price together. The price is the cashier's second way to tell two items apart.
+2. **Every tile opens M-2; no tile adds directly.** M-2's heading shows the whole name before Add, so a truncated tile
+   is always confirmed by its full name before a line exists. If any item could be added without M-2, say so: the rule
+   then needs another answer.
+3. **Draw the collision:** two active items whose names differ only after the second line (names are unique, but a
+   truncated prefix is not), side by side, and show where the cashier tells them apart. Name it in the Handoff as a
+   known limit for the owner, with a proposed note (for example, a hint on BO-04's name field); do not draw the back
+   office.
+4. **A 64-code-point name in the order panel's line** (a real item now reaches the stand-in order, Q14) wraps in full
+   and is never ellipsized, because the order is the record the cashier reads back. Measure it, with the line's
+   quantity, price and trailing slot intact.
+
+Measure with a realistic long Indonesian name as well as the 64-W worst case, and clamp by lines, not by a character
+count.
+
 ## Handoff
 
 *(design021 writes here.)*
