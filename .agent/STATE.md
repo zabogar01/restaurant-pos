@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-30 (wrap-up for a fresh session): #157 S6b, #158, #159 FE-037 and #160 merged; `development` at `44f31ad`;
-dev `pos` at `0014`. **Nothing running; no agent but the lead; no task worktree.** Lead branch `agent/lead-1030c`, not
-pushed. Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
+2026-10-30 (late): #161 merged; `development` at `ad8276b`; dev `pos` at `0014`. **ARCH-021 (C4) and DESIGN-021
+written, not started; no agent but the lead; no task worktree.** Lead branch `agent/lead-1030d`, not pushed.
+Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
 
 ## Phase and gates
 
@@ -27,8 +27,7 @@ pushed. Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14); S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
 - **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. ARCHITECTURE §8: catalog → business day →
   dining table → order → lease/receipt (TenderMethod not in it: Phase 4's, with an architect).
-- **Owed, not drafted:** ROADMAP Phase 1's users bullet omits role change (Q1c), its tender bullet "reactivate" (OQ1).
-  Designer: BO-06 inventory and sitemap (E2, C3 *Stale text* 5).
+- **Owed, not drafted:** ROADMAP Phase 1 users: role change (Q1c); tender: "reactivate" (OQ1). E2: BO-06 (C3 *Stale* 5).
 - **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office: sign-in, provisional BO-01, M-6, the rail, and
   BO-05, BO-08, BO-03, BO-04, **BO-07** whole. BO-03 and BO-07 merge reads and answers by catalog version (FE-037, S6b
   r3). **Frost designed:** A, B, C, I, E1, F (018, 022), BO-03 (019), BO-04 (020); left: DESIGN-021 (POS, G6), E2.
@@ -37,13 +36,13 @@ pushed. Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
 
 ## Integration branch
 
-- **`development`** at `44f31ad` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `ad8276b` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
   **before reporting or dispatching**. `0014` applied; no lockfile change since 10-26.
 - **Guard hooks** current (`--check` 2026-10-30); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1030c`** (from `44f31ad`). Cut each new lead branch from
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1030d`** (from `ad8276b`). Cut each new lead branch from
   `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (the classifier refuses it otherwise; LESSONS). Ask, then push the task
   and lead branches together. **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
@@ -51,7 +50,8 @@ pushed. Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
 
 ## Running tasks and agents
 
-- **Nothing running;** Herdr shows only `lead` (and the owner's own shell pane).
+- **ARCH-021 (C4) and DESIGN-021 (G6)**: written in the kit, untracked, to run in parallel, both hand-opened (`architect21`
+  Opus; `design021` Codex, Opus reviews); C4 writes *For DESIGN-021* first, the lead relays it. Nothing running yet.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -112,15 +112,8 @@ pushed. Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
 
 Nothing here is decided. Detail is where each line points.
 
-- **Lead rulings, yours to overturn** (each in its task file): FE-037 (r2: `apply()` replaces on equal versions); S6b
-  (path `/back-office/presets`; creation order per group; BO-03's name check reused; r3's version-provenance merge);
-  DESIGN-022 (*Round 2*: BO-07 keeps a standing version; F3 shared constants; the `design019` rail change); S6a (*The
-  shape* 1-10: no display order or reorder; name 1-32; whole-preset edit; its own read route); S5 (route names; a no-op
-  86 announces the reached state); S4c2b (option uniqueness by `lower(name)`; saved name on removal; F3 rejected);
-  S4c2a (the split; the item in client state at `/back-office/menu/item`; BO-04's own read; top bar kept; one command
-  across BO-03/BO-04); S4c1; S4b (bare `DUPLICATE`); S4a (option swap by temporary deactivation); S3b; DESIGN-020;
-  DESIGN-019 F7; S2b; S1b; S0; C3; S1a; DESIGN-017; PHASE0-004-013; DESIGN-011-016; ARCH-006; FE-030-036.
-- **When to start design slice E2 (BO-06 Users):** every owner answer it waited on is in. Lead: after DESIGN-021.
+- **Lead rulings:** all confirmed 2026-10-30 (DECISIONS). New ones from here on are listed here until confirmed.
+- **DESIGN-021's (C4) provisional answers** (its task file; journal 2026-10-30 *Night*): yours to overturn.
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
   for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
@@ -145,6 +138,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **DESIGN-021** (the POS addition, G6; feeds S7): write the task file, hand-open a Codex designer (Claude Opus
-   reviews), the lead runs the checks. Beside it, **consult C4** (for S7) with the architect. Then **S7**.
+1. **Start ARCH-021 and DESIGN-021** on the owner's go (worktrees, panes, briefs); the lead runs the design checks.
+   Then S7a and S7b from C4's *For the lead* and DESIGN-021's Handoff; E2 (BO-06) after DESIGN-021 (owner).
 2. **Small, between slices:** the code-point cleanup; the frame-focus question; the dialog and name-check extraction.
