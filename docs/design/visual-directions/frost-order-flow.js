@@ -159,18 +159,18 @@
     drawer.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();dismiss();}});
     return $('.sheet__body',drawer);
   }
-  function stepper(q,current,commit,update,disabled=false,adding=false) {
+  function stepper(q,current,commit,update,disabled=false,adding=false,canIncrease=()=>true) {
     const minus=$('[data-step="-1"]',drawer),plus=$('[data-step="1"]',drawer),save=$('.flow-save',drawer);
     const paint=()=>{
       $('output',drawer).textContent=q;
-      minus.disabled=q===1;plus.disabled=q===99;
+      minus.disabled=q===1;plus.disabled=q===99||!canIncrease(q+1);
       for(const b of [minus,plus]){b.classList.toggle('btn--off',b.disabled);b.setAttribute('aria-disabled',String(b.disabled));}
       save.textContent=adding?'Add to order':`Update to ${q}`;
-      save.disabled=(typeof disabled==='function'?disabled():disabled)||(!adding&&q===current);save.classList.toggle('btn--off',save.disabled);save.setAttribute('aria-disabled',String(save.disabled));
+      save.disabled=(typeof disabled==='function'?disabled(q):disabled)||(!adding&&q===current);save.classList.toggle('btn--off',save.disabled);save.setAttribute('aria-disabled',String(save.disabled));
       $('.flow-bound',drawer).textContent=q===99?'Maximum 99 per line. Increase is unavailable.':q===1?(adding?'Minimum 1 per line.':'Minimum 1. Use Remove line to remove this line.'):'Quantity · whole numbers, maximum 99';
       update(q);
     };
-    minus.onclick=()=>{if(q>1){q--;paint();}};plus.onclick=()=>{if(q<99){q++;paint();}};
+    minus.onclick=()=>{if(q>1){q--;paint();}};plus.onclick=()=>{if(q<99&&!plus.disabled){q++;paint();}};
     save.onclick=()=>{if(save.disabled)return;commit(q);dismiss();};paint();
     return ()=>paint();
   }
@@ -193,6 +193,14 @@
     source?.classList.add('tile--selected');
     let archived=false, unit, repaint;
     const missing=()=>item.served&&groups.some(g=>!g.many&&!g.selected.length);
+    const resolvedUnit=()=>{const n=BigInt(item.price)+groups.flatMap(g=>g.selected.map(j=>g.options[j][1])).reduce((sum,p)=>sum+BigInt(p),0n);return n<0n?0n:n;};
+    const limit=q=>{
+      if(!item.served)return '';
+      const price=resolvedUnit();
+      if(price*BigInt(q)>99999999n)return 'Line total cannot exceed 99.999.999.';
+      if(figures([...model,{unit:price,q}]).total>99999999n)return 'Order total cannot exceed 99.999.999.';
+      return '';
+    };
     body.innerHTML=(item.served?'<div class="notice flow-unavailable" id="served-sheet-notice" role="status" hidden></div><div class="served-option-groups"></div><div class="served-unit"><span>Unit price</span><b class="mono" id="served-unit"></b></div>':(unavailable?'<div class="notice flow-unavailable"><div class="notice__t">Burger is no longer available</div><div>A manager marked it 86 while you were choosing. Your selections are kept so you can note them, but it cannot be added.</div></div>':''))+'<div class="flow-line-total"><span>Line total</span><b class="mono" data-line-total></b></div><div class="muted" data-arithmetic></div>';
     function options() {
       const html=groups.map((g,i)=>`<span class="label" id="option-group-${i}" tabindex="-1">${esc(g.name)} — choose ${g.many?'any':'one'}</span><div class="flow-options ${id==='burger'&&i===1?'flow-extras':''}" role="group" aria-label="${esc(g.name)}">${g.options.map(([n,p],j)=>`<button type="button" class="btn ${g.selected.includes(j)?'btn--primary':''}" aria-pressed="${g.selected.includes(j)}" data-group="${i}" data-option="${j}">${esc(n)}${id==='burger'&&i===1?' ':'<br>'}${signed(p)}</button>`).join('')}</div>`).join('');
@@ -219,9 +227,10 @@
       $('[data-arithmetic]',body).textContent=`(${fmt(item.price)}${mods.map(p=>' '+signed(p)).join('')})${resolved<0n?' → 0':''} × ${q} = ${fmt(unit*BigInt(q))}`;
       if(item.served){
         $('#served-unit',body).textContent=fmt(unit);
-        $('#served-add-reason',drawer).textContent=archived?'This item is no longer on the menu.':unavailable?'This item is unavailable.':missing()?'Choose a variant before adding this item.':'';
+        $('#served-add-reason',drawer).textContent=archived?'This item is no longer on the menu.':unavailable?'This item is unavailable.':missing()?'Choose a variant before adding this item.':limit(q);
+        if(q<99&&limit(q+1))$('.flow-bound',drawer).textContent='Cannot increase quantity. '+limit(q+1);
       }
-    },()=>unavailable||archived||missing(),true);
+    },q=>unavailable||archived||missing()||!!limit(q),true,q=>!limit(q));
     if(item.served)served.sheetRefresh=kind=>{
       const notice=$('#served-sheet-notice',body);notice.hidden=false;
       if(kind==='86'){unavailable=true;notice.textContent=`${item.name} is no longer available. A manager marked it 86. Your choices are kept, but it cannot be added.`;}
@@ -290,7 +299,7 @@
     const visibleRows=$$('.line',lines).filter(x=>x.getClientRects().length);
     openEdit(visibleRows.indexOf(a.closest('.line')),a);
   });
-  if (served) served.start({openItem, openEdit, renderOrder, announce, wireFire,
+  if (served) served.start({openItem, openEdit, renderOrder, announce, wireFire, shell, dismiss,
     setModel: value => { model = value; renderOrder(); }, getModel: () => model});
   if(state==='fireblocked') {
     const notice=$('.orderpanel > .notice:not([hidden])'),line=$$('.line',lines).find(e=>e.getClientRects().length&&e.textContent.includes('Steak'));

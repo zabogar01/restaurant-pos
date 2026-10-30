@@ -26,6 +26,8 @@
   items.many={name:'Nasi Goreng',price:45000,groups:[{...variants(),options:Array.from({length:24},(_,i)=>['Variant '+(i+1),i*1000])},{...modifiers(),options:Array.from({length:32},(_,i)=>['Modifier '+(i+1),i*1000])}],served:true};
   items.extreme={name:'W'.repeat(64),price:99999999,groups:[{...variants(),options:[['W'.repeat(32),-99999999],['Large portion with special sambal',99999999]]},{...modifiers(),options:[['W'.repeat(32),99999999]]}],served:true};
   items.floor={name:'Nasi Goreng',price:45000,groups:[{...variants(),options:[['Small',-99999999]],selected:[0]}],served:true};
+  items.lineBound={name:'Nasi Goreng banquet',price:60000000,groups:[],served:true};
+  items.orderBound={name:'Nasi Goreng banquet',price:99999999,groups:[],served:true};
   let flow, selected = 'meals', stale = false, pointer = false, heldArchive = null;
   let categories = [{id:'meals',name:'Meals',ids:['nasi','tea','water']}];
   const api = window.ServedCatalogFixture = {items,base:emptyOrder?'empty':quick?'quick':'default',start,refresh,escape,fmt};
@@ -76,16 +78,61 @@
     if(state==='served-price') {flow.setModel([{id:'nasi',name:'Nasi Goreng',unit:45000n,q:1,detail:'',round:0}]);refresh('price');}
     if(state.startsWith('served-item-')||state.startsWith('quick-served-item-')) {
       const suffix=state.split('item-')[1];
-      const id=({none:'nasi',variants:'variants',modifiers:'modifiers',both:'both',many:'many',extremes:'extreme',floor:'floor',long:'long',indonesian:'longReal'})[suffix]||'both';
+      const id=({none:'nasi',variants:'variants',modifiers:'modifiers',both:'both',many:'many',extremes:'extreme',floor:'floor',long:'long',indonesian:'longReal','line-bound':'lineBound','order-bound':'orderBound'})[suffix]||'both';
       if(['86','archived','price','options','removed'].includes(suffix))items[id].groups.forEach(g=>g.selected=[0]);
       flow.openItem(id,$('[data-item]'));
       if(['86','archived','price','options','removed'].includes(suffix))api.sheetRefresh(suffix);
     }
+    if(state.includes('served-presets'))openPresets();
     if(state==='served-line-long'||state==='served-line-indonesian'||state==='quick-served-line') {
       const item=items[state==='served-line-indonesian'?'longReal':state==='quick-served-line'?'nasi':'long'];
       flow.setModel([{id:'served-line',name:item.name,unit:BigInt(item.price),q:1,detail:'',round:0}]);
       if(state==='quick-served-line')flow.openEdit(0,$('[data-edit]'),3);
     }
+  }
+  function openPresets() {
+    const subtotal=flow.getModel().reduce((sum,l)=>sum+(l.voided?0n:l.unit*BigInt(l.q)),0n);
+    let presets=[
+      {id:'comp',name:'Comp',kind:'percent',value:1000000},
+      {id:'regular',name:'Regular guest',kind:'percent',value:123456},
+      {id:'recovery',name:'Service recovery',kind:'fixed',value:99999999},
+      {id:'zero-fixed',name:'Zero amount',kind:'fixed',value:0},
+      {id:'zero-rate',name:'Zero percent',kind:'percent',value:0}
+    ];
+    if(state.endsWith('empty'))presets=[];
+    if(state.endsWith('many'))presets=Array.from({length:40},(_,i)=>({id:'preset-'+i,name:i===0?'W'.repeat(32):'Preset '+String(i+1).padStart(2,'0'),kind:i%2?'fixed':'percent',value:i%2?25000:123456}));
+    // Stable server order in these examples; never sort by benefit or preselect.
+    const source=$$('.actions .btn').find(e=>!e.hidden&&e.textContent==='Discount');
+    const body=flow.shell('Discount',subtotal,'<button class="btn" data-cancel>Cancel</button>',source);
+    $('.flow-price').remove();
+    $('.sheet__head').insertAdjacentHTML('beforeend','<span class="muted">One per order</span>');
+    $('.sheet__foot').innerHTML='<button type="button" class="btn" id="served-preset-cancel">Cancel</button>';
+    $('#served-preset-cancel').onclick=flow.dismiss;
+    body.innerHTML='<div id="preset-change" class="notice" role="status" hidden></div><span class="label" id="preset-heading" tabindex="-1">Presets — no approval needed</span><div id="served-presets" class="served-presets"></div><span class="label">Anything else</span><a class="btn served-freeform" href="order.html?state=sheet-freeform">Other amount — needs a manager</a>';
+    const value=p=>p.kind==='fixed'?fmt(p.value)+' off':(String(Math.floor(p.value/10000))+(p.value%10000?','+String(p.value%10000).padStart(4,'0').replace(/0+$/,''):'')+'%');
+    function render() {
+      $('#served-presets').innerHTML=presets.length?presets.map(p=>{
+        const capped=p.kind==='fixed'&&BigInt(p.value)>subtotal;
+        return `<button type="button" class="btn served-preset" data-preset="${p.id}" aria-label="${escape(p.name)} — ${value(p)}${capped?'. Applies '+fmt(subtotal)+' at this subtotal.':''}"><span>${escape(p.name)}</span><span class="mono">${value(p)}</span>${capped?`<span class="muted served-preset-cap">Applies ${fmt(subtotal)} at this subtotal.</span>`:''}</button>`;
+      }).join(''):'<div class="empty served-preset-empty">No active presets. A manager can add or activate a preset in the back office.</div>';
+      $$('[data-preset]').forEach(b=>b.onclick=()=>{
+        const p=presets.find(p=>p.id===b.dataset.preset);
+        if(!p)return;
+        api.chosenPreset=structuredClone(p);flow.dismiss();
+      });
+    }
+    render();
+    api.deactivatePreset=(id='regular',aboutToChoose=false)=>{
+      const p=presets.find(p=>p.id===id);if(!p)return;
+      const focused=document.activeElement.dataset.preset===id;
+      presets=presets.filter(p=>p.id!==id);
+      $(`[data-preset="${id}"]`)?.remove();
+      if(!presets.length)render();
+      $('#preset-change').hidden=false;
+      $('#preset-change').textContent=`${p.name} is no longer available.${aboutToChoose?' Nothing was applied. Choose another preset.':''}`;
+      if(focused)$('#preset-heading').focus();
+    };
+    if(state.endsWith('removed'))api.deactivatePreset('regular',true);
   }
   function status(text) { $('#served-status').textContent=text; }
   function renderCategories() {

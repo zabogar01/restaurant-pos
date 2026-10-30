@@ -45,6 +45,12 @@ window.MOCKUPS = [
       ["served-line-long", "Order line — 64 W name"],
       ["served-line-indonesian", "Order line — long Indonesian name"],
       ["quick-served-line", "Counter — served pending-line editor"],
+      ["served-presets", "Served presets — all values"],
+      ["served-presets-empty", "Served presets — none active"],
+      ["served-presets-many", "Served presets — overflow and longest name"],
+      ["served-presets-removed", "Served presets — deactivated before selection"],
+      ["served-item-line-bound", "Served M-2 — quantity limited by money"],
+      ["served-item-order-bound", "Served M-2 — order maximum blocks Add"],
       [
         "empty",
         "Table order — no lines"

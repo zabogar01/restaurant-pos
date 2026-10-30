@@ -30,3 +30,12 @@
 .served-drawer .served-unit { display:flex; justify-content:space-between; gap:var(--frost-space-4); }
 .served-drawer .flow-line-total { margin-top:var(--frost-space-3); }
 .served-drawer [data-arithmetic] { overflow-wrap:anywhere; }
+.served-presets { display:flex; flex-direction:column; gap:var(--frost-space-2); margin-bottom:var(--frost-space-6); }
+.served-preset.btn { display:grid; grid-template-columns:minmax(0,1fr) max-content; text-align:left; gap:var(--frost-space-2) var(--frost-space-4); height:auto; min-height:var(--frost-action-height); padding:var(--frost-space-3) var(--frost-space-4); }
+.served-preset > span:first-child { overflow-wrap:anywhere; }
+.served-preset .mono { white-space:nowrap; text-align:right; }
+.served-preset-cap { grid-column:1 / -1; font-size:var(--frost-text-14); }
+.served-freeform { border-style:dashed; }
+.served-preset-empty { padding:var(--frost-space-5); }
+.served-drawer .sheet__foot:has(#served-preset-cancel) { display:block; }
+#served-preset-cancel { width:100%; }
