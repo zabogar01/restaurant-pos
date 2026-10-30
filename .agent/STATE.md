@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-10-30 (late): #161 merged; `development` at `ad8276b`; dev `pos` at `0014`. **ARCH-021 (C4) complete
-(`ec1261d`, PR not opened); DESIGN-021 running** (pane `w2:p9N`). Lead branch `agent/lead-1030d`, not pushed.
+(`ec1261d`, PR not opened); DESIGN-021 in review** (designer pane `w2:p9N` kept). Lead branch `agent/lead-1030d`, not pushed.
 Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
 
 ## Phase and gates
@@ -50,8 +50,8 @@ Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
 
 ## Running tasks and agents
 
-- **ARCH-021 complete** (lead review `ec1261d`; S7a, S7b1-3 in *For the lead*; pane closed). **DESIGN-021** `design021`
-  (Codex): C4 relayed (`fe71f6a`), R1; run2 green (021 352/352, 012-022 all pass). Before review: `meta.json`.
+- **ARCH-021 complete** (lead review `ec1261d`; S7a, S7b1-3 in *For the lead*; pane closed). **DESIGN-021 DONE**
+  (`6fdfa1b`; lead verify `0298f5e`: run3 360/360, run2 earlier suite green); **Opus review dispatched**; `design021` kept.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
