@@ -132,6 +132,9 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   │   One screen, two variants: type=table and type=quick_sale.
 │   │   Variants differ in affordances, never in layout family.
 │   ├── [INLINE] Menu browser: categories → items ............... FR-C1
+│   │       DESIGN-021: served loading / first-read failure / empty /
+│   │       possibly out of date; active empty category; rail/grid overflow.
+│   │       Only 86 holds its slot; absent items reflow. G6 is drawn.
 │   ├── [INLINE] Order line list, grouped by round .............. FR-E1, E2
 │   ├── [INLINE] Totals panel (subtotal/discount/tax/svc/total) . FR-M4
 │   ├── [INLINE] 86'd item DISABLED IN PLACE, never removed (≤3s) C-3, FR-C5, C6
@@ -148,6 +151,9 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   ├── [SHEET] Item configuration — variant + modifiers ........ FR-C2, C3
 │   │       DESIGN-007: twelve item states (including no-options Soda);
 │   │       quantity beside Add; 1/99 bounds; Cancel discards ..... FR-M5
+│   │       DESIGN-021: one data-driven sheet; variant required when present;
+│   │       live prices and options, removed choices, zero floor, full names;
+│   │       no-longer-on-menu notice; Add/Update share money ceilings.
 │   │   └── [INLINE] Item 86'd mid-selection; choices kept,
 │   │                Add disabled, reason shown ................. FR-C6
 │   ├── [INLINE] PENDING line — remove control in the trailing slot
@@ -161,6 +167,8 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   │   └── [INLINE] quick form — returns to the QUICK workspace,
 │   │             which carries no fire control ................. C-2, FR-E5
 │   ├── [SHEET] Discount picker — presets ....................... FR-F2, F5
+│   │       DESIGN-021: served loading / failure / empty / long list;
+│   │       zero and precise values; silent live edits and removals.
 │   │   └── [SHEET] Free-form discount entry ................... FR-F3
 │   │       └── [MODAL] Manager approval ....................... FR-A6, F3
 │   ├── [SHEET] Remove / replace existing discount .............. FR-F8
