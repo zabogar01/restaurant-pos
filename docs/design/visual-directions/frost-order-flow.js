@@ -23,12 +23,14 @@
     wine: {name:'House Wine',price:80000,groups:[group('Pour',false,[['Standard',0],['Small',-20000]],[1])]}
   };
   const state = document.documentElement.dataset.state;
+  const served = window.ServedCatalogFixture;
+  if (served) Object.assign(items, served.items);
   const isItem = state === 'sheet-item' || state === 'sheet-item86' || state.startsWith('sheet-item-');
   const isEdit = state.startsWith('sheet-line') || state.startsWith('quick-line');
   const isFire = state.startsWith('fire-') || state === 'fireerror';
   const quick = state.startsWith('quick');
   // Extend existing states by composing their established background, not a new screen.
-  const base = isItem ? (state === 'sheet-item86' ? state : 'sheet-item') : isEdit ? (quick ? 'quick-line' : 'sheet-line') : isFire ? 'linecontrols' : state;
+  const base = served ? served.base : isItem ? (state === 'sheet-item86' ? state : 'sheet-item') : isEdit ? (quick ? 'quick-line' : 'sheet-line') : isFire ? 'linecontrols' : state;
   if (base !== state) {
     $$('[data-when]').forEach(e => e.hidden = !e.dataset.when.split(/\s+/).includes(base));
     $$('[data-unless]').forEach(e => e.hidden = e.dataset.unless.split(/\s+/).includes(base));
@@ -236,6 +238,8 @@
     const visibleRows=$$('.line',lines).filter(x=>x.getClientRects().length);
     openEdit(visibleRows.indexOf(a.closest('.line')),a);
   });
+  if (served) served.start({openItem, openEdit, renderOrder, announce,
+    setModel: value => { model = value; renderOrder(); }, getModel: () => model});
   if(state==='fireblocked') {
     const notice=$('.orderpanel > .notice:not([hidden])'),line=$$('.line',lines).find(e=>e.getClientRects().length&&e.textContent.includes('Steak'));
     line.id='blocked-steak';line.tabIndex=-1;

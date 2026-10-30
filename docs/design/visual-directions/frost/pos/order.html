@@ -19,11 +19,32 @@
 ['sheet-voidorder-fired','Sheet — void order (holds fired)'],
 ['approval','Modal — manager approval'],['approval-error','Modal — wrong PIN'],
 ['approval-throttled','Modal — approval cooldown'],['approval-denied','Modal — approval failure (alias)'],
-['pressed','Pressed — tap in progress (DESIGN-005)'],["sheet-item-burger", "Item — Burger"],["sheet-item-wings", "Item — Chicken Wings"],["sheet-item-steak", "Item — Steak"],["sheet-item-fish", "Item — Fish & Chips"],["sheet-item-salad", "Item — Caesar Salad"],["sheet-item-soup", "Item — Soup of the Day"],["sheet-item-fries", "Item — Fries"],["sheet-item-rings", "Item — Onion Rings"],["sheet-item-soda", "Item — Soda"],["sheet-item-coffee", "Item — Coffee"],["sheet-item-beer", "Item — Beer"],["sheet-item-wine", "Item — House Wine"],["sheet-item-two", "Add — Burger × 2"],["sheet-item-max", "Add — quantity 99"],["sheet-line-changed", "Steak — draft 1 → 3"],["sheet-line-max", "Steak — draft 99"],["quick-line-changed", "Counter Burger — draft 1 → 3"],["quick-line-max", "Counter Burger — draft 99"],["fire-ready", "Fire — ready, 2 pending lines"],["fire-queued", "Fire — sending, unconfirmed"],["fire-printed", "Fire — printed"],["fire-failed", "Fire — FAILED"],["fire-unknown", "Fire — UNKNOWN"],["fire-then-add", "Fire — next pending group"],["fire-heading-width", "Fire — Round 12, UNKNOWN"]] };</script>
+['pressed','Pressed — tap in progress (DESIGN-005)'],["sheet-item-burger", "Item — Burger"],["sheet-item-wings", "Item — Chicken Wings"],["sheet-item-steak", "Item — Steak"],["sheet-item-fish", "Item — Fish & Chips"],["sheet-item-salad", "Item — Caesar Salad"],["sheet-item-soup", "Item — Soup of the Day"],["sheet-item-fries", "Item — Fries"],["sheet-item-rings", "Item — Onion Rings"],["sheet-item-soda", "Item — Soda"],["sheet-item-coffee", "Item — Coffee"],["sheet-item-beer", "Item — Beer"],["sheet-item-wine", "Item — House Wine"],["sheet-item-two", "Add — Burger × 2"],["sheet-item-max", "Add — quantity 99"],["sheet-line-changed", "Steak — draft 1 → 3"],["sheet-line-max", "Steak — draft 99"],["quick-line-changed", "Counter Burger — draft 1 → 3"],["quick-line-max", "Counter Burger — draft 99"],["fire-ready", "Fire — ready, 2 pending lines"],["fire-queued", "Fire — sending, unconfirmed"],["fire-printed", "Fire — printed"],["fire-failed", "Fire — FAILED"],["fire-unknown", "Fire — UNKNOWN"],["fire-then-add", "Fire — next pending group"],["fire-heading-width", "Fire — Round 12, UNKNOWN"],
+["served", "Served menu"],
+["served-empty", "Served menu — empty"],
+["quick-served-empty", "Counter — empty catalog"],
+["served-empty-order", "Empty catalog — existing order"],
+["served-loading", "Served menu — first read"],
+["quick-served-loading", "Counter — first read"],
+["served-error", "Served menu — unavailable"],
+["quick-served-error", "Counter — unavailable"],
+["served-error-internal", "Served menu — unexpected failure"],
+["served-stale", "Served menu — refresh failing"],
+["quick-served-stale", "Counter — refresh failing"],
+["served-single", "Served menu — one item"],
+["served-categories", "Served menu — many categories"],
+["served-overflow", "Served menu — many items"],
+["served-extremes", "Served menu — longest name, maximum and zero price"],
+["served-86", "Served menu — Nasi Goreng 86"],
+["served-restored", "Served menu — Nasi Goreng restored"],
+["served-archived", "Served menu — item archived"],
+["served-price", "Served menu — price changed"]] };</script>
 <script defer src="../../mockup.js"></script>
 <link rel="stylesheet" href="../../visual.css">
 <link rel="stylesheet" href="../../frost-states.css">
 <link rel="stylesheet" href="../../frost-order-flow.css">
+<link rel="stylesheet" href="../../frost-served-catalog.css">
+<script defer src="../../frost-served-catalog.js"></script>
 <script>
 // DESIGN-008: these four entry snapshots use the compositions below, not
 // DESIGN-007's Table 1 / populated-counter interaction model.

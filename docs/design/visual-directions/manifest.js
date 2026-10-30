@@ -7,6 +7,26 @@ window.MOCKUPS = [
         "default",
         "Table order — 2 rounds fired"
       ],
+      ["served", "Served menu"],
+      ["served-empty", "Served menu — empty"],
+      ["quick-served-empty", "Counter — empty catalog"],
+      ["served-empty-order", "Empty catalog — existing order"],
+      ["served-loading", "Served menu — first read"],
+      ["quick-served-loading", "Counter — first read"],
+      ["served-error", "Served menu — unavailable"],
+      ["quick-served-error", "Counter — unavailable"],
+      ["served-error-internal", "Served menu — unexpected failure"],
+      ["served-stale", "Served menu — refresh failing"],
+      ["quick-served-stale", "Counter — refresh failing"],
+      ["served-single", "Served menu — one item"],
+      ["served-categories", "Served menu — many categories"],
+      ["served-overflow", "Served menu — many items"],
+      ["served-extremes", "Served menu — longest name, maximum and zero price"],
+      ["served-86", "Served menu — Nasi Goreng 86"],
+      ["served-restored", "Served menu — Nasi Goreng restored"],
+      ["served-archived", "Served menu — item archived"],
+      ["served-price", "Served menu — price changed"],
+
       [
         "empty",
         "Table order — no lines"
