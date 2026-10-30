@@ -71,7 +71,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    - *(Done: I, DESIGN-014, BO-12 audit viewer, merged 2026-10-08 as PR #67.)* The BO-12 frontend
      task must carry its rule C1 and density rule (task file, last lead ruling).
    - *(Done: D, DESIGN-019 and -020, BO-03 and BO-04; F's BO-08 half, DESIGN-018.)*
-   - **Left:** F's BO-07 half (DESIGN-022, complete, for S6b) · E2 (BO-06) · G (BO-09) · H (BO-10, 11).
+   - *(Done: F's BO-07 half, DESIGN-022, merged 2026-10-29 as PR #156.)*
+   - **Left:** E2 (BO-06) · G (BO-09) · H (BO-10, 11).
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
 
@@ -153,9 +154,14 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       S4c2a — complete, merged 2026-10-28 as PR #149.
     - **PHASE1-S5**, the 86 toggle: two domain commands and routes, BO-03's row action (C1 §3, DESIGN-019 F2, F7) —
       depends on S4c2b — complete, merged 2026-10-28 as PR #151.
-    - **PHASE1-S6a**, discount presets on the server (C1 §4, `0014`) — depends on S5 — complete, PR #154.
-    - **DESIGN-022**, design F's BO-07 half (the presets screen) — feeds S6b — complete 2026-10-29, PR #156.
-    - **PHASE1-S6b**, BO-07 — depends on S6a and that design — not written.
+    - **PHASE1-S6a**, discount presets on the server (C1 §4, `0014`) — depends on S5 — complete, merged 2026-10-29 as PR #154.
+    - **DESIGN-022**, design F's BO-07 half (the presets screen) — feeds S6b — complete, merged 2026-10-29 as PR #156.
+    - **PHASE1-S6b**, BO-07 — depends on S6a and DESIGN-022 (both merged) — complete 2026-10-30, PR open.
+    - **BO-03 version-aware merge (no ID yet)** — `menu/model.ts:379-380` merges a read and a command answer by
+      arrival order, the defect S6b's review F1 found in BO-07 (ADR-012 rule 13); port S6b round 3's provenance rule
+      and its three tests — depends on S6b — not written.
+    - **The frame's focus after a different manager signs in (no ID yet)** — `OfficeApp.tsx` focuses Log out; DESIGN-022's
+      focus contract says New preset on BO-07 — decide per screen or in `D`, with the designer — not written.
     - **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
