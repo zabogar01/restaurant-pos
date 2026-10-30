@@ -9,9 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-30 (wrap-up for a fresh session): #154 S6a, #155 and #156 DESIGN-022 merged; `development` at `8a35a82`; dev
-`pos` at `0014`. **Nothing running; no agent but the lead; no task worktree.** Lead branch `agent/lead-1030`, not
-pushed. Narrative: [journal/2026-10-29.md](journal/2026-10-29.md), [journal/2026-10-30.md](journal/2026-10-30.md).
+2026-10-30 (**S6b complete, PR open**): `development` at `8a35a82`; dev `pos` at `0014`. Lead branch
+`agent/lead-1030`, pushed with S6b. Narrative: [journal/2026-10-29.md](journal/2026-10-29.md), [journal/2026-10-30.md](journal/2026-10-30.md).
 
 ## Phase and gates
 
@@ -48,12 +47,13 @@ pushed. Narrative: [journal/2026-10-29.md](journal/2026-10-29.md), [journal/2026
   `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (the classifier refuses it otherwise; LESSONS). Ask, then push the task
   and lead branches together. **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
-- **Task worktrees: none** (S6a's, DESIGN-022's removed 10-30). Not the lead's: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
+- **Task worktrees:** `wt/PHASE1-S6b`. Not the lead's: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **Nothing running;** Herdr shows only `lead`.
-- **S6b's sources:** S6a's Handoff (*What S6b needs*) and DESIGN-022's (states, copy, rules, standing version, F3).
+- **PHASE1-S6b complete** at `968b047` (F1 fixed r3 `ddddb98`, lead-reviewed; verify 149/5448, e2e:all 108). **PR open:
+  owner looks (money; 48-row overflow and the look unchecked), merges.** BO-03 has F1's merge too: queued.
+- **Leftover pane `w2:p99`** (S6a's reviewer shell, cwd deleted): close refused to the lead; the owner closes it.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -145,6 +145,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S6b** (BO-07 in the back office, from the two Handoffs above; touches money; e2e:all before merge). Beside it,
-   **DESIGN-021** (POS addition, G6; Codex hand-opened, the lead runs the checks). Then **C4** (for S7).
+1. **S6b PR**: owner looks, merges; then remove `wt/PHASE1-S6b` and `runs/PHASE1-S6b`. Next: **BO-03 merge fix**
+   (small), **DESIGN-021** (POS addition, G6; Codex hand-opened, the lead runs the checks), then **C4** (for S7).
 2. **Small:** the code-point cleanup between slices.
