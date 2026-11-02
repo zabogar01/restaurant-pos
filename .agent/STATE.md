@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-10-30 (late): #161 merged; `development` at `ad8276b`; dev `pos` at `0014`. **ARCH-021 (C4) complete
-(`ec1261d`, PR not opened); DESIGN-021 round 2** (designer pane `w2:p9N`). Lead branch `agent/lead-1030d`, not pushed.
+2026-11-02: #161 merged; `development` at `ad8276b`; dev `pos` at `0014`. **ARCH-021 (C4) and
+DESIGN-021 complete, not pushed.** Lead branch `agent/lead-1030d`, not pushed.
 Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
 
 ## Phase and gates
@@ -46,12 +46,12 @@ Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
   `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (the classifier refuses it otherwise; LESSONS). Ask, then push the task
   and lead branches together. **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
-- **Task worktrees:** `wt/ARCH-021`, `wt/DESIGN-021` (`npm ci` run there for the checks). Not the lead's: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
+- **Task worktrees:** `wt/ARCH-021`, `wt/DESIGN-021` (complete; remove after merge, with `runs/DESIGN-021`). Not the lead's: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **ARCH-021 complete** (lead review `ec1261d`; S7a, S7b1-3 in *For the lead*; pane closed). **DESIGN-021 DONE**
-  (`6fdfa1b`); Opus review: findings F1-F11, all accepted; **round 2 rulings `f77206c`**; Codex hit its limit 10-30, resumed 11-02.
+- **ARCH-021 complete** (`ec1261d`) and **DESIGN-021 complete** (`1111af7`; r2 lead-reviewed: run4 602/602, 58 legacy states'
+  DOM text equal to `development`, earlier checks green). Both panes closed; **no agent but the lead.** Not pushed: PRs owed.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -140,6 +140,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **DESIGN-021** to finish, then an Opus design review; then S7a (needs only C4) and S7b1-3 task files.
+1. **Push and PR** `agent/arch-021`, `agent/design-021`, `agent/lead-1030d` (owner's word). Owner's look at DESIGN-021's
+   states. Then S7a (C4 only) and S7b1-3 task files; S7b3 waits on OQ1.
    Then S7a and S7b from C4's *For the lead* and DESIGN-021's Handoff; E2 (BO-06) after DESIGN-021 (owner).
 2. **Small, between slices:** the code-point cleanup; the frame-focus question; the dialog and name-check extraction.
