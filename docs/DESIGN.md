@@ -2105,8 +2105,14 @@ add no screen, navigation path, token, color, type size or weight.
 bottom of the menu region says “The menu may be out of date. You can keep taking
 orders.” It appears after two consecutive failed checks and clears when a check
 leaves the client current. It is a polite status, never the emergency banner.
-The menu stays usable. The position keeps an arriving status from moving the
-tiles. An open sheet does not duplicate this notice or lose its choices.
+The menu stays usable. In round 2, a fixed 72px band is reserved at the menu’s
+bottom edge, including when idle, and its live region always stays in the
+accessibility tree. Neither showing nor clearing text changes the grid height
+or the positions of tiles at its scroll end. An open sheet does not duplicate
+this notice or lose its choices. “Menu availability updated.” stays until the
+next changed projection, the out-of-date warning, or leaving POS-03. An unchanged
+successful poll retains it, so a two-second poll cannot erase it before it is
+read. Each accepted changed projection ends an out-of-date period.
 
 **Names within fixed targets.** A menu tile remains 150×96. Its name wraps and
 ellipsizes after two lines; its price remains complete on its separate bottom

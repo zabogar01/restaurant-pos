@@ -28,7 +28,7 @@
   items.floor={name:'Nasi Goreng',price:45000,groups:[{...variants(),options:[['Small',-99999999]],selected:[0]}],served:true};
   items.lineBound={name:'Nasi Goreng banquet',price:60000000,groups:[],served:true};
   items.orderBound={name:'Nasi Goreng banquet',price:99999999,groups:[],served:true};
-  let flow, selected = 'meals', failures = 0, stale = false;
+  let flow, selected = 'meals', failures = 0, stale = false, availabilityStatus = '';
   let categories = [{id:'meals',name:'Meals',ids:['nasi','tea','water']}];
   const api = window.ServedCatalogFixture = {items,base:emptyOrder?'empty':quick?'quick':'default',start,refresh,escape,fmt};
   function start(bridge) {
@@ -196,8 +196,11 @@
     if(focused)$(`[data-category="${selected}"]`).focus();
   }
   function refresh(kind,id='nasi') {
-    if(kind==='failed') {failures++;if(failures>=2){stale=true;status('The menu may be out of date. You can keep taking orders.');}return;}
-    if(kind==='success') {const lost=document.activeElement.id==='served-retry';failures=0;stale=false;status('');$('#served-read').innerHTML='';$('.catrail').hidden=false;$('.served-grid').hidden=false;if(lost)$('.cat').focus();return;}
+    if(kind==='failed') {failures++;if(failures>=2){stale=true;availabilityStatus='';status('The menu may be out of date. You can keep taking orders.');}return;}
+    if(kind==='success') {const lost=document.activeElement.id==='served-retry';failures=0;stale=false;status(availabilityStatus);$('#served-read').innerHTML='';$('.catrail').hidden=false;$('.served-grid').hidden=false;if(lost)$('.cat').focus();return;}
+    // Every change below is an accepted current projection; unchanged polls retain status.
+    if((kind==='86'||kind==='restore')&&!!items[id].unavailable===(kind==='86')){refresh('success');return;}
+    failures=0;stale=false;availabilityStatus='';status('');
     if(api.sheetRefresh&&api.sheetItemId===id)api.sheetRefresh(kind==='archive'?'archived':kind==='reappear'?'restore':kind);
     if(kind==='archive') {archive(id);return;}
     if(kind==='reappear'){categories[0].ids.unshift(id);renderGrid();return;}
@@ -209,7 +212,7 @@
       affected.forEach(l=>l.unavailable=item.unavailable);
       if(affected.length)flow.renderOrder();else flow.wireFire();
       if(b){b.classList.toggle('tile--off',item.unavailable);b.setAttribute('aria-disabled',String(item.unavailable));b.setAttribute('aria-label',`${item.name}, ${fmt(item.price)}${item.unavailable?', unavailable, 86':''}`);$('.tag',b)?.remove();if(item.unavailable)$('.served-tile-bottom',b).insertAdjacentHTML('beforeend','<span class="tag tag--86">86</span>');}
-      if(!stale)status('Menu availability updated.');
+      availabilityStatus='Menu availability updated.';status(availabilityStatus);
     }
     if(kind==='price'){item.price=50000;if(b){$('.tile__p',b).textContent=fmt(item.price);b.setAttribute('aria-label',`${item.name}, ${fmt(item.price)}`);}}
   }

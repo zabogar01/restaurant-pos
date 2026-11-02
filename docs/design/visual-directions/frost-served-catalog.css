@@ -10,8 +10,7 @@
 .served-tile-bottom { display:flex; justify-content:space-between; align-items:center; gap:var(--frost-space-1); }
 .served-tile-bottom .tile__p { white-space:nowrap; font-variant-numeric:var(--frost-numeric-variant); }
 .served-removed-slot { height:var(--frost-tile-height); }
-.served-status:empty { display:none; }
-.served-status { padding:var(--frost-totals-padding); background:var(--frost-group); border-bottom:var(--frost-control-stroke); font-size:var(--frost-text-14); }
+.served-status { height:var(--frost-action-height); box-sizing:border-box; padding:var(--frost-totals-padding); background:var(--frost-group); border-bottom:var(--frost-control-stroke); font-size:var(--frost-text-14); }
 .served-empty,.served-order-empty { margin:var(--frost-space-5); padding:var(--frost-space-8); }
 .served-empty b,.served-order-empty b { font-weight:var(--frost-weight-semibold); display:block; margin-bottom:var(--frost-space-2); }
 .served-loading { padding:var(--frost-space-6); }
@@ -39,7 +38,7 @@
 .served-preset-empty { padding:var(--frost-space-5); }
 .served-drawer .sheet__foot:has(#served-preset-cancel) { display:block; }
 #served-preset-cancel { width:100%; }
-/* Notices occupy the bottom edge: adding one never moves a tile's top-left. */
+/* The reserved bottom band keeps grid geometry unchanged when status text changes. */
 .served-catalog .served-grid { flex:1; order:1; }
 .served-status { order:2; flex:none; }
 .served-category-empty { grid-column:1 / -1; padding:var(--frost-space-4); color:var(--frost-muted); }
