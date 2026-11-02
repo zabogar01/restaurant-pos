@@ -85,7 +85,11 @@ const check=(passed,name,detail)=>report.checks.push({passed:!!passed,name,...(!
  await go('served-item-restored');check(await p.locator('#served-sheet-notice').textContent()===''&&!await p.locator('.flow-save').isDisabled(),'restoration clears availability notice');
  await go('served-item-reorder');check(await p.locator('[data-option-id="option-0-0"]').getAttribute('aria-pressed')==='true'&&await p.locator('#served-sheet-notice').textContent()==='','option identity survives reorder with no notice');
  await go('served-category-empty');check(await p.locator('.cat').isVisible()&&(await p.locator('.served-grid').textContent()).includes('No items in this category yet.'),'empty active category stays selectable');
- for(const state of ['served-presets-loading','served-presets-error']){await go(state);check(await p.locator('.served-freeform').isVisible()&&!await p.locator('[data-preset]').count(),'free-form survives preset read '+state);}
+ for(const state of ['served-presets-loading','served-presets-error','served-presets-error-internal']){await go(state);check(await p.locator('.served-freeform').isVisible()&&!await p.locator('[data-preset]').count(),'free-form survives preset read '+state);}
+ for(const [state,copy] of [['served-loading-order','LOADING PRESETS'],['served-error-order','The system is unavailable'],['served-error-internal-order','Something went wrong']]){
+  await go(state);await p.getByRole('link',{name:'Discount',exact:true}).click();check((await p.locator('#served-presets').textContent()).includes(copy)&&await p.locator('[data-preset]').count()===0,'picker shares menu first-read state '+state);
+ }
+ await go('served-presets-error-internal');check((await p.locator('#served-presets').textContent()).includes('Try again. If the problem continues, ask a manager for help.'),'preset unexpected failure uses shared full copy');
  await go('served-fireblocked');check((await p.locator('.served-fire-notice').textContent()).includes('2 pending lines are no longer available: Nasi Goreng, Jasmine Tea.')&&await p.locator('.actions button').filter({hasText:'Send 2 to kitchen'}).isDisabled(),'plural served fire refusal');
  // Full names in sheet and order; collision is deliberate, price and full sheet distinguish.
  await go('served-extremes');

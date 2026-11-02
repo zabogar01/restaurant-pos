@@ -69,6 +69,8 @@ window.MOCKUPS = [
       ["served-item-many-removed", "Served M-2 — scrolled, selected modifier removed"],
       ["served-fireblocked-same", "Served pending lines — one unavailable item on several lines"],
       ["served-extremes-86", "Served menu — largest price with 86 tag"],
+      ["served-presets-error-internal", "Served presets — unexpected first-read failure"],
+      ["served-error-internal-order", "Served menu — unexpected failure with existing order"],
       [
         "empty",
         "Table order — no lines"

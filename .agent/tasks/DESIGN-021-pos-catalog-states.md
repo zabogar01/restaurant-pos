@@ -721,6 +721,7 @@ its signed delta; plus zero is shown as +0. No raw error code appears.
 | M-3 | Group | Presets — no approval needed | `preset-heading` |
 | Preset read | Loading label | LOADING PRESETS | Status, same |
 | Preset unavailable read | Title / body / action | The system is unavailable / Wait a moment, then try again. / Try again | Alert; action `preset-retry` |
+| Preset unexpected read failure (round 2) | Title / body / action | Something went wrong / Try again. If the problem continues, ask a manager for help. / Try again | Alert; action `preset-retry`; same classification and words as the menu |
 | No active presets | Body | No active presets. A manager can add or activate a preset in the back office. | Same |
 | Percent preset | Entry | {preset name} — {percentage}% | Same; visible name and value occupy separate columns |
 | Fixed preset | Entry | {preset name} — {amount} off | Same |

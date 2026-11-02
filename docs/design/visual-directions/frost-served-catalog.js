@@ -28,9 +28,9 @@
   items.floor={name:'Nasi Goreng',price:45000,groups:[{...variants(),options:[['Small',-99999999]],selected:[0]}],served:true};
   items.lineBound={name:'Nasi Goreng banquet',price:60000000,groups:[],served:true};
   items.orderBound={name:'Nasi Goreng banquet',price:99999999,groups:[],served:true};
-  let flow, selected = 'meals', failures = 0, stale = false, availabilityStatus = '';
+  let flow, selected = 'meals', failures = 0, stale = false, availabilityStatus = '', readKind = 'ready';
   let categories = [{id:'meals',name:'Meals',ids:['nasi','tea','water']}];
-  const api = window.ServedCatalogFixture = {items,base:emptyOrder?'empty':quick?'quick':'default',start,refresh,escape,fmt};
+  const api = window.ServedCatalogFixture = {items,showRead,base:emptyOrder?'empty':quick?'quick':'default',start,refresh,escape,fmt};
   function start(bridge) {
     flow = bridge;
     api.orderRendered=()=>{
@@ -69,8 +69,8 @@
     renderCategories();renderGrid();wirePresets();
     if(state.includes('empty')&&!state.includes('category')&&!state.includes('presets')) showRead('empty');
     if(state==='served-category-empty'){categories[0].ids=[];renderGrid();}
-    if(state.includes('loading')&&!state.includes('presets')) showRead('loading');
-    if(state.includes('error')&&!state.includes('presets')) showRead(state.endsWith('internal')?'internal':'error');
+    if(state.includes('loading')) showRead('loading');
+    if(state.includes('error')) showRead(state.includes('error-internal')?'internal':'error');
     if(state.includes('stale')) for(let i=0;i<2;i++)refresh('failed');
     if(state==='served-86') refresh('86');
     if(state==='served-extremes-86')refresh('86','long');
@@ -158,11 +158,11 @@
       if(focused)$('#preset-heading').focus();
     };
     api.editPreset=()=>{const p=presets.find(p=>p.id==='regular');p.name='Returning guest';p.value=125000;const b=$('[data-preset=regular]');b.setAttribute('aria-label',p.name+' — '+value(p));b.firstElementChild.textContent=p.name;b.lastElementChild.textContent=value(p);};
-    api.retryPresets=()=>{const focused=document.activeElement.id==='preset-retry';render();if(focused)$('#preset-heading').focus();};
+    api.retryPresets=()=>{const focused=document.activeElement.id==='preset-retry';refresh('success');render();if(focused)$('#preset-heading').focus();};
     if(state.endsWith('removed'))api.deactivatePreset('regular');
     if(state.endsWith('changed'))api.editPreset();
-    if(state.endsWith('loading'))$('#served-presets').innerHTML='<div class="loadinglabel" role="status">LOADING PRESETS</div>';
-    if(state.endsWith('error')){ $('#served-presets').innerHTML='<div class="notice" role="alert"><div class="notice__t">The system is unavailable</div><div>Wait a moment, then try again.</div><button type="button" class="btn" id="preset-retry">Try again</button></div>';$('#preset-retry').onclick=api.retryPresets;$('#preset-retry').focus(); }
+    if(readKind==='loading')$('#served-presets').innerHTML='<div class="loadinglabel" role="status">LOADING PRESETS</div>';
+    if(readKind==='error'||readKind==='internal'){ $('#served-presets').innerHTML=`<div class="notice" role="alert"><div class="notice__t">${readFailure(readKind).title}</div><div>${readFailure(readKind).body}</div><button type="button" class="btn" id="preset-retry">Try again</button></div>`;$('#preset-retry').onclick=api.retryPresets;$('#preset-retry').focus(); }
 
   }
   function status(text) { $('#served-status').textContent=text; }
@@ -179,13 +179,17 @@
     if(!ids.length)$('.served-grid').innerHTML='<div class="served-category-empty">No items in this category yet.</div>';
     $$('[data-item]').forEach(b=>b.onclick=()=>{if(!items[b.dataset.item].unavailable)flow.openItem(b.dataset.item,b);});
   }
+  function readFailure(kind) {
+    return kind==='internal'?{title:'Something went wrong',body:'Try again. If the problem continues, ask a manager for help.'}:{title:'The system is unavailable',body:'Wait a moment, then try again.'};
+  }
   function showRead(kind) {
+    readKind=kind;
     $('.catrail').hidden=true;$('.served-grid').hidden=true;
     const read=$('#served-read');
     if(kind==='empty') read.innerHTML='<div class="empty served-empty" tabindex="-1" id="served-empty"><b>No menu items yet</b><div>There is nothing to add yet. A manager adds the menu in the back office.</div></div>';
     else if(kind==='loading') read.innerHTML='<div class="served-loading" role="status"><div class="loadinglabel">LOADING MENU</div><div class="skel skel--w80"></div><div class="skel skel--w60"></div><div class="skel skel--w40"></div></div>';
     else {
-      read.innerHTML=`<div class="notice served-read-error" role="alert"><div class="notice__t">${kind==='internal'?'Something went wrong':'The system is unavailable'}</div><div>${kind==='internal'?'Try again. If the problem continues, ask a manager for help.':'Wait a moment, then try again.'}</div><button type="button" class="btn" id="served-retry">Try again</button></div>`;
+      read.innerHTML=`<div class="notice served-read-error" role="alert"><div class="notice__t">${readFailure(kind).title}</div><div>${readFailure(kind).body}</div><button type="button" class="btn" id="served-retry">Try again</button></div>`;
       $('#served-retry').onclick=()=>{showRead('loading');refresh('success');$('.cat').focus();};
       $('#served-retry').focus();
     }
@@ -200,7 +204,7 @@
   }
   function refresh(kind,id='nasi') {
     if(kind==='failed') {failures++;if(failures>=2){stale=true;availabilityStatus='';status('The menu may be out of date. You can keep taking orders.');}return;}
-    if(kind==='success') {const lost=document.activeElement.id==='served-retry';failures=0;stale=false;status(availabilityStatus);$('#served-read').innerHTML='';$('.catrail').hidden=false;$('.served-grid').hidden=false;if(lost)$('.cat').focus();return;}
+    if(kind==='success') {readKind='ready';const lost=document.activeElement.id==='served-retry';failures=0;stale=false;status(availabilityStatus);$('#served-read').innerHTML='';$('.catrail').hidden=false;$('.served-grid').hidden=false;if(lost)$('.cat').focus();return;}
     // Every change below is an accepted current projection; unchanged polls retain status.
     if((kind==='86'||kind==='restore')&&!!items[id].unavailable===(kind==='86')){refresh('success');return;}
     failures=0;stale=false;availabilityStatus='';status('');
