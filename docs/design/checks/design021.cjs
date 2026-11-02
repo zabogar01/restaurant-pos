@@ -64,6 +64,9 @@ const check=(passed,name,detail)=>report.checks.push({passed:!!passed,name,...(!
  await p.evaluate(()=>ServedCatalogFixture.refresh('failed'));check(await p.locator('#served-status').textContent()==='','no stale notice on first failed poll');
  await p.evaluate(()=>ServedCatalogFixture.refresh('failed'));check((await p.locator('#served-status').textContent()).includes('may be out of date'),'second failure shows quiet notice');
  await p.evaluate(()=>ServedCatalogFixture.refresh('success'));check(await p.locator('#served-status').textContent()===''&&await p.evaluate(()=>document.activeElement.dataset.item)==='nasi','successful refresh clears notice without moving focus');
+ for(const state of ['served-empty','served-loading','served-error','quick-served-empty']){await go(state);check(await p.locator('#served-action-reason').textContent()==='No items on this order yet.'&&await p.locator('.actions:visible [aria-disabled=true]').count()>=3,'C-1 keeps inert actions with read-neutral reason '+state);}
+ await p.evaluate(()=>ServedCatalogFixture.refresh('success'));check(await p.locator('#served-action-reason').textContent()==='Add an item first.','held menu gives actionable empty-order reason');
+ await go('served');await p.locator('[data-item=nasi]').focus();
  // Availability changes hold the exact slot and focus; archive leaves a hole.
  const before=await p.locator('[data-item=tea]').boundingBox();await p.evaluate(()=>ServedCatalogFixture.refresh('86'));
  check(JSON.stringify(before)===JSON.stringify(await p.locator('[data-item=tea]').boundingBox())&&await p.locator('[data-item=nasi]').getAttribute('aria-disabled')==='true','86 never moves neighboring tile');

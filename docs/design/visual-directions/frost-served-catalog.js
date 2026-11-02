@@ -55,7 +55,7 @@
       const totals=$$('.orderpanel .totals').find(e=>!e.hidden);
       totals.innerHTML='<div class="t"><span>Subtotal</span><span class="mono">0</span></div><div class="t t--grand"><span>Total</span><span class="mono">0</span></div>';
       const actions=$$('.orderpanel .actions').find(e=>!e.hidden);
-      actions.setAttribute('aria-label','Add an item before using order actions');
+      actions.setAttribute('aria-label','Order actions');
       actions.innerHTML=['Discount','Void order',...(quick?[]:['Send to kitchen']),quick?'Settle — sends the order to the kitchen':'Settle'].map(t=>`<button type="button" class="btn btn--off ${t.startsWith('Settle')?'btn--primary':''}" aria-disabled="true" aria-describedby="served-action-reason">${t}</button>`).join('')+'<span class="muted" id="served-action-reason">Add an item first.</span>';
     }
     if(state==='served-single') categories[0].ids=['nasi'];
@@ -186,6 +186,7 @@
     const active=document.activeElement;
     const lost=active===document.body||$('#served-read').contains(active)||$('.catrail').contains(active)||$('.served-grid').contains(active);
     readKind=kind;
+    if($('#served-action-reason'))$('#served-action-reason').textContent='No items on this order yet.';
     $('.catrail').hidden=true;$('.served-grid').hidden=true;
     const read=$('#served-read');
     if(kind==='empty') read.innerHTML='<div class="empty served-empty" tabindex="-1" id="served-empty"><b>No menu items yet</b><div>There is nothing to add yet. A manager adds the menu in the back office.</div></div>';
@@ -207,7 +208,7 @@
   }
   function refresh(kind,id='nasi') {
     if(kind==='failed') {failures++;if(failures>=2){stale=true;availabilityStatus='';status('The menu may be out of date. You can keep taking orders.');}return;}
-    if(kind==='success') {readKind='ready';const lost=document.activeElement.id==='served-retry';failures=0;stale=false;status(availabilityStatus);$('#served-read').innerHTML='';$('.catrail').hidden=false;$('.served-grid').hidden=false;if(lost)$('.cat').focus();return;}
+    if(kind==='success') {readKind='ready';if($('#served-action-reason'))$('#served-action-reason').textContent='Add an item first.';const lost=document.activeElement.id==='served-retry';failures=0;stale=false;status(availabilityStatus);$('#served-read').innerHTML='';$('.catrail').hidden=false;$('.served-grid').hidden=false;if(lost)$('.cat').focus();return;}
     // Every change below is an accepted current projection; unchanged polls retain status.
     if((kind==='86'||kind==='restore')&&!!items[id].unavailable===(kind==='86')){refresh('success');return;}
     failures=0;stale=false;availabilityStatus='';status('');

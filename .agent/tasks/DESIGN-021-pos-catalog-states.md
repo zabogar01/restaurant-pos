@@ -566,7 +566,10 @@ preview in the final drawing.
    category. It offers no non-working menu control, no retry, and no link to
    the back office. The text makes menu setup a manager's task. The order
    panel remains. On an empty order, Discount, Void order and Settle stay in
-   place, focusable and inert, with “Add an item first.” A table also retains
+   place, focusable and inert under ruling C-1 (never absent), so the action
+   layout does not change as the order gains its first line. Round 2 uses
+   “No items on this order yet.” when no menu is held, including a successful
+   empty read; a held menu uses “Add an item first.” A table also retains
    its inert Send; a counter never has Send. An existing order keeps its
    existing actions even when the menu read is empty, loading or failed.
 3. **Loading is the first read only.** It lasts until the transport answers;
@@ -685,6 +688,7 @@ its signed delta; plus zero is shown as +0. No raw error code appears.
 | Empty order | Disabled-action reason | Add an item first. | `served-action-reason`, described by each disabled action |
 | Empty active category | Grid | No items in this category yet. | Same |
 | Held read uncertain | Notice | The menu may be out of date. You can keep taking orders. | Polite status, `served-status` |
+| Empty order without a held menu (round 2) | Action reason | No items on this order yet. | `served-action-reason`; empty, loading or failed first read |
 | Batch availability update | Status | Menu availability updated. | Polite status, `served-status` |
 | Available tile | Name and price | {full item name}; {base price} | `{full item name}, {base price}` |
 | Unavailable tile | Name, price and marker | {full item name}; {base price}; 86 | `{full item name}, {base price}, unavailable, 86`; aria-disabled |
