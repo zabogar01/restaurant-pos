@@ -91,6 +91,8 @@ export const ROUTES = {
   posMe: find('/api/pos/auth/me'),
   posActivity: find('/api/pos/auth/activity'),
   posRelease: find('/api/pos/auth/release'),
+  posCatalogRevision: find('/api/pos/catalog/revision'),
+  posCatalogMenu: find('/api/pos/catalog/menu'),
   backOfficeLogin: find('/api/back-office/auth/login'),
   backOfficeMe: find('/api/back-office/auth/me'),
   backOfficeActivity: find('/api/back-office/auth/activity'),

@@ -25,6 +25,11 @@ export const ROUTE_TABLE = [
   { method: 'GET', path: '/api/pos/auth/me', interactive: false },
   { method: 'POST', path: '/api/pos/auth/activity', interactive: true },
   { method: 'POST', path: '/api/pos/auth/release', interactive: false },
+  // The POS catalog reads are not interactive: the revision is polled every two seconds
+  // and the menu is reread on a change, so neither may extend the 90-second idle
+  // (FR-A2b, AC-28).
+  { method: 'GET', path: '/api/pos/catalog/revision', interactive: false },
+  { method: 'GET', path: '/api/pos/catalog/menu', interactive: false },
   { method: 'POST', path: '/api/back-office/auth/login', interactive: false },
   { method: 'GET', path: '/api/back-office/auth/me', interactive: false },
   { method: 'POST', path: '/api/back-office/auth/activity', interactive: true },
