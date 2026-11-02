@@ -59,7 +59,7 @@
       actions.innerHTML=['Discount','Void order',...(quick?[]:['Send to kitchen']),quick?'Settle — sends the order to the kitchen':'Settle'].map(t=>`<button type="button" class="btn btn--off ${t.startsWith('Settle')?'btn--primary':''}" aria-disabled="true" aria-describedby="served-action-reason">${t}</button>`).join('')+'<span class="muted" id="served-action-reason">Add an item first.</span>';
     }
     if(state==='served-single') categories[0].ids=['nasi'];
-    if(state==='served-extremes') categories[0].ids=['collisionA','collisionB','long','water','longReal'];
+    if(state==='served-extremes'||state==='served-extremes-86') categories[0].ids=['collisionA','collisionB','long','water','longReal'];
     if(state==='served-categories') categories=Array.from({length:24},(_,i)=>({id:'cat-'+i,name:i===0?'W'.repeat(32):'Category '+(i+1),ids:i===0?['nasi','tea','water']:['tea']}));
     if(state==='served-overflow') categories[0].ids=Array.from({length:80},(_,i)=>{const id='menu-'+i;items[id]={name:'Menu item '+(i+1),price:45000,groups:[],served:true};return id;});
     selected=categories[0].id;
@@ -73,6 +73,7 @@
     if(state.includes('error')&&!state.includes('presets')) showRead(state.endsWith('internal')?'internal':'error');
     if(state.includes('stale')) for(let i=0;i<2;i++)refresh('failed');
     if(state==='served-86') refresh('86');
+    if(state==='served-extremes-86')refresh('86','long');
     if(state==='served-fireblocked-same'){flow.setModel([{id:'nasi',name:'Nasi Goreng',unit:45000n,q:1,detail:'Regular',round:0},{id:'nasi',name:'Nasi Goreng',unit:50000n,q:2,detail:'With fried egg',round:0}]);refresh('86','nasi');}
     if(state==='served-fireblocked'){flow.setModel([{id:'nasi',name:'Nasi Goreng',unit:45000n,q:1,detail:'',round:0},{id:'tea',name:'Jasmine Tea',unit:18000n,q:1,detail:'',round:0}]);refresh('86','nasi');refresh('86','tea');}
     if(state==='served-restored') {refresh('86');refresh('restore');}
@@ -133,7 +134,7 @@
     $('.served-drawer .sheet__head').insertAdjacentHTML('beforeend','<span class="muted">One per order</span>');
     $('.served-drawer .sheet__foot').innerHTML='<button type="button" class="btn" id="served-preset-cancel">Cancel</button>';
     $('#served-preset-cancel').onclick=flow.dismiss;
-    body.innerHTML='<div id="preset-change" class="notice" role="status" hidden></div><span class="label" id="preset-heading" tabindex="-1">Presets — no approval needed</span><div id="served-presets" class="served-presets"></div><span class="label">Anything else</span><a class="btn served-freeform" href="order.html?state=sheet-freeform">Other amount — needs a manager</a>';
+    body.innerHTML='<span class="label" id="preset-heading" tabindex="-1">Presets — no approval needed</span><div id="served-presets" class="served-presets"></div><span class="label">Anything else</span><a class="btn served-freeform" href="order.html?state=sheet-freeform">Other amount — needs a manager</a>';
     const value=p=>p.kind==='fixed'?fmt(p.value)+' off':(String(Math.floor(p.value/10000))+(p.value%10000?','+String(p.value%10000).padStart(4,'0').replace(/0+$/,''):'')+'%');
     function render() {
       $('#served-presets').innerHTML=presets.length?presets.map(p=>{
