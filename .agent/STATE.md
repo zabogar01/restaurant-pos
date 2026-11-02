@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-11-02 (afternoon): #162 ARCH-021 (C4), #163 DESIGN-021 and #164 merged; `development` at `3d03067`; dev `pos`
-at `0014`. **PHASE1-S7a dispatched** (owner's word). Lead branch `agent/lead-1102` (the 11-02 wrap-up cherry-picked as
+at `0014`. **PHASE1-S7a complete** (review clean), not pushed. Lead branch `agent/lead-1102` (the 11-02 wrap-up cherry-picked as
 `ef80a1a`), not pushed. Narrative: [journal/2026-11-02.md](journal/2026-11-02.md).
 
 ## Phase and gates
@@ -22,7 +22,7 @@ at `0014`. **PHASE1-S7a dispatched** (owner's word). Lead branch `agent/lead-110
   methods), S4a (#140: catalog domain, `0013`, `catalogWrite`), S4b (#142: catalog routes, `CATALOG_CHANGED`), S4c1
   (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04 whole), S5 (#151: the 86 toggle), S6a (#154: presets server,
   `0014`), S6b (#157: BO-07). S0-S6 done. **S7 (POS catalog) in progress:** C4 and DESIGN-021 merged (#162,
-  #163); **S7a in review**; S7b1, S7b2, S7b3 to write from C4 *For the lead* and DESIGN-021's Handoff.
+  #163); **S7a complete** (`3bf91dc`, not pushed); S7b1, S7b2, S7b3 to write from C4 *For the lead* and DESIGN-021's Handoff.
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14), **real presets in the POS picker (C4
@@ -48,14 +48,14 @@ at `0014`. **PHASE1-S7a dispatched** (owner's word). Lead branch `agent/lead-110
   `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (the classifier refuses it otherwise; LESSONS). Ask, then push the task
   and lead branches together. **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
-- **Task worktrees:** `wt/PHASE1-S7a` (live). `wt/ARCH-021`, `wt/DESIGN-021` merged and clean; their removal (with
+- **Task worktrees:** `wt/PHASE1-S7a` (complete; remove after merge, with `runs/PHASE1-S7a`). `wt/ARCH-021`, `wt/DESIGN-021` merged and clean; their removal (with
   `runs/DESIGN-021`, `wt/evidence/DESIGN-021`) was refused by the classifier, so it is the owner's. Not the lead's:
   `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **PHASE1-S7a in review** (Codex `gpt-6-astra` oneshot, pane `PHASE1-S7a-review`). Builder done `ed921fa`; lead verify
-  `55c9e89`: 151/5497, e2e:all 108, criterion 5's red rerun. Touches money, boundaries, identity: owner looks before merge.
+- **PHASE1-S7a complete** (`3bf91dc`): builder `ed921fa`; lead verify 151/5497, e2e:all 108, criterion 5's red rerun; Codex
+  review clean (0 findings). **No agent but the lead.** Touches money, boundaries, identity: owner looks before merge.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -88,7 +88,7 @@ at `0014`. **PHASE1-S7a dispatched** (owner's word). Lead branch `agent/lead-110
 - **`max_fix_cycles` is 2** (three rounds). A round's ruling goes above the Handoff in the worktree, committed there, then
   `--resume --message`; widen `owns` in the same commit when a finding needs a file outside it.
 - **Codex reviews Claude-built work; Claude Opus reviews Codex- or OpenCode-built work** (owner exceptions, each once:
-  DESIGN-017 r3, -018 to -020, -022). **Codex allowance:** weekly reset 27 Oct 14:18, six reviews since; its 5h limit
+  DESIGN-017 r3, -018 to -020, -022). **Codex allowance:** weekly reset 27 Oct 14:18, seven reviews since; its 5h limit
   ran out mid-design four times (DESIGN-021 r2, 10-30; the same pane resumed after the reset). Stand-ins: wait, OpenCode,
   or an owner exception. Hand-opened: write `runs/<ID>/builder/meta.json` (`{"cli":"codex",…}`) before its review.
 - **Designers and architects are hand-opened** (recipes: journal 10-24; Codex also needs `-c
@@ -141,7 +141,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S7a:** read the Codex review; fix round or complete. Then write **S7b1, S7b2,
+1. **S7a:** push and open its PR with the lead branch (owner's word). Then write **S7b1, S7b2,
    S7b3** (S7b1 copies C4's `idle.spec.ts` B6/B8 warning; its PR waits for S7b2).
 2. **DESIGN-023 (E2, BO-06)** written 2026-11-02, untracked in the kit: on the owner's word, cut `wt/DESIGN-023` from
    `development`, commit the task file there first, and hand-open a Codex designer `design023` (Claude Opus reviews).
