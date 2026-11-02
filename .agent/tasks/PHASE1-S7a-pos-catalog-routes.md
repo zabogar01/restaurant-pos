@@ -190,4 +190,69 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ## Handoff
 
-*(The builder writes here.)*
+### What was done
+
+Commit `ed921fa` on `agent/phase1-s7a` (the Handoff itself is a second, docs-only commit on top). The slice adds two POS GET routes and nothing else; no migration, no write, no audit, no new error code.
+
+- `packages/contracts/src/pos-catalog.ts` (new): `PosMenuResponse`, `PosRevisionResponse` and the entry schemas (`PosCategory`, `PosItem`, `PosVariant`, `PosModifier`, `PosPreset`), all strict objects reusing `BasePrice`, `VariantPriceChange`, `ModifierPriceChange`, `CatalogVersion` and `PresetValue`. Exported from `packages/contracts/src/index.ts`.
+- `packages/contracts/src/routes.ts`: `GET /api/pos/catalog/revision` and `GET /api/pos/catalog/menu`, both `interactive: false`.
+- `apps/server/src/domain/pos-menu.ts` (new): `readPosMenu()` (one `REPEATABLE READ READ ONLY` transaction; the version is the first query) and `readCatalogVersion()` (one single-row read). Ordering is a small pure comparator, `display_order`, then BO-03's collator on the name, then id.
+- `apps/server/src/http/routes/pos-catalog.ts` (new), registered in `apps/server/src/http/server.ts` right after `posAuthRoutes`.
+- `packages/api-client/src/specs.ts` and `client.ts`: `SPECS` entries and `ROUTES.posCatalogRevision` / `ROUTES.posCatalogMenu`.
+- `apps/pos/src/session/api.ts`: the two `PosApi` entries the mapped type forces. They are unused until S7b1. No other POS source changed.
+- Tests: `apps/server/test/pos-catalog-routes.test.ts` (23 cases), `packages/contracts/test/pos-catalog.test.ts` (20 cases), and one added case in `packages/contracts/test/routes.test.ts`.
+
+### What S7b1 needs
+
+- Routes: `GET /api/pos/catalog/revision` answers `{ version }`; `GET /api/pos/catalog/menu` answers `{ version, categories, items, presets }`. `ROUTES.posCatalogRevision` and `ROUTES.posCatalogMenu`; on `PosApi` the keys are `'/api/pos/catalog/revision'` and `'/api/pos/catalog/menu'`, both taking no argument. `ValueOf` for each is the inferred `PosRevisionResponse` / `PosMenuResponse` (neither holds a `csrfToken`, so `WithoutToken` leaves them alone).
+- `PosMenuResponse`: `categories: [{ categoryId, name }]`; `items: [{ itemId, categoryId, name, basePrice, isAvailable, variants: [{ variantId, name, priceDelta }], modifiers: [{ modifierId, name, priceDelta }] }]`; `presets: [{ presetId, name, value }]` with `value` the existing `PresetValue` union. Money and rates are canonical strings; decode them with `decodeMoney` / `decodeRate`, never `Number()`. There is no `isActive` and no `displayOrder` anywhere (a strict parse refuses them); the arrays are already in the order to draw. Items are one flat array, grouped by category in the categories' order, so a client groups by `categoryId` without re-sorting.
+- Refusals and session ends arrive exactly as for `me`: no session is `401 UNAUTHENTICATED`, an idle session `401 SESSION_IDLE` (the POS cookie is cleared), a back-office cookie is no session at all (`UNAUTHENTICATED`), and a failure of the store is `500 INTERNAL`. The core settles all of these with the same machinery it already uses for `me`; I added nothing there. A 2xx that fails the schema is the core's `fault`.
+- A read never extends the idle (not interactive), so S7b1's poll cannot keep a session alive; only `activity` and commands do.
+
+### The librarian's answer on the log level
+
+Asked via `.agent/bin/ask.sh librarian`. It answered yes to both, with caveats. A route `logLevel` becomes the level of the route's child logger (pino: a child's `level` overrides the parent's), so Fastify's "incoming request" and "request completed" lines, which are emitted at `info`, are dropped on a `warn` route. Fastify's default error handler logs a 5xx at `error`, which passes a `warn` filter. It was explicit that this is a reading of `main`'s source rather than the v5.12.5 docs, that the docs do not say outright that the two lines are silenced, and that it ran nothing. Its suggested check was to count lines on `inject` for a 200 and a 500. The application does not use Fastify's default error handler (`apps/server/src/http/errors.ts` has its own and logs `request.log.error({ err }, 'request failed')` for a 500), so I did not rely on the answer: criterion 12's two cases run exactly that check against the real server at `info`. Result: a poll leaves no line at level 30 or below, the menu read leaves `incoming request` and `request completed`, and a forced 500 on the revision route writes a level-50 `request failed` line. Both conditions the task made a stop condition hold, so no BLOCKED.
+
+### What was decided, and on what evidence
+
+- **Items are ordered by category place, not grouped by iterating the served categories.** My first version built `items` with a `flatMap` over the served categories. The mutation that removed only the category half of the item filter (`c.is_active`) then passed all tests, because the grouping hid the archived category's items. The category half of the filter would have been dead code as far as any test or the wire was concerned. I changed it to sort the loaded items by their category's position, so only the SQL filter keeps an archived category's items out; with the category half removed the test now fails (an item of the archived category appears). The fallback place for an item whose category was not served is last, never dropped.
+- **Options are loaded only for items that were loaded**, with `is_active` in the same statement.
+- **The revision read is `query()` on the pool**, one statement, not a transaction: a single-row read is already a snapshot.
+- `readPosMenu` imports only the `CatalogTx` type from `catalog.ts` and the `PresetValue` type from `discount-preset.ts`; it duplicates the small preset row mapping because `presetOf` is not exported and `discount-preset.ts` is outside this slice's owned paths. If the lead prefers one mapping, exporting it later is a two-line change.
+- Order of the flat `items` array is category place, then display order, name, id. The task text says "the items of each ... by display order"; this is that, flattened.
+
+### Existing tests changed
+
+Only `packages/contracts/test/routes.test.ts`: one new `it` added, asserting the two entries and `interactive: false`. No assertion was changed or loosened. `route-table.test.ts` needed no edit: it reads `ROUTE_TABLE` and the registered routes, so the two new routes are covered by it as is. `access.test.ts`, `client-instance.test.ts` and everything under `apps/pos/test` needed no change (none enumerates the routes it would have to gain).
+
+### Red proofs (mutation, failure read, reverted)
+
+Honest note first: I wrote the production code before the tests, not red-first, so each guard below was proved red by mutation after the fact. Every mutation was reverted and the final tree is the committed one.
+
+1. Both routes `interactive: true` → `route-table.test.ts` "for each ACTIVE route the table's interactive equals the route's declaration" failed (`GET /api/pos/catalog/revision: expected false to be true`), and criterion 3's `last_interactive_at` check failed for both routes (stamp moved).
+2. Audience `BACK_OFFICE` → `StartupError: route GET /api/pos/catalog/revision declares audience BACK_OFFICE but is not under /api/back-office/`, the whole suite refused to start.
+3. Category filter `true` in place of `is_active` → case 4 failed (`['Drinks','Old']` for `['Drinks']`). Item filter `true` → cases 4 and 5 failed (archived item present; 86'd-and-archived item present). Only `i.is_active` (category half dropped) → passed with the first version of the code, failed after the change described above. Option filter `true` → case 4 failed (`['Small','Large']`). Preset filter `true` → case 4 failed (`['Staff','Gone']`). Filtering on `is_available` is covered by case 5, whose assertion is the present-but-marked 86'd item; I did not run that exact mutation separately (the item-filter `true` mutation already fails case 5 from the other side).
+4. Tie-break by name removed → case 6 failed (`['B','a10','a2']` for `['a2','a10','B']`). Only the first assertion (categories) is reached, but items and options use the same comparator and the same mutation.
+5. `READ COMMITTED READ ONLY` → case 7 failed (`expected 1n to be 25000n`, the version old and the price new).
+6. `basePrice: Number(...)` → case 8 failed (`PosMenuResponse.safeParse(...)` false). An earlier cruder mutation (`as unknown as string` of the bigint) produced 500s instead; I redid it with a real number so it proves the schema check.
+7. `markItemAvailable`/`markItemUnavailable` returning `wrote: false` (temporary edit to `apps/server/src/domain/catalog.ts`, reverted; `git diff` of that file is empty) → case 9 failed at `86: expected 45 to be 46`.
+8. `clientInstance: false` removed → case 10 failed (`last_seen_at` moved from the aged value).
+9. Menu route throwing `NOT_FOUND` on an empty catalog → case 11 and every case that reads an empty menu failed (404).
+10. `logLevel` removed → case 12 "no line at info" failed with the six `incoming request` / `request completed` lines listed. `logLevel: 'silent'` → case 12 "a 500 is still logged" failed (no level-50 `request failed`).
+11. Contracts: `PosCategory` as a non-strict `z.object` → the two category cases of "refuses isActive or displayOrder" failed.
+
+### Found and not fixed
+
+- `docs/superpowers/plans/...` and the DESIGN docs were not read beyond what the task cites; nothing contradicted the task.
+- Case 9 (revision follows every command class) drives `catalogWrite` through the real back-office routes, but the version-advance guarantee itself is S4a's and S6a's domain tests; this case only proves the POS revision read follows them.
+- The menu path runs several statements (version, categories, items, two option tables, presets) in one transaction. It is fine for a restaurant menu; if a catalog ever reaches thousands of items, the `item_id = ANY($1)` option reads and the per-category filtering in JS are the first things to revisit.
+
+### `npm run verify`
+
+`npm run verify` (typecheck of all seven projects, then `vitest run`): **151 test files, 5497 tests, all passed**. Baseline in the task was 149 files and 5453 tests; the change is +2 files and +44 tests (23 server, 20 contracts, 1 added to `routes.test.ts`). `npm run test:e2e:all` was not run (the task leaves it to the lead; no browser is available to me). No formatter was run.
+
+### What the next agent needs and does not have
+
+S7b1 needs a decision I did not take: whether the store polls with `ROUTES.posCatalogRevision` and rereads the menu only when the version differs from the one it holds, which is what the shape supports. The `PosApi` entries are deliberately unused, so a lint rule or review looking for dead code will find them; they are the compile-forced stand-ins the file's own header describes.
+
+DONE
