@@ -162,7 +162,7 @@
     if(state.endsWith('removed'))api.deactivatePreset('regular');
     if(state.endsWith('changed'))api.editPreset();
     if(readKind==='loading')$('#served-presets').innerHTML='<div class="loadinglabel" role="status">LOADING PRESETS</div>';
-    if(readKind==='error'||readKind==='internal'){ $('#served-presets').innerHTML=`<div class="notice" role="alert"><div class="notice__t">${readFailure(readKind).title}</div><div>${readFailure(readKind).body}</div><button type="button" class="btn" id="preset-retry">Try again</button></div>`;$('#preset-retry').onclick=api.retryPresets;$('#preset-retry').focus(); }
+    if(readKind==='error'||readKind==='internal'){ $('#served-presets').innerHTML=`<div class="notice" role="alert"><div class="notice__t">${readFailure(readKind).title}</div><div>${readFailure(readKind).body}</div><button type="button" class="btn" id="preset-retry">Try again</button></div>`;$('#preset-retry').onclick=api.retryPresets; }
 
   }
   function status(text) { $('#served-status').textContent=text; }
@@ -183,6 +183,8 @@
     return kind==='internal'?{title:'Something went wrong',body:'Try again. If the problem continues, ask a manager for help.'}:{title:'The system is unavailable',body:'Wait a moment, then try again.'};
   }
   function showRead(kind) {
+    const active=document.activeElement;
+    const lost=active===document.body||$('#served-read').contains(active)||$('.catrail').contains(active)||$('.served-grid').contains(active);
     readKind=kind;
     $('.catrail').hidden=true;$('.served-grid').hidden=true;
     const read=$('#served-read');
@@ -190,8 +192,9 @@
     else if(kind==='loading') read.innerHTML='<div class="served-loading" role="status"><div class="loadinglabel">LOADING MENU</div><div class="skel skel--w80"></div><div class="skel skel--w60"></div><div class="skel skel--w40"></div></div>';
     else {
       read.innerHTML=`<div class="notice served-read-error" role="alert"><div class="notice__t">${readFailure(kind).title}</div><div>${readFailure(kind).body}</div><button type="button" class="btn" id="served-retry">Try again</button></div>`;
-      $('#served-retry').onclick=()=>{showRead('loading');refresh('success');$('.cat').focus();};
-      $('#served-retry').focus();
+      $('#served-retry').onclick=()=>{const focused=document.activeElement.id==='served-retry';showRead('loading');refresh('success');if(focused)$('.cat').focus();};
+      // Fresh-mount pictures start on body; a background failure keeps any surviving control focused.
+      if(lost)$('#served-retry').focus();
     }
   }
   function archive(id) {

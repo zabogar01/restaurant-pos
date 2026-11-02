@@ -55,6 +55,11 @@ const check=(passed,name,detail)=>report.checks.push({passed:!!passed,name,...(!
  // Read failures, retry focus, and threshold/clear without focus stealing.
  await go('served-error');check(await p.evaluate(()=>document.activeElement.id)==='served-retry','first failure focuses Try again');
  await p.getByRole('button',{name:'Try again',exact:true}).click();check(await p.locator('.served-grid').isVisible()&&await p.evaluate(()=>document.activeElement.classList.contains('cat')),'retry success focuses first category');
+ await go('served-error-order');await p.getByRole('link',{name:'Discount',exact:true}).focus();await p.evaluate(()=>ServedCatalogFixture.showRead('internal'));
+ check(await p.evaluate(()=>document.activeElement.textContent)==='Discount','failed read preserves focused live order action');
+ await p.locator('#served-retry').focus();await p.evaluate(()=>ServedCatalogFixture.showRead('error'));check(await p.evaluate(()=>document.activeElement.id)==='served-retry','failure replaces a removed read control with Try again focus');
+ await p.getByRole('link',{name:'Discount',exact:true}).click();check(await p.evaluate(()=>document.activeElement.id)==='flow-title','failed picker opens on heading, not retry');
+ await p.locator('#preset-retry').click();check(await p.evaluate(()=>document.activeElement.id)==='preset-heading'&&await p.locator('[data-preset]').count()===5,'preset retry success focuses content heading');await p.keyboard.press('Escape');
  await go('served');await p.locator('[data-item=nasi]').focus();
  await p.evaluate(()=>ServedCatalogFixture.refresh('failed'));check(await p.locator('#served-status').textContent()==='','no stale notice on first failed poll');
  await p.evaluate(()=>ServedCatalogFixture.refresh('failed'));check((await p.locator('#served-status').textContent()).includes('may be out of date'),'second failure shows quiet notice');
