@@ -5,7 +5,7 @@ category: ui
 touches: [money, boundaries]
 depends_on: [DESIGN-022]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: complete
 cycles: 1
 ---
 # DESIGN-021 — The POS addition: the served menu, M-2 for any item, the served preset picker
@@ -535,6 +535,33 @@ Then update the Handoff in place (rules, copy table, focus, states, verification
 lead for a check run (`design021.cjs`, and the DOM-text comparison), and report done. This is round 2 of at most three.
 The lead reviews the round against these rulings; there is no second full review unless a fix goes beyond them.
 
+## Round 2 lead review and acceptance (2026-11-02)
+
+At `fa20a60`, the tree clean; `git diff --check f77206c..HEAD` clean; every changed path is within `owns` and none is under
+`apps/`, `packages/`, `db/`, `e2e/` or `docs/design/tokens/`. The round is the review's own fixes as ruled, so by the kit's
+rule the lead reviews it instead of a second full review.
+
+**run4**, in this worktree with evidence in `../restaurant-pos-wt/evidence/DESIGN-021/run4/`:
+`DESIGN021_COMPARE_DEVELOPMENT=1 … design021.cjs`, exit 0, 63 states, **602/602**, no failures or errors. The five review
+probes are real assertions and pass (F1 notice and line total visible outside a scrolled body, scrollTop kept; F2 options
+and Add fixed when a reason clears and a notice arrives; F3 focus kept on a disabled Add, its handler inert, Escape still
+closes; F4 every category row contains its name; F5 the status band present when idle, no tile shift on appearing,
+clearing or the stale notice). The **DOM-text comparison** against `development` (`ad8276b`, archived into the evidence
+directory, the worktree not switched) covers all 58 pre-existing `order.html` states: **0 differ**, which closes the
+review's point that AC 1 was proved only "not to throw". The earlier checks on the same tree, each exit 0: `design012`
+421, `design013` 371, `design014` 287/287, `design016` 399/399, `design017` 349/349, `design018` 730/730, `design019`
+998/998, `design020` 754/754, `design022` 688/688.
+
+Against the rulings: items 1 to 10 are each a separate commit. F5's lifetime is stated (the availability status stays
+until the next changed projection, the out-of-date warning or leaving POS-03; an unchanged poll keeps it), with its reason,
+and accepted. F6 keeps `fire.ts`'s singular unchanged and gives the plural and the one-item-several-lines case in its form
+(count of lines; names deduplicated by item id; "item" or "items" by distinct items), accepted. F8's second picker row
+reuses the menu's words. F9 is the review's rule. F10 uses *No items on this order yet.* when no menu is held.
+
+**Accepted.** DESIGN-021 is complete. Still open, none blocking the merge: **OQ1** (real presets in the Phase 1 picker),
+with the owner, the drawn picker following its recommended yes; R1's name-collision note for BO-04, the owner's; the
+DESIGN-007 `fireblocked` picture's older wording, noted, not redrawn. The owner's look at the states follows.
+
 ## Handoff
 
 ### design021 — round 2, 2026-11-02
@@ -555,9 +582,11 @@ preview in the final drawing.
 
 Round 2 implements all ten lead rulings (F1–F11), with one commit per item
 and a follow-up preserving body scroll during removed-option focus fallback.
-The five source-inferred probes are now browser assertions. Browser verification
-of this round is pending the lead’s run, including every legacy state’s DOM
-text against `development`. Prior run 3 evidence does not certify these edits.
+The five source-inferred probes are now browser assertions. The lead’s run 4
+passed 602/602 checks over 63 served states, including identical DOM text for
+all 58 legacy states against `development`. I read the output, checked its
+source hashes and inspected the new removal, largest-price 86 and plural
+refusal screenshots. The earlier-suite rerun is still in progress.
 
 #### Rules S7b can test, and the reasons for them
 
@@ -915,7 +944,11 @@ sitemap, the reusable additions in D and design021.cjs.
 
 #### Verification and measured limits
 
-Round 2 browser results are pending the lead’s run. `design021.cjs` covers
+The lead’s round 2 run 4 passed **602/602 checks, 63 served states**, with no
+failures or page errors. Evidence is
+`../evidence/DESIGN-021/run4/design021/measurements.json`, screenshots and
+`stdout.txt`. All **58 legacy states have identical DOM text** against
+`development` at `ad8276bda83619beb24753cc0576d22307e901db`. `design021.cjs` covers
 all 63 served states and the five review probes at 1280×800. It now asserts
 actual price/tag containment, quantity/amount/trailing-slot separation,
 category vertical containment, stable sheet positions and scrollTop, retained
@@ -928,9 +961,30 @@ state, recording the baseline commit and any before/after text. It never
 switches or changes this worktree. The dead preset notice assertion is gone.
 
 Local `node --check` on both runtime scripts and the check, and
-`git diff --check`, pass. Browser scripts are delegated to the lead as required;
-these local checks are not browser evidence. Current measured geometry and
-source hashes will be recorded after that run.
+`git diff --check`, pass. Browser scripts were run by the lead as required. The committed visual files
+match the measured SHA-256 hashes:
+
+| Source | SHA-256 prefix |
+|---|---|
+| frost-order-flow.js | cf19255f |
+| frost-served-catalog.js | 0b3b5802 |
+| frost-served-catalog.css | 9255d952 |
+| frost/pos/order.html | 348c4f50 |
+| manifest.js | 2527adf8 |
+
+| Round 2 measured case, 1280×800 | Result |
+|---|---|
+| Many options | Body 303px high, scroll height2369, scrollTop2066 at the final option; fixed footer unchanged. |
+| Removed modifier after scrolling | Body shrinks to277px; notice and line total stay above the footer; scrollTop is retained by the transition assertion. |
+| Longest category | Row height112px, clientHeight111 and scrollHeight111; complete name contained. Ordinary rows remain72px. |
+| Category rail | Client height736, scroll height1768, final scrollTop1032; no horizontal overflow. |
+| Overflow menu | Client height664 with the reserved72px status band; scroll height2096 and final scrollTop1432; showing, retaining and clearing status leave end-of-grid tile positions unchanged. |
+| Maximum-price 86 tile | Both 99.999.999 and the 86 tag are contained inside its150×96 box. |
+| Long order names | 64 W wraps in a232×87 box; Indonesian name in261×43.5. Quantity, amount and56×56 trailing slot fit separately. |
+| Many presets | Body565px high, scroll height3371, final scrollTop2806; final control reachable and footer fixed. |
+
+The lead is rerunning the earlier required suites against this same source;
+their run 4 results remain pending at this Handoff revision.
 
 Historical evidence: the lead’s pre-review run 3 passed 360/360 checks across
 58 served states with no page errors, under
@@ -1103,8 +1157,9 @@ index 22242f5..e2bd7d4 100644
 - R1's name collision is an acknowledged limitation with the proposed BO-04
   hint above. That is a future owner/design decision, not an edit to BO-04.
 - No other C4 difference remains. The other-family review was completed with
-  findings, all accepted. This round implements its ten lead rulings and awaits
-  the lead’s browser verification; it does not claim owner approval. S7b
+  findings, all accepted. This round implements its ten lead rulings and passed
+  the lead’s DESIGN-021 check and legacy DOM comparison; earlier-suite reruns
+  are in progress. It does not claim owner approval. S7b
   must bind real projection data/option ids, transport outcomes and transient
   store guards; it must not copy fixture arrays, URL state plumbing, or the
   fixture's selection-only preset callback as an application command.
