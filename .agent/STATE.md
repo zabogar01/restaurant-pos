@@ -22,7 +22,7 @@ at `0014`. **PHASE1-S7a dispatched** (owner's word). Lead branch `agent/lead-110
   methods), S4a (#140: catalog domain, `0013`, `catalogWrite`), S4b (#142: catalog routes, `CATALOG_CHANGED`), S4c1
   (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04 whole), S5 (#151: the 86 toggle), S6a (#154: presets server,
   `0014`), S6b (#157: BO-07). S0-S6 done. **S7 (POS catalog) in progress:** C4 and DESIGN-021 merged (#162,
-  #163); **S7a building**; S7b1, S7b2, S7b3 to write from C4 *For the lead* and DESIGN-021's Handoff.
+  #163); **S7a in review**; S7b1, S7b2, S7b3 to write from C4 *For the lead* and DESIGN-021's Handoff.
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14), **real presets in the POS picker (C4
@@ -54,8 +54,8 @@ at `0014`. **PHASE1-S7a dispatched** (owner's word). Lead branch `agent/lead-110
 
 ## Running tasks and agents
 
-- **PHASE1-S7a building** (dispatched 2026-11-02; Sonnet builder, interactive, Herdr agent `phase1-s7a`, branch
-  `agent/phase1-s7a`; touches money, boundaries, identity: the owner looks before merge). C4 copied into its task file.
+- **PHASE1-S7a in review** (Codex `gpt-6-astra` oneshot, pane `PHASE1-S7a-review`). Builder done `ed921fa`; lead verify
+  `55c9e89`: 151/5497, e2e:all 108, criterion 5's red rerun. Touches money, boundaries, identity: owner looks before merge.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -141,7 +141,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S7a:** on its exit, verify, `test:e2e:all`, then a Codex review (the builder is Claude). Then write **S7b1, S7b2,
+1. **S7a:** read the Codex review; fix round or complete. Then write **S7b1, S7b2,
    S7b3** (S7b1 copies C4's `idle.spec.ts` B6/B8 warning; its PR waits for S7b2).
 2. **DESIGN-023 (E2, BO-06)** written 2026-11-02, untracked in the kit: on the owner's word, cut `wt/DESIGN-023` from
    `development`, commit the task file there first, and hand-open a Codex designer `design023` (Claude Opus reviews).
