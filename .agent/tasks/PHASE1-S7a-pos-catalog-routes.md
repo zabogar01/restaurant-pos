@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S6a]
 owns: [packages/contracts/src/pos-catalog.ts, packages/contracts/src/index.ts, packages/contracts/src/routes.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/server/src/domain/catalog.ts, apps/server/src/domain/pos-menu.ts, apps/server/src/http/routes/pos-catalog.ts, apps/server/src/http/server.ts, apps/pos/src/session/api.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, apps/pos/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S7a — The POS catalog on the server
@@ -187,6 +187,22 @@ the Handoff below in full prose:
 - what was found and not fixed; the real `verify` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify (2026-11-02)
+
+Run by the lead in this worktree at `e0b812c`, for the reviewer, who cannot reach the database or a browser:
+
+- `npm run verify`: **151 test files, 5497 tests, all passed** (baseline 149 / 5453), the builder's count confirmed.
+- `npm run test:e2e:all`: **108 passed** (Chromium and WebKit), unchanged from the baseline.
+- `git diff --name-only development...HEAD`: every path is inside `owns`. The only existing test changed is
+  `packages/contracts/test/routes.test.ts` (one `it` added), which *Tests expected to change* names.
+- **Criterion 5's own red proof, which the builder did not run:** `AND i.is_available` added to the item filter in
+  `readPosMenu`; `pos-catalog-routes.test.ts` case 5 failed (`expected [ [ 'Tea', true ] ] to deeply equal [ [ 'Soup',
+  false ], [ 'Tea', true ] ]`, 1 failed, 22 passed); reverted with `git checkout --`, tree clean.
+- Every acceptance criterion from 1 to 14 maps to a named case in `pos-catalog-routes.test.ts` or
+  `packages/contracts/test/pos-catalog.test.ts` (criterion 13 by reading `apps/pos/src/session/api.ts`).
+- **For the reviewer:** the builder says the code was written before its tests, and every red proof was made by
+  mutation afterwards. Judge whether any case would pass against a wrong implementation it was not mutated against.
 
 ## Handoff
 
