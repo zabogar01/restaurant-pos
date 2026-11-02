@@ -117,6 +117,7 @@ at `0014`. **PHASE1-S7a dispatched** (owner's word). Lead branch `agent/lead-110
 
 Nothing here is decided. Detail is where each line points.
 
+- **Open DESIGN-023's designer?** (Codex `gpt-6-astra`; its start stops on an update prompt, yours.)
 - **Look at DESIGN-021's states** in the gallery (`docs/design/visual-directions/index.html`, POS-03 served states).
 - **Lead rulings since 10-30, yours to overturn:** DESIGN-021 R1 (long tile names), its round 2 rulings (F5 lifetime, F6
   `fire.ts` form stands), the 86-stepper reading; ARCH-021's lead review acceptances (S7b split in three, the revision
@@ -142,5 +143,6 @@ Nothing here is decided. Detail is where each line points.
 
 1. **S7a:** on its exit, verify, `test:e2e:all`, then a Codex review (the builder is Claude). Then write **S7b1, S7b2,
    S7b3** (S7b1 copies C4's `idle.spec.ts` B6/B8 warning; its PR waits for S7b2).
-2. **E2 (BO-06)** is the next designer task (owner, 10-30): write it while S7a builds.
+2. **DESIGN-023 (E2, BO-06)** written 2026-11-02, untracked in the kit: on the owner's word, cut `wt/DESIGN-023` from
+   `development`, commit the task file there first, and hand-open a Codex designer `design023` (Claude Opus reviews).
 3. **Small, between slices:** the code-point cleanup; the frame-focus question; the dialog and name-check extraction.

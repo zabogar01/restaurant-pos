@@ -72,7 +72,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
      task must carry its rule C1 and density rule (task file, last lead ruling).
    - *(Done: D, DESIGN-019 and -020, BO-03 and BO-04; F's BO-08 half, DESIGN-018.)*
    - *(Done: F's BO-07 half, DESIGN-022, merged 2026-10-29 as PR #156.)*
-   - **Left:** E2 (BO-06; next after DESIGN-021, owner 2026-10-30) · G (BO-09) · H (BO-10, 11).
+   - **E2, DESIGN-023**, BO-06 Users (feeds S8c) — depends on DESIGN-022 (complete) — written 2026-11-02, not started.
+   - **Left:** G (BO-09) · H (BO-10, 11).
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
 
