@@ -46,3 +46,9 @@
 #preset-retry { margin-top:var(--frost-space-4); width:100%; }
 .served-fire-notice { flex:none; margin:0; border-inline:0; }
 #served-show-blocked { margin-top:var(--frost-space-2); }
+
+/* Round 2, F1/F2: notices and committed line figure never scroll away. */
+.served-sheet-summary { flex:none; padding:var(--frost-space-3) var(--frost-space-5); border-top:var(--frost-divider-stroke); }
+#served-sheet-notice { min-height:calc(var(--frost-text-14) * var(--frost-leading-body)); font-size:var(--frost-text-14); overflow-wrap:anywhere; }
+#served-sheet-notice:not(:empty) { padding:var(--frost-space-2) var(--frost-space-3); margin-bottom:var(--frost-space-2); background:var(--frost-group); border:var(--frost-control-stroke); }
+#served-add-reason { min-height:calc(var(--frost-text-15) * var(--frost-leading-body)); }

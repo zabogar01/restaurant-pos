@@ -200,7 +200,12 @@
     const missing=()=>item.served&&groups.some(g=>!g.many&&g.options.length&&!g.selected.length);
     const resolvedUnit=()=>{const n=BigInt(item.price)+groups.flatMap(g=>g.selected.map(j=>g.options[j][1])).reduce((sum,p)=>sum+BigInt(p),0n);return n<0n?0n:n;};
     const limit=q=>item.served?ceiling(resolvedUnit(),q,[...model,{unit:resolvedUnit(),q}]):'';
-    body.innerHTML=(item.served?'<div class="notice flow-unavailable" id="served-sheet-notice" role="status" hidden></div><div class="served-option-groups"></div><div class="served-unit"><span>Unit price</span><b class="mono" id="served-unit"></b></div>':(unavailable?'<div class="notice flow-unavailable"><div class="notice__t">Burger is no longer available</div><div>A manager marked it 86 while you were choosing. Your selections are kept so you can note them, but it cannot be added.</div></div>':''))+'<div class="flow-line-total"><span>Line total</span><b class="mono" data-line-total></b></div><div class="muted" data-arithmetic></div>';
+    body.innerHTML=(item.served?'<div class="served-option-groups"></div><div class="served-unit"><span>Unit price</span><b class="mono" id="served-unit"></b></div>':(unavailable?'<div class="notice flow-unavailable"><div class="notice__t">Burger is no longer available</div><div>A manager marked it 86 while you were choosing. Your selections are kept so you can note them, but it cannot be added.</div></div>':''))+'<div class="flow-line-total"><span>Line total</span><b class="mono" data-line-total></b></div><div class="muted" data-arithmetic></div>';
+    if(item.served){
+      const summary=document.createElement('div');summary.className='served-sheet-summary';
+      summary.innerHTML='<div id="served-sheet-notice" role="status" aria-live="polite"></div>';
+      summary.append($('.served-unit',body),$('.flow-line-total',body));body.after(summary);
+    }
     function options() {
       const html=groups.map((g,i)=>!g.options.length?'':`<span class="label" id="option-group-${i}" tabindex="-1">${esc(g.name)} — choose ${g.many?'any':'one'}</span><div class="flow-options ${id==='burger'&&i===1?'flow-extras':''}" role="group" aria-label="${esc(g.name)}">${g.options.map(([n,p],j)=>`<button type="button" class="btn ${g.selected.includes(j)?'btn--primary':''}" aria-pressed="${g.selected.includes(j)}" data-group="${i}" data-option="${j}" data-option-id="${esc(g.options[j][2]||j)}">${esc(n)}${id==='burger'&&i===1?' ':'<br>'}${signed(p)}</button>`).join('')}</div>`).join('');
       if(item.served)$('.served-option-groups',body).innerHTML=html;
@@ -222,16 +227,16 @@
       const mods=groups.flatMap(g=>g.selected.map(j=>g.options[j][1]));
       const resolved=BigInt(item.price)+mods.reduce((sum,p)=>sum+BigInt(p),0n);
       unit=resolved<0n?0n:resolved;
-      $('[data-line-total]',body).textContent=fmt(unit*BigInt(q));
+      $('[data-line-total]',drawer).textContent=fmt(unit*BigInt(q));
       $('[data-arithmetic]',body).textContent=`(${fmt(item.price)}${mods.map(p=>' '+signed(p)).join('')})${resolved<0n?' → 0':''} × ${q} = ${fmt(unit*BigInt(q))}`;
       if(item.served){
-        $('#served-unit',body).textContent=fmt(unit);
+        $('#served-unit',drawer).textContent=fmt(unit);
         $('#served-add-reason',drawer).textContent=archived?'This item is no longer on the menu.':unavailable?'This item is unavailable.':missing()?'Choose a variant before adding this item.':limit(q);
         if(q<99&&limit(q+1))$('.flow-bound',drawer).textContent='Cannot increase quantity. '+limit(q+1);
       }
     },q=>unavailable||archived||missing()||!!limit(q),true,q=>!limit(q));
     if(item.served) {served.sheetItemId=id;served.sheetRefresh=kind=>{
-      const notice=$('#served-sheet-notice',body);
+      const notice=$('#served-sheet-notice',drawer);
       const focused=document.activeElement,focusId=focused.dataset.optionId,focusGroup=focused.dataset.group;
       let redraw=false;
       if(kind==='86')unavailable=true;
@@ -256,7 +261,7 @@
       if(redraw){options();if(focusId!==undefined){const target=$(`[data-option-id="${focusId}"]`,body);(target||$('#option-group-'+focusGroup,body)||$('#flow-title',drawer)).focus();}}
       const availability=archived?`${item.name} is no longer on the menu. Your choices are kept, but it cannot be added.`:unavailable?`${item.name} is no longer available. A manager marked it 86. Your choices are kept, but it cannot be added.`:'';
       const text=[availability,changeNotice].filter(Boolean).join(' ');
-      notice.hidden=!text;if(notice.textContent!==text)notice.textContent=text;
+      if(notice.textContent!==text)notice.textContent=text;
       repaint();
     };}
 

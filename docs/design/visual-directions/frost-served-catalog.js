@@ -79,12 +79,14 @@
     if(state==='served-price') {flow.setModel([{id:'nasi',name:'Nasi Goreng',unit:45000n,q:1,detail:'',round:0}]);refresh('price');}
     if(state.startsWith('served-item-')||state.startsWith('quick-served-item-')) {
       const suffix=state.split('item-')[1];
-      const id=({none:'nasi',variants:'variants',modifiers:'modifiers',both:'both',many:'many',extremes:'extreme',floor:'floor',long:'long',indonesian:'longReal','line-bound':'lineBound','order-bound':'orderBound','choice-bound':'extreme'})[suffix]||'both';
+      const id=({none:'nasi',variants:'variants',modifiers:'modifiers',both:'both',many:'many','many-removed':'many',extremes:'extreme',floor:'floor',long:'long',indonesian:'longReal','line-bound':'lineBound','order-bound':'orderBound','choice-bound':'extreme'})[suffix]||'both';
       if(['86','restored','archived','reappeared','price','changed','options','reorder','removed','modifier-removed','choice-bound'].includes(suffix))items[id].groups.forEach(g=>g.selected=[0]);
+      if(suffix==='many-removed'){items[id].groups.forEach(g=>g.selected=[0]);items[id].groups[1].options[0][1]=5000;}
       categories[0].ids=[id,'tea','water'];renderGrid();
       if(suffix==='order-bound')flow.setModel([{id:'banquet',name:'Banquet order',unit:10000000n,q:1,detail:'',round:0}]);
       flow.openItem(id,$(`[data-item="${id}"]`));
-      if(suffix==='86')refresh('86',id);
+      if(suffix==='many-removed'){const body=$('.served-drawer .sheet__body');body.scrollTop=body.scrollHeight;api.sheetRefresh('modifier-removed');}
+      else if(suffix==='86')refresh('86',id);
       else if(suffix==='archived')refresh('archive',id);
       else if(suffix==='restored'){refresh('86',id);refresh('restore',id);}
       else if(suffix==='reappeared'){refresh('archive',id);refresh('reappear',id);}

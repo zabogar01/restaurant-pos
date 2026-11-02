@@ -66,6 +66,7 @@ window.MOCKUPS = [
       ["served-fireblocked", "Served pending lines — plural 86 refusal"],
       ["served-loading-order", "First read — existing order stays live"],
       ["served-error-order", "First read failed — existing order stays live"],
+      ["served-item-many-removed", "Served M-2 — scrolled, selected modifier removed"],
       [
         "empty",
         "Table order — no lines"

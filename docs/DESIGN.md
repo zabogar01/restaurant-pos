@@ -2118,8 +2118,11 @@ and option names wrap without shrinking their type.
 **The data-driven sheet.** An item supplies at most two flat lists, labelled
 “Variant — choose one” and “Modifiers — choose any”. Empty lists draw nothing.
 Nothing is preselected on opening. If variants exist, Add waits for a choice.
-The sheet body owns option scrolling; the quantity keys and Add remain in its
-fixed footer. Options grow vertically for wrapped names and keep a minimum
+The sheet body owns option scrolling. In round 2, its always-present live notice
+band and line total sit outside that scroll owner, between body and footer.
+A notice can shrink the body without changing its top or scrollTop. The quantity
+keys and Add remain in the fixed footer, which always reserves one line for its
+disabled reason so clearing that reason cannot move the controls. Options grow vertically for wrapped names and keep a minimum
 72px target. The header grows for a full item name; quantity keys retain 88px.
 Selected options use the existing ink selection treatment. Figures show the
 resolved unit price, floored at zero, and its multiplication by quantity.
