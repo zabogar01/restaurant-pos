@@ -113,8 +113,6 @@ Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
 Nothing here is decided. Detail is where each line points.
 
 - **Lead rulings:** all confirmed 2026-10-30 (DECISIONS). New ones from here on are listed here until confirmed.
-- **C4 OQ1: real presets in the Phase 1 POS picker** (stand-in applies a real preset)? C4, lead: yes. Blocks S7b3 only.
-- **S7b1 merges before S7b2:** a served tile opens nothing in between (C4). Lead: accept, or hold S7b1's PR for S7b2.
 - **DESIGN-021 R1** (long tile names, its task file): yours to overturn.
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
@@ -140,7 +138,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **Push and PR** `agent/arch-021`, `agent/design-021`, `agent/lead-1030d` (owner's word). Owner's look at DESIGN-021's
-   states. Then S7a (C4 only) and S7b1-3 task files; S7b3 waits on OQ1.
+1. **PRs open** for ARCH-021, DESIGN-021 and the lead branch (owner merges). Owner's look at DESIGN-021's states.
+   **S7a** written (2026-11-02). Then S7b1-3; **S7b1's PR held for S7b2** (owner); OQ1 yes (owner): S7b3 builds real presets.
    Then S7a and S7b from C4's *For the lead* and DESIGN-021's Handoff; E2 (BO-06) after DESIGN-021 (owner).
 2. **Small, between slices:** the code-point cleanup; the frame-focus question; the dialog and name-check extraction.
