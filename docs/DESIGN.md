@@ -2092,3 +2092,75 @@ catalog, because an unrelated menu change can cause it; the no-difference case
 adds “The current preset has the same values as your draft.” The copy is the
 same after M-6. The exact words and focus targets are in DESIGN-022's Handoff.
 No token is added or changed.
+
+
+### DESIGN-021 additions — served POS catalog
+
+Round 2: a served category row uses 72px as its minimum height and grows to show a wrapped name in full, with registered spacing tokens.
+
+These rules apply the existing Frost geometry to the served POS catalog. They
+add no screen, navigation path, token, color, type size or weight.
+
+**A held read becoming uncertain.** A non-blocking grouping-blue notice at the
+bottom of the menu region says “The menu may be out of date. You can keep taking
+orders.” It appears after two consecutive failed checks and clears when a check
+leaves the client current. It is a polite status, never the emergency banner.
+The menu stays usable. In round 2, a fixed 72px band is reserved at the menu’s
+bottom edge, including when idle, and its live region always stays in the
+accessibility tree. Neither showing nor clearing text changes the grid height
+or the positions of tiles at its scroll end. An open sheet does not duplicate
+this notice or lose its choices. “Menu availability updated.” stays until the
+next changed projection, the out-of-date warning, or leaving POS-03. An unchanged
+successful poll retains it, so a two-second poll cannot erase it before it is
+read. Each accepted changed projection ends an out-of-date period.
+
+**Names within fixed targets.** A menu tile remains 150×96. Its name wraps and
+ellipsizes after two lines; its price remains complete on its separate bottom
+line. The full name is its accessible name (followed by price and availability)
+and the sheet heading. Every item, including one with no options, opens M-2
+before Add. Long order-line names wrap in full beside the existing quantity,
+amount and reserved trailing slot. Two names with the same visible prefix can
+look identical on tiles: full M-2 headings distinguish them before Add. Category
+and option names wrap without shrinking their type.
+
+**The data-driven sheet.** An item supplies at most two flat lists, labelled
+“Variant — choose one” and “Modifiers — choose any”. Empty lists draw nothing.
+Nothing is preselected on opening. If variants exist, Add waits for a choice.
+The sheet body owns option scrolling. In round 2, its always-present live notice
+band and line total sit outside that scroll owner, between body and footer.
+A notice can shrink the body without changing its top or scrollTop. The quantity
+keys and Add remain in the fixed footer, which always reserves one line for its
+disabled reason so clearing that reason cannot move the controls. Options grow vertically for wrapped names and keep a minimum
+72px target. The header grows for a full item name; quantity keys retain 88px.
+Selected options use the existing ink selection treatment. Figures show the
+resolved unit price, floored at zero, and its multiplication by quantity.
+
+An 86 preserves the draft and disables Add; becoming available clears that
+notice. The quantity stepper stays visible and usable within the quantity and
+money bounds, even while the item is 86’d or no longer on the menu. Only the
+commit is blocked; restoration does not require choosing quantity again. An item no longer in the projection preserves its last-known details
+and choices, with its own notice and disabled Add. A changed name, price or
+option delta updates in place and leaves one change notice until close. A
+removed selected option is named and deselected; a removed variant makes Add
+wait for another choice. Added or reordered options need no notice and retain
+selection by option identity. Polls do not steal focus: a removed focused
+option returns focus to its group heading; a removed focused preset returns
+focus to the preset heading. Existing controls otherwise retain focus. In round 2, served Add, Update and
+quantity keys use aria-disabled with guarded activation, so becoming off never
+drops keyboard focus or loses Escape.
+
+**Monetary ceilings.** Add and Update to n use the same ceiling check: line
+amount and the order's resulting total, including its discount and service,
+must each be at most 99.999.999. Options remain selectable, even if a choice
+exceeds a limit at quantity 1; the commit control explains its disabled state.
+Plus stops before the next quantity would exceed either limit. Minus remains
+available above 1. The visible reason names the limit, never a calculated
+excess. These rules are presentation in Phase 1; server enforcement follows.
+
+**Served preset rows.** The picker follows server order, not value or benefit.
+It shows zero values, whole-rupiah fixed amounts, and percentages with a decimal
+comma and up to four places, without trailing zeros. Fixed amounts are shown
+as stored; the subtotal cap belongs to application and the order's totals.
+The list scrolls above Cancel. Loading, read failure and no active presets
+retain Other amount. Changed rows update and removed rows leave without a
+notice. Existing order snapshots retain their own name and value.

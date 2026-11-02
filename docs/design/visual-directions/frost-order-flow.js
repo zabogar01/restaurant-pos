@@ -5,6 +5,7 @@
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => [...root.querySelectorAll(s)];
   const fmt = n => BigInt(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const signed = n => (n < 0 ? '−' : '+') + fmt(n < 0 ? -n : n);
   const half = (n, d) => (n * 2n + d) / (d * 2n);
   const group = (name, many, options, selected = [0]) => ({name, many, options, selected});
@@ -23,12 +24,14 @@
     wine: {name:'House Wine',price:80000,groups:[group('Pour',false,[['Standard',0],['Small',-20000]],[1])]}
   };
   const state = document.documentElement.dataset.state;
+  const served = window.ServedCatalogFixture;
+  if (served) Object.assign(items, served.items);
   const isItem = state === 'sheet-item' || state === 'sheet-item86' || state.startsWith('sheet-item-');
   const isEdit = state.startsWith('sheet-line') || state.startsWith('quick-line');
   const isFire = state.startsWith('fire-') || state === 'fireerror';
   const quick = state.startsWith('quick');
   // Extend existing states by composing their established background, not a new screen.
-  const base = isItem ? (state === 'sheet-item86' ? state : 'sheet-item') : isEdit ? (quick ? 'quick-line' : 'sheet-line') : isFire ? 'linecontrols' : state;
+  const base = served ? served.base : isItem ? (state === 'sheet-item86' ? state : 'sheet-item') : isEdit ? (quick ? 'quick-line' : 'sheet-line') : isFire ? 'linecontrols' : state;
   if (base !== state) {
     $$('[data-when]').forEach(e => e.hidden = !e.dataset.when.split(/\s+/).includes(base));
     $$('[data-unless]').forEach(e => e.hidden = e.dataset.unless.split(/\s+/).includes(base));
@@ -78,6 +81,7 @@
     const service=half(net,20n), tax=half(net,11n);
     return {subtotal,disc,net,service,tax,total:net+service};
   };
+  const ceiling = (unit,q,list) => unit*BigInt(q)>99999999n?'Line total cannot exceed 99.999.999.':figures(list).total>99999999n?'Order total cannot exceed 99.999.999.':'';
   const totals = (list, preview=false) => {
     const f=figures(list);
     return `${preview?'<span class="label">After update · not saved yet</span>':''}<div class="t"><span>Subtotal</span><span class="mono">${fmt(f.subtotal)}</span></div>${discount?`<div class="t"><span>${discount.name} ${discount.value}%</span><span class="mono">−${fmt(f.disc)}</span></div>`:''}<div class="t"><span>Service charge 5%</span><span class="mono">${fmt(f.service)}</span></div><div class="t t--grand"><span>Total</span><span class="mono">${fmt(f.total)}</span></div><div class="t t--incl"><span>Includes tax 10%</span><span class="mono">${fmt(f.tax)}</span></div>`;
@@ -85,8 +89,8 @@
   const deliveryCopy={queued:'sending · unconfirmed',printed:'printed',failed:'FAILED · not printed',unknown:'UNKNOWN · may have printed'};
   const heading = (round,time,delivery,focus=false) => `<div class="roundhead flow-round" ${focus?'id="new-round" tabindex="-1"':''}><span>Round ${round} · fired ${time}${delivery == null?'':' · '+deliveryCopy[delivery]}</span><span class="tag">MANAGER TO VOID</span></div>`;
   const row = (l,index) => l.voided
-    ? `<div class="line line--void" data-flow-line="${index}"><div class="line__q">${l.q}</div><div class="line__b"><div class="line__n">${l.name}</div><div class="line__m">${l.detail}</div></div><div class="line__a">${fmt(l.unit*BigInt(l.q))}</div><div class="line__x line__x--empty"></div></div>`
-    : `<div class="line" data-flow-line="${index}"><a class="line__t" href="order.html?state=${l.round?'sheet-voidline':quick?'quick-line':'sheet-line'}" ${l.round?'':'data-edit="'+index+'"'}><div class="line__q">${l.q}</div><div class="line__b"><div class="line__n">${l.name}${l.unavailable?' <span class="tag tag--86">86</span>':''}</div>${l.detail?`<div class="line__m">${l.detail}</div>`:''}</div><div class="line__a">${fmt(l.unit*BigInt(l.q))}</div></a>${l.round?'<div class="line__x line__x--empty"></div>':`<a class="line__x" href="#" data-remove="${index}" aria-label="Remove ${l.name}"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></a>`}</div>`;
+    ? `<div class="line line--void" data-flow-line="${index}"><div class="line__q">${l.q}</div><div class="line__b"><div class="line__n">${esc(l.name)}</div><div class="line__m">${esc(l.detail)}</div></div><div class="line__a">${fmt(l.unit*BigInt(l.q))}</div><div class="line__x line__x--empty"></div></div>`
+    : `<div class="line" data-flow-line="${index}"><a class="line__t" href="order.html?state=${l.round?'sheet-voidline':quick?'quick-line':'sheet-line'}" ${l.round?'':'data-edit="'+index+'"'}><div class="line__q">${l.q}</div><div class="line__b"><div class="line__n">${esc(l.name)}${l.unavailable?' <span class="tag tag--86">86</span>':''}</div>${l.detail?`<div class="line__m">${esc(l.detail)}</div>`:''}</div><div class="line__a">${fmt(l.unit*BigInt(l.q))}</div></a>${l.round?'<div class="line__x line__x--empty"></div>':`<a class="line__x" href="#" data-remove="${index}" aria-label="Remove ${esc(l.name)}"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></a>`}</div>`;
   function renderOrder(focusRound=false) {
     let last=-1;
     lines.innerHTML=model.map((l,i)=>{
@@ -101,6 +105,7 @@
     $$('[data-edit]',lines).forEach(a=>a.onclick=e=>{e.preventDefault();openEdit(Number(a.dataset.edit),a);});
     $$('[data-remove]',lines).forEach(a=>a.onclick=e=>{e.preventDefault();model.splice(Number(a.dataset.remove),1);renderOrder();});
     wireFire();
+    served?.orderRendered?.();
     if(focusRound) {
       const target=$('#new-round');
       target?.focus({preventScroll:true});
@@ -130,31 +135,47 @@
   }
   function dismiss() {
     drawer?.remove();drawer=null;panel.inert=false;
+    if(served) {served.sheetRefresh=null;$('.pos__body').inert=false;$('.pos__bar').inert=false;}
     $$('.tile--selected').forEach(e=>e.classList.remove('tile--selected'));
     if(opener?.isConnected)opener.focus();
+    else if(served)($(`[data-item="${served.sheetItemId}"]`)||$('.cat[aria-pressed="true"]'))?.focus();
   }
   function shell(name,price,secondary,source) {
     dismiss();opener=source;
     drawer=document.createElement('div');drawer.className='flow-drawer';
-    drawer.innerHTML=`<div class="scrim scrim--sheet"></div><section class="sheet flow-sheet" role="dialog" aria-labelledby="flow-title"><div class="sheet__head"><h2 id="flow-title">${name}</h2><span class="mono flow-price">${fmt(price)}</span></div><div class="sheet__body"></div><div class="sheet__foot flow-foot"><div class="flow-secondary">${secondary}</div><div class="flow-commit"><div class="flow-stepper" role="group" aria-label="Quantity"><button type="button" class="btn" data-step="-1" aria-label="Decrease quantity">−</button><output class="field mono" aria-label="Quantity">1</output><button type="button" class="btn" data-step="1" aria-label="Increase quantity">+</button></div><button type="button" class="btn btn--primary flow-save"></button></div><div class="flow-bound muted" aria-live="polite"></div></div></section>`;
+    drawer.innerHTML=`<div class="scrim scrim--sheet"></div><section class="sheet flow-sheet" role="dialog" aria-labelledby="flow-title"><div class="sheet__head"><h2 id="flow-title">${esc(name)}</h2><span class="mono flow-price">${fmt(price)}</span></div><div class="sheet__body"></div><div class="sheet__foot flow-foot"><div class="flow-secondary">${secondary}</div><div class="flow-commit"><div class="flow-stepper" role="group" aria-label="Quantity"><button type="button" class="btn" data-step="-1" aria-label="Decrease quantity">−</button><output class="field mono" aria-label="Quantity">1</output><button type="button" class="btn" data-step="1" aria-label="Increase quantity">+</button></div><button type="button" class="btn btn--primary flow-save"></button></div><div class="flow-bound muted" aria-live="polite"></div></div></section>`;
     $('.pos').append(drawer);panel.inert=true;
+    if(served) {
+      drawer.classList.add('served-drawer');$('.sheet',drawer).setAttribute('aria-modal','true');
+      $('.pos__body').inert=true;$('.pos__bar').inert=true;
+      $('#flow-title',drawer).tabIndex=-1;$('#flow-title',drawer).focus();
+      drawer.addEventListener('keydown',e=>{
+        if(e.key!=='Tab')return;
+        const keys=$$('button:not([disabled]),a[href]',drawer).filter(x=>x.getClientRects().length),i=keys.indexOf(document.activeElement);
+        if(e.shiftKey&&(i<=0)){e.preventDefault();keys.at(-1)?.focus();}
+        else if(!e.shiftKey&&(i===keys.length-1)){e.preventDefault();keys[0]?.focus();}
+      });
+    }
     $('[data-cancel]',drawer).onclick=dismiss;
     drawer.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();dismiss();}});
     return $('.sheet__body',drawer);
   }
-  function stepper(q,current,commit,update,disabled=false,adding=false) {
+  function stepper(q,current,commit,update,disabled=false,adding=false,canIncrease=()=>true) {
     const minus=$('[data-step="-1"]',drawer),plus=$('[data-step="1"]',drawer),save=$('.flow-save',drawer);
+    const off=(button,value)=>{
+      if(!served)button.disabled=value;
+      button.classList.toggle('btn--off',value);button.setAttribute('aria-disabled',String(value));
+    };
     const paint=()=>{
       $('output',drawer).textContent=q;
-      minus.disabled=q===1;plus.disabled=q===99;
-      for(const b of [minus,plus]){b.classList.toggle('btn--off',b.disabled);b.setAttribute('aria-disabled',String(b.disabled));}
+      off(minus,q===1);off(plus,q===99||!canIncrease(q+1));
       save.textContent=adding?'Add to order':`Update to ${q}`;
-      save.disabled=disabled||(!adding&&q===current);save.classList.toggle('btn--off',save.disabled);save.setAttribute('aria-disabled',String(save.disabled));
+      off(save,(typeof disabled==='function'?disabled(q):disabled)||(!adding&&q===current));
       $('.flow-bound',drawer).textContent=q===99?'Maximum 99 per line. Increase is unavailable.':q===1?(adding?'Minimum 1 per line.':'Minimum 1. Use Remove line to remove this line.'):'Quantity · whole numbers, maximum 99';
       update(q);
     };
-    minus.onclick=()=>{if(q>1){q--;paint();}};plus.onclick=()=>{if(q<99){q++;paint();}};
-    save.onclick=()=>{commit(q);dismiss();};paint();
+    minus.onclick=()=>{if(q>1){q--;paint();}};plus.onclick=()=>{if(q<99&&plus.getAttribute('aria-disabled')!=='true'){q++;paint();}};
+    save.onclick=()=>{if(save.getAttribute('aria-disabled')==='true')return;commit(q);dismiss();};paint();
     return ()=>paint();
   }
   function openEdit(index,source,draft) {
@@ -162,33 +183,91 @@
     const body=shell(line.name+' — pending',line.unit,'<button class="btn" data-cancel>Back</button><button class="btn btn--destructive" data-remove-current>Remove line</button>',source);
     body.innerHTML=`<div class="muted">${quick?'Nothing on a counter sale goes to the kitchen until settlement.':'This line has not been sent to the kitchen.'} Back discards changes.</div><div class="flow-line-total"><span>Line total</span><b class="mono" data-line-total></b></div><div class="muted" data-arithmetic></div><div class="totals flow-preview"></div>`;
     $('[data-remove-current]',drawer).onclick=()=>{model.splice(index,1);renderOrder();dismiss();};
+    const limit=q=>served?ceiling(line.unit,q,model.map((l,i)=>i===index?{...l,q}:l)):'';
+    if(served){$('.flow-bound',drawer).insertAdjacentHTML('beforebegin','<div id="served-add-reason" class="muted" aria-live="polite"></div>');$('.flow-save',drawer).setAttribute('aria-describedby','served-add-reason');}
     stepper(draft??line.q,line.q,q=>{line.q=q;renderOrder();},q=>{
       $('[data-line-total]',body).textContent=fmt(line.unit*BigInt(q));
       $('[data-arithmetic]',body).textContent=`${fmt(line.unit)} × ${q} = ${fmt(line.unit*BigInt(q))}`;
       $('.flow-preview',body).innerHTML=totals(model.map((l,i)=>i===index?{...l,q}:l),true);
-    });
+      if(served){$('#served-add-reason',drawer).textContent=limit(q);if(q<99&&limit(q+1))$('.flow-bound',drawer).textContent='Cannot increase quantity. '+limit(q+1);}
+    },q=>!!limit(q),false,q=>!limit(q));
   }
   function openItem(id,source,initial=1,unavailable=false) {
     const item=items[id];
     if(!item)return;
     const groups=structuredClone(item.groups);
+    if(item.served)groups.forEach((g,i)=>g.options.forEach((o,j)=>o[2]='option-'+i+'-'+j));
     const body=shell(item.name,item.price,'<button class="btn" data-cancel>Cancel</button>',source);
     source?.classList.add('tile--selected');
-    body.innerHTML=(unavailable?'<div class="notice flow-unavailable"><div class="notice__t">Burger is no longer available</div><div>A manager marked it 86 while you were choosing. Your selections are kept so you can note them, but it cannot be added.</div></div>':'')+groups.map((g,i)=>`<span class="label">${g.name} — choose ${g.many?'any':'one'}</span><div class="flow-options ${id==='burger'&&i===1?'flow-extras':''}" role="group" aria-label="${g.name}">${g.options.map(([n,p],j)=>`<button type="button" class="btn ${g.selected.includes(j)?'btn--primary':''}" aria-pressed="${g.selected.includes(j)}" data-group="${i}" data-option="${j}">${n}${id==='burger'&&i===1?' ':'<br>'}${signed(p)}</button>`).join('')}</div>`).join('')+'<div class="flow-line-total"><span>Line total</span><b class="mono" data-line-total></b></div><div class="muted" data-arithmetic></div>';
-    let unit;
-    const repaint=stepper(initial,0,q=>{
+    let archived=false, unit, repaint, changeNotice='';
+    const missing=()=>item.served&&groups.some(g=>!g.many&&g.options.length&&!g.selected.length);
+    const resolvedUnit=()=>{const n=BigInt(item.price)+groups.flatMap(g=>g.selected.map(j=>g.options[j][1])).reduce((sum,p)=>sum+BigInt(p),0n);return n<0n?0n:n;};
+    const limit=q=>item.served?ceiling(resolvedUnit(),q,[...model,{unit:resolvedUnit(),q}]):'';
+    body.innerHTML=(item.served?'<div class="served-option-groups"></div><div class="served-unit"><span>Unit price</span><b class="mono" id="served-unit"></b></div>':(unavailable?'<div class="notice flow-unavailable"><div class="notice__t">Burger is no longer available</div><div>A manager marked it 86 while you were choosing. Your selections are kept so you can note them, but it cannot be added.</div></div>':''))+'<div class="flow-line-total"><span>Line total</span><b class="mono" data-line-total></b></div><div class="muted" data-arithmetic></div>';
+    if(item.served){
+      const summary=document.createElement('div');summary.className='served-sheet-summary';
+      summary.innerHTML='<div id="served-sheet-notice" role="status" aria-live="polite"></div>';
+      summary.append($('.served-unit',body),$('.flow-line-total',body));body.after(summary);
+    }
+    function options() {
+      const html=groups.map((g,i)=>!g.options.length?'':`<span class="label" id="option-group-${i}" tabindex="-1">${esc(g.name)} — choose ${g.many?'any':'one'}</span><div class="flow-options ${id==='burger'&&i===1?'flow-extras':''}" role="group" aria-label="${esc(g.name)}">${g.options.map(([n,p],j)=>`<button type="button" class="btn ${g.selected.includes(j)?'btn--primary':''}" aria-pressed="${g.selected.includes(j)}" data-group="${i}" data-option="${j}" data-option-id="${esc(g.options[j][2]||j)}">${esc(n)}${id==='burger'&&i===1?' ':'<br>'}${signed(p)}</button>`).join('')}</div>`).join('');
+      if(item.served)$('.served-option-groups',body).innerHTML=html;
+      else $('.flow-line-total',body).insertAdjacentHTML('beforebegin',html);
+      $$('[data-option]',body).forEach(b=>b.onclick=()=>{
+        const g=groups[Number(b.dataset.group)],j=Number(b.dataset.option);
+        g.selected=g.many?(g.selected.includes(j)?g.selected.filter(x=>x!==j):[...g.selected,j]):[j];
+        $$('[data-option]',body).forEach(x=>{const selected=groups[Number(x.dataset.group)].selected.includes(Number(x.dataset.option));x.classList.toggle('btn--primary',selected);x.setAttribute('aria-pressed',String(selected));});repaint();
+      });
+    }
+    options();
+    if(item.served){
+      $('.flow-bound',drawer).insertAdjacentHTML('beforebegin','<div id="served-add-reason" class="muted" aria-live="polite"></div>');
+      $('.flow-save',drawer).setAttribute('aria-describedby','served-add-reason');
+    }
+    repaint=stepper(initial,0,q=>{
       model.push({id,name:item.name,unit,q,detail:groups.flatMap(g=>g.selected.map(j=>`${g.options[j][0]} (${signed(g.options[j][1])})`)).join(' · '),round:0});renderOrder();
     },q=>{
       const mods=groups.flatMap(g=>g.selected.map(j=>g.options[j][1]));
-      unit=BigInt(item.price)+mods.reduce((sum,p)=>sum+BigInt(p),0n);
-      $('[data-line-total]',body).textContent=fmt(unit*BigInt(q));
-      $('[data-arithmetic]',body).textContent=`(${fmt(item.price)}${mods.map(p=>' '+signed(p)).join('')}) × ${q} = ${fmt(unit*BigInt(q))}`;
-    },unavailable,true);
-    $$('[data-option]',body).forEach(b=>b.onclick=()=>{
-      const g=groups[Number(b.dataset.group)],j=Number(b.dataset.option);
-      g.selected=g.many?(g.selected.includes(j)?g.selected.filter(x=>x!==j):[...g.selected,j]):[j];
-      $$('[data-option]',body).forEach(x=>{const selected=groups[Number(x.dataset.group)].selected.includes(Number(x.dataset.option));x.classList.toggle('btn--primary',selected);x.setAttribute('aria-pressed',String(selected));});repaint();
-    });
+      const resolved=BigInt(item.price)+mods.reduce((sum,p)=>sum+BigInt(p),0n);
+      unit=resolved<0n?0n:resolved;
+      $('[data-line-total]',drawer).textContent=fmt(unit*BigInt(q));
+      $('[data-arithmetic]',body).textContent=`(${fmt(item.price)}${mods.map(p=>' '+signed(p)).join('')})${resolved<0n?' → 0':''} × ${q} = ${fmt(unit*BigInt(q))}`;
+      if(item.served){
+        $('#served-unit',drawer).textContent=fmt(unit);
+        $('#served-add-reason',drawer).textContent=archived?'This item is no longer on the menu.':unavailable?'This item is unavailable.':missing()?'Choose a variant before adding this item.':limit(q);
+        if(q<99&&limit(q+1))$('.flow-bound',drawer).textContent='Cannot increase quantity. '+limit(q+1);
+      }
+    },q=>unavailable||archived||missing()||!!limit(q),true,q=>!limit(q));
+    if(item.served) {served.sheetItemId=id;served.sheetRefresh=kind=>{
+      const notice=$('#served-sheet-notice',drawer),scrollTop=body.scrollTop;
+      const focused=document.activeElement,focusId=focused.dataset.optionId,focusGroup=focused.dataset.group;
+      let redraw=false;
+      if(kind==='86')unavailable=true;
+      if(kind==='restore'){unavailable=false;archived=false;}
+      if(kind==='archived')archived=true;
+      if(kind==='price'||kind==='changed'){
+        item.price=50000;
+        if(kind==='changed'){item.name='Nasi Goreng Spesial';groups[1].options[0][1]=7000;$('#flow-title',drawer).textContent=item.name;redraw=true;}
+        $('.flow-price',drawer).textContent=fmt(item.price);
+        changeNotice='This item changed while you were choosing. Check the updated choices and prices before adding.';
+      }
+      if(kind==='options'){groups[1].options.push(['Crispy shallots',3000,'new-modifier']);redraw=true;}
+      if(kind==='reorder'){
+        groups.forEach(g=>{const selectedIds=g.selected.map(j=>g.options[j][2]);g.options.reverse();g.selected=g.options.flatMap((o,j)=>selectedIds.includes(o[2])?[j]:[]);});redraw=true;
+      }
+      if(kind==='removed'||kind==='modifier-removed'){
+        const g=groups[kind==='removed'?0:1],removed=g.options[0][0];
+        g.options.shift();g.selected=g.selected.filter(j=>j!==0).map(j=>j-1);
+        changeNotice=`This item changed while you were choosing. ${removed} was removed and deselected.`;
+        redraw=true;
+      }
+      if(redraw){options();if(focusId!==undefined){const target=$(`[data-option-id="${focusId}"]`,body);(target||$('#option-group-'+focusGroup,body)||$('#flow-title',drawer)).focus({preventScroll:true});}}
+      const availability=archived?`${item.name} is no longer on the menu. Your choices are kept, but it cannot be added.`:unavailable?`${item.name} is no longer available. A manager marked it 86. Your choices are kept, but it cannot be added.`:'';
+      const text=[availability,changeNotice].filter(Boolean).join(' ');
+      if(notice.textContent!==text)notice.textContent=text;
+      repaint();body.scrollTop=scrollTop;
+    };}
+
   }
   if(isItem || isEdit) {
     if(isItem) {
@@ -236,6 +315,8 @@
     const visibleRows=$$('.line',lines).filter(x=>x.getClientRects().length);
     openEdit(visibleRows.indexOf(a.closest('.line')),a);
   });
+  if (served) served.start({openItem, openEdit, renderOrder, announce, wireFire, shell, dismiss,
+    setModel: value => { model = value; renderOrder(); }, getModel: () => model});
   if(state==='fireblocked') {
     const notice=$('.orderpanel > .notice:not([hidden])'),line=$$('.line',lines).find(e=>e.getClientRects().length&&e.textContent.includes('Steak'));
     line.id='blocked-steak';line.tabIndex=-1;

@@ -182,6 +182,24 @@ affordances only.
 - *overflow* — long order (up to 99 per line, many lines) and long menu
   category. The order list and the menu browser scroll independently; the
   totals panel never scrolls out of view.
+- *served catalog* — DESIGN-021 closes G6: first read loading; first read
+  failed with Try again; successful empty catalog; held catalog possibly out
+  of date after two failed checks, still usable. Reads affect only the menu;
+  existing order work remains live. Initial failure retries in the background
+  without flicker. A successful current check clears the stale notice. Round 2
+  reserves the status band at all times; availability text survives unchanged
+  polls until the next change, stale warning or departure. Empty-order actions
+  remain inert in place under C-1, with a read-neutral reason when no menu is held.
+- *served menu extremes* — one or many categories, one or many items, an active
+  category with no items, 64-code-point names, 0 and 99.999.999 prices. The rail
+  and grid scroll independently. Tile names clamp at two lines with a full
+  accessible name and M-2 heading; prices never clamp. Order-line names wrap
+  in full. Empty categories stay in the rail; a removed selected category
+  falls back to the first. Only an 86 preserves its slot; projection removals,
+  additions and reorder reflow at refresh. Price changes have no tile badge
+  and never change a line snapshot. Round 2 draws the maximum price beside
+  an 86 tag and several blocked lines for one item; refusal counts lines and
+  deduplicates item names. Wrapped category names grow beyond the 72px minimum.
 - *line states* — PENDING, FIRED, VOIDED must be distinguishable at a glance
   in greyscale (FR-D5, E1, H4). **Ruling I-12:** the distinction is carried by
   the line's trailing slot, not only by its typography. A PENDING line has a
@@ -240,14 +258,21 @@ affordances only.
   resend. Delivery text and the manager tag occupy separate heading columns,
   including Round 12 at 23:59. These are states of the existing fire-result
   inline node, not new screens or modals.
-- *item configuration / quantity commit* — DESIGN-007 gives each of the twelve
-  menu tiles its own `sheet-item-<id>` fixture. `sheet-item` remains Burger's
+- *item configuration / quantity commit* — DESIGN-007 supplies twelve named
+  `sheet-item-<id>` design examples; the application fixture catalog has fourteen
+  tiles (C4), and a served catalog has no fixed item count. `sheet-item` remains Burger's
   alias, `sheet-item86` remains its unavailable state, and Soda has no option
   groups. These are illustrative option sets, not a production catalogue.
   Quantity keys (88px) sit beside Add to order. Pending-line editors use the
   same footer beside “Update to n”, disabled when unchanged. Back/Cancel
   discard; Add/Update commits. Minus at 1 and plus at 99 are disabled, with a
   visible bound. Remove line stays separate. Fired lines have no stepper.
+  DESIGN-021 adds one data-driven M-2 for served items: fixed Variant and
+  Modifiers labels, no default choices, required variant when present, flat
+  modifier choices and a zero floor. Every tile opens that sheet before Add.
+  The existing twelve fixture pictures and aliases remain. Add and pending
+  Update use the same line/order monetary ceilings; Plus stops before an
+  increase would exceed them. The quantity editor retains snapshot prices.
   Draft totals are labeled unsaved inside the sheet; order-panel figures stay
   committed until Update. Table and counter variants both have changed and
   maximum-quantity fixtures. See DESIGN-007's handoff for states and arithmetic.
@@ -1142,7 +1167,24 @@ preserved, the item is marked unavailable, Add is disabled, and the change is
 explained (FR-C6, AC-12 — this exact behaviour is specified, not a
 suggestion) · *resolved unit price floors at zero* (FR-C2, AC-26).
 
-**Requirements.** FR-C2, FR-C3, FR-C4, FR-C5, FR-C6, FR-D4.
+DESIGN-021 served states: *no options*, *variants only*, *modifiers only*,
+*both*, *many options*, *long names and extreme deltas*, *variant required*,
+*zero floor*, *86 then available again*, *no longer on the menu then
+reappearing*, *item name/price/option delta changed*, *selected variant
+removed*, *selected modifier removed*, *new or reordered options*, and
+*line/order ceiling, including a choice at quantity 1*. Round 2 also draws
+*selected modifier removed at the end of a long scrolled list*. The live notice
+and line total stay between body and footer; the reason always has a reserved
+line. Served commit and quantity controls retain focus through aria-disabled.
+The sheet stays open;
+choices survive by identity except removed options. Figures update before
+Add. Availability restoration clears its notice; the item-change notice
+persists until close. New options and reorder have no notice. M-2 uses the
+held catalog; it has no independent first-read request in served mode. Its
+loading/read-failure entry is therefore POS-03's menu state, with no sheet
+opener until an item is known. CATALOG_CHANGED remains a Phase 2 fixture.
+
+**Requirements.** FR-C2, FR-C3, FR-C4, FR-C5, FR-C6, FR-D4, FR-M5.
 
 ## M-3 — Discount sheets `[SHEET]` — POS-03
 
@@ -1151,6 +1193,18 @@ Three distinct nodes, not one: preset picker (ungated, FR-F2), free-form entry
 Deactivated presets are absent from the picker but readable on orders holding
 them (FR-F5). Each successful change writes one audit entry with before and
 after values (FR-F8).
+
+DESIGN-021 adds the served picker's *loading*, *first read unavailable*,
+*unexpected first-read failure* (round 2), *no active
+presets*, *both kinds and zero*, *four-decimal percentage*, *maximum fixed
+amount*, *long name and overflow*, *deactivated while open* and *edited while
+open* states. The picker shares the menu’s first-read outcome and always opens
+on its heading. Other amount stays offered during loading, failure and emptiness.
+Presets keep server order (oldest created first), use decimal commas for
+percentages, and show fixed values as stored; the cap is reflected at
+application in order totals. Poll updates are silent, never suggested or
+preselected; a removed focused entry yields focus to the preset heading.
+These drawings follow C4's recommended real-preset path pending its owner ruling.
 
 ## M-4 — Tender pads `[INLINE]` — POS-04
 
