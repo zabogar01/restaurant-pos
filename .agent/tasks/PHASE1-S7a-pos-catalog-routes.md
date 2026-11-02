@@ -5,7 +5,7 @@ category: feature
 touches: [money, boundaries, identity]
 depends_on: [PHASE1-S6a]
 owns: [packages/contracts/src/pos-catalog.ts, packages/contracts/src/index.ts, packages/contracts/src/routes.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, apps/server/src/domain/catalog.ts, apps/server/src/domain/pos-menu.ts, apps/server/src/http/routes/pos-catalog.ts, apps/server/src/http/server.ts, apps/pos/src/session/api.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, apps/pos/test/**]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE1-S7a — The POS catalog on the server
