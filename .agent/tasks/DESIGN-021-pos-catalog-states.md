@@ -714,8 +714,8 @@ its signed delta; plus zero is shown as +0. No raw error code appears.
 | Selected option removed | Notice | This item changed while you were choosing. {option name} was removed and deselected. | Polite status, `served-sheet-notice`; variant-required reason appears separately when needed |
 | Pending editor | Actions | Back / Remove line / Update to {quantity} | Same |
 | Pending editor | Preview label | After update · not saved yet | Same |
-| Fire refusal, singular | Title / body | Cannot send to the kitchen / {item name} is 86’d. Remove the pending line or ask a manager to restore the item. | Same |
-| Fire refusal, plural | Title / body | Cannot send to the kitchen / {item names} are 86’d. Remove their pending lines or ask a manager to restore the items. | Same; names are a comma-separated list, not a quantity claim |
+| Fire refusal, plural (round 2) | Title / lead / resolution | Cannot send to the kitchen / {line count} pending lines are no longer available: **{distinct item names}**. / Void those lines or ask a manager to put the items back on. | Count pending lines; deduplicate bold names by item id, in first-line order |
+| Fire refusal, several lines for one item (round 2) | Title / lead / resolution | Cannot send to the kitchen / {line count} pending lines are no longer available: **{item name}**. / Void those lines or ask a manager to put the item back on. | Use singular item for one distinct item, regardless of quantities or line count |
 | Fire refusal | Recovery | Show unavailable lines | Same; `served-show-blocked`, reveals/focuses first offending line |
 | M-3 | Title / note | Discount / One per order | Dialog labelled by `flow-title` |
 | M-3 | Group | Presets — no approval needed | `preset-heading` |
@@ -733,7 +733,14 @@ removed under C4. For a change and unavailability arriving together, one
 notice contains the availability sentence followed by the change sentence;
 restoration removes only the availability part. The item-change sentence
 persists until closing. S7b should deduplicate names if several pending lines
-hold the same unavailable item when composing the plural refusal.
+hold the same unavailable item when composing the plural refusal. Round 2
+counts affected pending lines, not quantities, because those are the lines to
+void; it deduplicates names by item id and uses item/items for the distinct
+items a manager would restore. `served-fireblocked` draws two different items;
+`served-fireblocked-same` draws two lines (three units) of Nasi Goreng. The
+reviewed singular in `fire.ts` and `order.html` stays unchanged. DESIGN-007’s
+dynamic `fireblocked` picture uses older wording; that is a pre-existing
+difference and this task does not redraw it.
 
 #### Focus and keyboard rules
 

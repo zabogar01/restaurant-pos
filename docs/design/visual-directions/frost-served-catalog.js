@@ -73,6 +73,7 @@
     if(state.includes('error')&&!state.includes('presets')) showRead(state.endsWith('internal')?'internal':'error');
     if(state.includes('stale')) for(let i=0;i<2;i++)refresh('failed');
     if(state==='served-86') refresh('86');
+    if(state==='served-fireblocked-same'){flow.setModel([{id:'nasi',name:'Nasi Goreng',unit:45000n,q:1,detail:'Regular',round:0},{id:'nasi',name:'Nasi Goreng',unit:50000n,q:2,detail:'With fried egg',round:0}]);refresh('86','nasi');}
     if(state==='served-fireblocked'){flow.setModel([{id:'nasi',name:'Nasi Goreng',unit:45000n,q:1,detail:'',round:0},{id:'tea',name:'Jasmine Tea',unit:18000n,q:1,detail:'',round:0}]);refresh('86','nasi');refresh('86','tea');}
     if(state==='served-restored') {refresh('86');refresh('restore');}
     if(state==='served-archived') refresh('archive');
@@ -109,8 +110,9 @@
     let notice=$('.served-fire-notice');
     if(!blocked.length){notice?.remove();return;}
     if(!notice){notice=document.createElement('div');notice.className='notice served-fire-notice';$('.lines').after(notice);}
-    const names=blocked.map(l=>l.name).join(', ');
-    notice.innerHTML=`<div class="notice__t">Cannot send to the kitchen</div><div>${escape(names)} ${blocked.length===1?'is':'are'} 86’d. Remove ${blocked.length===1?'the pending line':'their pending lines'} or ask a manager to restore ${blocked.length===1?'the item':'the items'}.</div><button type="button" class="btn btn--sm" id="served-show-blocked">Show unavailable lines</button>`;
+    const names=[...new Map(blocked.map(l=>[l.id,l.name])).values()];
+    const singular=blocked.length===1;
+    notice.innerHTML=`<div class="notice__t">Cannot send to the kitchen</div><div>${blocked.length} pending ${singular?'line is':'lines are'} no longer available: <b>${names.map(escape).join(', ')}</b>.</div><div>Void ${singular?'that line':'those lines'} or ask a manager to put the ${names.length===1?'item':'items'} back on.</div><button type="button" class="btn btn--sm" id="served-show-blocked">Show unavailable lines</button>`;
     $('#served-show-blocked').onclick=()=>{const i=flow.getModel().findIndex(l=>l.unavailable&&!l.round),line=$(`[data-flow-line="${i}"]`);if(line){line.tabIndex=-1;line.focus();line.scrollIntoView({block:'nearest'});}};
   }
   function openPresets() {
