@@ -2096,6 +2096,8 @@ No token is added or changed.
 
 ### DESIGN-021 additions — served POS catalog
 
+Round 2: a served category row uses 72px as its minimum height and grows to show a wrapped name in full, with registered spacing tokens.
+
 These rules apply the existing Frost geometry to the served POS catalog. They
 add no screen, navigation path, token, color, type size or weight.
 

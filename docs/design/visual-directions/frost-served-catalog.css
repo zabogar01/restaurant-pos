@@ -1,7 +1,7 @@
 /* DESIGN-021. Existing registry values; light POS only. */
 @import url('../tokens/frost.css');
 .served-catalog .catrail { overflow-y:auto; }
-.served-catalog .cat { width:100%; flex:none; border:0; border-bottom:var(--frost-divider-stroke); background:var(--frost-elevated); color:var(--frost-text); font:inherit; text-align:left; overflow-wrap:anywhere; }
+.served-catalog .cat { height:auto; min-height:var(--frost-category-height); padding:var(--frost-space-3) var(--frost-space-4); width:100%; flex:none; border:0; border-bottom:var(--frost-divider-stroke); background:var(--frost-elevated); color:var(--frost-text); font:inherit; text-align:left; overflow-wrap:anywhere; }
 .served-catalog .cat--on { background:var(--frost-selected); color:var(--frost-selected-text); font-weight:var(--frost-weight-semibold); }
 .served-catalog .served-grid { overflow-y:auto; min-height:0; }
 .served-catalog .tile { text-align:left; font-family:var(--frost-font); cursor:pointer; }
