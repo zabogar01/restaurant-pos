@@ -162,17 +162,20 @@
   }
   function stepper(q,current,commit,update,disabled=false,adding=false,canIncrease=()=>true) {
     const minus=$('[data-step="-1"]',drawer),plus=$('[data-step="1"]',drawer),save=$('.flow-save',drawer);
+    const off=(button,value)=>{
+      if(!served)button.disabled=value;
+      button.classList.toggle('btn--off',value);button.setAttribute('aria-disabled',String(value));
+    };
     const paint=()=>{
       $('output',drawer).textContent=q;
-      minus.disabled=q===1;plus.disabled=q===99||!canIncrease(q+1);
-      for(const b of [minus,plus]){b.classList.toggle('btn--off',b.disabled);b.setAttribute('aria-disabled',String(b.disabled));}
+      off(minus,q===1);off(plus,q===99||!canIncrease(q+1));
       save.textContent=adding?'Add to order':`Update to ${q}`;
-      save.disabled=(typeof disabled==='function'?disabled(q):disabled)||(!adding&&q===current);save.classList.toggle('btn--off',save.disabled);save.setAttribute('aria-disabled',String(save.disabled));
+      off(save,(typeof disabled==='function'?disabled(q):disabled)||(!adding&&q===current));
       $('.flow-bound',drawer).textContent=q===99?'Maximum 99 per line. Increase is unavailable.':q===1?(adding?'Minimum 1 per line.':'Minimum 1. Use Remove line to remove this line.'):'Quantity · whole numbers, maximum 99';
       update(q);
     };
-    minus.onclick=()=>{if(q>1){q--;paint();}};plus.onclick=()=>{if(q<99&&!plus.disabled){q++;paint();}};
-    save.onclick=()=>{if(save.disabled)return;commit(q);dismiss();};paint();
+    minus.onclick=()=>{if(q>1){q--;paint();}};plus.onclick=()=>{if(q<99&&plus.getAttribute('aria-disabled')!=='true'){q++;paint();}};
+    save.onclick=()=>{if(save.getAttribute('aria-disabled')==='true')return;commit(q);dismiss();};paint();
     return ()=>paint();
   }
   function openEdit(index,source,draft) {
