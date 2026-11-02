@@ -239,7 +239,7 @@
       }
     },q=>unavailable||archived||missing()||!!limit(q),true,q=>!limit(q));
     if(item.served) {served.sheetItemId=id;served.sheetRefresh=kind=>{
-      const notice=$('#served-sheet-notice',drawer);
+      const notice=$('#served-sheet-notice',drawer),scrollTop=body.scrollTop;
       const focused=document.activeElement,focusId=focused.dataset.optionId,focusGroup=focused.dataset.group;
       let redraw=false;
       if(kind==='86')unavailable=true;
@@ -261,11 +261,11 @@
         changeNotice=`This item changed while you were choosing. ${removed} was removed and deselected.`;
         redraw=true;
       }
-      if(redraw){options();if(focusId!==undefined){const target=$(`[data-option-id="${focusId}"]`,body);(target||$('#option-group-'+focusGroup,body)||$('#flow-title',drawer)).focus();}}
+      if(redraw){options();if(focusId!==undefined){const target=$(`[data-option-id="${focusId}"]`,body);(target||$('#option-group-'+focusGroup,body)||$('#flow-title',drawer)).focus({preventScroll:true});}}
       const availability=archived?`${item.name} is no longer on the menu. Your choices are kept, but it cannot be added.`:unavailable?`${item.name} is no longer available. A manager marked it 86. Your choices are kept, but it cannot be added.`:'';
       const text=[availability,changeNotice].filter(Boolean).join(' ');
       if(notice.textContent!==text)notice.textContent=text;
-      repaint();
+      repaint();body.scrollTop=scrollTop;
     };}
 
   }
