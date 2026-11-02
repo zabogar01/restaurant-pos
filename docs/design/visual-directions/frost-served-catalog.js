@@ -148,7 +148,7 @@
       });
     }
     render();
-    api.deactivatePreset=(id='regular',aboutToChoose=false)=>{
+    api.deactivatePreset=(id='regular')=>{
       const p=presets.find(p=>p.id===id);if(!p)return;
       const focused=document.activeElement.dataset.preset===id;
       presets=presets.filter(p=>p.id!==id);
@@ -159,8 +159,8 @@
     };
     api.editPreset=()=>{const p=presets.find(p=>p.id==='regular');p.name='Returning guest';p.value=125000;const b=$('[data-preset=regular]');b.setAttribute('aria-label',p.name+' — '+value(p));b.firstElementChild.textContent=p.name;b.lastElementChild.textContent=value(p);};
     api.retryPresets=()=>{const focused=document.activeElement.id==='preset-retry';refresh('success');render();if(focused)$('#preset-heading').focus();};
-    if(state.endsWith('removed'))api.deactivatePreset('regular');
-    if(state.endsWith('changed'))api.editPreset();
+    if(state==='served-presets-removed')api.deactivatePreset('regular');
+    if(state==='served-presets-changed')api.editPreset();
     if(readKind==='loading')$('#served-presets').innerHTML='<div class="loadinglabel" role="status">LOADING PRESETS</div>';
     if(readKind==='error'||readKind==='internal'){ $('#served-presets').innerHTML=`<div class="notice" role="alert"><div class="notice__t">${readFailure(readKind).title}</div><div>${readFailure(readKind).body}</div><button type="button" class="btn" id="preset-retry">Try again</button></div>`;$('#preset-retry').onclick=api.retryPresets; }
 

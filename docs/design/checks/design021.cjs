@@ -67,7 +67,7 @@ const check=(passed,name,detail)=>report.checks.push({passed:!!passed,name,...(!
  for(const state of ['served-empty','served-loading','served-error','quick-served-empty']){await go(state);check(await p.locator('#served-action-reason').textContent()==='No items on this order yet.'&&await p.locator('.actions:visible [aria-disabled=true]').count()>=3,'C-1 keeps inert actions with read-neutral reason '+state);}
  await p.evaluate(()=>ServedCatalogFixture.refresh('success'));check(await p.locator('#served-action-reason').textContent()==='Add an item first.','held menu gives actionable empty-order reason');
  await go('served');await p.locator('[data-item=nasi]').focus();
- // Availability changes hold the exact slot and focus; archive leaves a hole.
+ // Availability changes hold the exact slot and focus; archive removes the tile and reflows.
  const before=await p.locator('[data-item=tea]').boundingBox();await p.evaluate(()=>ServedCatalogFixture.refresh('86'));
  check(JSON.stringify(before)===JSON.stringify(await p.locator('[data-item=tea]').boundingBox())&&await p.locator('[data-item=nasi]').getAttribute('aria-disabled')==='true','86 never moves neighboring tile');
  await p.locator('[data-item=nasi]').evaluate(e=>e.click());check(!await p.locator('.served-drawer').count(),'86 tile cannot open a sheet');
@@ -116,7 +116,7 @@ const check=(passed,name,detail)=>report.checks.push({passed:!!passed,name,...(!
  // The picker describes a choice only: no fixture discount arithmetic added here.
  await go('served-presets');check((await p.locator('#served-presets').textContent()).includes('12,3456%')&&(await p.locator('#served-presets').textContent()).includes('99.999.999 off'),'decimal precision and stored fixed value shown');
  check(await p.locator('[data-preset=zero-fixed]').count()===1&&await p.locator('[data-preset=zero-rate]').count()===1,'both zero preset kinds shown');
- await p.locator('[data-preset=regular]').focus();await p.evaluate(()=>ServedCatalogFixture.deactivatePreset('regular',true));check(!await p.locator('[data-preset=regular]').count()&&await p.evaluate(()=>document.activeElement.id)==='preset-heading','deactivation silently removes entry and focuses heading');
+ await p.locator('[data-preset=regular]').focus();await p.evaluate(()=>ServedCatalogFixture.deactivatePreset('regular'));check(!await p.locator('[data-preset=regular]').count()&&await p.evaluate(()=>document.activeElement.id)==='preset-heading','deactivation silently removes entry and focuses heading');
  await go('served-presets-empty');check(await p.locator('.served-freeform').isVisible()&&!await p.locator('[data-preset]').count(),'no presets keeps free-form route');
  // Round 2: the review's five inferred probes, with before/after geometry.
  await go('served-item-many');
@@ -150,6 +150,10 @@ const check=(passed,name,detail)=>report.checks.push({passed:!!passed,name,...(!
  check(JSON.stringify(unchanged)===JSON.stringify(staleBox)&&JSON.stringify(staleBox)===JSON.stringify(await last.boundingBox()),'F5 stale appearance and clear never shift tile');
  await go('served-extremes-86');check(await p.locator('[data-item=long] .tile__p').textContent()==='99.999.999'&&await p.locator('[data-item=long] .tag--86').count()===1,'largest-price 86 fixture exercises both contained boxes');
  await go('served-fireblocked-same');check((await p.locator('.served-fire-notice').textContent()).includes('2 pending lines are no longer available: Nasi Goreng.')&&(await p.locator('.served-fire-notice').textContent()).includes('put the item back on.')&&await p.locator('.served-fire-notice b').textContent()==='Nasi Goreng','plural counts lines rather than units and deduplicates item names');
+ // Removed sheet openers return to the selected category; item-state suffixes never mutate presets.
+ await go('served-categories');await p.locator('[data-category="cat-1"]').click();await p.locator('[data-item=tea]').click();await p.evaluate(()=>ServedCatalogFixture.refresh('archive','tea'));await p.keyboard.press('Escape');
+ check(await p.evaluate(()=>document.activeElement.dataset.category)==='cat-1','removed opener returns to selected category rather than first');
+ for(const state of ['served-item-removed','served-item-changed']){await go(state);await p.keyboard.press('Escape');await p.getByRole('link',{name:'Discount',exact:true}).click();check(await p.locator('[data-preset=regular] > span').first().textContent()==='Regular guest'&&await p.locator('[data-preset]').count()===5,'item mutation cannot leak into preset fixture '+state);}
  // Optional once-per-round baseline: archive development into evidence, never switch this worktree.
  if(process.env.DESIGN021_COMPARE_DEVELOPMENT==='1'){
   const baseline=path.join(out,'development-baseline');fs.mkdirSync(baseline,{recursive:true});

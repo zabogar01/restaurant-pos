@@ -138,7 +138,7 @@
     if(served) {served.sheetRefresh=null;$('.pos__body').inert=false;$('.pos__bar').inert=false;}
     $$('.tile--selected').forEach(e=>e.classList.remove('tile--selected'));
     if(opener?.isConnected)opener.focus();
-    else if(served)($(`[data-item="${served.sheetItemId}"]`)||$('.cat:not([hidden])'))?.focus();
+    else if(served)($(`[data-item="${served.sheetItemId}"]`)||$('.cat[aria-pressed="true"]'))?.focus();
   }
   function shell(name,price,secondary,source) {
     dismiss();opener=source;
