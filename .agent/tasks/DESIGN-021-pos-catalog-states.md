@@ -1013,7 +1013,7 @@ index 44106e8..7334ec1 100644
 @@ -1142,7 +1167,24 @@ preserved, the item is marked unavailable, Add is disabled, and the change is
  explained (FR-C6, AC-12 — this exact behaviour is specified, not a
  suggestion) · *resolved unit price floors at zero* (FR-C2, AC-26).
- 
+
 -**Requirements.** FR-C2, FR-C3, FR-C4, FR-C5, FR-C6, FR-D4.
 +DESIGN-021 served states: *no options*, *variants only*, *modifiers only*,
 +*both*, *many options*, *long names and extreme deltas*, *variant required*,
@@ -1033,13 +1033,13 @@ index 44106e8..7334ec1 100644
 +opener until an item is known. CATALOG_CHANGED remains a Phase 2 fixture.
 +
 +**Requirements.** FR-C2, FR-C3, FR-C4, FR-C5, FR-C6, FR-D4, FR-M5.
- 
+
  ## M-3 — Discount sheets `[SHEET]` — POS-03
- 
+
 @@ -1152,6 +1194,18 @@ Deactivated presets are absent from the picker but readable on orders holding
  them (FR-F5). Each successful change writes one audit entry with before and
  after values (FR-F8).
- 
+
 +DESIGN-021 adds the served picker's *loading*, *first read unavailable*,
 +*unexpected first-read failure* (round 2), *no active
 +presets*, *both kinds and zero*, *four-decimal percentage*, *maximum fixed
@@ -1053,7 +1053,7 @@ index 44106e8..7334ec1 100644
 +These drawings follow C4's recommended real-preset path pending its owner ruling.
 +
  ## M-4 — Tender pads `[INLINE]` — POS-04
- 
+
  **Retyped 2026-09-14, applying the owner's ruling of 2026-09-10.** Not a sheet.
 diff --git a/docs/design/SITEMAP.md b/docs/design/SITEMAP.md
 index 22242f5..e2bd7d4 100644
