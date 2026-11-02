@@ -51,7 +51,7 @@ Narrative: [journal/2026-10-30.md](journal/2026-10-30.md).
 ## Running tasks and agents
 
 - **ARCH-021 complete** (lead review `ec1261d`; S7a, S7b1-3 in *For the lead*; pane closed). **DESIGN-021 DONE**
-  (`6fdfa1b`); Opus review: findings F1-F11, all accepted; **round 2 rulings `f77206c`**, designer fixing (Codex 5h: 3%).
+  (`6fdfa1b`); Opus review: findings F1-F11, all accepted; **round 2 rulings `f77206c`**; Codex hit its limit 10-30, resumed 11-02.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
