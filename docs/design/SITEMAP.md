@@ -135,6 +135,7 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   │       DESIGN-021: served loading / first-read failure / empty /
 │   │       possibly out of date; active empty category; rail/grid overflow.
 │   │       Only 86 holds its slot; absent items reflow. G6 is drawn.
+│   │       Round 2: reserved status band; growing wrapped category rows.
 │   ├── [INLINE] Order line list, grouped by round .............. FR-E1, E2
 │   ├── [INLINE] Totals panel (subtotal/discount/tax/svc/total) . FR-M4
 │   ├── [INLINE] 86'd item DISABLED IN PLACE, never removed (≤3s) C-3, FR-C5, C6
@@ -154,6 +155,7 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   │       DESIGN-021: one data-driven sheet; variant required when present;
 │   │       live prices and options, removed choices, zero floor, full names;
 │   │       no-longer-on-menu notice; Add/Update share money ceilings.
+│   │       Round 2: fixed notice/line total; reason space always reserved.
 │   │   └── [INLINE] Item 86'd mid-selection; choices kept,
 │   │                Add disabled, reason shown ................. FR-C6
 │   ├── [INLINE] PENDING line — remove control in the trailing slot
@@ -167,7 +169,7 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
 │   │   └── [INLINE] quick form — returns to the QUICK workspace,
 │   │             which carries no fire control ................. C-2, FR-E5
 │   ├── [SHEET] Discount picker — presets ....................... FR-F2, F5
-│   │       DESIGN-021: served loading / failure / empty / long list;
+│   │       DESIGN-021: shared loading / both first-read failures / empty / long list;
 │   │       zero and precise values; silent live edits and removals.
 │   │   └── [SHEET] Free-form discount entry ................... FR-F3
 │   │       └── [MODAL] Manager approval ....................... FR-A6, F3

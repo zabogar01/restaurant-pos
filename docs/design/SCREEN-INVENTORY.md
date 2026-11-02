@@ -186,7 +186,10 @@ affordances only.
   failed with Try again; successful empty catalog; held catalog possibly out
   of date after two failed checks, still usable. Reads affect only the menu;
   existing order work remains live. Initial failure retries in the background
-  without flicker. A successful current check clears the stale notice.
+  without flicker. A successful current check clears the stale notice. Round 2
+  reserves the status band at all times; availability text survives unchanged
+  polls until the next change, stale warning or departure. Empty-order actions
+  remain inert in place under C-1, with a read-neutral reason when no menu is held.
 - *served menu extremes* — one or many categories, one or many items, an active
   category with no items, 64-code-point names, 0 and 99.999.999 prices. The rail
   and grid scroll independently. Tile names clamp at two lines with a full
@@ -194,7 +197,9 @@ affordances only.
   in full. Empty categories stay in the rail; a removed selected category
   falls back to the first. Only an 86 preserves its slot; projection removals,
   additions and reorder reflow at refresh. Price changes have no tile badge
-  and never change a line snapshot.
+  and never change a line snapshot. Round 2 draws the maximum price beside
+  an 86 tag and several blocked lines for one item; refusal counts lines and
+  deduplicates item names. Wrapped category names grow beyond the 72px minimum.
 - *line states* — PENDING, FIRED, VOIDED must be distinguishable at a glance
   in greyscale (FR-D5, E1, H4). **Ruling I-12:** the distinction is carried by
   the line's trailing slot, not only by its typography. A PENDING line has a
@@ -1167,7 +1172,11 @@ DESIGN-021 served states: *no options*, *variants only*, *modifiers only*,
 *zero floor*, *86 then available again*, *no longer on the menu then
 reappearing*, *item name/price/option delta changed*, *selected variant
 removed*, *selected modifier removed*, *new or reordered options*, and
-*line/order ceiling, including a choice at quantity 1*. The sheet stays open;
+*line/order ceiling, including a choice at quantity 1*. Round 2 also draws
+*selected modifier removed at the end of a long scrolled list*. The live notice
+and line total stay between body and footer; the reason always has a reserved
+line. Served commit and quantity controls retain focus through aria-disabled.
+The sheet stays open;
 choices survive by identity except removed options. Figures update before
 Add. Availability restoration clears its notice; the item-change notice
 persists until close. New options and reorder have no notice. M-2 uses the
@@ -1185,10 +1194,12 @@ Deactivated presets are absent from the picker but readable on orders holding
 them (FR-F5). Each successful change writes one audit entry with before and
 after values (FR-F8).
 
-DESIGN-021 adds the served picker's *loading*, *first read failed*, *no active
+DESIGN-021 adds the served picker's *loading*, *first read unavailable*,
+*unexpected first-read failure* (round 2), *no active
 presets*, *both kinds and zero*, *four-decimal percentage*, *maximum fixed
 amount*, *long name and overflow*, *deactivated while open* and *edited while
-open* states. Other amount stays offered during loading, failure and emptiness.
+open* states. The picker shares the menu’s first-read outcome and always opens
+on its heading. Other amount stays offered during loading, failure and emptiness.
 Presets keep server order (oldest created first), use decimal commas for
 percentages, and show fixed values as stored; the cap is reflected at
 application in order totals. Poll updates are silent, never suggested or

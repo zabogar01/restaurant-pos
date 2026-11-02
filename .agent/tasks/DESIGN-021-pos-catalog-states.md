@@ -537,7 +537,7 @@ The lead reviews the round against these rulings; there is no second full review
 
 ## Handoff
 
-### design021 — 2026-10-30
+### design021 — round 2, 2026-11-02
 
 The drawings implement Parts A–D and the lead-relayed C4 section above. They
 are local design fixtures, not a production catalog, seed data, or application
@@ -552,6 +552,12 @@ provisional money limits as `f18582b`. The C4 correction and passing browser che
 they supersede provisional behavior in those commits. In particular, there is no archive
 placeholder, three-failure threshold, preset-change notice or picker cap
 preview in the final drawing.
+
+Round 2 implements all ten lead rulings (F1–F11), with one commit per item
+and a follow-up preserving body scroll during removed-option focus fallback.
+The five source-inferred probes are now browser assertions. Browser verification
+of this round is pending the lead’s run, including every legacy state’s DOM
+text against `development`. Prior run 3 evidence does not certify these edits.
 
 #### Rules S7b can test, and the reasons for them
 
@@ -594,7 +600,12 @@ preview in the final drawing.
    updated.” status, not one announcement per tile. No change means no
    announcement. A focused tile retains focus. Availability restoration
    removes 86 and re-enables that same button. The status occupies the menu's
-   bottom edge so its appearance never moves a tile's top-left position.
+   bottom edge in a fixed 72px band, reserved even when empty and always in
+   the accessibility tree. Round 2 keeps the status until the next changed
+   projection, the out-of-date warning, or leaving POS-03; unchanged polls
+   retain it so the cashier has time to read it. A changed current projection
+   ends staleness. Showing or clearing either status cannot resize the grid
+   or shift its end-of-scroll tiles.
 6. **Projection changes reflow.** An absent item is removed at refresh with
    no placeholder, delay for a finger, or archive announcement. New items,
    restored items and order changes likewise use the current projection.
@@ -611,9 +622,13 @@ preview in the final drawing.
    the full name, choices and displayed non-negative unit price. The
    selected fixture states are pictures after a cashier made choices, not
    default selections to copy into the build.
-8. **M-2 keeps quantity and Add in reach.** Its body alone scrolls, including
-   long option lists and calculations. The header shows the full item name.
-   Quantity keys and Add stay in the fixed footer. The unit is
+8. **M-2 keeps quantity and Add in reach.** Its body alone scrolls through
+   long options and arithmetic. Round 2 moves the always-present live notice,
+   unit and line total into a fixed band between body and footer. New notices
+   shrink the body without moving its top or scrollTop; removed-option focus
+   uses preventScroll. Quantity keys and Add stay in the fixed footer, which
+   always reserves one reason line. Clearing the reason cannot move Add.
+   The header shows the full item name. The unit is
    `max(0, base + variant + modifiers)`; the line is unit times quantity.
    Cancel/Escape discard, and Add alone commits. A pending-line editor uses
    the same footer, snapshot unit and explicit Update to n; unchanged Update
@@ -632,7 +647,9 @@ preview in the final drawing.
     ItemSheet-comment discrepancy: quantity can still be adjusted within
     its quantity/money bounds during 86 or absence. Add alone is blocked by
     availability. Restoration retains the draft quantity and choices. S7b2
-    should follow this drawing, not the contradictory code comment.
+    should follow this drawing, not the contradictory code comment. Round 2
+    uses aria-disabled and guarded handlers for Add, Update and quantity keys;
+    a poll disabling focused Add retains focus and Escape still closes.
 11. **D1's ceiling is one check shared by Add and Update.** A line amount
     above 99.999.999 disables commit; otherwise check the resulting order
     total, after its discount and service, against the same limit. Plus is
@@ -650,6 +667,9 @@ preview in the final drawing.
     This follows C4 and keeps a preset identifiable independently of the
     current order. No ranking, suggestion, scheduling or new approval
     appears. Loading, failure and no active presets retain Other amount.
+    Round 2 shares the menu’s first-read outcome with the picker and includes
+    both unavailable and unexpected-failure copy; it never invents a held
+    preset list when the catalog read has not succeeded.
     Changed entries update and removed entries leave silently. An already
     applied preset remains the order's snapshot. The design runtime records
     a chosen preset and closes; applying its discount/arithmetic is out of
@@ -665,7 +685,8 @@ for the owner. Proposed future BO-04 hint: “Put distinguishing words near the
 start of the item name.” BO-04 was not edited. Stress fixtures use both 64 W
 characters and the realistic Indonesian name “Nasi Goreng Kampung dengan Ayam
 Suwir dan Sambal Terasi Istimewa”. Both wrap in full on order lines beside the
-quantity, amount and unchanged 56×56 trailing control.
+quantity, amount and unchanged 56×56 trailing control. Round 2 lets category
+rows grow beyond a 72px minimum for complete wrapped names.
 
 #### Exact copy and accessible names
 
@@ -685,7 +706,7 @@ its signed delta; plus zero is shown as +0. No raw error code appears.
 | Empty catalog | Title | No menu items yet | Same; `served-empty` |
 | Empty catalog | Body | There is nothing to add yet. A manager adds the menu in the back office. | Same |
 | Empty order | Title / body | No items yet / Add an item when the menu is available. | Same |
-| Empty order | Disabled-action reason | Add an item first. | `served-action-reason`, described by each disabled action |
+| Empty order with a held menu | Disabled-action reason | Add an item first. | `served-action-reason`, described by each disabled action |
 | Empty active category | Grid | No items in this category yet. | Same |
 | Held read uncertain | Notice | The menu may be out of date. You can keep taking orders. | Polite status, `served-status` |
 | Empty order without a held menu (round 2) | Action reason | No items on this order yet. | `served-action-reason`; empty, loading or failed first read |
@@ -749,8 +770,12 @@ difference and this task does not redraw it.
 
 #### Focus and keyboard rules
 
-The initial read-failure picture starts on Try again. In a running workspace,
-a failed background read must preserve focus in the live order panel. If a
+Round 2: a failure moves focus to Try again only if focus is on the body or
+on a control removed by that read. The initial read-failure picture is this
+fresh-mount body-focus case. A failure otherwise preserves focus, including
+a live order action. M-3 always opens on its heading even when the read failed;
+its Try again does not take opening focus. Successful picker retry replaces
+its removed retry control with focus on Presets — no approval needed. If a
 focused read control disappears when the read succeeds (whether by polling or
 explicit retry), focus moves to the first category, or to the empty-catalog
 message if no category exists. A user already working in a persistent order
@@ -769,7 +794,7 @@ served application navigation or browser-history entries for sheets.
 
 #### Every state and the acceptance mapping
 
-The following table lists all new query pictures. The same entries are in
+The following table lists all 63 served query pictures (five added in round 2). The same entries are in
 order.html, manifest.js and the gallery's Frost selector; Paper excludes them.
 All share the same 1280×800 surface and existing order/overlay compositions.
 
@@ -833,6 +858,11 @@ All share the same 1280×800 surface and existing order/overlay compositions.
 | `served-fireblocked` | Served pending lines — plural 86 refusal |
 | `served-loading-order` | First read — existing order stays live |
 | `served-error-order` | First read failed — existing order stays live |
+| `served-item-many-removed` | Round 2 — selected modifier removed with many options scrolled to the end |
+| `served-extremes-86` | Round 2 — maximum price and 86 tag on the same tile |
+| `served-fireblocked-same` | Round 2 — two pending lines for one unavailable item |
+| `served-presets-error-internal` | Round 2 — picker unexpected first-read failure |
+| `served-error-internal-order` | Round 2 — unexpected first-read failure with a live order |
 
 Part A uses `served` through `served-price`, the two existing-order read
 pictures, active empty category, and `served-fireblocked`. The quick pictures
@@ -885,53 +915,33 @@ sitemap, the reusable additions in D and design021.cjs.
 
 #### Verification and measured limits
 
-The lead ran the browser scripts; I read their output and inspected the
-screenshots. Final DESIGN-021 run 3 passed **360/360 checks across 58 new
-states**, with no page errors or failures. Every pre-existing order query
-state was opened, and all twelve named DESIGN-007 item sheets were checked.
-The final five source hashes match the measured working files:
+Round 2 browser results are pending the lead’s run. `design021.cjs` covers
+all 63 served states and the five review probes at 1280×800. It now asserts
+actual price/tag containment, quantity/amount/trailing-slot separation,
+category vertical containment, stable sheet positions and scrollTop, retained
+focus and Escape, and stable end-of-grid tiles through status changes. It
+also checks shared read outcomes and focus, inert-action reasons, distinct-item
+plural copy and item/preset fixture isolation. With
+`DESIGN021_COMPARE_DEVELOPMENT=1`, it archives `development` into the external
+evidence directory and compares `.pos.innerText` for every previous order
+state, recording the baseline commit and any before/after text. It never
+switches or changes this worktree. The dead preset notice assertion is gone.
 
-| Source | SHA-256 prefix |
-|---|---|
-| frost-order-flow.js | b1cc252b |
-| frost-served-catalog.js | 9df0b612 |
-| frost-served-catalog.css | 033abec1 |
-| frost/pos/order.html | 607c0fc2 |
-| manifest.js | 4c3db5a8 |
+Local `node --check` on both runtime scripts and the check, and
+`git diff --check`, pass. Browser scripts are delegated to the lead as required;
+these local checks are not browser evidence. Current measured geometry and
+source hashes will be recorded after that run.
 
-Evidence is outside the repository at
-`../evidence/DESIGN-021/run3/design021/measurements.json`, with screenshots
-and stdout alongside it. The earlier required suite, run by the lead against
-the C4-corrected tree in run 2, passed: design012 421 checks/116 states;
-design013 371 checks/41 states; design014 287/287 (the known development
-baseline); design016 399/399; design017 349/349; design018 730/730;
-design019 998/998; design020 754/754; design022 688/688. Their output is under
-`../evidence/DESIGN-021/run2/designNNN/`. There is no design015.cjs.
-Run 1 stopped because Playwright correctly would not click an aria-disabled
-tile; the test now invokes its DOM activation to prove the guard. That run
-also exposed the picker-footer selector, which was fixed before the green
-runs. Run 3 specifically covers the final served Discount opener, retained
-86 stepper and scroll reachability. No unresolved check failure remains.
-
-| Measured case at 1280×800 | Result |
-|---|---|
-| Every new state | Product 1280×800; document and product horizontal extent 1280; no document horizontal overflow. |
-| Menu extremes | All tiles 150×96; maximum 99.999.999 price fits beneath the two-line name; full-price width checks pass. |
-| M-2 geometry | Sheet x0, y64, width820, height736. Sheet body width818 with no horizontal overflow. |
-| Many options | Body client height411, scroll height2439, final scrollTop2028. Last option reachable; fixed footer unchanged. |
-| M-2 footer | Cancel 150×72; minus/plus 88×88; Add 466×88. Footer controls stay entirely above y800. |
-| Extreme option names/deltas | Option controls at least72px tall; names wrap and full signed 99.999.999 values fit. The longest header grows without clipping Add. |
-| Many categories | Rail client height736, scroll height1728, final scrollTop992; width and scroll width171 inside its 172px rail allocation. |
-| Long category | Grid client height736, scroll height2096, final scrollTop1360; client/scroll width648. |
-| Many presets | Body client height565, scroll height3371, final scrollTop2806; final entry and Other amount reachable. Cancel remains 778×72 at y711. |
-| 64 W order line | Full name box approximately232×87, normal wrapping and visible overflow; no hidden name content. Quantity/amount remain separate and trailing remove is56×56. |
-| Indonesian order line | Full name box approximately261×43.5; no hidden name content, same intact trailing slot. |
-
-`node --check` on both runtime scripts and the new check, and
-`git diff --check`, were run and passed. The final checks cover restoration,
-archive reflow/focus, retry focus, the two-failure threshold, the zero floor,
-required variants, removed choices, quantity/option/editor monetary bounds,
-preset read states, silent removal and plural fire copy.
+Historical evidence: the lead’s pre-review run 3 passed 360/360 checks across
+58 served states with no page errors, under
+`../evidence/DESIGN-021/run3/design021/`. It opened earlier states but did not
+compare their DOM text; its category and tile checks were insufficient, as
+F7 identified. Its geometry measurements are superseded by the round 2 layout.
+The earlier suite passed in run 2: design012 421, design013 371, design014
+287/287 (known development baseline), design016 399, design017 349, design018
+730, design019 998, design020 754 and design022 688; evidence remains under
+`../evidence/DESIGN-021/run2/designNNN/`. There is no design015.cjs. None of
+those historical passes is claimed for the round 2 source.
 
 The source-only Impeccable detector ran once. It returned warnings on inherited
 frame padding, compact tags/text and fixed surface conventions, rather than a
@@ -948,15 +958,21 @@ The exact changed lines follow; surrounding context is retained for review.
 
 ```diff
 diff --git a/docs/design/SCREEN-INVENTORY.md b/docs/design/SCREEN-INVENTORY.md
-index 44106e8..487bb80 100644
+index 44106e8..7334ec1 100644
 --- a/docs/design/SCREEN-INVENTORY.md
 +++ b/docs/design/SCREEN-INVENTORY.md
-@@ -184,0 +185,13 @@ affordances only.
+@@ -182,6 +182,24 @@ affordances only.
+ - *overflow* — long order (up to 99 per line, many lines) and long menu
+   category. The order list and the menu browser scroll independently; the
+   totals panel never scrolls out of view.
 +- *served catalog* — DESIGN-021 closes G6: first read loading; first read
 +  failed with Try again; successful empty catalog; held catalog possibly out
 +  of date after two failed checks, still usable. Reads affect only the menu;
 +  existing order work remains live. Initial failure retries in the background
-+  without flicker. A successful current check clears the stale notice.
++  without flicker. A successful current check clears the stale notice. Round 2
++  reserves the status band at all times; availability text survives unchanged
++  polls until the next change, stale warning or departure. Empty-order actions
++  remain inert in place under C-1, with a read-neutral reason when no menu is held.
 +- *served menu extremes* — one or many categories, one or many items, an active
 +  category with no items, 64-code-point names, 0 and 99.999.999 prices. The rail
 +  and grid scroll independently. Tile names clamp at two lines with a full
@@ -964,28 +980,51 @@ index 44106e8..487bb80 100644
 +  in full. Empty categories stay in the rail; a removed selected category
 +  falls back to the first. Only an 86 preserves its slot; projection removals,
 +  additions and reorder reflow at refresh. Price changes have no tile badge
-+  and never change a line snapshot.
-@@ -243,2 +256,3 @@ affordances only.
++  and never change a line snapshot. Round 2 draws the maximum price beside
++  an 86 tag and several blocked lines for one item; refusal counts lines and
++  deduplicates item names. Wrapped category names grow beyond the 72px minimum.
+ - *line states* — PENDING, FIRED, VOIDED must be distinguishable at a glance
+   in greyscale (FR-D5, E1, H4). **Ruling I-12:** the distinction is carried by
+   the line's trailing slot, not only by its typography. A PENDING line has a
+@@ -240,14 +258,21 @@ affordances only.
+   resend. Delivery text and the manager tag occupy separate heading columns,
+   including Round 12 at 23:59. These are states of the existing fire-result
+   inline node, not new screens or modals.
 -- *item configuration / quantity commit* — DESIGN-007 gives each of the twelve
 -  menu tiles its own `sheet-item-<id>` fixture. `sheet-item` remains Burger's
 +- *item configuration / quantity commit* — DESIGN-007 supplies twelve named
 +  `sheet-item-<id>` design examples; the application fixture catalog has fourteen
 +  tiles (C4), and a served catalog has no fixed item count. `sheet-item` remains Burger's
-@@ -250,0 +265,6 @@ affordances only.
+   alias, `sheet-item86` remains its unavailable state, and Soda has no option
+   groups. These are illustrative option sets, not a production catalogue.
+   Quantity keys (88px) sit beside Add to order. Pending-line editors use the
+   same footer beside “Update to n”, disabled when unchanged. Back/Cancel
+   discard; Add/Update commits. Minus at 1 and plus at 99 are disabled, with a
+   visible bound. Remove line stays separate. Fired lines have no stepper.
 +  DESIGN-021 adds one data-driven M-2 for served items: fixed Variant and
 +  Modifiers labels, no default choices, required variant when present, flat
 +  modifier choices and a zero floor. Every tile opens that sheet before Add.
 +  The existing twelve fixture pictures and aliases remain. Add and pending
 +  Update use the same line/order monetary ceilings; Plus stops before an
 +  increase would exceed them. The quantity editor retains snapshot prices.
-@@ -1145 +1165,14 @@ suggestion) · *resolved unit price floors at zero* (FR-C2, AC-26).
+   Draft totals are labeled unsaved inside the sheet; order-panel figures stay
+   committed until Update. Table and counter variants both have changed and
+   maximum-quantity fixtures. See DESIGN-007's handoff for states and arithmetic.
+@@ -1142,7 +1167,24 @@ preserved, the item is marked unavailable, Add is disabled, and the change is
+ explained (FR-C6, AC-12 — this exact behaviour is specified, not a
+ suggestion) · *resolved unit price floors at zero* (FR-C2, AC-26).
+ 
 -**Requirements.** FR-C2, FR-C3, FR-C4, FR-C5, FR-C6, FR-D4.
 +DESIGN-021 served states: *no options*, *variants only*, *modifiers only*,
 +*both*, *many options*, *long names and extreme deltas*, *variant required*,
 +*zero floor*, *86 then available again*, *no longer on the menu then
 +reappearing*, *item name/price/option delta changed*, *selected variant
 +removed*, *selected modifier removed*, *new or reordered options*, and
-+*line/order ceiling, including a choice at quantity 1*. The sheet stays open;
++*line/order ceiling, including a choice at quantity 1*. Round 2 also draws
++*selected modifier removed at the end of a long scrolled list*. The live notice
++and line total stay between body and footer; the reason always has a reserved
++line. Served commit and quantity controls retain focus through aria-disabled.
++The sheet stays open;
 +choices survive by identity except removed options. Figures update before
 +Add. Availability restoration clears its notice; the item-change notice
 +persists until close. New options and reorder have no notice. M-2 uses the
@@ -994,32 +1033,63 @@ index 44106e8..487bb80 100644
 +opener until an item is known. CATALOG_CHANGED remains a Phase 2 fixture.
 +
 +**Requirements.** FR-C2, FR-C3, FR-C4, FR-C5, FR-C6, FR-D4, FR-M5.
-@@ -1154,0 +1188,10 @@ after values (FR-F8).
-+DESIGN-021 adds the served picker's *loading*, *first read failed*, *no active
+ 
+ ## M-3 — Discount sheets `[SHEET]` — POS-03
+ 
+@@ -1152,6 +1194,18 @@ Deactivated presets are absent from the picker but readable on orders holding
+ them (FR-F5). Each successful change writes one audit entry with before and
+ after values (FR-F8).
+ 
++DESIGN-021 adds the served picker's *loading*, *first read unavailable*,
++*unexpected first-read failure* (round 2), *no active
 +presets*, *both kinds and zero*, *four-decimal percentage*, *maximum fixed
 +amount*, *long name and overflow*, *deactivated while open* and *edited while
-+open* states. Other amount stays offered during loading, failure and emptiness.
++open* states. The picker shares the menu’s first-read outcome and always opens
++on its heading. Other amount stays offered during loading, failure and emptiness.
 +Presets keep server order (oldest created first), use decimal commas for
 +percentages, and show fixed values as stored; the cap is reflected at
 +application in order totals. Poll updates are silent, never suggested or
 +preselected; a removed focused entry yields focus to the preset heading.
 +These drawings follow C4's recommended real-preset path pending its owner ruling.
 +
+ ## M-4 — Tender pads `[INLINE]` — POS-04
+ 
+ **Retyped 2026-09-14, applying the owner's ruling of 2026-09-10.** Not a sheet.
 diff --git a/docs/design/SITEMAP.md b/docs/design/SITEMAP.md
-index 22242f5..9349c00 100644
+index 22242f5..e2bd7d4 100644
 --- a/docs/design/SITEMAP.md
 +++ b/docs/design/SITEMAP.md
-@@ -134,0 +135,3 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
+@@ -132,6 +132,10 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
+ │   │   One screen, two variants: type=table and type=quick_sale.
+ │   │   Variants differ in affordances, never in layout family.
+ │   ├── [INLINE] Menu browser: categories → items ............... FR-C1
 +│   │       DESIGN-021: served loading / first-read failure / empty /
 +│   │       possibly out of date; active empty category; rail/grid overflow.
 +│   │       Only 86 holds its slot; absent items reflow. G6 is drawn.
-@@ -150,0 +154,3 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
++│   │       Round 2: reserved status band; growing wrapped category rows.
+ │   ├── [INLINE] Order line list, grouped by round .............. FR-E1, E2
+ │   ├── [INLINE] Totals panel (subtotal/discount/tax/svc/total) . FR-M4
+ │   ├── [INLINE] 86'd item DISABLED IN PLACE, never removed (≤3s) C-3, FR-C5, C6
+@@ -148,6 +152,10 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
+ │   ├── [SHEET] Item configuration — variant + modifiers ........ FR-C2, C3
+ │   │       DESIGN-007: twelve item states (including no-options Soda);
+ │   │       quantity beside Add; 1/99 bounds; Cancel discards ..... FR-M5
 +│   │       DESIGN-021: one data-driven sheet; variant required when present;
 +│   │       live prices and options, removed choices, zero floor, full names;
 +│   │       no-longer-on-menu notice; Add/Update share money ceilings.
-@@ -163,0 +170,2 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
-+│   │       DESIGN-021: served loading / failure / empty / long list;
++│   │       Round 2: fixed notice/line total; reason space always reserved.
+ │   │   └── [INLINE] Item 86'd mid-selection; choices kept,
+ │   │                Add disabled, reason shown ................. FR-C6
+ │   ├── [INLINE] PENDING line — remove control in the trailing slot
+@@ -161,6 +169,8 @@ Tablet landscape, 1280×800. Touch. Standing cashier. 90-second idle expiry
+ │   │   └── [INLINE] quick form — returns to the QUICK workspace,
+ │   │             which carries no fire control ................. C-2, FR-E5
+ │   ├── [SHEET] Discount picker — presets ....................... FR-F2, F5
++│   │       DESIGN-021: shared loading / both first-read failures / empty / long list;
 +│   │       zero and precise values; silent live edits and removals.
+ │   │   └── [SHEET] Free-form discount entry ................... FR-F3
+ │   │       └── [MODAL] Manager approval ....................... FR-A6, F3
+ │   ├── [SHEET] Remove / replace existing discount .............. FR-F8
 ```
 
 #### Questions, differences and next handoff
@@ -1032,8 +1102,9 @@ index 22242f5..9349c00 100644
   if the owner says no; this does not block the requested drawings.
 - R1's name collision is an acknowledged limitation with the proposed BO-04
   hint above. That is a future owner/design decision, not an edit to BO-04.
-- No other C4 difference remains. This is ready for the other-family design
-  review, not a claim that the review or owner approval has happened. S7b
+- No other C4 difference remains. The other-family review was completed with
+  findings, all accepted. This round implements its ten lead rulings and awaits
+  the lead’s browser verification; it does not claim owner approval. S7b
   must bind real projection data/option ids, transport outcomes and transient
   store guards; it must not copy fixture arrays, URL state plumbing, or the
   fixture's selection-only preset callback as an application command.

@@ -2145,7 +2145,9 @@ removed selected option is named and deselected; a removed variant makes Add
 wait for another choice. Added or reordered options need no notice and retain
 selection by option identity. Polls do not steal focus: a removed focused
 option returns focus to its group heading; a removed focused preset returns
-focus to the preset heading. Existing controls otherwise retain focus.
+focus to the preset heading. Existing controls otherwise retain focus. In round 2, served Add, Update and
+quantity keys use aria-disabled with guarded activation, so becoming off never
+drops keyboard focus or loses Escape.
 
 **Monetary ceilings.** Add and Update to n use the same ceiling check: line
 amount and the order's resulting total, including its discount and service,
