@@ -72,7 +72,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
      task must carry its rule C1 and density rule (task file, last lead ruling).
    - *(Done: D, DESIGN-019 and -020, BO-03 and BO-04; F's BO-08 half, DESIGN-018.)*
    - *(Done: F's BO-07 half, DESIGN-022, merged 2026-10-29 as PR #156.)*
-   - **Left:** E2 (BO-06) · G (BO-09) · H (BO-10, 11).
+   - **Left:** E2 (BO-06; next after DESIGN-021, owner 2026-10-30) · G (BO-09) · H (BO-10, 11).
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
 
@@ -141,7 +141,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - *(Done: PHASE1-S3a, tender methods on the server, `0012`, #134; DESIGN-020, BO-04 and BO-08's `first-run-closed`,
       #135; both merged 2026-10-24.)*
     - **PHASE1-S3b**, BO-08's payment-methods part (FR-B7 end to end) — depends on S3a — complete, PR #137.
-    - **DESIGN-021** the POS addition, G6 (feeds S7b) — after S3b's review — not started.
+    - **DESIGN-021** the POS addition, G6: the served menu, M-2 from data, the served preset picker (feeds S7b) —
+      complete 2026-11-02, PR not opened.
+    - **ARCH-021**, consult C4, the POS catalog (feeds S7a, S7b1-3) — complete 2026-10-30, PR not opened.
     - **Code-point lengths cleanup (no ID yet)** — zod 4.6.5 and `char_length` count code points; the "UTF-16 units"
       comments (contracts `tables.ts`, `settings.ts`, `auth.ts`; migrations `0010`, `0011`), `D:1607`, the inventory's sign-in
       rows, and the client checks `tables/label.ts`, `SignIn.tsx` (which refuse more than the server) — found by S2b — not written.
@@ -161,7 +163,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       ADR-012 rule 13) — depends on S6b — complete, merged 2026-10-30 as PR #159.
     - **The frame's focus after a different manager signs in (no ID yet)** — `OfficeApp.tsx` focuses Log out; DESIGN-022's
       focus contract says New preset on BO-07 — decide per screen or in `D`, with the designer — not written.
-    - **S7** (POS catalog, needs C4), **S8a-c** (users, from C3; S8c needs design E2), **S9**
+    - **S7a** (POS catalog routes, from C4; can start now), **S7b1-3** (after DESIGN-021's review; S7b3 needs OQ1), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
     post-close corrections (before Phase 5), permitted tax and service-charge range (before
