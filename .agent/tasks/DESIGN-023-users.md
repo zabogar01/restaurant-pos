@@ -5,7 +5,7 @@ category: ui
 touches: [identity, boundaries]
 depends_on: [DESIGN-022]
 owns: [docs/design/**, docs/DESIGN.md]
-status: active
+status: complete
 cycles: 1
 ---
 # DESIGN-023 — BO-06 Users (design slice E2)
@@ -412,6 +412,33 @@ change what the review cleared (its section 4). This is round 2 of at most three
 Then update the Handoff in place (rules, copy, focus, states, the inventory and sitemap diff), mark what is new as round
 2, ask the lead for a check run (`design023`, and `design017` for the sitemap), and report done. The lead reviews the
 round against these rulings; there is no second full review unless a fix goes beyond them.
+
+## Round 2 lead review and acceptance (2026-11-03)
+
+At `9260dc2`, the tree clean. The round is nine fix commits (`7117fa0` to `e987179`, one per finding) and two Handoff
+commits (`c51397e`, `9260dc2`). Every changed path is under `docs/design/`, `docs/DESIGN.md` or this file; nothing
+under `apps/`, `packages/`, `db/`, `e2e/` or `docs/design/tokens/`. The fixes are the review's own as ruled, so the
+lead reviews the round instead of a second full review.
+
+**Against the rulings, from the diff `f557bee..c51397e`:** F1 the own-PIN warning is the own-password sentence, and the
+inventory now cites FR-B3; F2 `INVALID_CREDENTIALS` with `retryAfterSeconds` takes the `THROTTLED` path (notice, field
+error, disabled controls, focus), with two new states; F3 `D` no longer claims the tokens stop a save prompt; F4
+`cooldown = 0` on the different-manager branch; F5 `unknown-move-applied`, whose context names the opening and the
+current classification, says "it is not confirmed", and blocks the form as `USER_CHANGED` does; F6 the current password
+counted in code points, with a 1024-astral-character acceptance check; F7 the departure node uncited and the in-use
+refusal a sibling of the forms; F8 Change role opens on a disabled *Choose a new classification*, no fields, no warning,
+Save off, focus on the select, with a check on three subjects; F9 the three sentences as proposed. Each has its own
+`design023` assertion.
+
+**run5, run by the lead at `c51397e`** (evidence `../restaurant-pos-wt/evidence/DESIGN-023/run5/`), every script exit
+0, failures and errors empty: `design023` 1946/1946 over 126 states; `design012` 421; `design013` 371; `design014`
+287/287; `design016` 399/399; `design017` 350/350; `design018` 733/733; `design019` 998/998; `design020` 754/754;
+`design021` 543/543; `design022` 691/691.
+
+**Accepted.** DESIGN-023 is complete. Carried, none blocking the merge: **F3**, whether a browser offers to save a PIN
+or another person's password from these fields, becomes a manual Chrome and Firefox check in S8c and a question for
+the owner; **S8c's task file must take FR-B3's own-PIN words**, not this task's *Server facts* summary. The owner's
+look at the states follows.
 
 ## Handoff
 
