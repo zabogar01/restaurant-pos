@@ -480,6 +480,12 @@ window.USER_CASES = {
     "target": "MANAGER",
     "result": "unknown"
   },
+  "unknown-move-applied": {
+    "op": "move",
+    "id": "ana",
+    "target": "MANAGER",
+    "result": "unknown-applied"
+  },
   "unknown-own-password": {
     "op": "own-password",
     "id": "iqbal",
@@ -1087,6 +1093,10 @@ window.WF = {
     [
       "unknown-move-cashier-manager",
       "Unknown outcome · move-cashier-manager"
+    ],
+    [
+      "unknown-move-applied",
+      "Unknown move · reread shows the new classification"
     ],
     [
       "unknown-own-password",

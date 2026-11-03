@@ -2201,6 +2201,10 @@ window.MOCKUPS.push({
       "Unknown outcome · move-cashier-manager"
     ],
     [
+      "unknown-move-applied",
+      "Unknown move · reread shows the new classification"
+    ],
+    [
       "unknown-own-password",
       "Unknown outcome · own-password"
     ],

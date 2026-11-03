@@ -52,7 +52,8 @@
     $('#user-editor').hidden=!editor;$('#users-workspace').classList.toggle('editing',!!editor);if(!editor)return;
     const {op,subject:r,target}=editor,create=op==='create';
     $('#editor-title').textContent=create?'Add person':({move:'Change role',pin:'Reset PIN',password:'Reset password','own-pin':'Change my PIN','own-password':'Change my password',reactivate:'Reactivate'}[op]+' — '+r.name);
-    $('#form-context').textContent=create?'Create a named person. Choose the classification before entering credentials.':op==='move'?'Current classification: '+label(r.classification)+'. '+(target==='MANAGER'?'Promotion always sets a new password.':target==='KITCHEN'?'The PIN is removed.':'The POS PIN is '+(r.classification==='KITCHEN'?'set.':'kept.')):op==='reactivate'?'Set a new PIN to reactivate '+r.name+'.':r.name+' · '+label(r.classification);
+    // After an unknown outcome the reread may show the person changed (perhaps by this save): never claim the opening classification as current.
+    $('#form-context').textContent=editor.shows?'When you opened this form, '+r.name+'’s classification was '+label(r.classification)+'. The staff list now shows '+label(editor.shows.classification)+(editor.shows.isActive?'':', inactive')+'. This may be your change; it is not confirmed.':create?'Create a named person. Choose the classification before entering credentials.':op==='move'?'Current classification: '+label(r.classification)+'. '+(target==='MANAGER'?'Promotion always sets a new password.':target==='KITCHEN'?'The PIN is removed.':'The POS PIN is '+(r.classification==='KITCHEN'?'set.':'kept.')):op==='reactivate'?'Set a new PIN to reactivate '+r.name+'.':r.name+' · '+label(r.classification);
     $('#classification-field').hidden=!(create||op==='move');
     const options=create?['KITCHEN','CASHIER','MANAGER']:['KITCHEN','CASHIER','MANAGER'].filter(c=>c!==r.classification);
     $('#user-classification').innerHTML=options.map(c=>'<option value="'+c+'">'+label(c)+(c==='KITCHEN'?' · no sign-in':'')+'</option>').join('');$('#user-classification').value=target;
@@ -108,11 +109,13 @@
   function resultFocus(id){const b=$('#user-rows tr[data-id="'+id+'"] button');(b||$('#new-user')).focus();}
   function unknownCopy(cmd){const readText=read==='failed'?'The list could not be refreshed.':'The list has been refreshed.';
     let body=cmd.name+': the outcome could not be confirmed. '+readText+' Nothing was sent again.';
-    if(cmd.form)body+=' Your draft is kept; enter credentials again.';
+    if(cmd.form)body+=editor?.shows?' Return to the staff list and choose an action on the current person.':' Your draft is kept; enter credentials again.';
     if(cmd.op==='own-password')body+=' The list cannot show whether your password changed. For your next change, try the new password you chose as Current password first. If it is refused, try your previous password. Each wrong attempt counts towards your sign-in cooldown.';
     if(cmd.op==='pin'||cmd.op==='password')body+=' The list cannot confirm the reset or whether this person’s sessions ended.';
     return body;
   }
+  function compareSubject(){if(!editor?.unknown||!editor.subject||read!=='ready')return;const now=find(editor.id);
+    if(now&&(now.classification!==editor.subject.classification||now.isActive!==editor.subject.isActive||now.username!==editor.subject.username)){editor.shows=clone(now);editor.blocked=true;}}
   function finish(result,cmd=pending){if(!cmd)return;clearCredentials(true);
     if(gate!=='active'||decision){held={result,cmd,sessionRefused:result==='idle'||result==='ended'};return;}
     pending=null;
@@ -123,8 +126,8 @@
       const text=cmd.op==='create'?' added.':cmd.op==='move'?' changed to '+label(r.classification)+'.':cmd.op==='deactivate'?' deactivated.':cmd.op==='reactivate'?' reactivated.':cmd.op.includes('password')?'’s password changed.':'’s PIN changed.';
       status(r.name+text+(cmd.op==='own-pin'||cmd.op==='own-password'?' This back-office session continues.':''));resultFocus(r.staffUserId);/* Walk 4 follows the person: kitchen has no sessions; a cashier has POS sessions; a manager has both. */$('#cross-client').hidden=cmd.op!=='deactivate'||r.classification==='KITCHEN';$('#cross-bo').hidden=r.classification!=='MANAGER';set('saved-'+cmd.op);return;
     }
-    if(result.startsWith('unknown')){if(result==='unknown-read-failed')failRead=true;reread();render();if(cmd.discarded){status();return;}
-      if(cmd.form){editor.unknown=true;editor.lastCommand={op:cmd.op,name:cmd.name,form:true};notice('Outcome not confirmed',unknownCopy(cmd));firstField().focus();}else{status(unknownCopy(cmd));focus('#page-status');}set('unknown-'+cmd.op);return;
+    if(result.startsWith('unknown')){if(result==='unknown-read-failed')failRead=true;if(result==='unknown-applied')apply(cmd);reread();render();if(cmd.discarded){status();return;}
+      if(cmd.form){editor.unknown=true;editor.lastCommand={op:cmd.op,name:cmd.name,form:true};compareSubject();render();notice('Outcome not confirmed',unknownCopy(cmd));(editor.blocked?$('#form-notice'):firstField()).focus();}else{status(unknownCopy(cmd));focus('#page-status');}set('unknown-'+cmd.op);return;
     }
     if(['duplicate-pin','duplicate-username','user-changed','not-found'].includes(result)){
       if(result==='user-changed'){const r=serverRow(cmd.id);if(r)r.isActive=false;}
@@ -207,7 +210,7 @@
   keys.forEach(k=>$('#user-'+k).oninput=()=>{if(!editor)return;if(k==='name')editor.name=$('#user-name').value;else editor.secretTouched=true;fieldError(k);});
   $('#user-username').onblur=()=>{const e=$('#user-username');e.value=e.value.trim().replace(/[A-Z]/g,c=>c.toLowerCase());};
   $('#user-classification').onchange=()=>{if(!editor||pending)return;editor.target=$('#user-classification').value;clearCredentials(true);clearErrors();renderForm();(fields().find(k=>k!=='name')?$('#user-'+fields().find(k=>k!=='name')):$('#user-classification')).focus();set('classification-switch');};
-  $('#read-state').onclick=e=>{if(!e.target.closest('#retry-read'))return;reread();render();if(editor?.unknown)notice('Outcome not confirmed',unknownCopy(editor.lastCommand));if(editor?.blocked)focus('#form-notice');else firstField().focus();};
+  $('#read-state').onclick=e=>{if(!e.target.closest('#retry-read'))return;reread();compareSubject();render();if(editor?.unknown)notice('Outcome not confirmed',unknownCopy(editor.lastCommand));if(editor?.blocked)focus('#form-notice');else firstField().focus();};
   $('#finish-command').onclick=()=>finish(response()==='pending'?'saved':response());$('#fixture-idle').onclick=()=>expire('idle');$('#fixture-ended').onclick=()=>expire('ended');$('#fail-read').onclick=()=>{failRead=true;};
   $('#finish-wait').onclick=()=>{cooldown=0;fieldError('currentPassword');notice();renderForm();if(editor?.op.startsWith('own-'))focus('#user-currentPassword');};
   setInterval(()=>{if(!cooldown)return;cooldown--;if(editor?.op.startsWith('own-')){fieldError('currentPassword',cooldown?'Wait '+duration(cooldown)+' before trying your current password again.':'');$('#notice-body').textContent='Wait '+duration(cooldown)+'. This is the same cooldown used at sign-in.';if(!cooldown){notice();renderForm();}}},1000);
