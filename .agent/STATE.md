@@ -55,8 +55,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **DESIGN-023** (E2, BO-06 Users; task file committed `736112d` on `agent/design-023`): Codex `gpt-6-astra` high, Herdr
-  agent `design023`, pane `DESIGN-023` (`w2:p9S`); briefed 2026-11-03 13:24, working.
+- **DESIGN-023** (E2, BO-06 Users, `agent/design-023`): Codex drew A-C, hit its limit (resets 18:24); **Claude Opus
+  `design023c`, pane `DESIGN-023` (`w2:p9T`), finishing** (handover + R1, R2 at `67c62be`). Review: Claude Opus (owner).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -89,7 +89,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **`max_fix_cycles` is 2** (three rounds). A round's ruling goes above the Handoff in the worktree, committed there, then
   `--resume --message`; widen `owns` in the same commit when a finding needs a file outside it.
 - **Codex reviews Claude-built work; Claude Opus reviews Codex- or OpenCode-built work** (owner exceptions, each once:
-  DESIGN-017 r3, -018 to -020, -022). **Codex allowance:** weekly reset 27 Oct 14:18, seven reviews since; its 5h limit
+  DESIGN-017 r3, -018 to -020, -022). **Codex allowance:** limit hit 11-03 mid-DESIGN-023 (5h, resets 18:24); its 5h limit
   ran out mid-design four times (DESIGN-021 r2, 10-30; the same pane resumed after the reset). Stand-ins: wait, OpenCode,
   or an owner exception. Hand-opened: write `runs/<ID>/builder/meta.json` (`{"cli":"codex",…}`) before its review.
 - **Designers and architects are hand-opened** (recipes: journal 10-24; Codex also needs `-c
@@ -122,7 +122,7 @@ Nothing here is decided. Detail is where each line points.
 - **Look at DESIGN-021's states** in the gallery (`docs/design/visual-directions/index.html`, POS-03 served states).
 - **Lead rulings since 10-30, yours to overturn:** DESIGN-021 R1 (long tile names), its round 2 rulings (F5 lifetime, F6
   `fire.ts` form stands), the 86-stepper reading; ARCH-021's lead review acceptances (S7b split in three, the revision
-  route's client-instance opt-out and log level, no backoff, no option ids in a stand-in line); DESIGN-023: `design019`'s rail list may gain Staff; BO-06 focuses Add person after a different manager signs in (frame: per-screen create control); neither yet in its task file.
+  route's client-instance opt-out and log level, no backoff, no option ids in a stand-in line); DESIGN-023 R1 (`design019`'s rail list gains Staff) and R2 (BO-06 focuses Add person after a different manager signs in).
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
   for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
