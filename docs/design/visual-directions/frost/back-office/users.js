@@ -20,6 +20,7 @@
   function status(text=''){const el=$('#page-status');el.hidden=!text;el.textContent=text;}
   function fields(){if(!editor)return [];const {op,subject,target}=editor;
     if(op==='create')return ['name',...(target==='KITCHEN'?[]:target==='CASHIER'?['pin']:['pin','username','password'])];
+    if(op==='move'&&!target)return [];
     if(op==='move')return [...(subject.classification==='KITCHEN'?['pin']:[]),...(target==='MANAGER'?[...(subject.username?[]:['username']),'password']:[])];
     if(op==='own-password')return ['currentPassword','password'];if(op==='own-pin')return ['currentPassword','pin'];
     return op==='password'?['password']:['pin'];
@@ -27,7 +28,7 @@
   function warning(op,r,target){
     // FR-B3: an own PIN or own password change ends every other session of the manager; this one continues.
     if(op==='own-pin'||op==='own-password')return 'Your other POS and back-office sessions will end on their next action. This back-office session will continue.';
-    if(op==='create'||op==='reactivate')return '';
+    if(op==='create'||op==='reactivate'||(op==='move'&&!target))return '';
     if(r.classification==='KITCHEN')return op==='deactivate'?r.name+' will be inactive. Kitchen staff have no PIN or sign-in sessions. You can reactivate this person later.':r.name+' currently has no sign-in sessions. After this change, they must sign in to use '+(target==='MANAGER'?'the POS or back office.':'the POS.');
     // A cashier has POS sessions only; a manager has both. Name only what this person has.
     return r.name+'’s '+(r.classification==='MANAGER'?'POS and back-office sessions':'POS sessions')+' will end on their next action. '+(op==='deactivate'?'They cannot sign in while inactive. You can reactivate this person later.':target==='KITCHEN'?'Their PIN will be removed. They will no longer sign in.':target==='CASHIER'&&r.classification==='MANAGER'?'Their back-office login will no longer work. They can sign in at the POS.':'They must sign in again.');
@@ -53,18 +54,20 @@
     const {op,subject:r,target}=editor,create=op==='create';
     $('#editor-title').textContent=create?'Add person':({move:'Change role',pin:'Reset PIN',password:'Reset password','own-pin':'Change my PIN','own-password':'Change my password',reactivate:'Reactivate'}[op]+' — '+r.name);
     // After an unknown outcome the reread may show the person changed (perhaps by this save): never claim the opening classification as current.
-    $('#form-context').textContent=editor.shows?'When you opened this form, '+r.name+'’s classification was '+label(r.classification)+'. The staff list now shows '+label(editor.shows.classification)+(editor.shows.isActive?'':', inactive')+'. This may be your change; it is not confirmed.':create?'Create a named person. Choose the classification before entering credentials.':op==='move'?'Current classification: '+label(r.classification)+'. '+(target==='MANAGER'?'Promotion always sets a new password.':target==='KITCHEN'?'The PIN is removed.':'The POS PIN is '+(r.classification==='KITCHEN'?'set.':'kept.')):op==='reactivate'?'Set a new PIN to reactivate '+r.name+'.':r.name+' · '+label(r.classification);
+    $('#form-context').textContent=editor.shows?'When you opened this form, '+r.name+'’s classification was '+label(r.classification)+'. The staff list now shows '+label(editor.shows.classification)+(editor.shows.isActive?'':', inactive')+'. This may be your change; it is not confirmed.':create?'Create a named person. Choose the classification before entering credentials.':op==='move'?'Current classification: '+label(r.classification)+'.'+(!target?'':' ')+(!target?'':target==='MANAGER'?'Promotion always sets a new password.':target==='KITCHEN'?'The PIN is removed.':'The POS PIN is '+(r.classification==='KITCHEN'?'set.':'kept.')):op==='reactivate'?'Set a new PIN to reactivate '+r.name+'.':r.name+' · '+label(r.classification);
     $('#classification-field').hidden=!(create||op==='move');
     const options=create?['KITCHEN','CASHIER','MANAGER']:['KITCHEN','CASHIER','MANAGER'].filter(c=>c!==r.classification);
-    $('#user-classification').innerHTML=options.map(c=>'<option value="'+c+'">'+label(c)+(c==='KITCHEN'?' · no sign-in':'')+'</option>').join('');$('#user-classification').value=target;
+    $('#user-classification').innerHTML=(create?'':'<option value="" disabled>Choose a new classification</option>')+options.map(c=>'<option value="'+c+'">'+label(c)+(c==='KITCHEN'?' · no sign-in':'')+'</option>').join('');$('#user-classification').value=target||'';
     $('#classification-help').textContent=create?'Kitchen needs a name only. Cashiers need a PIN. Managers also need a back-office login.':'Choose the new classification. Changing this choice clears every credential field.';
     const visible=fields();keys.forEach(k=>{$('#'+k+'-field').hidden=!visible.includes(k);$('#user-'+k).disabled=!!pending;});
     $('#user-name').value=editor.name;$('#user-classification').disabled=!!pending;
     $('#stored-username').hidden=!(op==='move'&&target==='MANAGER'&&r.username);$('#stored-username').textContent=r?.username?'Retained username: '+r.username+' · This username cannot change.':'';
     const w=warning(op,r,target);$('#session-warning').hidden=!w;$('#session-warning').textContent=w;
     $('#save-user').textContent=op==='reactivate'?'Reactivate with new PIN':'Save';
-    $('#save-user').disabled=!!pending||!!editor.blocked||(cooldown>0&&op.startsWith('own-'));
-    $('#save-hint').textContent=pending?'Wait for the save result.':editor.blocked?'Return to the staff list and choose an action on the current person.':cooldown>0&&op.startsWith('own-')?'Wait for the cooldown before saving.':'Nothing is sent until you save.';
+    // Change role opens with no destination: no fields, no warning and Save off until the manager chooses a move.
+    const unchosen=op==='move'&&!target;
+    $('#save-user').disabled=!!pending||!!editor.blocked||unchosen||(cooldown>0&&op.startsWith('own-'));
+    $('#save-hint').textContent=pending?'Wait for the save result.':editor.blocked?'Return to the staff list and choose an action on the current person.':unchosen?'Choose a new classification before saving.':cooldown>0&&op.startsWith('own-')?'Wait for the cooldown before saving.':'Nothing is sent until you save.';
     $('#changed-actions').hidden=!editor.blocked;
     if(cooldown>0&&op.startsWith('own-'))$('#user-currentPassword').disabled=true;
   }
@@ -78,8 +81,8 @@
   $('#users-content').addEventListener('scroll',()=>requestAnimationFrame(fitPanel));
 
   function openEditor(op,id=null,opener=null,target=null){clearCredentials();const r=id?clone(find(id)):null;
-    editor={op,id,subject:r,name:'',openingName:'',target:target||(op==='create'?'KITCHEN':op==='move'?(r.classification==='KITCHEN'?'CASHIER':'MANAGER') :null),opener:opener||'#new-user',secretTouched:false,unknown:false,blocked:false};
-    if(op==='move'&&editor.target===r.classification)editor.target='CASHIER';editor.openingTarget=editor.target;
+    editor={op,id,subject:r,name:'',openingName:'',target:target||(op==='create'?'KITCHEN':null),opener:opener||'#new-user',secretTouched:false,unknown:false,blocked:false};
+    editor.openingTarget=editor.target;
     clearErrors();notice();status();$('#credentials-cleared').hidden=true;render();firstField().focus();set(op==='create'?'create-'+editor.target.toLowerCase():op);
     if(cooldown>0&&op.startsWith('own-')){fieldError('currentPassword','Wait '+duration(cooldown)+' before trying your current password again.');focus('#form-notice');notice('Password verification is cooling down','Wait '+duration(cooldown)+'. This is the same cooldown used at sign-in.','failure');}
   }
@@ -93,7 +96,7 @@
     if('currentPassword'in values)fieldError('currentPassword',!values.currentPassword?'Enter your current password.':[...values.currentPassword].length>1024?'Use 1024 characters or fewer.':'');
     if(errors.size){focus('#user-'+errors.keys().next().value);return null;}return values;
   }
-  function submit(){if(!editor||pending||editor.blocked||(cooldown>0&&editor.op.startsWith('own-')))return;const values=validate();if(!values)return;
+  function submit(){if(!editor||pending||editor.blocked||(editor.op==='move'&&!editor.target)||(cooldown>0&&editor.op.startsWith('own-')))return;const values=validate();if(!values)return;
     // Deliberately exclude secrets from the mock request ledger and pending state.
     const cmd={op:editor.op,id:editor.id,name:editor.op==='create'?values.name:editor.subject.name,target:editor.target,username:values.username,fields:Object.keys(values),form:true};send(cmd,response());
   }
@@ -209,7 +212,7 @@
   $('#return-list').onclick=()=>leave(()=>set('default'));
   keys.forEach(k=>$('#user-'+k).oninput=()=>{if(!editor)return;if(k==='name')editor.name=$('#user-name').value;else editor.secretTouched=true;fieldError(k);});
   $('#user-username').onblur=()=>{const e=$('#user-username');e.value=e.value.trim().replace(/[A-Z]/g,c=>c.toLowerCase());};
-  $('#user-classification').onchange=()=>{if(!editor||pending)return;editor.target=$('#user-classification').value;clearCredentials(true);clearErrors();renderForm();(fields().find(k=>k!=='name')?$('#user-'+fields().find(k=>k!=='name')):$('#user-classification')).focus();set('classification-switch');};
+  $('#user-classification').onchange=()=>{if(!editor||pending)return;const had=editor.target;editor.target=$('#user-classification').value||null;clearCredentials(!!had);clearErrors();renderForm();(fields().find(k=>k!=='name')?$('#user-'+fields().find(k=>k!=='name')):$('#user-classification')).focus();set('classification-switch');};
   $('#read-state').onclick=e=>{if(!e.target.closest('#retry-read'))return;reread();compareSubject();render();if(editor?.unknown)notice('Outcome not confirmed',unknownCopy(editor.lastCommand));if(editor?.blocked)focus('#form-notice');else firstField().focus();};
   $('#finish-command').onclick=()=>finish(response()==='pending'?'saved':response());$('#fixture-idle').onclick=()=>expire('idle');$('#fixture-ended').onclick=()=>expire('ended');$('#fail-read').onclick=()=>{failRead=true;};
   $('#finish-wait').onclick=()=>{cooldown=0;fieldError('currentPassword');notice();renderForm();if(editor?.op.startsWith('own-'))focus('#user-currentPassword');};

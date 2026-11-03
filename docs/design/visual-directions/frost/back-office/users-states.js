@@ -53,6 +53,10 @@ window.USER_CASES = {
     "result": "saved",
     "draft": true
   },
+  "move-unchosen": {
+    "op": "move",
+    "id": "ayu"
+  },
   "move-kitchen-cashier": {
     "op": "move",
     "id": "halim",
@@ -789,6 +793,10 @@ window.WF = {
     [
       "saved-create-manager",
       "Saved · create manager"
+    ],
+    [
+      "move-unchosen",
+      "Change role opened · no destination chosen"
     ],
     [
       "move-kitchen-cashier",

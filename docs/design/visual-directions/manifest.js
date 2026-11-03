@@ -1897,6 +1897,10 @@ window.MOCKUPS.push({
       "Saved · create manager"
     ],
     [
+      "move-unchosen",
+      "Change role opened · no destination chosen"
+    ],
+    [
       "move-kitchen-cashier",
       "Move kitchen cashier"
     ],
