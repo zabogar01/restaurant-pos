@@ -307,10 +307,16 @@ reports and audit.
 │   └── [INLINE] Deactivate rejected — holds OPEN order (Phase 2) FR-C8
 │
 ├── BO-06 [SCREEN] Users ................................. FR-B3, A1, A3, A4
-│   ├── [MODAL] User create / edit — role assignment ..... FR-B3, A1
-│   ├── [MODAL] Set / reset PIN ......................... FR-B3, A3, A4, J4
-│   │   └── [INLINE] PIN not unique — rejected ........... FR-A4
-│   └── [MODAL] Deactivate — invalidates POS session ..... FR-B3
+│   ├── [INLINE] Create person — classification form .... FR-B3, A1
+│   ├── [INLINE] Change role — six classification moves . FR-B3, A1
+│   ├── [INLINE] Reset another person's PIN / password .. FR-B3, A3, A4, J4
+│   │   └── [INLINE] PIN or username in use — refused ... FR-A4, B3
+│   ├── [INLINE] Change own password / own PIN .......... FR-B3
+│   │   └── [INLINE] Current password wrong / throttled . FR-A5b
+│   ├── [MODAL] Deactivate — ends sessions on next action FR-B3, AC-32
+│   ├── [INLINE] Reactivate ............................. FR-B3
+│   │   └── [INLINE] New PIN required — reactivate ...... FR-B3, A4
+│   └── [MODAL] Depart — Stay or Discard ................ C2
 │
 ├── BO-07 [SCREEN] Discount presets ...................... FR-B5, F5
 │   ├── [INLINE] Preset create / edit — non-modal panel . FR-B5
@@ -399,6 +405,9 @@ prototype.
    walk this, even though the two clients do not link to each other.
 4. **User deactivation → POS.** BO-06 deactivate → POS-01 shows the
    session-invalidated state on the next authenticated request (FR-B3, AC-32).
+   A manager’s back office reaches BO-01 *Session ended* on its next request.
+   DESIGN-023 supplies both review links outside the product frame; the clients
+   do not navigate to each other.
 5. **Lease → back office.** An active CheckoutLease on a quick-sale order
    causes BO-03's 86 toggle to be rejected, naming the order (FR-G13, AC-29).
    This refusal arrives in Phase 4; DESIGN-019 marks it separately from S5.

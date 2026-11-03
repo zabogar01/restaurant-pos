@@ -18,7 +18,7 @@
       heading.className = 'bonav__sec'; heading.textContent = section; nav.append(heading);
       entries.forEach(([label, file, key]) => {
         const a = document.createElement('a'); a.textContent = label;
-        a.href = ['menu','incidents','audit','today','tables','presets','settings'].includes(key) ? file : '../../../prototype/back-office/' + file;
+        a.href = ['menu','incidents','audit','today','tables','users','presets','settings'].includes(key) ? file : '../../../prototype/back-office/' + file;
         a.dataset.nav = key; nav.append(a);
       });
     });
@@ -28,6 +28,12 @@
     const presets = document.createElement('a'); presets.href = 'presets.html';
     presets.dataset.nav = 'presets'; presets.textContent = 'Discount presets';
     nav.querySelector('[data-nav="settings"]').before(presets);
+  }
+  // Phase 1 authored rails gain BO-06 alongside the other configuration screens.
+  if (!phase0 && nav.querySelector('[data-nav="settings"]') && !nav.querySelector('[data-nav="users"]')) {
+    const users = document.createElement('a'); users.href = 'users.html';
+    users.dataset.nav = 'users'; users.textContent = 'Staff';
+    nav.querySelector('[data-nav="presets"], [data-nav="settings"]').before(users);
   }
   const active = nav.querySelector(`[data-nav="${window.WF.nav}"]`);
   if (active) active.setAttribute('aria-current','page');

@@ -845,27 +845,45 @@ No table merge, transfer, or split (out of scope).
 
 ## BO-06 — Users
 
-**Purpose.** Manage staff: create, assign role, set and reset PIN, deactivate.
+**Purpose.** Manage staff: create, assign a role or the kitchen classification, change it, set and reset PINs, set a manager's username and password and reset the password, change one's own password and PIN, deactivate and reactivate.
 
 **Reached by / from.** Manager, from navigation.
 
-**States.** *empty* · *loading* · *error* · *permission-denied* (n/a) ·
-*overflow* · *PIN not unique — rejected* (FR-A4) · *deactivation invalidates
-that user's POS session on its next authenticated request* (FR-B3, AC-32) ·
-*kitchen staff listed without a PIN* (FR-A1).
+**States.** *only the signed-in manager* (empty is unreachable in a manager-only session) ·
+*loading* · *failed to load* · *permission-denied* (n/a) · *overflow* ·
+*active and inactive staff* · *kitchen staff listed without a PIN* ·
+*create by classification* · *six classification moves, including a former manager* ·
+*reset another person's PIN or password* · *own password and own PIN* ·
+*local invalid input* · *saving and saved* · *PIN or username in use — refused* ·
+*own account — deactivation and role change refused* · *user changed meanwhile — reread* ·
+*not found* · *current password wrong or throttled* ·
+*warning before every session-ending command* · *deactivation confirmation and result* ·
+*deactivation invalidates that person's sessions (POS, and back office for a manager) on their next authenticated request* ·
+*reactivating and reactivated* · *reactivation needs a new PIN* ·
+*general failure with draft kept* · *outcome unknown, reread, no resend* ·
+*departure decision* · *M-6 over inert work* · *BO-01 with isolated draft* ·
+*same-manager return with credential fields empty* · *success while the list read still fails*.
+The [Frost BO-06 artifact](visual-directions/frost/back-office/users.html) and
+DESIGN-023's Handoff specify the exact words and focus targets.
 
-**Requirements.** FR-A1, FR-A3, FR-A4, FR-B3, FR-J4.
+**Requirements.** FR-A1, FR-A3, FR-A4, FR-B3, FR-J3, FR-J4, AC-32.
 
 **Must not invent.**
 - Two authenticating roles only: cashier and manager. **Kitchen is a
   non-authenticating classification** with no PIN and no permissions (FR-A1).
   Waiter is deferred — no waiter option.
-- PINs are six digits and unique across users, because an audit actor must be
+- PINs are six digits and unique among active users, because an audit actor must be
   unambiguous (FR-A1, A4, B-13).
 - A PIN is **never displayed, echoed, or recoverable** — set and reset only,
   never "view" (FR-A3, J4, B-11, B-12). No masked-reveal control.
-- Deactivating a user or resetting a PIN has an immediate floor consequence
-  (FR-B3). The manager must be told that, at the moment of the action.
+- Deactivation, every role change, and another person’s PIN or password reset
+  end every session that person has (a cashier's POS sessions; a manager's POS
+  and back-office sessions) on their next action. Own PIN
+  changes end POS sessions; own password changes end every other session. This
+  back-office session continues for both own changes (C3 §10). Explain the effect
+  before the command. Kitchen staff have no sign-in sessions to end.
+- A name cannot be corrected and a username cannot be changed or reused.
+  The own row offers neither deactivation nor a role change. No last-manager rule.
 
 ---
 
