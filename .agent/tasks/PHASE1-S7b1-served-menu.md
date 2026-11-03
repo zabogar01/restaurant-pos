@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries, money]
 depends_on: [PHASE1-S7a, DESIGN-021]
 owns: [apps/pos/src/catalog/**, apps/pos/src/session/source.ts, apps/pos/src/session/realSession.ts, apps/pos/src/session/types.ts, apps/pos/src/session/api.ts, apps/pos/src/session/useSession.tsx, apps/pos/src/App.tsx, apps/pos/src/PosRoutes.tsx, apps/pos/src/MenuRegion.tsx, apps/pos/src/menuFixtures.ts, apps/pos/src/sheetFixtures.ts, apps/pos/src/orderFixtures.ts, apps/pos/src/orderStore.ts, apps/pos/src/OrderPanel.tsx, apps/pos/src/Sheets.tsx, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/pos-catalog.spec.ts, e2e/tests/idle.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S7b1 — The served POS menu
@@ -339,6 +339,30 @@ below in full prose:
 - what was found and not fixed; the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verify (2026-11-03)
+
+Run by the lead in this worktree at `c277c57`, the tree clean, for the reviewer, who cannot reach the database or a
+browser (evidence in `../restaurant-pos-wt/evidence/PHASE1-S7b1/`):
+
+- `npm run verify`: **153 test files, 5612 tests, all passed** (baseline 151 / 5497), the builder's count confirmed.
+- `npm run test:e2e:all`: **118 passed** (Chromium and WebKit; baseline 108): the four `pos-catalog` cases and B9 in
+  each engine are the new ten.
+- `git diff --name-only development...HEAD`: every path is inside `owns`. The existing tests changed are
+  `built-session-support.ts`, `fire.test.tsx`, `menu-categories.test.tsx`, `menu-region.test.tsx`,
+  `no-invented-values.test.ts`, `one-press-fire.test.tsx`, `own-items.test.tsx`, `sheets.test.tsx` and
+  `e2e/tests/idle.spec.ts`, all on *Tests expected to change*.
+- The Handoff was read whole. **For the reviewer to judge:**
+  1. Commit `0285a34` (the split, "no behaviour change") raised the suite from 5497 to 5501 tests without a test file's
+     cases being edited by hand; the builder did not find which enumeration grew. Find it, and say whether a case now
+     enumerated differently has changed meaning.
+  2. The tile markup changed for **both** sources (the name clamp and the price foot), and every tile gained an
+     `aria-label`; the builder says every existing assertion still holds.
+  3. The status band and the empty-order reason are drawn only when `store.kind === 'real'`, the one place the region
+     branches on source rather than data.
+  4. `SessionStore.catalogReads` is optional only because `fixtureSession.ts` was outside `owns`.
+  5. Criterion 4's red was proved by the source scan, not by compiling the whole `PosApi` into the store.
+  6. The hidden-tab pause is proved in jsdom only; neither engine hides a page in the harness.
 
 ## Handoff
 
