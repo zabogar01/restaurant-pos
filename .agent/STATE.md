@@ -55,8 +55,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **DESIGN-023** (E2, BO-06 Users, `agent/design-023`): Codex drew A-C, hit its limit (resets 18:24); **Claude Opus
-  `design023c`, pane `DESIGN-023` (`w2:p9T`), finishing** (handover + R1, R2 at `67c62be`). Review: Claude Opus (owner).
+- **DESIGN-023 in review** (`136afb9`): Codex drew A-C, Claude Opus `design023c` (pane `w2:p9T`, kept for a round)
+  finished; run4 all green (design023 1874/1874). Reviewer Claude Opus oneshot (owner exception), pane `DESIGN-023-review`.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
