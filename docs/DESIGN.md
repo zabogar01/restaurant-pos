@@ -2175,8 +2175,7 @@ has `autocomplete="current-password"`. PIN entry additionally has
 `autocapitalize="none"` and spellchecking off. These are the standard hints
 for a new or current secret; whether a browser offers to save a PIN or another
 person's password after the form is submitted is unverified, and is not claimed
-as their effect. No reveal, confirmation field,
-text echo or value attribute is drawn. A stored username is public account
+as their effect. No reveal, text echo or value attribute is drawn. A stored username is public account
 identity, displayed as text; a fixed username in a session-gate input is set
 through its property, never its attribute (ADR-011 rule 25).
 
@@ -2200,8 +2199,8 @@ change, explicitly say that this back-office session continues. A kitchen
 person has no sessions or PIN to end; describe the classification change or
 inactive state without inventing either. A reversible credential reset or
 role change needs no additional acknowledgement: its named form and warning
-already make the effect explicit. Deactivation uses a modal confirmation
-because it can interrupt floor work. Initial focus is Keep active; Escape
+already make the effect explicit. Deactivating a person uses a modal
+confirmation because it can interrupt floor work. Initial focus is Keep active; Escape
 keeps the person active. Reactivation alone needs no confirmation.
 
 **BO-06 copy and composition.** The Staff rail entry opens `users.html`.
@@ -2233,7 +2232,7 @@ cannot be corrected after creation. No secret is displayed after saving.
 holder. `INVALID_CREDENTIALS` sits on Current password; when it carries
 `retryAfterSeconds`, that failure started the cooldown and is drawn exactly as
 `THROTTLED`, as BO-01 and POS-01 read the same answer. `THROTTLED` sits on
-that field with seconds remaining, disables verification, and focuses a
+that field with the remaining wait, in the sign-in duration format, disables verification, and focuses a
 focusable notice because the field is disabled. `OWN_ACCOUNT`, `USER_CHANGED`
 and `NOT_FOUND` are named form-level refusals; USER_CHANGED and NOT_FOUND
 reread the list. These forms keep their non-secret choices, disable Save and
