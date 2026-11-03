@@ -415,6 +415,50 @@ round against these rulings; there is no second full review unless a fix goes be
 
 ## Handoff
 
+### Round 2 (design023c, 2026-11-03): what changed
+
+The review's nine findings were applied in the lead's order, one commit each:
+F1 `7117fa0`, F2 `fa0f608`, F3 `46acae1`, F4 `861afa1`, F5 `b85c43c`, F6
+`9a3bdc1`, F7 `9053669`, F8 `4ba52a6`, F9 `e987179`. Nothing the review cleared
+(its section 4) was changed. Text below that is new or corrected in this round
+is marked **[Round 2]**.
+
+1. **F1.** Own PIN now warns, like own password, “Your other POS and back-office
+   sessions will end on their next action. This back-office session will
+   continue.” (PRD FR-B3; the task's *Server facts* summary was narrower). Its
+   saved result already matched own password's (“{name}’s PIN changed. This
+   back-office session continues.”) and is unchanged. The matrix, the warning
+   table and the inventory line are corrected; `design023` asserts both
+   own-change warnings.
+2. **F2.** `INVALID_CREDENTIALS` with `retryAfterSeconds` (the failure that starts
+   the cooldown) is drawn exactly as `THROTTLED`. New fixture response *Current
+   password wrong; cooldown starts*; new states `cooldown-started-own-password`
+   and `cooldown-started-own-pin`; a check; the rule is in `D` Part B and below.
+3. **F3.** No drawing change. Part B now calls the `autocomplete` values the
+   standard hints for a new or current secret and says that whether a browser
+   offers to save a PIN or another person's password is unverified. Neither the
+   Handoff nor `D` had claimed the effect; the task's own ruling text (which is the
+   lead's) still does.
+4. **F4.** The cooldown belongs to the signed-in manager's account and is
+   discarded when a different manager signs in. Fixture and check.
+5. **F5.** New state `unknown-move-applied`: the reread shows Ana R. as Manager.
+   The form's context no longer claims the opening classification as current, and
+   the form is blocked as `USER_CHANGED` blocks it. Fixture response *Unknown;
+   reread shows it applied*; check.
+6. **F6.** Current password is counted in code points (1–1024), as the schema
+   counts; `D` and the rules below say so; the check tests 1024 and 1025 astral
+   characters.
+7. **F7.** The sitemap's departure node is uncited (it read as FR-C2), and the
+   in-use refusal is a sibling of the BO-06 forms, no longer nested under resets.
+8. **F8.** Change role opens on “Choose a new classification”: no fields, no
+   warning, Save off. New state `move-unchosen`; checks that an untouched move
+   form cannot save, for a manager, a cashier and a kitchen person.
+9. **F9.** In Part B: the no-confirmation-field sentence now lives only in the
+   BO-06 copy part; “Deactivating a person uses a modal confirmation”; the
+   cooldown is “the remaining wait, in the sign-in duration format”.
+
+The registered state count rises from 122 to 126.
+
 ### Delivery and implementation boundary
 
 The Frost composition is `docs/design/visual-directions/frost/back-office/users.html`.
@@ -504,6 +548,7 @@ A username is asked only when UserView.username is null.
 | Create kitchen | Name | Classification = Kitchen; no credential fields. |
 | Create cashier | Name, New PIN | Classification = Cashier. |
 | Create manager | Name, New PIN, Username, New password | Classification = Manager. |
+| Change role, no move chosen yet | None | **[Round 2]** Opens on “Choose a new classification”; no warning; Save off. |
 | Kitchen → cashier | New PIN | Set a PIN. |
 | Kitchen → manager | New PIN, Username if absent, New password | Set PIN and login; retained username is a fact if present. |
 | Cashier → manager | Username if absent, New password | Keep PIN; always set a new password. |
@@ -513,7 +558,7 @@ A username is asked only when UserView.username is null.
 | Reset another cashier/manager's PIN | New PIN | No username or current password. |
 | Reset another manager's password | New password | No current password. |
 | Change own password | Current password, New password | This back-office session continues; every other session ends on its next action. |
-| Change own PIN | Current password, New PIN | POS sessions end on their next action; this back-office session continues. |
+| Change own PIN | Current password, New PIN | **[Round 2]** This back-office session continues; every other session, POS and back office, ends on its next action (FR-B3). |
 | Deactivate | None | Named confirmation. |
 | Reactivate | None initially | Immediate row command, keeping PIN; kitchen never has a PIN. |
 | Reactivate after PIN collision | New PIN | Reactivate with new PIN sends one explicit command with that PIN. |
@@ -525,8 +570,9 @@ and ASCII A–Z lowercased before validation, and the native field shows that
 stored form on blur and submit. Validate `^[a-z0-9][a-z0-9._-]{2,31}$`.
 It can never be changed or reused, including for inactive people. New passwords
 are 8–128 Unicode code points, never trimmed, without composition rules.
-Current password is nonempty and at most 1024 UTF-16 units (C3 §8's request
-shape), otherwise judged by verification rather than new-password policy.
+**[Round 2]** Current password is 1–1024 characters, counted in code points
+(`[...value].length`) as C3 §8's request schema counts them, otherwise judged
+by verification rather than new-password policy.
 Validate only the selected classification/move's fields, in displayed order.
 Local errors send nothing. Editing a field removes its obsolete error and
 aria-describedby error reference. DUPLICATE uses details.field, never guesses
@@ -538,7 +584,11 @@ echo or value attribute. New PIN and password use password inputs; no reveal
 control exists. Username is public account identity in UserView and is shown
 on saved rows, as C3 requires; typed credentials are not echoed in notices.
 Every form declares POST, prevents native submission and has a form-action
-none backstop. The local fixture never sends any request.
+none backstop. The local fixture never sends any request. **[Round 2]** The
+`autocomplete` values are C3 §10 item 6's: the standard hints for a new or
+current secret. Whether a browser offers to save a PIN or another person's
+password after a submission is unverified; the lead carries a manual check in
+Chrome and Firefox into S8c.
 
 Clear every credential field after every response, success and refusal
 included; on Cancel/Discard/unmount; on a classification or move change;
@@ -568,6 +618,31 @@ even after a successful read retry. Resets never claim sessions ended on an
 unknown answer. Own-password uncertainty explicitly says the list cannot
 resolve it, and explains which password to try at a subsequent change. The
 ordinary Save is the only command path; there is no automatic or separate resend.
+
+**[Round 2]** **Change role opens with no destination chosen.** The select's first
+option is “Choose a new classification” (disabled, selected); the other choices
+omit the person's current classification. Until a move is chosen the form shows
+no credential field and no warning, Save is disabled with the hint “Choose a new
+classification before saving.”, and a submission sends nothing. Focus is on the
+select. Choosing a move shows exactly its fields and its warning; the
+“credentials cleared” note appears only when a previous choice is replaced.
+
+**[Round 2]** **An unknown move whose reread shows a change.** After an unknown outcome
+and a successful reread, if the person's classification, status or username
+differs from when the form opened, the context reads “When you opened this
+form, {name}’s classification was {opening}. The staff list now shows
+{current}[, inactive]. This may be your change; it is not confirmed.” It never
+says the change is this save's. The form is then blocked as `USER_CHANGED`
+blocks it: Save off, Return to staff list, focus on the notice. A reread that
+shows no change keeps the ordinary unknown form; a later successful read retry
+applies the same comparison.
+
+**[Round 2]** **The cooldown.** `INVALID_CREDENTIALS` carrying `retryAfterSeconds` started
+the cooldown and is handled exactly as `THROTTLED`: the same notice, field
+error, disabled Current password and Save, and focus. `INVALID_CREDENTIALS`
+without it is the plain wrong-password state. The wait belongs to the signed-in
+manager's account: reopening an own-change form preserves it, and a different
+manager's sign-in discards it.
 
 ### Exact copy and accessible names
 
@@ -618,6 +693,8 @@ response chooser is part of S8c's UI.
 | Create and move | Select choices | Kitchen · no sign-in; Cashier; Manager | Same as visible; move omits current classification |
 | Create | Classification help | Kitchen needs a name only. Cashiers need a PIN. Managers also need a back-office login. | — |
 | Move | Classification help | Choose the new classification. Changing this choice clears every credential field. | — |
+| Move **[Round 2]** | Select placeholder (first option, disabled) | Choose a new classification | Classification |
+| Move, no destination **[Round 2]** | Commit help | Choose a new classification before saving. | — |
 | Former manager promotion | Read-only fact | Retained username: {username} · This username cannot change. | — |
 | Every create | Field label / help | Name / 1–64 characters. Check the spelling: a name cannot be changed after saving. | Name / off |
 | Create cashier/manager; moves from kitchen; PIN resets; own PIN; reactivation PIN | Field label / help | New PIN / Exactly six digits, 0–9. PINs must differ among active staff. | New PIN / new-password |
@@ -638,7 +715,7 @@ response chooser is part of S8c's UI.
 | DUPLICATE username | Field error | That username is already in use. Choose another username. | Username with associated error |
 | DUPLICATE reactivation PIN | Field error | That PIN is already in use. Enter a new PIN to reactivate this person. | New PIN with associated error |
 | INVALID_CREDENTIALS | Field error | Incorrect current password. Try again. | Current password with associated error |
-| THROTTLED | Field error | Wait {duration} before trying your current password again. | Current password with associated error |
+| THROTTLED, and INVALID_CREDENTIALS with retryAfterSeconds **[Round 2]** | Field error | Wait {duration} before trying your current password again. | Current password with associated error |
 | THROTTLED | Notice title / body | Password verification is cooling down / Wait {duration}. This is the same cooldown used at sign-in. | Focusable notice |
 | THROTTLED | Commit help | Wait for the cooldown before saving. | — |
 | Loading | Status | Loading staff… | status |
@@ -665,6 +742,8 @@ response chooser is part of S8c's UI.
 | Unknown, reread succeeded | Body prefix | {name}: the outcome could not be confirmed. The list has been refreshed. Nothing was sent again. | — |
 | Unknown, reread failed | Body prefix | {name}: the outcome could not be confirmed. The list could not be refreshed. Nothing was sent again. | — |
 | Unknown form | Body continuation | Your draft is kept; enter credentials again. | — |
+| Unknown, reread shows a change **[Round 2]** | Context | When you opened this form, {name}’s classification was {opening classification}. The staff list now shows {current classification}[, inactive]. This may be your change; it is not confirmed. | — |
+| Unknown, reread shows a change **[Round 2]** | Body continuation (replaces the one above) | Return to the staff list and choose an action on the current person. | — |
 | Unknown PIN/password reset | Final continuation | The list cannot confirm the reset or whether this person’s sessions ended. | — |
 | Unknown own password | Final continuation | The list cannot show whether your password changed. For your next change, try the new password you chose as Current password first. If it is refused, try your previous password. Each wrong attempt counts towards your sign-in cooldown. | — |
 | Discarded pending command | Page status | Waiting for an earlier save to finish. Nothing will be sent again. | status |
@@ -691,7 +770,7 @@ reactivation with a new PIN end nothing and carry no warning.
 | Kitchen → cashier | {name} currently has no sign-in sessions. After this change, they must sign in to use the POS. |
 | Kitchen → manager | {name} currently has no sign-in sessions. After this change, they must sign in to use the POS or back office. |
 | Kitchen deactivation | {name} will be inactive. Kitchen staff have no PIN or sign-in sessions. You can reactivate this person later. |
-| Own PIN | Your POS sessions will end on their next action. This back-office session will continue. |
+| Own PIN **[Round 2]** | Your other POS and back-office sessions will end on their next action. This back-office session will continue. |
 | Own password | Your other POS and back-office sessions will end on their next action. This back-office session will continue. |
 
 | Modal / session state | Element | Exact text | Accessible name / autocomplete |
@@ -726,7 +805,7 @@ reactivation with a new PIN end nothing and carry no warning.
 | Event | Focus target and retained state |
 |---|---|
 | Create opens | Name, empty. |
-| Move opens | Classification; only the move's fields exist visibly. |
+| Move opens | **[Round 2]** Classification, with no destination chosen; no fields, no warning, Save off. |
 | Other reset opens | New PIN or New password. |
 | Own change opens | Current password. |
 | Reactivation needs new PIN | Empty New PIN, with associated refusal. |
@@ -734,7 +813,7 @@ reactivation with a new PIN end nothing and carry no warning.
 | Local error | First invalid field in displayed order. |
 | DUPLICATE | The field named by details.field, empty after the response. |
 | INVALID_CREDENTIALS | Empty Current password. |
-| THROTTLED | The focusable cooldown notice; Current password and Save are disabled until zero. Reopening preserves the wait. |
+| THROTTLED, and INVALID_CREDENTIALS with retryAfterSeconds | The focusable cooldown notice; Current password and Save are disabled until zero. Reopening preserves the wait; **[Round 2]** a different manager's sign-in discards it. |
 | USER_CHANGED / NOT_FOUND / OWN_ACCOUNT | Focusable form notice; Save disabled. Reread itself never commits or changes the move. |
 | Read retry after a blocked refusal | Form notice; the manager still chooses a row action. |
 | Pending form / status command | Saving notice / page status; duplicate commands and all row openers are inert. |
@@ -744,6 +823,7 @@ reactivation with a new PIN end nothing and carry no warning.
 | Stay | First form field (Classification for moves), or Saving status if still pending. |
 | Deactivate confirmation opens / Escape | Keep active; Escape closes and restores that person's Deactivate opener. |
 | Deactivated / reactivated | That person's new first action: Reactivate / Change role. |
+| Unknown, reread shows a change | **[Round 2]** Focusable form notice; Save disabled; Return to staff list. |
 | Unknown / definite general failure | First field, preserving non-secret choices and clearing credentials after the response. |
 | Same-manager M-6 / BO-01 restoration | First form field; no credential or secret selection is restored. A held confirmation reopens on Keep active; a held departure on Stay. Pending focuses its status; a held result follows its ordinary result focus. |
 | Different-manager sign-in | **Add person**, in a clean working area; no old draft, pending notice or focus is delivered (lead ruling R2, as BO-07 focuses New preset). The shared frame (`OfficeApp.tsx`) is a later build task; nothing is drawn in `office.js` for it. |
@@ -760,7 +840,7 @@ cleared. Stay never resends. Discard never cancels an already-sent command.
 
 ### Coverage and review states
 
-The 122 registered states below are available directly through `?state=`.
+**[Round 2]** The 126 registered states below are available directly through `?state=`.
 The manifest and artifact carry identical state lists.
 
 | State | Review picture |
@@ -779,6 +859,7 @@ The manifest and artifact carry identical state lists.
 | `create-manager` | Create manager |
 | `saving-create-manager` | Saving · create manager |
 | `saved-create-manager` | Saved · create manager |
+| `move-unchosen` | **[Round 2]** Change role opened · no destination chosen |
 | `move-kitchen-cashier` | Move kitchen cashier |
 | `saving-move-kitchen-cashier` | Saving · move kitchen cashier |
 | `saved-move-kitchen-cashier` | Saved · move kitchen cashier |
@@ -828,8 +909,10 @@ The manifest and artifact carry identical state lists.
 | `duplicate-username-move-kitchen-manager` | Username in use · move kitchen manager |
 | `wrong-password-own-password` | wrong password · own-password |
 | `throttled-own-password` | throttled · own-password |
+| `cooldown-started-own-password` | **[Round 2]** Wrong password starts cooldown · own-password |
 | `wrong-password-own-pin` | wrong password · own-pin |
 | `throttled-own-pin` | throttled · own-pin |
+| `cooldown-started-own-pin` | **[Round 2]** Wrong password starts cooldown · own-pin |
 | `deactivate-cashier` | Confirm deactivation · cashier |
 | `deactivated-cashier` | Deactivated · cashier |
 | `deactivate-manager` | Confirm deactivation · manager |
@@ -853,6 +936,7 @@ The manifest and artifact carry identical state lists.
 | `unknown-pin-cashier` | Unknown outcome · pin-cashier |
 | `unknown-password-manager` | Unknown outcome · password-manager |
 | `unknown-move-cashier-manager` | Unknown outcome · move-cashier-manager |
+| `unknown-move-applied` | **[Round 2]** Unknown move · reread shows the new classification |
 | `unknown-own-password` | Unknown outcome · own-password |
 | `unknown-read-failed` | Unknown reset · list could not be refreshed |
 | `pending-deactivate` | Pending · deactivate |
@@ -903,8 +987,8 @@ The manifest and artifact carry identical state lists.
 | C3 §10.4 warnings | Warning table above; every affected form, deactivation dialog, and own-change form. |
 | C3 §10.5 own account | Own row; own-password; own-pin; own-account crafted-request refusal. |
 | C3 §10.6 credentials | Native field matrix and clearing rules; classification-switch; draft-restored; marker and value-attribute checks. |
-| C3 §10.7 refusals | duplicate-*; wrong-password-*; throttled-*; own-account; user-changed; not-found; reactivate-pin-needed. |
-| C3 §10.8 unknown outcomes | unknown-pin-cashier; unknown-password-manager; unknown-move-cashier-manager; unknown-own-password; unknown-read-failed. |
+| C3 §10.7 refusals | duplicate-*; wrong-password-*; throttled-*; cooldown-started-* (**[Round 2]**); own-account; user-changed; not-found; reactivate-pin-needed. |
+| C3 §10.8 unknown outcomes | unknown-pin-cashier; unknown-password-manager; unknown-move-cashier-manager; unknown-move-applied (**[Round 2]**); unknown-own-password; unknown-read-failed. |
 | C3 §10.9 remaining inventory | loading; load-error; overflow; deactivated-*; reactivate-*; default inactive group; review cross-client links. |
 | Ruling: kitchen is not a role | Classification heading; Kitchen · no sign-in option; no kitchen credential actions. |
 | Ruling: no reveal or echo | Password input types; no value attributes, reveal or confirmation controls; DOM marker assertions. |
@@ -945,12 +1029,13 @@ also follows the rendered rail on every existing Frost back-office screen.
 | visual-directions/index.html | 0 | 0 |
 | P/users.html | 0 | 0 |
 
-The exact inventory and sitemap changes follow. Other sections of both documents
+**[Round 2]** The diff below is regenerated after F1 (the own-change line) and F7
+(the sitemap). The exact inventory and sitemap changes follow. Other sections of both documents
 are untouched.
 
 ```diff
 diff --git a/docs/design/SCREEN-INVENTORY.md b/docs/design/SCREEN-INVENTORY.md
-index 7334ec1..6e70e82 100644
+index 7334ec1..e8f5f41 100644
 --- a/docs/design/SCREEN-INVENTORY.md
 +++ b/docs/design/SCREEN-INVENTORY.md
 @@ -845,27 +845,45 @@ No table merge, transfer, or split (out of scope).
@@ -1000,9 +1085,9 @@ index 7334ec1..6e70e82 100644
 -  (FR-B3). The manager must be told that, at the moment of the action.
 +- Deactivation, every role change, and another person’s PIN or password reset
 +  end every session that person has (a cashier's POS sessions; a manager's POS
-+  and back-office sessions) on their next action. Own PIN
-+  changes end POS sessions; own password changes end every other session. This
-+  back-office session continues for both own changes (C3 §10). Explain the effect
++  and back-office sessions) on their next action. Own PIN and own password
++  changes end every other session of the manager, POS and back office; this
++  back-office session continues (FR-B3). Explain the effect
 +  before the command. Kitchen staff have no sign-in sessions to end.
 +- A name cannot be corrected and a username cannot be changed or reused.
 +  The own row offers neither deactivation nor a role change. No last-manager rule.
@@ -1010,7 +1095,7 @@ index 7334ec1..6e70e82 100644
  ---
  
 diff --git a/docs/design/SITEMAP.md b/docs/design/SITEMAP.md
-index e2bd7d4..b904601 100644
+index e2bd7d4..9b08ba3 100644
 --- a/docs/design/SITEMAP.md
 +++ b/docs/design/SITEMAP.md
 @@ -307,10 +307,16 @@ reports and audit.
@@ -1024,13 +1109,13 @@ index e2bd7d4..b904601 100644
 +│   ├── [INLINE] Create person — classification form .... FR-B3, A1
 +│   ├── [INLINE] Change role — six classification moves . FR-B3, A1
 +│   ├── [INLINE] Reset another person's PIN / password .. FR-B3, A3, A4, J4
-+│   │   └── [INLINE] PIN or username in use — refused ... FR-A4, B3
 +│   ├── [INLINE] Change own password / own PIN .......... FR-B3
 +│   │   └── [INLINE] Current password wrong / throttled . FR-A5b
++│   ├── [INLINE] PIN or username in use — refused ....... FR-A4, B3
 +│   ├── [MODAL] Deactivate — ends sessions on next action FR-B3, AC-32
 +│   ├── [INLINE] Reactivate ............................. FR-B3
 +│   │   └── [INLINE] New PIN required — reactivate ...... FR-B3, A4
-+│   └── [MODAL] Depart — Stay or Discard ................ C2
++│   └── [MODAL] Depart — Stay or Discard
  │
  ├── BO-07 [SCREEN] Discount presets ...................... FR-B5, F5
  │   ├── [INLINE] Preset create / edit — non-modal panel . FR-B5
@@ -1125,4 +1210,10 @@ retained login never verifies). The panel-height rule is behaviour (warning
 and Save always in view), not a pixel value. The fixture's response chooser,
 cross-client links and fixture buttons are review-only and are not product UI.
 
-DONE
+**[Round 2] Validation.** Pending: the lead has been asked for a `design023` and
+`design017` run on the round-2 tree. Until it is quoted here no round-2 result is
+claimed. `design023` gains assertions for F1, F2, F4, F5, F6 and F8; its state
+count becomes 126.
+
+**[Round 2] Carried, not ruled here.** F3's save-prompt question goes to S8c as a
+manual Chrome and Firefox check and to the owner, by the lead.
