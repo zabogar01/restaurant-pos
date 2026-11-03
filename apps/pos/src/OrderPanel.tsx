@@ -6,7 +6,8 @@ import { DiscountSheet } from './DiscountSheets.js';
 import { EmergencyBanner } from './EmergencyBanner.js';
 import { FIRE_ACTION, blockingLines, fireRefusal, holdsUnavailable, sendableLines, type FireRefusal } from './fire.js';
 import { Icon } from './icons.js';
-import { MENU_FIXTURES, menuFixtureFor, originFacts } from './menuFixtures.js';
+import { useCatalog } from './catalog/useCatalog.js';
+import { FIXTURE_ORDER_STATES } from './session/source.js';
 import { MenuRegion } from './MenuRegion.js';
 import { followClientSide } from './navigation.js';
 import { formatAmount } from './money.js';
@@ -17,6 +18,7 @@ import {
   ORDER_FIXTURES,
   ITEM_SHEET_ORIGINS,
   ORDER_STATES,
+  originFacts,
   PENDING_TAG,
   countLines,
   orderCountLabel,
@@ -128,6 +130,7 @@ export function ControlledOrderScreen({
   /** Told on every navigate — same-screen or leaving — so the one owner of `view` above this component re-reads the URL (see `navigate` below). */
   onLocationChange: () => void;
 }) {
+  const catalog = useCatalog(view);
   const [voidOpened, setVoidOpened] = useState<VoidSheetFixture['target']>();
   const [lineOpened, setLineOpened] = useState<string>();
   const [discountOpened, setDiscountOpened] = useState(false);
@@ -206,7 +209,7 @@ export function ControlledOrderScreen({
   }, [store.order.groups]);
   // A line editor is for a line on the order the cashier is looking at — the
   // store's, which holds lines added since the fixture was drawn (FE-021).
-  const fixtureSheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, store.order) : undefined);
+  const fixtureSheet = SHEET_FIXTURES[view.state] ?? catalog.itemSheetFor(view.state) ?? (lineOpened !== undefined ? panelLine(lineOpened, view, store.order) : undefined);
   // An item sheet opened from a tile returns to where the tile was pressed.
   // What Cancel and a successful Add return to is the origin's own policy
   // (ITEM_SHEET_ORIGINS): a persistent condition returns to both, a notice
@@ -242,7 +245,7 @@ export function ControlledOrderScreen({
     const next = orderViewFrom(new URL(destination, window.location.href).search);
     const open = sheet ?? approval ?? discount ?? voiding;
     returnFocusTo.current = open?.opener;
-    if (leaves && !open && !overlayAt(next.state)) window.history.pushState(null, '', destination);
+    if (leaves && !open && !overlayAt(next.state, catalog.itemSheetFor)) window.history.pushState(null, '', destination);
     else window.history.replaceState(null, '', search);
     closeOpened();
     // FE-019 finding 1: `view` is a prop now — the wrapper or `PosRoutes`
@@ -354,14 +357,14 @@ export function ControlledOrderScreen({
           />
         )}
       </div>
-      {import.meta.env.DEV && <OrderFixtureStates current={view.state} />}
+      {FIXTURE_ORDER_STATES && <OrderFixtureStates current={view.state} />}
     </>
   );
 }
 
 /** Whether a state draws a sheet or the prompt over the order: an overlay, not a place (SITEMAP §1). */
-const overlayAt = (state: OrderState) =>
-  Boolean(SHEET_FIXTURES[state] ?? APPROVAL_FIXTURES[state] ?? DISCOUNT_FIXTURES[state] ?? VOID_FIXTURES[state]);
+const overlayAt = (state: OrderState, itemSheetFor: (state: OrderState) => unknown) =>
+  Boolean(SHEET_FIXTURES[state] ?? itemSheetFor(state) ?? APPROVAL_FIXTURES[state] ?? DISCOUNT_FIXTURES[state] ?? VOID_FIXTURES[state]);
 
 /**
  * What the panel's controls do. navigate moves the screen to a ?state= view,
@@ -445,7 +448,7 @@ export function OrderPanel({
   // three. Scoping the notice back to one state would be the per-state flag
   // again, and would let a cashier fire an 86'd Steak from `eightysix`.
   // test/fire.test.tsx pins it; raised in the FE-011 handoff.
-  const unavailable = menuFixtureFor(view).eightySixed ?? [];
+  const { unavailable, picture } = useCatalog(view);
   const lines = groups.flatMap((g) => g.lines);
   // FR-E5, ruling C-2: a quick sale has no fire control at all, so it has
   // nothing to refuse and nothing that is "not sendable yet" either — both
@@ -465,7 +468,7 @@ export function OrderPanel({
     if (firstBlocked) reveal(panel.current?.querySelector<HTMLElement>(`[data-line-id="${firstBlocked}"]`));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- first draw only
   }, []);
-  const loading = MENU_FIXTURES[view.state].loading ?? false;
+  const loading = picture?.loading ?? false;
   // While the menu loads the panel draws a skeleton, not the lines (F2h). A live
   // Send there would fire an order the cashier cannot see, and the pending group
   // on screen is the whole confirmation (ARCH-002 §1.2). So it is inert in place,
@@ -901,10 +904,11 @@ function OrderActions({
   );
 }
 
-// Development-only review aid, outside the 1280×800 frame.
+// Fixture-mode review aid, outside the 1280×800 frame. Behind the one constant, not NODE_ENV:
+// `data-fixture-list` is the bundle test's marker that a build holds none of it.
 function OrderFixtureStates({ current }: { current: OrderState }) {
   return (
-    <nav className="fixture-states" aria-label="Fixture states">
+    <nav className="fixture-states" aria-label="Fixture states" data-fixture-list="pos-03-order-states">
       {ORDER_STATES.map((s) => (
         <a key={s.id} href={`?state=${s.id}`} aria-current={s.id === current ? 'page' : undefined}>
           {s.label}

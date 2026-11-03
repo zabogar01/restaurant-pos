@@ -3,7 +3,8 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FIRE_ACTION, blockingLines, fireRefusal, holdsUnavailable, sendableLines } from '../src/fire.js';
-import { MENU_FIXTURES, REJECTED_NOTICE } from '../src/menuFixtures.js';
+import { REJECTED_NOTICE } from '../src/catalog/menuCopy.js';
+import { MENU_FIXTURES } from '../src/menuFixtures.js';
 import { OrderScreen } from '../src/OrderPanel.js';
 import { FIRE_INCIDENT, ORDER_FIXTURES, ORDER_STATES, orderVariant, type OrderState, type OrderView } from '../src/orderFixtures.js';
 

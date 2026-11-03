@@ -1,18 +1,9 @@
+import { useLayoutEffect } from 'react';
+import { CATALOG_NOTICE, LOADING_LABEL, LOCK_NOTICE, REJECTED_NOTICE } from './catalog/menuCopy.js';
+import type { CatalogItem } from './catalog/types.js';
+import { useCatalog } from './catalog/useCatalog.js';
 import { formatAmount } from './money.js';
-import {
-  CATALOG_NOTICE,
-  itemDestination,
-  LOADING_LABEL,
-  LOCK_NOTICE,
-  MENU_CATEGORIES,
-  menuFixtureFor,
-  originFacts,
-  itemsIn,
-  REJECTED_NOTICE,
-  type CategoryId,
-  type MenuItem,
-} from './menuFixtures.js';
-import { viewSearch, type OrderState, type OrderView, type SettlementLock } from './orderFixtures.js';
+import { originFacts, viewSearch, type OrderState, type OrderView, type SettlementLock } from './orderFixtures.js';
 
 // POS-03, F2b: the menu region left of the order panel — the category rail and
 // the tile grid, or, under a settlement lock, the notice that carries the route
@@ -39,13 +30,22 @@ export function MenuRegion({
   locked = false,
 }: {
   view: OrderView;
-  category: CategoryId;
-  selectCategory: (category: CategoryId) => void;
+  /** The id the order store holds; `undefined` on a fresh mount. The region resolves it against the menu it holds. */
+  category: string | undefined;
+  selectCategory: (category: string) => void;
   navigate?: (destination: string, leaves?: boolean) => void;
   /** F3d rule 2/3: a session-derived lock, always drawn as `draft` — never the lease's words, whatever the fixture says. */
   locked?: boolean;
 }) {
-  const fixture = menuFixtureFor(view);
+  const { snapshot, picture, unavailable, destinationOf } = useCatalog(view);
+  const fixture = picture ?? {};
+  const menu = snapshot.menu;
+  // The selection follows the category's id. One that is no longer on the menu (and a
+  // fresh mount) falls to the first, silently, and the store is told so it stays there.
+  const selected = menu?.categories.find((c) => c.id === category)?.id ?? menu?.categories[0]?.id;
+  useLayoutEffect(() => {
+    if (selected !== undefined && selected !== category) selectCategory(selected);
+  }, [selected, category, selectCategory]);
   const lock = locked ? 'draft' : originFacts(view).lock;
 
   // Under either lock the rail and grid are absent, not inert: adding a line is
@@ -65,17 +65,17 @@ export function MenuRegion({
   return (
     <div className="order-screen__menu">
       <nav className="menu-categories" aria-label="Menu categories">
-        {MENU_CATEGORIES.map((c) => {
-          const selected = c.id === category;
+        {(menu?.categories ?? []).map((c) => {
+          const isSelected = c.id === selected;
           const pressed = fixture.pressedCategories?.includes(c.id) ?? false;
           return (
             <button
               key={c.id}
               type="button"
-              className={['menu-category', selected && 'menu-category--selected', pressed && 'is-pressed']
+              className={['menu-category', isSelected && 'menu-category--selected', pressed && 'is-pressed']
                 .filter(Boolean)
                 .join(' ')}
-              aria-current={selected ? 'true' : undefined}
+              aria-current={isSelected ? 'true' : undefined}
               onClick={() => selectCategory(c.id)}
             >
               {c.name}
@@ -136,16 +136,19 @@ export function MenuRegion({
           </div>
         ) : (
           <div className="menu-grid">
-            {itemsIn(category).map((item) => (
-              <Tile
-                key={item.id}
-                item={item}
-                off={fixture.eightySixed?.includes(item.id) ?? false}
-                pressed={item.id === fixture.pressedItem}
-                from={view.from ?? view.state}
-                navigate={navigate}
-              />
-            ))}
+            {(menu?.items ?? [])
+              .filter((i) => i.categoryId === selected)
+              .map((item) => (
+                <Tile
+                  key={item.id}
+                  item={item}
+                  off={unavailable.includes(item.id)}
+                  pressed={item.id === fixture.pressedItem}
+                  from={view.from ?? view.state}
+                  destinationOf={destinationOf}
+                  navigate={navigate}
+                />
+              ))}
           </div>
         )}
       </div>
@@ -164,13 +167,16 @@ function Tile({
   off,
   pressed,
   from,
+  destinationOf,
   navigate,
 }: {
-  item: MenuItem;
+  item: CatalogItem;
   off: boolean;
   pressed: boolean;
   /** The state this tile was pressed on: the item sheet returns there. */
   from: OrderState;
+  /** `null`: this menu's tiles open nothing. */
+  destinationOf: ((itemId: string, from?: OrderState) => string) | null;
   navigate: (destination: string, leaves?: boolean) => void;
 }) {
 
@@ -202,7 +208,7 @@ function Tile({
       type="button"
       className={pressed ? 'menu-tile is-pressed' : 'menu-tile'}
       data-item={item.id}
-      onClick={() => navigate(itemDestination(item.id, from))}
+      onClick={() => destinationOf && navigate(destinationOf(item.id, from))}
     >
       <span>{item.name}</span>
       <span className="menu-tile__price">{formatAmount(item.price)}</span>

@@ -7,10 +7,12 @@ import { PRESETS } from './discountFixtures.js';
 import { voidLine as applyVoidLine, voidOrder as applyVoidOrder, type VoidRefusal, type VoidResult, type VoidThrough } from './voidChange.js';
 import { refundOrder, type RefundRecord, type RefundRequest, type RefundResult } from './refund.js';
 import { fireOrder } from './fire.js';
-import { DEFAULT_CATEGORY, MENU_ITEMS, originFacts, type CategoryId } from './menuFixtures.js';
+import { unavailableAt, useCatalogStore } from './catalog/useCatalog.js';
+import { FixtureMenu } from './session/source.js';
 import {
   ORDER_FIXTURES,
   orderIdOf,
+  originFacts,
   type Modifier,
   type OrderState,
   type OrderLine,
@@ -75,9 +77,9 @@ export type OrderStore = {
    * not in the URL: it has the store's lifetime, so an item sheet opening and
    * closing never drops the cashier back on Mains. A fresh mount starts there.
    */
-  category: CategoryId;
-  selectCategory: (category: CategoryId) => void;
-  /** Appends a PENDING line, priced from `MENU_ITEMS`. Mutation 1 (item sheet's *Add to order*). */
+  category: string | undefined;
+  selectCategory: (category: string) => void;
+  /** Appends a PENDING line, priced from the fixture menu (S7b2 gives `NewLine` the base price). Mutation 1 (item sheet's *Add to order*). */
   addLine: (line: NewLine) => void;
   /** Drops a line outright, from any group, whether or not a fixture ever pre-figured it. Mutation 3 (a row's ×). */
   removeLine: (lineId: string) => void;
@@ -142,10 +144,12 @@ export type VoidOutcome = { refused: VoidRefusal } | { refused?: undefined; canc
 /** What the store answers a discount change with: the refusal, or nothing. */
 export type DiscountOutcome = { refused: DiscountRefusal } | { refused?: undefined };
 
+// Gone in S7b2, when `NewLine` carries the base price. Until then a line can only be
+// added from a fixture item sheet, which a served build does not draw, so the price is
+// the fixture menu's and a build has none to give.
 function priceOf(itemId: string): Money {
-  const item = MENU_ITEMS.find((i) => i.id === itemId);
-  if (!item) throw new Error(`no menu item for itemId ${itemId}`);
-  return item.price;
+  if (!FixtureMenu) throw new Error(`no menu item for itemId ${itemId}`);
+  return FixtureMenu.priceOf(itemId);
 }
 
 /** FR-C2: the unit price is `max(0, base + modifier deltas)`, and a line's amount is that unit × quantity. The clamp is on the unit, never the total. */
@@ -361,7 +365,10 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
   // FE-026 rule 5: a payment lock belongs to the order the session began on, so
   // it is asked of the active order, never taken as one flag for the whole book.
   const locked = lockedOn(book.activeId);
-  const [category, selectCategory] = useState<CategoryId>(DEFAULT_CATEGORY);
+  // `undefined` is a fresh mount, which starts on the first category; the region
+  // writes the id it resolved (MenuRegion), so the selection follows the id.
+  const [category, selectCategory] = useState<string | undefined>(undefined);
+  const catalog = useCatalogStore();
   const appliedGone = useRef(view.gone);
   const nextId = useRef(0);
   const nextQuick = useRef(1);
@@ -439,22 +446,25 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
     const { view, locked } = context.current;
     // The place's own facts, through originFacts: an item sheet draws the state
     // it was opened from, and reading `X[view.state]` would un-86 a held line.
-    const { menu, lock } = originFacts(view);
+    const { lock } = originFacts(view);
+    // The catalog's list at the press, never one kept from a render (consult C4 item 5).
+    const unavailable = unavailableAt(catalog, view);
     update((prev) => {
       const result = fireOrder(prev.groups, {
         type: prev.type ?? 'table',
-        unavailable: menu.eightySixed ?? [],
+        unavailable,
         locked: locked || lock !== undefined,
         firedAt,
       });
       return result.refused ? prev : { ...prev, groups: result.groups };
     });
-  }, [update]);
+  }, [update, catalog]);
 
   const close = useCallback((closedAt: string, drafts: ReadonlyArray<{ id: string; label: string; amount: Money }>) => {
     // The place's own facts, as the fire reads them. Only another client's lease
     // refuses a close: this tab's own payment session is how a close is reached.
-    const { menu, lock } = originFacts(context.current.view);
+    const { lock } = originFacts(context.current.view);
+    const unavailable = unavailableAt(catalog, context.current.view);
     const attempt = (order: StoreState) =>
       closeOrder(
         {
@@ -462,7 +472,7 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
           groups: order.groups,
           total: totalsFor(order.groups.flatMap((g) => g.lines), order.applied).total,
           locked: lock === 'lease',
-          unavailable: menu.eightySixed ?? [],
+          unavailable,
         },
         drafts,
         closedAt
@@ -476,7 +486,7 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
       return { ...prev, groups, closed: { closedAt: at, tenders, change } };
     });
     return true;
-  }, [update]);
+  }, [update, catalog]);
 
   const changeDiscount = useCallback((change: DiscountChange, through: DiscountThrough): DiscountOutcome => {
     // The facts are read now, at the press, as the fire reads them: both locks

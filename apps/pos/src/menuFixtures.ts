@@ -1,27 +1,31 @@
 import type { Money } from '@pos/money';
-import { ORDER_FIXTURES, type OrderState, type OrderView, type SettlementLock } from './orderFixtures.js';
-
-// POS-03's menu region as fixtures (F2b), selected by the same ?state= as the
-// panel. Categories, items, prices and every notice's copy are the reviewed
-// artifact's (docs/design/visual-directions/frost/pos/order.html, on
-// agent/design-direction). Nothing is fetched: the catalog is the server's and
-// this slice has none.
+import type { CatalogCategory } from './catalog/types.js';
+import type { OrderState, OrderView } from './orderFixtures.js';
+import type { ItemSheetFixture } from './sheetFixtures.js';
 
 
-export const MENU_CATEGORIES = [
+// FIXTURE MODE ONLY. POS-03's menu region as fixtures (F2b), selected by the same
+// ?state= as the panel, and the fixture item sheets (F2c, FE-021). Categories,
+// items, prices and options are the reviewed artifact's
+// (docs/design/visual-directions/frost/pos/order.html, on agent/design-direction).
+// This module is reached only through session/source.ts behind
+// `__FIXTURE_SESSION__`, so a built bundle holds none of it and the fixture menu
+// can never stand in for a served one (B-24, ARCH-021 consult C4 item 5). It holds
+// data and pure functions only, so the bundler can drop it; the bundle test is
+// the proof, not that reasoning.
+
+/** Exported only so the bundle test can prove this module is absent from a build. */
+export const FIXTURE_MENU_MARKER = 'fixture-menu:rpos-b24c7e';
+
+export const MENU_CATEGORIES: ReadonlyArray<CatalogCategory> = [
   { id: 'mains', name: 'Mains' },
   { id: 'sides', name: 'Sides' },
   { id: 'drinks', name: 'Drinks' },
   { id: 'desserts', name: 'Desserts' },
-] as const;
-
-export type CategoryId = (typeof MENU_CATEGORIES)[number]['id'];
+];
 
 /** `category` is the single source of which grid an item is on: every item belongs to exactly one (FE-023). */
-export type MenuItem = { id: string; name: string; price: Money; category: CategoryId };
-
-/** The category a fresh load starts on. The selection itself lives beside the order store (`useOrderStore`), outside the URL. */
-export const DEFAULT_CATEGORY: CategoryId = 'mains';
+export type MenuItem = { id: string; name: string; price: Money; category: string };
 
 // The owner's ruling of 2026-09-24 (POS-03 question 8): a category press shows
 // that category's items. The categorisation is the lead's (FE-023): beers and
@@ -47,85 +51,20 @@ export const MENU_ITEMS: ReadonlyArray<MenuItem> = [
 ];
 
 /** The items a category's grid shows, in the table's order. */
-export const itemsIn = (category: CategoryId) => MENU_ITEMS.filter((i) => i.category === category);
-
-/** A tile's destination: its own item's configuration sheet (M-2), one state per item (FE-021). */
-export const itemDestination = (itemId: string, from?: OrderState) =>
-  `?state=sheet-item-${itemId}${from && from !== 'default' && !from.startsWith('sheet-item') ? `&from=${from}` : ''}`;
+export const itemsIn = (category: string) => MENU_ITEMS.filter((i) => i.category === category);
 
 // A category press has no destination. It is an [INLINE] change of POS-03
 // (SITEMAP §1): the URL and history are untouched, the order stays exactly as
 // it is, and the selection moves (FE-023, superseding the 2026-09-21 ruling
 // that it did not).
 
-export type LockNotice = {
-  title: string;
-  body: string;
-  action: { label: string; href: string };
-  /** notice--soft: the cashier's own doing, on this tab (ruling C-5). */
-  soft: boolean;
-};
-
-// Ruling C-5: the two locks never share a string, and each names its own route
-// out. The artifact links to settlement.html?state=pending and ?state=takeover.
-// FE-015 reconciles the artifact's placeholder state names onto POS-04's real
-// route. The state remains in the query so later slices can supply the pending
-// and takeover compositions without another routing change.
-export const LOCK_NOTICE: Record<SettlementLock, LockNotice> = {
-  draft: {
-    title: 'Finish this payment first',
-    body:
-      'You are collecting payment for this order on this tab. Adding items, changing the discount, firing, and ' +
-      'voiding — including removing a line you have not sent yet — are unavailable until you finish or cancel ' +
-      'it. You can still read the order.',
-    action: { label: 'Back to payment', href: '/pos/settlement?state=settle-pending' },
-    soft: true,
-  },
-  lease: {
-    title: 'Another client is settling this order',
-    body:
-      'Payment was started elsewhere and may involve a card charge already in progress. You cannot add items, ' +
-      'discount, fire, or void this order — and that includes removing a line you have not sent yet. Reading ' +
-      'it is still fine.',
-    action: { label: 'Manager: take over payment', href: '/pos/settlement?state=settle-takeover' },
-    soft: false,
-  },
-};
-
-export const CATALOG_NOTICE = {
-  title: 'The menu changed while you were ordering',
-  body: 'Nothing was added. Prices have been refreshed — check the item and add it again.',
-};
-
-/**
- * B-20, the `error` state: a command the server rejected. The copy is the
- * artifact's. **The whole claim is that nothing happened** — so the notice
- * carries no undo, no retry of the command, and nothing that touches the
- * order; its one control clears the notice and leaves the cashier on the order
- * they were already on, with the live grid to add the line again.
- *
- * `role="alert"`, not `role="status"`: this is the answer to something the
- * cashier just did, and F2e ruled that a failure a screen-reader user is never
- * told about is a real defect. CATALOG_NOTICE is the other shape — a standing
- * condition of the screen — and keeps `role="status"`.
- */
-export const REJECTED_NOTICE = {
-  title: 'Could not add that line',
-  body: 'The order is exactly as it was. Nothing was half-applied.',
-  action: 'Try again',
-};
-
-export const LOADING_LABEL = 'LOADING MENU';
-
 export type MenuFixture = {
-  /** Absent: the menu is replaced by the lock notice (AC-21, AC-29). */
-  lock?: SettlementLock;
   loading?: boolean;
   catalogChanged?: boolean;
   /** Items 86'd: drawn disabled in place, never removed or moved (ruling C-3). */
   eightySixed?: ReadonlyArray<string>;
   /** Held down, because a fixture cannot hold a finger. */
-  pressedCategories?: ReadonlyArray<CategoryId>;
+  pressedCategories?: ReadonlyArray<string>;
   pressedItem?: string;
   /**
    * B-20: the order this state's rejection notice was drawn over, and so the
@@ -149,8 +88,9 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   // colours show: white on the ink fill, ink on white.
   // The pressed tile is a Main so it shows on a fresh load, which starts on Mains (FE-023).
   pressed: { pressedCategories: ['mains', 'sides'], pressedItem: 'burger' },
-  'lock-draft': { lock: 'draft' },
-  'lock-lease': { lock: 'lease' },
+  // The lock states: the place's lock is the order stand-in's (orderFixtures.ts, `originFacts`).
+  'lock-draft': {},
+  'lock-lease': {},
   eightysix: { eightySixed: ['steak'] },
   loading: { loading: true },
   catalog: { catalogChanged: true },
@@ -218,8 +158,8 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   // and grid are the artifact's default ones behind both states.
   quick: {},
   'quick-line': {},
-  // FE-026: the floor's entry snapshots. Table 7's grid is replaced by the lock notice, as lock-draft's is.
-  'open-t7': { lock: 'draft' },
+  // FE-026: the floor's entry snapshots. Table 7's grid is replaced by the lock notice, as lock-draft's is (the lock is orderFixtures.ts's).
+  'open-t7': {},
   'open-t9': {},
   'open-t12': {},
   'quick-new': {},
@@ -231,18 +171,146 @@ export const MENU_FIXTURES: Record<OrderState, MenuFixture> = {
   'settle-ceiling': {},
 };
 
-/**
- * The view-level facts an open item sheet takes from the state it was opened
- * from (`view.from`), in one place so a new one cannot be missed: an item
- * sheet's own fixture states none of them, and reading it would un-86 a held
- * line, drop the menu's notice, or hide the application-wide incident banner
- * (FR-E3) behind a sheet. Anything view-level that is *about the place, not the
- * sheet* is read here, never as `X[view.state]`.
- */
-export function originFacts(view: OrderView) {
-  const origin = view.from ?? view.state;
-  return { menu: MENU_FIXTURES[origin], incident: ORDER_FIXTURES[origin].incident, lock: ORDER_FIXTURES[origin].lock };
+/** The menu fixture a view draws: an item sheet draws the state it was opened from, so what was 86'd stays 86'd. */
+export const menuFixtureFor = (view: OrderView): MenuFixture => MENU_FIXTURES[view.from ?? view.state];
+
+// ---- The fixture item sheets (F2c, FE-021) ----
+// The artifact routes each sheet's actions to fixture states. Its Cancel is
+// order.html (the default state); its Add goes to eightysix and its line
+// editor's Back goes to eightysix too. Those are the artifact's choices, kept
+// as they are. Remove line lands on the default figures without the Steak,
+// which is what the artifact's order.html shows.
+type Def = { id: string; groups: ReadonlyArray<{ name: string; many: boolean; options: ReadonlyArray<[string, bigint]>; on: ReadonlyArray<number> }> };
+
+// The tables are built on the first read, not at load. A function nothing calls is
+// dropped by the bundler, a top-level call is not: the fixture menu has to leave a
+// build whole (B-24), and a table built at module level would stay.
+let built: { fixtures: Partial<Record<OrderState, ItemSheetFixture>>; states: ReadonlyArray<OrderState> } | undefined;
+
+function buildItemSheets() {
+  // FE-021: the twelve item sheets. Every option set, price and default is the
+  // artifact's (frost-order-flow.js, the `items` table) — illustrative fixture
+  // data, never a production catalogue; the real one is the server's.
+  const g = (name: string, many: boolean, options: Def['groups'][number]['options'], on: ReadonlyArray<number> = [0]) => ({ name, many, options, on });
+
+  // Burger keeps the ids its tests and Add routing already use.
+  const burger: Omit<ItemSheetFixture, 'unavailable'> = {
+    kind: 'item',
+    itemId: 'burger',
+    name: 'Burger',
+    price: 100_000n,
+    groups: [
+      {
+        id: 'size',
+        name: 'Size',
+        many: false,
+        options: [
+          { id: 'regular', name: 'Regular', delta: 0n },
+          { id: 'large', name: 'Large', delta: 20_000n },
+          { id: 'small', name: 'Small', delta: -10_000n },
+        ],
+      },
+      {
+        id: 'extras',
+        name: 'Extras',
+        many: true,
+        options: [
+          { id: 'cheese', name: 'Extra cheese', delta: 15_000n },
+          { id: 'bacon', name: 'Bacon', delta: 20_000n },
+          { id: 'no-onion', name: 'No onion', delta: 0n },
+        ],
+      },
+    ],
+    chosen: { size: ['large'], extras: ['cheese'] },
+    opener: '.menu-tile[data-item="burger"]',
+    cancel: { state: 'default' },
+    add: { state: 'eightysix' },
+  };
+
+  const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  const OTHER_ITEMS: ReadonlyArray<Def & { name: string; price: bigint }> = [
+    { id: 'wings', name: 'Chicken Wings', price: 90_000n, groups: [g('Sauce', false, [['Buffalo', 0n], ['BBQ', 0n], ['Garlic butter', 10_000n]])] },
+    {
+      id: 'steak',
+      name: 'Steak',
+      price: 240_000n,
+      groups: [g('Doneness', false, [['Medium rare', 0n], ['Medium', 0n], ['Well done', 0n]]), g('Extras', true, [['Pepper sauce', 10_000n], ['Garlic butter', 15_000n]])],
+    },
+    { id: 'fish', name: 'Fish & Chips', price: 140_000n, groups: [g('Sauce', false, [['Tartare', 0n], ['Chilli mayo', 5_000n]]), g('Extras', true, [['Extra fish', 60_000n]])] },
+    { id: 'salad', name: 'Caesar Salad', price: 75_000n, groups: [g('Extras', true, [['Grilled chicken', 25_000n], ['No croutons', 0n]])] },
+    { id: 'soup', name: 'Soup of the Day', price: 55_000n, groups: [g('Bread', false, [['With bread', 0n], ['No bread', -5_000n]], [1])] },
+    { id: 'fries', name: 'Fries', price: 40_000n, groups: [g('Seasoning', false, [['Salt', 0n], ['Chilli', 0n]]), g('Extras', true, [['Cheese sauce', 10_000n]], [])] },
+    { id: 'rings', name: 'Onion Rings', price: 45_000n, groups: [g('Dip', false, [['Ketchup', 0n], ['Garlic mayo', 5_000n]], [1])] },
+    { id: 'soda', name: 'Soda', price: 30_000n, groups: [] },
+    { id: 'water', name: 'Mineral Water', price: 20_000n, groups: [] },
+    { id: 'coffee', name: 'Coffee', price: 35_000n, groups: [g('Size', false, [['Regular', 0n], ['Large', 10_000n]], [1]), g('Extras', true, [['Extra shot', 10_000n]], [])] },
+    { id: 'beer', name: 'Beer', price: 65_000n, groups: [g('Size', false, [['Regular', 0n], ['Large', 25_000n]], [1])] },
+    { id: 'wine', name: 'House Wine', price: 80_000n, groups: [g('Pour', false, [['Standard', 0n], ['Small', -20_000n]], [1])] },
+    { id: 'cheesecake', name: 'Cheesecake', price: 60_000n, groups: [] },
+  ];
+
+  function fromDef(d: (typeof OTHER_ITEMS)[number]): Omit<ItemSheetFixture, 'unavailable'> {
+    const groups = d.groups.map((grp) => ({
+      id: slug(grp.name),
+      name: grp.name,
+      many: grp.many,
+      options: grp.options.map(([name, delta]) => ({ id: slug(name), name, delta })),
+    }));
+    return {
+      kind: 'item',
+      itemId: d.id,
+      name: d.name,
+      price: d.price,
+      groups,
+      chosen: Object.fromEntries(d.groups.map((grp, i) => [groups[i]!.id, grp.on.map((j) => groups[i]!.options[j]!.id)])),
+      opener: `.menu-tile[data-item="${d.id}"]`,
+      cancel: { state: 'default' },
+      add: { state: 'default' },
+    };
+  }
+
+  /** The fourteen `sheet-item-<id>` states, in tile order. `sheet-item` stays Burger's alias. */
+  // `__PURE__`: these calls build the table once at load, and a bundle that never reads it must be able to drop it.
+  const ITEM_SHEETS: Record<string, Omit<ItemSheetFixture, 'unavailable'>> = {
+    'sheet-item-burger': { ...burger, add: { state: 'default' } },
+    ...(Object.fromEntries(OTHER_ITEMS.map((d) => [`sheet-item-${d.id}`, fromDef(d)]))),
+  };
+
+
+
+  /** Every item-sheet state, in tile order: the twelve `sheet-item-<id>` ones, then the two aliases. */
+  const ITEM_SHEET_FIXTURES: Partial<Record<OrderState, ItemSheetFixture>> = {
+    ...(ITEM_SHEETS as Partial<Record<OrderState, ItemSheetFixture>>),
+    'sheet-item': burger,
+
+    'sheet-item86': {
+      ...burger,
+      unavailable: {
+        title: 'Burger is no longer available',
+        body:
+          'A manager marked it 86 while you were choosing. Your selections are kept so you can note them, but it ' +
+          'cannot be added.',
+      },
+    },
+  };
+
+  return { fixtures: ITEM_SHEET_FIXTURES, states: Object.keys(ITEM_SHEETS) as ReadonlyArray<OrderState> };
 }
 
-/** The menu fixture a view draws: an item sheet draws the state it was opened from, so what was 86'd stays 86'd. */
-export const menuFixtureFor = (view: OrderView): MenuFixture => originFacts(view).menu;
+/** Every item-sheet state's sheet: the twelve `sheet-item-<id>` ones, then the two aliases. */
+export const itemSheetFixtures = (): Partial<Record<OrderState, ItemSheetFixture>> => (built ??= buildItemSheets()).fixtures;
+
+/** The `sheet-item-<id>` states, in tile order. */
+export const itemSheetStates = (): ReadonlyArray<OrderState> => (built ??= buildItemSheets()).states;
+
+/** A tile's destination: its own item's configuration sheet (M-2), one state per item (FE-021). */
+export const itemDestination = (itemId: string, from?: OrderState) =>
+  `?state=sheet-item-${itemId}${from && from !== 'default' && !from.startsWith('sheet-item') ? `&from=${from}` : ''}`;
+
+/** The price a fixture item adds at. */
+export function fixturePriceOf(itemId: string): Money {
+  const item = MENU_ITEMS.find((i) => i.id === itemId);
+  if (!item) throw new Error(`no menu item for itemId ${itemId}`);
+  return item.price;
+}

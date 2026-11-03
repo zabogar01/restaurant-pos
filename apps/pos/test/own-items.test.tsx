@@ -2,15 +2,19 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { MENU_FIXTURES, MENU_ITEMS } from '../src/menuFixtures.js';
+import { itemSheetFixtures, itemSheetStates, MENU_FIXTURES, MENU_ITEMS } from '../src/menuFixtures.js';
 import { APPROVAL_FIXTURES } from '../src/approvalFixtures.js';
 import { DISCOUNT_FIXTURES } from '../src/discountFixtures.js';
 import { VOID_FIXTURES } from '../src/voidFixtures.js';
 import { OrderScreen } from '../src/OrderPanel.js';
 import { orderTotals } from '../src/discount.js';
 import { STAFF_MEAL } from '../src/discountFixtures.js';
-import { ITEM_SHEET_ORIGINS, ORDER_FIXTURES, ORDER_STATES, orderViewFrom, type OrderState } from '../src/orderFixtures.js';
-import { ITEM_SHEET_STATES, QUANTITY_MAX, SHEET_FIXTURES, panelLine, type ItemSheetFixture } from '../src/sheetFixtures.js';
+import { ITEM_SHEET_ORIGINS, ORDER_FIXTURES, ORDER_STATES, orderViewFrom, originFacts, type OrderState } from '../src/orderFixtures.js';
+import { QUANTITY_MAX, SHEET_FIXTURES as LINE_SHEETS, panelLine, type ItemSheetFixture, type SheetFixture } from '../src/sheetFixtures.js';
+
+// The item sheets are the fixture menu's (menuFixtures.ts) and the line editors' are sheetFixtures.ts's;
+// every assertion below reads them as the one table they were.
+const SHEET_FIXTURES: Partial<Record<OrderState, SheetFixture>> = { ...itemSheetFixtures(), ...LINE_SHEETS };
 import { SheetView } from '../src/Sheets.js';
 import { shownOrder } from '../src/voidFixtures.js';
 import { formatAmount } from '../src/money.js';
@@ -94,7 +98,7 @@ describe('criterion 1: each of the fourteen tiles adds its own item', () => {
   });
 
   it('the fourteen states exist, with sheet-item still Burger’s alias', () => {
-    expect(ITEM_SHEET_STATES).toEqual(MENU_ITEMS.map((i) => `sheet-item-${i.id}`));
+    expect(itemSheetStates()).toEqual(MENU_ITEMS.map((i) => `sheet-item-${i.id}`));
     expect((SHEET_FIXTURES['sheet-item' as never] as ItemSheetFixture).itemId).toBe('burger');
   });
 });
@@ -477,7 +481,7 @@ describe('round 3', () => {
   // and not a state whose grid is inert (a lock, or the loading skeleton).
   // Derived from the fixture tables, not from the parser's own list.
   const overlay = (id: string) => Boolean(SHEET_FIXTURES[id as never] ?? APPROVAL_FIXTURES[id as never] ?? DISCOUNT_FIXTURES[id as never] ?? VOID_FIXTURES[id as never]);
-  const inert = (id: string) => Boolean(MENU_FIXTURES[id as OrderState].lock || MENU_FIXTURES[id as OrderState].loading);
+  const inert = (id: string) => Boolean(originFacts({ state: id as OrderState }).lock || MENU_FIXTURES[id as OrderState].loading);
   const pressable = (id: string) => !overlay(id) && !inert(id);
 
   it.each(ORDER_STATES.map((s) => s.id))('10: from=%s parses per the rule', (id) => {

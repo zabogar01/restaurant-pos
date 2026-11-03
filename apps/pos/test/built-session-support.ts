@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { FIXTURE_MENU_MARKER } from '../src/menuFixtures.js';
 import { FIXTURE_SESSION_MARKER } from '../src/session/fixtureSession.js';
 
 // ARCH-014 question 3, mechanism 1: the fixture session is chosen by a constant
@@ -14,7 +15,19 @@ import { FIXTURE_SESSION_MARKER } from '../src/session/fixtureSession.js';
 const pos = resolve(import.meta.dirname, '..');
 const vite = resolve(import.meta.dirname, '../../../node_modules/vite/bin/vite.js');
 
-const FIXTURE_ONLY = ['Ana R. · Cashier', 'Sign-in locked for 4 min 12 s', 'LOGIN cooldown', FIXTURE_SESSION_MARKER];
+// Item names cannot be needles: ORDER_FIXTURES, which stays, names Burger and Steak. The option names
+// below are used by the fixture item sheets and by no fixture order. `pos-03-order-states` marks POS-03's
+// list of fixture states, which was gated by NODE_ENV and is now gated by the one constant.
+const FIXTURE_ONLY = [
+  'Ana R. · Cashier',
+  'Sign-in locked for 4 min 12 s',
+  'LOGIN cooldown',
+  FIXTURE_SESSION_MARKER,
+  FIXTURE_MENU_MARKER,
+  'Chilli mayo',
+  'Garlic mayo',
+  'pos-03-order-states',
+];
 
 export function builtSessionTests(nodeEnv: 'production' | 'development') {
   let out = '';
@@ -36,7 +49,7 @@ export function builtSessionTests(nodeEnv: 'production' | 'development') {
   });
 
   describe(`the built POS bundle, NODE_ENV=${nodeEnv}`, () => {
-    it('27. holds none of the fixture session, the fixture cashier or POS-01’s fixture pictures', () => {
+    it('27. holds none of the fixture session, the fixture cashier, POS-01’s fixture pictures, the fixture menu or POS-03’s list of fixture states', () => {
       expect(scripts().length).toBeGreaterThan(0);
       for (const file of scripts()) {
         const code = readFileSync(file, 'utf8');
