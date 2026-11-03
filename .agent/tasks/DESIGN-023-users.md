@@ -366,9 +366,49 @@ Part A provides the list, forms, confirmations, refusals, recovery and session
 walks below. Part B appends DESIGN-023 additions to `docs/DESIGN.md` without
 rewriting an existing rule. Part C registers every state in the gallery, resolves
 Staff destinations to Frost, adds the wireframe pointer, updates inventory and
-sitemap, and supplies `docs/design/checks/design023.cjs`. The only earlier-check
-change is DESIGN-014's authored prototype-link expectation for report-detail,
-from four to three; its assertion is retained.
+sitemap, and supplies `docs/design/checks/design023.cjs`. Two earlier-check
+expectations change, and nothing else in either file: `design019.cjs`'s F5
+expected Phase 1 rail becomes `["Menu","Tables","Staff","Discount
+presets","Settings"]` (lead ruling R1), and `design014.cjs`'s authored
+prototype-link count for report-detail falls from four to three, because its
+Staff link now reaches `users.html`. Both assertions are retained.
+
+**The panel-height change.** BO-06's longest forms (create manager, kitchen to
+manager, own password with a refusal notice) are taller than the 1440×900
+content pane. The shared non-modal panel would then push the session warning
+and Save below the fold, so a manager could press Save without having seen the
+warning that is the reason it needs none. `users.js` therefore measures the
+space from the panel's top to the content pane's bottom (less that pane's own
+bottom padding) and sets it as the panel's `max-height`, on open, on resize and
+on scroll; `users.css` makes the panel a column whose field body scrolls while
+the heading, the warning and the footer stay in view. This is measured geometry,
+not a new size token, and no shared CSS changed. `design023.cjs` asserts it in
+every state at both sizes ("commit controls visible"). S8c should reproduce the
+behaviour, not the number: the warning and Save are always in view while a form
+is open.
+
+**Finishing pass (design023c, Claude Opus).** Checked against the task, C3 §10
+and the rulings; three things were wrong and were fixed, nothing redesigned:
+
+1. *Session warnings named surfaces a cashier does not have.* Every warning for a
+   cashier said “POS and back-office sessions”. A cashier has POS sessions only;
+   the task asks for the person's own terms (what ends: POS, back office, or
+   both), and Part B's rule says to name the affected surfaces. The warning now
+   says “POS sessions” for a cashier and “POS and back-office sessions” for a
+   manager. The inventory's two BO-06 lines that said the same were corrected.
+2. *Walk 4's review links ignored the person.* After deactivating a kitchen
+   person the fixture offered “Cashier's POS — session ended”, and a cashier's
+   deactivation also offered the manager's BO-01 link. The links now follow the
+   classification: none for kitchen, POS-01 for a cashier, POS-01 and BO-01 for a
+   manager (DESIGN-011 P1, subject-correct walks).
+3. *The cooldown used a different format from sign-in.* BO-06 said “Wait 300
+   seconds” (and would reach “1 seconds”) while claiming to be “the same cooldown
+   used at sign-in”, which BO-01 and M-6 show as “5 min”, “4 min 59 s”, “59 s”
+   (`D`: omit zero minute and second parts). BO-06 now uses that formatter.
+
+Each fix is asserted in `design023.cjs` (subject-correct warnings for a cashier
+reset, move and deactivation and a manager deactivation; walk-4 links for each
+classification; the cooldown format).
 
 ### Rules for S8c
 
@@ -380,7 +420,7 @@ read withholds counts. A success while that read still fails draws the known
 rows including the answered row and the partial-list warning. No list reread
 follows authoritative success. There is no search, sort, reorder or staff number.
 
-M. Iqbal is the initial actor. His row says “You · Signed in” and offers only
+M. Iqbal is the initial actor. The own row says “You · Signed in” and offers only
 Change my password and Change my PIN. These own changes live on the own row,
 where the subject is explicit and the actions cannot be confused with a reset
 of someone else. Kitchen is labelled “Kitchen” with “No sign-in”, never a role
@@ -469,8 +509,11 @@ ordinary Save is the only command path; there is no automatic or separate resend
 
 Braces below are substitution slots, not literal UI text. `{name}` is the
 subject's full saved name; `{classification}` is exactly Kitchen, Cashier or
-Manager; `{username}` is the stored lower-case username; `{seconds}` is the
-remaining server-supplied wait, decremented locally to zero. The table is the
+Manager; `{username}` is the stored lower-case username; `{duration}` is the
+remaining server-supplied wait (`retryAfterSeconds`), decremented locally to
+zero and written as BO-01 and M-6 write it: whole minutes as “{m} min”,
+remaining seconds as “{s} s”, a zero part omitted (“5 min”, “4 min 59 s”,
+“59 s”). The table is the
 copy contract, including the three S8c browser walks D1–D3. Where no separate
 accessible name is listed, visible text is the accessible name. No fixture-only
 response chooser is part of S8c's UI.
@@ -531,8 +574,8 @@ response chooser is part of S8c's UI.
 | DUPLICATE username | Field error | That username is already in use. Choose another username. | Username with associated error |
 | DUPLICATE reactivation PIN | Field error | That PIN is already in use. Enter a new PIN to reactivate this person. | New PIN with associated error |
 | INVALID_CREDENTIALS | Field error | Incorrect current password. Try again. | Current password with associated error |
-| THROTTLED | Field error | Wait {seconds} seconds before trying your current password again. | Current password with associated error |
-| THROTTLED | Notice title / body | Password verification is cooling down / Wait {seconds} seconds. This is the same cooldown used at sign-in. | Focusable notice |
+| THROTTLED | Field error | Wait {duration} before trying your current password again. | Current password with associated error |
+| THROTTLED | Notice title / body | Password verification is cooling down / Wait {duration}. This is the same cooldown used at sign-in. | Focusable notice |
 | THROTTLED | Commit help | Wait for the cooldown before saving. | — |
 | Loading | Status | Loading staff… | status |
 | Load failed | Title / body / action | Staff could not be loaded / Try again to read the staff list. / Try again | Try again |
@@ -565,14 +608,22 @@ response chooser is part of S8c's UI.
 | Form session refusal, after recovery | Title / body | Nothing was saved / Enter credentials again, then press Save. | — |
 
 Warnings are exact complete sentences beside the commit controls, or in the
-deactivation confirmation. Their wording is classification-specific:
+deactivation confirmation. Their wording is classification-specific, and the
+rule S8c tests is: the subject's current classification decides the surfaces
+named, “POS sessions” for a cashier (a former manager's retained login never
+verifies, so it has no back-office session) and “POS and back-office sessions”
+for a manager; a kitchen subject has none. Creation, plain reactivation and
+reactivation with a new PIN end nothing and carry no warning.
 
 | Command / subject | Exact warning |
 |---|---|
-| Reset PIN / reset password / promotion from cashier | {name}’s POS and back-office sessions will end on their next action. They must sign in again. |
-| Authenticating person deactivation | {name}’s POS and back-office sessions will end on their next action. They cannot sign in while inactive. You can reactivate this person later. |
+| Reset PIN of a cashier / promotion from cashier | {name}’s POS sessions will end on their next action. They must sign in again. |
+| Reset PIN or password of a manager | {name}’s POS and back-office sessions will end on their next action. They must sign in again. |
+| Cashier deactivation | {name}’s POS sessions will end on their next action. They cannot sign in while inactive. You can reactivate this person later. |
+| Manager deactivation | {name}’s POS and back-office sessions will end on their next action. They cannot sign in while inactive. You can reactivate this person later. |
 | Manager → cashier | {name}’s POS and back-office sessions will end on their next action. Their back-office login will no longer work. They can sign in at the POS. |
-| Cashier/manager → kitchen | {name}’s POS and back-office sessions will end on their next action. Their PIN will be removed. They will no longer sign in. |
+| Cashier → kitchen | {name}’s POS sessions will end on their next action. Their PIN will be removed. They will no longer sign in. |
+| Manager → kitchen | {name}’s POS and back-office sessions will end on their next action. Their PIN will be removed. They will no longer sign in. |
 | Kitchen → cashier | {name} currently has no sign-in sessions. After this change, they must sign in to use the POS. |
 | Kitchen → manager | {name} currently has no sign-in sessions. After this change, they must sign in to use the POS or back office. |
 | Kitchen deactivation | {name} will be inactive. Kitchen staff have no PIN or sign-in sessions. You can reactivate this person later. |
@@ -631,7 +682,7 @@ deactivation confirmation. Their wording is classification-specific:
 | Deactivated / reactivated | That person's new first action: Reactivate / Change role. |
 | Unknown / definite general failure | First field, preserving non-secret choices and clearing credentials after the response. |
 | Same-manager M-6 / BO-01 restoration | First form field; no credential or secret selection is restored. A held confirmation reopens on Keep active; a held departure on Stay. Pending focuses its status; a held result follows its ordinary result focus. |
-| Different-manager sign-in | Proposed Add person in a clean working area; no old draft, pending notice or focus is delivered. Lead owns the frame policy. |
+| Different-manager sign-in | **Add person**, in a clean working area; no old draft, pending notice or focus is delivered (lead ruling R2, as BO-07 focuses New preset). The shared frame (`OfficeApp.tsx`) is a later build task; nothing is drawn in `office.js` for it. |
 | Late answer after explicit Discard | Apply answered row silently; do not reopen a form, announce or move focus. |
 
 M-6 retains the mounted form, visible and inert, and cannot be escaped. BO-01
@@ -780,7 +831,7 @@ The manifest and artifact carry identical state lists.
 | I BO-06 active/inactive and kitchen | default; every kitchen row has no PIN/password action. |
 | I BO-06 create / moves / own changes | create-*; move-*; own-password; own-pin. |
 | I BO-06 validation / saving / saved / refusals | invalid-*; saving-*; saved-*; duplicate-*; own-account; user-changed; not-found; wrong-password-*; throttled-*. |
-| I BO-06 status and cross-client | deactivate-*; deactivated-*; reactivate-*; reactivated-*; reactivate-pin-needed; saved-reactivate-pin. Deactivated states expose review-only links to POS-01 invalidated and BO-01 session-ended, on next request. |
+| I BO-06 status and cross-client | deactivate-*; deactivated-*; reactivate-*; reactivated-*; reactivate-pin-needed; saved-reactivate-pin. Deactivated states expose review-only links, inside the review fixtures, by classification: deactivated-cashier to POS-01 *session invalidated*; deactivated-manager to POS-01 and BO-01 *Session ended*; deactivated-kitchen to none. |
 | I BO-06 uncertainty / draft/session states | failure; unknown-*; unsaved; leave-pending; leave-unknown; reauth; bo01-draft; draft-restored; partial. |
 | C3 §10.1 kitchen | create-kitchen; default halim and wibowo; deactivate-kitchen; reactivate-kitchen. |
 | C3 §10.2 create | create-kitchen/cashier/manager and their saving/saved states. Normalization is walked by the check script. |
@@ -835,10 +886,10 @@ are untouched.
 
 ```diff
 diff --git a/docs/design/SCREEN-INVENTORY.md b/docs/design/SCREEN-INVENTORY.md
-index 7334ec1..f6669ff 100644
+index 7334ec1..6e70e82 100644
 --- a/docs/design/SCREEN-INVENTORY.md
 +++ b/docs/design/SCREEN-INVENTORY.md
-@@ -845,27 +845,44 @@ No table merge, transfer, or split (out of scope).
+@@ -845,27 +845,45 @@ No table merge, transfer, or split (out of scope).
  
  ## BO-06 — Users
  
@@ -862,7 +913,7 @@ index 7334ec1..f6669ff 100644
 +*own account — deactivation and role change refused* · *user changed meanwhile — reread* ·
 +*not found* · *current password wrong or throttled* ·
 +*warning before every session-ending command* · *deactivation confirmation and result* ·
-+*deactivation invalidates that person's POS and back-office sessions on their next authenticated request* ·
++*deactivation invalidates that person's sessions (POS, and back office for a manager) on their next authenticated request* ·
 +*reactivating and reactivated* · *reactivation needs a new PIN* ·
 +*general failure with draft kept* · *outcome unknown, reread, no resend* ·
 +*departure decision* · *M-6 over inert work* · *BO-01 with isolated draft* ·
@@ -884,7 +935,8 @@ index 7334ec1..f6669ff 100644
 -- Deactivating a user or resetting a PIN has an immediate floor consequence
 -  (FR-B3). The manager must be told that, at the moment of the action.
 +- Deactivation, every role change, and another person’s PIN or password reset
-+  end that person’s POS and back-office sessions on their next action. Own PIN
++  end every session that person has (a cashier's POS sessions; a manager's POS
++  and back-office sessions) on their next action. Own PIN
 +  changes end POS sessions; own password changes end every other session. This
 +  back-office session continues for both own changes (C3 §10). Explain the effect
 +  before the command. Kitchen staff have no sign-in sessions to end.
@@ -894,7 +946,7 @@ index 7334ec1..f6669ff 100644
  ---
  
 diff --git a/docs/design/SITEMAP.md b/docs/design/SITEMAP.md
-index e2bd7d4..6992a91 100644
+index e2bd7d4..b904601 100644
 --- a/docs/design/SITEMAP.md
 +++ b/docs/design/SITEMAP.md
 @@ -307,10 +307,16 @@ reports and audit.
@@ -912,7 +964,7 @@ index e2bd7d4..6992a91 100644
 +│   ├── [INLINE] Change own password / own PIN .......... FR-B3
 +│   │   └── [INLINE] Current password wrong / throttled . FR-A5b
 +│   ├── [MODAL] Deactivate — ends sessions on next action FR-B3, AC-32
-+│   ├── [ACTION] Reactivate ............................. FR-B3
++│   ├── [INLINE] Reactivate ............................. FR-B3
 +│   │   └── [INLINE] New PIN required — reactivate ...... FR-B3, A4
 +│   └── [MODAL] Depart — Stay or Discard ................ C2
  │
@@ -932,19 +984,81 @@ index e2bd7d4..6992a91 100644
 
 ### Validation, measurements and unresolved questions
 
-The designer did not run the check scripts. The lead has been asked through
-Herdr to run DESIGN-023, DESIGN-012 to -014, DESIGN-016 to -022, npm run verify,
-and the one Impeccable mechanical scan. Browser evidence is requested under
-`../evidence/DESIGN-023/run1/`, outside the repository. Results and measured
-geometry will be recorded here after the lead returns them; no passing result
-is claimed yet.
+The designer ran no check script; the lead ran every one. Evidence is outside
+the repository, under `../restaurant-pos-wt/evidence/DESIGN-023/runN/`.
 
-One frame question was sent to the lead: after a different manager signs in,
-BO-06 proposes focus on Add person in the clean Staff screen. This is a desired
-screen target, not a unilateral change to the frame's policy. No product,
-server, audit or boundary question has been raised or decided by this drawing.
-No tests outside docs/design are changed; no token check is required by a token
-edit because there is none. Physical-device and assistive-technology testing
-are not claimed. Independent design review is still required before S8c.
+**Earlier runs on the Codex draft.** run1: `design012`, `013`, `014` with
+failures and errors empty; `design016` 399/399, `design018` 733/733,
+`design020` 754/754, `design021` 543/543, `design022` 691/691; `npm run verify`
+151 files / 5497 tests. It also failed three scripts, all fixed before run2 and
+run3: `design023` (a hidden fixture chooser timed out), `design017` 349/350 (an
+`[ACTION]` node in the sitemap, now `[INLINE] Reactivate`) and `design019`
+995/998 (the rail list, settled by R1). run2: `design023` 1866/1866, 122
+states; `design017` 350/350. run3: `design019` 998/998 with R1's one-line change.
 
-Validation is pending the lead's results.
+**Final run, run4, at `a02f699` (tree clean at start;
+`evidence/DESIGN-023/run4/designNNN/`).** Every script exited 0 with no failures
+and no page errors:
+
+| Script | Result | States |
+|---|---|---:|
+| `design023` | 1874/1874 | 122 |
+| `design012` | 421 checks, failures and errors empty | 116 |
+| `design013` | 371 checks, failures and errors empty | 41 |
+| `design014` | 287/287 | 24 |
+| `design016` | 399/399 | — |
+| `design017` | 350/350 | 74 |
+| `design018` | 733/733 | 130 |
+| `design019` | 998/998 | 74 |
+| `design020` | 754/754 | 124 |
+| `design021` | 543/543 | 63 |
+| `design022` | 691/691 | 58 |
+
+`design023` grew from 1866 to 1874 with the finishing pass's eight new
+assertions (four subject-correct warnings, three walk-4 link sets, one cooldown
+format). `npm run verify` was not rerun: nothing under `docs/design/tokens/`
+or outside `docs/design/` changed, and no token was added.
+
+**Measurements (run4, `measurements.json`, every one of the 122 states at both
+sizes).** Horizontal overflow is zero everywhere: the document's and the
+content pane's `scrollWidth − clientWidth` is 0 at the maximum over all states,
+`overflow` (the 64-character name and 32-character username) included, and
+every table cell fits. Boxes are x,y width×height in CSS pixels:
+
+| State | 1440×900 | 1920×1080 |
+|---|---|---|
+| default, list | rail 0,0 220×900; table 244,233 1172×763 | rail 240,0 220×1080; table 484,233 1172×763 |
+| overflow | table 1172×4902 in its scroll owner; sticky header held at the pane's top after scrolling | same, at x 484 |
+| create-manager | table 689 wide; panel 957,233 459×643; Save 1335,823 60×36; focus Name | panel 1197,233 459×802; Save 1575,982; focus Name |
+| move-kitchen-manager | panel 459×643; Save 1335,823; focus Classification | panel 459×775; Save 1575,955 |
+| throttled-own-password | panel 459×643; Save 1335,823; focus the cooldown notice | panel 459×660; Save 1575,841 |
+| deactivate-cashier | dialog 400,341 640×218; focus Keep active | dialog 640,431 640×218 |
+
+At 1440×900 the measured panel height (643) is what keeps Save inside the
+viewport (its bottom at 859 of 900); “commit controls visible” passed in every
+form state at both sizes.
+
+**The Impeccable detector** (run1) reported eight *cramped-padding* warnings, all
+on shared classes (`table-editor`, `office-dialog`, `office-emergency`,
+`office-notice`) and none on `users.css`. They were not forked away: the task
+forbids forking `office.css`, and a BO-06-only padding would make the shared
+panel differ between screens. They belong to a shared-pattern pass if the lead
+wants one.
+
+**Not claimed.** Physical-device and assistive-technology testing. The
+independent design review (Claude Opus, by the owner's exception) is still
+required before S8c, and S8a and S8b remain prerequisites.
+
+**Questions raised and not ruled.** None remain open from this task. R1 and R2
+settled the two the draft raised. No product, server, audit or boundary question
+was raised. For the lead to note, not to rule here: C3 §8 calls the absence of a
+standalone “set username and password” route a reading for the lead to confirm;
+BO-06 draws none, as the task's server facts say.
+
+**What S8c must know beyond the tables above.** The warning's surfaces come
+from the subject's classification, never from `username` (a former manager's
+retained login never verifies). The panel-height rule is behaviour (warning
+and Save always in view), not a pixel value. The fixture's response chooser,
+cross-client links and fixture buttons are review-only and are not product UI.
+
+DONE
