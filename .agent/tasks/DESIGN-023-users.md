@@ -307,5 +307,644 @@ with `DONE` or `BLOCKED: <one question>`. Then run exactly one of:
     herdr agent prompt lead "design023: DESIGN-023 done — <one line>"
     herdr agent prompt lead "design023: BLOCKED — <question>"
 
+## Lead rulings during the task (2026-11-03)
+
+- **R1, `design019`'s rail list.** Part C's rail entry necessarily changes `design019.cjs`'s F5 expected rail, as
+  DESIGN-022's presets entry did. That one expected array may become `["Menu","Tables","Staff","Discount
+  presets","Settings"]`, with nothing else in the file changed. It is named in the Handoff beside `design014`'s
+  report-detail prototype count (four to three).
+- **R2, focus after a different manager signs in.** BO-06 focuses **Add person** (a clean screen, no draft held), as BO-07
+  focuses New preset. The shared frame (`OfficeApp.tsx`) is a later build task: state BO-06's target in the Handoff's
+  focus rules, and draw nothing in `office.js` for it.
+
+## Handover (lead, 2026-11-03): finish the Codex designer's draft on Claude Opus
+
+The Codex designer (`design023`, `gpt-6-astra`) reached its usage limit after drawing Parts A to C. On the owner's word
+the task is finished by a Claude Opus designer, `design023c`, and reviewed by Claude Opus (owner exception, 2026-11-03).
+
+**Where it stopped.** Part B is committed (`ac892e2`). Parts A and C are drawn and **on disk, uncommitted**:
+`F/users.html`, `F/users.css`, `F/users.js`, `F/users-states.js`, `docs/design/checks/design023.cjs` (new);
+`F/office.js`, `F/report-detail.html`, `docs/design/visual-directions/index.html`, `manifest.js`, `P/users.html`,
+`SCREEN-INVENTORY.md`, `SITEMAP.md`, `design014.cjs`, `design019.cjs` (changed); and this file's Handoff below, a draft.
+Late in the work it also changed BO-06's long forms to measure the available panel height and scroll the fields, so
+that the warning and the footer (Save) stay in view, with a new viewport assertion; no shared CSS changed.
+
+**The lead's runs on that tree** (evidence in `../restaurant-pos-wt/evidence/DESIGN-023/`):
+- run1: `design012`, `013`, `014` (failures and errors empty), `design016` 399/399, `design018` 733/733, `design020`
+  754/754, `design021` 543/543, `design022` 691/691; `npm run verify` 151 files / 5497 tests. Failed then, fixed since:
+  `design023` (a hidden fixture chooser timed out), `design017` 349/350 (`[ACTION]` in the sitemap), `design019`
+  995/998 (the rail list, R1). The Impeccable detector: 8 *cramped-padding* warnings, all on shared classes
+  (`table-editor`, `office-dialog`, `office-emergency`, `office-notice`), none on `users.css`.
+- run2: `design023` **1866/1866**, 122 states; `design017` **350/350**.
+- run3: `design019` **998/998** with R1's one-line change.
+
+**What is left, in this order:**
+1. Read the task above and the draft. Do not redesign; check the drawn states, the copy table and the rules against the
+   task, C3 §10 and the rulings, and fix only what is wrong or missing. Say what you changed and why.
+2. Commit Parts A and C as their own commits, path-scoped.
+3. Bring the Handoff up to date: replace *Validation, measurements and unresolved questions* with the runs above and
+   the final run's results and measurements; name the two earlier-check changes (R1, `design014`); record R2 in the
+   focus rules; say what the panel-height change does and why; say the detector's warnings are on shared classes and
+   were not forked away.
+4. Ask the lead for the final run (`design023` and every earlier check, and `npm run verify` if anything under
+   `docs/design/tokens/` changed), quote it, and end with `DONE`.
+
 ## Handoff
 
+### Delivery and implementation boundary
+
+The Frost composition is `docs/design/visual-directions/frost/back-office/users.html`.
+It uses `office.css`, `office.js`, `entry.css`, `tables.css` and `settings.css`
+unchanged except for the requested Staff destination and rail registration in
+`office.js`. `users.css`, `users.js` and `users-states.js` supply BO-06's local
+composition and review walks. These are illustrative records and responses,
+not authentication, server code or seeded restaurant configuration. S8a and S8b
+remain prerequisites for S8c. No production path, token or accepted ADR changed.
+The independent design review remains the next gate.
+
+Part A provides the list, forms, confirmations, refusals, recovery and session
+walks below. Part B appends DESIGN-023 additions to `docs/DESIGN.md` without
+rewriting an existing rule. Part C registers every state in the gallery, resolves
+Staff destinations to Frost, adds the wireframe pointer, updates inventory and
+sitemap, and supplies `docs/design/checks/design023.cjs`. The only earlier-check
+change is DESIGN-014's authored prototype-link expectation for report-detail,
+from four to three; its assertion is retained.
+
+### Rules for S8c
+
+The list groups active before inactive, preserving the server's creation order
+within each group (the server breaks creation-time ties by identity). An
+answered create appends at the end of the active group; a state change preserves
+its underlying creation position. Counts include all returned rows. A failed
+read withholds counts. A success while that read still fails draws the known
+rows including the answered row and the partial-list warning. No list reread
+follows authoritative success. There is no search, sort, reorder or staff number.
+
+M. Iqbal is the initial actor. His row says “You · Signed in” and offers only
+Change my password and Change my PIN. These own changes live on the own row,
+where the subject is explicit and the actions cannot be confused with a reset
+of someone else. Kitchen is labelled “Kitchen” with “No sign-in”, never a role
+with permissions. A former manager shows the retained username and “No
+back-office access”; it explains why promotion does not ask for a new username.
+The empty state is unreachable because the active manager is always in the list.
+`only-manager` draws the real minimum: one manager and Add person.
+
+The following is the complete command-field matrix. Name and credentials appear
+in this order; Classification is a separate native select for create and move.
+No confirmation field is drawn: typing a secret twice would add work to a
+reversible operation. The session warning already makes each change explicit.
+A username is asked only when UserView.username is null.
+
+| Command | Fields | Other information and effect |
+|---|---|---|
+| Create kitchen | Name | Classification = Kitchen; no credential fields. |
+| Create cashier | Name, New PIN | Classification = Cashier. |
+| Create manager | Name, New PIN, Username, New password | Classification = Manager. |
+| Kitchen → cashier | New PIN | Set a PIN. |
+| Kitchen → manager | New PIN, Username if absent, New password | Set PIN and login; retained username is a fact if present. |
+| Cashier → manager | Username if absent, New password | Keep PIN; always set a new password. |
+| Manager → cashier | None | Keep PIN; retained login no longer verifies. |
+| Cashier → kitchen | None | Remove PIN. |
+| Manager → kitchen | None | Remove PIN; retained login no longer verifies. |
+| Reset another cashier/manager's PIN | New PIN | No username or current password. |
+| Reset another manager's password | New password | No current password. |
+| Change own password | Current password, New password | This back-office session continues; every other session ends on its next action. |
+| Change own PIN | Current password, New PIN | POS sessions end on their next action; this back-office session continues. |
+| Deactivate | None | Named confirmation. |
+| Reactivate | None initially | Immediate row command, keeping PIN; kitchen never has a PIN. |
+| Reactivate after PIN collision | New PIN | Reactivate with new PIN sends one explicit command with that PIN. |
+
+Name is trimmed, 1–64 Unicode code points, with no Unicode Cc character. Its
+spelling cannot be changed after saving. A PIN is exactly six ASCII digits;
+there is no maxlength truncation or numeric conversion. Username is trimmed
+and ASCII A–Z lowercased before validation, and the native field shows that
+stored form on blur and submit. Validate `^[a-z0-9][a-z0-9._-]{2,31}$`.
+It can never be changed or reused, including for inactive people. New passwords
+are 8–128 Unicode code points, never trimmed, without composition rules.
+Current password is nonempty and at most 1024 UTF-16 units (C3 §8's request
+shape), otherwise judged by verification rather than new-password policy.
+Validate only the selected classification/move's fields, in displayed order.
+Local errors send nothing. Editing a field removes its obsolete error and
+aria-describedby error reference. DUPLICATE uses details.field, never guesses
+from the submitted values and never names a PIN holder.
+
+Every credential field is native and uncontrolled. Read its value once at
+submit; keep no React state, fixture command ledger secret, URL, storage, text
+echo or value attribute. New PIN and password use password inputs; no reveal
+control exists. Username is public account identity in UserView and is shown
+on saved rows, as C3 requires; typed credentials are not echoed in notices.
+Every form declares POST, prevents native submission and has a form-action
+none backstop. The local fixture never sends any request.
+
+Clear every credential field after every response, success and refusal
+included; on Cancel/Discard/unmount; on a classification or move change;
+on entering M-6 or BO-01; on each M-6 mode change; and before restoring the
+same manager's draft. A local invalid-input result is not a server response:
+the native input keeps its own text for correction. Switching classification
+keeps the non-secret name and selected choice, but clears all credentials,
+even those also needed in the new choice. Switching back restores none.
+A held response is not lost when inputs clear. No session recovery resends.
+
+Deactivation confirms, because removing a person can interrupt floor work.
+Keep active is the safe initial focus and Escape means Keep active. Resets,
+each move, own changes and credential-bearing reactivation have their warning
+beside Save and no additional modal: all are reversible, and another modal
+would repeat an already named decision. Plain reactivation ends no session and
+needs no confirmation. Kitchen deactivation mentions no PIN effect or session
+invalidation. No “last manager” restriction is drawn.
+
+USER_CHANGED rereads once and preserves the non-secret choices against their
+original subject. It does not silently change the origin of a move or expose
+credentials. Save stays disabled; Return to staff list lets the manager choose
+an action on the current person. NOT_FOUND also rereads and offers that path.
+OWN_ACCOUNT refuses at form level and points to the own-row entries. General
+failure keeps the form and permits a fresh explicit Save with re-entered
+credentials. Unknown outcomes reread once, keep the form and remain unknown
+even after a successful read retry. Resets never claim sessions ended on an
+unknown answer. Own-password uncertainty explicitly says the list cannot
+resolve it, and explains which password to try at a subsequent change. The
+ordinary Save is the only command path; there is no automatic or separate resend.
+
+### Exact copy and accessible names
+
+Braces below are substitution slots, not literal UI text. `{name}` is the
+subject's full saved name; `{classification}` is exactly Kitchen, Cashier or
+Manager; `{username}` is the stored lower-case username; `{seconds}` is the
+remaining server-supplied wait, decremented locally to zero. The table is the
+copy contract, including the three S8c browser walks D1–D3. Where no separate
+accessible name is listed, visible text is the accessible name. No fixture-only
+response chooser is part of S8c's UI.
+
+| State / scope | Element | Exact text | Accessible name / autocomplete |
+|---|---|---|---|
+| Frame / all | Rail entry; screen heading | Staff | Staff |
+| List / only-manager | Create control | Add person | Add person |
+| List | Intro | Cashiers and managers sign in. Kitchen staff have no PIN and do not sign in. | — |
+| List | Counts | {active} active · {inactive} inactive | — |
+| List | Caption | Active first · Oldest created first within each status | — |
+| List | Column headings | Person; Classification; Status; Actions | Same as visible |
+| Own row | Marker | You · Signed in | — |
+| Kitchen row | Classification detail | No sign-in | — |
+| Manager row | Account fact | Username: {username} | — |
+| Former manager row | Account fact | Retained username: {username} · No back-office access | — |
+| Rows | Status | Active; Inactive | — |
+| Active other row | Role opener | Change role | Change role — {name} |
+| Active cashier/manager | PIN opener | Reset PIN | Reset PIN — {name} |
+| Active other manager; D2 | Password opener | Reset password | Reset password — {name}; D2: Reset password — Ratna Ayu |
+| Active other row; D1 | Deactivate opener | Deactivate | Deactivate — {name}; D1: Deactivate — Ana R. |
+| Inactive row | Reactivate opener | Reactivate | Reactivate — {name} |
+| Own row; D3 | Own password opener | Change my password | Change my password — {name}; D3: Change my password — M. Iqbal |
+| Own row | Own PIN opener | Change my PIN | Change my PIN — {name} |
+| Create | Form heading | Add person | Add person (non-modal dialog) |
+| Move | Form heading | Change role — {name} | Same as visible |
+| Reset | Form heading | Reset PIN — {name}; Reset password — {name} | Same as visible |
+| Own change | Form heading | Change my password — {name}; Change my PIN — {name} | Same as visible |
+| Reactivation PIN | Form heading | Reactivate — {name} | Same as visible |
+| Create | Context | Create a named person. Choose the classification before entering credentials. | — |
+| Move | Context prefix | Current classification: {classification}. | — |
+| Promotion | Context suffix | Promotion always sets a new password. | — |
+| Move to kitchen | Context suffix | The PIN is removed. | — |
+| Move to cashier | Context suffix | The POS PIN is set. / The POS PIN is kept. | Set from kitchen; kept from manager |
+| Reset / own change | Context | {name} · {classification} | — |
+| Reactivation PIN | Context | Set a new PIN to reactivate {name}. | — |
+| Create and move | Select label | Classification | Classification / off |
+| Create and move | Select choices | Kitchen · no sign-in; Cashier; Manager | Same as visible; move omits current classification |
+| Create | Classification help | Kitchen needs a name only. Cashiers need a PIN. Managers also need a back-office login. | — |
+| Move | Classification help | Choose the new classification. Changing this choice clears every credential field. | — |
+| Former manager promotion | Read-only fact | Retained username: {username} · This username cannot change. | — |
+| Every create | Field label / help | Name / 1–64 characters. Check the spelling: a name cannot be changed after saving. | Name / off |
+| Create cashier/manager; moves from kitchen; PIN resets; own PIN; reactivation PIN | Field label / help | New PIN / Exactly six digits, 0–9. PINs must differ among active staff. | New PIN / new-password |
+| Create manager; promotion without retained username | Field label / help | Username / 3–32 characters: a–z, 0–9, dot, underscore or hyphen. Start with a letter or digit. It can never be changed or reused. | Username / username |
+| Create manager; every promotion; password reset; own password | Field label / help | New password / 8–128 characters. Spaces count and are kept exactly as typed. | New password / new-password |
+| Own password and own PIN | Field label / help | Current password / Enter your current back-office password. | Current password / current-password |
+| All command forms except reactivation PIN | Commit / cancel | Save; Cancel | Save; Cancel |
+| Reactivation PIN | Commit / cancel | Reactivate with new PIN; Cancel | Same as visible |
+| Resting form | Commit help | Nothing is sent until you save. | — |
+| Saving | Commit help | Wait for the save result. | — |
+| Credential clearing | Retained-choice notice | Enter the credentials again. The name and classification choices are kept. | — |
+| Invalid name | Field error | Enter a name. / Use 64 characters or fewer. / Remove control characters from the name. | Name with associated error |
+| Invalid PIN | Field error | Enter exactly six digits, 0–9. | New PIN with associated error |
+| Invalid username | Field error | Use 3–32 characters: a–z, 0–9, dot, underscore or hyphen. Start with a letter or digit. | Username with associated error |
+| Invalid new password | Field error | Use 8–128 characters. Spaces count. | New password with associated error |
+| Invalid current password | Field error | Enter your current password. / Use 1024 characters or fewer. | Current password with associated error |
+| DUPLICATE PIN | Field error | That PIN is already in use. Choose a different PIN. | New PIN with associated error |
+| DUPLICATE username | Field error | That username is already in use. Choose another username. | Username with associated error |
+| DUPLICATE reactivation PIN | Field error | That PIN is already in use. Enter a new PIN to reactivate this person. | New PIN with associated error |
+| INVALID_CREDENTIALS | Field error | Incorrect current password. Try again. | Current password with associated error |
+| THROTTLED | Field error | Wait {seconds} seconds before trying your current password again. | Current password with associated error |
+| THROTTLED | Notice title / body | Password verification is cooling down / Wait {seconds} seconds. This is the same cooldown used at sign-in. | Focusable notice |
+| THROTTLED | Commit help | Wait for the cooldown before saving. | — |
+| Loading | Status | Loading staff… | status |
+| Load failed | Title / body / action | Staff could not be loaded / Try again to read the staff list. / Try again | Try again |
+| Partial success | Title / body / action | The staff list may be out of date / The rows below are the ones this page knows, including your latest change. Try again to read the full list. / Try again | Try again |
+| Saving form | Title / body | Saving… / Wait for the result. Your draft is kept. | Focusable status |
+| Pending status command | Page status | Deactivating {name}… / Reactivating {name}… | Focusable status |
+| Saved create | Page result | {name} added. | status |
+| Saved move | Page result | {name} changed to {classification}. | status |
+| Saved other reset | Page result | {name}’s PIN changed. / {name}’s password changed. | status |
+| Saved own change | Page result | {name}’s PIN changed. This back-office session continues. / {name}’s password changed. This back-office session continues. | status |
+| Deactivated / reactivated | Page result | {name} deactivated. / {name} reactivated. | status |
+| General definite failure | Notice title / body | Something went wrong / Nothing was saved. Your draft is kept. Enter credentials again, then press Save to try again. | Focus returns to first field |
+| Status-command definite failure | Page status | Something went wrong. {name} was not changed. Use its row action to try again. | Focusable status |
+| OWN_ACCOUNT | Notice title / body | This action cannot change your own account / Use Change my password or Change my PIN on your own row. You cannot deactivate yourself or change your own role. | Focusable alert |
+| USER_CHANGED | Notice title | {name} changed while you were editing | Focusable alert |
+| USER_CHANGED, read succeeded | Notice body | Nothing was saved. The staff list has been refreshed. Your choices are kept and credentials are empty. Return to the staff list and choose an action on the current person. | — |
+| USER_CHANGED, read failed | Notice body | Nothing was saved. The staff list could not be refreshed. Try again reads the list only. Your choices are kept and credentials are empty. Return to the staff list and choose an action on the current person. | — |
+| NOT_FOUND | Notice title | {name} could not be found | Focusable alert |
+| NOT_FOUND, read succeeded | Notice body | Nothing was saved. The staff list has been refreshed. Return to the staff list to choose another person. | — |
+| NOT_FOUND, read failed | Notice body | Nothing was saved. The staff list could not be refreshed. Return to the staff list to choose another person. | — |
+| OWN_ACCOUNT / USER_CHANGED / NOT_FOUND | Return / disabled Save help | Return to staff list / Return to the staff list and choose an action on the current person. | Return to staff list |
+| Unknown | Title | Outcome not confirmed | status |
+| Unknown, reread succeeded | Body prefix | {name}: the outcome could not be confirmed. The list has been refreshed. Nothing was sent again. | — |
+| Unknown, reread failed | Body prefix | {name}: the outcome could not be confirmed. The list could not be refreshed. Nothing was sent again. | — |
+| Unknown form | Body continuation | Your draft is kept; enter credentials again. | — |
+| Unknown PIN/password reset | Final continuation | The list cannot confirm the reset or whether this person’s sessions ended. | — |
+| Unknown own password | Final continuation | The list cannot show whether your password changed. For your next change, try the new password you chose as Current password first. If it is refused, try your previous password. Each wrong attempt counts towards your sign-in cooldown. | — |
+| Discarded pending command | Page status | Waiting for an earlier save to finish. Nothing will be sent again. | status |
+| Status session refusal, after recovery | Page status | {name} was not changed. Use its row action to try again. | status |
+| Form session refusal, after recovery | Title / body | Nothing was saved / Enter credentials again, then press Save. | — |
+
+Warnings are exact complete sentences beside the commit controls, or in the
+deactivation confirmation. Their wording is classification-specific:
+
+| Command / subject | Exact warning |
+|---|---|
+| Reset PIN / reset password / promotion from cashier | {name}’s POS and back-office sessions will end on their next action. They must sign in again. |
+| Authenticating person deactivation | {name}’s POS and back-office sessions will end on their next action. They cannot sign in while inactive. You can reactivate this person later. |
+| Manager → cashier | {name}’s POS and back-office sessions will end on their next action. Their back-office login will no longer work. They can sign in at the POS. |
+| Cashier/manager → kitchen | {name}’s POS and back-office sessions will end on their next action. Their PIN will be removed. They will no longer sign in. |
+| Kitchen → cashier | {name} currently has no sign-in sessions. After this change, they must sign in to use the POS. |
+| Kitchen → manager | {name} currently has no sign-in sessions. After this change, they must sign in to use the POS or back office. |
+| Kitchen deactivation | {name} will be inactive. Kitchen staff have no PIN or sign-in sessions. You can reactivate this person later. |
+| Own PIN | Your POS sessions will end on their next action. This back-office session will continue. |
+| Own password | Your other POS and back-office sessions will end on their next action. This back-office session will continue. |
+
+| Modal / session state | Element | Exact text | Accessible name / autocomplete |
+|---|---|---|---|
+| Deactivation; D1 | Title | Deactivate {name}? | Named dialog; D1: Deactivate Ana R.? |
+| Deactivation | Keep / commit | Keep active; Deactivate | Keep active — {name}; Deactivate {name}; D1: Deactivate Ana R. |
+| Dirty departure | Title / body | Discard unsaved changes? / Your edits have not been saved. Stay to keep editing, or discard them before leaving. | Named dialog |
+| Pending/unknown departure | Body | The save may or may not have succeeded. Leaving does not send it again. Stay to keep the draft, or discard it and leave. | — |
+| Departure | Actions | Stay; Discard | Stay; Discard |
+| Logout departure | Title / body | Log out and discard your changes? / The unsaved changes to this draft will be lost. Anyone signing in next starts a separate session. | Named dialog |
+| Logout departure | Actions | Keep this draft; Discard changes and log out | Same as visible |
+| Pending/unknown logout | Extra context | The save may or may not have succeeded. Leaving does not send it again. | — |
+| Modal kitchen notice | Repeated emergency | Kitchen printing needs attention / {incident identity} | Existing shared emergency |
+| Deactivation kitchen context | Context | Decide whether to keep or deactivate this person before opening print incidents. | — |
+| Departure kitchen context | Context | Decide whether to stay or discard before opening print incidents. | — |
+| M-6 kitchen context | Context / action | Continue your session to open print incidents. / Open print incidents after sign-in | Same as visible |
+| M-6 | Title / body | Your session timed out / Your unsaved changes are kept. Continue as {username} to resume them. | Named dialog |
+| M-6 | Fields | Username; Password | Username / username, fixed property; Password / current-password |
+| M-6 | Actions | Sign in as a different manager; Log out; Continue | Same as visible |
+| M-6 missing password | Field error | Enter your password. | Password |
+| Different-manager acknowledgement | Title / body | Sign in as a different manager? / The current manager’s unsaved changes will not be available to the manager signing in. | Named dialog |
+| Different-manager acknowledgement | Actions | Stay with current manager; Continue to sign-in | Same as visible |
+| Different-manager sign-in | Title / body | Sign in as a different manager / Enter your own username and password. The current manager’s unsaved changes will not be available to you. | Named dialog |
+| Different-manager sign-in | Actions | Back to {username}; Log out; Sign in | Same as visible |
+| BO-01 with draft held | Heading / intro | Back office / Sign in with your manager username and password. | — |
+| BO-01 with draft held | Notice | Your session has ended / Sign in again to continue. / The previous session’s unsaved changes are stored on this tab and are not submitted automatically. | alert |
+| BO-01 | Fields / action | Username; Password; Sign in | Username / username; Password / current-password; Sign in |
+| BO-01 missing fields | Errors | Enter your username.; Enter your password. | Associated field |
+
+### Focus and interruption contract
+
+| Event | Focus target and retained state |
+|---|---|
+| Create opens | Name, empty. |
+| Move opens | Classification; only the move's fields exist visibly. |
+| Other reset opens | New PIN or New password. |
+| Own change opens | Current password. |
+| Reactivation needs new PIN | Empty New PIN, with associated refusal. |
+| Classification/move switch | First credential the new choice needs, or Classification if it needs none. Name stays. |
+| Local error | First invalid field in displayed order. |
+| DUPLICATE | The field named by details.field, empty after the response. |
+| INVALID_CREDENTIALS | Empty Current password. |
+| THROTTLED | The focusable cooldown notice; Current password and Save are disabled until zero. Reopening preserves the wait. |
+| USER_CHANGED / NOT_FOUND / OWN_ACCOUNT | Focusable form notice; Save disabled. Reread itself never commits or changes the move. |
+| Read retry after a blocked refusal | Form notice; the manager still chooses a row action. |
+| Pending form / status command | Saving notice / page status; duplicate commands and all row openers are inert. |
+| Authoritative success | Affected row's first available action: Change role if active and other, Reactivate if inactive, Change my password if own. Fall back to Add person if absent. |
+| Cancel or Discard | Original opener; opening a different record then focuses the new form. |
+| Dirty departure opens / Escape | Stay; Escape also means Stay. |
+| Stay | First form field (Classification for moves), or Saving status if still pending. |
+| Deactivate confirmation opens / Escape | Keep active; Escape closes and restores that person's Deactivate opener. |
+| Deactivated / reactivated | That person's new first action: Reactivate / Change role. |
+| Unknown / definite general failure | First field, preserving non-secret choices and clearing credentials after the response. |
+| Same-manager M-6 / BO-01 restoration | First form field; no credential or secret selection is restored. A held confirmation reopens on Keep active; a held departure on Stay. Pending focuses its status; a held result follows its ordinary result focus. |
+| Different-manager sign-in | Proposed Add person in a clean working area; no old draft, pending notice or focus is delivered. Lead owns the frame policy. |
+| Late answer after explicit Discard | Apply answered row silently; do not reopen a form, announce or move focus. |
+
+M-6 retains the mounted form, visible and inert, and cannot be escaped. BO-01
+hides the entire working area and closes its live dialogs while retaining their
+state; same-manager recovery reopens a held modal before restoring focus.
+The different-manager acknowledgement stays explicit. Rail, logout, incident
+navigation, Escape, browser Back/Forward and another row all use the same
+single-form departure guard. There is no beforeunload handler. A pending or
+unknown command requires departure acknowledgement even if its secrets were
+cleared. Stay never resends. Discard never cancels an already-sent command.
+
+### Coverage and review states
+
+The 122 registered states below are available directly through `?state=`.
+The manifest and artifact carry identical state lists.
+
+| State | Review picture |
+|---|---|
+| `default` | Active and inactive staff |
+| `only-manager` | Only the signed-in manager |
+| `loading` | Reading staff |
+| `load-error` | Staff read failed |
+| `overflow` | Long list · 64-character name and 32-character username |
+| `create-kitchen` | Create kitchen |
+| `saving-create-kitchen` | Saving · create kitchen |
+| `saved-create-kitchen` | Saved · create kitchen |
+| `create-cashier` | Create cashier |
+| `saving-create-cashier` | Saving · create cashier |
+| `saved-create-cashier` | Saved · create cashier |
+| `create-manager` | Create manager |
+| `saving-create-manager` | Saving · create manager |
+| `saved-create-manager` | Saved · create manager |
+| `move-kitchen-cashier` | Move kitchen cashier |
+| `saving-move-kitchen-cashier` | Saving · move kitchen cashier |
+| `saved-move-kitchen-cashier` | Saved · move kitchen cashier |
+| `move-kitchen-manager` | Move kitchen manager |
+| `saving-move-kitchen-manager` | Saving · move kitchen manager |
+| `saved-move-kitchen-manager` | Saved · move kitchen manager |
+| `move-cashier-kitchen` | Move cashier kitchen |
+| `saving-move-cashier-kitchen` | Saving · move cashier kitchen |
+| `saved-move-cashier-kitchen` | Saved · move cashier kitchen |
+| `move-cashier-manager` | Move cashier manager |
+| `saving-move-cashier-manager` | Saving · move cashier manager |
+| `saved-move-cashier-manager` | Saved · move cashier manager |
+| `move-manager-kitchen` | Move manager kitchen |
+| `saving-move-manager-kitchen` | Saving · move manager kitchen |
+| `saved-move-manager-kitchen` | Saved · move manager kitchen |
+| `move-manager-cashier` | Move manager cashier |
+| `saving-move-manager-cashier` | Saving · move manager cashier |
+| `saved-move-manager-cashier` | Saved · move manager cashier |
+| `move-former-manager` | Move former manager |
+| `saving-move-former-manager` | Saving · move former manager |
+| `saved-move-former-manager` | Saved · move former manager |
+| `pin-cashier` | Pin cashier |
+| `saving-pin-cashier` | Saving · pin cashier |
+| `saved-pin-cashier` | Saved · pin cashier |
+| `pin-manager` | Pin manager |
+| `saving-pin-manager` | Saving · pin manager |
+| `saved-pin-manager` | Saved · pin manager |
+| `password-manager` | Password manager |
+| `saving-password-manager` | Saving · password manager |
+| `saved-password-manager` | Saved · password manager |
+| `own-password` | Own password |
+| `saving-own-password` | Saving · own password |
+| `saved-own-password` | Saved · own password |
+| `own-pin` | Own pin |
+| `saving-own-pin` | Saving · own pin |
+| `saved-own-pin` | Saved · own pin |
+| `classification-switch` | Classification changed · name kept, credentials empty |
+| `duplicate-pin-create-cashier` | PIN in use · create cashier |
+| `duplicate-pin-create-manager` | PIN in use · create manager |
+| `duplicate-pin-move-kitchen-cashier` | PIN in use · move kitchen cashier |
+| `duplicate-pin-move-kitchen-manager` | PIN in use · move kitchen manager |
+| `duplicate-pin-pin-cashier` | PIN in use · pin cashier |
+| `duplicate-pin-pin-manager` | PIN in use · pin manager |
+| `duplicate-pin-own-pin` | PIN in use · own pin |
+| `duplicate-username-create-manager` | Username in use · create manager |
+| `duplicate-username-move-cashier-manager` | Username in use · move cashier manager |
+| `duplicate-username-move-kitchen-manager` | Username in use · move kitchen manager |
+| `wrong-password-own-password` | wrong password · own-password |
+| `throttled-own-password` | throttled · own-password |
+| `wrong-password-own-pin` | wrong password · own-pin |
+| `throttled-own-pin` | throttled · own-pin |
+| `deactivate-cashier` | Confirm deactivation · cashier |
+| `deactivated-cashier` | Deactivated · cashier |
+| `deactivate-manager` | Confirm deactivation · manager |
+| `deactivated-manager` | Deactivated · manager |
+| `deactivate-kitchen` | Confirm deactivation · kitchen |
+| `deactivated-kitchen` | Deactivated · kitchen |
+| `reactivate-cashier` | Reactivating · cashier |
+| `reactivated-cashier` | Reactivated · cashier |
+| `reactivate-manager` | Reactivating · manager |
+| `reactivated-manager` | Reactivated · manager |
+| `reactivate-kitchen` | Reactivating · kitchen |
+| `reactivated-kitchen` | Reactivated · kitchen |
+| `reactivate-pin-needed` | Reactivation refused · a new PIN is needed |
+| `saving-reactivate-pin` | Saving reactivation with a new PIN |
+| `saved-reactivate-pin` | Reactivated with a new PIN |
+| `failure` | Failure |
+| `not-found` | Not found |
+| `user-changed` | User changed |
+| `user-changed-read-failed` | Person changed · reread failed |
+| `own-account` | Own-account command refused |
+| `unknown-pin-cashier` | Unknown outcome · pin-cashier |
+| `unknown-password-manager` | Unknown outcome · password-manager |
+| `unknown-move-cashier-manager` | Unknown outcome · move-cashier-manager |
+| `unknown-own-password` | Unknown outcome · own-password |
+| `unknown-read-failed` | Unknown reset · list could not be refreshed |
+| `pending-deactivate` | Pending · deactivate |
+| `unknown-deactivate` | Unknown · deactivate |
+| `failure-deactivate` | Failure · deactivate |
+| `pending-reactivate` | Pending · reactivate |
+| `unknown-reactivate` | Unknown · reactivate |
+| `failure-reactivate` | Failure · reactivate |
+| `partial` | Saved while full staff read still fails |
+| `unsaved` | Stay or Discard |
+| `unsaved-logout` | Log out with a draft |
+| `leave-pending` | Leave while saving |
+| `leave-unknown` | Leave after unknown outcome |
+| `reauth` | M-6 over inert draft |
+| `bo01-draft` | BO-01 with isolated draft |
+| `draft-restored` | Same manager returns · credential fields empty |
+| `reauth-decision` | M-6 over departure decision |
+| `bo01-decision` | BO-01 with departure held |
+| `reauth-confirm` | Session gate over deactivation |
+| `bo01-confirm` | Session gate over deactivation |
+| `invalid-name-empty` | Local refusal · name-empty |
+| `invalid-name-long` | Local refusal · name-long |
+| `invalid-name-control` | Local refusal · name-control |
+| `invalid-pin-empty` | Local refusal · pin-empty |
+| `invalid-pin-short` | Local refusal · pin-short |
+| `invalid-pin-format` | Local refusal · pin-format |
+| `invalid-username-empty` | Local refusal · username-empty |
+| `invalid-username-short` | Local refusal · username-short |
+| `invalid-username-long` | Local refusal · username-long |
+| `invalid-username-format` | Local refusal · username-format |
+| `invalid-password-short` | Local refusal · password-short |
+| `invalid-password-long` | Local refusal · password-long |
+| `invalid-currentPassword-empty` | Local refusal · currentPassword-empty |
+| `invalid-currentPassword-long` | Local refusal · currentPassword-long |
+
+
+| Authority / requested item | Evidence |
+|---|---|
+| I BO-06 minimum, loading, failed read, overflow | only-manager, loading, load-error, overflow. Permission-denied remains n/a. |
+| I BO-06 active/inactive and kitchen | default; every kitchen row has no PIN/password action. |
+| I BO-06 create / moves / own changes | create-*; move-*; own-password; own-pin. |
+| I BO-06 validation / saving / saved / refusals | invalid-*; saving-*; saved-*; duplicate-*; own-account; user-changed; not-found; wrong-password-*; throttled-*. |
+| I BO-06 status and cross-client | deactivate-*; deactivated-*; reactivate-*; reactivated-*; reactivate-pin-needed; saved-reactivate-pin. Deactivated states expose review-only links to POS-01 invalidated and BO-01 session-ended, on next request. |
+| I BO-06 uncertainty / draft/session states | failure; unknown-*; unsaved; leave-pending; leave-unknown; reauth; bo01-draft; draft-restored; partial. |
+| C3 §10.1 kitchen | create-kitchen; default halim and wibowo; deactivate-kitchen; reactivate-kitchen. |
+| C3 §10.2 create | create-kitchen/cashier/manager and their saving/saved states. Normalization is walked by the check script. |
+| C3 §10.3 six moves / former manager | move-kitchen-cashier, move-kitchen-manager, move-cashier-manager, move-manager-cashier, move-cashier-kitchen, move-manager-kitchen, move-former-manager. |
+| C3 §10.4 warnings | Warning table above; every affected form, deactivation dialog, and own-change form. |
+| C3 §10.5 own account | Own row; own-password; own-pin; own-account crafted-request refusal. |
+| C3 §10.6 credentials | Native field matrix and clearing rules; classification-switch; draft-restored; marker and value-attribute checks. |
+| C3 §10.7 refusals | duplicate-*; wrong-password-*; throttled-*; own-account; user-changed; not-found; reactivate-pin-needed. |
+| C3 §10.8 unknown outcomes | unknown-pin-cashier; unknown-password-manager; unknown-move-cashier-manager; unknown-own-password; unknown-read-failed. |
+| C3 §10.9 remaining inventory | loading; load-error; overflow; deactivated-*; reactivate-*; default inactive group; review cross-client links. |
+| Ruling: kitchen is not a role | Classification heading; Kitchen · no sign-in option; no kitchen credential actions. |
+| Ruling: no reveal or echo | Password input types; no value attributes, reveal or confirmation controls; DOM marker assertions. |
+| Ruling: current credential lifecycle | Every response/gate clears credentials; local-only native corrections; POST forms. |
+| Ruling: warning / confirmation choice | Deactivation confirms for floor consequence; other reversible commands warn beside Save. |
+| Ruling: own row restrictions | Only own-change entries; no own deactivate, move or other-person resets. |
+| Ruling: unknown outcomes | Unknown read never establishes credential outcome; own-password next-step copy; no automatic resend. |
+| Ruling: immutable names and usernames | Create hint; no rename; retained username fact at promotion. |
+| Ruling: no last-manager rule | Another manager can be deactivated or demoted in the row walks. |
+| Ruling: drafts and named identity | reauth*, bo01*, draft-restored, unsaved*, late-answer walk; named results and dialog headings. |
+| Ruling: tokens | No added or changed tokens; every CSS dimension/color/weight uses the existing registry or a structural ratio. |
+| Part A.1 state completeness | Full state table above. |
+| Part A.2 subject correctness | Script walks every action of every initial row, including kitchen, cashier, other manager and own manager; counts are checked in both sizes. |
+| Part A.3 exact copy | Copy, warning, modal and field tables above; D1–D3 accessible names explicit. |
+| Part A.4 focus | Focus table and scripted error, duplicate, cooldown, recovery, Cancel and success walks. |
+| Part B | DESIGN.md's appended DESIGN-023 section, each reusable rule marked behaviour and local composition marked BO-06 copy. |
+| Part C.1 | office.js resolves users locally and inserts Staff in authored Phase 1 rails; report-detail's explicit link migrated. |
+| Part C.2 | manifest.js and gallery register every state; design023.cjs supplies browser evidence. |
+| Part C.3 | Inventory and sitemap diff below; historical P/users.html gets the current Frost pointer. |
+
+### Prototype-link ledger and changed inventory/sitemap lines
+
+Counts are the number of lines containing `prototype/`, equivalent to
+`grep -c "prototype/"`. A shared fallback line stays for other undrawn screens;
+Staff no longer takes it. No Frost back-office HTML or JavaScript artifact
+contains an authored `prototype/back-office/users.html` destination. The check
+also follows the rendered rail on every existing Frost back-office screen.
+
+| Changed artifact | Before | After |
+|---|---:|---:|
+| F/office.js | 1 | 1 |
+| F/report-detail.html | 4 | 3 |
+| F/users.html | absent | 0 |
+| F/users.js | absent | 0 |
+| F/users.css | absent | 0 |
+| F/users-states.js | absent | 0 |
+| visual-directions/manifest.js | 0 | 0 |
+| visual-directions/index.html | 0 | 0 |
+| P/users.html | 0 | 0 |
+
+The exact inventory and sitemap changes follow. Other sections of both documents
+are untouched.
+
+```diff
+diff --git a/docs/design/SCREEN-INVENTORY.md b/docs/design/SCREEN-INVENTORY.md
+index 7334ec1..f6669ff 100644
+--- a/docs/design/SCREEN-INVENTORY.md
++++ b/docs/design/SCREEN-INVENTORY.md
+@@ -845,27 +845,44 @@ No table merge, transfer, or split (out of scope).
+ 
+ ## BO-06 — Users
+ 
+-**Purpose.** Manage staff: create, assign role, set and reset PIN, deactivate.
++**Purpose.** Manage staff: create, assign a role or the kitchen classification, change it, set and reset PINs, set a manager's username and password and reset the password, change one's own password and PIN, deactivate and reactivate.
+ 
+ **Reached by / from.** Manager, from navigation.
+ 
+-**States.** *empty* · *loading* · *error* · *permission-denied* (n/a) ·
+-*overflow* · *PIN not unique — rejected* (FR-A4) · *deactivation invalidates
+-that user's POS session on its next authenticated request* (FR-B3, AC-32) ·
+-*kitchen staff listed without a PIN* (FR-A1).
+-
+-**Requirements.** FR-A1, FR-A3, FR-A4, FR-B3, FR-J4.
++**States.** *only the signed-in manager* (empty is unreachable in a manager-only session) ·
++*loading* · *failed to load* · *permission-denied* (n/a) · *overflow* ·
++*active and inactive staff* · *kitchen staff listed without a PIN* ·
++*create by classification* · *six classification moves, including a former manager* ·
++*reset another person's PIN or password* · *own password and own PIN* ·
++*local invalid input* · *saving and saved* · *PIN or username in use — refused* ·
++*own account — deactivation and role change refused* · *user changed meanwhile — reread* ·
++*not found* · *current password wrong or throttled* ·
++*warning before every session-ending command* · *deactivation confirmation and result* ·
++*deactivation invalidates that person's POS and back-office sessions on their next authenticated request* ·
++*reactivating and reactivated* · *reactivation needs a new PIN* ·
++*general failure with draft kept* · *outcome unknown, reread, no resend* ·
++*departure decision* · *M-6 over inert work* · *BO-01 with isolated draft* ·
++*same-manager return with credential fields empty* · *success while the list read still fails*.
++The [Frost BO-06 artifact](visual-directions/frost/back-office/users.html) and
++DESIGN-023's Handoff specify the exact words and focus targets.
++
++**Requirements.** FR-A1, FR-A3, FR-A4, FR-B3, FR-J3, FR-J4, AC-32.
+ 
+ **Must not invent.**
+ - Two authenticating roles only: cashier and manager. **Kitchen is a
+   non-authenticating classification** with no PIN and no permissions (FR-A1).
+   Waiter is deferred — no waiter option.
+-- PINs are six digits and unique across users, because an audit actor must be
++- PINs are six digits and unique among active users, because an audit actor must be
+   unambiguous (FR-A1, A4, B-13).
+ - A PIN is **never displayed, echoed, or recoverable** — set and reset only,
+   never "view" (FR-A3, J4, B-11, B-12). No masked-reveal control.
+-- Deactivating a user or resetting a PIN has an immediate floor consequence
+-  (FR-B3). The manager must be told that, at the moment of the action.
++- Deactivation, every role change, and another person’s PIN or password reset
++  end that person’s POS and back-office sessions on their next action. Own PIN
++  changes end POS sessions; own password changes end every other session. This
++  back-office session continues for both own changes (C3 §10). Explain the effect
++  before the command. Kitchen staff have no sign-in sessions to end.
++- A name cannot be corrected and a username cannot be changed or reused.
++  The own row offers neither deactivation nor a role change. No last-manager rule.
+ 
+ ---
+ 
+diff --git a/docs/design/SITEMAP.md b/docs/design/SITEMAP.md
+index e2bd7d4..6992a91 100644
+--- a/docs/design/SITEMAP.md
++++ b/docs/design/SITEMAP.md
+@@ -307,10 +307,16 @@ reports and audit.
+ │   └── [INLINE] Deactivate rejected — holds OPEN order (Phase 2) FR-C8
+ │
+ ├── BO-06 [SCREEN] Users ................................. FR-B3, A1, A3, A4
+-│   ├── [MODAL] User create / edit — role assignment ..... FR-B3, A1
+-│   ├── [MODAL] Set / reset PIN ......................... FR-B3, A3, A4, J4
+-│   │   └── [INLINE] PIN not unique — rejected ........... FR-A4
+-│   └── [MODAL] Deactivate — invalidates POS session ..... FR-B3
++│   ├── [INLINE] Create person — classification form .... FR-B3, A1
++│   ├── [INLINE] Change role — six classification moves . FR-B3, A1
++│   ├── [INLINE] Reset another person's PIN / password .. FR-B3, A3, A4, J4
++│   │   └── [INLINE] PIN or username in use — refused ... FR-A4, B3
++│   ├── [INLINE] Change own password / own PIN .......... FR-B3
++│   │   └── [INLINE] Current password wrong / throttled . FR-A5b
++│   ├── [MODAL] Deactivate — ends sessions on next action FR-B3, AC-32
++│   ├── [ACTION] Reactivate ............................. FR-B3
++│   │   └── [INLINE] New PIN required — reactivate ...... FR-B3, A4
++│   └── [MODAL] Depart — Stay or Discard ................ C2
+ │
+ ├── BO-07 [SCREEN] Discount presets ...................... FR-B5, F5
+ │   ├── [INLINE] Preset create / edit — non-modal panel . FR-B5
+@@ -399,6 +405,9 @@ prototype.
+    walk this, even though the two clients do not link to each other.
+ 4. **User deactivation → POS.** BO-06 deactivate → POS-01 shows the
+    session-invalidated state on the next authenticated request (FR-B3, AC-32).
++   A manager’s back office reaches BO-01 *Session ended* on its next request.
++   DESIGN-023 supplies both review links outside the product frame; the clients
++   do not navigate to each other.
+ 5. **Lease → back office.** An active CheckoutLease on a quick-sale order
+    causes BO-03's 86 toggle to be rejected, naming the order (FR-G13, AC-29).
+    This refusal arrives in Phase 4; DESIGN-019 marks it separately from S5.
+```
+
+### Validation, measurements and unresolved questions
+
+The designer did not run the check scripts. The lead has been asked through
+Herdr to run DESIGN-023, DESIGN-012 to -014, DESIGN-016 to -022, npm run verify,
+and the one Impeccable mechanical scan. Browser evidence is requested under
+`../evidence/DESIGN-023/run1/`, outside the repository. Results and measured
+geometry will be recorded here after the lead returns them; no passing result
+is claimed yet.
+
+One frame question was sent to the lead: after a different manager signs in,
+BO-06 proposes focus on Add person in the clean Staff screen. This is a desired
+screen target, not a unilateral change to the frame's policy. No product,
+server, audit or boundary question has been raised or decided by this drawing.
+No tests outside docs/design are changed; no token check is required by a token
+edit because there is none. Physical-device and assistive-technology testing
+are not claimed. Independent design review is still required before S8c.
+
+Validation is pending the lead's results.
