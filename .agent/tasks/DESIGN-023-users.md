@@ -1210,10 +1210,17 @@ retained login never verifies). The panel-height rule is behaviour (warning
 and Save always in view), not a pixel value. The fixture's response chooser,
 cross-client links and fixture buttons are review-only and are not product UI.
 
-**[Round 2] Validation.** Pending: the lead has been asked for a `design023` and
-`design017` run on the round-2 tree. Until it is quoted here no round-2 result is
-claimed. `design023` gains assertions for F1, F2, F4, F5, F6 and F8; its state
-count becomes 126.
+**[Round 2] Validation.** The lead ran run5 at `c51397e`, with the tree clean
+before and after (evidence `../restaurant-pos-wt/evidence/DESIGN-023/run5/designNNN/`).
+Every script exited 0 with failures and errors empty: `design023` 1946/1946
+over 126 states (it gained assertions for F1, F2, F4, F5, F6 and F8);
+`design017` 350/350 on the round-2 sitemap. Every earlier check is unchanged:
+`design012` 421 checks, `design013` 371, `design014` 287/287, `design016`
+399/399, `design018` 733/733, `design019` 998/998, `design020` 754/754,
+`design021` 543/543, `design022` 691/691. The lead read the round's diff against
+items 1 to 9 and found all of them applied.
 
 **[Round 2] Carried, not ruled here.** F3's save-prompt question goes to S8c as a
 manual Chrome and Firefox check and to the owner, by the lead.
+
+DONE
