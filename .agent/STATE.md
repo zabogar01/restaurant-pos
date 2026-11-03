@@ -122,7 +122,7 @@ Nothing here is decided. Detail is where each line points.
 - **Look at DESIGN-021's states** in the gallery (`docs/design/visual-directions/index.html`, POS-03 served states).
 - **Lead rulings since 10-30, yours to overturn:** DESIGN-021 R1 (long tile names), its round 2 rulings (F5 lifetime, F6
   `fire.ts` form stands), the 86-stepper reading; ARCH-021's lead review acceptances (S7b split in three, the revision
-  route's client-instance opt-out and log level, no backoff, no option ids in a stand-in line).
+  route's client-instance opt-out and log level, no backoff, no option ids in a stand-in line); DESIGN-023 run1: `design019`'s rail list may gain Staff (not yet in its task file).
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
   for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
