@@ -345,6 +345,11 @@ window.USER_CASES = {
     "id": "iqbal",
     "result": "throttled"
   },
+  "cooldown-started-own-password": {
+    "op": "own-password",
+    "id": "iqbal",
+    "result": "wrong-password-cooldown"
+  },
   "wrong-password-own-pin": {
     "op": "own-pin",
     "id": "iqbal",
@@ -354,6 +359,11 @@ window.USER_CASES = {
     "op": "own-pin",
     "id": "iqbal",
     "result": "throttled"
+  },
+  "cooldown-started-own-pin": {
+    "op": "own-pin",
+    "id": "iqbal",
+    "result": "wrong-password-cooldown"
   },
   "deactivate-cashier": {
     "op": "deactivate",
@@ -971,12 +981,20 @@ window.WF = {
       "throttled · own-password"
     ],
     [
+      "cooldown-started-own-password",
+      "Wrong password starts cooldown · own-password"
+    ],
+    [
       "wrong-password-own-pin",
       "wrong password · own-pin"
     ],
     [
       "throttled-own-pin",
       "throttled · own-pin"
+    ],
+    [
+      "cooldown-started-own-pin",
+      "Wrong password starts cooldown · own-pin"
     ],
     [
       "deactivate-cashier",

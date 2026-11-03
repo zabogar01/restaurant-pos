@@ -134,9 +134,11 @@
     if(cmd.discarded){render();status();return;}
     if(result==='duplicate-pin'&&cmd.op==='reactivate'&&!cmd.form){openEditor('reactivate',cmd.id,'[data-action="reactivate"][data-id="'+cmd.id+'"]');}
     if(result.startsWith('duplicate-')&&editor){const k=result==='duplicate-pin'?'pin':'username';notice();render();fieldError(k,k==='pin'?(cmd.op==='reactivate'?'That PIN is already in use. Enter a new PIN to reactivate this person.':'That PIN is already in use. Choose a different PIN.'):'That username is already in use. Choose another username.');focus('#user-'+k);set(result);return;}
-    if(result==='wrong-password'||result==='throttled'){
-      if(result==='throttled')cooldown=300;render();fieldError('currentPassword',result==='throttled'?'Wait '+duration(cooldown)+' before trying your current password again.':'Incorrect current password. Try again.');
-      if(result==='throttled'){notice('Password verification is cooling down','Wait '+duration(cooldown)+'. This is the same cooldown used at sign-in.','failure');focus('#form-notice');}else focus('#user-currentPassword');set(result);return;
+    // INVALID_CREDENTIALS carrying retryAfterSeconds started the cooldown: drawn exactly as THROTTLED (as BO-01 and POS-01).
+    const waits=result==='throttled'||result==='wrong-password-cooldown';
+    if(result==='wrong-password'||waits){
+      if(waits)cooldown=300;render();fieldError('currentPassword',waits?'Wait '+duration(cooldown)+' before trying your current password again.':'Incorrect current password. Try again.');
+      if(waits){notice('Password verification is cooling down','Wait '+duration(cooldown)+'. This is the same cooldown used at sign-in.','failure');focus('#form-notice');}else focus('#user-currentPassword');set(result);return;
     }
     let title='Something went wrong',body='Nothing was saved. Your draft is kept. Enter credentials again, then press Save to try again.';
     if(result==='own-account'){title='This action cannot change your own account';body='Use Change my password or Change my PIN on your own row. You cannot deactivate yourself or change your own role.';}

@@ -2227,7 +2227,9 @@ is exactly six ASCII digits. Passwords are never trimmed. Names and usernames
 cannot be corrected after creation. No secret is displayed after saving.
 
 `DUPLICATE` uses the server's field name, focuses that field and names no PIN
-holder. `INVALID_CREDENTIALS` sits on Current password. `THROTTLED` sits on
+holder. `INVALID_CREDENTIALS` sits on Current password; when it carries
+`retryAfterSeconds`, that failure started the cooldown and is drawn exactly as
+`THROTTLED`, as BO-01 and POS-01 read the same answer. `THROTTLED` sits on
 that field with seconds remaining, disables verification, and focuses a
 focusable notice because the field is disabled. `OWN_ACCOUNT`, `USER_CHANGED`
 and `NOT_FOUND` are named form-level refusals; USER_CHANGED and NOT_FOUND

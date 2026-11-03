@@ -2093,12 +2093,20 @@ window.MOCKUPS.push({
       "throttled · own-password"
     ],
     [
+      "cooldown-started-own-password",
+      "Wrong password starts cooldown · own-password"
+    ],
+    [
       "wrong-password-own-pin",
       "wrong password · own-pin"
     ],
     [
       "throttled-own-pin",
       "throttled · own-pin"
+    ],
+    [
+      "cooldown-started-own-pin",
+      "Wrong password starts cooldown · own-pin"
     ],
     [
       "deactivate-cashier",
