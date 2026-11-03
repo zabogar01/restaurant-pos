@@ -342,3 +342,93 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ## Handoff
 
+**Builder's report, PHASE1-S7b1.** Two commits on `agent/phase1-s7b1`, nothing pushed, no formatter run (I did not run Prettier; every file was edited by hand, matching its neighbours). No browser was missing: Chromium and WebKit are installed and the Docker database was up, so every browser claim below was run, not reasoned.
+
+### What I did
+
+**Commit `0285a34`, the split (no behaviour change in fixture mode).** The fixture menu, its `?state=` pictures, its item sheets and the price lookup are now reached only through `session/source.ts`, behind the one constant `__FIXTURE_SESSION__`.
+- New plain module `apps/pos/src/catalog/menuCopy.ts` (kept in every bundle): `LOCK_NOTICE`, `CATALOG_NOTICE`, `REJECTED_NOTICE`, `LOADING_LABEL`, the `LockNotice` type, and, added in the second commit, DESIGN-021's served copy.
+- New `catalog/types.ts` (the client shape both sources give a screen), `catalog/fixtureCatalog.ts` (the fixture store: no request, no timer; plus `fixtureMenuFacts`), `catalog/useCatalog.tsx` (`CatalogProvider`, `useCatalogStore`, `useCatalog(view)`, `unavailableAt(store, view)`).
+- `menuFixtures.ts` is now fixture-only data and pure functions, and exports `FIXTURE_MENU_MARKER`. The item-sheet fixtures moved into it from `sheetFixtures.ts`, which keeps the types, the quantity bounds, `unitPrice`, the two line-editor fixtures and `panelLine`. `originFacts` moved to `orderFixtures.ts` and now returns only `{ incident, lock }`; `menuFixtureFor(view)` replaced its `.menu`. `MenuFixture.lock` is gone. `CategoryId` is `string`. The comment at `orderFixtures.ts:37` and `source.ts`'s are reworded.
+- `source.ts` exports `createCatalogStore(reads?)`, `FixtureMenu` (the `FixtureMenuFacts`, `null` in a build) and `FIXTURE_ORDER_STATES` (the constant POS-03's list of fixture states now reads; `OrderPanel.tsx:357`'s `import.meta.env.DEV` is gone).
+- Between the two commits a build held an empty catalog, never the fixture menu; I wrote it that way so the intermediate commit is honest under B-24.
+- Bundle test: `built-session-support.ts` gained the marker, `Chilli mayo`, `Garlic mayo` (confirmed by search to appear in no fixture order) and `pos-03-order-states`, a `data-fixture-list` attribute I added to the list's `<nav>`, because the generic `Fixture states` label appears in five other screens whose `DEV` gates stay.
+- Rollup kept the item-sheet tables (a top-level `g(...)` call retains its string arguments), so the first build failed the new needle. I made the tables lazy (`itemSheetFixtures()`, `itemSheetStates()` build on first read); the marker test is the proof, as the task said it would have to be.
+
+**Commit `8142562`, the served path.**
+- `catalog/catalogStore.ts`: `createRealCatalog(reads, { setTimer, isVisible })`, no React, handed exactly `{ revision, menu }`. One cycle at a time (an `inFlight` token tagged with the epoch, so a dead cycle never blocks a new start); the next timed 2000 ms after the previous settles (`POLL_MS`); the epoch advances on every start and stop and is checked after each read inside a cycle; `visibilitychange` pauses and resumes, `focus` with the tab visible refreshes, `start()` (a sign-in) refreshes at once; no backoff; every non-`ok` result is alike "not a check that succeeded" and no code is read; `retry()` shows loading only when nothing is held; whatever a read answers is adopted whole, even a lower number; money and rates are decoded by `decodeMoney`/`decodeRate` once, in `toMenu`; a body that does not decode is a failed check.
+- `SessionStore` gained an optional `catalogReads` (set by `realSession.ts` from `posApi`, absent on the fixture session, which I do not own); `useCatalogStore()` builds the served store from the session store's reads, one per session store, and `PosRoutes.tsx` starts it while signed in, so it runs on every POS screen and stops under POS-01.
+- `MenuRegion.tsx` is data-driven from the store and draws DESIGN-021's states: loading, first read failed (both variants, *Try again*, `data-action="served-retry"`), empty catalog (`#menu-empty-catalog`, no control), empty category, the 72px status band, 86 held in place, the focus rules, selection by id. `OrderPanel.tsx` draws the no-menu empty-order words and the inert four's reason line. `orderStore.ts` reads the unavailable list from the catalog store at the press in `fire` and `close`. `pos.css` gained the clamp, the foot row, the scrolling grid and rail, the band and the empty block.
+- New tests: `catalog-store.test.tsx` (32), `served-menu.test.tsx` (58), `served-harness.tsx`; `no-invented-values.test.ts` now reads `src/catalog` too. Browser: `e2e/tests/pos-catalog.spec.ts` (P1 to P4), `e2e/support/catalog.ts`, and B6, B8 and a new B9 in `idle.spec.ts`.
+
+### What S7b2 needs
+
+- **The store's shape.** `CatalogStore` (`catalog/types.ts`): `kind`, `getSnapshot()`, `subscribe`, `start()`, `retry()`. A snapshot is `{ menu, read, failure, outOfDate, availabilityChanges }`; `menu` is `{ version, categories, items, presets }`, one immutable object replaced whole. An item is `{ id, categoryId, name, price: Money, available, variants: {id,name,delta}[], modifiers: {id,name,delta}[] }`; presets carry `value: { kind: 'PERCENTAGE', rate } | { kind: 'FIXED', amount }`. **A sheet reads the live item** with `const { snapshot } = useCatalog(view)` and `snapshot.menu?.items.find((i) => i.id === itemId)`; an item absent from the projection is "no longer on the menu" (the archived-while-open case needs the last-known details kept in the sheet's own state, since the store holds only the current object). The version a sheet may keep is `snapshot.menu.version`; nothing else carries it (Q13).
+- **The source switch.** `session/source.ts`: `createCatalogStore`, `FixtureMenu` (null in a build; has `pictureFor`, `eightySixedFor`, `itemDestination`, `itemSheet`, `priceOf`), `FIXTURE_ORDER_STATES`. `useCatalog(view)` returns `{ store, snapshot, picture, unavailable, destinationOf, itemSheetFor }`. `destinationOf` is `null` for a served menu, which is why a served tile opens nothing; S7b2 replaces that single `if (!off && destinationOf)` in `Tile` (`MenuRegion.tsx`) with its sheet opener.
+- **Where `priceOf` still lives:** `orderStore.ts`, a small function that calls `FixtureMenu.priceOf` and throws when there is none (as it threw for an unknown item before). `NewLine` is unchanged. It goes when `NewLine` carries the base price.
+- **The served-mode render helper for tests:** `apps/pos/test/served-harness.tsx`. `makeCatalogHarness(firstMenu)` builds the real store over stubbed reads with a manual timer and a visibility switch (`revision(...)`, `menu(...)`, `hold()`, `advance(ms)`, `settle()`, `count()`, `setVisible()`); `mountServed(h, view)` renders the order screen under `CatalogProvider`, started as POS signs in; `menuOf`, `ok`, `FAILED`, `UNAVAILABLE`, `NASI`, `SATE`, `TEA` build bodies. Under vitest `__FIXTURE_SESSION__` is undefined, so the fixture session and pictures stay available beside a served store, which is how the `?state=` table is tested.
+- **The poll and an open sheet.** The store is above the routes and keeps polling while a sheet is open; a sheet re-renders from `useCatalog`'s snapshot. The band is outside the sheet and is not duplicated.
+
+### What I decided, and on what evidence
+
+- **`aria-pressed` and `aria-current` on the rail.** DESIGN-021's copy table says the rail button carries `aria-pressed`; existing assertions in `menu-region.test.tsx` and `menu-categories.test.tsx` read `aria-current` and the task says their meaning may not change. I emit both. If you would rather drop `aria-current`, those assertions need a ruling.
+- **The tile markup changed for both sources.** The reviewed served artifact puts the name on two clamped lines and the price with its tag on the bottom line (`frost-served-catalog.css`). Keeping the old fixture tile beside it would have been two layouts for one component, so the fixture tile now has `.menu-tile__name` and `.menu-tile__foot` too, and the 86 tag sits beside the price instead of after the name. Every existing assertion (`.menu-tile__price`, `.tag-86`, `aria-describedby` equal to the tag's id, classes) still holds. Every tile now has an `aria-label` (`{name}, {price}` and `, unavailable, 86`).
+- **The status band and the empty-order reason are drawn only when the store is the server's** (`store.kind === 'real'`). A hard-coded `['menu-notice', 'menu-grid']` children assertion in `menu-region.test.tsx` and FE-024's "the screen draws no reason here" for an empty fixture order would otherwise have changed meaning. This is the one place the region differs by source rather than by data; it is `store.kind`, not a build test.
+- **`pausePoll` instead of leaving the clock paused for the whole test.** Playwright's click waits for animation frames, which a paused clock does not deliver, and `idle.spec.ts`'s `settle()` waits on a page `setTimeout`. So `P1` presses with `{ force: true }`, and the paused POS cases use a message-channel `turn()`. `pausePoll` pauses at the page's own time plus 500 ms (the runner's `Date.now()` is behind a page whose clock has been moved).
+- **Waiting for the back office.** BO-03's status line can still hold the last action's words (the name of the item just created), so `mark86`, `makeAvailable` and `archiveAtOffice` wait for the server's answer to the one request they send. My first version awaited the status text and let P2 pass or fail by timing; I found it by printing the version the revision read returned (3, the old one).
+- **A defect the first store tests found:** `check()` carried on to the menu read after a stop, because the epoch was only checked once the whole check returned. A late revision answer after a lock would have sent a menu request. Fixed; it is covered by "drops a revision answer that settles after the stop".
+- **The librarian's answer on `clock.resume` and `pauseAt`** (asked with `ask.sh librarian`): after `install()` with no time the clock runs in real time (the guide says "let the page load naturally"); `pauseAt(time)` jumps the clock forward to `time` and pauses, and nothing fires until `runFor`, `fastForward`, `pauseAt` or `resume`; `resume()` lets time flow again; `runFor(n)` advances and fires all callbacks; `fastForward(n)` jumps and fires each due timer at most once. The v1.64 source auto-installs on any clock call, so `pauseAt` does not need `install()` first, though the docs say it must. The answer could not confirm whether `runFor` flushes promises between timers. I did not depend on it: each case pauses explicitly and I watched the steps run (P1 passes with the tile still enabled before `runFor(2000)` and disabled after, in both engines). `pauseAt` into the past throws ("Cannot fast-forward to the past"), which is why it takes the page's time.
+- **Both pages are `visible` in both engines**: `document.visibilityState` was `visible` for the POS tab in every run, and the poll ran in Chromium and WebKit.
+
+### Existing tests I changed, and why
+
+Only imports moved, except where stated; no assertion was loosened.
+- `built-session-support.ts`: the new needles (the task's instruction).
+- `fire.test.tsx`, `one-press-fire.test.tsx`, `menu-categories.test.tsx`, `menu-region.test.tsx`: imports follow the moves (`REJECTED_NOTICE`, `CATALOG_NOTICE`, `LOCK_NOTICE`, `LOADING_LABEL` to `catalog/menuCopy.js`; `originFacts` to `orderFixtures.js`). In `menu-categories.test.tsx`, `facts.menu.eightySixed` became `menuFixtureFor({...}).eightySixed` (the same fact, read from where it now lives) and the `EXPECTED` table gained a `Record<string, ...>` view because `CategoryId` is `string`.
+- `sheets.test.tsx`, `own-items.test.tsx`: the item sheets and the line editors were one table (`SHEET_FIXTURES`); they are two now, so each file builds `{ ...itemSheetFixtures(), ...SHEET_FIXTURES }` under the old name and every assertion reads it as before. `own-items.test.tsx` line 480 read `MENU_FIXTURES[id].lock`, which the task said to drop; it reads `originFacts({ state: id }).lock`, which is the same value for every state the test enumerates (the suite passes).
+- `no-invented-values.test.ts`: reads `src/catalog` too (the task's instruction).
+- Not changed though the task listed them: `tile-for.ts`, `quick-sale.test.tsx`, `order-store.test.tsx`, `void-apply.test.tsx`, `discount-apply.test.tsx`, `discount.test.tsx`, `discount-change.test.ts`; their imports still resolve.
+- `e2e/tests/idle.spec.ts`: B6 and the POS B8 pause the poll first (`pausePoll`) and take the verdict from either route (`sessionVerdicts`: `SESSION_IDLE` among the codes of `me`, the revision and the menu). The back-office B8 is untouched. `polledTwice` gained a `quiet` flag. New B9.
+
+### The red proofs (each: mutation applied, failure read, reverted)
+
+1. **AC1** hard-coded a category in `MenuRegion` → 7 failures in `served-menu.test.tsx` (first: "draws the served categories in server order").
+2. **AC2** imported `FIXTURE_MENU_MARKER` and `MENU_ITEMS` into `MenuRegion` and rendered them → production bundle test: `fixture-menu:rpos-b24c7e in …/index-….js: expected true to be false`.
+3. **AC3** timer scheduled before settle and the in-flight guard removed → "times the next cycle two seconds after the previous settled, and never overlaps two": `expected 6 to be 1`.
+4. **AC4** imported `PosApi` into `catalogStore.ts` → "its folder names no other route" fails. The scan was the red I ran; I did not compile a whole `PosApi` into the store, which has none of the keys `CatalogReads` names and so should not type-check either.
+5. **AC5** removed the `focus` listener → "a focus on the window": `expected +0 to be 1`; removed the `visibilitychange` listener → "pauses while the tab is hidden and resumes…": `expected 1 to be +0`.
+6. **AC6** threshold 1 instead of 2 → 6 failures across both files ("failed counts as a check that did not succeed…" and the band case).
+7. **AC7** `commit({ read: 'loading' })` at the start of every cycle → "background retries never turn failure back into loading": `expected [ 'failed', 'loading', 'failed', … ] to not include 'loading'`.
+8. **AC9** removed the epoch advance on stop → "drops a menu read that settles after the stop": `expected { version: 9, … } to be null`, and the revision-answer case.
+9. **AC10** set the held version to the revision before the menu read → `expected 5 to be 1`.
+10. **AC11** filtered 86'd items out of the grid → 4 failures (keeps order and slot; restoration re-enables the same element; focus kept; the store's unavailable states).
+11. **AC12** selected by remembered index → 4 failures (the selected category's items; an active empty category; both removed-tile focus cases).
+12. **AC13** rendered the band only when it has text → 8 failures ("is in the tree… before it has any text" and others).
+13. **AC14** removed `-webkit-line-clamp` → the unit CSS test fails (`expected '…' to match /-webkit-line-clamp:\s*2/`). My first browser version of P4 still passed without the clamp (`overflow: hidden` alone keeps the price inside the tile by clipping mid-line), so I added the computed `-webkit-line-clamp` and a two-lines-high check; with the clamp dropped P4 now fails with `Expected: "2"  Received: "none"`.
+14. **AC15** always focus *Try again* → "a failure leaves focus where the cashier is working" fails.
+15. **AC16** restored `import.meta.env.DEV` as the gate → the development bundle test: `pos-03-order-states in …/index-….js`.
+16. **AC17** compared by name (`unavailableIn` returns names, `holdsUnavailable` compares `line.name`) → "a fixture line itemId steak beside a served 86'd item named Steak does not block" fails (and two tile cases).
+17. **AC18** `POLL_MS = 3500` → P1 fails at `runFor(2000)`: `Expected: "true"  Received: ""` on the tile's `aria-disabled`.
+18. **AC19** the server's menu read drops `i.is_active AND c.is_active` → P3: `Expected value: not "Satay-…"  Received array: ["Soup-…", "Satay-…"]`.
+19. **AC20** the revision route marked `interactive: true` (in `apps/server/src/http/routes/pos-catalog.ts`; the contracts table alone does not drive the server) → B9: `Expected: "signed-out"  Received: "signed-in"`. Reverted; `git status` shows nothing outside my paths.
+20. The `R1` and `AC20` mutations also needed a rebuild of the clients; I rebuilt after each revert.
+
+### Things I found and did not fix
+
+- `OrderPanel.tsx`, `FloorScreen.tsx`, `SettlementScreen.tsx` and the closed-order screens still carry `import.meta.env.DEV` gates for their own lists of fixture states, as the task said to leave them. A `NODE_ENV=development` build still contains those lists.
+- DESIGN-021's fire refusal copy has a plural form; `fire.ts` still uses the provisional plural from FE-011 (S7b2's, as the task says).
+- `catalogReads` is optional on `SessionStore` only because `session/fixtureSession.ts` is not in my paths; if you would rather it be required, that file needs the one-line `catalogReads: undefined`-style change.
+- The hidden-tab pause is proved in jsdom (the store's `isVisible`) but not in a browser: neither engine hides a page here. P1 and P2 prove the poll runs while visible.
+- The full-suite test count rose from 5497 to 5501 in commit 1, which added no test file and changed no `it` by hand. I did not find which existing `it.each` enumerates the extra cases (my guess is a test that walks the tile markup, which gained spans), and I did not chase it.
+
+### Output
+
+- `npm run verify`, at the final tree (`8142562`): typecheck clean; **Test Files 153 passed (153), Tests 5612 passed (5612)** (baseline 151 files, 5497 tests). After commit 1 alone: 151 files, 5501 tests.
+- `npm run test:e2e:all`, same tree: **118 passed (1.6m)** (baseline 108): the 8 new `pos-catalog` cases (four in each engine) and the new B9 in each.
+- `idle.spec.ts` B6, the POS B8 and B9, `--repeat-each=5` in both engines: **30 passed (1.2m)**, no flake.
+
+### What the next agent needs and does not have
+
+M-2 for a served item, Add into the stand-in, `NewLine`'s base price, D1's ceilings, the sheet's open-between-polls behaviour (it can read `useCatalog` but nothing in this slice does), the plural fire refusal, and the preset picker (`snapshot.menu.presets` is held and decoded, and nothing draws it). I also did not check the owner's real browser behaviour with a touch device; geometry is proved in Chromium and WebKit at the default viewport (150 by 96 tiles, a 72px band).
+
+DONE
