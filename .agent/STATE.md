@@ -55,7 +55,7 @@ at `0014`. **PHASE1-S7a complete** (review clean), not pushed. Lead branch `agen
 ## Running tasks and agents
 
 - **PHASE1-S7a complete** (`3bf91dc`): builder `ed921fa`; lead verify 151/5497, e2e:all 108, criterion 5's red rerun; Codex
-  review clean (0 findings). **No agent but the lead.** Touches money, boundaries, identity: owner looks before merge.
+  review clean (0 findings). **No agent but the lead.** **Owner tested it by hand 2026-11-03** ("it works"); pushed, PR open.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -141,7 +141,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S7a:** push and open its PR with the lead branch (owner's word). Then write **S7b1, S7b2,
+1. **S7a:** PR open, owner to merge. Then write **S7b1, S7b2,
    S7b3** (S7b1 copies C4's `idle.spec.ts` B6/B8 warning; its PR waits for S7b2).
 2. **DESIGN-023 (E2, BO-06)** written 2026-11-02, untracked in the kit: on the owner's word, cut `wt/DESIGN-023` from
    `development`, commit the task file there first, and hand-open a Codex designer `design023` (Claude Opus reviews).
