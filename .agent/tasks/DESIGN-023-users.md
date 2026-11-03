@@ -5,7 +5,7 @@ category: ui
 touches: [identity, boundaries]
 depends_on: [DESIGN-022]
 owns: [docs/design/**, docs/DESIGN.md]
-status: not-started
+status: review
 cycles: 0
 ---
 # DESIGN-023 — BO-06 Users (design slice E2)
@@ -348,6 +348,28 @@ that the warning and the footer (Save) stay in view, with a new viewport asserti
    were not forked away.
 4. Ask the lead for the final run (`design023` and every earlier check, and `npm run verify` if anything under
    `docs/design/tokens/` changed), quote it, and end with `DONE`.
+
+## Lead verify (2026-11-03)
+
+For the reviewer, who cannot run a browser or the design checks. At `e65b1bf`, the tree clean:
+
+- `git log development..HEAD`: `736112d` (task file), `ac892e2` (Part B), `67c62be` (R1, R2, handover), `51f2d5a`
+  (Part A), `a02f699` (Part C), `e65b1bf` (Handoff). `git diff --name-only development...HEAD`: every path is under
+  `docs/design/`, `docs/DESIGN.md` or this task file; nothing under `apps/`, `packages/`, `db/`, `e2e/` or
+  `docs/design/tokens/`. `git diff --check`: trailing whitespace only, on blank context lines inside the Handoff's diff
+  excerpt.
+- **run4, run by the lead at `a02f699`** (the Handoff's last commit changes only this file), evidence in
+  `../restaurant-pos-wt/evidence/DESIGN-023/run4/`: every script exit 0, failures and errors empty. `design023`
+  1874/1874 over 122 states; `design012` 421 checks; `design013` 371; `design014` 287/287; `design016` 399/399;
+  `design017` 350/350; `design018` 733/733; `design019` 998/998; `design020` 754/754; `design021` 543/543; `design022`
+  691/691. `npm run verify` (run1, before the finishing pass): 151 files, 5497 tests; nothing it covers changed since.
+- The earlier-check changes are exactly the two the Handoff names: `design019.cjs` one expected array (R1) and
+  `design014.cjs` one count (four to three), both seen in `git diff`.
+- **The Handoff was read whole.** Two points for the reviewer to judge: *Rules for S8c* gives the current-password
+  limit as "at most 1024 UTF-16 units", but zod 4.6.5 counts code points (a known defect elsewhere in the repo); and
+  the sitemap's new `[MODAL] Depart — Stay or Discard` node cites "C2", which reads as FR-C2 rather than consult C2.
+- **Authorship:** Parts A to C were drawn by Codex (`design023`); the finishing pass and the Handoff are Claude Opus's
+  (`design023c`). The review is Claude Opus by the owner's exception (DECISIONS 2026-11-03).
 
 ## Handoff
 
