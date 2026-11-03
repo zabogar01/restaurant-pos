@@ -19,6 +19,8 @@ import {
   MarkItemAvailableRequest,
   MarkItemUnavailableRequest,
   PosLoginRequest,
+  PosMenuResponse,
+  PosRevisionResponse,
   PresetResponse,
   PresetsResponse,
   ReactivatePresetRequest,
@@ -89,6 +91,8 @@ export const SPECS = {
   '/api/pos/auth/me': { response: SessionView, session: true },
   '/api/pos/auth/activity': { response: null },
   '/api/pos/auth/release': { response: null, ends: true },
+  '/api/pos/catalog/revision': { response: PosRevisionResponse },
+  '/api/pos/catalog/menu': { response: PosMenuResponse },
   '/api/back-office/auth/login': {
     body: BackOfficeLoginRequest,
     response: BackOfficeSessionView,

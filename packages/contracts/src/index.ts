@@ -43,6 +43,14 @@ export {
   ReactivatePresetRequest,
   UpdatePresetRequest,
 } from './discount-presets.js';
+export { PosMenuResponse, PosRevisionResponse } from './pos-catalog.js';
+export type {
+  PosCategory,
+  PosItem,
+  PosModifier,
+  PosPreset,
+  PosVariant,
+} from './pos-catalog.js';
 export { ErrorBody, ErrorCode } from './errors.js';
 export type { ErrorDetailsByCode, ErrorDetailsOf } from './errors.js';
 export { CSRF_HEADER } from './headers.js';

@@ -21,4 +21,12 @@ describe('the route table', () => {
       'POST /api/back-office/config/tables/reactivate true',
     ]);
   });
+
+  it('lists the two POS catalog reads, neither interactive (FR-A2b, AC-28)', () => {
+    const reads = ROUTE_TABLE.filter((e) => e.path.startsWith('/api/pos/catalog/'));
+    expect(reads.map((e) => `${e.method} ${e.path} ${e.interactive}`)).toEqual([
+      'GET /api/pos/catalog/revision false',
+      'GET /api/pos/catalog/menu false',
+    ]);
+  });
 });

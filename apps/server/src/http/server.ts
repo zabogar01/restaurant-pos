@@ -24,6 +24,7 @@ import { backOfficeTableRoutes } from './routes/back-office-tables.js';
 import { backOfficeTenderMethodRoutes } from './routes/back-office-tender-methods.js';
 import { healthRoutes } from './routes/health.js';
 import { posAuthRoutes } from './routes/pos-auth.js';
+import { posCatalogRoutes } from './routes/pos-catalog.js';
 import { decorateActor, sessionGuard } from './session-guard.js';
 
 export interface BuildServerOptions {
@@ -110,6 +111,7 @@ export function buildServer({
       api.addHook('onRequest', sessionGuard);
       await api.register(healthRoutes);
       await api.register(posAuthRoutes);
+      await api.register(posCatalogRoutes);
       await api.register(backOfficeAuthRoutes);
       await api.register(backOfficeTableRoutes);
       await api.register(backOfficeSettingsRoutes);
