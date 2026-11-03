@@ -25,8 +25,8 @@
     return op==='password'?['password']:['pin'];
   }
   function warning(op,r,target){
-    if(op==='own-pin')return 'Your POS sessions will end on their next action. This back-office session will continue.';
-    if(op==='own-password')return 'Your other POS and back-office sessions will end on their next action. This back-office session will continue.';
+    // FR-B3: an own PIN or own password change ends every other session of the manager; this one continues.
+    if(op==='own-pin'||op==='own-password')return 'Your other POS and back-office sessions will end on their next action. This back-office session will continue.';
     if(op==='create'||op==='reactivate')return '';
     if(r.classification==='KITCHEN')return op==='deactivate'?r.name+' will be inactive. Kitchen staff have no PIN or sign-in sessions. You can reactivate this person later.':r.name+' currently has no sign-in sessions. After this change, they must sign in to use '+(target==='MANAGER'?'the POS or back office.':'the POS.');
     // A cashier has POS sessions only; a manager has both. Name only what this person has.

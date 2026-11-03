@@ -878,9 +878,9 @@ DESIGN-023's Handoff specify the exact words and focus targets.
   never "view" (FR-A3, J4, B-11, B-12). No masked-reveal control.
 - Deactivation, every role change, and another person’s PIN or password reset
   end every session that person has (a cashier's POS sessions; a manager's POS
-  and back-office sessions) on their next action. Own PIN
-  changes end POS sessions; own password changes end every other session. This
-  back-office session continues for both own changes (C3 §10). Explain the effect
+  and back-office sessions) on their next action. Own PIN and own password
+  changes end every other session of the manager, POS and back office; this
+  back-office session continues (FR-B3). Explain the effect
   before the command. Kitchen staff have no sign-in sessions to end.
 - A name cannot be corrected and a username cannot be changed or reused.
   The own row offers neither deactivation nor a role change. No last-manager rule.
