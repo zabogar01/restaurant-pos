@@ -310,13 +310,13 @@ reports and audit.
 │   ├── [INLINE] Create person — classification form .... FR-B3, A1
 │   ├── [INLINE] Change role — six classification moves . FR-B3, A1
 │   ├── [INLINE] Reset another person's PIN / password .. FR-B3, A3, A4, J4
-│   │   └── [INLINE] PIN or username in use — refused ... FR-A4, B3
 │   ├── [INLINE] Change own password / own PIN .......... FR-B3
 │   │   └── [INLINE] Current password wrong / throttled . FR-A5b
+│   ├── [INLINE] PIN or username in use — refused ....... FR-A4, B3
 │   ├── [MODAL] Deactivate — ends sessions on next action FR-B3, AC-32
 │   ├── [INLINE] Reactivate ............................. FR-B3
 │   │   └── [INLINE] New PIN required — reactivate ...... FR-B3, A4
-│   └── [MODAL] Depart — Stay or Discard ................ C2
+│   └── [MODAL] Depart — Stay or Discard
 │
 ├── BO-07 [SCREEN] Discount presets ...................... FR-B5, F5
 │   ├── [INLINE] Preset create / edit — non-modal panel . FR-B5
