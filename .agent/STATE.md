@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-11-03: #165 S7a and #166 merged; `development` at `22be697`; dev `pos` at `0014`. **DESIGN-023 complete**
-(`0533314`, not pushed). Lead branch `agent/lead-1103`, not pushed. Narrative: [journal/2026-11-03.md](journal/2026-11-03.md).
+(PR #167). Lead branch `agent/lead-1103` (PR #168; later commits not pushed). **PHASE1-S7b1 dispatched.** Narrative: [journal/2026-11-03.md](journal/2026-11-03.md).
 
 ## Phase and gates
 
@@ -52,7 +52,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **No agent but the lead.** DESIGN-023 complete (`0533314`): Codex drew, Claude Opus finished and reviewed (owner);
+- **PHASE1-S7b1 building** (Sonnet, interactive, Herdr agent `phase1-s7b1`, `agent/phase1-s7b1`); its PR waits for S7b2.
+- DESIGN-023 complete (`0533314`): Codex drew, Claude Opus finished and reviewed (owner);
   r2 lead-reviewed, run5 all green (design023 1946/1946). **S8c: FR-B3's own-PIN words; a Chrome/Firefox save-prompt check.**
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
@@ -116,7 +117,6 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 Nothing here is decided. Detail is where each line points.
 
 - **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified; S8c checks by hand.
-- **Dispatch PHASE1-S7b1?** Dry run clean (Sonnet builder, interactive; Codex reviews).
 - **Look at DESIGN-021's and DESIGN-023's states** in the gallery (`docs/design/visual-directions/index.html`).
 - **Lead rulings since 10-30, yours to overturn:** DESIGN-021 R1 (long tile names), its round 2 rulings (F5 lifetime, F6
   `fire.ts` form stands), the 86-stepper reading; ARCH-021's lead review acceptances (S7b split in three, the revision
@@ -140,7 +140,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S7b1 written** (`.agent/tasks/PHASE1-S7b1-served-menu.md`, untracked in the kit; dry run clean, Sonnet): dispatch on
-   the owner's word. Then write S7b2 and S7b3 from C4 *For the lead* and DESIGN-021's Handoff (S7b1's PR waits for S7b2).
-2. **DESIGN-023:** push and open its PR with the lead branch (owner's word); the owner looks at BO-06's states.
+1. **S7b1:** on exit, verify, `test:e2e:all`, review (Codex if reset, else ask the owner). Meanwhile write S7b2 and S7b3
+   from C4 *For the lead* and DESIGN-021's Handoff (S7b1's PR waits for S7b2).
+2. **DESIGN-023:** PR #167 open; the owner looks at BO-06's states, then merges.
 3. **Small, between slices:** the code-point cleanup; the frame-focus question; the dialog and name-check extraction.
