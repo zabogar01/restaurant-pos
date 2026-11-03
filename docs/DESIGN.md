@@ -2172,7 +2172,10 @@ uncontrolled inputs, read once on submit. New PINs and new passwords have
 `type="password"` and `autocomplete="new-password"`; the current password
 has `autocomplete="current-password"`. PIN entry additionally has
 `inputmode="numeric"`. A new username has `autocomplete="username"`,
-`autocapitalize="none"` and spellchecking off. No reveal, confirmation field,
+`autocapitalize="none"` and spellchecking off. These are the standard hints
+for a new or current secret; whether a browser offers to save a PIN or another
+person's password after the form is submitted is unverified, and is not claimed
+as their effect. No reveal, confirmation field,
 text echo or value attribute is drawn. A stored username is public account
 identity, displayed as text; a fixed username in a session-gate input is set
 through its property, never its attribute (ADR-011 rule 25).
