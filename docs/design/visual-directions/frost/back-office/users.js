@@ -185,7 +185,8 @@
       else focus('#new-user');
       if(queuedIncident&&!decision&&!confirmation){queuedIncident=false;leave(()=>location.href=O.emergency.querySelector('a').href,'rail');}
     }else{
-      decision=null;confirmation=null;pending=null;held=null;$('#departure').close();$('#deactivate-confirm').close();closeEditor(false);clearCredentials();actor=actor==='iqbal'?'ayu':'iqbal';status();$('.office-actor').textContent=find(actor).name+' · Manager';render();focus('#new-user');set('default');
+      // The cooldown belongs to the signed-in manager's account: a different manager starts without it.
+      decision=null;confirmation=null;pending=null;held=null;cooldown=0;$('#departure').close();$('#deactivate-confirm').close();closeEditor(false);clearCredentials();actor=actor==='iqbal'?'ayu':'iqbal';status();$('.office-actor').textContent=find(actor).name+' · Manager';render();focus('#new-user');set('default');
     }heldDecision=false;heldConfirm=false;
   }
   $('#users-reauth').addEventListener('cancel',e=>e.preventDefault());
