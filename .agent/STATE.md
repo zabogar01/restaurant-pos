@@ -56,7 +56,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Running tasks and agents
 
 - **DESIGN-023** (E2, BO-06 Users; task file committed `736112d` on `agent/design-023`): Codex `gpt-6-astra` high, Herdr
-  agent `design023`, pane `DESIGN-023` (`w2:p9S`); a background waiter briefs it once the update prompt (owner's) clears.
+  agent `design023`, pane `DESIGN-023` (`w2:p9S`); briefed 2026-11-03 13:24, working.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -118,7 +118,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
-- **DESIGN-023's Codex update prompt** in pane `DESIGN-023` (Update or Skip): yours; the brief follows on its own.
+- **Dispatch PHASE1-S7b1?** Dry run clean (Sonnet builder, interactive; Codex reviews).
 - **Look at DESIGN-021's states** in the gallery (`docs/design/visual-directions/index.html`, POS-03 served states).
 - **Lead rulings since 10-30, yours to overturn:** DESIGN-021 R1 (long tile names), its round 2 rulings (F5 lifetime, F6
   `fire.ts` form stands), the 86-stepper reading; ARCH-021's lead review acceptances (S7b split in three, the revision
@@ -142,8 +142,8 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **Write S7b1, S7b2, S7b3** (S7b1 copies C4's `idle.spec.ts` B6/B8 warning; its PR waits for S7b2), from C4 *For
-   the lead* and DESIGN-021's Handoff; dispatch S7b1 on the owner's word (`max_builders` 1; the designer does not count).
+1. **S7b1 written** (`.agent/tasks/PHASE1-S7b1-served-menu.md`, untracked in the kit; dry run clean, Sonnet): dispatch on
+   the owner's word. Then write S7b2 and S7b3 from C4 *For the lead* and DESIGN-021's Handoff (S7b1's PR waits for S7b2).
 2. **DESIGN-023:** run the checks the designer asks for; on DONE, lead verify, then a Claude Opus review (hand-opened:
    write `runs/DESIGN-023/builder/meta.json` with `{"cli":"codex",…}` first).
 3. **Small, between slices:** the code-point cleanup; the frame-focus question; the dialog and name-check extraction.
