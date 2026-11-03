@@ -2164,3 +2164,91 @@ as stored; the subtotal cap belongs to application and the order's totals.
 The list scrolls above Cancel. Loading, read failure and no active presets
 retain Other amount. Changed rows update and removed rows leave without a
 notice. Existing order snapshots retain their own name and value.
+
+### Configuration forms — DESIGN-023 additions (awaiting review)
+
+**Credentials inside a configuration form — behaviour.** Use native,
+uncontrolled inputs, read once on submit. New PINs and new passwords have
+`type="password"` and `autocomplete="new-password"`; the current password
+has `autocomplete="current-password"`. PIN entry additionally has
+`inputmode="numeric"`. A new username has `autocomplete="username"`,
+`autocapitalize="none"` and spellchecking off. No reveal, confirmation field,
+text echo or value attribute is drawn. A stored username is public account
+identity, displayed as text; a fixed username in a session-gate input is set
+through its property, never its attribute (ADR-011 rule 25).
+
+Credential fields are emptied after every response, including success and
+refusal; on Cancel, Discard and unmount; when the form's classification or
+move changes; on entry to a session gate and every change of M-6 mode; and
+before the same manager's draft is restored. A local validation failure is
+not a response: the uncontrolled input keeps its typed value for correction.
+Neither the credential nor an alternate-kind buffer survives a classification
+switch. Non-credential name and classification choices stay. This is the
+credential-specific case of DESIGN-022's kind switch, not a change to its
+ordinary amount buffers. A held answer is presented only after the same
+manager resumes; clearing credentials does not discard or resend the command.
+No form uses GET: declare `method="post"`, prevent submission and apply
+`form-action 'none'` as ADR-011 requires.
+
+**Session-ending warnings — behaviour.** Place the warning with the commit
+controls so the manager sees it at the moment of acting. Name the person,
+the affected surfaces, and the timing: the person's next action. For an own
+change, explicitly say that this back-office session continues. A kitchen
+person has no sessions or PIN to end; describe the classification change or
+inactive state without inventing either. A reversible credential reset or
+role change needs no additional acknowledgement: its named form and warning
+already make the effect explicit. Deactivation uses a modal confirmation
+because it can interrupt floor work. Initial focus is Keep active; Escape
+keeps the person active. Reactivation alone needs no confirmation.
+
+**BO-06 copy and composition.** The Staff rail entry opens `users.html`.
+The list places active people before inactive people, preserving the read's
+creation order (server ties by identity) within each status. No sort or
+reorder control is offered. The own row says “You · Signed in” and offers
+only Change my password and Change my PIN. A former manager's retained
+username is shown with “No back-office access”, so promotion's fixed username
+is understandable before opening its form. Kitchen is a classification, not
+an authenticating role. The signed-in manager makes an empty list unreachable;
+the one-person state shows that manager and Add person.
+
+BO-06 reuses the shared table and 3:2 non-modal panel. Its maximum height is
+the measured space from the panel's top to the content pane's bottom, minus
+that pane's existing bottom padding. The field body scrolls inside it; heading,
+session warning and commit controls remain visible. This is responsive geometry,
+not a new fixed size token. The 40px credential
+fields are stacked like BO-01, but fill the configuration panel rather than
+BO-01's 420px page column. New passwords validate 8–128 Unicode code points;
+current passwords are verified as typed, with only the request-shape bounds
+(1–1024 UTF-16 units). There is no new-password confirmation field: a reset is
+reversible and the warning already states its consequence. A name is trimmed,
+1–64 code points and free of control characters; a username is trimmed and
+ASCII-lowercased, then checked against `^[a-z0-9][a-z0-9._-]{2,31}$`. A PIN
+is exactly six ASCII digits. Passwords are never trimmed. Names and usernames
+cannot be corrected after creation. No secret is displayed after saving.
+
+`DUPLICATE` uses the server's field name, focuses that field and names no PIN
+holder. `INVALID_CREDENTIALS` sits on Current password. `THROTTLED` sits on
+that field with seconds remaining, disables verification, and focuses a
+focusable notice because the field is disabled. `OWN_ACCOUNT`, `USER_CHANGED`
+and `NOT_FOUND` are named form-level refusals; USER_CHANGED and NOT_FOUND
+reread the list. These forms keep their non-secret choices, disable Save and
+offer Return to staff list, through the ordinary departure decision if dirty.
+The manager explicitly chooses a current row action; a reread never silently
+changes the command's origin classification. A read failure offers only a
+read retry. No version comparison or credential fact is inferred from UserView.
+
+A plain Reactivate is the existing immediate status command. Its PIN conflict
+opens that inactive person's non-modal form, focuses an empty New PIN and
+provides “Reactivate with new PIN”. This is C3's credential-bearing reactivation:
+one explicit submission sets the new PIN and reactivates together. It does
+not use the rename-then-reactivate path of BO-05 or BO-07. Kitchen reactivation
+never opens a PIN field. Unknown reset outcomes never claim sessions ended;
+unknown own-password copy explains that a list read cannot establish which
+password now verifies, and tells the manager to try the newly chosen password
+as Current password first at the next change, then the previous one if refused,
+with the existing cooldown consequence stated. Nothing resends automatically.
+
+Exact copy, command-field matrix, focus destinations and state coverage are in
+DESIGN-023's Handoff. No token is added or changed. The desired focus after a
+different manager signs in is Add person on the new manager's clean Staff
+screen; the shared frame's final policy remains the lead's decision.
