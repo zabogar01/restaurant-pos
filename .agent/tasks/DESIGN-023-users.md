@@ -5,8 +5,8 @@ category: ui
 touches: [identity, boundaries]
 depends_on: [DESIGN-022]
 owns: [docs/design/**, docs/DESIGN.md]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # DESIGN-023 — BO-06 Users (design slice E2)
 
@@ -370,6 +370,48 @@ For the reviewer, who cannot run a browser or the design checks. At `e65b1bf`, t
   the sitemap's new `[MODAL] Depart — Stay or Discard` node cites "C2", which reads as FR-C2 rather than consult C2.
 - **Authorship:** Parts A to C were drawn by Codex (`design023`); the finishing pass and the Handoff are Claude Opus's
   (`design023c`). The review is Claude Opus by the owner's exception (DECISIONS 2026-11-03).
+
+## Round 2 (lead rulings, 2026-11-03), from the review
+
+The review is `.agent/reviews/DESIGN-023-review.md` (Claude Opus, at `136afb9`): verdict *findings*, nine. The reviewer
+ran no browser, so F4 and F5 are inferred from the code. Fix them as below, in this order, committing as you go. Do not
+change what the review cleared (its section 4). This is round 2 of at most three.
+
+1. **F1, own PIN. Accepted; the task's *Server facts* line was wrong.** PRD FR-B3 is the authority: after an own PIN or
+   own password change, "the back-office session the change was made from continues, and every other session of theirs
+   is invalidated". This task's *Server facts* bullet ("Own PIN: the manager's POS sessions end") and C3 §10 item 4 are
+   narrower summaries; the credential version ends every other session, back office included. Give own PIN the
+   own-password warning ("Your other POS and back-office sessions will end on their next action. This back-office
+   session will continue."), its saved result to match, and correct the Handoff's matrix, warning table and the
+   inventory's line. Add a `design023` assertion on the own-PIN warning.
+2. **F2, `INVALID_CREDENTIALS` with `retryAfterSeconds`. Accepted.** Treat it exactly as `THROTTLED`, as BO-01 and
+   POS-01 do: the same notice, field error, disabled controls and focus. Add a fixture response and a check; say it in
+   *Rules for S8c* and in `D` Part B.
+3. **F3, `autocomplete="new-password"` and the save prompt. No drawing change.** The fields keep C3 §10 item 6's
+   tokens. Remove the claim of effect: wherever the Handoff or `D` says the tokens stop a browser offering to save a
+   PIN or someone else's password, say instead that they are the standard hints for a new secret and that whether a
+   browser offers to save is unverified. The lead carries a manual check in Chrome and Firefox into S8c and the
+   question to the owner.
+4. **F4, the cooldown's owner. Accepted.** The wait belongs to the signed-in manager's account and is discarded when a
+   different manager signs in; set `cooldown = 0` on that branch, state it in the Handoff, and add a check.
+5. **F5, an unknown move that applied. Accepted.** Draw `unknown-move-…` with the reread showing the destination. The
+   form never claims the opening classification as current: say what it was when the form opened and what the list
+   now shows, that this may be the manager's change and never that it is, then treat the form as `USER_CHANGED` does
+   (Save off, *Return to staff list*). Words are yours.
+6. **F6, code points. Accepted.** Count the current password in code points (`[...value].length > 1024`), and write
+   "1–1024 characters (code points)" in `D` and the Handoff.
+7. **F7, the sitemap. Accepted.** Cite the departure node by its real authority or leave it uncited; move *PIN or
+   username in use — refused* up a level under BO-06, as a sibling of the forms it serves.
+8. **F8, the move form's default. Accepted, the review's fix.** Change role opens with no destination chosen (a first
+   option such as *Choose a new classification*), no fields and no warning, and Save off until a move is chosen. State
+   the rule and its focus (the select) for S8c; add a check that an untouched move form cannot save.
+9. **F9, Part B's reach. Accepted, all three as proposed:** the no-confirmation-field sentence moves to BO-06 copy;
+   "Deactivating a person uses a modal confirmation"; the cooldown "with the remaining wait, in the sign-in duration
+   format".
+
+Then update the Handoff in place (rules, copy, focus, states, the inventory and sitemap diff), mark what is new as round
+2, ask the lead for a check run (`design023`, and `design017` for the sitemap), and report done. The lead reviews the
+round against these rulings; there is no second full review unless a fix goes beyond them.
 
 ## Handoff
 
