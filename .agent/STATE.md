@@ -55,8 +55,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **DESIGN-023 in review** (`136afb9`): Codex drew A-C, Claude Opus `design023c` (pane `w2:p9T`, kept for a round)
-  finished; run4 all green (design023 1874/1874). Reviewer Claude Opus oneshot (owner exception), pane `DESIGN-023-review`.
+- **DESIGN-023 round 2** (rulings `f557bee`): Claude Opus review, 9 findings; F1, F2, F4-F9 accepted, F3 (save prompt)
+  no drawing change. `design023c` (pane `w2:p9T`) fixing; lead reviews the round. **S8c must use FR-B3's own-PIN words.**
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -118,6 +118,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
+- **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified; S8c checks by hand.
 - **Dispatch PHASE1-S7b1?** Dry run clean (Sonnet builder, interactive; Codex reviews).
 - **Look at DESIGN-021's states** in the gallery (`docs/design/visual-directions/index.html`, POS-03 served states).
 - **Lead rulings since 10-30, yours to overturn:** DESIGN-021 R1 (long tile names), its round 2 rulings (F5 lifetime, F6
