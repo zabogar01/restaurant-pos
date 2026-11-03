@@ -52,7 +52,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE1-S7b1 building** (Sonnet, interactive, Herdr agent `phase1-s7b1`, `agent/phase1-s7b1`); its PR waits for S7b2.
+- **PHASE1-S7b1 ready for review** (`d9dd898`): lead verify 153/5612, e2e:all 118. Review waits: Codex resets 18:24, or an
+  owner exception. Its PR waits for S7b2. **S7b2 written** (untracked in the kit) but must be cut from S7b1's branch.
 - DESIGN-023 complete (`0533314`): Codex drew, Claude Opus finished and reviewed (owner);
   r2 lead-reviewed, run5 all green (design023 1946/1946). **S8c: FR-B3's own-PIN words; a Chrome/Firefox save-prompt check.**
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
@@ -116,6 +117,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
+- **S7b1's review:** wait for Codex (18:24) or a Claude Opus exception? **S7b2's base:** a one-line kit change so a task
+  file's `base:` names its branch (lead: yes), or merge S7b1 first?
 - **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified; S8c checks by hand.
 - **Look at DESIGN-021's and DESIGN-023's states** in the gallery (`docs/design/visual-directions/index.html`).
 - **Lead rulings since 10-30, yours to overturn:** DESIGN-021 R1 (long tile names), its round 2 rulings (F5 lifetime, F6
