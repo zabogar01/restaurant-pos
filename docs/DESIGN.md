@@ -2221,8 +2221,8 @@ session warning and commit controls remain visible. This is responsive geometry,
 not a new fixed size token. The 40px credential
 fields are stacked like BO-01, but fill the configuration panel rather than
 BO-01's 420px page column. New passwords validate 8–128 Unicode code points;
-current passwords are verified as typed, with only the request-shape bounds
-(1–1024 UTF-16 units). There is no new-password confirmation field: a reset is
+current passwords are verified as typed, with only the request schema's bound,
+1–1024 characters (code points). There is no new-password confirmation field: a reset is
 reversible and the warning already states its consequence. A name is trimmed,
 1–64 code points and free of control characters; a username is trimmed and
 ASCII-lowercased, then checked against `^[a-z0-9][a-z0-9._-]{2,31}$`. A PIN

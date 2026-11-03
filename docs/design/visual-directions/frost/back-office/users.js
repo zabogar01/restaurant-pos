@@ -90,7 +90,7 @@
     if('pin'in values)fieldError('pin',/^[0-9]{6}$/.test(values.pin)?'':'Enter exactly six digits, 0–9.');
     if('username'in values){values.username=values.username.trim().replace(/[A-Z]/g,c=>c.toLowerCase());$('#user-username').value=values.username;fieldError('username',/^[a-z0-9][a-z0-9._-]{2,31}$/.test(values.username)?'':'Use 3–32 characters: a–z, 0–9, dot, underscore or hyphen. Start with a letter or digit.');}
     if('password'in values)fieldError('password',[...values.password].length<8||[...values.password].length>128?'Use 8–128 characters. Spaces count.':'');
-    if('currentPassword'in values)fieldError('currentPassword',!values.currentPassword?'Enter your current password.':values.currentPassword.length>1024?'Use 1024 characters or fewer.':'');
+    if('currentPassword'in values)fieldError('currentPassword',!values.currentPassword?'Enter your current password.':[...values.currentPassword].length>1024?'Use 1024 characters or fewer.':'');
     if(errors.size){focus('#user-'+errors.keys().next().value);return null;}return values;
   }
   function submit(){if(!editor||pending||editor.blocked||(cooldown>0&&editor.op.startsWith('own-')))return;const values=validate();if(!values)return;
