@@ -1,7 +1,8 @@
 import type { ComponentType } from 'react';
 import { App } from '../App.js';
+import { createRealCatalog } from '../catalog/catalogStore.js';
 import { createFixtureCatalog, fixtureMenuFacts } from '../catalog/fixtureCatalog.js';
-import type { CatalogSnapshot, CatalogStore, FixtureMenuFacts } from '../catalog/types.js';
+import type { CatalogReads, CatalogStore, FixtureMenuFacts } from '../catalog/types.js';
 import { createFixtureSession } from './fixtureSession.js';
 import { createRealSession } from './realSession.js';
 import type { SessionStore } from './types.js';
@@ -13,7 +14,8 @@ import type { SessionStore } from './types.js';
 // menu with its `?state=` pictures and item sheets, and POS-03's list of fixture
 // states (ARCH-021 consult C4 item 5). Each is reached only through the lines
 // below, and the minifier drops the branch a build does not take: the bundle
-// tests find none of them in a built output.
+// tests find none of them in a built output. `createSessionStore` and
+// `createCatalogStore` each pick one of two things; nothing else names either.
 
 // Vitest does not load this package's vite.config.ts (the root vitest.config.ts
 // is its own), so under test the constant is undefined, and a test run is a
@@ -27,9 +29,15 @@ export function createSessionStore(): SessionStore {
 /** POS-01's fixture pictures, drawn at `/pos/` in fixture mode. `null` in a built bundle. */
 export const FixtureLockPictures: ComponentType | null = FIXTURE ? App : null;
 
-/** The catalog behind the switch: the fixture menu in fixture mode, the server's in a build. */
-export function createCatalogStore(): CatalogStore {
-  return FIXTURE ? createFixtureCatalog() : createServedCatalog();
+/**
+ * The catalog behind the switch: the fixture menu in fixture mode, the server's in a build.
+ * A build is handed the session's two reads; there is no fallback in either direction, so an
+ * empty served catalog is empty and a served failure is a failure, never the fixture menu (B-24).
+ */
+export function createCatalogStore(reads?: CatalogReads): CatalogStore {
+  if (FIXTURE) return createFixtureCatalog();
+  if (!reads) throw new Error('a served catalog needs the session store\'s reads');
+  return createRealCatalog(reads);
 }
 
 /** The fixture menu's `?state=` pictures, item sheets and prices. `null` in a built bundle. */
@@ -37,17 +45,3 @@ export const FixtureMenu: FixtureMenuFacts | null = FIXTURE ? fixtureMenuFacts :
 
 /** POS-03's list of fixture states (a review aid). False in a built bundle, whatever NODE_ENV says. */
 export const FIXTURE_ORDER_STATES: boolean = FIXTURE;
-
-// Until the served store is wired (next commit) a build holds an empty catalog,
-// never the fixture menu (B-24).
-const EMPTY: CatalogSnapshot = {
-  menu: { version: 0, categories: [], items: [], presets: [] },
-  read: 'ready',
-  failure: null,
-  outOfDate: false,
-  availabilityChanges: 0,
-};
-
-function createServedCatalog(): CatalogStore {
-  return { kind: 'real', getSnapshot: () => EMPTY, subscribe: () => () => {}, start: () => () => {}, retry: () => {} };
-}

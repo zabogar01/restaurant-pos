@@ -1,5 +1,15 @@
-import { useLayoutEffect } from 'react';
-import { CATALOG_NOTICE, LOADING_LABEL, LOCK_NOTICE, REJECTED_NOTICE } from './catalog/menuCopy.js';
+import { useLayoutEffect, useRef, useState, type MutableRefObject } from 'react';
+import {
+  AVAILABILITY_STATUS,
+  CATALOG_NOTICE,
+  EMPTY_CATALOG,
+  EMPTY_CATEGORY,
+  LOADING_LABEL,
+  LOCK_NOTICE,
+  READ_FAILURE,
+  REJECTED_NOTICE,
+  STALE_STATUS,
+} from './catalog/menuCopy.js';
 import type { CatalogItem } from './catalog/types.js';
 import { useCatalog } from './catalog/useCatalog.js';
 import { formatAmount } from './money.js';
@@ -37,7 +47,7 @@ export function MenuRegion({
   /** F3d rule 2/3: a session-derived lock, always drawn as `draft` — never the lease's words, whatever the fixture says. */
   locked?: boolean;
 }) {
-  const { snapshot, picture, unavailable, destinationOf } = useCatalog(view);
+  const { store, snapshot, picture, unavailable, destinationOf } = useCatalog(view);
   const fixture = picture ?? {};
   const menu = snapshot.menu;
   // The selection follows the category's id. One that is no longer on the menu (and a
@@ -47,6 +57,30 @@ export function MenuRegion({
     if (selected !== undefined && selected !== category) selectCategory(selected);
   }, [selected, category, selectCategory]);
   const lock = locked ? 'draft' : originFacts(view).lock;
+  const region = useRef<HTMLDivElement>(null);
+  // Set when a focused control is removed by a read (the *Try again* a success replaces, a tile an
+  // archive removes). The next commit puts focus on the selected category, or on the empty-catalog
+  // message when there is none, so a poll never leaves focus on the document.
+  const refocus = useRef(false);
+  useLayoutEffect(() => {
+    if (!refocus.current) return;
+    const target =
+      region.current?.querySelector<HTMLElement>('.menu-category[aria-pressed="true"]') ??
+      region.current?.querySelector<HTMLElement>('#menu-empty-catalog');
+    if (!target) return;
+    refocus.current = false;
+    target.focus();
+  });
+
+  // "Menu availability updated." stays until the next changed projection, the out-of-date warning,
+  // or leaving POS-03 (this component unmounting); an unchanged poll keeps it (DESIGN-021 rule 5).
+  const [availability, setAvailability] = useState({ seen: snapshot.availabilityChanges, shown: false });
+  if (availability.seen !== snapshot.availabilityChanges) {
+    setAvailability({ seen: snapshot.availabilityChanges, shown: true });
+  } else if (snapshot.outOfDate && availability.shown) {
+    setAvailability({ seen: availability.seen, shown: false });
+  }
+  const status = snapshot.outOfDate ? STALE_STATUS : availability.shown ? AVAILABILITY_STATUS : '';
 
   // Under either lock the rail and grid are absent, not inert: adding a line is
   // one of the five blocked actions and the grid is the surface that performs
@@ -62,27 +96,42 @@ export function MenuRegion({
     );
   }
 
+  const items = (menu?.items ?? []).filter((i) => i.categoryId === selected);
+  const reading = fixture.loading === true || (menu === null && snapshot.read === 'loading');
+  const loadingBlock = (
+    <div className="menu-loading" aria-busy="true">
+      <div className="menu-loading__label">{LOADING_LABEL}</div>
+      <div className="skel-bar skel-bar--80" aria-hidden="true" />
+      <div className="skel-bar skel-bar--60" aria-hidden="true" />
+      <div className="skel-bar skel-bar--40" aria-hidden="true" />
+    </div>
+  );
+
   return (
-    <div className="order-screen__menu">
-      <nav className="menu-categories" aria-label="Menu categories">
-        {(menu?.categories ?? []).map((c) => {
-          const isSelected = c.id === selected;
-          const pressed = fixture.pressedCategories?.includes(c.id) ?? false;
-          return (
-            <button
-              key={c.id}
-              type="button"
-              className={['menu-category', isSelected && 'menu-category--selected', pressed && 'is-pressed']
-                .filter(Boolean)
-                .join(' ')}
-              aria-current={isSelected ? 'true' : undefined}
-              onClick={() => selectCategory(c.id)}
-            >
-              {c.name}
-            </button>
-          );
-        })}
-      </nav>
+    <div className="order-screen__menu" ref={region}>
+      {menu !== null && menu.categories.length > 0 && (
+        <nav className="menu-categories" aria-label="Menu categories">
+          {menu.categories.map((c) => {
+            const isSelected = c.id === selected;
+            const pressed = fixture.pressedCategories?.includes(c.id) ?? false;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                className={['menu-category', isSelected && 'menu-category--selected', pressed && 'is-pressed']
+                  .filter(Boolean)
+                  .join(' ')}
+                data-category={c.id}
+                aria-pressed={isSelected}
+                aria-current={isSelected ? 'true' : undefined}
+                onClick={() => selectCategory(c.id)}
+              >
+                {c.name}
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       <div className="menu-area">
         {fixture.catalogChanged && (
@@ -127,31 +176,91 @@ export function MenuRegion({
           </div>
         )}
 
-        {fixture.loading ? (
-          <div className="menu-loading" aria-busy="true">
-            <div className="menu-loading__label">{LOADING_LABEL}</div>
-            <div className="skel-bar skel-bar--80" aria-hidden="true" />
-            <div className="skel-bar skel-bar--60" aria-hidden="true" />
-            <div className="skel-bar skel-bar--40" aria-hidden="true" />
+        {/*
+          Loading is the first read only: no timer, no countdown, no promised duration. One failed
+          first read is a failure, which background retries do not turn back into loading; only the
+          explicit *Try again* does. An empty catalog is a successful read with no categories: it
+          offers no control (no retry, no link to the back office).
+        */}
+        {reading ? (
+          loadingBlock
+        ) : menu === null ? (
+          <ReadFailed variant={snapshot.failure ?? 'failed'} retry={() => store.retry()} refocus={refocus} />
+        ) : menu.categories.length === 0 ? (
+          <div className="menu-empty" id="menu-empty-catalog" tabIndex={-1}>
+            <div className="menu-empty__title">{EMPTY_CATALOG.title}</div>
+            <div>{EMPTY_CATALOG.body}</div>
           </div>
         ) : (
           <div className="menu-grid">
-            {(menu?.items ?? [])
-              .filter((i) => i.categoryId === selected)
-              .map((item) => (
-                <Tile
-                  key={item.id}
-                  item={item}
-                  off={unavailable.includes(item.id)}
-                  pressed={item.id === fixture.pressedItem}
-                  from={view.from ?? view.state}
-                  destinationOf={destinationOf}
-                  navigate={navigate}
-                />
-              ))}
+            {items.length === 0 && <div className="menu-grid__empty">{EMPTY_CATEGORY}</div>}
+            {items.map((item) => (
+              <Tile
+                key={item.id}
+                item={item}
+                off={unavailable.includes(item.id)}
+                pressed={item.id === fixture.pressedItem}
+                from={view.from ?? view.state}
+                destinationOf={destinationOf}
+                navigate={navigate}
+                refocus={refocus}
+              />
+            ))}
+          </div>
+        )}
+
+        {/*
+          A fixed band, reserved when empty and always in the accessibility tree, so showing or clearing
+          text moves nothing. Only the server's menu has anything to say here; the fixture pictures draw
+          their own notices above and keep the fixture screens exactly as they were reviewed.
+        */}
+        {store.kind === 'real' && (
+          <div className="menu-status" role="status" aria-live="polite">
+            {status && <span key={snapshot.outOfDate ? 'stale' : availability.seen}>{status}</span>}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The shared general failure's two variants (*The system is unavailable* for `unavailable`,
+ * *Something went wrong* otherwise), both with *Try again*. A failure moves focus to *Try again*
+ * only when focus is on the document (nothing, or a control this read removed); anything else
+ * the cashier is on keeps it. If the read succeeds while *Try again* holds focus, the region
+ * puts focus on the first category.
+ */
+function ReadFailed({
+  variant,
+  retry,
+  refocus,
+}: {
+  variant: 'unavailable' | 'failed';
+  retry: () => void;
+  refocus: MutableRefObject<boolean>;
+}) {
+  const copy = READ_FAILURE[variant];
+  const button = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    refocus.current = false;
+    const active = document.activeElement;
+    if (!active || active === document.body) button.current?.focus();
+  }, [refocus]);
+  // The read control going away with focus on it: its success, or the press that shows loading.
+  useLayoutEffect(() => {
+    const el = button.current;
+    return () => {
+      if (el && document.activeElement === el) refocus.current = true;
+    };
+  }, [refocus]);
+  return (
+    <div className="notice menu-notice" role="alert">
+      <div className="notice__title">{copy.title}</div>
+      <div>{copy.body}</div>
+      <button ref={button} type="button" className="action action--compact menu-notice__action" data-action="served-retry" onClick={retry}>
+        {READ_FAILURE.retry}
+      </button>
     </div>
   );
 }
@@ -162,6 +271,11 @@ export function MenuRegion({
 // does nothing, and the pressed rule below matches only an enabled tile. It is never removed and never moved to the end — a
 // cashier's hand knows where Steak is, and a reflowed grid puts another item
 // under it.
+//
+// One element for both states, so a poll that 86s or restores the item under a
+// cashier's finger keeps the very node, and with it the focus. The accessible name is the
+// full item name and its price, then "unavailable, 86" (DESIGN-021). The name wraps and is
+// clamped after two lines; the price is its own line and is never clamped (R1).
 function Tile({
   item,
   off,
@@ -169,6 +283,7 @@ function Tile({
   from,
   destinationOf,
   navigate,
+  refocus,
 }: {
   item: CatalogItem;
   off: boolean;
@@ -178,40 +293,41 @@ function Tile({
   /** `null`: this menu's tiles open nothing. */
   destinationOf: ((itemId: string, from?: OrderState) => string) | null;
   navigate: (destination: string, leaves?: boolean) => void;
+  refocus: MutableRefObject<boolean>;
 }) {
-
-  if (off) {
-    return (
-      <button
-        type="button"
-        className="menu-tile menu-tile--off"
-        aria-disabled="true"
-        aria-describedby={`tag-86-${item.id}`}
-        data-item={item.id}
-        onClick={() => {}}
-      >
-        <span>
-          {item.name}{' '}
-          <span className="tag-86" id={`tag-86-${item.id}`}>
-            86
-          </span>
-        </span>
-        <span className="menu-tile__price">{formatAmount(item.price)}</span>
-      </button>
-    );
-  }
-
-  // Spans, not divs: a <button> holds phrasing content only. The tile is a
-  // flex column, so each is laid out as the 86'd tile's divs are.
+  const button = useRef<HTMLButtonElement>(null);
+  // A removed tile that held focus sends it to its selected category (the region's effect).
+  useLayoutEffect(() => {
+    const el = button.current;
+    return () => {
+      if (el && document.activeElement === el) refocus.current = true;
+    };
+  }, [refocus]);
+  const price = formatAmount(item.price);
+  const tag = `tag-86-${item.id}`;
+  // Spans, not divs: a <button> holds phrasing content only.
   return (
     <button
+      ref={button}
       type="button"
-      className={pressed ? 'menu-tile is-pressed' : 'menu-tile'}
+      className={off ? 'menu-tile menu-tile--off' : pressed ? 'menu-tile is-pressed' : 'menu-tile'}
       data-item={item.id}
-      onClick={() => destinationOf && navigate(destinationOf(item.id, from))}
+      aria-label={off ? `${item.name}, ${price}, unavailable, 86` : `${item.name}, ${price}`}
+      aria-disabled={off ? 'true' : undefined}
+      aria-describedby={off ? tag : undefined}
+      onClick={() => {
+        if (!off && destinationOf) navigate(destinationOf(item.id, from));
+      }}
     >
-      <span>{item.name}</span>
-      <span className="menu-tile__price">{formatAmount(item.price)}</span>
+      <span className="menu-tile__name">{item.name}</span>
+      <span className="menu-tile__foot">
+        <span className="menu-tile__price">{price}</span>
+        {off && (
+          <span className="tag-86" id={tag}>
+            86
+          </span>
+        )}
+      </span>
     </button>
   );
 }

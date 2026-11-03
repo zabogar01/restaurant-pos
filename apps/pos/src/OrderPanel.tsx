@@ -6,6 +6,7 @@ import { DiscountSheet } from './DiscountSheets.js';
 import { EmergencyBanner } from './EmergencyBanner.js';
 import { FIRE_ACTION, blockingLines, fireRefusal, holdsUnavailable, sendableLines, type FireRefusal } from './fire.js';
 import { Icon } from './icons.js';
+import { ACTION_REASON, NO_MENU_ORDER } from './catalog/menuCopy.js';
 import { useCatalog } from './catalog/useCatalog.js';
 import { FIXTURE_ORDER_STATES } from './session/source.js';
 import { MenuRegion } from './MenuRegion.js';
@@ -448,7 +449,10 @@ export function OrderPanel({
   // three. Scoping the notice back to one state would be the per-state flag
   // again, and would let a cashier fire an 86'd Steak from `eightysix`.
   // test/fire.test.tsx pins it; raised in the FE-011 handoff.
-  const { unavailable, picture } = useCatalog(view);
+  const { store: catalogStore, snapshot, unavailable, picture } = useCatalog(view);
+  // DESIGN-021 rule 2: the empty order's words depend on whether a menu with categories is held. A successful
+  // empty read and a read still loading or failed hold none.
+  const menuHeld = snapshot.menu !== null && snapshot.menu.categories.length > 0;
   const lines = groups.flatMap((g) => g.lines);
   // FR-E5, ruling C-2: a quick sale has no fire control at all, so it has
   // nothing to refuse and nothing that is "not sendable yet" either — both
@@ -494,8 +498,8 @@ export function OrderPanel({
           <>
             {empty && (
               <div className="order-empty">
-                <div className="order-empty__title">No items yet</div>
-                <div>Tap an item on the left to start.</div>
+                <div className="order-empty__title">{menuHeld ? 'No items yet' : NO_MENU_ORDER.title}</div>
+                <div>{menuHeld ? 'Tap an item on the left to start.' : NO_MENU_ORDER.body}</div>
               </div>
             )}
             {groups.map((group) => (
@@ -537,6 +541,8 @@ export function OrderPanel({
         fireOff={refusal !== undefined || nothingToSend || loading}
         fireCount={fireCount}
         fireDescribedBy={refusal ? FIRE_REFUSAL_ID : undefined}
+        // Only the server's menu has a reason to give: the four stay in place, focusable and inert (ruling C-1).
+        reason={empty && lock === undefined && catalogStore.kind === 'real' ? (menuHeld ? ACTION_REASON.menuHeld : ACTION_REASON.noMenu) : undefined}
         actions={actions}
       />
     </section>
@@ -815,6 +821,8 @@ export function TotalsView({ totals }: { totals: Totals }) {
 // words. `actionsFor` reads the order's variant, never `view.state`.
 type ActionDef = { id: string; label: string; search?: string; leaves?: boolean; primary?: boolean; wide?: boolean };
 
+const ACTION_REASON_ID = 'served-action-reason';
+
 const DISCOUNT_BTN: ActionDef = { id: DISCOUNT_ACTION, label: 'Discount' };
 const VOID_ORDER_BTN: ActionDef = { id: VOID_ORDER_ACTION, label: 'Void order' };
 const FIRE_BTN: ActionDef = { id: FIRE_ACTION, label: 'Send to kitchen' };
@@ -859,6 +867,7 @@ function OrderActions({
   fireOff,
   fireDescribedBy,
   fireCount,
+  reason,
   actions,
 }: {
   type: OrderVariant;
@@ -866,6 +875,8 @@ function OrderActions({
   fireOff: boolean;
   fireCount: number;
   fireDescribedBy: string | undefined;
+  /** Why the four are inert on an empty order, when the screen says so. */
+  reason: string | undefined;
   actions: PanelActions;
 }) {
   return (
@@ -878,7 +889,7 @@ function OrderActions({
             className="action action--off"
             aria-disabled="true"
             data-action={a.id}
-            aria-describedby={!off && a.id === FIRE_ACTION ? fireDescribedBy : undefined}
+            aria-describedby={off ? (reason ? ACTION_REASON_ID : undefined) : a.id === FIRE_ACTION ? fireDescribedBy : undefined}
             onClick={() => {}}
           >
             {a.id === FIRE_ACTION ? fireLabel(fireCount) : a.label}
@@ -899,6 +910,11 @@ function OrderActions({
             {a.id === FIRE_ACTION ? fireLabel(fireCount) : a.label}
           </button>
         )
+      )}
+      {reason && (
+        <span className="order-actions__reason" id={ACTION_REASON_ID}>
+          {reason}
+        </span>
       )}
     </div>
   );

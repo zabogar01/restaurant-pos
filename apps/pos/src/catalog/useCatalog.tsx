@@ -3,16 +3,18 @@ import type { MenuFixture } from '../menuFixtures.js';
 import type { OrderState, OrderView } from '../orderFixtures.js';
 import type { ItemSheetFixture } from '../sheetFixtures.js';
 import { createCatalogStore, FixtureMenu } from '../session/source.js';
+import type { SessionStore } from '../session/types.js';
+import { useSessionStore } from '../session/useSession.js';
 import type { CatalogItem, CatalogSnapshot, CatalogStore } from './types.js';
 
 // The catalog store above the routes, as the session store is (session/useSession.tsx).
-// A screen rendered on its own, as most of the existing tests do, reads the
-// module's default store without a provider; a test that wants a particular
-// store, a served one, passes it.
+// A test that wants a particular store, a served one, passes it.
 
 const CatalogContext = createContext<CatalogStore | null>(null);
 
-let standalone: CatalogStore | null = null;
+// One catalog store for each session store: the served one is built from the reads the
+// session store holds, and a screen on its own gets the same store the routes would.
+const defaults = new WeakMap<SessionStore, CatalogStore>();
 
 export function CatalogProvider({ store, children }: { store: CatalogStore; children: ReactNode }) {
   return <CatalogContext.Provider value={store}>{children}</CatalogContext.Provider>;
@@ -20,9 +22,14 @@ export function CatalogProvider({ store, children }: { store: CatalogStore; chil
 
 export function useCatalogStore(): CatalogStore {
   const provided = useContext(CatalogContext);
+  const session = useSessionStore();
   if (provided) return provided;
-  standalone ??= createCatalogStore();
-  return standalone;
+  let store = defaults.get(session);
+  if (!store) {
+    store = createCatalogStore(session.catalogReads);
+    defaults.set(session, store);
+  }
+  return store;
 }
 
 /** The ids of the items the menu has 86'd. */

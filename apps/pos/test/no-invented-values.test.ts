@@ -12,9 +12,12 @@ const src = resolve(here, '../src');
 const registry = readFileSync(resolve(here, '../../../docs/design/tokens/frost.css'), 'utf8');
 const known = new Set([...registry.matchAll(/(--frost-[\w-]+)\s*:/g)].map((m) => m[1]));
 
-const files = readdirSync(src)
-  .filter((f) => /\.(css|tsx?)$/.test(f))
-  .map((f) => ({ name: f, text: readFileSync(join(src, f), 'utf8') }));
+// The top-level files and the catalog folder (S7b1): its copy and its store hold no literal either.
+const files = ['.', 'catalog'].flatMap((dir) =>
+  readdirSync(join(src, dir))
+    .filter((f) => /\.(css|tsx?)$/.test(f))
+    .map((f) => ({ name: dir === '.' ? f : `${dir}/${f}`, text: readFileSync(join(src, dir, f), 'utf8') }))
+);
 
 const stripComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 

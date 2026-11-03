@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { REAUTH_TITLE } from '../../apps/back-office/src/copy.js';
 import { SESSION_POLICY } from '../../apps/server/src/domain/session.js';
+import { CATALOG_REVISION, catalogReadsOf, pausePoll, sessionVerdicts, turn } from '../support/catalog.js';
 import { ageSession } from '../support/clock.js';
 import { expect, signInAtBackOffice, signInAtPos, test, type Person, type Profile } from '../support/fixtures.js';
 
@@ -50,13 +51,16 @@ test('B6. an idle POS session returns to POS-01', async ({ world, oneProfile }) 
   const { pos } = oneProfile;
   await signInPos(pos, cashier);
 
+  // The POS now polls the catalog, and a poll and the deadline read both ask the server for the verdict.
+  // The poll is quiet before the clocks move, so none is in flight, and the verdict may come from either route.
+  await pausePoll(oneProfile, pos);
   const seconds = SESSION_POLICY.POS.idleSeconds + 1;
   await ageSession('POS', cashier, seconds);
   await pos.clock.fastForward(seconds * 1000);
 
   await expect(rootState(pos)).toHaveAttribute('data-session', 'signed-out');
   await expect(pos.locator('[data-lock-state]')).toHaveAttribute('data-lock-state', 'resting');
-  expect(await lastCodeOf(oneProfile, POS_ME)).toBe('SESSION_IDLE');
+  expect(await sessionVerdicts(oneProfile, POS_ME)).toContain('SESSION_IDLE');
   // The deadline was reached by a read, not by a person acting.
   expect(activity(oneProfile)).toBe(0);
 });
@@ -92,9 +96,12 @@ async function polledTwice(
   page: Page,
   audience: 'POS' | 'BACK_OFFICE',
   person: Person,
-  mePath: string
+  mePath: string,
+  quiet = false
 ): Promise<void> {
   const limit = SESSION_POLICY[audience].idleSeconds;
+  // The POS polls the catalog. With `quiet`, none is in flight when the clocks first move.
+  if (quiet) await pausePoll(profile, page);
   const remainder = Math.floor(limit / 3);
   const readsBefore = reads(profile, mePath).length;
 
@@ -102,7 +109,7 @@ async function polledTwice(
   const first = page.waitForResponse((r) => pathOf(r.url()) === mePath);
   await page.clock.fastForward((limit + 1) * 1000);
   expect((await first).status()).toBe(200);
-  await settle(page);
+  await (quiet ? turn(page) : settle(page));
   await expect(rootState(page)).toHaveAttribute('data-session', 'signed-in');
   expect(reads(profile, mePath)).toHaveLength(readsBefore + 1);
 
@@ -115,11 +122,48 @@ test('B8. a POS read at the deadline extends nothing', async ({ world, oneProfil
   const { pos } = oneProfile;
   await signInPos(pos, cashier);
 
-  await polledTwice(oneProfile, pos, 'POS', cashier, POS_ME);
+  await polledTwice(oneProfile, pos, 'POS', cashier, POS_ME, true);
 
   await expect(rootState(pos)).toHaveAttribute('data-session', 'signed-out');
   await expect(pos.locator('[data-lock-state]')).toHaveAttribute('data-lock-state', 'resting');
-  expect(await lastCodeOf(oneProfile, POS_ME)).toBe('SESSION_IDLE');
+  // Either route may give the verdict: the deadline read, or the poll that fell due with it.
+  expect(await sessionVerdicts(oneProfile, POS_ME)).toContain('SESSION_IDLE');
+  expect(activity(oneProfile)).toBe(0);
+});
+
+test('B9. a catalog poll at the deadline extends nothing, and the tab locks with no activity sent', async ({
+  world,
+  oneProfile,
+}) => {
+  const cashier = await world.people.cashier();
+  const { pos } = oneProfile;
+  await signInPos(pos, cashier);
+
+  // Let the poll run first, a few cycles of the page's own clock: the session is young and alive.
+  for (let cycle = 1; cycle <= 3; cycle += 1) {
+    await pos.clock.runFor(2_000);
+    await expect.poll(() => catalogReadsOf(oneProfile, pos, CATALOG_REVISION)).toBeGreaterThanOrEqual(cycle);
+  }
+  await pausePoll(oneProfile, pos);
+
+  // Then age the session past what a poll that extended it would leave. The first fast-forward brings
+  // the poll due with the deadline: the server finds the session alive with its remainder, and a poll
+  // that counted as activity would give the session its whole limit back.
+  const limit = SESSION_POLICY.POS.idleSeconds;
+  const remainder = Math.floor(limit / 3);
+  await ageSession('POS', cashier, limit - remainder);
+  const polled = pos.waitForResponse((r) => pathOf(r.url()) === CATALOG_REVISION);
+  await pos.clock.fastForward((limit + 1) * 1000);
+  expect((await polled).status()).toBe(200);
+  await turn(pos);
+  await expect(rootState(pos)).toHaveAttribute('data-session', 'signed-in');
+
+  await ageSession('POS', cashier, remainder + 1);
+  await pos.clock.fastForward((remainder + 1) * 1000);
+
+  await expect(rootState(pos)).toHaveAttribute('data-session', 'signed-out');
+  await expect(pos.locator('[data-lock-state]')).toHaveAttribute('data-lock-state', 'resting');
+  expect(await sessionVerdicts(oneProfile, POS_ME)).toContain('SESSION_IDLE');
   expect(activity(oneProfile)).toBe(0);
 });
 

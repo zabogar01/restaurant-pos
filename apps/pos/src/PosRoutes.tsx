@@ -7,6 +7,7 @@ import { floorStateFrom } from './floorFixtures.js';
 import { formatAmount } from './money.js';
 import { settlementPosition } from './tender.js';
 import { LockRoute, type TenderDraft } from './LockRoute.js';
+import { useCatalogStore } from './catalog/useCatalog.js';
 import { FixtureLockPictures } from './session/source.js';
 import { useSession, useSessionStore } from './session/useSession.js';
 import { ControlledOrderScreen } from './OrderPanel.js';
@@ -47,6 +48,10 @@ export function PosRoutes() {
   const sessionNow = useSession();
   const signedIn = sessionNow.phase === 'signed-in';
   useEffect(() => sessionStore.start(), [sessionStore]);
+  // The catalog poll runs while signed in, on every POS screen (a quick sale's close on POS-04 reads
+  // availability too), and stops under POS-01 for any reason. A sign-in starts it with an immediate read.
+  const catalogStore = useCatalogStore();
+  useEffect(() => (signedIn ? catalogStore.start() : undefined), [signedIn, catalogStore]);
   useEffect(() => {
     // The harness reads this, not the copy.
     document.getElementById('root')?.setAttribute('data-session', sessionNow.phase);
