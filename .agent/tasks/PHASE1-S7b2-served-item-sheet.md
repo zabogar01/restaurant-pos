@@ -6,7 +6,7 @@ touches: [money, boundaries]
 depends_on: [PHASE1-S7b1]
 base: agent/phase1-s7b1
 owns: [apps/pos/src/Sheets.tsx, apps/pos/src/MenuRegion.tsx, apps/pos/src/OrderPanel.tsx, apps/pos/src/orderStore.ts, apps/pos/src/fire.ts, apps/pos/src/tender.ts, apps/pos/src/sheetFixtures.ts, apps/pos/src/menuFixtures.ts, apps/pos/src/session/source.ts, apps/pos/src/catalog/**, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/pos-catalog.spec.ts, e2e/support/**]
-status: active
+status: complete
 cycles: 0
 ---
 # PHASE1-S7b2 — M-2 for a served item, Add, and the sheet between polls
@@ -282,6 +282,26 @@ Fix exactly these, each test first with its red proof recorded, and nothing else
 commit, and run `npm run test:e2e:all` and report its count. Append a *Round 2* section to the Handoff (do not rewrite
 round 1) with each fix, each red proof, the tests changed and the real counts, ending with `DONE` or `BLOCKED: <one
 question>`.
+
+## Round 2: lead review, 2026-11-04 (complete)
+
+A lead review instead of a re-review: every round-2 fix is one the review asked for or the lead ruled (R1 to R4).
+Reviewed at `dcc19ef`.
+
+- **Diff:** seven files, all inside `owns`; no earlier assertion changed; new `served-round2.test.tsx` (10 tests) and
+  P10. R1 carries `served` from the screen's catalog store kind, not from the line, and the fixture line editor has no
+  reason row again. R2's control uses `data-action="served-show-blocked"`, the codebase's convention for served test
+  ids (`served-retry`), with DESIGN-021's exact words, and focuses `blocking[0]`; the fixture controls are unchanged.
+  R3 names one removal and gives the reviewed generic sentence for two or more; the comma-joined plural is gone.
+- **`npm run verify`:** exit 0; 157 files, 5696 tests passed. **`npm run test:e2e:all`:** exit 0; 130 passed, both
+  engines, P10 included. Output in `../restaurant-pos-wt/evidence/PHASE1-S7b2/lead/round2/`.
+- **Red proofs repeated by mutating the new code** (reverted, tree clean after): R2's served branch forced to the
+  per-line controls, and R3's comma-joined plural restored: 5 tests fail in `served-round2.test.tsx`, both R2 tests and
+  the three R3 plural tests.
+- **Queued, not this task's:** a drawn plural for several removed options (designer); the screen's live-lock state
+  while M-2 is open, once real external leases arrive (the review's *Cleared*, Phase 2).
+
+**Verdict: complete.** `touches: money, boundaries`: the owner looks before merge. S7b1 and S7b2 merge together.
 
 ## Lead verification, 2026-11-04 (before review)
 
