@@ -142,6 +142,7 @@ touches: []            # money | audit | identity | boundaries
 depends_on: []
 owns: [apps/pos/src/**]
 profile: default       # optional: economy | heavy
+base: agent/<task>     # optional: cut the worktree from this branch, not development
 status: not-started    # not-started | active | blocked | review | complete
 cycles: 0
 ---
