@@ -47,15 +47,15 @@ for S7b2. Lead branch `agent/lead-1104` pushed (owner). Narrative: [journal/2026
   --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (LESSONS); push task and lead branches together; `gh pr view <n>
   --json state` as its own step before any follow-up push.
-- **Task worktrees:** `wt/PHASE1-S7b2` (building); `wt/PHASE1-S7b1` (complete, held; evidence in `wt/evidence/PHASE1-S7b1/`). DESIGN-023's removed
+- **Task worktrees:** `wt/PHASE1-S7b2` (in review); `wt/PHASE1-S7b1` (complete, held; evidence in `wt/evidence/PHASE1-S7b1/`). DESIGN-023's removed
   11-04. Left behind: `runs/PHASE1-S7a`, `runs/DESIGN-023`, `wt/evidence/DESIGN-023`; `wt/ARCH-021`, `wt/DESIGN-021`
   (removal refused by the classifier: the owner's). Not ours: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **PHASE1-S7b2 building** (dispatched 11-04, interactive Sonnet builder, Herdr `phase1-s7b2`, pane `PHASE1-S7b2`;
-  `base: agent/phase1-s7b1`; Codex reviews). M-2 for a served item, Add (NewLine snapshot), `addLine` under a lock, D1's
-  ceilings, the sheet between polls, the plural fire refusal. `touches: money, boundaries`: the owner looks before merge.
+- **PHASE1-S7b2 in review** (Codex `gpt-6-astra` high, oneshot, dispatched 11-04). Builder `f118283` (Sonnet; pane
+  `PHASE1-S7b2` kept for a fix round); lead note `03370a0`: verify 156 files / 5686 tests, e2e:all 128, AC-3 and AC-9 red
+  proofs repeated by the lead, five points put to the reviewer. `touches: money, boundaries`: owner looks before merge.
 - **PHASE1-S7b1 complete** (`ae44200` on `agent/phase1-s7b1`, not pushed): the catalog store and poll, the two menu
   sources (fixture menu out of served bundles), DESIGN-021's four states, the 3-second browser proof. Codex review 2 P2
   + 1 P3, fixed in round 2, lead-reviewed. **Served tiles open nothing until S7b2 (expected).**
@@ -141,7 +141,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S7b2 building:** on its exit, verify (`verify`, `test:e2e:all`), then Codex review. Meanwhile **write S7b3**
+1. **S7b2 in review:** on the report, commit it on the task branch, rule findings, `--resume` the builder. Meanwhile **write S7b3**
    (`base: agent/phase1-s7b2`).
 2. **S7b1 and S7b2 together:** after S7b2's review, push both and open their PRs (owner merges them together); then S7b3.
 3. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
