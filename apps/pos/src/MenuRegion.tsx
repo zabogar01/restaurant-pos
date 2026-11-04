@@ -78,11 +78,13 @@ export function MenuRegion({
 
   // "Menu availability updated." stays until the next changed projection, the out-of-date warning,
   // or leaving POS-03 (this component unmounting); an unchanged poll keeps it (DESIGN-021 rule 5).
-  const [availability, setAvailability] = useState({ seen: snapshot.availabilityChanges, shown: false });
-  if (availability.seen !== snapshot.availabilityChanges) {
-    setAvailability({ seen: snapshot.availabilityChanges, shown: true });
+  // A newly adopted projection (a different menu object: an unchanged poll adopts none) ends the old
+  // announcement, unless it changes availability itself, which announces again.
+  const [availability, setAvailability] = useState({ seen: snapshot.availabilityChanges, menu, shown: false });
+  if (availability.menu !== menu || availability.seen !== snapshot.availabilityChanges) {
+    setAvailability({ seen: snapshot.availabilityChanges, menu, shown: availability.seen !== snapshot.availabilityChanges });
   } else if (snapshot.outOfDate && availability.shown) {
-    setAvailability({ seen: availability.seen, shown: false });
+    setAvailability({ ...availability, shown: false });
   }
   const status = snapshot.outOfDate ? STALE_STATUS : availability.shown ? AVAILABILITY_STATUS : '';
 

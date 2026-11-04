@@ -532,6 +532,46 @@ describe('round 2, F1: a completed retry does not steal focus from work in progr
   });
 });
 
+describe('round 2, F2: the availability announcement ends at the next changed projection', () => {
+  const eightySixed = menuOf(2, MEALS, [{ ...NASI, available: false }, SATE, TEA]);
+  const announced = async () => {
+    await open();
+    await change(eightySixed);
+    expect(band()!.textContent).toBe(AVAILABILITY_STATUS);
+  };
+
+  it('a price-only change clears it', async () => {
+    await announced();
+    await change(menuOf(3, MEALS, [{ ...NASI, available: false, price: '50000' }, SATE, TEA]));
+    expect(band()!.textContent).toBe('');
+  });
+
+  it('an archive clears it', async () => {
+    await announced();
+    await change(menuOf(3, MEALS, [SATE, TEA]));
+    expect(band()!.textContent).toBe('');
+  });
+
+  it('an empty projection clears it, beside the empty-catalog message', async () => {
+    await announced();
+    await change(menuOf(3, [], []));
+    expect(q('#menu-empty-catalog')).not.toBeNull();
+    expect(band()!.textContent).toBe('');
+  });
+
+  it('an unchanged poll keeps it', async () => {
+    await announced();
+    await h.advance(POLL_MS * 3);
+    expect(band()!.textContent).toBe(AVAILABILITY_STATUS);
+  });
+
+  it('a projection that itself changes availability announces again', async () => {
+    await announced();
+    await change(menuOf(3, MEALS, [{ ...NASI, available: false }, { ...SATE, available: false }, TEA]));
+    expect(band()!.textContent).toBe(AVAILABILITY_STATUS);
+  });
+});
+
 describe('16. ?state= in a served build keeps its job for the order, and chooses nothing about the menu', () => {
   it.each(['eightysix', 'fireblocked', 'fireblocked-overflow', 'sheet-item86'] as const)(
     '%s: the order is drawn as it was and the served catalog decides availability',
