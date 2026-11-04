@@ -307,10 +307,3 @@ export const itemSheetStates = (): ReadonlyArray<OrderState> => (built ??= build
 /** A tile's destination: its own item's configuration sheet (M-2), one state per item (FE-021). */
 export const itemDestination = (itemId: string, from?: OrderState) =>
   `?state=sheet-item-${itemId}${from && from !== 'default' && !from.startsWith('sheet-item') ? `&from=${from}` : ''}`;
-
-/** The price a fixture item adds at. */
-export function fixturePriceOf(itemId: string): Money {
-  const item = MENU_ITEMS.find((i) => i.id === itemId);
-  if (!item) throw new Error(`no menu item for itemId ${itemId}`);
-  return item.price;
-}

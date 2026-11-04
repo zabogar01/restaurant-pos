@@ -2,7 +2,6 @@ import {
   FIXTURE_MENU_MARKER,
   MENU_CATEGORIES,
   MENU_ITEMS,
-  fixturePriceOf,
   itemDestination,
   itemSheetFixtures,
   menuFixtureFor,
@@ -55,5 +54,4 @@ export const fixtureMenuFacts: FixtureMenuFacts & { readonly marker: string } = 
   eightySixedFor: (view) => menuFixtureFor(view).eightySixed ?? [],
   itemDestination,
   itemSheet: (state) => itemSheetFixtures()[state],
-  priceOf: fixturePriceOf,
 };

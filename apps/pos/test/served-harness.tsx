@@ -19,12 +19,17 @@ export const FAILED = { kind: 'failed' } as const;
 export const UNAVAILABLE = { kind: 'unavailable' } as const;
 export const REFUSED = { kind: 'refused', body: { error: { code: 'FORBIDDEN' } } } as unknown as ApiResult<never>;
 
+/** A served variant or modifier: the delta is the wire's canonical string, as the server sends it. */
+export type ServedOption = { id: string; name: string; delta: string };
+
 export type ServedItem = {
   id: string;
   category: string;
   name: string;
   price?: string;
   available?: boolean;
+  variants?: ReadonlyArray<ServedOption>;
+  modifiers?: ReadonlyArray<ServedOption>;
 };
 
 export function menuOf(
@@ -41,8 +46,8 @@ export function menuOf(
       name: i.name,
       basePrice: i.price ?? '45000',
       isAvailable: i.available ?? true,
-      variants: [],
-      modifiers: [],
+      variants: (i.variants ?? []).map((v) => ({ variantId: v.id, name: v.name, priceDelta: v.delta })),
+      modifiers: (i.modifiers ?? []).map((m) => ({ modifierId: m.id, name: m.name, priceDelta: m.delta })),
     })),
     presets: [],
   };

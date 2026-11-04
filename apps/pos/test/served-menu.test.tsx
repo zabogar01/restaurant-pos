@@ -99,12 +99,12 @@ describe('1. tiles, order, categories and prices come from the store', () => {
     expect(q('.order-screen__menu')!.textContent).not.toContain('Burger');
   });
 
-  it('a press on an available served tile opens nothing in this slice', async () => {
+  it('a press on an available served tile opens M-2 for that item, by component state: the address does not change', async () => {
     await open();
     const before = window.location.href;
     press(tile('nasi'));
     expect(window.location.href).toBe(before);
-    expect(q('[role="dialog"]')).toBeNull();
+    expect(q('[role="dialog"]')!.querySelector('#sheet-title')!.textContent).toBe('Nasi Goreng');
   });
 });
 

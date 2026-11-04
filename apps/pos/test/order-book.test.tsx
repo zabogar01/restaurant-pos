@@ -81,7 +81,7 @@ describe('the book', () => {
     expect(out.book.activeId).toBe('table-2');
     expect(out.store.order.title).toBe('Order · T2');
     expect(out.store.order.groups).toEqual([]);
-    act(() => out.store.addLine({ itemId: 'burger', name: 'Burger', quantity: 1 }));
+    act(() => out.store.addLine({ itemId: 'burger', name: 'Burger', basePrice: 100_000n, quantity: 1 }));
     act(() => {
       out.book.openTable(3);
     });
@@ -99,7 +99,7 @@ describe('the book', () => {
     act(() => {
       a = out.book.newQuickSale();
     });
-    act(() => out.store.addLine({ itemId: 'soda', name: 'Soda', quantity: 1 }));
+    act(() => out.store.addLine({ itemId: 'soda', name: 'Soda', basePrice: 30_000n, quantity: 1 }));
     act(() => {
       b = out.book.newQuickSale();
     });
@@ -147,7 +147,7 @@ describe('the book after a close', () => {
 
   it('a quick sale’s pending lines become one queued round at close', () => {
     const { out } = mountBook({ state: 'quick-new' });
-    act(() => out.store.addLine({ itemId: 'burger', name: 'Burger', quantity: 1 }));
+    act(() => out.store.addLine({ itemId: 'burger', name: 'Burger', basePrice: 100_000n, quantity: 1 }));
     const total = out.store.order.totals.total;
     act(() => out.store.close!('t1', [{ id: 'd', label: 'Card', amount: total }]));
     const groups = out.book.orderFor(out.book.activeId)!.groups;

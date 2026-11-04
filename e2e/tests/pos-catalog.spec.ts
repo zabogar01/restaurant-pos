@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { readCatalog } from '../../apps/server/src/domain/catalog.js';
+import { createCategory, createItem, readCatalog } from '../../apps/server/src/domain/catalog.js';
 import {
   CATALOG_REVISION,
   archiveAtOffice,
@@ -246,4 +246,119 @@ test('P7. the band is at the bottom edge in both first-read failures', async ({ 
   await pos.clock.runFor(2_000);
   await expect.poll(() => pos.locator('.menu-area .notice__title').innerText()).not.toBe(general);
   await expectBandAtBottom(pos);
+});
+
+// PHASE1-S7b2 (consult C4 item 4, step 6; DESIGN-021 rules 8 and 10): AC-12 for the sheet. The menu holds an
+// item with a variant and a modifier, which BO-04 can make but only slowly, so it is made through the
+// server's own domain functions, as item-editor.spec.ts makes its options; the 86 is the back office's own
+// row control. The geometry is read here because jsdom cannot measure it.
+async function madeMenu(stem: string, options: Array<[string, bigint]> = [['Regular', 0n], ['Large', 5_000n]]) {
+  const category = await createCategory(unique(stem));
+  if (category.kind !== 'OK') throw new Error('could not make the category');
+  const name = unique('Rice');
+  const item = await createItem({
+    categoryId: category.record.categoryId,
+    name,
+    basePrice: 40_000n,
+    variants: options.map(([n, priceDelta]) => ({ name: n, priceDelta })),
+    modifiers: [{ name: 'Cheese', priceDelta: 3_000n }],
+  });
+  if (item.kind !== 'OK') throw new Error('could not make the item');
+  const other = unique('Tea');
+  const second = await createItem({ categoryId: category.record.categoryId, name: other, basePrice: 20_000n, variants: [], modifiers: [] });
+  if (second.kind !== 'OK') throw new Error('could not make the second item');
+  return { name, other };
+}
+
+test('P8. an 86 made while M-2 is open keeps the sheet and its choices, turns Add off in place, and Cancel returns to the tile', async ({
+  world,
+  twoProfiles,
+}) => {
+  const manager = await world.people.manager();
+  const cashier = await world.people.cashier();
+  const { a: office, b: till } = twoProfiles;
+  const { name } = await madeMenu('Mains');
+
+  await openOfficeMenu(office.page, manager);
+  await openPosOrder(till.page, cashier);
+  const pos = till.page;
+  const tile = tileNamed(pos, name);
+  await expect(tile).toBeVisible();
+  await pausePoll(till, pos);
+
+  // Open another item's sheet by a press, and choose a variant and a modifier.
+  await tile.click();
+  const sheet = pos.getByRole('dialog');
+  await expect(sheet).toBeVisible();
+  const large = sheet.getByRole('button', { name: 'Large +5.000', exact: true });
+  const cheese = sheet.getByRole('button', { name: 'Cheese +3.000', exact: true });
+  const add = sheet.getByRole('button', { name: 'Add to order', exact: true });
+  await expect(sheet.getByRole('button', { pressed: true })).toHaveCount(0);
+  await expect(add).toHaveAttribute('aria-disabled', 'true');
+  await large.click();
+  await cheese.click();
+  await expect(large).toHaveAttribute('aria-pressed', 'true');
+  await expect(cheese).toHaveAttribute('aria-pressed', 'true');
+  await expect(add).not.toHaveAttribute('aria-disabled', 'true');
+  const before = { add: await add.boundingBox(), large: await large.boundingBox(), body: await sheet.locator('.sheet__body').boundingBox() };
+
+  // The 86 is made in the back office; only the poll can bring it, so the sheet is unchanged until the page's clock moves.
+  await mark86(office.page, name);
+  await expect(add).not.toHaveAttribute('aria-disabled', 'true');
+  await pos.clock.runFor(PAGE_MS);
+
+  // The sheet is open, the choices are kept, and Add alone is off, in the very place it was.
+  await expect(add).toHaveAttribute('aria-disabled', 'true');
+  await expect(sheet).toBeVisible();
+  await expect(large).toHaveAttribute('aria-pressed', 'true');
+  await expect(cheese).toHaveAttribute('aria-pressed', 'true');
+  await expect(add).not.toHaveAttribute('disabled', /.*/);
+  expect(await add.boundingBox()).toEqual(before.add);
+  expect(await large.boundingBox()).toEqual(before.large);
+  // The notice is in the fixed band, so the body gave way to it and kept its top.
+  const body = (await sheet.locator('.sheet__body').boundingBox())!;
+  expect(body.y).toBe(before.body!.y);
+  expect(body.height).toBeLessThan(before.body!.height);
+  await expect(sheet.locator('#served-sheet-notice')).not.toBeEmpty();
+
+  // Cancel returns to the grid with focus on the (86'd) tile.
+  await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(tile).toBeFocused();
+});
+
+test('P9. R1 in the order panel: a 64-character name wraps in full beside the quantity, the amount and the remove control', async ({
+  world,
+  twoProfiles,
+}) => {
+  const cashier = await world.people.cashier();
+  const { b: till } = twoProfiles;
+  const category = await createCategory(unique('Mains'));
+  if (category.kind !== 'OK') throw new Error('could not make the category');
+  const long = `${'W'.repeat(56)}${randomBytes(4).toString('hex')}`;
+  const item = await createItem({ categoryId: category.record.categoryId, name: long, basePrice: 45_000n, variants: [], modifiers: [] });
+  if (item.kind !== 'OK') throw new Error('could not make the item');
+  await openPosOrder(till.page, cashier);
+  const pos = till.page;
+
+  await tileNamed(pos, long).click();
+  await expect(pos.getByRole('dialog')).toBeVisible();
+  await expect(pos.getByRole('heading', { name: long, exact: true })).toBeVisible();
+  await pos.getByRole('button', { name: 'Add to order', exact: true }).click();
+  const row = pos.locator('.order-line', { has: pos.locator('.order-line__name', { hasText: long }) });
+  await expect(row).toBeVisible();
+  const text = await row.locator('.order-line__name').evaluate((el) => ({ shown: el.textContent, clipped: el.scrollWidth > el.clientWidth, lines: el.getClientRects().length }));
+  expect(text.shown).toBe(long);
+  expect(text.clipped).toBe(false);
+  const name = (await row.locator('.order-line__name').boundingBox())!;
+  const quantity = (await row.locator('.order-line__quantity').boundingBox())!;
+  const amount = (await row.locator('.order-line__amount').boundingBox())!;
+  const slot = (await row.locator('.order-line__slot').boundingBox())!;
+  // Side by side without overlap: quantity, then the name, then the amount, then the trailing slot.
+  expect(quantity.x + quantity.width).toBeLessThanOrEqual(name.x + 1);
+  expect(name.x + name.width).toBeLessThanOrEqual(amount.x + 1);
+  expect(amount.x + amount.width).toBeLessThanOrEqual(slot.x + 1);
+  expect(slot.width).toBe(56);
+  // It wrapped: taller than one 15px line.
+  expect(name.height).toBeGreaterThan(24);
 });

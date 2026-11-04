@@ -268,7 +268,7 @@ describe('a voided order is terminal (10)', () => {
     let closed: boolean | undefined;
     let discount: unknown;
     act(() => {
-      out.store.addLine({ itemId: 'soda', name: 'Soda', quantity: 1 });
+      out.store.addLine({ itemId: 'soda', name: 'Soda', basePrice: 30_000n, quantity: 1 });
       out.store.removeLine('t9-soda');
       out.store.setQuantity('t9-soda', 3);
       out.store.fire('19:00');
@@ -699,8 +699,8 @@ describe('money (23)', () => {
     const { out } = mountStore({ state: 'default' });
     act(() => void out.book.openTable(2));
     act(() => {
-      out.store.addLine({ itemId: 'burger', name: 'Burger', quantity: 1 });
-      out.store.addLine({ itemId: 'soda', name: 'Soda', quantity: 1 });
+      out.store.addLine({ itemId: 'burger', name: 'Burger', basePrice: 100_000n, quantity: 1 });
+      out.store.addLine({ itemId: 'soda', name: 'Soda', basePrice: 30_000n, quantity: 1 });
     });
     act(() => out.store.fire('19:00'));
     const recovery = snapshotOf(PRESETS.find((p) => p.id === 'service-recovery')!);

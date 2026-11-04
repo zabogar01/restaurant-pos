@@ -40,7 +40,7 @@ export function createCatalogStore(reads?: CatalogReads): CatalogStore {
   return createRealCatalog(reads);
 }
 
-/** The fixture menu's `?state=` pictures, item sheets and prices. `null` in a built bundle. */
+/** The fixture menu's `?state=` pictures and item sheets. `null` in a built bundle. */
 export const FixtureMenu: FixtureMenuFacts | null = FIXTURE ? fixtureMenuFacts : null;
 
 /** POS-03's list of fixture states (a review aid). False in a built bundle, whatever NODE_ENV says. */

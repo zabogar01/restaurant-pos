@@ -101,21 +101,30 @@ export const FIRE_REFUSAL_TITLE = 'Cannot send to the kitchen';
  * The count and the name are read off the order rather than written down, so
  * the notice cannot outlive the line it names.
  *
- * **PROVISIONAL COPY — the plural.** No reviewed state has two blocking lines,
- * so the plural forms and the way several names are joined have no reviewed
- * wording. They follow the artifact's sentence exactly and change only what
- * English forces. Flagged in the FE-011 handoff; a designer owns the real copy.
+ * The plural is DESIGN-021's (round 2), and it counts two different things.
+ * The LINES are what a cashier voids, so the count and "that line / those
+ * lines" follow the number of blocking lines. The ITEMS are what a manager
+ * restores, so the bold names are deduplicated **by item id** in first-line
+ * order, and "the item / the items" follows the number of distinct items. Two
+ * lines for one item read "2 pending lines … **Steak** … put the item back on";
+ * two items that happen to share a name are still two items.
+ *
+ * A blocking line always has an `itemId` (`holdsUnavailable`). The name is the
+ * key only for an input that has none, which no order produces.
  */
-export function fireRefusal(blocking: ReadonlyArray<{ name: string }>): FireRefusal | undefined {
+export function fireRefusal(blocking: ReadonlyArray<{ name: string; itemId?: string }>): FireRefusal | undefined {
   if (blocking.length === 0) return undefined;
-  const one = blocking.length === 1;
+  const items = new Map<string, string>();
+  for (const line of blocking) {
+    const key = line.itemId ?? `name:${line.name}`;
+    if (!items.has(key)) items.set(key, line.name);
+  }
+  const oneLine = blocking.length === 1;
   return {
     title: FIRE_REFUSAL_TITLE,
-    lead: `${blocking.length} pending line${one ? '' : 's'} ${one ? 'is' : 'are'} no longer available:`,
-    names: blocking.map((l) => l.name),
-    resolution: one
-      ? 'Void that line or ask a manager to put the item back on.'
-      : 'Void those lines or ask a manager to put the items back on.',
+    lead: `${blocking.length} pending line${oneLine ? '' : 's'} ${oneLine ? 'is' : 'are'} no longer available:`,
+    names: [...items.values()],
+    resolution: `${oneLine ? 'Void that line' : 'Void those lines'} or ask a manager to put ${items.size === 1 ? 'the item' : 'the items'} back on.`,
   };
 }
 

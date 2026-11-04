@@ -187,7 +187,7 @@ describe('criteria 4 and 5: the line editor commits explicitly and stays in boun
         <SheetView
           sheet={SHEET_FIXTURES[state]!}
           go={(v) => backs.push(v)}
-          addLine={() => {}}
+          addLine={() => ({})}
           setQuantity={(id, n) => calls.push([id, n])}
           order={order}
           renderTotals={() => null}

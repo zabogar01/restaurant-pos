@@ -81,7 +81,7 @@ export type CatalogReads = {
 
 /**
  * What the fixture source adds to the screen path: POS-03's `?state=` pictures
- * of the menu, the fixture items' item sheets and their prices. `null` in a
+ * of the menu and the fixture items' item sheets. `null` in a
  * build (session/source.ts), so a served screen can draw none of it (B-24).
  */
 export type FixtureMenuFacts = {
@@ -93,6 +93,4 @@ export type FixtureMenuFacts = {
   itemDestination(itemId: string, from?: OrderState): string;
   /** The item sheet a `sheet-item…` state draws. */
   itemSheet(state: OrderState): ItemSheetFixture | undefined;
-  /** The price a fixture item adds at. Throws for an item the fixture does not hold. */
-  priceOf(itemId: string): Money;
 };

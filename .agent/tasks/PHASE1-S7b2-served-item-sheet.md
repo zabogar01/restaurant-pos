@@ -246,3 +246,64 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ## Handoff
 
+### Builder handoff, 2026-11-04
+
+**What I did.** A press on an available served tile now opens M-2 for that item by component state (no URL change). The cashier chooses a variant (exactly one when the item has variants) and any modifiers, sets the quantity, and Add puts a snapshot line into the stand-in order. The sheet follows the live item between polls, per the C4 table. Nothing is written to the server.
+
+Paths:
+- `apps/pos/src/Sheets.tsx`: new `ServedItemSheet`. `SheetFrame` gained an optional fixed `band` between body and footer, plus a `served` flag (focus opens on the heading, Tab/Shift-Tab wrap). `QuantityStepper` takes `moreBlocked`. `LineSheet` gained D1 (Update off, reason line, plus off).
+- `apps/pos/src/catalog/servedSheet.ts` (new): the adapter and the follow rule (`groupsOf`, `follow`, `noticeOf`, `prune`).
+- `apps/pos/src/catalog/menuCopy.ts`: DESIGN-021's M-2 copy.
+- `apps/pos/src/orderStore.ts`: `NewLine` is the snapshot (`basePrice`; `priceOf` removed along with `FixtureMenu.priceOf`/`fixturePriceOf`). `addLine` returns an outcome and refuses `closed`, `locked`, `unavailable` and `over-limit`, reading facts at the press and advancing `bookRef`. The stand-in comment names Phase 2's add-line command. `ceilingFor` is D1's one pure function. `setQuantity` refuses past a ceiling.
+- `apps/pos/src/tender.ts`: `LINE_TOTAL_LIMIT`, `ORDER_TOTAL_LIMIT`.
+- `apps/pos/src/fire.ts`: DESIGN-021's plural (lines counted, names deduped by item id, item/items by distinct items). The reviewed singular is unchanged.
+- `apps/pos/src/MenuRegion.tsx` (`openItem`), `OrderPanel.tsx` (`itemOpened` state, inert, focus return to tile or selected category), `pos.css` (band, reason line, R1 `overflow-wrap`).
+- Tests: `served-item-sheet.test.tsx`, `served-add-store.test.tsx`, `served-fire.test.tsx` (new); P8 and P9 in `e2e/tests/pos-catalog.spec.ts`.
+
+**Decisions and evidence.**
+- I built `ServedItemSheet` as a separate component, not by adapting the fixture `ItemSheet`. The served sheet differs in nearly every branch (band, notices, reasons, ceilings, nothing preselected). The fixture sheets stay exactly as reviewed. The adapter the task describes is `catalog/servedSheet.ts`; `picked` is still option ids. This departs from "Sheets.tsx changes little".
+- The order ceiling is the order's total after discount and service (5% in fixtures). A single line of exactly 99.999.999 is therefore only addable under a discount that cancels the service charge. The pure test proves the exact line bound under a 100% discount.
+- The stepper stays while the item is 86'd or gone (DESIGN-021 rule 10). I corrected the `Sheets.tsx` comment.
+- Fixture `ItemSheet`'s Add now stays open if the store refuses.
+
+**Existing tests changed.**
+- `served-menu.test.tsx`: "a press opens nothing" became "opens M-2, address unchanged" (expected).
+- `fire.test.tsx`: deleted "no reviewed state produces more than one blocking line, so the plural stays unreviewed". Its own comment says to delete it once the plural is reviewed, and DESIGN-021 reviewed it.
+- `order-store.test.tsx`, `own-items.test.tsx`: mechanical (`basePrice` added; stub returns `({})`).
+- Outside the expected list, mechanical only (`basePrice` on calls, or `addLine: () => ({})` stubs for the new return type): `order-book`, `void-apply`, `discount-apply`, `settlement` tests. No assertion changed.
+- `served-harness.tsx`: additions only (served variants/modifiers).
+- `sheets.test.tsx`, `one-press-fire`, `fire-order`: untouched, still passing.
+
+**Red proofs** (mutation, observed failing, reverted):
+1. Preselect first variant: 4 tests fail (nothing-chosen, variant-required).
+2. Allow no variant: 3 fail.
+3. Unit not clamped (the store's `resolveUnit` clamp removed; the task's "clamp the total" variant was not run separately): stored unit `-10000n`, expected `0n`.
+4. Remove the lock check: both lock tests fail (`{}` instead of `{refused:'locked'}`).
+5. Read the 86 list captured at render: the stale-`addLine` test fails.
+6. Check the line only: 4 fail (order-total cases).
+7. Sheet uses the item snapshotted at open: 12 fail.
+8. Close the sheet on 86: P8 fails in Chromium.
+9. Dedupe by name: `['Steak']` instead of `['Steak','Steak']`. The fixture-`steak` case holds because the 86 list is item ids, but I did not run a separate compare-by-name mutation for blocking.
+10. Reprice from the catalog on a quantity edit: 200000n instead of 90000n.
+11. Notice inside the scrolling body: structure test fails. This is structural only; jsdom cannot measure.
+12. Native `disabled`: 8 fail, including the focus test.
+13. Ellipsize the name: the CSS test fails, and P9 fails in Chromium.
+14. Focus the first category: the "selected, not first" test fails.
+
+**Found, not fixed.**
+- The fire notice still draws a `Show {name}` button per blocking line. DESIGN-021 specifies one "Show unavailable lines" (`served-show-blocked`). I stayed within the task.
+- `LineSheet` does not use the served heading focus or Tab wrap, and the fixture line editor now carries an empty reserved reason line. The tests pass.
+- The multi-removed-options wording ("A, B were removed and deselected.") is mine; DESIGN-021 only draws one.
+- A lock arriving while M-2 is open is refused by the store only; the sheet stays and shows no reason.
+- An archived item is refused by the sheet, not by the store (C4's table lists only the 86 list).
+- P8/P9 build the menu through the server's domain functions, not BO screens, as `item-editor.spec.ts` does. The 86 is the BO row control.
+- The task's baseline said 5612 tests; I measured 5619 before starting.
+- No Prettier was run.
+
+**Output.**
+- `npm run verify`: typecheck clean; 156 files, 5686 tests passed (baseline 153 / 5619).
+- `npm run test:e2e:all`: 128 passed (both engines), including P8 and P9.
+
+**What S7b3 needs.** The store's presets are unchanged: `CatalogMenu.presets: {id, name, value: {kind:'PERCENTAGE', rate} | {kind:'FIXED', amount}}[]`, read from `useCatalog(view).snapshot.menu?.presets`. The picker's entry point is `discountOpened` / `panelDiscount` in `OrderPanel.tsx` and `DiscountSheet`. `changeDiscount` in `orderStore.ts` still passes the fixture `PRESETS`, which S7b3 must replace.
+
+DONE

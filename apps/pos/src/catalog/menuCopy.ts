@@ -1,3 +1,4 @@
+import { formatAmount } from '../money.js';
 import type { SettlementLock } from '../orderFixtures.js';
 
 // The words POS-03's menu region says, and nothing that is data. This module is
@@ -96,3 +97,38 @@ export const ACTION_REASON = {
   menuHeld: 'Add an item first.',
   noMenu: 'No items on this order yet.',
 } as const;
+
+// DESIGN-021's copy for M-2 over a served item, word for word (ADR-011 rule 24): the reasons Add is off,
+// the two money ceilings, and the notices the open sheet raises when the item changes under it. Braces in
+// the design table are the functions' arguments.
+
+/** The two fixed group labels. A list with nothing in it draws no heading. */
+export const SERVED_GROUPS = {
+  variant: { id: 'variant', name: 'Variant' },
+  modifiers: { id: 'modifiers', name: 'Modifiers' },
+} as const;
+
+/** The commit reason (`served-add-reason`) by cause. The sheet shows the first that holds, in this order. */
+export const ADD_REASON = {
+  gone: 'This item is no longer on the menu.',
+  unavailable: 'This item is unavailable.',
+  variant: 'Choose a variant before adding this item.',
+} as const;
+
+/** FR-M5's ceilings, in the amounts' own formatting. No computed excess is ever quoted. */
+export const CEILING_REASON = (limit: bigint) => ({
+  line: `Line total cannot exceed ${formatAmount(limit)}.`,
+  order: `Order total cannot exceed ${formatAmount(limit)}.`,
+});
+
+/** The bound line when the next quantity would pass a money ceiling. */
+export const cannotIncrease = (ceilingSentence: string) => `Cannot increase quantity. ${ceilingSentence}`;
+
+export const UNAVAILABLE_NOTICE = (name: string) =>
+  `${name} is no longer available. A manager marked it 86. Your choices are kept, but it cannot be added.`;
+export const GONE_NOTICE = (name: string) => `${name} is no longer on the menu. Your choices are kept, but it cannot be added.`;
+
+/** One notice for whatever changed: the sentence below, or, when a chosen option went, the sentence naming it. */
+export const CHANGED_NOTICE = 'This item changed while you were choosing. Check the updated choices and prices before adding.';
+export const REMOVED_NOTICE = (names: ReadonlyArray<string>) =>
+  `This item changed while you were choosing. ${names.join(', ')} ${names.length === 1 ? 'was' : 'were'} removed and deselected.`;

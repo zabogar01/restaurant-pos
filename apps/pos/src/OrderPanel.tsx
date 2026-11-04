@@ -38,7 +38,8 @@ import {
   type Totals,
 } from './orderFixtures.js';
 import { SHEET_FIXTURES, panelLine } from './sheetFixtures.js';
-import { SheetView } from './Sheets.js';
+import { ServedItemSheet, SheetView } from './Sheets.js';
+import type { CatalogItem } from './catalog/types.js';
 import { VOID_FIXTURES, VOID_ORDER_ACTION, panelVoid, shownOrder, type ShownOrder, type VoidSheetFixture } from './voidFixtures.js';
 import { VoidSheet, subjectOf } from './VoidSheets.js';
 
@@ -135,6 +136,11 @@ export function ControlledOrderScreen({
   const [voidOpened, setVoidOpened] = useState<VoidSheetFixture['target']>();
   const [lineOpened, setLineOpened] = useState<string>();
   const [discountOpened, setDiscountOpened] = useState(false);
+  // M-2 for a served item opens by component state (S7b2): a UUID is not an `OrderState`, and the sheet is not
+  // back-stackable (SITEMAP §1), so it writes no URL and no history entry. Holds the item as the tile showed it.
+  const [itemOpened, setItemOpened] = useState<CatalogItem>();
+  // The tile (or, once it has gone, the selected category) that takes focus when that sheet closes.
+  const itemOpener = useRef<string>();
   // FE-022: the round a press just made. `after` is the highest round before
   // it, so the effect below can tell the fire's own round from any other.
   const [firing, setFiring] = useState<{ after: number }>();
@@ -150,7 +156,21 @@ export function ControlledOrderScreen({
     setVoidOpened(undefined);
     setLineOpened(undefined);
     setDiscountOpened(false);
+    setItemOpened(undefined);
   };
+
+  /** Cancel, Escape and a successful Add all leave the view as it is and hand focus back to the tile. */
+  const closeItem = () => {
+    itemOpener.current = itemOpened?.id;
+    setItemOpened(undefined);
+  };
+  useLayoutEffect(() => {
+    const id = itemOpener.current;
+    if (itemOpened !== undefined || id === undefined) return;
+    itemOpener.current = undefined;
+    const area = device.current;
+    (area?.querySelector<HTMLElement>(`.menu-tile[data-item="${id}"]`) ?? area?.querySelector<HTMLElement>('.menu-category[aria-pressed="true"]'))?.focus();
+  }, [itemOpened]);
 
   // A location change this component did not itself cause — browser
   // Back/Forward — arrives as a new `view` prop from whichever component owns
@@ -277,7 +297,7 @@ export function ControlledOrderScreen({
 
   // React 18 has no inert prop; an empty string renders the bare attribute.
   const { incident } = originFacts(view);
-  const inert = sheet || approval || discount || voiding ? { inert: '' } : {};
+  const inert = sheet || approval || discount || voiding || itemOpened ? { inert: '' } : {};
   // A sheet opened over a particular line or order is remounted when that
   // target changes, so tapping a second row draws the second row's sheet.
   const voidKey = voidOpened ? `opened-${voidOpened.kind === 'line' ? voidOpened.lineId : 'order'}` : view.state;
@@ -304,7 +324,14 @@ export function ControlledOrderScreen({
           <div className="order-screen__bar" aria-hidden="true" {...inert} />
         )}
         <div className="order-screen__body" {...inert}>
-          <MenuRegion view={view} category={store.category} selectCategory={store.selectCategory} navigate={navigate} locked={locked} />
+          <MenuRegion
+            view={view}
+            category={store.category}
+            selectCategory={store.selectCategory}
+            navigate={navigate}
+            openItem={setItemOpened}
+            locked={locked}
+          />
           <OrderPanel
             view={view}
             order={store.order}
@@ -328,12 +355,27 @@ export function ControlledOrderScreen({
             sheet={sheet}
             go={go}
             addLine={(line) => {
-              justAdded.current = true;
-              store.addLine(line);
+              const outcome = store.addLine(line);
+              if (!outcome.refused) justAdded.current = true;
+              return outcome;
             }}
             setQuantity={store.setQuantity}
             order={store.order}
             renderTotals={(totals) => <TotalsView totals={totals} />}
+          />
+        )}
+        {itemOpened && (
+          <ServedItemSheet
+            key={itemOpened.id}
+            opened={itemOpened}
+            live={catalog.snapshot.menu?.items.find((i) => i.id === itemOpened.id)}
+            order={store.order}
+            addLine={(line) => {
+              const outcome = store.addLine(line);
+              if (!outcome.refused) justAdded.current = true;
+              return outcome;
+            }}
+            onClose={closeItem}
           />
         )}
         {approval && <ApprovalPrompt key={view.state} approval={approval} go={go} />}
@@ -595,7 +637,7 @@ function FireRefusalNotice({
       <div>
         {refusal.lead}{' '}
         {refusal.names.map((name, i) => (
-          <span key={name}>
+          <span key={i}>
             {i > 0 && ', '}
             <b>{name}</b>
           </span>

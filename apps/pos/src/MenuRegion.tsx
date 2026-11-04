@@ -37,6 +37,7 @@ export function MenuRegion({
   category,
   selectCategory,
   navigate = () => {},
+  openItem = () => {},
   locked = false,
 }: {
   view: OrderView;
@@ -44,6 +45,8 @@ export function MenuRegion({
   category: string | undefined;
   selectCategory: (category: string) => void;
   navigate?: (destination: string, leaves?: boolean) => void;
+  /** A served tile's press: M-2 for that item opens by component state (the fixture menu's tiles route instead). */
+  openItem?: (item: CatalogItem) => void;
   /** F3d rule 2/3: a session-derived lock, always drawn as `draft` — never the lease's words, whatever the fixture says. */
   locked?: boolean;
 }) {
@@ -209,6 +212,7 @@ export function MenuRegion({
                 from={view.from ?? view.state}
                 destinationOf={destinationOf}
                 navigate={navigate}
+                openItem={openItem}
                 refocus={refocus}
               />
             ))}
@@ -289,6 +293,7 @@ function Tile({
   from,
   destinationOf,
   navigate,
+  openItem,
   refocus,
 }: {
   item: CatalogItem;
@@ -296,9 +301,10 @@ function Tile({
   pressed: boolean;
   /** The state this tile was pressed on: the item sheet returns there. */
   from: OrderState;
-  /** `null`: this menu's tiles open nothing. */
+  /** The fixture menu's routing; `null` for a served menu, whose tiles open M-2 by component state instead. */
   destinationOf: ((itemId: string, from?: OrderState) => string) | null;
   navigate: (destination: string, leaves?: boolean) => void;
+  openItem: (item: CatalogItem) => void;
   refocus: MutableRefObject<boolean>;
 }) {
   const button = useRef<HTMLButtonElement>(null);
@@ -322,7 +328,9 @@ function Tile({
       aria-disabled={off ? 'true' : undefined}
       aria-describedby={off ? tag : undefined}
       onClick={() => {
-        if (!off && destinationOf) navigate(destinationOf(item.id, from));
+        if (off) return;
+        if (destinationOf) navigate(destinationOf(item.id, from));
+        else openItem(item);
       }}
     >
       <span className="menu-tile__name">{item.name}</span>

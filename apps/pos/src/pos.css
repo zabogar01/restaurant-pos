@@ -469,6 +469,10 @@ button.order-line__target {
   display: block;
   font-size: var(--frost-text-15);
   font-weight: var(--frost-weight-medium);
+  /* R1 (DESIGN-021): the whole name, never ellipsized or clamped. A name with no space (64 code points of
+   * one letter) breaks inside the word instead, and the body beside it may shrink so the quantity, the
+   * amount and the trailing slot keep their places. */
+  overflow-wrap: anywhere;
 }
 
 .order-line__detail {
@@ -1149,6 +1153,79 @@ button.menu-category:focus-visible:active {
 
 .sheet__preview {
   margin-top: var(--frost-space-6);
+}
+
+/* M-2 over a served item (PHASE1-S7b2; DESIGN-021 rule 8, frost-served-catalog.css). The body alone
+ * scrolls. The live notice, the unit and the line total sit in a band between the body and the footer, so
+ * a notice arriving shrinks the body without moving its top or its scroll position, and the footer's
+ * quantity keys and Add never move: it always reserves one reason line, so clearing the reason moves
+ * nothing. A long item name wraps in the heading, and a long option name wraps in its button. */
+.sheet__band {
+  flex: none;
+  padding: var(--frost-space-3) var(--frost-space-5);
+  border-top: var(--frost-divider-stroke);
+}
+
+.sheet__live {
+  min-height: calc(var(--frost-text-14) * var(--frost-leading-body));
+  font-size: var(--frost-text-14);
+  overflow-wrap: anywhere;
+}
+
+.sheet__live:not(:empty) {
+  margin-bottom: var(--frost-space-2);
+  padding: var(--frost-space-2) var(--frost-space-3);
+  background: var(--frost-group);
+  border: var(--frost-control-stroke);
+}
+
+.sheet-figure {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--frost-space-4);
+}
+
+.sheet--served .sheet-total {
+  margin-top: var(--frost-space-3);
+}
+
+.sheet--served .sheet__band .sheet__note {
+  overflow-wrap: anywhere;
+}
+
+.sheet--served .sheet__head {
+  height: auto;
+  min-height: var(--frost-sheet-header-height);
+  align-items: flex-start;
+}
+
+.sheet--served .sheet__title {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.sheet--served .sheet__aside {
+  flex: none;
+  white-space: nowrap;
+}
+
+.sheet--served .sheet-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sheet--served .sheet-option {
+  height: auto;
+  min-height: var(--frost-action-height);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* The commit reason: the footer's one reserved line, present when empty. */
+.sheet__reason {
+  grid-column: 1 / -1;
+  min-height: calc(var(--frost-text-15) * var(--frost-leading-body));
 }
 
 .sheet__note {

@@ -56,7 +56,7 @@ export type CatalogView = {
   picture: MenuFixture | null;
   /** The ids of the items the menu has 86'd, for the tiles, the order's tags and the Send refusal. */
   unavailable: ReadonlyArray<string>;
-  /** A tile's destination, or `null` when a tile opens nothing (a served menu, until M-2 is built for it). */
+  /** A tile's destination, or `null` for a served menu, whose tiles open M-2 by component state instead. */
   destinationOf: ((itemId: string, from?: OrderState) => string) | null;
   /** The item sheet a `sheet-item…` state draws: the fixture's own, and nothing at all for a served menu. */
   itemSheetFor: (state: OrderState) => ItemSheetFixture | undefined;

@@ -327,7 +327,7 @@ describe('tender entry', () => {
     window.history.replaceState(null, '', '/pos/settlement?state=empty');
     const store: OrderStore = {
       order: shownOrder({ state: 'default', gone: 'steak' }),
-      addLine: () => {},
+      addLine: () => ({}),
       removeLine: () => {},
       category: 'mains',
       selectCategory: () => {},
@@ -449,7 +449,7 @@ describe('F3b: cash and card diverge (POS-04)', () => {
     window.history.replaceState(null, '', '/pos/settlement?state=empty');
     const store: OrderStore = {
       order: { ...shownOrder({ state: 'default', gone: 'steak' }), totals: { subtotal: 95_000_000n, total: 95_000_000n } },
-      addLine: () => {},
+      addLine: () => ({}),
       removeLine: () => {},
       category: 'mains',
       selectCategory: () => {},
@@ -760,7 +760,7 @@ describe('F3c: close outcomes (POS-04)', () => {
     window.history.replaceState(null, '', '/pos/settlement?state=exact');
     const store: OrderStore = {
       order: shownOrder({ state: 'default', gone: 'steak' }),
-      addLine: () => {},
+      addLine: () => ({}),
       removeLine: () => {},
       category: 'mains',
       selectCategory: () => {},
@@ -785,7 +785,7 @@ describe('F3c: close outcomes (POS-04)', () => {
         groups: [{ kind: 'pending', lines }],
         totals: { subtotal: 2_000n, total: 2_000n },
       },
-      addLine: () => {},
+      addLine: () => ({}),
       removeLine: () => {},
       category: 'mains',
       selectCategory: () => {},
@@ -1044,7 +1044,7 @@ describe('F3d: the payment session', () => {
     window.history.replaceState(null, '', '/pos/settlement?state=empty');
     const store: OrderStore = {
       order: shownOrder({ state: 'default', gone: 'steak' }),
-      addLine: () => {},
+      addLine: () => ({}),
       removeLine: () => {},
       category: 'mains',
       selectCategory: () => {},
