@@ -6,7 +6,7 @@ touches: [money, boundaries]
 depends_on: [PHASE1-S7b1]
 base: agent/phase1-s7b1
 owns: [apps/pos/src/Sheets.tsx, apps/pos/src/MenuRegion.tsx, apps/pos/src/OrderPanel.tsx, apps/pos/src/orderStore.ts, apps/pos/src/fire.ts, apps/pos/src/tender.ts, apps/pos/src/sheetFixtures.ts, apps/pos/src/menuFixtures.ts, apps/pos/src/session/source.ts, apps/pos/src/catalog/**, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/pos-catalog.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S7b2 — M-2 for a served item, Add, and the sheet between polls
@@ -243,6 +243,39 @@ picker's entry point); what was decided and on what evidence; tests changed and 
 not fixed; the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verification, 2026-11-04 (before review)
+
+The lead ran these in this worktree at `f118283`; this note is the evidence a reviewer cannot gather.
+
+- **`npm run verify`:** exit 0; typecheck clean; 156 files, 5686 tests passed. **`npm run test:e2e:all`:** exit 0; 128
+  passed, both engines, P8 and P9 included. Output in `../restaurant-pos-wt/evidence/PHASE1-S7b2/lead/`.
+- **Paths:** every changed path is inside `owns`. The four test files outside *Tests expected to change*
+  (`order-book`, `void-apply`, `discount-apply`, `settlement`) are named in the Handoff as mechanical.
+- **The two red proofs the builder did not run, run by the lead** (each reverted, tree clean after):
+  - AC-3, *clamp the total, not the unit* (`resolveUnit` unclamped, the line's amount floored instead): 2 tests fail,
+    `served-add-store.test.tsx` (`expected -10000n to be 0n`) and `served-item-sheet.test.tsx` (`expected '−30.000' to
+    be '0'`).
+  - AC-9, *compare by name* (`holdsUnavailable` also matches `line.name`, `unavailableIn` emits names as well as ids):
+    3 tests fail, the fixture-`steak` case in `served-fire.test.tsx` and `served-menu.test.tsx`, and "a line with no
+    item never blocks".
+
+**For the reviewer.** Review `agent/phase1-s7b1..HEAD`: this branch is cut from S7b1's, which is already reviewed.
+The lead asks for a view on each of these, beyond the review's own reading:
+
+1. **The fire notice's recovery control.** DESIGN-021's copy table, whose fire rows this task binds exactly, gives
+   *Show unavailable lines* (`served-show-blocked`), revealing and focusing the first offending line. The panel still
+   draws one `Show {name}` button per blocking line (`OrderPanel.tsx:649-650`). The Handoff lists this as found and
+   not fixed. Is it a defect of this slice?
+2. **A lock that arrives while M-2 is open** is refused by the store only; the sheet stays open with Add live and no
+   reason. Is that reachable in the Phase 1 stand-in, and if so, is a silent refusal acceptable under B-20 and C4 item 7?
+3. **D1's order figure includes the fixture service charge**, so a single line of exactly 99.999.999 is not addable
+   without a discount; AC-6's exact bound is proved in the pure function under a 100% discount. Does this follow C4's
+   "the order's `total` as the panel shows it"?
+4. **`ServedItemSheet` is a new component** rather than the fixture `ItemSheet` fed by an adapter, which departs from
+   C4 item 8's "so `Sheets.tsx` changes little". Is the fixture path still exactly as reviewed?
+5. **An archived item** is refused by the sheet but not by the store (C4's table names only the 86 list), and the
+   fixture line editor now reserves an empty reason line. Are either of these a problem?
 
 ## Handoff
 
