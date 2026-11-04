@@ -495,4 +495,14 @@ Only imports moved, except where stated; no assertion was loosened.
 
 M-2 for a served item, Add into the stand-in, `NewLine`'s base price, D1's ceilings, the sheet's open-between-polls behaviour (it can read `useCatalog` but nothing in this slice does), the plural fire refusal, and the preset picker (`snapshot.menu.presets` is held and decoded, and nothing draws it). I also did not check the owner's real browser behaviour with a touch device; geometry is proved in Chromium and WebKit at the default viewport (150 by 96 tiles, a 72px band).
 
+### Round 2 (builder), from the review
+
+Three commits after `dd8bf02`, each test first and red, nothing pushed. Item 4 needed nothing.
+
+1. **F1, focus (`fix(pos): a completed retry no longer steals focus…`).** The held-response test (press *Try again*, hold the read, focus an `.order-line__target`, deliver) failed red: focus moved to the Meals category. `MenuRegion`'s refocus effect now applies only while focus is still lost (on the body); a surviving control keeps it. The lost-focus case is a second test and still lands on the first category; the earlier empty-catalog and removed-tile cases still pass.
+2. **F2, the announcement (`fix(pos): end the availability announcement…`).** Five tests; three were red against the old code (price-only change, archive, empty projection, each leaving "Menu availability updated." in the band); the unchanged-poll and "availability changes again" cases passed before and after. The state now also remembers the adopted menu object: a different object clears the announcement unless the availability counter moved with it, and an unchanged poll adopts no new object, so it keeps it.
+3. **F3, the band's place (`fix(pos): anchor the status band…`).** New browser cases P5 (empty catalog), P6 (first read held, loading) and P7 (first read failing, then the health read refused too, so both variants), plus the populated-grid check added to P1; each asserts the band is 72px high and its bottom is within 1px of `.order-screen__menu`'s bottom, in both engines. Red before the fix: the band was 514.5, 530.6 and 521.4px above the region's bottom. The fix is `margin-top: auto` on `.menu-status` in `pos.css`. I proved the red again after writing the final spec by removing the line (P5, P6, P7 failed in Chromium), then restored it. The first draft of P6 tried to reach failure on a page whose first read was held; a held read keeps the cycle in flight, so I split loading and failure into P6 and P7.
+
+Output at the final tree: `npm run verify`: **153 files, 5619 tests passed** (was 5612; seven new unit tests). `npm run test:e2e:all`: **124 passed** (was 118; P5 to P7 in each engine). I did not rerun the B6/B8/B9 five-times check: nothing round 2 touched is on that path.
+
 DONE
