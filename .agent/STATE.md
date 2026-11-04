@@ -52,8 +52,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE1-S7b1 in review** (Codex, oneshot, pane `PHASE1-S7b1-review`): lead verify `d9dd898` 153/5612, e2e:all 118. Its
-  PR waits for S7b2. **S7b2 written** (untracked in the kit), `base: agent/phase1-s7b1`; dispatch once S7b1 is complete.
+- **PHASE1-S7b1 round 2** (rulings `dd8bf02`): Codex found 2 P2 (retry focus, announcement lifetime) and 1 P3 (band
+  anchor), all accepted; builder resumed. Its PR waits for S7b2. **S7b2 written** (untracked in the kit), `base: agent/phase1-s7b1`; dispatch once S7b1 is complete.
 - DESIGN-023 complete (`0533314`): Codex drew, Claude Opus finished and reviewed (owner);
   r2 lead-reviewed, run5 all green (design023 1946/1946). **S8c: FR-B3's own-PIN words; a Chrome/Firefox save-prompt check.**
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
