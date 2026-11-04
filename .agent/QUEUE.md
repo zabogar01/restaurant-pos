@@ -43,7 +43,8 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
    consult (`touches: money`) and the owner's look before merge — not written.
 8c. **For the designer (no ID yet)** — the settlement state for a quick sale whose pending line
    is 86'd at Close (today a live-looking Close that does nothing); *Nothing outstanding* drawn
-   twice on POS-07; `floor.html:48` and the two strip questions (STATE.md, Live conflicts) —
+   twice on POS-07; `floor.html:48` and the two strip questions (STATE.md, Live conflicts); M-2's
+   sentence for two or more removed choices (S7b2 R3 uses the generic *changed* sentence meanwhile) —
    depends on the owner's word — not written.
 8d. **A reopened book-only order's URL** (`?state=default` names Table 1's fixture) — depends on
    the server's order ids (Phase 1); not worth a fixture-only URL scheme — deferred.
@@ -164,7 +165,9 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       ADR-012 rule 13) — depends on S6b — complete, merged 2026-10-30 as PR #159.
     - **The frame's focus after a different manager signs in (no ID yet)** — `OfficeApp.tsx` focuses Log out; DESIGN-022's
       focus contract says New preset on BO-07 — decide per screen or in `D`, with the designer — not written.
-    - **S7a** (POS catalog routes, from C4) — complete, merged 2026-11-03 as PR #165, **S7b1-3** (after DESIGN-021's review; S7b3 needs OQ1), **S8a-c** (users, from C3; S8c needs design E2), **S9**
+    - **S7a** (POS catalog routes, from C4) — complete, merged 2026-11-03 as PR #165. **S7b1** (served menu) and
+      **S7b2** (M-2, Add, the sheet between polls) — complete 2026-11-04, PRs not opened, merged together. **S7b3** (the
+      POS preset picker) — depends on S7b2 — not written. **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
     post-close corrections (before Phase 5), permitted tax and service-charge range (before

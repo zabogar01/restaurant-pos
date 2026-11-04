@@ -46,16 +46,16 @@ for S7b2. Lead branch `agent/lead-1104` pushed (owner). Narrative: [journal/2026
   --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (LESSONS); push task and lead branches together; `gh pr view <n>
   --json state` as its own step before any follow-up push.
-- **Task worktrees:** `wt/PHASE1-S7b2` (round 2); `wt/PHASE1-S7b1` (complete, held; evidence in `wt/evidence/PHASE1-S7b1/`). DESIGN-023's removed
+- **Task worktrees:** `wt/PHASE1-S7b2` (complete, held; evidence `wt/evidence/PHASE1-S7b2/`); `wt/PHASE1-S7b1` (complete, held; evidence in `wt/evidence/PHASE1-S7b1/`). DESIGN-023's removed
   11-04. Left behind: `runs/PHASE1-S7a`, `runs/DESIGN-023`, `wt/evidence/DESIGN-023`; `wt/ARCH-021`, `wt/DESIGN-021`
   (removal refused by the classifier: the owner's). Not ours: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **PHASE1-S7b2 round 2 building** (resumed 11-04, Sonnet, pane `PHASE1-S7b2`; resume 1 of 2). Round 1 `f118283`, lead
-  verified `03370a0` (verify 156 / 5686, e2e:all 128). Codex review: 3 findings (`32af68a`, report and rulings R1-R4):
-  F1 served line editor frame, F2 one *Show unavailable lines*, F3 invented plural (R3, lead: reviewed generic sentence),
-  R4 a browser `scrollTop` proof. Then lead review (ruled round). `touches: money, boundaries`: owner looks before merge.
+- **PHASE1-S7b2 complete** (`988baa8` on `agent/phase1-s7b2`, not pushed; base `agent/phase1-s7b1`). Round 1 `f118283`;
+  Codex review 3 findings (`32af68a`: served line editor frame, one *Show unavailable lines*, invented plural → R3);
+  round 2 `dcc19ef`, lead-reviewed: verify 157 / 5696, e2e:all 130, R2/R3 mutations red. Pane closed. **Owner looks
+  before merge (`touches: money, boundaries`); S7b1 and S7b2 push and merge together, on the owner's word.**
 - **PHASE1-S7b1 complete** (`ae44200` on `agent/phase1-s7b1`, not pushed): the catalog store and poll, the two menu
   sources (fixture menu out of served bundles), DESIGN-021's four states, the 3-second browser proof. Codex review 2 P2
   + 1 P3, fixed in round 2, lead-reviewed. **Served tiles open nothing until S7b2 (expected).**
@@ -119,7 +119,8 @@ for S7b2. Lead branch `agent/lead-1104` pushed (owner). Narrative: [journal/2026
 
 Nothing here is decided. Detail is where each line points.
 
-- **Open a PR for `agent/lead-1104`?** Pushed 11-04 on your word; no PR opened.
+- **Push S7b1 and S7b2 and open their two PRs** (merged together), with `agent/lead-1104` (pushed once 11-04; its PR
+  not opened)? Then look at the served POS in a browser before merging (money, boundaries).
 - **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified;
   S8c checks by hand; if a prompt appears, does the 2026-10-13 "does not fight the password manager" ruling extend?
 - **Lead rulings since 10-30, yours to overturn** (each in its task file): DESIGN-021 R1 and round 2; ARCH-021's
@@ -142,8 +143,8 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S7b2 round 2:** on exit, `git status`, verify, `test:e2e:all`, repeat a red proof, lead review. Meanwhile **write S7b3**
-   (`base: agent/phase1-s7b2`).
-2. **S7b1 and S7b2 together:** after S7b2's review, push both and open their PRs (owner merges them together); then S7b3.
+1. **Write S7b3** (`base: agent/phase1-s7b2`; S7b2's Handoff *What S7b3 needs*: `changeDiscount` still passes fixture
+   `PRESETS`; entry `discountOpened`/`panelDiscount` in `OrderPanel.tsx`, `DiscountSheet`).
+2. **S7b1 and S7b2 together:** push both and open their PRs on the owner's word; the owner merges them together.
 3. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction. Then S8a (users server, C3).
