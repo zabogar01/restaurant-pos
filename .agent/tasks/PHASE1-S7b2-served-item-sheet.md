@@ -6,7 +6,7 @@ touches: [money, boundaries]
 depends_on: [PHASE1-S7b1]
 base: agent/phase1-s7b1
 owns: [apps/pos/src/Sheets.tsx, apps/pos/src/MenuRegion.tsx, apps/pos/src/OrderPanel.tsx, apps/pos/src/orderStore.ts, apps/pos/src/fire.ts, apps/pos/src/tender.ts, apps/pos/src/sheetFixtures.ts, apps/pos/src/menuFixtures.ts, apps/pos/src/session/source.ts, apps/pos/src/catalog/**, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/pos-catalog.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S7b2 — M-2 for a served item, Add, and the sheet between polls
@@ -243,6 +243,45 @@ picker's entry point); what was decided and on what evidence; tests changed and 
 not fixed; the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Round 2: the lead's rulings on the review, 2026-11-04
+
+The review is `.agent/reviews/PHASE1-S7b2-review.md` (Codex, three findings). Read it whole. Its *Cleared* section
+settles the lead's five questions: points 2 to 5 need no change here, apart from what R1 says about the reason row.
+Fix exactly these, each test first with its red proof recorded, and nothing else.
+
+- **R1 (F1, accepted).** A pending line in a served order opens its line editor in the served frame: the served heading
+  class, focus on the heading, Tab and Shift-Tab wrapping, and the growing, wrapping header (R1's full name). Carry
+  "this is a served catalog" from where `ServedItemSheet` already knows it, through `SheetView` to `LineSheet` and
+  `SheetFrame`; do not guess it from the line. **The reserved reason row is served mode only:** the fixture line editor
+  returns to exactly its reviewed layout, with no empty reason row. Tests: add a served item with a 64-code-point name,
+  open its pending row, and assert the served class, the heading's focus, Tab from *Update to n* wrapping to *Back*, and
+  the wrapping header; a fixture line editor has no reason row. *Red:* drop the served flag on `LineSheet`.
+- **R2 (F2, accepted).** In a served order, the fire refusal draws **one** recovery control, *Show unavailable lines*,
+  test id `served-show-blocked`, which reveals and focuses the **first** blocking line (DESIGN-021's copy table, line
+  773, binds exactly; its artifact is `docs/design/visual-directions/frost-served-catalog.js:116`). The existing
+  reveal-and-focus callback does the work. **The fixture path keeps its reviewed per-line controls unchanged.** Tests:
+  two lines for one item, and two distinct items: one control each time, and it focuses the first line. *Red:* map a
+  control per blocking line.
+- **R3 (F3, ruled by the lead; the owner may overturn it).** The builder may not invent screen copy (ADR-011 rule 24).
+  When **one** chosen option is removed, keep DESIGN-021's reviewed sentence naming it. When **more than one** chosen
+  option has been removed while the sheet is open (at once or across polls, a variant and a modifier counted alike),
+  show DESIGN-021's reviewed generic sentence instead, exactly: *This item changed while you were choosing. Check the
+  updated choices and prices before adding.* Delete the comma-joined plural. The removed options still leave the
+  choices and the total, and a removed variant still turns Add off until one is chosen. A drawn plural is queued for
+  the designer, not for you. Tests: two removals at once, and two across successive polls, each show the generic
+  sentence; one removal still names the option. *Red:* restore the comma-joined plural.
+- **R4 (from the review's *What I did not* note).** AC-11 is proved structurally in jsdom only. Add a browser assertion
+  to `e2e/tests/pos-catalog.spec.ts`, both engines: open a served item whose options overflow the body, scroll the body,
+  record `scrollTop`, make a notice arrive (86 it or change its price, then `runFor(2000)`), and assert the body's
+  `scrollTop` and Add's position are unchanged. Use the menu setup P8 already uses. *Red:* put the notice inside the
+  scrolling body.
+
+**How to work.** Create and change files with the Write and Edit tools only, never with shell heredocs, `python3` or
+`sed`; the last round stopped for over an hour on an approval prompt for a heredoc. Run `npm run verify` before you
+commit, and run `npm run test:e2e:all` and report its count. Append a *Round 2* section to the Handoff (do not rewrite
+round 1) with each fix, each red proof, the tests changed and the real counts, ending with `DONE` or `BLOCKED: <one
+question>`.
 
 ## Lead verification, 2026-11-04 (before review)
 
