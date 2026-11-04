@@ -46,6 +46,8 @@ duplicates, drop a rule once a test or hook enforces it. The stories are in the
 - Count an interactive builder's resume-to-finish as a round when sizing what is left, because PHASE1-S6b's builder stopped on an approval prompt and went idle uncommitted; the resume that finished it was round 2, so the review's F1 had to be fixed in the last round (journal 2026-10-30).
 - When a review finds a defect in a pattern a task copied from merged code, grep the source for the same pattern before closing, because S6b's F1 (merge by arrival order) was copied from BO-03's `menu/model.ts`, which had it too (FE-037, journal 2026-10-30).
 
+- When an interactive dispatch's waiter dies at the two-hour limit, write `.agent/runs/<ID>/builder/session` from `herdr agent list`'s `agent_session.value` for that agent (check the `.jsonl` of that name exists under the worktree's `~/.claude/projects` folder) before any `--resume`, because the waiter records the session only when it exits normally; PHASE1-S7b2's waiter was killed while the builder sat on an approval prompt, and the round-2 resume was refused with "recorded session: none" (journal 2026-11-04).
+
 ## Builder
 
 - Read the reviewed artifact and the contract, not only the task file, and follow them where they disagree, because seven slices running had a builder catch a wrong task file this way (L2206-2210, L2401-2416).

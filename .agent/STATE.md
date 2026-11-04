@@ -26,8 +26,7 @@ for S7b2. Lead branch `agent/lead-1104` pushed (owner). Narrative: [journal/2026
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14), real presets in the POS picker (C4
   OQ1, 11-02), **S7b1's PR held for S7b2, merged together (11-02)**; S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
-- **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. §8's order: catalog → business day →
-  table → order → lease/receipt.
+- **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. §8: catalog → day → table → order → lease.
 - **Owed, not drafted:** ROADMAP Phase 1 users: role change (Q1c); tender: "reactivate" (OQ1).
 - **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office BO-01 (provisional), M-6, BO-03/04/05/07/08.
   **Frost designed:** all but G (BO-09) and H (BO-10, 11); **E2 BO-06 is DESIGN-023 (#167)**.
@@ -47,15 +46,16 @@ for S7b2. Lead branch `agent/lead-1104` pushed (owner). Narrative: [journal/2026
   --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (LESSONS); push task and lead branches together; `gh pr view <n>
   --json state` as its own step before any follow-up push.
-- **Task worktrees:** `wt/PHASE1-S7b2` (in review); `wt/PHASE1-S7b1` (complete, held; evidence in `wt/evidence/PHASE1-S7b1/`). DESIGN-023's removed
+- **Task worktrees:** `wt/PHASE1-S7b2` (round 2); `wt/PHASE1-S7b1` (complete, held; evidence in `wt/evidence/PHASE1-S7b1/`). DESIGN-023's removed
   11-04. Left behind: `runs/PHASE1-S7a`, `runs/DESIGN-023`, `wt/evidence/DESIGN-023`; `wt/ARCH-021`, `wt/DESIGN-021`
   (removal refused by the classifier: the owner's). Not ours: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **PHASE1-S7b2 in review** (Codex `gpt-6-astra` high, oneshot, dispatched 11-04). Builder `f118283` (Sonnet; pane
-  `PHASE1-S7b2` kept for a fix round); lead note `03370a0`: verify 156 files / 5686 tests, e2e:all 128, AC-3 and AC-9 red
-  proofs repeated by the lead, five points put to the reviewer. `touches: money, boundaries`: owner looks before merge.
+- **PHASE1-S7b2 round 2 building** (resumed 11-04, Sonnet, pane `PHASE1-S7b2`; resume 1 of 2). Round 1 `f118283`, lead
+  verified `03370a0` (verify 156 / 5686, e2e:all 128). Codex review: 3 findings (`32af68a`, report and rulings R1-R4):
+  F1 served line editor frame, F2 one *Show unavailable lines*, F3 invented plural (R3, lead: reviewed generic sentence),
+  R4 a browser `scrollTop` proof. Then lead review (ruled round). `touches: money, boundaries`: owner looks before merge.
 - **PHASE1-S7b1 complete** (`ae44200` on `agent/phase1-s7b1`, not pushed): the catalog store and poll, the two menu
   sources (fixture menu out of served bundles), DESIGN-021's four states, the 3-second browser proof. Codex review 2 P2
   + 1 P3, fixed in round 2, lead-reviewed. **Served tiles open nothing until S7b2 (expected).**
@@ -100,7 +100,8 @@ for S7b2. Lead branch `agent/lead-1104` pushed (owner). Narrative: [journal/2026
 ## Live bugs and known defects
 
 - **Owner to see in a browser, then close:** BO-03 (with 86), BO-04, BO-07 (48-row overflow unmeasured), BO-08's
-  methods (if not seen before #137); the Burger-tile fix (FE-021 `7268943`, L257-262); POS-03 Add (L353).
+  methods (if not seen before #137); the Burger-tile fix (FE-021 `7268943`, L257-262); POS-03 Add (L353); DESIGN-021's
+  and DESIGN-023's states in the gallery (`docs/design/visual-directions/index.html`).
 - **Money, not filed (ARCH-003, 9.6):** `closeOrder` accepts any drafts; only the Add gate keeps a card under the balance (B-5).
 - **Must not become a guarantee:** optional `OrderLine.itemId` (C4 §5); the in-memory refund and change walk.
 - **Backend:** `session_replication_role` bypasses the append-only trigger (ADR-008); PIN timing (ARCH-013 §7). The
@@ -121,9 +122,9 @@ Nothing here is decided. Detail is where each line points.
 - **Open a PR for `agent/lead-1104`?** Pushed 11-04 on your word; no PR opened.
 - **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified;
   S8c checks by hand; if a prompt appears, does the 2026-10-13 "does not fight the password manager" ruling extend?
-- **Look at DESIGN-021's and DESIGN-023's states** in the gallery (`docs/design/visual-directions/index.html`).
 - **Lead rulings since 10-30, yours to overturn** (each in its task file): DESIGN-021 R1 and round 2; ARCH-021's
-  acceptances; DESIGN-023 R1, R2 (each screen's create control takes focus) and round 2; S7b1 round 2.
+  acceptances; DESIGN-023 R1, R2 (each screen's create control takes focus) and round 2; S7b1 round 2; S7b2 R3 (two
+  or more removed choices show DESIGN-021's generic *changed* sentence; a drawn plural is the designer's, not queued yet).
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
   for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
@@ -141,7 +142,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S7b2 in review:** on the report, commit it on the task branch, rule findings, `--resume` the builder. Meanwhile **write S7b3**
+1. **S7b2 round 2:** on exit, `git status`, verify, `test:e2e:all`, repeat a red proof, lead review. Meanwhile **write S7b3**
    (`base: agent/phase1-s7b2`).
 2. **S7b1 and S7b2 together:** after S7b2's review, push both and open their PRs (owner merges them together); then S7b3.
 3. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
