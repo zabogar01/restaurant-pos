@@ -52,8 +52,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE1-S7b1 round 2** (rulings `dd8bf02`): Codex found 2 P2 (retry focus, announcement lifetime) and 1 P3 (band
-  anchor), all accepted; builder resumed. Its PR waits for S7b2. **S7b2 written** (untracked in the kit), `base: agent/phase1-s7b1`; dispatch once S7b1 is complete.
+- **PHASE1-S7b1 complete** (`ae44200`, not pushed): Codex review 2 P2 + 1 P3, fixed in r2, lead-reviewed; verify 153/5619,
+  e2e:all 124. Its PR waits for S7b2. **No agent but the lead.** S7b2 dry run clean (base `agent/phase1-s7b1`). **S7b2 written** (untracked in the kit), `base: agent/phase1-s7b1`; dispatch once S7b1 is complete.
 - DESIGN-023 complete (`0533314`): Codex drew, Claude Opus finished and reviewed (owner);
   r2 lead-reviewed, run5 all green (design023 1946/1946). **S8c: FR-B3's own-PIN words; a Chrome/Firefox save-prompt check.**
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
@@ -117,6 +117,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
+- **Dispatch PHASE1-S7b2?** Written; dry run clean (Sonnet, base `agent/phase1-s7b1`, Codex reviews).
 - **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified; S8c checks by hand.
 - **Look at DESIGN-021's and DESIGN-023's states** in the gallery (`docs/design/visual-directions/index.html`).
 - **Lead rulings since 10-30, yours to overturn:** DESIGN-021 R1 (long tile names), its round 2 rulings (F5 lifetime, F6
@@ -141,7 +142,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S7b1:** on exit, verify, `test:e2e:all`, review (Codex if reset, else ask the owner). Meanwhile write S7b2 and S7b3
-   from C4 *For the lead* and DESIGN-021's Handoff (S7b1's PR waits for S7b2).
+1. **Dispatch S7b2** on the owner's word (written, dry run clean). Meanwhile write S7b3 (the picker). S7b1 and S7b2 are
+   pushed and merged together (owner).
 2. **DESIGN-023:** PR #167 open; the owner looks at BO-06's states, then merges.
 3. **Small, between slices:** the code-point cleanup; the frame-focus question; the dialog and name-check extraction.
