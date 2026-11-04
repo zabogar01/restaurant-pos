@@ -5,7 +5,7 @@ category: ui
 touches: [boundaries, money]
 depends_on: [PHASE1-S7a, DESIGN-021]
 owns: [apps/pos/src/catalog/**, apps/pos/src/session/source.ts, apps/pos/src/session/realSession.ts, apps/pos/src/session/types.ts, apps/pos/src/session/api.ts, apps/pos/src/session/useSession.tsx, apps/pos/src/App.tsx, apps/pos/src/PosRoutes.tsx, apps/pos/src/MenuRegion.tsx, apps/pos/src/menuFixtures.ts, apps/pos/src/sheetFixtures.ts, apps/pos/src/orderFixtures.ts, apps/pos/src/orderStore.ts, apps/pos/src/OrderPanel.tsx, apps/pos/src/Sheets.tsx, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/pos-catalog.spec.ts, e2e/tests/idle.spec.ts, e2e/support/**]
-status: active
+status: complete
 cycles: 1
 ---
 # PHASE1-S7b1 — The served POS menu
@@ -403,6 +403,27 @@ nothing to do.
 
 Then update the Handoff in place (mark round 2), with the new `verify` and `test:e2e:all` counts, and report done. The
 lead reviews the round against these rulings; there is no second full review unless a fix goes beyond them.
+
+## Round 2 lead review and acceptance (2026-11-04)
+
+At `6c06d2f`, the tree clean. Three fix commits (`19203a4` F1, `acfca73` F2, `9b87ee9` F3) and the Handoff (`6c06d2f`);
+every path inside `owns`. The fixes are the review's own as ruled, so the lead reviews the round instead of a second
+full review.
+
+- **Against the rulings, from `git diff dd8bf02..HEAD`:** F1, `MenuRegion`'s refocus effect returns when
+  `document.activeElement` is anything but the body, so a surviving control keeps focus, and two tests cover the held
+  retry with an order line focused and the still-lost case. F2, the announcement state remembers the adopted menu
+  object, so a newly adopted projection clears it unless the availability counter moved too, and an unchanged poll
+  (no new object) keeps it; five tests. F3, `margin-top: auto` on `.menu-status`, with browser cases P5 to P7 and a P1
+  addition asserting a 72px band whose bottom meets `.order-screen__menu`'s in the empty, loading, both failure and
+  populated states, in both engines.
+- **The lead's red proof:** F2's change reverted in `MenuRegion.tsx` (`availability.menu !== menu ||` removed);
+  `served-menu.test.tsx` failed three ("a price-only change clears it", "an archive clears it", "an empty projection
+  clears it, beside the empty-catalog message"; 3 failed, 62 passed); restored with `git checkout --`, tree clean.
+- **The lead's runs at `6c06d2f`** (evidence `../restaurant-pos-wt/evidence/PHASE1-S7b1/verify-r2.txt`,
+  `e2e-all-r2.txt`): `npm run verify` **153 files, 5619 tests passed**; `npm run test:e2e:all` **124 passed**.
+
+**Accepted.** PHASE1-S7b1 is complete. Its PR is held for S7b2 (DECISIONS 2026-11-02); S7b2 is cut from this branch.
 
 ## Handoff
 
