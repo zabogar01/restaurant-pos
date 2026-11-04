@@ -496,6 +496,42 @@ describe('15. focus', () => {
   });
 });
 
+describe('round 2, F1: a completed retry does not steal focus from work in progress', () => {
+  it('Try again, then focus moves to an order line while the read is held: the line keeps it', async () => {
+    h = makeCatalogHarness(null);
+    screen = mountServed(h, { state: 'default' });
+    await h.settle();
+    const retry = q('[data-action="served-retry"]')!;
+    retry.focus();
+    const wait = h.hold<ReturnType<typeof menuOf>>();
+    h.menu({ held: wait.held });
+    press(retry);
+    await h.settle();
+    const row = q('.order-line__target') as HTMLElement;
+    row.focus();
+    wait.deliver(ok(menuOf(1, MEALS, [NASI])));
+    await h.settle();
+    expect(rail()).toHaveLength(2);
+    expect(document.activeElement).toBe(row);
+  });
+
+  it('and with focus still lost when the read lands, it goes to the first category', async () => {
+    h = makeCatalogHarness(null);
+    screen = mountServed(h);
+    await h.settle();
+    const retry = q('[data-action="served-retry"]')!;
+    retry.focus();
+    const wait = h.hold<ReturnType<typeof menuOf>>();
+    h.menu({ held: wait.held });
+    press(retry);
+    await h.settle();
+    expect(document.activeElement).toBe(document.body);
+    wait.deliver(ok(menuOf(1, MEALS, [NASI])));
+    await h.settle();
+    expect(document.activeElement).toBe(rail()[0]);
+  });
+});
+
 describe('16. ?state= in a served build keeps its job for the order, and chooses nothing about the menu', () => {
   it.each(['eightysix', 'fireblocked', 'fireblocked-overflow', 'sheet-item86'] as const)(
     '%s: the order is drawn as it was and the served catalog decides availability',

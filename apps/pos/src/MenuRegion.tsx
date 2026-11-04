@@ -69,6 +69,10 @@ export function MenuRegion({
       region.current?.querySelector<HTMLElement>('#menu-empty-catalog');
     if (!target) return;
     refocus.current = false;
+    // Only while focus is still lost. A cashier who has moved to a surviving control (an order line, an
+    // action, an open sheet) in the meantime keeps it: the fallback is cancelled.
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
     target.focus();
   });
 
