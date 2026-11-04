@@ -79,6 +79,6 @@ export function noticeOf(f: Follow, availability: 'available' | 'unavailable' | 
   const parts: string[] = [];
   if (availability === 'gone') parts.push(GONE_NOTICE(f.known.name));
   else if (availability === 'unavailable') parts.push(UNAVAILABLE_NOTICE(f.known.name));
-  if (f.changed) parts.push(f.removed.length > 0 ? REMOVED_NOTICE(f.removed) : CHANGED_NOTICE);
+  if (f.changed) parts.push(f.removed.length === 1 ? REMOVED_NOTICE(f.removed[0]!) : CHANGED_NOTICE);
   return parts.join(' ');
 }

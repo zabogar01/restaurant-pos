@@ -379,3 +379,23 @@ Paths:
 **What S7b3 needs.** The store's presets are unchanged: `CatalogMenu.presets: {id, name, value: {kind:'PERCENTAGE', rate} | {kind:'FIXED', amount}}[]`, read from `useCatalog(view).snapshot.menu?.presets`. The picker's entry point is `discountOpened` / `panelDiscount` in `OrderPanel.tsx` and `DiscountSheet`. `changeDiscount` in `orderStore.ts` still passes the fixture `PRESETS`, which S7b3 must replace.
 
 DONE
+
+### Round 2 (builder), 2026-11-04
+
+Fixes for the lead's rulings R1 to R4. All files were written with the Write and Edit tools only. Tests came first: the new unit file was run against the round-1 code (8 of 10 failed) before any code changed.
+
+**R1: the served line editor.** `ControlledOrderScreen` passes `served={catalog.store.kind === 'real'}` through `SheetView` to `LineSheet` and `SheetFrame`. `served` is optional and defaults to false in `SheetView`, so `own-items.test.tsx`, which mounts `SheetView` directly, needed no change. A served editor now has the `sheet--served` class, the wrapping header, focus on the heading, and Tab/Shift-Tab wrapping. The reserved reason row and the Update button's `aria-describedby` on it exist only in served mode, so the fixture line editor is back to its reviewed layout. Tests (`served-round2.test.tsx`): a 64-code-point served item's pending row has the served class and full heading, focus on the heading, Tab from *Update to n* wraps to *Back* and Shift-Tab back, a reason row is present; a fixture `sheet-line` has no served class, no reason row, and focus on the dialog. Red: dropping `served` on the `LineSheet` frame fails the class/heading-focus test and the Tab-wrap test.
+
+**R2: one recovery control.** On a served catalog `FireRefusalNotice` draws one button, *Show unavailable lines* (`data-action="served-show-blocked"`, the codebase's convention for served test ids, as `served-retry`), whose handler is the existing reveal-and-focus callback on `blocking[0]`. The fixture path keeps its per-line `Show {name}` buttons unchanged (the existing fire and one-press-fire tests still pass). Tests: two lines of one item, and two distinct items, each give one control that focuses the first blocking line in order. Red: taking the per-line branch on the served path fails both.
+
+**R3: removed options.** `REMOVED_NOTICE` takes one name. `noticeOf` uses it only when exactly one chosen option has been removed while the sheet is open; two or more (at once or across polls, variants and modifiers alike) get `CHANGED_NOTICE`. The comma-joined plural is deleted. Removed options still leave the choices and the total, and a removed variant still turns Add off. Tests: one removal names it, two at once, two across polls, and a variant plus a modifier give the generic sentence (and Add stays off with the variant reason). Red: restoring the comma-joined plural fails those three. Queued for the designer: a drawn plural for several removed options.
+
+**R4: scroll and Add in the browser.** New P10 in `e2e/tests/pos-catalog.spec.ts`, using `madeMenu` (extended with an optional count of extra modifiers: 40) so the options overflow the body. It scrolls the body to 200, records `scrollTop` and Add's box, 86s the item from the BO row, `runFor(2000)`, and asserts the notice is drawn, `scrollTop` and Add's box are unchanged, and the body kept its top and gave up height. Red (Chromium): moving the notice into the scrolling body fails the `scrollTop`/position assertions.
+
+**Tests changed:** none of the earlier assertions. New: `served-round2.test.tsx` (10 tests), P10. `madeMenu` gained an optional parameter.
+
+**Output.** `npm run verify`: typecheck clean; 157 files, 5696 tests passed (round 1: 156 / 5686). `npm run test:e2e:all`: 130 passed, both engines (round 1: 128), P10 included. I did not run the P10 mutation in WebKit; the full suite passes there with the fix.
+
+**Not done, as ruled.** Nothing else from the review was touched (the lock-while-open, archive, and ceiling points were cleared).
+
+DONE

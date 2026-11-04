@@ -33,6 +33,7 @@ export function SheetView({
   setQuantity,
   order,
   renderTotals,
+  served = false,
 }: {
   sheet: SheetFixture;
   go: (view: OrderView) => void;
@@ -41,11 +42,13 @@ export function SheetView({
   /** The store's order: the line editor reads its line's current quantity and previews against it. */
   order: ShownOrder;
   renderTotals: (totals: Totals) => ReactNode;
+  /** This is a served catalog (the screen's catalog store is the server's): the line editor takes the served frame. */
+  served?: boolean;
 }) {
   return sheet.kind === 'item' ? (
     <ItemSheet sheet={sheet} go={go} addLine={addLine} />
   ) : (
-    <LineSheet sheet={sheet} go={go} setQuantity={setQuantity} order={order} renderTotals={renderTotals} />
+    <LineSheet sheet={sheet} go={go} setQuantity={setQuantity} order={order} renderTotals={renderTotals} served={served} />
   );
 }
 
@@ -555,12 +558,15 @@ function LineSheet({
   setQuantity,
   order,
   renderTotals,
+  served,
 }: {
   sheet: LineSheetFixture;
   go: (view: OrderView) => void;
   setQuantity: (lineId: string, quantity: number) => void;
   order: ShownOrder;
   renderTotals: (totals: Totals) => ReactNode;
+  /** Served catalog: the served frame (heading focus, Tab wrap, wrapping header) and the reserved reason row. */
+  served: boolean;
 }) {
   const line = order.groups.flatMap((g) => g.lines).find((l) => l.id === sheet.lineId);
   // The order's own quantity wins over the fixture's, so a line the cashier
@@ -578,6 +584,7 @@ function LineSheet({
 
   return (
     <SheetFrame
+      served={served}
       title={sheet.title}
       aside={sheet.tag && <span className="sheet__aside round-head__tag">{sheet.tag}</span>}
       onClose={() => go(sheet.back)}
@@ -597,7 +604,7 @@ function LineSheet({
               type="button"
               className={updateOff ? 'action action--primary action--off' : 'action action--primary'}
               aria-disabled={updateOff}
-              aria-describedby={ceiling ? SHEET_REASON_ID : undefined}
+              aria-describedby={served && ceiling ? SHEET_REASON_ID : undefined}
               data-action="update-quantity"
               onClick={() => {
                 if (updateOff) return;
@@ -608,9 +615,12 @@ function LineSheet({
               Update to {quantity}
             </button>
           </div>
-          <div className="sheet__reason" id={SHEET_REASON_ID} aria-live="polite">
-            {ceilingSentence(ceiling)}
-          </div>
+          {/* Served mode only: the fixture editor keeps its reviewed layout, with no reason row. */}
+          {served && (
+            <div className="sheet__reason" id={SHEET_REASON_ID} aria-live="polite">
+              {ceilingSentence(ceiling)}
+            </div>
+          )}
           <div className="sheet__bound" id={SHEET_BOUND_ID} aria-live="polite">
             {boundCopy(quantity, false, ceilingSentence(nextCeiling))}
           </div>

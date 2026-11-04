@@ -128,7 +128,13 @@ export const UNAVAILABLE_NOTICE = (name: string) =>
   `${name} is no longer available. A manager marked it 86. Your choices are kept, but it cannot be added.`;
 export const GONE_NOTICE = (name: string) => `${name} is no longer on the menu. Your choices are kept, but it cannot be added.`;
 
-/** One notice for whatever changed: the sentence below, or, when a chosen option went, the sentence naming it. */
+/**
+ * One notice for whatever changed: the sentence below, or, when exactly ONE chosen option went, the reviewed
+ * sentence naming it. DESIGN-021 draws no wording for several removed options, and the builder invents none
+ * (ADR-011 rule 24), so two or more removals use the generic sentence. A drawn plural is the designer's.
+ */
 export const CHANGED_NOTICE = 'This item changed while you were choosing. Check the updated choices and prices before adding.';
-export const REMOVED_NOTICE = (names: ReadonlyArray<string>) =>
-  `This item changed while you were choosing. ${names.join(', ')} ${names.length === 1 ? 'was' : 'were'} removed and deselected.`;
+export const REMOVED_NOTICE = (name: string) => `This item changed while you were choosing. ${name} was removed and deselected.`;
+
+/** The served fire refusal's one recovery control (DESIGN-021's copy table), which focuses the first blocking line. */
+export const SHOW_BLOCKED = 'Show unavailable lines';

@@ -6,7 +6,7 @@ import { DiscountSheet } from './DiscountSheets.js';
 import { EmergencyBanner } from './EmergencyBanner.js';
 import { FIRE_ACTION, blockingLines, fireRefusal, holdsUnavailable, sendableLines, type FireRefusal } from './fire.js';
 import { Icon } from './icons.js';
-import { ACTION_REASON, NO_MENU_ORDER } from './catalog/menuCopy.js';
+import { ACTION_REASON, NO_MENU_ORDER, SHOW_BLOCKED } from './catalog/menuCopy.js';
 import { useCatalog } from './catalog/useCatalog.js';
 import { FIXTURE_ORDER_STATES } from './session/source.js';
 import { MenuRegion } from './MenuRegion.js';
@@ -362,6 +362,7 @@ export function ControlledOrderScreen({
             setQuantity={store.setQuantity}
             order={store.order}
             renderTotals={(totals) => <TotalsView totals={totals} />}
+            served={catalog.store.kind === 'real'}
           />
         )}
         {itemOpened && (
@@ -568,6 +569,7 @@ export function OrderPanel({
             panel.current?.querySelector<HTMLElement>(`[data-line-id="${lineId}"] .order-line__target`)?.focus({ preventScroll: true });
           }}
           blocking={blocking}
+          served={catalogStore.kind === 'real'}
         />
       )}
       {type === 'table' && (
@@ -626,10 +628,13 @@ function FireRefusalNotice({
   refusal,
   blocking,
   onShow,
+  served,
 }: {
   refusal: FireRefusal;
   blocking: ReadonlyArray<OrderLine>;
   onShow: (lineId: string) => void;
+  /** A served catalog draws DESIGN-021's one recovery control; the fixture path keeps its per-line controls. */
+  served: boolean;
 }) {
   return (
     <div className="notice order-notice" role="status" id={FIRE_REFUSAL_ID}>
@@ -645,11 +650,17 @@ function FireRefusalNotice({
         . {refusal.resolution}
       </div>
       {/* POS-03 question 10: the named line can be scrolled out of view, so each one has a way back to it. */}
-      {blocking.map((line) => (
-        <button key={line.id} type="button" className="notice__show" onClick={() => onShow(line.id)}>
-          Show {line.name}
+      {served ? (
+        <button type="button" className="notice__show" data-action="served-show-blocked" onClick={() => onShow(blocking[0]!.id)}>
+          {SHOW_BLOCKED}
         </button>
-      ))}
+      ) : (
+        blocking.map((line) => (
+          <button key={line.id} type="button" className="notice__show" onClick={() => onShow(line.id)}>
+            Show {line.name}
+          </button>
+        ))
+      )}
     </div>
   );
 }

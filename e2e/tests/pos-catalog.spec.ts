@@ -252,7 +252,7 @@ test('P7. the band is at the bottom edge in both first-read failures', async ({ 
 // item with a variant and a modifier, which BO-04 can make but only slowly, so it is made through the
 // server's own domain functions, as item-editor.spec.ts makes its options; the 86 is the back office's own
 // row control. The geometry is read here because jsdom cannot measure it.
-async function madeMenu(stem: string, options: Array<[string, bigint]> = [['Regular', 0n], ['Large', 5_000n]]) {
+async function madeMenu(stem: string, options: Array<[string, bigint]> = [['Regular', 0n], ['Large', 5_000n]], extraModifiers = 0) {
   const category = await createCategory(unique(stem));
   if (category.kind !== 'OK') throw new Error('could not make the category');
   const name = unique('Rice');
@@ -261,7 +261,10 @@ async function madeMenu(stem: string, options: Array<[string, bigint]> = [['Regu
     name,
     basePrice: 40_000n,
     variants: options.map(([n, priceDelta]) => ({ name: n, priceDelta })),
-    modifiers: [{ name: 'Cheese', priceDelta: 3_000n }],
+    modifiers: [
+      { name: 'Cheese', priceDelta: 3_000n },
+      ...Array.from({ length: extraModifiers }, (_, i) => ({ name: `Extra ${i + 1}`, priceDelta: 1_000n })),
+    ],
   });
   if (item.kind !== 'OK') throw new Error('could not make the item');
   const other = unique('Tea');
@@ -361,4 +364,45 @@ test('P9. R1 in the order panel: a 64-character name wraps in full beside the qu
   expect(slot.width).toBe(56);
   // It wrapped: taller than one 15px line.
   expect(name.height).toBeGreaterThan(24);
+});
+
+// PHASE1-S7b2 round 2, R4 (DESIGN-021 rule 8): a notice arriving moves neither the scrolled body's position
+// nor Add. The item's options overflow the body, so there is a scroll position to keep.
+test('P10. a notice arriving keeps the scrolled body where it was, and Add where it was', async ({ world, twoProfiles }) => {
+  const manager = await world.people.manager();
+  const cashier = await world.people.cashier();
+  const { a: office, b: till } = twoProfiles;
+  const { name } = await madeMenu('Mains', undefined, 40);
+
+  await openOfficeMenu(office.page, manager);
+  await openPosOrder(till.page, cashier);
+  const pos = till.page;
+  await expect(tileNamed(pos, name)).toBeVisible();
+  await pausePoll(till, pos);
+
+  await tileNamed(pos, name).click();
+  const sheet = pos.getByRole('dialog');
+  await expect(sheet).toBeVisible();
+  const body = sheet.locator('.sheet__body');
+  const add = sheet.getByRole('button', { name: 'Add to order', exact: true });
+  // The options overflow the body: there is something to scroll.
+  expect(await body.evaluate((el) => el.scrollHeight > el.clientHeight + 200)).toBe(true);
+  await body.evaluate((el) => {
+    el.scrollTop = 200;
+  });
+  const top = await body.evaluate((el) => el.scrollTop);
+  expect(top).toBeGreaterThan(0);
+  const addBox = await add.boundingBox();
+  const bodyBox = (await body.boundingBox())!;
+
+  await mark86(office.page, name);
+  await pos.clock.runFor(PAGE_MS);
+  await expect(sheet.locator('#served-sheet-notice')).not.toBeEmpty();
+
+  // The notice took room from the body, not from its position or its scroll.
+  expect(await body.evaluate((el) => el.scrollTop)).toBe(top);
+  expect(await add.boundingBox()).toEqual(addBox);
+  const after = (await body.boundingBox())!;
+  expect(after.y).toBe(bodyBox.y);
+  expect(after.height).toBeLessThan(bodyBox.height);
 });
