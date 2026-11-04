@@ -9,9 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-11-02 (afternoon): #162 ARCH-021 (C4), #163 DESIGN-021 and #164 merged; `development` at `3d03067`; dev `pos`
-at `0014`. **PHASE1-S7a complete** (review clean), not pushed. Lead branch `agent/lead-1102` (the 11-02 wrap-up cherry-picked as
-`ef80a1a`), not pushed. Narrative: [journal/2026-11-02.md](journal/2026-11-02.md).
+2026-11-03: #165 S7a and #166 merged; `development` at `22be697`; dev `pos` at `0014`. **DESIGN-023 complete**
+(`0533314`, not pushed). Lead branch `agent/lead-1103`, not pushed. Narrative: [journal/2026-11-03.md](journal/2026-11-03.md).
 
 ## Phase and gates
 
@@ -22,40 +21,39 @@ at `0014`. **PHASE1-S7a complete** (review clean), not pushed. Lead branch `agen
   methods), S4a (#140: catalog domain, `0013`, `catalogWrite`), S4b (#142: catalog routes, `CATALOG_CHANGED`), S4c1
   (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04 whole), S5 (#151: the 86 toggle), S6a (#154: presets server,
   `0014`), S6b (#157: BO-07). S0-S6 done. **S7 (POS catalog) in progress:** C4 and DESIGN-021 merged (#162,
-  #163); **S7a complete** (`3bf91dc`, not pushed); S7b1, S7b2, S7b3 to write from C4 *For the lead* and DESIGN-021's Handoff.
+  #163); **S7a merged** (#165); S7b1, S7b2, S7b3 to write from C4 *For the lead* and DESIGN-021's Handoff.
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14), **real presets in the POS picker (C4
   OQ1, 11-02), S7b1's PR held for S7b2 (11-02)**; S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
 - **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. ARCHITECTURE §8: catalog → business day →
   dining table → order → lease/receipt (TenderMethod not in it: Phase 4's, with an architect).
-- **Owed, not drafted:** ROADMAP Phase 1 users: role change (Q1c); tender: "reactivate" (OQ1). E2: BO-06 (C3 *Stale* 5).
+- **Owed, not drafted:** ROADMAP Phase 1 users: role change (Q1c); tender: "reactivate" (OQ1).
 - **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office: sign-in, provisional BO-01, M-6, the rail, and
   BO-05, BO-08, BO-03, BO-04, **BO-07** whole. BO-03 and BO-07 merge reads and answers by catalog version (FE-037, S6b
-  r3). **Frost designed:** A, B, C, I, E1, F (018, 022), BO-03 (019), BO-04 (020), POS G6 (021, PR #163); left: E2 (next).
-- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** FE-037 final tree
-  (`3dd51d5`) verify 149 files / 5453 tests, e2e:all 108.
+  r3). **Frost designed:** A, B, C, I, E1, F (018, 022), BO-03 (019), BO-04 (020), POS G6 (021, #163), **E2 (023, complete)**.
+- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** S7a final tree
+  (`e0b812c`) verify 151 files / 5497 tests, e2e:all 108.
 
 ## Integration branch
 
-- **`development`** at `3d03067` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `22be697` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
   **before reporting or dispatching**. `0014` applied; no lockfile change since 10-26.
 - **Guard hooks** current (`--check` 2026-10-30); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1102`** (from `3d03067`). New lead branches: from
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1103`** (from `22be697`). New lead branches: from
   `origin/development`, then `git branch --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (the classifier refuses it otherwise; LESSONS). Ask, then push the task
   and lead branches together. **Run `gh pr view <n> --json state` as its own step before any follow-up push.**
-- **Task worktrees:** `wt/PHASE1-S7a` (complete; remove after merge, with `runs/PHASE1-S7a`). `wt/ARCH-021`, `wt/DESIGN-021` merged and clean; their removal (with
-  `runs/DESIGN-021`, `wt/evidence/DESIGN-021`) was refused by the classifier, so it is the owner's. Not the lead's:
-  `restaurant-pos-design`, `keen-chebyshev-ccf255`.
+- **Task worktrees:** `wt/DESIGN-023` (complete; remove after merge, with `runs/DESIGN-023`). `runs/PHASE1-S7a` left.
+  `wt/ARCH-021`, `wt/DESIGN-021`: removal refused by the classifier, the owner's. Not ours: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **PHASE1-S7a complete** (`3bf91dc`): builder `ed921fa`; lead verify 151/5497, e2e:all 108, criterion 5's red rerun; Codex
-  review clean (0 findings). **No agent but the lead.** **Owner tested it by hand 2026-11-03** ("it works"); pushed, PR open.
+- **No agent but the lead.** DESIGN-023 complete (`0533314`): Codex drew, Claude Opus finished and reviewed (owner);
+  r2 lead-reviewed, run5 all green (design023 1946/1946). **S8c: FR-B3's own-PIN words; a Chrome/Firefox save-prompt check.**
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -88,7 +86,7 @@ at `0014`. **PHASE1-S7a complete** (review clean), not pushed. Lead branch `agen
 - **`max_fix_cycles` is 2** (three rounds). A round's ruling goes above the Handoff in the worktree, committed there, then
   `--resume --message`; widen `owns` in the same commit when a finding needs a file outside it.
 - **Codex reviews Claude-built work; Claude Opus reviews Codex- or OpenCode-built work** (owner exceptions, each once:
-  DESIGN-017 r3, -018 to -020, -022). **Codex allowance:** weekly reset 27 Oct 14:18, seven reviews since; its 5h limit
+  DESIGN-017 r3, -018 to -020, -022). **Codex allowance:** limit hit 11-03 mid-DESIGN-023 (5h, resets 18:24); its 5h limit
   ran out mid-design four times (DESIGN-021 r2, 10-30; the same pane resumed after the reset). Stand-ins: wait, OpenCode,
   or an owner exception. Hand-opened: write `runs/<ID>/builder/meta.json` (`{"cli":"codex",…}`) before its review.
 - **Designers and architects are hand-opened** (recipes: journal 10-24; Codex also needs `-c
@@ -117,11 +115,12 @@ at `0014`. **PHASE1-S7a complete** (review clean), not pushed. Lead branch `agen
 
 Nothing here is decided. Detail is where each line points.
 
-- **Open DESIGN-023's designer?** (Codex `gpt-6-astra`; its start stops on an update prompt, yours.)
-- **Look at DESIGN-021's states** in the gallery (`docs/design/visual-directions/index.html`, POS-03 served states).
+- **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified; S8c checks by hand.
+- **Dispatch PHASE1-S7b1?** Dry run clean (Sonnet builder, interactive; Codex reviews).
+- **Look at DESIGN-021's and DESIGN-023's states** in the gallery (`docs/design/visual-directions/index.html`).
 - **Lead rulings since 10-30, yours to overturn:** DESIGN-021 R1 (long tile names), its round 2 rulings (F5 lifetime, F6
   `fire.ts` form stands), the 86-stepper reading; ARCH-021's lead review acceptances (S7b split in three, the revision
-  route's client-instance opt-out and log level, no backoff, no option ids in a stand-in line).
+  route's client-instance opt-out and log level, no backoff, no option ids in a stand-in line); DESIGN-023 R1 (`design019`'s rail list gains Staff) and R2 (BO-06 focuses Add person after a different manager signs in).
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
   for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
@@ -137,12 +136,11 @@ Nothing here is decided. Detail is where each line points.
 
 - **`floor.html:48`** draws `dayclosed` as *closed · 25 Sep*; the build follows 2026-09-30. Owed to the designer.
 - **DESIGN-007 on `fireerror`** (`:365`/`:407` vs `:578`): you ruled `:578` (L349); the file is unchanged.
-- **After a different manager signs in**, `OfficeApp.tsx` focuses Log out; DESIGN-022 says New preset (QUEUE; designer).
+- **After a different manager signs in**, `OfficeApp.tsx` focuses Log out; DESIGN-022/023 say the screen's create control.
 
 ## Next up
 
-1. **S7a:** PR open, owner to merge. Then write **S7b1, S7b2,
-   S7b3** (S7b1 copies C4's `idle.spec.ts` B6/B8 warning; its PR waits for S7b2).
-2. **DESIGN-023 (E2, BO-06)** written 2026-11-02, untracked in the kit: on the owner's word, cut `wt/DESIGN-023` from
-   `development`, commit the task file there first, and hand-open a Codex designer `design023` (Claude Opus reviews).
+1. **S7b1 written** (`.agent/tasks/PHASE1-S7b1-served-menu.md`, untracked in the kit; dry run clean, Sonnet): dispatch on
+   the owner's word. Then write S7b2 and S7b3 from C4 *For the lead* and DESIGN-021's Handoff (S7b1's PR waits for S7b2).
+2. **DESIGN-023:** push and open its PR with the lead branch (owner's word); the owner looks at BO-06's states.
 3. **Small, between slices:** the code-point cleanup; the frame-focus question; the dialog and name-check extraction.

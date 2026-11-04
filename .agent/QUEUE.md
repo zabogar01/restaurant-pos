@@ -72,7 +72,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
      task must carry its rule C1 and density rule (task file, last lead ruling).
    - *(Done: D, DESIGN-019 and -020, BO-03 and BO-04; F's BO-08 half, DESIGN-018.)*
    - *(Done: F's BO-07 half, DESIGN-022, merged 2026-10-29 as PR #156.)*
-   - **E2, DESIGN-023**, BO-06 Users (feeds S8c) — depends on DESIGN-022 (complete) — written 2026-11-02, not started.
+   - **E2, DESIGN-023**, BO-06 Users (feeds S8c) — depends on DESIGN-022 (complete) — complete 2026-11-03 (Codex drew, Claude Opus finished and reviewed by owner exception), PR not opened.
    - **Left:** G (BO-09) · H (BO-10, 11).
 10. **Back-office frontend** — built against fixtures, in small slices, before the backend —
     depends on item 9 — not written. Ruling I-8 (reprint audited) is settled and drawn.
@@ -164,7 +164,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       ADR-012 rule 13) — depends on S6b — complete, merged 2026-10-30 as PR #159.
     - **The frame's focus after a different manager signs in (no ID yet)** — `OfficeApp.tsx` focuses Log out; DESIGN-022's
       focus contract says New preset on BO-07 — decide per screen or in `D`, with the designer — not written.
-    - **S7a** (POS catalog routes, from C4) — complete 2026-11-02, PR not opened, **S7b1-3** (after DESIGN-021's review; S7b3 needs OQ1), **S8a-c** (users, from C3; S8c needs design E2), **S9**
+    - **S7a** (POS catalog routes, from C4) — complete, merged 2026-11-03 as PR #165, **S7b1-3** (after DESIGN-021's review; S7b3 needs OQ1), **S8a-c** (users, from C3; S8c needs design E2), **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
     post-close corrections (before Phase 5), permitted tax and service-charge range (before
