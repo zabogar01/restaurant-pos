@@ -9,9 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-11-04 (wrap-up for a fresh session): #167 DESIGN-023 and #168 merged; `development` at `a589c23`; dev `pos` at
-`0014`. **PHASE1-S7b1 complete, not pushed** (held for S7b2). **Nothing running; no agent but the lead.** Lead branch
-`agent/lead-1104`, not pushed. Narrative: [journal/2026-11-04.md](journal/2026-11-04.md), [11-03](journal/2026-11-03.md).
+2026-11-04: `development` at `a589c23`; dev `pos` at `0014`. **PHASE1-S7b2 dispatched** (owner). S7b1 complete, held
+for S7b2. Lead branch `agent/lead-1104` pushed (owner). Narrative: [journal/2026-11-04.md](journal/2026-11-04.md).
 
 ## Phase and gates
 
@@ -45,22 +44,21 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **Guard hooks** current (preflight `--check` 2026-11-04); no agents.yaml or `.githooks/` change since 2026-10-17.
 - **Lead work: `../restaurant-pos-kit` on `agent/lead-1104`** (from `a589c23`; the five post-#168 commits cherry-picked,
   the kit's `base:` change among them). New lead branches: from `origin/development`, then `git branch
-  --unset-upstream`; push with `-u origin <branch>`. **Untracked in the kit, keep:** `.agent/tasks/PHASE1-S7b2-…md`.
+  --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (LESSONS); push task and lead branches together; `gh pr view <n>
   --json state` as its own step before any follow-up push.
-- **Task worktrees:** `wt/PHASE1-S7b1` (complete, held; evidence in `wt/evidence/PHASE1-S7b1/`). DESIGN-023's removed
+- **Task worktrees:** `wt/PHASE1-S7b2` (building); `wt/PHASE1-S7b1` (complete, held; evidence in `wt/evidence/PHASE1-S7b1/`). DESIGN-023's removed
   11-04. Left behind: `runs/PHASE1-S7a`, `runs/DESIGN-023`, `wt/evidence/DESIGN-023`; `wt/ARCH-021`, `wt/DESIGN-021`
   (removal refused by the classifier: the owner's). Not ours: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **Nothing running; Herdr shows only `lead`.**
+- **PHASE1-S7b2 building** (dispatched 11-04, interactive Sonnet builder, Herdr `phase1-s7b2`, pane `PHASE1-S7b2`;
+  `base: agent/phase1-s7b1`; Codex reviews). M-2 for a served item, Add (NewLine snapshot), `addLine` under a lock, D1's
+  ceilings, the sheet between polls, the plural fire refusal. `touches: money, boundaries`: the owner looks before merge.
 - **PHASE1-S7b1 complete** (`ae44200` on `agent/phase1-s7b1`, not pushed): the catalog store and poll, the two menu
   sources (fixture menu out of served bundles), DESIGN-021's four states, the 3-second browser proof. Codex review 2 P2
   + 1 P3, fixed in round 2, lead-reviewed. **Served tiles open nothing until S7b2 (expected).**
-- **PHASE1-S7b2 written** (`.agent/tasks/PHASE1-S7b2-served-item-sheet.md`, untracked in the kit; `base:
-  agent/phase1-s7b1`; dry run clean: Sonnet builder, Codex reviews). M-2 for a served item, Add (NewLine snapshot),
-  `addLine` under a lock, D1's ceilings, the sheet between polls, the plural fire refusal. **Waits on the owner's word.**
 - **S7b3 (the POS preset picker) not written:** from C4 *For the lead* S7b3, item 9, *For DESIGN-021* 7, DESIGN-021
   rule 12 and its picker copy; `base: agent/phase1-s7b2`; `discountFixtures.ts`, `discount.ts`, `DiscountSheets.tsx`.
 - **For S8c (from DESIGN-023):** FR-B3's own-PIN words (every other session ends); a Chrome/Firefox save-prompt check (F3).
@@ -120,8 +118,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
-- **Dispatch PHASE1-S7b2?** Written; dry run clean (Sonnet, base `agent/phase1-s7b1`, Codex reviews).
-- **Push the lead branch `agent/lead-1104`** (the kit's `base:` change and STATE since #168) and open its PR?
+- **Open a PR for `agent/lead-1104`?** Pushed 11-04 on your word; no PR opened.
 - **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified;
   S8c checks by hand; if a prompt appears, does the 2026-10-13 "does not fight the password manager" ruling extend?
 - **Look at DESIGN-021's and DESIGN-023's states** in the gallery (`docs/design/visual-directions/index.html`).
@@ -144,7 +141,8 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **`/lead`**, then on the owner's word **dispatch S7b2**; while it builds, **write S7b3** (`base: agent/phase1-s7b2`).
+1. **S7b2 building:** on its exit, verify (`verify`, `test:e2e:all`), then Codex review. Meanwhile **write S7b3**
+   (`base: agent/phase1-s7b2`).
 2. **S7b1 and S7b2 together:** after S7b2's review, push both and open their PRs (owner merges them together); then S7b3.
 3. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction. Then S8a (users server, C3).
