@@ -5,8 +5,8 @@ category: ui
 touches: [boundaries, money]
 depends_on: [PHASE1-S7a, DESIGN-021]
 owns: [apps/pos/src/catalog/**, apps/pos/src/session/source.ts, apps/pos/src/session/realSession.ts, apps/pos/src/session/types.ts, apps/pos/src/session/api.ts, apps/pos/src/session/useSession.tsx, apps/pos/src/App.tsx, apps/pos/src/PosRoutes.tsx, apps/pos/src/MenuRegion.tsx, apps/pos/src/menuFixtures.ts, apps/pos/src/sheetFixtures.ts, apps/pos/src/orderFixtures.ts, apps/pos/src/orderStore.ts, apps/pos/src/OrderPanel.tsx, apps/pos/src/Sheets.tsx, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/pos-catalog.spec.ts, e2e/tests/idle.spec.ts, e2e/support/**]
-status: review
-cycles: 0
+status: active
+cycles: 1
 ---
 # PHASE1-S7b1 — The served POS menu
 
@@ -363,6 +363,46 @@ browser (evidence in `../restaurant-pos-wt/evidence/PHASE1-S7b1/`):
   4. `SessionStore.catalogReads` is optional only because `fixtureSession.ts` was outside `owns`.
   5. Criterion 4's red was proved by the source scan, not by compiling the whole `PosApi` into the store.
   6. The hidden-tab pause is proved in jsdom only; neither engine hides a page in the harness.
+
+## Round 2 (lead rulings, 2026-11-04), from the review
+
+The review is `.agent/reviews/PHASE1-S7b1-review.md` (Codex, at `d9dd898`): verdict *findings*, three. The reviewer
+reproduced 1 and 2 in jsdom; 3 is read from the CSS. **All three are accepted.** Fix them in this order, each test
+first and red against the current code, committing as you go. Change nothing the review cleared. This is round 2 of at
+most three.
+
+1. **F1, a completed retry steals focus.** The pending refocus after *Try again* applies only while focus is still lost
+   (on the body, or on the control the read removed). If the cashier has focused a surviving control in the meantime (an
+   order line, an order action, an open sheet or dialog), the fallback is cancelled and focus stays there. Add the
+   held-response test the review describes: press *Try again*, hold the read, focus an `.order-line__target`, deliver the
+   menu, and assert focus is still on the line; and the existing lost-focus case still lands on the first category (or
+   the empty-catalog message). *Red:* the current code moves focus to the category.
+2. **F2, the availability announcement outlives a changed projection.** DESIGN-021 rule 5 (`D:2112`): the announcement
+   ends at the **next changed projection**, the out-of-date warning, or leaving POS-03; an unchanged poll keeps it. Key
+   its lifetime to the adoption of a changed projection as well as to availability changes: a newly adopted projection
+   that changes anything clears the old announcement, unless that projection itself changes availability, which
+   announces again. Tests: an 86 then a price-only change (cleared); an 86 then an archive (cleared); an 86 then an empty
+   projection (cleared, beside the empty-catalog message); an 86 then an unchanged poll (kept). *Red:* the current code
+   keeps it on the price-only change.
+3. **F3, the band's place in the no-grid states.** The 72px band sits at the menu's bottom edge whatever body is drawn:
+   loading, both first-read failures, the empty catalog and a populated grid. Anchor it independently of the body (an
+   automatic top margin, or one growing content region). Extend `pos-catalog.spec.ts` (or a new browser case) to assert
+   the band's bottom equals the menu region's bottom and its height is 72 in those states, in both engines; the jsdom
+   test cannot measure it. *Red:* remove the anchor: the band's bottom is above the region's.
+4. **The lead's open point, not a finding:** commit `0285a34` raised the suite from 5497 to 5501 tests with no test
+   file edited by hand. The lead traces it (it needs an older checkout) and records the answer below this list; act on
+   it only if it says a case has changed meaning.
+
+**Item 4, answered by the lead.** `npx vitest list --project client` on `development` (`22be697`) and on this branch,
+compared with the two new test files left out: `money-display.test.ts` ("POS source never converts to a double")
+enumerates one case per POS source file, and commit `0285a34` added four files under `src/catalog/` (`types.ts`,
+`fixtureCatalog.ts`, `useCatalog.tsx`, `menuCopy.ts`): those are the four. Commit `8142562`'s `catalogStore.ts` adds
+a fifth, and `no-invented-values.test.ts`'s extension to `src/catalog` adds four cases per file. The only other
+differences are the two built-bundle case 27 titles, renamed with the new needles. No existing case changed meaning;
+nothing to do.
+
+Then update the Handoff in place (mark round 2), with the new `verify` and `test:e2e:all` counts, and report done. The
+lead reviews the round against these rulings; there is no second full review unless a fix goes beyond them.
 
 ## Handoff
 
