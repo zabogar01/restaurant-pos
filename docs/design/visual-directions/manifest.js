@@ -1830,3 +1830,519 @@ window.MOCKUPS.push({
 
 // DESIGN-021 states have no Paper counterpart.
 window.MOCKUPS[0].paperStates = window.MOCKUPS[0].states.filter(([state]) => !state.includes('served'));
+
+window.MOCKUPS.push({
+  "path": "back-office/users.html",
+  "title": "Staff",
+  "directions": [
+    "frost"
+  ],
+  "width": 1440,
+  "height": 900,
+  "states": [
+    [
+      "default",
+      "Active and inactive staff"
+    ],
+    [
+      "only-manager",
+      "Only the signed-in manager"
+    ],
+    [
+      "loading",
+      "Reading staff"
+    ],
+    [
+      "load-error",
+      "Staff read failed"
+    ],
+    [
+      "overflow",
+      "Long list · 64-character name and 32-character username"
+    ],
+    [
+      "create-kitchen",
+      "Create kitchen"
+    ],
+    [
+      "saving-create-kitchen",
+      "Saving · create kitchen"
+    ],
+    [
+      "saved-create-kitchen",
+      "Saved · create kitchen"
+    ],
+    [
+      "create-cashier",
+      "Create cashier"
+    ],
+    [
+      "saving-create-cashier",
+      "Saving · create cashier"
+    ],
+    [
+      "saved-create-cashier",
+      "Saved · create cashier"
+    ],
+    [
+      "create-manager",
+      "Create manager"
+    ],
+    [
+      "saving-create-manager",
+      "Saving · create manager"
+    ],
+    [
+      "saved-create-manager",
+      "Saved · create manager"
+    ],
+    [
+      "move-unchosen",
+      "Change role opened · no destination chosen"
+    ],
+    [
+      "move-kitchen-cashier",
+      "Move kitchen cashier"
+    ],
+    [
+      "saving-move-kitchen-cashier",
+      "Saving · move kitchen cashier"
+    ],
+    [
+      "saved-move-kitchen-cashier",
+      "Saved · move kitchen cashier"
+    ],
+    [
+      "move-kitchen-manager",
+      "Move kitchen manager"
+    ],
+    [
+      "saving-move-kitchen-manager",
+      "Saving · move kitchen manager"
+    ],
+    [
+      "saved-move-kitchen-manager",
+      "Saved · move kitchen manager"
+    ],
+    [
+      "move-cashier-kitchen",
+      "Move cashier kitchen"
+    ],
+    [
+      "saving-move-cashier-kitchen",
+      "Saving · move cashier kitchen"
+    ],
+    [
+      "saved-move-cashier-kitchen",
+      "Saved · move cashier kitchen"
+    ],
+    [
+      "move-cashier-manager",
+      "Move cashier manager"
+    ],
+    [
+      "saving-move-cashier-manager",
+      "Saving · move cashier manager"
+    ],
+    [
+      "saved-move-cashier-manager",
+      "Saved · move cashier manager"
+    ],
+    [
+      "move-manager-kitchen",
+      "Move manager kitchen"
+    ],
+    [
+      "saving-move-manager-kitchen",
+      "Saving · move manager kitchen"
+    ],
+    [
+      "saved-move-manager-kitchen",
+      "Saved · move manager kitchen"
+    ],
+    [
+      "move-manager-cashier",
+      "Move manager cashier"
+    ],
+    [
+      "saving-move-manager-cashier",
+      "Saving · move manager cashier"
+    ],
+    [
+      "saved-move-manager-cashier",
+      "Saved · move manager cashier"
+    ],
+    [
+      "move-former-manager",
+      "Move former manager"
+    ],
+    [
+      "saving-move-former-manager",
+      "Saving · move former manager"
+    ],
+    [
+      "saved-move-former-manager",
+      "Saved · move former manager"
+    ],
+    [
+      "pin-cashier",
+      "Pin cashier"
+    ],
+    [
+      "saving-pin-cashier",
+      "Saving · pin cashier"
+    ],
+    [
+      "saved-pin-cashier",
+      "Saved · pin cashier"
+    ],
+    [
+      "pin-manager",
+      "Pin manager"
+    ],
+    [
+      "saving-pin-manager",
+      "Saving · pin manager"
+    ],
+    [
+      "saved-pin-manager",
+      "Saved · pin manager"
+    ],
+    [
+      "password-manager",
+      "Password manager"
+    ],
+    [
+      "saving-password-manager",
+      "Saving · password manager"
+    ],
+    [
+      "saved-password-manager",
+      "Saved · password manager"
+    ],
+    [
+      "own-password",
+      "Own password"
+    ],
+    [
+      "saving-own-password",
+      "Saving · own password"
+    ],
+    [
+      "saved-own-password",
+      "Saved · own password"
+    ],
+    [
+      "own-pin",
+      "Own pin"
+    ],
+    [
+      "saving-own-pin",
+      "Saving · own pin"
+    ],
+    [
+      "saved-own-pin",
+      "Saved · own pin"
+    ],
+    [
+      "classification-switch",
+      "Classification changed · name kept, credentials empty"
+    ],
+    [
+      "duplicate-pin-create-cashier",
+      "PIN in use · create cashier"
+    ],
+    [
+      "duplicate-pin-create-manager",
+      "PIN in use · create manager"
+    ],
+    [
+      "duplicate-pin-move-kitchen-cashier",
+      "PIN in use · move kitchen cashier"
+    ],
+    [
+      "duplicate-pin-move-kitchen-manager",
+      "PIN in use · move kitchen manager"
+    ],
+    [
+      "duplicate-pin-pin-cashier",
+      "PIN in use · pin cashier"
+    ],
+    [
+      "duplicate-pin-pin-manager",
+      "PIN in use · pin manager"
+    ],
+    [
+      "duplicate-pin-own-pin",
+      "PIN in use · own pin"
+    ],
+    [
+      "duplicate-username-create-manager",
+      "Username in use · create manager"
+    ],
+    [
+      "duplicate-username-move-cashier-manager",
+      "Username in use · move cashier manager"
+    ],
+    [
+      "duplicate-username-move-kitchen-manager",
+      "Username in use · move kitchen manager"
+    ],
+    [
+      "wrong-password-own-password",
+      "wrong password · own-password"
+    ],
+    [
+      "throttled-own-password",
+      "throttled · own-password"
+    ],
+    [
+      "cooldown-started-own-password",
+      "Wrong password starts cooldown · own-password"
+    ],
+    [
+      "wrong-password-own-pin",
+      "wrong password · own-pin"
+    ],
+    [
+      "throttled-own-pin",
+      "throttled · own-pin"
+    ],
+    [
+      "cooldown-started-own-pin",
+      "Wrong password starts cooldown · own-pin"
+    ],
+    [
+      "deactivate-cashier",
+      "Confirm deactivation · cashier"
+    ],
+    [
+      "deactivated-cashier",
+      "Deactivated · cashier"
+    ],
+    [
+      "deactivate-manager",
+      "Confirm deactivation · manager"
+    ],
+    [
+      "deactivated-manager",
+      "Deactivated · manager"
+    ],
+    [
+      "deactivate-kitchen",
+      "Confirm deactivation · kitchen"
+    ],
+    [
+      "deactivated-kitchen",
+      "Deactivated · kitchen"
+    ],
+    [
+      "reactivate-cashier",
+      "Reactivating · cashier"
+    ],
+    [
+      "reactivated-cashier",
+      "Reactivated · cashier"
+    ],
+    [
+      "reactivate-manager",
+      "Reactivating · manager"
+    ],
+    [
+      "reactivated-manager",
+      "Reactivated · manager"
+    ],
+    [
+      "reactivate-kitchen",
+      "Reactivating · kitchen"
+    ],
+    [
+      "reactivated-kitchen",
+      "Reactivated · kitchen"
+    ],
+    [
+      "reactivate-pin-needed",
+      "Reactivation refused · a new PIN is needed"
+    ],
+    [
+      "saving-reactivate-pin",
+      "Saving reactivation with a new PIN"
+    ],
+    [
+      "saved-reactivate-pin",
+      "Reactivated with a new PIN"
+    ],
+    [
+      "failure",
+      "Failure"
+    ],
+    [
+      "not-found",
+      "Not found"
+    ],
+    [
+      "user-changed",
+      "User changed"
+    ],
+    [
+      "user-changed-read-failed",
+      "Person changed · reread failed"
+    ],
+    [
+      "own-account",
+      "Own-account command refused"
+    ],
+    [
+      "unknown-pin-cashier",
+      "Unknown outcome · pin-cashier"
+    ],
+    [
+      "unknown-password-manager",
+      "Unknown outcome · password-manager"
+    ],
+    [
+      "unknown-move-cashier-manager",
+      "Unknown outcome · move-cashier-manager"
+    ],
+    [
+      "unknown-move-applied",
+      "Unknown move · reread shows the new classification"
+    ],
+    [
+      "unknown-own-password",
+      "Unknown outcome · own-password"
+    ],
+    [
+      "unknown-read-failed",
+      "Unknown reset · list could not be refreshed"
+    ],
+    [
+      "pending-deactivate",
+      "Pending · deactivate"
+    ],
+    [
+      "unknown-deactivate",
+      "Unknown · deactivate"
+    ],
+    [
+      "failure-deactivate",
+      "Failure · deactivate"
+    ],
+    [
+      "pending-reactivate",
+      "Pending · reactivate"
+    ],
+    [
+      "unknown-reactivate",
+      "Unknown · reactivate"
+    ],
+    [
+      "failure-reactivate",
+      "Failure · reactivate"
+    ],
+    [
+      "partial",
+      "Saved while full staff read still fails"
+    ],
+    [
+      "unsaved",
+      "Stay or Discard"
+    ],
+    [
+      "unsaved-logout",
+      "Log out with a draft"
+    ],
+    [
+      "leave-pending",
+      "Leave while saving"
+    ],
+    [
+      "leave-unknown",
+      "Leave after unknown outcome"
+    ],
+    [
+      "reauth",
+      "M-6 over inert draft"
+    ],
+    [
+      "bo01-draft",
+      "BO-01 with isolated draft"
+    ],
+    [
+      "draft-restored",
+      "Same manager returns · credential fields empty"
+    ],
+    [
+      "reauth-decision",
+      "M-6 over departure decision"
+    ],
+    [
+      "bo01-decision",
+      "BO-01 with departure held"
+    ],
+    [
+      "reauth-confirm",
+      "Session gate over deactivation"
+    ],
+    [
+      "bo01-confirm",
+      "Session gate over deactivation"
+    ],
+    [
+      "invalid-name-empty",
+      "Local refusal · name-empty"
+    ],
+    [
+      "invalid-name-long",
+      "Local refusal · name-long"
+    ],
+    [
+      "invalid-name-control",
+      "Local refusal · name-control"
+    ],
+    [
+      "invalid-pin-empty",
+      "Local refusal · pin-empty"
+    ],
+    [
+      "invalid-pin-short",
+      "Local refusal · pin-short"
+    ],
+    [
+      "invalid-pin-format",
+      "Local refusal · pin-format"
+    ],
+    [
+      "invalid-username-empty",
+      "Local refusal · username-empty"
+    ],
+    [
+      "invalid-username-short",
+      "Local refusal · username-short"
+    ],
+    [
+      "invalid-username-long",
+      "Local refusal · username-long"
+    ],
+    [
+      "invalid-username-format",
+      "Local refusal · username-format"
+    ],
+    [
+      "invalid-password-short",
+      "Local refusal · password-short"
+    ],
+    [
+      "invalid-password-long",
+      "Local refusal · password-long"
+    ],
+    [
+      "invalid-currentPassword-empty",
+      "Local refusal · currentPassword-empty"
+    ],
+    [
+      "invalid-currentPassword-long",
+      "Local refusal · currentPassword-long"
+    ]
+  ]
+});
