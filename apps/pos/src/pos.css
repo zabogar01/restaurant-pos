@@ -859,6 +859,8 @@ button.menu-tile:not([aria-disabled="true"]) {
 /* DESIGN-021's fixed band at the menu's bottom edge: 72px, reserved when empty. */
 .menu-status {
   flex: none;
+  /* Whatever body is drawn above it (a grid, a loading block, a failure, the empty message), the band takes the bottom edge. */
+  margin-top: auto;
   height: var(--frost-action-height);
   box-sizing: border-box;
   padding: var(--frost-totals-padding);

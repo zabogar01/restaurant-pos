@@ -65,6 +65,7 @@ test('P1. an 86 made in the back office reaches the POS tile in two seconds of p
   const band = pos.locator('.menu-status');
   const bandBox = (await band.boundingBox())!;
   expect(bandBox.height).toBe(72);
+  await expectBandAtBottom(pos);
   const reads = catalogReadsOf(till, pos, CATALOG_REVISION);
 
   // 3. Mark one item 86 from its BO-03 row. The tile is still enabled: only the poll can bring it.
@@ -199,4 +200,50 @@ test('P4. R1: the longest name and the largest price together keep the price lin
   });
   expect(lines.clamp).toBe('2');
   expect(lines.height).toBeLessThanOrEqual(2 * lines.lineHeight + 1);
+});
+
+// Round 2, F3 (DESIGN-021 rule 5): the 72px band sits at the menu region's bottom edge whatever body is
+// drawn. jsdom cannot measure it, so the geometry is read here, for the states that have no grid too.
+async function expectBandAtBottom(pos: import('@playwright/test').Page): Promise<void> {
+  const band = pos.locator('.menu-status');
+  await expect(band).toHaveCount(1);
+  const box = (await band.boundingBox())!;
+  const region = (await pos.locator('.order-screen__menu').boundingBox())!;
+  expect(box.height).toBe(72);
+  expect(Math.abs(box.y + box.height - (region.y + region.height))).toBeLessThanOrEqual(1);
+}
+
+test('P5. the band is at the menu region’s bottom edge when the catalog is empty', async ({ world, twoProfiles }) => {
+  const cashier = await world.people.cashier();
+  const pos = twoProfiles.b.page;
+  await openPosOrder(pos, cashier);
+  await expect(pos.locator('#menu-empty-catalog')).toBeVisible();
+  await expectBandAtBottom(pos);
+});
+
+test('P6. the band is at the bottom edge while the first read is loading', async ({ world, twoProfiles }) => {
+  const cashier = await world.people.cashier();
+  const pos = twoProfiles.b.page;
+  const never = new Promise<void>(() => {});
+  await pos.route('**/api/pos/catalog/menu', async () => never);
+  await openPosOrder(pos, cashier);
+  await expect(pos.locator('.menu-loading')).toBeVisible();
+  await expectBandAtBottom(pos);
+});
+
+test('P7. the band is at the bottom edge in both first-read failures', async ({ world, twoProfiles }) => {
+  const cashier = await world.people.cashier();
+  const pos = twoProfiles.b.page;
+  // A read that fails while the health read answers: the general failure.
+  await pos.route('**/api/pos/catalog/menu', (route) => route.abort());
+  await openPosOrder(pos, cashier);
+  await expect(pos.locator('[data-action="served-retry"]')).toBeVisible();
+  const general = await pos.locator('.menu-area .notice__title').innerText();
+  await expectBandAtBottom(pos);
+
+  // With the health read refused too, the next poll finds the system unavailable: the other variant.
+  await pos.route('**/api/health', (route) => route.abort());
+  await pos.clock.runFor(2_000);
+  await expect.poll(() => pos.locator('.menu-area .notice__title').innerText()).not.toBe(general);
+  await expectBandAtBottom(pos);
 });
