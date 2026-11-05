@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-11-05: **#169 S7b1 and #170 S7b2 merged**; `development` at `99a734b`; dev `pos` at `0014`. **S7b3 PR #171 open**
-(owner: push). Lead branch pushed. Nothing running. Narrative: [journal/2026-11-04.md](journal/2026-11-04.md).
+(owner: push). Lead branch pushed. **S8a written.** Nothing running. Narrative: [journal/2026-11-04.md](journal/2026-11-04.md).
 
 ## Phase and gates
 
@@ -56,8 +56,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **PHASE1-S7b3 complete, PR #171** (`df215e9`, against `development`, its own 8 commits). Codex: 3 findings
   (`c6b9e55`; F1 P1: a preset changed under an open approval was applied with its new value), fixed in round 2 `dd1c1d2`,
   lead-reviewed: 158 / 5743, e2e:all 132, R1 mutations red. `shown` optional (noted). Owner looks before merge.
-- **S7b3's lead rulings 1-6** (in its task file): presets from the catalog store in both modes, `PRESETS` fixture-only,
-  served M-3 vs the reviewed fixture picker, the gated label, the decimal comma. `base: agent/phase1-s7b2`; Codex reviews.
+- **PHASE1-S8a written:** C3 §1-3, §5-8 and *For the lead* S8a copied verbatim; lead rulings 1-8 (`0015`, C3's three
+  readings accepted, `users.ts`, `DUPLICATE` details users-only, audit rollback by privilege not a seam, script output
+  unchanged, client declarations only, e2e run). `touches: identity, audit, boundaries`.
 - **For S8c (from DESIGN-023):** FR-B3's own-PIN words (every other session ends); a Chrome/Firefox save-prompt check (F3).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
@@ -141,6 +142,7 @@ Nothing here is decided. Detail is where each line points.
 ## Next up
 
 1. **After #171 merges:** fetch, fast-forward; remove `wt/PHASE1-S7b3`, its `runs/` and evidence.
-2. **Next slice, S8a** (users server, from C3): write its task file on the owner's word.
+2. **S8a written** (`.agent/tasks/PHASE1-S8a-users-server.md`, untracked in the kit; base `development`; dry run clean,
+   Sonnet, caveman off, Codex reviews): dispatch on the owner's word. Then S8b from C3 *For the lead* S8b.
 3. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
