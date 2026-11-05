@@ -34,10 +34,12 @@ export type OrderLine = {
   quantity: number;
   name: string;
   /**
-   * The menu item this line is for (`MENU_ITEMS`), which is what makes the
-   * line's availability knowable: FR-E4 blocks the fire on a PENDING line
-   * "holding an item that is 86'd", and the unavailability fact lives on the
-   * menu (`MENU_FIXTURES[state].eightySixed`). fire.ts reads the two together.
+   * The menu item this line is for, which is what makes the line's
+   * availability knowable: FR-E4 blocks the fire on a PENDING line "holding an
+   * item that is 86'd", and the unavailability fact lives on the catalog (the
+   * served list, or in fixture mode the fixture menu's `eightySixed`). fire.ts
+   * reads the two together. A line is a snapshot: a fixture line's id is a slug
+   * such as `steak`, a served item's a UUID, so the two never match.
    *
    * The identification is the artifact's own — its grid prices Steak at
    * 240.000 and its pending line is a Steak at 240.000 — so nothing is
@@ -1058,4 +1060,17 @@ export function orderViewFrom(search: string): OrderView {
   const origin = params.get('from') as OrderState | null;
   const from = state.startsWith('sheet-item-') && origin && origin in ITEM_SHEET_ORIGINS ? origin : undefined;
   return { state, ...(gone && { gone }), ...(from && { from }) };
+}
+
+/**
+ * The view-level facts an open item sheet takes from the state it was opened
+ * from (`view.from`), in one place so a new one cannot be missed: an item
+ * sheet's own fixture states none of them, and reading it would drop a lock or
+ * hide the application-wide incident banner (FR-E3) behind a sheet. Anything
+ * view-level that is *about the place, not the sheet* is read here, never as
+ * `X[view.state]`. The menu's own 86s are the catalog's (catalog/useCatalog.tsx).
+ */
+export function originFacts(view: OrderView) {
+  const origin = view.from ?? view.state;
+  return { incident: ORDER_FIXTURES[origin].incident, lock: ORDER_FIXTURES[origin].lock };
 }

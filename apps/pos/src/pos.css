@@ -469,6 +469,10 @@ button.order-line__target {
   display: block;
   font-size: var(--frost-text-15);
   font-weight: var(--frost-weight-medium);
+  /* R1 (DESIGN-021): the whole name, never ellipsized or clamped. A name with no space (64 code points of
+   * one letter) breaks inside the word instead, and the body beside it may shrink so the quantity, the
+   * amount and the trailing slot keep their places. */
+  overflow-wrap: anywhere;
 }
 
 .order-line__detail {
@@ -569,6 +573,13 @@ button.order-line__target {
   padding: var(--frost-actions-padding);
   border-top: var(--frost-divider-stroke);
   background: var(--frost-elevated);
+}
+
+/* Why the four are inert on an empty order: a line under them, across both columns. */
+.order-actions__reason {
+  grid-column: 1 / -1;
+  font-size: var(--frost-text-13);
+  color: var(--frost-muted);
 }
 
 .action {
@@ -672,17 +683,20 @@ button.order-line__target:active,
 .menu-categories {
   width: var(--frost-category-width);
   flex: none;
-  overflow: hidden;
+  overflow-y: auto;
   background: var(--frost-elevated);
   border-right: var(--frost-divider-stroke);
 }
 
+/* The row's 72px is a minimum: a served name wraps in full and the row grows (DESIGN-021 round 2). */
 .menu-category {
   width: 100%;
-  height: var(--frost-category-height);
+  min-height: var(--frost-category-height);
+  flex: none;
   display: flex;
   align-items: center;
-  padding: 0 var(--frost-space-4);
+  padding: var(--frost-space-3) var(--frost-space-4);
+  overflow-wrap: anywhere;
   border: 0;
   border-bottom: var(--frost-divider-stroke);
   background: none;
@@ -715,7 +729,17 @@ button.order-line__target:active,
   gap: var(--frost-menu-gap);
   padding: var(--frost-menu-padding);
   align-content: start;
-  overflow: hidden;
+  /* The grid owns the scrolling and the status band below it is not part of it, so a band that
+   * shows or clears text cannot change the grid's height or move its end-of-scroll tiles. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.menu-grid__empty {
+  grid-column: 1 / -1;
+  padding: var(--frost-space-4);
+  color: var(--frost-muted);
 }
 
 .menu-tile {
@@ -740,10 +764,29 @@ button.menu-tile:not([aria-disabled="true"]) {
   cursor: pointer;
 }
 
+/* R1: the name wraps and is clamped after two lines (lines, not characters; the type never
+ * shrinks), and the price is its own bottom line, never truncated or pushed out of the 150x96 tile. */
+.menu-tile__name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.menu-tile__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--frost-space-1);
+}
+
 .menu-tile__price {
   font-size: var(--frost-text-15);
   font-weight: var(--frost-weight-regular);
   color: var(--frost-muted);
+  white-space: nowrap;
+  font-variant-numeric: var(--frost-numeric-variant);
 }
 
 /* 86'd (ruling C-3): the same box in the same slot, greyed and dashed. Dashed
@@ -815,6 +858,34 @@ button.menu-tile:not([aria-disabled="true"]) {
  * do; the lock screen's notice keeps its own margin. */
 .menu-notice {
   margin: var(--frost-space-3) var(--frost-space-4);
+}
+
+/* DESIGN-021's fixed band at the menu's bottom edge: 72px, reserved when empty. */
+.menu-status {
+  flex: none;
+  /* Whatever body is drawn above it (a grid, a loading block, a failure, the empty message), the band takes the bottom edge. */
+  margin-top: auto;
+  height: var(--frost-action-height);
+  box-sizing: border-box;
+  padding: var(--frost-totals-padding);
+  background: var(--frost-group);
+  border-top: var(--frost-control-stroke);
+  font-size: var(--frost-text-14);
+}
+
+/* The empty catalog: the message the order panel's empty block is the sibling of. No control. */
+.menu-empty {
+  margin: var(--frost-space-5);
+  padding: var(--frost-space-8);
+  border: 1px dashed var(--frost-control-border);
+  border-radius: var(--frost-radius-surface);
+  background: var(--frost-surface);
+  color: var(--frost-muted);
+  text-align: center;
+}
+
+.menu-empty__title {
+  font-weight: var(--frost-weight-semibold);
 }
 
 /* The route out of a lock: a compact action, 48px at 13px (docs/DESIGN.md,
@@ -1082,6 +1153,79 @@ button.menu-category:focus-visible:active {
 
 .sheet__preview {
   margin-top: var(--frost-space-6);
+}
+
+/* M-2 over a served item (PHASE1-S7b2; DESIGN-021 rule 8, frost-served-catalog.css). The body alone
+ * scrolls. The live notice, the unit and the line total sit in a band between the body and the footer, so
+ * a notice arriving shrinks the body without moving its top or its scroll position, and the footer's
+ * quantity keys and Add never move: it always reserves one reason line, so clearing the reason moves
+ * nothing. A long item name wraps in the heading, and a long option name wraps in its button. */
+.sheet__band {
+  flex: none;
+  padding: var(--frost-space-3) var(--frost-space-5);
+  border-top: var(--frost-divider-stroke);
+}
+
+.sheet__live {
+  min-height: calc(var(--frost-text-14) * var(--frost-leading-body));
+  font-size: var(--frost-text-14);
+  overflow-wrap: anywhere;
+}
+
+.sheet__live:not(:empty) {
+  margin-bottom: var(--frost-space-2);
+  padding: var(--frost-space-2) var(--frost-space-3);
+  background: var(--frost-group);
+  border: var(--frost-control-stroke);
+}
+
+.sheet-figure {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--frost-space-4);
+}
+
+.sheet--served .sheet-total {
+  margin-top: var(--frost-space-3);
+}
+
+.sheet--served .sheet__band .sheet__note {
+  overflow-wrap: anywhere;
+}
+
+.sheet--served .sheet__head {
+  height: auto;
+  min-height: var(--frost-sheet-header-height);
+  align-items: flex-start;
+}
+
+.sheet--served .sheet__title {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.sheet--served .sheet__aside {
+  flex: none;
+  white-space: nowrap;
+}
+
+.sheet--served .sheet-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sheet--served .sheet-option {
+  height: auto;
+  min-height: var(--frost-action-height);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* The commit reason: the footer's one reserved line, present when empty. */
+.sheet__reason {
+  grid-column: 1 / -1;
+  min-height: calc(var(--frost-text-15) * var(--frost-leading-body));
 }
 
 .sheet__note {

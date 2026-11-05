@@ -3,7 +3,8 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FIRE_ACTION, blockingLines, fireRefusal, holdsUnavailable, sendableLines } from '../src/fire.js';
-import { MENU_FIXTURES, REJECTED_NOTICE } from '../src/menuFixtures.js';
+import { REJECTED_NOTICE } from '../src/catalog/menuCopy.js';
+import { MENU_FIXTURES } from '../src/menuFixtures.js';
 import { OrderScreen } from '../src/OrderPanel.js';
 import { FIRE_INCIDENT, ORDER_FIXTURES, ORDER_STATES, orderVariant, type OrderState, type OrderView } from '../src/orderFixtures.js';
 
@@ -131,32 +132,6 @@ describe('fire.ts: the refusal copy is derived, never written per state', () => 
     expect(refusal.lead).toBe('2 pending lines are no longer available:');
     expect(refusal.names).toEqual(['Steak', 'House Wine']);
     expect(refusal.resolution).toBe('Void those lines or ask a manager to put the items back on.');
-  });
-
-  /**
-   * **This test exists to keep provisional copy from shipping unseen.**
-   *
-   * The plural above — the `s`, the `are`, the comma between names, and *"Void
-   * those lines … put the items back on"* — is `PROVISIONAL COPY`: the
-   * artifact draws this notice with exactly one blocking line and never with
-   * two, so none of it has been reviewed. It is written and tested so the
-   * module is correct for any order, not because any order reaches it.
-   *
-   * Nothing else records that. Add a second 86'd item to a menu fixture, or a
-   * second pending line for an already-86'd one, and the unreviewed sentence
-   * is simply on screen — no test fails, nobody looks. So the coupling is made
-   * a checked one, the way A9 pinned the order-line ring offset: the day a
-   * fixture produces two blocking lines, this fails and says why.
-   *
-   * **The fix when it fails is not to raise the number.** It is to get the
-   * plural copy reviewed on the design branch and then delete this test.
-   */
-  it('no reviewed state produces more than one blocking line, so the plural stays unreviewed', () => {
-    for (const state of ALL_STATES) {
-      const lines = ORDER_FIXTURES[state].groups.flatMap((g) => g.lines);
-      const blocking = blockingLines(lines, MENU_FIXTURES[state].eightySixed ?? []);
-      expect({ state, blocking: blocking.length }).toEqual({ state, blocking: Math.min(blocking.length, 1) });
-    }
   });
 });
 

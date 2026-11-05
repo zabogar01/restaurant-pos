@@ -294,6 +294,10 @@ export function createRealSession(deps: Deps = {}): SessionStore {
 
   return {
     kind: 'real',
+    catalogReads: {
+      revision: () => api['/api/pos/catalog/revision'](),
+      menu: () => api['/api/pos/catalog/menu'](),
+    },
     getSnapshot: () => snapshot,
     subscribe(listener) {
       listeners.add(listener);

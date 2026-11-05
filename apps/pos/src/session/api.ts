@@ -22,7 +22,7 @@ export function posApi(client: ApiClient): PosApi {
     '/api/pos/auth/me': () => client.request(ROUTES.posMe),
     '/api/pos/auth/activity': () => client.request(ROUTES.posActivity),
     '/api/pos/auth/release': () => client.request(ROUTES.posRelease),
-    // Unused until S7b1 builds the catalog store on them.
+    // The catalog store's two reads (catalog/catalogStore.ts), handed to it by the session store.
     '/api/pos/catalog/revision': () => client.request(ROUTES.posCatalogRevision),
     '/api/pos/catalog/menu': () => client.request(ROUTES.posCatalogMenu),
   };

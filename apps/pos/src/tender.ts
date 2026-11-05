@@ -7,6 +7,16 @@ export const CASH_CHANGE_LIMIT: Money = 9_999_999n;
 export const SINGLE_TENDER_LIMIT: Money = 99_999_999n;
 
 /**
+ * FR-M5's other two monetary ceilings, as the Phase 1 stand-in checks them (consult C4 D1): the most
+ * one line may total, and the most an order's total may be, after its discount and service charge.
+ * The same value as the single-tender limit and written separately, because they are different rules
+ * that happen to agree: raising one must not move the others. `ceilingFor` (orderStore.ts) is the one
+ * function the item sheet and the store both ask.
+ */
+export const LINE_TOTAL_LIMIT: Money = 99_999_999n;
+export const ORDER_TOTAL_LIMIT: Money = 99_999_999n;
+
+/**
  * The most a method may be keyed against a balance (FR-G3, FR-G4, FR-M5,
  * B-5). Cash is the only exception: capped at the balance plus the change
  * limit, itself capped at the single-tender limit. Every other method,

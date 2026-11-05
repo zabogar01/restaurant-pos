@@ -5,15 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import {
-  CATALOG_NOTICE,
-  itemDestination,
-  LOADING_LABEL,
-  LOCK_NOTICE,
-  MENU_CATEGORIES,
-  MENU_ITEMS,
-  itemsIn,
-} from '../src/menuFixtures.js';
+import { CATALOG_NOTICE, LOADING_LABEL, LOCK_NOTICE } from '../src/catalog/menuCopy.js';
+import { itemDestination, MENU_CATEGORIES, MENU_ITEMS, itemsIn } from '../src/menuFixtures.js';
 import { formatAmount } from '../src/money.js';
 import { OrderScreen } from '../src/OrderPanel.js';
 import { FIRE_INCIDENT, LOCK_TAG, ORDER_STATES, type OrderState } from '../src/orderFixtures.js';

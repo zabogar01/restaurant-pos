@@ -2,10 +2,10 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { MENU_CATEGORIES, MENU_FIXTURES, MENU_ITEMS, originFacts } from '../src/menuFixtures.js';
+import { MENU_CATEGORIES, MENU_FIXTURES, MENU_ITEMS, menuFixtureFor } from '../src/menuFixtures.js';
 import { formatAmount } from '../src/money.js';
 import { OrderScreen } from '../src/OrderPanel.js';
-import { ITEM_SHEET_ORIGINS, ORDER_STATES, type OrderState, type OrderView } from '../src/orderFixtures.js';
+import { ITEM_SHEET_ORIGINS, ORDER_STATES, originFacts, type OrderState, type OrderView } from '../src/orderFixtures.js';
 
 // FE-023: a category press selects that category, and the grid shows its items.
 
@@ -44,13 +44,14 @@ const EXPECTED = {
   sides: ['salad', 'soup', 'fries', 'rings'],
   drinks: ['soda', 'water', 'coffee', 'beer', 'wine'],
   desserts: ['cheesecake'],
-} as const;
+} as const satisfies Record<string, ReadonlyArray<string>>;
+const EXPECTED_BY_ID: Record<string, ReadonlyArray<string>> = EXPECTED;
 
 describe('criterion 1: each category shows exactly its items', () => {
   it.each(MENU_CATEGORIES.map((c) => [c.id, c.name] as const))('%s', (id, name) => {
     render('default');
     press(rail(name));
-    expect(gridIds()).toEqual(EXPECTED[id]);
+    expect(gridIds()).toEqual(EXPECTED_BY_ID[id]);
   });
 
   it('a fresh load starts on Mains', () => {
@@ -219,9 +220,9 @@ describe('criterion 7: what applies to a tile applies in every category', () => 
         expect(host.querySelector('.menu-category--selected')!.textContent).toBe(c.name);
         continue;
       }
-      expect(gridIds()).toEqual(EXPECTED[c.id]);
+      expect(gridIds()).toEqual(EXPECTED_BY_ID[c.id]);
       const off = tiles().filter((t) => t.classList.contains('menu-tile--off')).map((t) => t.dataset.item);
-      expect(off).toEqual(EXPECTED[c.id].filter((id) => facts.menu.eightySixed?.includes(id)));
+      expect(off).toEqual(EXPECTED_BY_ID[c.id]!.filter((id) => menuFixtureFor({ state }).eightySixed?.includes(id)));
     }
   });
 
@@ -234,7 +235,7 @@ describe('criterion 7: what applies to a tile applies in every category', () => 
         continue;
       }
       const off = tiles().filter((t) => t.classList.contains('menu-tile--off')).map((t) => t.dataset.item);
-      expect(off).toEqual(EXPECTED.mains.filter((id) => facts.menu.eightySixed?.includes(id)));
+      expect(off).toEqual(EXPECTED.mains.filter((id) => menuFixtureFor({ state: 'sheet-item-water', from: origin }).eightySixed?.includes(id)));
     }
   });
 });

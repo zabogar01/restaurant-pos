@@ -1,3 +1,5 @@
+import type { CatalogReads } from '../catalog/types.js';
+
 // The POS session as a screen sees it (ARCH-014 question 5). Every state and
 // event of that table is one value here; nothing in a screen reasons about a
 // server code.
@@ -41,6 +43,12 @@ export type SessionSnapshot =
 export interface SessionStore {
   /** Which source this is. A screen may differ in what it draws, never in what it asks. */
   readonly kind: 'fixture' | 'real';
+  /**
+   * The two catalog reads over this session's one core instance (consult C4 item 3):
+   * exactly the revision and the menu, so the catalog store has no way to reach `activity`.
+   * Absent on the fixture session, which makes no request.
+   */
+  readonly catalogReads?: CatalogReads;
   getSnapshot(): SessionSnapshot;
   subscribe(listener: () => void): () => void;
   /** Reads the session once, and begins listening. Returns the stop. Idempotent in its read. */

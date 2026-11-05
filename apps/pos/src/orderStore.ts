@@ -7,10 +7,12 @@ import { PRESETS } from './discountFixtures.js';
 import { voidLine as applyVoidLine, voidOrder as applyVoidOrder, type VoidRefusal, type VoidResult, type VoidThrough } from './voidChange.js';
 import { refundOrder, type RefundRecord, type RefundRequest, type RefundResult } from './refund.js';
 import { fireOrder } from './fire.js';
-import { DEFAULT_CATEGORY, MENU_ITEMS, originFacts, type CategoryId } from './menuFixtures.js';
+import { unavailableAt, useCatalogStore } from './catalog/useCatalog.js';
+import { LINE_TOTAL_LIMIT, ORDER_TOTAL_LIMIT } from './tender.js';
 import {
   ORDER_FIXTURES,
   orderIdOf,
+  originFacts,
   type Modifier,
   type OrderState,
   type OrderLine,
@@ -60,13 +62,31 @@ type StoreState = {
   voided?: { voidedAt: string };
 };
 
+/**
+ * A line as the sheet hands it to the store: a SNAPSHOT (Q14, B-8, FR-D4). The names and the component deltas
+ * of what the cashier chose, and the base price the sheet showed, are copied here; the store resolves the unit
+ * from them and reads nothing back from any menu. Option ids are deliberately not carried: a line is not a
+ * reference to anything that can change.
+ */
 export type NewLine = {
   /** Required, never optional: a line the store creates always knows its item (fire.ts's FR-E4 depends on it). */
   itemId: string;
   name: string;
   quantity: number;
+  /** The item's base price at the press, as the sheet displayed it. */
+  basePrice: Money;
+  /** The chosen variant and modifiers: name and delta. A zero delta is written as the bare name. */
   modifiers?: ReadonlyArray<Modifier>;
 };
+
+/**
+ * Why `addLine` added nothing. All four are refusals the screen should never offer: the sheet turns Add off
+ * for each, so the store's check is reached only if the screen is wrong, which is exactly why it exists.
+ */
+export type AddRefusal = 'closed' | 'locked' | 'unavailable' | 'over-limit';
+
+/** What the store answers an add with: the refusal, or nothing. */
+export type AddOutcome = { refused: AddRefusal } | { refused?: undefined };
 
 export type OrderStore = {
   order: ShownOrder;
@@ -75,10 +95,20 @@ export type OrderStore = {
    * not in the URL: it has the store's lifetime, so an item sheet opening and
    * closing never drops the cashier back on Mains. A fresh mount starts there.
    */
-  category: CategoryId;
-  selectCategory: (category: CategoryId) => void;
-  /** Appends a PENDING line, priced from `MENU_ITEMS`. Mutation 1 (item sheet's *Add to order*). */
-  addLine: (line: NewLine) => void;
+  category: string | undefined;
+  selectCategory: (category: string) => void;
+  /**
+   * Appends a PENDING line from a snapshot. Mutation 1 (item sheet's *Add to order*).
+   *
+   * A STAND-IN for the server's add-line command, which Phase 2 builds (the same way `discountChange.ts` stands
+   * in for the discount command). It refuses what the server will: a closed order, a lock (this tab's payment
+   * session or another client's lease; ARCH-004's gap), an 86'd item, and a line or order past FR-M5's ceilings.
+   * The availability check reads the catalog store at the press and controls nothing in a browser: the server's
+   * refusal is the control (ADR-012 rule 12). A refusal changes nothing and returns the same book (B-20).
+   * Applied through the functional updater, and the ref is advanced as `changeDiscount` advances it, so a
+   * second call in the same tick sees the first.
+   */
+  addLine: (line: NewLine) => AddOutcome;
   /** Drops a line outright, from any group, whether or not a fixture ever pre-figured it. Mutation 3 (a row's ×). */
   removeLine: (lineId: string) => void;
   /**
@@ -142,12 +172,6 @@ export type VoidOutcome = { refused: VoidRefusal } | { refused?: undefined; canc
 /** What the store answers a discount change with: the refusal, or nothing. */
 export type DiscountOutcome = { refused: DiscountRefusal } | { refused?: undefined };
 
-function priceOf(itemId: string): Money {
-  const item = MENU_ITEMS.find((i) => i.id === itemId);
-  if (!item) throw new Error(`no menu item for itemId ${itemId}`);
-  return item.price;
-}
-
 /** FR-C2: the unit price is `max(0, base + modifier deltas)`, and a line's amount is that unit × quantity. The clamp is on the unit, never the total. */
 function resolveUnit(price: Money, modifiers: ReadonlyArray<Modifier> | undefined): Money {
   const unit = (modifiers ?? []).reduce((sum, m) => sum + (m.delta ?? 0n), price);
@@ -162,6 +186,28 @@ function resolveUnit(price: Money, modifiers: ReadonlyArray<Modifier> | undefine
  */
 export function unitOf(l: OrderLine): Money {
   return l.unitPrice ?? l.amount / BigInt(l.quantity);
+}
+
+/**
+ * D1, FR-M5's ceilings in the Phase 1 stand-in: the one question the item sheet, the line editor and the store
+ * all ask, so what the screen draws and what the store refuses cannot disagree. A line of `unit` × `quantity`
+ * (replacing the line `replacing`, for a quantity edit) is refused when the line itself would total more than
+ * the line limit, and otherwise when the order's total, after its discount and service charge and with this
+ * line in it, would pass the order limit. It answers which, or nothing.
+ *
+ * Removing or replacing a discount is not checked here (C4 D1): Phase 2 owns that enforcement.
+ */
+export function ceilingFor(
+  order: { groups: ReadonlyArray<RoundGroup>; applied?: DiscountSnapshot | undefined },
+  unit: Money,
+  quantity: number,
+  replacing?: string
+): 'line' | 'order' | undefined {
+  const line = unit * BigInt(quantity);
+  if (line > LINE_TOTAL_LIMIT) return 'line';
+  const others = order.groups.flatMap((g) => g.lines).filter((l) => l.id !== replacing);
+  const total = totalsFor([...others, { id: '', name: '', quantity, amount: line, status: 'pending' }], order.applied).total;
+  return total > ORDER_TOTAL_LIMIT ? 'order' : undefined;
 }
 
 function dropLine(groups: ReadonlyArray<RoundGroup>, lineId: string): ReadonlyArray<RoundGroup> {
@@ -361,7 +407,10 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
   // FE-026 rule 5: a payment lock belongs to the order the session began on, so
   // it is asked of the active order, never taken as one flag for the whole book.
   const locked = lockedOn(book.activeId);
-  const [category, selectCategory] = useState<CategoryId>(DEFAULT_CATEGORY);
+  // `undefined` is a fresh mount, which starts on the first category; the region
+  // writes the id it resolved (MenuRegion), so the selection follows the id.
+  const [category, selectCategory] = useState<string | undefined>(undefined);
+  const catalog = useCatalogStore();
   const appliedGone = useRef(view.gone);
   const nextId = useRef(0);
   const nextQuick = useRef(1);
@@ -412,49 +461,85 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
     update((prev) => ({ ...prev, groups: dropLine(prev.groups, view.gone!) }));
   }, [view.gone, view.state, locked, update]);
 
-  const addLine = useCallback((line: NewLine) => {
-    const unitPrice = resolveUnit(priceOf(line.itemId), line.modifiers);
-    const newLine: OrderLine = {
-      id: `${line.itemId}-${++nextId.current}`,
-      quantity: line.quantity,
-      name: line.name,
-      itemId: line.itemId,
-      ...(line.modifiers && line.modifiers.length > 0 && { modifiers: line.modifiers }),
-      unitPrice,
-      amount: unitPrice * BigInt(line.quantity),
-      status: 'pending',
+  const addLine = useCallback((line: NewLine): AddOutcome => {
+    // The facts are read now, at the press, as the discount reads them: both locks refuse an add, this
+    // tab's own payment session included, and the 86 list is the catalog's own at this moment, never one
+    // kept from a render (consult C4 item 5). The server's refusal is the control; this is a stand-in.
+    const { view, locked } = context.current;
+    const lockedNow = locked || originFacts(view).lock !== undefined;
+    const unavailable = unavailableAt(catalog, view);
+    const unitPrice = resolveUnit(line.basePrice, line.modifiers);
+    const id = `${line.itemId}-${nextId.current + 1}`;
+    const attempt = (order: StoreState): { refused: AddRefusal } | { order: StoreState } => {
+      if (!isOpen(order)) return { refused: 'closed' };
+      if (lockedNow) return { refused: 'locked' };
+      if (unavailable.includes(line.itemId)) return { refused: 'unavailable' };
+      if (ceilingFor(order, unitPrice, line.quantity)) return { refused: 'over-limit' };
+      const newLine: OrderLine = {
+        id,
+        quantity: line.quantity,
+        name: line.name,
+        itemId: line.itemId,
+        ...(line.modifiers && line.modifiers.length > 0 && { modifiers: line.modifiers }),
+        unitPrice,
+        amount: unitPrice * BigInt(line.quantity),
+        status: 'pending',
+      };
+      return { order: { ...order, groups: appendPending(order.groups, newLine) } };
     };
-    update((prev) => ({ ...prev, groups: appendPending(prev.groups, newLine) }));
-  }, [update]);
+    const { orders, activeId } = bookRef.current;
+    const now = orders[activeId];
+    // With no order open there is nothing to add to, which is a closed order's answer too.
+    if (!now) return { refused: 'closed' };
+    const result = attempt(now);
+    if ('refused' in result) return { refused: result.refused };
+    nextId.current += 1;
+    // The ref is advanced here as well as by the render, so a second call in the same tick reads the
+    // first one's order. The updater is the write.
+    bookRef.current = { orders: { ...orders, [activeId]: result.order }, activeId };
+    update((prev) => {
+      const next = attempt(prev);
+      return 'refused' in next ? prev : next.order;
+    });
+    return {};
+  }, [update, catalog]);
 
   const removeLine = useCallback((lineId: string) => {
     update((prev) => ({ ...prev, groups: dropLine(prev.groups, lineId) }));
   }, [update]);
 
   const setQuantity = useCallback((lineId: string, quantity: number) => {
-    update((prev) => ({ ...prev, groups: rewriteQuantity(prev.groups, lineId, quantity) }));
+    update((prev) => {
+      // D1 applies to a quantity edit too, unlike the lock (which `removeLine` and this keep until Phase 2).
+      const held = prev.groups.flatMap((g) => g.lines).find((l) => l.id === lineId);
+      if (held && ceilingFor(prev, unitOf(held), quantity, lineId)) return prev;
+      return { ...prev, groups: rewriteQuantity(prev.groups, lineId, quantity) };
+    });
   }, [update]);
 
   const fire = useCallback((firedAt: string) => {
     const { view, locked } = context.current;
     // The place's own facts, through originFacts: an item sheet draws the state
     // it was opened from, and reading `X[view.state]` would un-86 a held line.
-    const { menu, lock } = originFacts(view);
+    const { lock } = originFacts(view);
+    // The catalog's list at the press, never one kept from a render (consult C4 item 5).
+    const unavailable = unavailableAt(catalog, view);
     update((prev) => {
       const result = fireOrder(prev.groups, {
         type: prev.type ?? 'table',
-        unavailable: menu.eightySixed ?? [],
+        unavailable,
         locked: locked || lock !== undefined,
         firedAt,
       });
       return result.refused ? prev : { ...prev, groups: result.groups };
     });
-  }, [update]);
+  }, [update, catalog]);
 
   const close = useCallback((closedAt: string, drafts: ReadonlyArray<{ id: string; label: string; amount: Money }>) => {
     // The place's own facts, as the fire reads them. Only another client's lease
     // refuses a close: this tab's own payment session is how a close is reached.
-    const { menu, lock } = originFacts(context.current.view);
+    const { lock } = originFacts(context.current.view);
+    const unavailable = unavailableAt(catalog, context.current.view);
     const attempt = (order: StoreState) =>
       closeOrder(
         {
@@ -462,7 +547,7 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
           groups: order.groups,
           total: totalsFor(order.groups.flatMap((g) => g.lines), order.applied).total,
           locked: lock === 'lease',
-          unavailable: menu.eightySixed ?? [],
+          unavailable,
         },
         drafts,
         closedAt
@@ -476,7 +561,7 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
       return { ...prev, groups, closed: { closedAt: at, tenders, change } };
     });
     return true;
-  }, [update]);
+  }, [update, catalog]);
 
   const changeDiscount = useCallback((change: DiscountChange, through: DiscountThrough): DiscountOutcome => {
     // The facts are read now, at the press, as the fire reads them: both locks

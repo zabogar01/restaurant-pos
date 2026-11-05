@@ -78,7 +78,7 @@ describe('AC2: adding a line moves the total to orderTotals’ own figure', () =
     const store = mountStore({ state: 'quick' });
     expect(store.order.totals.subtotal).toBe(165_000n);
 
-    store.addLine({ itemId: 'soda', name: 'Soda', quantity: 1 });
+    store.addLine({ itemId: 'soda', name: 'Soda', basePrice: 30_000n, quantity: 1 });
 
     expect(store.order.totals.subtotal).toBe(195_000n);
     expect(store.order.totals).toEqual(orderTotals(195_000n));
@@ -87,7 +87,7 @@ describe('AC2: adding a line moves the total to orderTotals’ own figure', () =
 
   it('carries the new line’s itemId, so fire.ts can always read it (FR-E4)', () => {
     const store = mountStore({ state: 'quick' });
-    store.addLine({ itemId: 'soda', name: 'Soda', quantity: 1 });
+    store.addLine({ itemId: 'soda', name: 'Soda', basePrice: 30_000n, quantity: 1 });
     const added = store.order.groups.flatMap((g) => g.lines).find((l) => l.name === 'Soda' && l.status === 'pending');
     expect(added?.itemId).toBe('soda');
   });
@@ -161,7 +161,7 @@ describe('AC5: a quantity rewrite recomputes from the unit price and its own mod
 
   it('Add at quantity 2 with a modifier appends 2 × unit (FR-C2)', () => {
     const store = mountStore({ state: 'quick' });
-    store.addLine({ itemId: 'burger', name: 'Burger', quantity: 2, modifiers: [{ name: 'Large', delta: 20_000n }] });
+    store.addLine({ itemId: 'burger', name: 'Burger', basePrice: 100_000n, quantity: 2, modifiers: [{ name: 'Large', delta: 20_000n }] });
     const added = store.order.groups.flatMap((g) => g.lines).find((l) => l.id.startsWith('burger-'))!;
     expect(added.quantity).toBe(2);
     expect(added.amount).toBe(240_000n);
@@ -169,7 +169,7 @@ describe('AC5: a quantity rewrite recomputes from the unit price and its own mod
 
   it('clamps the unit at zero, not the total', () => {
     const store = mountStore({ state: 'quick' });
-    store.addLine({ itemId: 'soda', name: 'Soda', quantity: 3, modifiers: [{ name: 'Deal', delta: -40_000n }] });
+    store.addLine({ itemId: 'soda', name: 'Soda', basePrice: 30_000n, quantity: 3, modifiers: [{ name: 'Deal', delta: -40_000n }] });
     const added = store.order.groups.flatMap((g) => g.lines).find((l) => l.id.startsWith('soda-'))!;
     expect(added.amount).toBe(0n);
   });
@@ -181,7 +181,7 @@ describe('B-8/FR-D4: a line keeps the unit price it was added at', () => {
     const was = burger.price;
     try {
       const store = mountStore({ state: 'quick' });
-      store.addLine({ itemId: 'burger', name: 'Burger', quantity: 1, modifiers: [{ name: 'Large', delta: 20_000n }, { name: 'Extra cheese', delta: 15_000n }] });
+      store.addLine({ itemId: 'burger', name: 'Burger', basePrice: 100_000n, quantity: 1, modifiers: [{ name: 'Large', delta: 20_000n }, { name: 'Extra cheese', delta: 15_000n }] });
       (burger as { price: bigint }).price = 120_000n;
       const id = store.order.groups.flatMap((g) => g.lines).find((l) => l.id.startsWith('burger-'))!.id;
       store.setQuantity(id, 2);

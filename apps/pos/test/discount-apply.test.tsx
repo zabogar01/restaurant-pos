@@ -172,7 +172,7 @@ describe('the store writes the active order, and the totals follow (7)', () => {
 
   it('a fixed amount above the subtotal applies, and the total is 0 with the snapshot untouched (4)', () => {
     const { out } = mountStore({ state: 'quick-new' });
-    act(() => out.store.addLine({ itemId: 'soda', name: 'Soda', quantity: 1 }));
+    act(() => out.store.addLine({ itemId: 'soda', name: 'Soda', basePrice: 30_000n, quantity: 1 }));
     act(() => {
       expect(out.store.changeDiscount(PRESET('service-recovery'), 'direct')).toEqual({});
     });
@@ -250,7 +250,7 @@ describe('twice in one tick (10)', () => {
 describe('nothing chooses a discount but a press (21)', () => {
   it('a line added and a line removed leave the snapshot as it was', () => {
     const { out } = mountStore({ state: 'default' });
-    act(() => out.store.addLine({ itemId: 'burger', name: 'Burger', quantity: 1 }));
+    act(() => out.store.addLine({ itemId: 'burger', name: 'Burger', basePrice: 100_000n, quantity: 1 }));
     expect(out.store.order.applied).toBe(STAFF_MEAL);
     act(() => out.store.removeLine('steak'));
     expect(out.store.order.applied).toBe(STAFF_MEAL);
@@ -258,8 +258,8 @@ describe('nothing chooses a discount but a press (21)', () => {
 
   it('a line removed below a fixed discount leaves the snapshot unchanged and the total at 0', () => {
     const { out } = mountStore({ state: 'quick-new' });
-    act(() => out.store.addLine({ itemId: 'burger', name: 'Burger', quantity: 1 }));
-    act(() => out.store.addLine({ itemId: 'soda', name: 'Soda', quantity: 1 }));
+    act(() => out.store.addLine({ itemId: 'burger', name: 'Burger', basePrice: 100_000n, quantity: 1 }));
+    act(() => out.store.addLine({ itemId: 'soda', name: 'Soda', basePrice: 30_000n, quantity: 1 }));
     act(() => {
       out.store.changeDiscount(PRESET('service-recovery'), 'direct');
     });

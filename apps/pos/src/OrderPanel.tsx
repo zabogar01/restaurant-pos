@@ -6,7 +6,9 @@ import { DiscountSheet } from './DiscountSheets.js';
 import { EmergencyBanner } from './EmergencyBanner.js';
 import { FIRE_ACTION, blockingLines, fireRefusal, holdsUnavailable, sendableLines, type FireRefusal } from './fire.js';
 import { Icon } from './icons.js';
-import { MENU_FIXTURES, menuFixtureFor, originFacts } from './menuFixtures.js';
+import { ACTION_REASON, NO_MENU_ORDER, SHOW_BLOCKED } from './catalog/menuCopy.js';
+import { useCatalog } from './catalog/useCatalog.js';
+import { FIXTURE_ORDER_STATES } from './session/source.js';
 import { MenuRegion } from './MenuRegion.js';
 import { followClientSide } from './navigation.js';
 import { formatAmount } from './money.js';
@@ -17,6 +19,7 @@ import {
   ORDER_FIXTURES,
   ITEM_SHEET_ORIGINS,
   ORDER_STATES,
+  originFacts,
   PENDING_TAG,
   countLines,
   orderCountLabel,
@@ -35,7 +38,8 @@ import {
   type Totals,
 } from './orderFixtures.js';
 import { SHEET_FIXTURES, panelLine } from './sheetFixtures.js';
-import { SheetView } from './Sheets.js';
+import { ServedItemSheet, SheetView } from './Sheets.js';
+import type { CatalogItem } from './catalog/types.js';
 import { VOID_FIXTURES, VOID_ORDER_ACTION, panelVoid, shownOrder, type ShownOrder, type VoidSheetFixture } from './voidFixtures.js';
 import { VoidSheet, subjectOf } from './VoidSheets.js';
 
@@ -128,9 +132,15 @@ export function ControlledOrderScreen({
   /** Told on every navigate — same-screen or leaving — so the one owner of `view` above this component re-reads the URL (see `navigate` below). */
   onLocationChange: () => void;
 }) {
+  const catalog = useCatalog(view);
   const [voidOpened, setVoidOpened] = useState<VoidSheetFixture['target']>();
   const [lineOpened, setLineOpened] = useState<string>();
   const [discountOpened, setDiscountOpened] = useState(false);
+  // M-2 for a served item opens by component state (S7b2): a UUID is not an `OrderState`, and the sheet is not
+  // back-stackable (SITEMAP §1), so it writes no URL and no history entry. Holds the item as the tile showed it.
+  const [itemOpened, setItemOpened] = useState<CatalogItem>();
+  // The tile (or, once it has gone, the selected category) that takes focus when that sheet closes.
+  const itemOpener = useRef<string>();
   // FE-022: the round a press just made. `after` is the highest round before
   // it, so the effect below can tell the fire's own round from any other.
   const [firing, setFiring] = useState<{ after: number }>();
@@ -146,7 +156,21 @@ export function ControlledOrderScreen({
     setVoidOpened(undefined);
     setLineOpened(undefined);
     setDiscountOpened(false);
+    setItemOpened(undefined);
   };
+
+  /** Cancel, Escape and a successful Add all leave the view as it is and hand focus back to the tile. */
+  const closeItem = () => {
+    itemOpener.current = itemOpened?.id;
+    setItemOpened(undefined);
+  };
+  useLayoutEffect(() => {
+    const id = itemOpener.current;
+    if (itemOpened !== undefined || id === undefined) return;
+    itemOpener.current = undefined;
+    const area = device.current;
+    (area?.querySelector<HTMLElement>(`.menu-tile[data-item="${id}"]`) ?? area?.querySelector<HTMLElement>('.menu-category[aria-pressed="true"]'))?.focus();
+  }, [itemOpened]);
 
   // A location change this component did not itself cause — browser
   // Back/Forward — arrives as a new `view` prop from whichever component owns
@@ -206,7 +230,7 @@ export function ControlledOrderScreen({
   }, [store.order.groups]);
   // A line editor is for a line on the order the cashier is looking at — the
   // store's, which holds lines added since the fixture was drawn (FE-021).
-  const fixtureSheet = SHEET_FIXTURES[view.state] ?? (lineOpened !== undefined ? panelLine(lineOpened, view, store.order) : undefined);
+  const fixtureSheet = SHEET_FIXTURES[view.state] ?? catalog.itemSheetFor(view.state) ?? (lineOpened !== undefined ? panelLine(lineOpened, view, store.order) : undefined);
   // An item sheet opened from a tile returns to where the tile was pressed.
   // What Cancel and a successful Add return to is the origin's own policy
   // (ITEM_SHEET_ORIGINS): a persistent condition returns to both, a notice
@@ -242,7 +266,7 @@ export function ControlledOrderScreen({
     const next = orderViewFrom(new URL(destination, window.location.href).search);
     const open = sheet ?? approval ?? discount ?? voiding;
     returnFocusTo.current = open?.opener;
-    if (leaves && !open && !overlayAt(next.state)) window.history.pushState(null, '', destination);
+    if (leaves && !open && !overlayAt(next.state, catalog.itemSheetFor)) window.history.pushState(null, '', destination);
     else window.history.replaceState(null, '', search);
     closeOpened();
     // FE-019 finding 1: `view` is a prop now — the wrapper or `PosRoutes`
@@ -273,7 +297,7 @@ export function ControlledOrderScreen({
 
   // React 18 has no inert prop; an empty string renders the bare attribute.
   const { incident } = originFacts(view);
-  const inert = sheet || approval || discount || voiding ? { inert: '' } : {};
+  const inert = sheet || approval || discount || voiding || itemOpened ? { inert: '' } : {};
   // A sheet opened over a particular line or order is remounted when that
   // target changes, so tapping a second row draws the second row's sheet.
   const voidKey = voidOpened ? `opened-${voidOpened.kind === 'line' ? voidOpened.lineId : 'order'}` : view.state;
@@ -300,7 +324,14 @@ export function ControlledOrderScreen({
           <div className="order-screen__bar" aria-hidden="true" {...inert} />
         )}
         <div className="order-screen__body" {...inert}>
-          <MenuRegion view={view} category={store.category} selectCategory={store.selectCategory} navigate={navigate} locked={locked} />
+          <MenuRegion
+            view={view}
+            category={store.category}
+            selectCategory={store.selectCategory}
+            navigate={navigate}
+            openItem={setItemOpened}
+            locked={locked}
+          />
           <OrderPanel
             view={view}
             order={store.order}
@@ -324,12 +355,28 @@ export function ControlledOrderScreen({
             sheet={sheet}
             go={go}
             addLine={(line) => {
-              justAdded.current = true;
-              store.addLine(line);
+              const outcome = store.addLine(line);
+              if (!outcome.refused) justAdded.current = true;
+              return outcome;
             }}
             setQuantity={store.setQuantity}
             order={store.order}
             renderTotals={(totals) => <TotalsView totals={totals} />}
+            served={catalog.store.kind === 'real'}
+          />
+        )}
+        {itemOpened && (
+          <ServedItemSheet
+            key={itemOpened.id}
+            opened={itemOpened}
+            live={catalog.snapshot.menu?.items.find((i) => i.id === itemOpened.id)}
+            order={store.order}
+            addLine={(line) => {
+              const outcome = store.addLine(line);
+              if (!outcome.refused) justAdded.current = true;
+              return outcome;
+            }}
+            onClose={closeItem}
           />
         )}
         {approval && <ApprovalPrompt key={view.state} approval={approval} go={go} />}
@@ -354,14 +401,14 @@ export function ControlledOrderScreen({
           />
         )}
       </div>
-      {import.meta.env.DEV && <OrderFixtureStates current={view.state} />}
+      {FIXTURE_ORDER_STATES && <OrderFixtureStates current={view.state} />}
     </>
   );
 }
 
 /** Whether a state draws a sheet or the prompt over the order: an overlay, not a place (SITEMAP §1). */
-const overlayAt = (state: OrderState) =>
-  Boolean(SHEET_FIXTURES[state] ?? APPROVAL_FIXTURES[state] ?? DISCOUNT_FIXTURES[state] ?? VOID_FIXTURES[state]);
+const overlayAt = (state: OrderState, itemSheetFor: (state: OrderState) => unknown) =>
+  Boolean(SHEET_FIXTURES[state] ?? itemSheetFor(state) ?? APPROVAL_FIXTURES[state] ?? DISCOUNT_FIXTURES[state] ?? VOID_FIXTURES[state]);
 
 /**
  * What the panel's controls do. navigate moves the screen to a ?state= view,
@@ -445,7 +492,10 @@ export function OrderPanel({
   // three. Scoping the notice back to one state would be the per-state flag
   // again, and would let a cashier fire an 86'd Steak from `eightysix`.
   // test/fire.test.tsx pins it; raised in the FE-011 handoff.
-  const unavailable = menuFixtureFor(view).eightySixed ?? [];
+  const { store: catalogStore, snapshot, unavailable, picture } = useCatalog(view);
+  // DESIGN-021 rule 2: the empty order's words depend on whether a menu with categories is held. A successful
+  // empty read and a read still loading or failed hold none.
+  const menuHeld = snapshot.menu !== null && snapshot.menu.categories.length > 0;
   const lines = groups.flatMap((g) => g.lines);
   // FR-E5, ruling C-2: a quick sale has no fire control at all, so it has
   // nothing to refuse and nothing that is "not sendable yet" either — both
@@ -465,7 +515,7 @@ export function OrderPanel({
     if (firstBlocked) reveal(panel.current?.querySelector<HTMLElement>(`[data-line-id="${firstBlocked}"]`));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- first draw only
   }, []);
-  const loading = MENU_FIXTURES[view.state].loading ?? false;
+  const loading = picture?.loading ?? false;
   // While the menu loads the panel draws a skeleton, not the lines (F2h). A live
   // Send there would fire an order the cashier cannot see, and the pending group
   // on screen is the whole confirmation (ARCH-002 §1.2). So it is inert in place,
@@ -491,8 +541,8 @@ export function OrderPanel({
           <>
             {empty && (
               <div className="order-empty">
-                <div className="order-empty__title">No items yet</div>
-                <div>Tap an item on the left to start.</div>
+                <div className="order-empty__title">{menuHeld ? 'No items yet' : NO_MENU_ORDER.title}</div>
+                <div>{menuHeld ? 'Tap an item on the left to start.' : NO_MENU_ORDER.body}</div>
               </div>
             )}
             {groups.map((group) => (
@@ -519,6 +569,7 @@ export function OrderPanel({
             panel.current?.querySelector<HTMLElement>(`[data-line-id="${lineId}"] .order-line__target`)?.focus({ preventScroll: true });
           }}
           blocking={blocking}
+          served={catalogStore.kind === 'real'}
         />
       )}
       {type === 'table' && (
@@ -534,6 +585,8 @@ export function OrderPanel({
         fireOff={refusal !== undefined || nothingToSend || loading}
         fireCount={fireCount}
         fireDescribedBy={refusal ? FIRE_REFUSAL_ID : undefined}
+        // Only the server's menu has a reason to give: the four stay in place, focusable and inert (ruling C-1).
+        reason={empty && lock === undefined && catalogStore.kind === 'real' ? (menuHeld ? ACTION_REASON.menuHeld : ACTION_REASON.noMenu) : undefined}
         actions={actions}
       />
     </section>
@@ -575,10 +628,13 @@ function FireRefusalNotice({
   refusal,
   blocking,
   onShow,
+  served,
 }: {
   refusal: FireRefusal;
   blocking: ReadonlyArray<OrderLine>;
   onShow: (lineId: string) => void;
+  /** A served catalog draws DESIGN-021's one recovery control; the fixture path keeps its per-line controls. */
+  served: boolean;
 }) {
   return (
     <div className="notice order-notice" role="status" id={FIRE_REFUSAL_ID}>
@@ -586,7 +642,7 @@ function FireRefusalNotice({
       <div>
         {refusal.lead}{' '}
         {refusal.names.map((name, i) => (
-          <span key={name}>
+          <span key={i}>
             {i > 0 && ', '}
             <b>{name}</b>
           </span>
@@ -594,11 +650,17 @@ function FireRefusalNotice({
         . {refusal.resolution}
       </div>
       {/* POS-03 question 10: the named line can be scrolled out of view, so each one has a way back to it. */}
-      {blocking.map((line) => (
-        <button key={line.id} type="button" className="notice__show" onClick={() => onShow(line.id)}>
-          Show {line.name}
+      {served ? (
+        <button type="button" className="notice__show" data-action="served-show-blocked" onClick={() => onShow(blocking[0]!.id)}>
+          {SHOW_BLOCKED}
         </button>
-      ))}
+      ) : (
+        blocking.map((line) => (
+          <button key={line.id} type="button" className="notice__show" onClick={() => onShow(line.id)}>
+            Show {line.name}
+          </button>
+        ))
+      )}
     </div>
   );
 }
@@ -812,6 +874,8 @@ export function TotalsView({ totals }: { totals: Totals }) {
 // words. `actionsFor` reads the order's variant, never `view.state`.
 type ActionDef = { id: string; label: string; search?: string; leaves?: boolean; primary?: boolean; wide?: boolean };
 
+const ACTION_REASON_ID = 'served-action-reason';
+
 const DISCOUNT_BTN: ActionDef = { id: DISCOUNT_ACTION, label: 'Discount' };
 const VOID_ORDER_BTN: ActionDef = { id: VOID_ORDER_ACTION, label: 'Void order' };
 const FIRE_BTN: ActionDef = { id: FIRE_ACTION, label: 'Send to kitchen' };
@@ -856,6 +920,7 @@ function OrderActions({
   fireOff,
   fireDescribedBy,
   fireCount,
+  reason,
   actions,
 }: {
   type: OrderVariant;
@@ -863,6 +928,8 @@ function OrderActions({
   fireOff: boolean;
   fireCount: number;
   fireDescribedBy: string | undefined;
+  /** Why the four are inert on an empty order, when the screen says so. */
+  reason: string | undefined;
   actions: PanelActions;
 }) {
   return (
@@ -875,7 +942,7 @@ function OrderActions({
             className="action action--off"
             aria-disabled="true"
             data-action={a.id}
-            aria-describedby={!off && a.id === FIRE_ACTION ? fireDescribedBy : undefined}
+            aria-describedby={off ? (reason ? ACTION_REASON_ID : undefined) : a.id === FIRE_ACTION ? fireDescribedBy : undefined}
             onClick={() => {}}
           >
             {a.id === FIRE_ACTION ? fireLabel(fireCount) : a.label}
@@ -897,14 +964,20 @@ function OrderActions({
           </button>
         )
       )}
+      {reason && (
+        <span className="order-actions__reason" id={ACTION_REASON_ID}>
+          {reason}
+        </span>
+      )}
     </div>
   );
 }
 
-// Development-only review aid, outside the 1280×800 frame.
+// Fixture-mode review aid, outside the 1280×800 frame. Behind the one constant, not NODE_ENV:
+// `data-fixture-list` is the bundle test's marker that a build holds none of it.
 function OrderFixtureStates({ current }: { current: OrderState }) {
   return (
-    <nav className="fixture-states" aria-label="Fixture states">
+    <nav className="fixture-states" aria-label="Fixture states" data-fixture-list="pos-03-order-states">
       {ORDER_STATES.map((s) => (
         <a key={s.id} href={`?state=${s.id}`} aria-current={s.id === current ? 'page' : undefined}>
           {s.label}

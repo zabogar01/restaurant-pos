@@ -10,7 +10,12 @@ import { ORDER_STATES, type OrderState } from '../src/orderFixtures.js';
 import { APPROVAL_FIXTURES } from '../src/approvalFixtures.js';
 import { DISCOUNT_FIXTURES } from '../src/discountFixtures.js';
 import { VOID_FIXTURES } from '../src/voidFixtures.js';
-import { ITEM_SHEET_STATES, QUANTITY_MAX, SHEET_FIXTURES, unitPrice, type ItemSheetFixture } from '../src/sheetFixtures.js';
+import { itemSheetFixtures, itemSheetStates } from '../src/menuFixtures.js';
+import { QUANTITY_MAX, SHEET_FIXTURES as LINE_SHEETS, unitPrice, type ItemSheetFixture, type SheetFixture } from '../src/sheetFixtures.js';
+
+// The item sheets are the fixture menu's (menuFixtures.ts) and the line editors' are sheetFixtures.ts's;
+// every assertion below reads them as the one table they were.
+const SHEET_FIXTURES: Partial<Record<OrderState, SheetFixture>> = { ...itemSheetFixtures(), ...LINE_SHEETS };
 import { tileFor } from './tile-for.js';
 
 // POS-03's ungated sheets (F2c). Three properties are the point:
@@ -249,7 +254,7 @@ it('the reachability sweep names every fixture SHEET_FIXTURES carries, quick-lin
   // record the panel reads, so this now fails the day a fixture is added
   // and left out — it cannot be, since REACHABILITY_STATES is built from it.
   expect(SHEET_STATES.slice().sort()).toEqual(
-    ['quick-line', 'sheet-item', 'sheet-item86', 'sheet-line', ...ITEM_SHEET_STATES].sort()
+    ['quick-line', 'sheet-item', 'sheet-item86', 'sheet-line', ...itemSheetStates()].sort()
   );
   expect(REACHABILITY_STATES).toEqual(expect.arrayContaining(SHEET_STATES));
 });
