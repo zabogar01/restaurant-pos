@@ -6,7 +6,7 @@ touches: [money, boundaries]
 depends_on: [PHASE1-S7b2]
 base: agent/phase1-s7b2
 owns: [apps/pos/src/DiscountSheets.tsx, apps/pos/src/discountFixtures.ts, apps/pos/src/discount.ts, apps/pos/src/discountChange.ts, apps/pos/src/orderFixtures.ts, apps/pos/src/orderStore.ts, apps/pos/src/OrderPanel.tsx, apps/pos/src/menuFixtures.ts, apps/pos/src/session/source.ts, apps/pos/src/catalog/**, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/pos-catalog.spec.ts, e2e/support/**]
-status: active
+status: complete
 cycles: 0
 ---
 # PHASE1-S7b3 — The POS preset picker reads the real active presets
@@ -270,6 +270,31 @@ settles the lead's five questions. Fix exactly these, each test first with its r
 **How to work.** Create and change files with the Write and Edit tools only. Run `npm run verify` on a quiet machine,
 not beside another suite, before you commit, and run `npm run test:e2e:all` and report its count. Append a *Round 2*
 section to the Handoff (do not rewrite round 1), ending with `DONE` or `BLOCKED: <one question>`.
+
+## Round 2: lead review, 2026-11-05 (complete)
+
+A lead review instead of a re-review: every round-2 fix is the review's own, as ruled (R1 to R3). Reviewed at `e6b837f`
+(code `dd1c1d2`), the tree clean.
+
+- **Diff:** six source and test files, all inside `owns`. R1: a preset pick carries `shown`, the snapshot the sheet
+  resolved from the live list; the store refuses an otherwise accepted change as `unknown-preset` unless the list at the
+  press gives exactly that snapshot (`sameSnapshot`), closed and locked keeping their place; a layout effect closes the
+  prompt by the refusal path when its preset changes or leaves, adding no sentence. `discountChange.ts` changes its type
+  only. R2: the closing effect focuses the opener only if it is connected, else `#preset-heading`. R3: one Cancel with
+  `grid-column: 1 / -1`, scoped to its class. The one existing assertion changed (`discount.test.tsx`, the change now
+  carries `shown: STAFF_MEAL`) follows from R1.
+- **`npm run verify`:** exit 0; 158 files, 5743 tests passed. **`npm run test:e2e:all`:** exit 0; 132 passed, both
+  engines. Output in `../restaurant-pos-wt/evidence/PHASE1-S7b3/lead/round2/`.
+- **The lead's red proof on the new code** (reverted, tree clean after): the store's `stale` check and the prompt's
+  closing effect both disabled: 7 tests fail in `served-presets.test.tsx`, the hook refusal, all four R1 screen cases
+  and both R2 closure cases.
+- **Known, not fixed:** `shown` is optional on `DiscountChange`, so the store's check binds only callers that pass it.
+  The one preset caller, `DiscountSheet.change`, always does when the preset resolves, and an unresolved preset is
+  refused as `unknown-preset` anyway; Phase 2's discount command replaces this stand-in. The served picker's layout
+  (two columns, 40 entries, the 32-code-point name, the full-width Cancel, the gated value column) is unmeasured in a
+  real browser; the owner's look covers it.
+
+**Verdict: complete.** `touches: money, boundaries`: the owner looks before merge. Its PR follows #169 and #170.
 
 ## Lead verification, 2026-11-05 (before review)
 
