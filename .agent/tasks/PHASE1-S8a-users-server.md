@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: []
 owns: [db/migrations/0015_staff_user_kitchen.sql, apps/server/src/domain/users.ts, apps/server/src/domain/staff.ts, apps/server/src/domain/pin.ts, apps/server/src/domain/session.ts, apps/server/src/domain/back-office-credential.ts, apps/server/src/domain/audit.ts, apps/server/scripts/create-manager.ts, apps/server/src/http/routes/back-office-users.ts, apps/server/src/http/server.ts, apps/server/src/http/log.ts, packages/contracts/src/users.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, packages/api-client/src/index.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/back-office/src/session/fixtureSession.ts, apps/back-office/test/config-api.test.tsx, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, e2e/support/people.ts]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S8a — Users on the server: staff records, kitchen, roles, status, and the audit
@@ -727,6 +727,34 @@ holds a table keyed by every config route: the fixture `CONFIG` (widened in `50d
 list. `config-api.test.tsx` joins `owns` for exactly that list and its title; nothing else in it. The lead committed the
 builder's working-tree edit unchanged, as the builder wrote it, so the slice's tree is the one the builder verified,
 and no builder round was spent on a commit. The Handoff's `BLOCKED` line is answered here; the round counts as done.
+
+## Lead verification, 2026-11-05 (before review)
+
+The lead ran these in this worktree at `8fd0eb9`; this note is the evidence a reviewer cannot gather.
+
+- **`npm run verify`:** exit 0; typecheck clean; 162 files, 5779 tests passed. **`npm run test:e2e:all`:** exit 0; 130
+  passed, both engines (no browser test changed). Output in `../restaurant-pos-wt/evidence/PHASE1-S8a/lead/`.
+- **Paths:** every changed path is inside `owns` (widened twice, above). The development database `pos` has `0015`
+  applied (the builder migrated it; no row violated a new check).
+- **Red proofs repeated by the lead** (reverted, tree clean after), on the server project: `AND u.role IS NOT NULL`
+  removed from `session.ts` and `changeRole`'s own-account check disabled: 4 tests fail, session case 11, both users
+  case 8 tests, and users case 12 (a knock-on of the self-demotion the mutation let through).
+
+**For the reviewer.** Review `development...HEAD`. Beyond the review's own reading, the lead asks for a view on:
+
+1. **The split create path.** `createStaffUser` and `createBackOfficeCredential` now compose a hash step and a shared
+   insert (`insertStaffUser`, `insertBackOfficeCredential`) so no lock is held across Argon2id; the script calls the
+   originals. Do the script and the create command still share one insert path (ADR-009 §7), and do the originals still
+   print and refuse exactly as before?
+2. **A username collision after the staff insert** is a thrown `Refusal` that rolls back both rows. Is the rollback
+   proved, and is C3 §6's order (the PIN first, then the credential) kept?
+3. **The credential-key test** (`apps/server/test/credential-keys.test.ts`) walks every `*Request` export at any depth,
+   where C3 §8 named top-level keys. Does it still fail on a nested credential and on a key missing from
+   `SECRET_KEYS`, and does it cover every request schema?
+4. **The response-body scans** exclude username markers (a `UserView` carries the username by design) and check that no
+   refusal carries one. Is that the right reading of C3 AC 12?
+5. **The actor lock and re-check** (`lockUsers`, AC 9): is the acting session's row read unreleased and at the same
+   credential version, and is the lock order the one ARCHITECTURE §8 states?
 
 ## Handoff
 
