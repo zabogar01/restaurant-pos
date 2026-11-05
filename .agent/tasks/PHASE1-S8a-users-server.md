@@ -4,7 +4,7 @@ title: Users on the server — staff records, kitchen, roles, deactivate and rea
 category: feature
 touches: [identity, audit, boundaries]
 depends_on: []
-owns: [db/migrations/0015_staff_user_kitchen.sql, apps/server/src/domain/users.ts, apps/server/src/domain/staff.ts, apps/server/src/domain/pin.ts, apps/server/src/domain/session.ts, apps/server/src/domain/back-office-credential.ts, apps/server/src/domain/audit.ts, apps/server/scripts/create-manager.ts, apps/server/src/http/routes/back-office-users.ts, apps/server/src/http/server.ts, apps/server/src/http/log.ts, packages/contracts/src/users.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, packages/api-client/src/index.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, e2e/support/people.ts]
+owns: [db/migrations/0015_staff_user_kitchen.sql, apps/server/src/domain/users.ts, apps/server/src/domain/staff.ts, apps/server/src/domain/pin.ts, apps/server/src/domain/session.ts, apps/server/src/domain/back-office-credential.ts, apps/server/src/domain/audit.ts, apps/server/scripts/create-manager.ts, apps/server/src/http/routes/back-office-users.ts, apps/server/src/http/server.ts, apps/server/src/http/log.ts, packages/contracts/src/users.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, packages/api-client/src/index.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/back-office/src/session/fixtureSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, e2e/support/people.ts]
 status: not-started
 cycles: 0
 ---
@@ -83,7 +83,9 @@ These fill what C3 left open or what changed since it was written (2026-10-20, a
    codes stay exactly as they are**; say so in the Handoff with the before and after.
 7. **The client lines are declarations only:** `SPECS`, `ROUTES`, the five back-office API functions (called by no
    screen), and `OWN_ACCOUNT` and `USER_CHANGED` in both clients' `realSession.ts` switches in the general failure
-   group. Nothing else in either client changes.
+   group. Nothing else in either client changes. **Widened by the lead during round 1 (2026-11-05):**
+   `apps/back-office/src/session/fixtureSession.ts` joins `owns` for the five users routes' `unavailable` entries in
+   its `CONFIG` table, which the compiler forces (the table is keyed by every config route); nothing else in it.
 8. **The browser suite runs before merge** (the lead runs `npm run test:e2e:all`); no browser test is added or changed
    (S8c's). `e2e/support/people.ts` changes only if `createStaffUser`'s signature does.
 
