@@ -32,10 +32,14 @@ export type ServedItem = {
   modifiers?: ReadonlyArray<ServedOption>;
 };
 
+/** A served preset: a percentage as its parts per million, or a fixed amount, both as the wire's canonical strings. */
+export type ServedPreset = { id: string; name: string; ppm?: string; amount?: string };
+
 export function menuOf(
   version: number,
   categories: ReadonlyArray<{ id: string; name: string }>,
-  items: ReadonlyArray<ServedItem>
+  items: ReadonlyArray<ServedItem>,
+  presets: ReadonlyArray<ServedPreset> = []
 ): PosMenuResponse {
   return {
     version,
@@ -49,7 +53,11 @@ export function menuOf(
       variants: (i.variants ?? []).map((v) => ({ variantId: v.id, name: v.name, priceDelta: v.delta })),
       modifiers: (i.modifiers ?? []).map((m) => ({ modifierId: m.id, name: m.name, priceDelta: m.delta })),
     })),
-    presets: [],
+    presets: presets.map((p) => ({
+      presetId: p.id,
+      name: p.name,
+      value: p.ppm !== undefined ? { kind: 'PERCENTAGE' as const, ratePpm: p.ppm } : { kind: 'FIXED' as const, amount: p.amount ?? '0' },
+    })),
   };
 }
 

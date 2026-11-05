@@ -1,4 +1,5 @@
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from 'react';
+import { presetOf, type Preset } from '../discount.js';
 import type { MenuFixture } from '../menuFixtures.js';
 import type { OrderState, OrderView } from '../orderFixtures.js';
 import type { ItemSheetFixture } from '../sheetFixtures.js';
@@ -45,6 +46,13 @@ export function unavailableAt(store: CatalogStore, view: OrderView): ReadonlyArr
   if (store.kind === 'fixture') return FixtureMenu?.eightySixedFor(view) ?? [];
   return unavailableIn(store.getSnapshot().menu?.items ?? []);
 }
+
+/**
+ * The presets the catalog holds **now**, for a discount change at the press (consult C4 item 9, the lead's
+ * ruling 2): the same store, in fixture mode and in a served build, read at the moment of the press and never
+ * kept. Nothing is held before a first read has answered, so a press then finds no preset (`unknown-preset`).
+ */
+export const presetsAt = (store: CatalogStore): ReadonlyArray<Preset> => (store.getSnapshot().menu?.presets ?? []).map(presetOf);
 
 export type CatalogView = {
   store: CatalogStore;

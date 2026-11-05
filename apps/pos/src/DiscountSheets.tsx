@@ -1,14 +1,20 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { ApprovalDialog } from './Approval.js';
 import type { ApprovalRequest } from './approvalFixtures.js';
+import { PRESET_ANYTHING_ELSE, PRESET_GROUP, PRESET_LOADING_LABEL, PRESET_NONE, READ_FAILURE } from './catalog/menuCopy.js';
+import { useCatalogStore } from './catalog/useCatalog.js';
 import {
   discountAmount,
   discountName,
   needsManager,
   parseFreeForm,
+  presetOf,
+  sameSnapshot,
   totalsLabel,
+  valueText,
   type DiscountSnapshot,
   type FreeFormEntry,
+  type Preset,
 } from './discount.js';
 import { snapshotFor, type DiscountChange, type DiscountThrough } from './discountChange.js';
 import type { DiscountSheetFixture, DiscountStep } from './discountFixtures.js';
@@ -58,6 +64,14 @@ export function DiscountSheet({
 }) {
   const { applied } = order;
   const subtotal = order.totals.subtotal;
+  // The presets are the catalog's, read at every render (the lead's ruling 2): the picker follows the poll, in
+  // fixture mode through the same store as in a served build. Never copied into state, so there is one owner.
+  const catalog = useCatalogStore();
+  const held = useSyncExternalStore(catalog.subscribe, catalog.getSnapshot);
+  const presets = useMemo(() => (held.menu?.presets ?? []).map(presetOf), [held.menu]);
+  const served = catalog.kind === 'real';
+  const read: PresetRead =
+    held.menu !== null ? { state: 'ready' } : held.read === 'failed' ? { state: 'failed', variant: held.failure ?? 'failed' } : { state: 'loading' };
   const [trail, setTrail] = useState(fixture.trail);
   const [entry, setEntry] = useState<FreeFormEntry>(fixture.entry ?? { kind: 'percent', text: '' });
   const [refusal, setRefusal] = useState<string>();
@@ -78,8 +92,11 @@ export function DiscountSheet({
   }
 
   // The one door. FR-F8 decides from the order, never from the sheet.
-  function change(next: DiscountChange, from: HTMLElement) {
-    const shown = next.kind === 'remove' ? 'remove' : snapshotFor(next, fixture.presets);
+  function change(asked: DiscountChange, from: HTMLElement) {
+    const shown = asked.kind === 'remove' ? 'remove' : snapshotFor(asked, presets);
+    // A preset pick carries the snapshot this screen displays, so the store can refuse it if the list no longer
+    // gives that (a preset edited or deactivated since), over a prompt as well as for a direct press.
+    const next: DiscountChange = asked.kind === 'preset' && shown && shown !== 'remove' ? { ...asked, shown } : asked;
     if (!shown || !needsManager(applied, next.kind === 'remove' ? 'remove' : { source: next.kind })) {
       return settle(changeDiscount(next, 'direct'), next);
     }
@@ -88,16 +105,32 @@ export function DiscountSheet({
     setPrompt({ next, request: requestFor(applied, shown, subtotal) });
   }
 
+  // A prompt describes one transition. If its preset leaves the live list or its snapshot changes while the manager
+  // is deciding, the prompt closes as a refused submission does: the sheet stays, nothing is applied, and no
+  // sentence is added. The cashier picks again, and a gated pick asks for a fresh approval (B-14, FR-F8).
+  useLayoutEffect(() => {
+    if (!prompt || prompt.next.kind !== 'preset' || !prompt.next.shown) return;
+    const now = snapshotFor(prompt.next, presets);
+    if (now && sameSnapshot(now, prompt.next.shown)) return;
+    promptOpen.current = false;
+    setPrompt(undefined);
+  }, [prompt, presets]);
+
   function cancelPrompt() {
     promptOpen.current = false;
     setPrompt(undefined);
   }
 
-  // Cancelling the prompt hands focus back to the control that raised it.
+  // A prompt closing (cancelled, refused, or closed because its preset changed) hands focus back to the control
+  // that raised it, if that control is still there. A preset a poll removed while its prompt held focus is not:
+  // focus goes to the preset group's heading, now that the sheet is no longer inert, never to the body.
+  const flow = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (prompt || !raisedBy.current) return;
-    raisedBy.current.focus();
+    const opener = raisedBy.current;
     raisedBy.current = null;
+    if (opener.isConnected) opener.focus();
+    else flow.current?.querySelector<HTMLElement>('#preset-heading')?.focus();
   }, [prompt]);
 
   const open = (next: DiscountStep) => {
@@ -124,8 +157,22 @@ export function DiscountSheet({
 
   return (
     <>
-      <div className="discount-flow" {...inert}>
-        {step === 'picker' && <Picker fixture={fixture} applied={applied} change={change} open={open} cancel={cancel} onEscape={onEscape} />}
+      <div className="discount-flow" ref={flow} {...inert}>
+        {step === 'picker' &&
+          (served ? (
+            <ServedPicker
+              presets={presets}
+              read={read}
+              retry={catalog.retry}
+              applied={applied}
+              change={change}
+              open={open}
+              cancel={cancel}
+              onEscape={onEscape}
+            />
+          ) : (
+            <Picker presets={presets} applied={applied} change={change} open={open} cancel={cancel} onEscape={onEscape} />
+          ))}
         {step === 'free-form' && (
           <FreeForm
             applied={applied}
@@ -180,21 +227,16 @@ function ChangeButton({ label, gated, onPress }: { label: string; gated: boolean
   );
 }
 
-function Picker({
-  fixture,
-  applied,
-  change,
-  open,
-  cancel,
-  onEscape,
-}: {
-  fixture: DiscountSheetFixture;
+type PickerProps = {
+  presets: ReadonlyArray<Preset>;
   applied: DiscountSnapshot | undefined;
   change: MakeChange;
   open: (step: DiscountStep) => void;
   cancel: () => void;
   onEscape: () => void;
-}) {
+};
+
+function Picker({ presets, applied, change, open, cancel, onEscape }: PickerProps) {
   // Every preset is gated alike, because the table decides by kind: none is,
   // unless what the order carries is free-form.
   const presetsGated = needsManager(applied, { source: 'preset' });
@@ -213,10 +255,10 @@ function Picker({
         </>
       }
     >
-      <span className="sheet__label">{presetsGated ? PRESETS_GATED : 'Presets — no approval needed'}</span>
+      <span className="sheet__label">{presetsGated ? PRESETS_GATED : PRESET_GROUP}</span>
       <div className="discount-options">
         {/* FR-F5: a deactivated preset is not offered. No preset is chosen until a finger chooses it (B-21). */}
-        {fixture.presets
+        {presets
           .filter((p) => p.active)
           .map((p) => (
             <ChangeButton
@@ -227,11 +269,136 @@ function Picker({
             />
           ))}
       </div>
-      <span className="sheet__label">Anything else</span>
+      <span className="sheet__label">{PRESET_ANYTHING_ELSE}</span>
       <div className="discount-options">
         <ChangeButton label="Other amount" gated={needsManager(applied, { source: 'free-form' })} onPress={() => open('free-form')} />
       </div>
     </SheetFrame>
+  );
+}
+
+/** What the served picker knows of the catalog's first read: the presets arrive with the menu. */
+type PresetRead = { state: 'loading' } | { state: 'failed'; variant: 'unavailable' | 'failed' } | { state: 'ready' };
+
+/**
+ * M-3 over the served presets (DESIGN-021 rule 12). The list is the catalog's, drawn at every render, so an open
+ * picker follows the poll: an edited preset's row updates, a deactivated one leaves, with no notice and no
+ * rule in place (a wrong preset is replaced without approval). Nothing is held back from a failed read: until
+ * the catalog has answered there is no list, and *Other amount* is offered all the same.
+ *
+ * Focus (DESIGN-021's M-3 rules): the sheet opens on its heading, never on *Try again*; a failure moves focus
+ * to *Try again* only when focus is on the body or on a control the read removed; a retry that succeeds, and a
+ * focused preset that a poll removed, both send focus to the group heading.
+ */
+function ServedPicker({ presets, read, retry, applied, change, open, cancel, onEscape }: PickerProps & { read: PresetRead; retry: () => void }) {
+  const presetsGated = needsManager(applied, { source: 'preset' });
+  const heading = useRef<HTMLSpanElement>(null);
+  // Focus was on a control that a retry or a poll removed. Read after every commit, once the removal has happened.
+  const lost = useRef(false);
+  const lose = useCallback(() => {
+    lost.current = true;
+  }, []);
+  useLayoutEffect(() => {
+    // A retry in flight keeps the claim: the list it draws, if it succeeds, is where focus goes. A failed read
+    // is its own *Try again*'s to focus.
+    if (!lost.current || read.state === 'loading') return;
+    lost.current = false;
+    if (read.state === 'ready') heading.current?.focus();
+  });
+
+  return (
+    <SheetFrame
+      title="Discount"
+      aside={<span className="sheet__aside discount-aside">One per order</span>}
+      onClose={onEscape}
+      served
+      foot={
+        // One full-width Cancel, as the artifact draws it: no empty sibling holding the second column.
+        <button type="button" className="action served-preset-cancel" data-action="served-preset-cancel" onClick={cancel}>
+          Cancel
+        </button>
+      }
+    >
+      <span className="sheet__label" id="preset-heading" tabIndex={-1} ref={heading}>
+        {presetsGated ? PRESETS_GATED : PRESET_GROUP}
+      </span>
+      {read.state === 'loading' && (
+        <div className="menu-loading__label served-presets__loading" role="status">
+          {PRESET_LOADING_LABEL}
+        </div>
+      )}
+      {read.state === 'failed' && <PresetReadFailed variant={read.variant} retry={retry} lose={lose} />}
+      {read.state === 'ready' && presets.length === 0 && <p className="served-presets__none">{PRESET_NONE}</p>}
+      {read.state === 'ready' && presets.length > 0 && (
+        <div className="discount-options served-presets">
+          {presets.map((p) => (
+            <PresetEntry key={p.id} preset={p} gated={presetsGated} lose={lose} onPress={(el) => change({ kind: 'preset', presetId: p.id }, el)} />
+          ))}
+        </div>
+      )}
+      <span className="sheet__label">{PRESET_ANYTHING_ELSE}</span>
+      <div className="discount-options">
+        <ChangeButton label="Other amount" gated={needsManager(applied, { source: 'free-form' })} onPress={() => open('free-form')} />
+      </div>
+    </SheetFrame>
+  );
+}
+
+/**
+ * One preset: its name and its value in two columns, named as the design names it, "{name} — {value}". The value
+ * is the one the preset is stored at (a fixed amount above the subtotal is listed as stored and capped only when
+ * applied, FR-M5). Gated like every preset when the order carries a free-form discount (FR-F8).
+ */
+function PresetEntry({ preset, gated, lose, onPress }: { preset: Preset; gated: boolean; lose: () => void; onPress: (el: HTMLElement) => void }) {
+  const button = useRef<HTMLButtonElement>(null);
+  // A poll that removes this row while it holds focus: the sheet sends focus to the group heading.
+  useLayoutEffect(() => {
+    const el = button.current;
+    return () => {
+      if (el && document.activeElement === el) lose();
+    };
+  }, [lose]);
+  const value = valueText(preset.value);
+  return (
+    <button
+      ref={button}
+      type="button"
+      className={gated ? 'action discount-option discount-option--gated served-preset' : 'action discount-option served-preset'}
+      data-gated={gated ? 'true' : 'false'}
+      data-preset={preset.id}
+      aria-label={gated ? discountName(preset) + NEEDS_MANAGER : discountName(preset)}
+      onClick={(e) => onPress(e.currentTarget)}
+    >
+      <span className="served-preset__name">{preset.name}</span>
+      <span className="served-preset__value">{gated ? value + NEEDS_MANAGER : value}</span>
+    </button>
+  );
+}
+
+/** The shared general failure, with its one control (DESIGN-021): the menu's own words, and `preset-retry`. */
+function PresetReadFailed({ variant, retry, lose }: { variant: 'unavailable' | 'failed'; retry: () => void; lose: () => void }) {
+  const copy = READ_FAILURE[variant];
+  const button = useRef<HTMLButtonElement>(null);
+  // Focus moves here only from the body: opening focus is the heading's, and a control the cashier is on keeps it.
+  useLayoutEffect(() => {
+    const active = document.activeElement;
+    if (!active || active === document.body) button.current?.focus();
+  }, []);
+  // The control going away with focus on it: the press that shows loading, or the read's success.
+  useLayoutEffect(() => {
+    const el = button.current;
+    return () => {
+      if (el && document.activeElement === el) lose();
+    };
+  }, [lose]);
+  return (
+    <div className="notice" role="alert">
+      <div className="notice__title">{copy.title}</div>
+      <div>{copy.body}</div>
+      <button ref={button} type="button" className="action action--compact menu-notice__action" data-action="preset-retry" onClick={retry}>
+        {READ_FAILURE.retry}
+      </button>
+    </div>
   );
 }
 

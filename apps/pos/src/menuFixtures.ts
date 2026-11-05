@@ -1,5 +1,6 @@
 import type { Money } from '@pos/money';
 import type { CatalogCategory } from './catalog/types.js';
+import type { Preset } from './discount.js';
 import type { OrderState, OrderView } from './orderFixtures.js';
 import type { ItemSheetFixture } from './sheetFixtures.js';
 
@@ -16,6 +17,20 @@ import type { ItemSheetFixture } from './sheetFixtures.js';
 
 /** Exported only so the bundle test can prove this module is absent from a build. */
 export const FIXTURE_MENU_MARKER = 'fixture-menu:rpos-b24c7e';
+
+/** Exported only so the bundle test can prove the fixture preset list is absent from a build (B-24). */
+export const FIXTURE_PRESETS_MARKER = 'fixture-presets:rpos-5d29e0';
+
+// The artifact's four presets, in its order, all active (docs/design/visual-directions/frost/pos/order.html).
+// The fixture catalog's menu carries them as the server's would (catalog/fixtureCatalog.ts), so the fixture
+// picker and the store read them through the one path a served build reads its own. Like the rest of this
+// module they are reached only through session/source.ts, so no built bundle holds them.
+export const PRESETS: ReadonlyArray<Preset> = [
+  { id: 'staff-meal', name: 'Staff meal', value: { kind: 'percent', percent: '10' }, active: true },
+  { id: 'regular', name: 'Regular customer', value: { kind: 'percent', percent: '5' }, active: true },
+  { id: 'service-recovery', name: 'Service recovery', value: { kind: 'fixed', amount: 50_000n }, active: true },
+  { id: 'comp', name: 'Comp', value: { kind: 'percent', percent: '100' }, active: true },
+];
 
 export const MENU_CATEGORIES: ReadonlyArray<CatalogCategory> = [
   { id: 'mains', name: 'Mains' },

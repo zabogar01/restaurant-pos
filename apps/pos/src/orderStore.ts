@@ -1,13 +1,12 @@
 import type { Money } from '@pos/money';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { orderTotals, type DiscountSnapshot } from './discount.js';
+import { orderTotals, sameSnapshot, type DiscountSnapshot } from './discount.js';
 import { closeOrder, type ClosedOrder } from './close.js';
-import { changeDiscount as applyDiscountChange, type DiscountChange, type DiscountRefusal, type DiscountThrough } from './discountChange.js';
-import { PRESETS } from './discountFixtures.js';
+import { changeDiscount as applyDiscountChange, snapshotFor, type DiscountChange, type DiscountRefusal, type DiscountThrough } from './discountChange.js';
 import { voidLine as applyVoidLine, voidOrder as applyVoidOrder, type VoidRefusal, type VoidResult, type VoidThrough } from './voidChange.js';
 import { refundOrder, type RefundRecord, type RefundRequest, type RefundResult } from './refund.js';
 import { fireOrder } from './fire.js';
-import { unavailableAt, useCatalogStore } from './catalog/useCatalog.js';
+import { presetsAt, unavailableAt, useCatalogStore } from './catalog/useCatalog.js';
 import { LINE_TOTAL_LIMIT, ORDER_TOTAL_LIMIT } from './tender.js';
 import {
   ORDER_FIXTURES,
@@ -568,8 +567,19 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
     // refuse a discount, this tab's own payment session included.
     const { view, locked } = context.current;
     const lockedNow = locked || originFacts(view).lock !== undefined;
-    const attempt = (order: StoreState) =>
-      applyDiscountChange(order, change, through, { closed: !isOpen(order), locked: lockedNow, presets: PRESETS });
+    // The presets are the catalog's own at this moment, as the 86 list is at a fire: never a list kept from a
+    // render. One that was deactivated since the picker drew is refused as `unknown-preset`.
+    const presets = presetsAt(catalog);
+    // A preset change carries the snapshot the screen displayed (and the manager approved). The list at this press
+    // must give exactly that, or the change is refused as it is for a preset that has gone: the approval covers the
+    // transition it showed (B-14, FR-F8), never the preset's new facts.
+    const resolved = change.kind === 'preset' ? snapshotFor(change, presets) : undefined;
+    const stale = change.kind === 'preset' && change.shown !== undefined && !(resolved && sameSnapshot(resolved, change.shown));
+    const attempt = (order: StoreState) => {
+      const result = applyDiscountChange(order, change, through, { closed: !isOpen(order), locked: lockedNow, presets });
+      // Closed and locked keep their place in the operation's order; only an otherwise accepted change is stale.
+      return stale && !result.refused ? { refused: 'unknown-preset' as const, order } : result;
+    };
     const { orders, activeId } = bookRef.current;
     const now = orders[activeId];
     // With no order open there is nothing to change, which is a closed order's answer too.
@@ -584,7 +594,7 @@ export function useOrderBook(view: OrderView, lock: Locked = false, showing = tr
       return next.refused ? prev : next.order;
     });
     return {};
-  }, [update]);
+  }, [update, catalog]);
 
   // The facts are read now, at the press, as the discount reads them: both locks
   // refuse a void, this tab's own payment session included.
