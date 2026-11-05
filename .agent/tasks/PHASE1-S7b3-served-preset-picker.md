@@ -6,7 +6,7 @@ touches: [money, boundaries]
 depends_on: [PHASE1-S7b2]
 base: agent/phase1-s7b2
 owns: [apps/pos/src/DiscountSheets.tsx, apps/pos/src/discountFixtures.ts, apps/pos/src/discount.ts, apps/pos/src/discountChange.ts, apps/pos/src/orderFixtures.ts, apps/pos/src/orderStore.ts, apps/pos/src/OrderPanel.tsx, apps/pos/src/menuFixtures.ts, apps/pos/src/session/source.ts, apps/pos/src/catalog/**, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/pos-catalog.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S7b3 — The POS preset picker reads the real active presets
@@ -236,6 +236,40 @@ the Handoff below in full prose: what was done; what was decided and on what evi
 proof; what was found and not fixed; the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Round 2: the lead's rulings on the review, 2026-11-05
+
+The review is `.agent/reviews/PHASE1-S7b3-review.md` (Codex, three findings). Read it whole; its *Cleared* section
+settles the lead's five questions. Fix exactly these, each test first with its red proof recorded, and nothing else.
+
+- **R1 (F1, P1, accepted).** A manager approval covers the transition it displays (B-14, FR-F8), so a preset that
+  changes under an open prompt must never be applied with its new facts. Two parts, both required:
+  - **At submission, the store is the control.** A preset change carries the snapshot the screen displayed (name and
+    value, as `snapshotOf` gives them), and `changeDiscount` refuses it as `unknown-preset` unless the preset resolved
+    from the current list at the press gives exactly that snapshot. The order is the same object (B-20). Reuse
+    `unknown-preset`; add no refusal code. This applies to a direct press too, where it is trivially met.
+  - **While the prompt is open,** if its preset leaves the live list or its snapshot changes, the prompt closes as a
+    refused submission closes today (`settle`'s refusal path): the sheet stays, nothing is applied, and **no sentence is
+    added** (DESIGN-021 adds none for a preset edit or removal; ADR-011 rule 24). The cashier picks again, and a gated
+    pick asks for a fresh approval.
+  - Tests, at the screen through ordinary controls (the review's scenario): over an applied free-form discount, pick a
+    served preset, change its value by a poll while the prompt is open, and assert the prompt has closed and the order
+    still carries the free-form discount; the same with the preset deactivated; and at the hook, a submission whose
+    displayed snapshot no longer matches is refused with the same order. Also press a stale entry at the screen and see
+    the refusal there (the review notes the current screen test only polls the entry away). *Red:* resolve by id alone
+    at submission.
+- **R2 (F2, P2, accepted).** When the prompt closes (cancelled, refused, or closed by R1), focus returns to its opener
+  only if the opener is still connected; otherwise it goes to *Presets — no approval needed* (`preset-heading`, whatever
+  its gated label), once the sheet is no longer inert. Tests: cancel and refusal after the opener was removed while the
+  prompt held focus, and R1's closure; focus is on the heading, never the body. *Red:* focus the detached opener.
+- **R3 (F3, P3, accepted).** The served picker's footer is one full-width Cancel, as the artifact draws it
+  (`docs/design/visual-directions/frost-served-catalog.css:37-38`): no empty sibling, scoped to the served picker so no
+  other sheet's footer changes. Test the structure (one child, the served footer class); the lead measures it in the
+  browser run. *Red:* restore the empty sibling.
+
+**How to work.** Create and change files with the Write and Edit tools only. Run `npm run verify` on a quiet machine,
+not beside another suite, before you commit, and run `npm run test:e2e:all` and report its count. Append a *Round 2*
+section to the Handoff (do not rewrite round 1), ending with `DONE` or `BLOCKED: <one question>`.
 
 ## Lead verification, 2026-11-05 (before review)
 
