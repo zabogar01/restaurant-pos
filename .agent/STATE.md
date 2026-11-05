@@ -46,14 +46,14 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (LESSONS); push task and lead branches together; `gh pr view <n>
   --json state` as its own step before any follow-up push.
-- **Task worktrees:** `wt/PHASE1-S7b3` (building); `wt/PHASE1-S7b1`, `wt/PHASE1-S7b2` (PRs open; remove after merge, with their `runs/` and
+- **Task worktrees:** `wt/PHASE1-S7b3` (in review); `wt/PHASE1-S7b1`, `wt/PHASE1-S7b2` (PRs open; remove after merge, with their `runs/` and
   `wt/evidence/`). Left behind: `runs/PHASE1-S7a`, `runs/DESIGN-023`, `wt/evidence/DESIGN-023`; `wt/ARCH-021`, `wt/DESIGN-021`
   (removal refused by the classifier: the owner's). Not ours: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **PHASE1-S7b3 building** (dispatched 11-05, interactive Sonnet, Herdr `phase1-s7b3`, pane `PHASE1-S7b3`; worktree
-  `wt/PHASE1-S7b3`). If the waiter dies at two hours, write `runs/PHASE1-S7b3/builder/session` before a resume (LESSONS).
+- **PHASE1-S7b3 in review** (Codex `gpt-6-astra` high, oneshot, 11-05). Builder `f9c253b` + Handoff `3708338` (Sonnet,
+  pane closed); lead note `d3dd75b`: verify 158 / 5733, e2e:all 132, AC 3 and AC 10 reds repeated, five points put.
 - **PRs #169 (S7b1, `ae44200`) and #170 (S7b2, `988baa8`) open,** both against `development`; #170 holds S7b1's
   commits, so #169 merges first. **Owner looks at the served POS before merging (`touches: money, boundaries`).**
 - **S7b3's lead rulings 1-6** (in its task file): presets from the catalog store in both modes, `PRESETS` fixture-only,
@@ -139,7 +139,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S7b3 building:** on exit, `git status`, verify, `test:e2e:all`, red proofs, then Codex review. PR after #169/#170.
+1. **S7b3 in review:** on the report, commit it on the task branch, rule findings, `--resume` the builder. PR after #169/#170.
 2. **After #169/#170 merge:** fetch, fast-forward; remove the two worktrees, `runs/` and evidence.
 3. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction. Then S8a (users server, C3).
