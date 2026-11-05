@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: []
 owns: [db/migrations/0015_staff_user_kitchen.sql, apps/server/src/domain/users.ts, apps/server/src/domain/staff.ts, apps/server/src/domain/pin.ts, apps/server/src/domain/session.ts, apps/server/src/domain/back-office-credential.ts, apps/server/src/domain/audit.ts, apps/server/scripts/create-manager.ts, apps/server/src/http/routes/back-office-users.ts, apps/server/src/http/server.ts, apps/server/src/http/log.ts, packages/contracts/src/users.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, packages/api-client/src/index.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/back-office/src/session/fixtureSession.ts, apps/back-office/test/config-api.test.tsx, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, e2e/support/people.ts]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S8a — Users on the server: staff records, kitchen, roles, status, and the audit
@@ -727,6 +727,24 @@ holds a table keyed by every config route: the fixture `CONFIG` (widened in `50d
 list. `config-api.test.tsx` joins `owns` for exactly that list and its title; nothing else in it. The lead committed the
 builder's working-tree edit unchanged, as the builder wrote it, so the slice's tree is the one the builder verified,
 and no builder round was spent on a commit. The Handoff's `BLOCKED` line is answered here; the round counts as done.
+
+## Round 2: the lead's ruling on the review, 2026-11-05
+
+The review is `.agent/reviews/PHASE1-S8a-review.md` (Codex, one finding; its *Cleared* section settles the lead's five
+questions). Fix exactly this, test first with its red proof recorded, and nothing else.
+
+- **R1 (F1, P2, accepted).** `apps/server/test/log-scan.test.ts`'s users scans send `USERS_MARK.malformedPassword` but
+  never search for it, so C3 §8's malformed-value case is unproved for the password (AC 13, ADR-010 rule 2). **Derive
+  the scans' secret list from every marker leaf of `USERS_MARK`** (and of any other marker object the users scans
+  send), so a standalone marker can never be left out again; keep the lookups of the marker PINs in it. Searching for a
+  username in a successful `UserView` body stays excluded as now (the review cleared that reading). *Red:* add a log
+  line carrying the malformed password on the validation-failure path (a test-only mutation of the route or of the
+  test's logger probe, never committed): the scan fails; remove it, the scan passes. Also show the old hand-built list
+  passing that same mutation, so the red is the fix's.
+
+**How to work.** Write and Edit tools only. Run `npm run verify` on a quiet machine before you commit, and report its
+counts. Append a *Round 2* section to the Handoff (do not rewrite round 1), ending with `DONE` or `BLOCKED: <one
+question>`.
 
 ## Lead verification, 2026-11-05 (before review)
 
