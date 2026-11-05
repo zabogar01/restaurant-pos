@@ -391,7 +391,10 @@ module Dispatch
     end
 
     Array(p.fm["depends_on"]).each do |dep|
-      files = Dir.glob(File.join(p.root, ".agent/tasks", "#{dep}-*.md")) + Dir.glob(File.join(p.root, ".agent/tasks", "#{dep}.md"))
+      find = lambda { |dir| Dir.glob(File.join(dir, ".agent/tasks", "#{dep}-*.md")) + Dir.glob(File.join(dir, ".agent/tasks", "#{dep}.md")) }
+      files = find.call(p.root)
+      # A dependency not yet merged (the task's `base:`) has its task file only on its own branch, in its worktree.
+      files = find.call(File.join(File.dirname(p.worktree), dep)) if files.empty?
       if files.size != 1
         checks << ["depends_on #{dep}", false, "no single task file for #{dep}"]
       else
@@ -426,8 +429,19 @@ module Dispatch
     else
       free = !wt_exists && !br_exists
       checks << ["fresh worktree and branch", free, free ? "#{p.worktree}, #{p.branch}" : "#{wt_exists ? 'worktree' : 'branch'} exists; use --resume or remove it"]
+      base = base_of(p)
+      _, base_ok = git("rev-parse", "--verify", "--quiet", "#{base}^{commit}", dir: p.main)
+      checks << ["base #{base}", base_ok, base_ok ? "exists" : "no such branch or commit in the main checkout"]
     end
     checks
+  end
+
+  # The branch a new task worktree is cut from: the task file's optional `base:`
+  # (a task that builds on another task's unmerged branch, as S7b2 on S7b1),
+  # else the integration branch.
+  def self.base_of(p)
+    named = p.fm["base"].to_s.strip
+    named.empty? ? p.cfg["integration_branch"] : named
   end
 
   # ------------------------------------------------------------- dry run
@@ -441,6 +455,7 @@ module Dispatch
     puts "  mcps      #{p.mcp_notes.join('; ')}"
     puts "  skills    no gate (owner, 2026-09-29)"
     puts "  branch    #{p.branch}"
+    puts "  base      #{base_of(p)}" unless p.o.resume || p.role == "reviewer"
     puts "  worktree  #{p.worktree}"
     puts "  pane      #{p.pane_name}"
     puts "  run dir   #{p.run_dir}"
@@ -461,7 +476,7 @@ module Dispatch
   def self.prepare_worktree(p)
     wt_root = File.dirname(p.worktree)
     FileUtils.mkdir_p(wt_root)
-    base = p.cfg["integration_branch"]
+    base = base_of(p)
     out, ok = git("worktree", "add", "-b", p.branch, p.worktree, base, dir: p.main)
     refuse "git worktree add failed: #{out}" unless ok
     _, committed = git("cat-file", "-e", "HEAD:#{p.task_rel}", dir: p.worktree)
