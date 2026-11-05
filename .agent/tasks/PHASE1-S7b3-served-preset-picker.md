@@ -6,7 +6,7 @@ touches: [money, boundaries]
 depends_on: [PHASE1-S7b2]
 base: agent/phase1-s7b2
 owns: [apps/pos/src/DiscountSheets.tsx, apps/pos/src/discountFixtures.ts, apps/pos/src/discount.ts, apps/pos/src/discountChange.ts, apps/pos/src/orderFixtures.ts, apps/pos/src/orderStore.ts, apps/pos/src/OrderPanel.tsx, apps/pos/src/menuFixtures.ts, apps/pos/src/session/source.ts, apps/pos/src/catalog/**, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/pos-catalog.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S7b3 — The POS preset picker reads the real active presets
@@ -236,6 +236,34 @@ the Handoff below in full prose: what was done; what was decided and on what evi
 proof; what was found and not fixed; the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verification, 2026-11-05 (before review)
+
+The lead ran these in this worktree at `3708338`; this note is the evidence a reviewer cannot gather.
+
+- **`npm run verify`:** exit 0; typecheck clean; 158 files, 5733 tests passed. **`npm run test:e2e:all`:** exit 0; 132
+  passed, both engines, P11 included. Output in `../restaurant-pos-wt/evidence/PHASE1-S7b3/lead/`.
+- **Paths:** every changed path is inside `owns`. Test changes are as the Handoff lists them; `discount.test.tsx`'s
+  FR-F5 block now reaches its presets through a stub catalog store instead of the removed `DiscountSheetFixture.presets`.
+- **Red proofs repeated by the lead** (reverted, tree clean after): `valueText` printing the stored string (AC 3) and
+  `ServedPicker`'s `presetsGated` forced to `false` (AC 10), together: 7 tests fail in `served-presets.test.tsx`,
+  including both AC 3 tests and the AC 10 free-form test.
+
+**For the reviewer.** Review `agent/phase1-s7b2..HEAD`. Beyond the review's own reading, the lead asks for a view on:
+
+1. **The gated served entry.** Over a free-form discount each served entry's value column and accessible name append
+   ` — needs a manager` (`NEEDS_MANAGER`, the fixture picker's reviewed marker) and take the fixture's dashed gated
+   style. DESIGN-021 draws no gated served picker; ruling 4 named only the group label. Is reusing the reviewed marker
+   within ADR-011 rule 24, and is the visible form right?
+2. **`valueText` now throws** on a percent string `rateFromPercent` rejects, where it once printed it. Is any caller
+   reachable with a non-canonical or malformed percent (a free-form entry, a fixture snapshot, a refund or receipt
+   path)?
+3. **Before a first read,** `presetsAt` gives an empty list, so a press is `unknown-preset`. Can the served picker offer
+   an entry in that window?
+4. **`?state=sheet-discount` in a served build** opens `ServedPicker` (fixture pictures are still honoured there, as
+   before this task). Does anything in that path reach a fixture preset or a fixture-only module?
+5. **AC 8 and 9 under a poll:** does a deactivated preset holding focus send focus to the heading in every case,
+   including the gated label and the last preset leaving?
 
 ## Handoff
 
