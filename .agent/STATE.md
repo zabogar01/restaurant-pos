@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-11-05: **#169 S7b1 and #170 S7b2 merged**; `development` at `99a734b`; dev `pos` at `0014`. **S7b3 PR #171 open**
-(owner: push). Lead branch pushed. **S8a written.** Nothing running. Narrative: [journal/2026-11-04.md](journal/2026-11-04.md).
+(owner: push). Lead branch pushed. **S8a dispatched** (owner). Narrative: [journal/2026-11-04.md](journal/2026-11-04.md).
 
 ## Phase and gates
 
@@ -52,11 +52,12 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **Nothing running; only `lead` in Herdr.**
+- **PHASE1-S8a building** (dispatched 11-05, interactive Sonnet, Herdr `phase1-s8a`, pane `PHASE1-S8a`, worktree
+  `wt/PHASE1-S8a`). If the waiter dies at two hours, write `runs/PHASE1-S8a/builder/session` before a resume.
 - **PHASE1-S7b3 complete, PR #171** (`df215e9`, against `development`, its own 8 commits). Codex: 3 findings
   (`c6b9e55`; F1 P1: a preset changed under an open approval was applied with its new value), fixed in round 2 `dd1c1d2`,
   lead-reviewed: 158 / 5743, e2e:all 132, R1 mutations red. `shown` optional (noted). Owner looks before merge.
-- **PHASE1-S8a written:** C3 §1-3, §5-8 and *For the lead* S8a copied verbatim; lead rulings 1-8 (`0015`, C3's three
+- **PHASE1-S8a's task file:** C3 §1-3, §5-8 and *For the lead* S8a copied verbatim; lead rulings 1-8 (`0015`, C3's three
   readings accepted, `users.ts`, `DUPLICATE` details users-only, audit rollback by privilege not a seam, script output
   unchanged, client declarations only, e2e run). `touches: identity, audit, boundaries`.
 - **For S8c (from DESIGN-023):** FR-B3's own-PIN words (every other session ends); a Chrome/Firefox save-prompt check (F3).
@@ -142,7 +143,6 @@ Nothing here is decided. Detail is where each line points.
 ## Next up
 
 1. **After #171 merges:** fetch, fast-forward; remove `wt/PHASE1-S7b3`, its `runs/` and evidence.
-2. **S8a written** (`.agent/tasks/PHASE1-S8a-users-server.md`, untracked in the kit; base `development`; dry run clean,
-   Sonnet, caveman off, Codex reviews): dispatch on the owner's word. Then S8b from C3 *For the lead* S8b.
+2. **S8a building:** on exit, `git status`, verify, `test:e2e:all`, red proofs, then Codex review. Then write S8b.
 3. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
