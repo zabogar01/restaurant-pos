@@ -9,7 +9,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-11-05: **#169 S7b1 and #170 S7b2 merged**; `development` at `99a734b`; dev `pos` at `0014`. **S7b3 PR #171 open**
+2026-11-05: **#169 S7b1 and #170 S7b2 merged**; `development` at `99a734b`; dev `pos` at `0015` (S8a's). **S7b3 PR #171 open**
 (owner: push). Lead branch pushed. **S8a dispatched** (owner). Narrative: [journal/2026-11-04.md](journal/2026-11-04.md).
 
 ## Phase and gates
@@ -26,8 +26,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14), real presets in the POS picker (C4
   OQ1, 11-02); S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
-- **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. §8: catalog → day → table → order → lease.
-- **Owed, not drafted:** ROADMAP Phase 1 users: role change (Q1c); tender: "reactivate" (OQ1).
+- **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. **Owed, not drafted:** ROADMAP Phase 1
+  users: role change (Q1c); tender: "reactivate" (OQ1).
 - **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office BO-01 (provisional), M-6, BO-03/04/05/07/08.
   **Frost designed:** all but G (BO-09) and H (BO-10, 11); **E2 BO-06 is DESIGN-023 (#167)**.
 - **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** S7b3 final tree
@@ -52,9 +52,10 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Running tasks and agents
 
-- **PHASE1-S8a building** (dispatched 11-05, interactive Sonnet, Herdr `phase1-s8a`, pane `PHASE1-S8a`, worktree
-  `wt/PHASE1-S8a`). Waiter exited 4 at 15:46 (idle on its own Monitors, not stopped); the builder keeps working, in
-  **auto mode** since the 15:16 heredoc prompt (chosen in the pane). `owns` widened for `fixtureSession.ts` (`50d2501`).
+- **PHASE1-S8a built** (`5c41a6a`; Sonnet, pane `PHASE1-S8a` kept, **auto mode** since a 15:16 prompt). Its BLOCKED
+  (two forced files outside `owns`) ruled: `owns` widened, the builder's `config-api.test.tsx` edit committed by the lead
+  unchanged (`d191ef7`, `8fd0eb9`). Lead verify running; then Codex review. **Dev `pos` is at `0015`** (the builder
+  migrated): the main checkout's server refuses to start until S8a merges.
 - **PHASE1-S7b3 complete, PR #171** (`df215e9`, against `development`, its own 8 commits). Codex: 3 findings
   (`c6b9e55`; F1 P1: a preset changed under an open approval was applied with its new value), fixed in round 2 `dd1c1d2`,
   lead-reviewed: 158 / 5743, e2e:all 132, R1 mutations red. `shown` optional (noted). Owner looks before merge.
@@ -102,8 +103,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **Owner to see in a browser, then close:** BO-03 (with 86), BO-04, BO-07 (48-row overflow unmeasured), BO-08's
   methods (if not seen before #137); the Burger-tile fix (FE-021 `7268943`, L257-262); POS-03 Add (L353); DESIGN-021's
   and DESIGN-023's states in the gallery (`docs/design/visual-directions/index.html`).
-- **Money, not filed (ARCH-003, 9.6):** `closeOrder` accepts any drafts; only the Add gate keeps a card under the balance (B-5).
-- **Must not become a guarantee:** optional `OrderLine.itemId` (C4 §5); the in-memory refund and change walk.
+- **Money (ARCH-003, 9.6):** `closeOrder` takes any drafts; only Add keeps a card under the balance (B-5). **Not guarantees:** optional `OrderLine.itemId` (C4 §5), the in-memory refund and change walk, S7b3's `shown`.
 - **Backend:** `session_replication_role` bypasses the append-only trigger (ADR-008); PIN timing (ARCH-013 §7). The
   schema check compares migration names, not contents (S0). `npm ci` warns about install scripts. One high npm advisory,
   development-only (PHASE0-008a). **BO-01 provisional** (S10 builds DESIGN-016). **012a/b:** no `makePeople` in `e2e/`.
