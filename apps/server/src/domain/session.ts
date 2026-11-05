@@ -73,6 +73,7 @@ const VALID = `s.token_hash = $1
    AND u.id = s.staff_user_id
    AND s.released_at IS NULL
    AND u.is_active
+   AND u.role IS NOT NULL
    AND u.credential_version = s.credential_version
    AND (s.absolute_expires_at IS NULL OR s.absolute_expires_at > clock_timestamp())`;
 const NOT_IDLE = `AND s.last_interactive_at > clock_timestamp() - make_interval(secs => $3::int)`;

@@ -58,6 +58,11 @@ export function configApi(api: OfficeApi): ConfigApi {
     '/api/back-office/config/catalog/presets/update': api['/api/back-office/config/catalog/presets/update'],
     '/api/back-office/config/catalog/presets/deactivate': api['/api/back-office/config/catalog/presets/deactivate'],
     '/api/back-office/config/catalog/presets/reactivate': api['/api/back-office/config/catalog/presets/reactivate'],
+    '/api/back-office/config/users': api['/api/back-office/config/users'],
+    '/api/back-office/config/users/create': api['/api/back-office/config/users/create'],
+    '/api/back-office/config/users/change-role': api['/api/back-office/config/users/change-role'],
+    '/api/back-office/config/users/deactivate': api['/api/back-office/config/users/deactivate'],
+    '/api/back-office/config/users/reactivate': api['/api/back-office/config/users/reactivate'],
   };
 }
 
@@ -110,5 +115,10 @@ export function officeApi(client: ApiClient): OfficeApi {
     '/api/back-office/config/catalog/presets/update': (body) => client.request(ROUTES.presetsUpdate, body),
     '/api/back-office/config/catalog/presets/deactivate': (body) => client.request(ROUTES.presetsDeactivate, body),
     '/api/back-office/config/catalog/presets/reactivate': (body) => client.request(ROUTES.presetsReactivate, body),
+    '/api/back-office/config/users': () => client.request(ROUTES.usersList),
+    '/api/back-office/config/users/create': (body) => client.request(ROUTES.usersCreate, body),
+    '/api/back-office/config/users/change-role': (body) => client.request(ROUTES.usersChangeRole, body),
+    '/api/back-office/config/users/deactivate': (body) => client.request(ROUTES.usersDeactivate, body),
+    '/api/back-office/config/users/reactivate': (body) => client.request(ROUTES.usersReactivate, body),
   };
 }

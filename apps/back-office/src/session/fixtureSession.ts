@@ -84,6 +84,13 @@ const CONFIG: SessionStore['config'] = {
   '/api/back-office/config/catalog/presets/update': unavailable,
   '/api/back-office/config/catalog/presets/deactivate': unavailable,
   '/api/back-office/config/catalog/presets/reactivate': unavailable,
+  // The users answer `unavailable` too: no screen calls them yet, and there is no fixture user
+  // list to seed.
+  '/api/back-office/config/users': unavailable,
+  '/api/back-office/config/users/create': unavailable,
+  '/api/back-office/config/users/change-role': unavailable,
+  '/api/back-office/config/users/deactivate': unavailable,
+  '/api/back-office/config/users/reactivate': unavailable,
 };
 
 export function createFixtureSession(): SessionStore {

@@ -721,3 +721,59 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ## Handoff
 
+**Result.** The slice is built and `npm run verify` is green: typecheck clean, 162 files and 5779 tests passed (baseline was 157 files and 5696 tests). I did not run `npm run test:e2e:all`: it needs a browser build and run that I did not attempt, and the task has the lead run it before merge. No browser test was added or changed. I changed nothing that Prettier formats; no formatter was run.
+
+**What was built, by path.**
+- `db/migrations/0015_staff_user_kitchen.sql`: `role`, `pin_hash`, `pin_lookup` nullable; `staff_user_credential_shape_check` (a role and a PIN together, or neither); `staff_user_name_text_check` (trimmed, at most 64, no `[[:cntrl:]]`); `REVOKE UPDATE` then `GRANT UPDATE (role, pin_hash, pin_lookup, is_active, credential_version)`. The header states the full credential-version rule. The PostgreSQL 16 manual (REVOKE page) says a table-level revoke also revokes the column privileges, confirmed through ask.sh librarian and by the privilege-map test. U+0007 and U+009B are both refused by `[[:cntrl:]]` (schema test).
+- `apps/server/src/domain/users.ts` (new): `listUsers`, `createUser`, `changeRole`, `deactivateUser`, `reactivateUser`, `lockUsers`, `USER_ACTIONS`.
+- `apps/server/src/http/routes/back-office-users.ts` (new), registered in `server.ts`.
+- `pin.ts`: added `preparePin` and `insertStaffUser` (`createStaffUser` now composes them, same messages). `back-office-credential.ts`: added `hashPassword` and `insertBackOfficeCredential` (`createBackOfficeCredential` composes them, same messages); `LockedRow.role` is `StaffRole | null`. `session.ts`: `AND u.role IS NOT NULL` in `VALID`. `log.ts`: `SECRET_KEYS` exported and gains `currentPassword` and `username`.
+- Contracts: `users.ts` (new), `errors.ts`, `routes.ts`, `index.ts`. Client: `specs.ts`, `client.ts`, both `realSession.ts` switches, back-office `api.ts`.
+
+**Names to carry forward (S8b, S8c).**
+- Routes: `GET /api/back-office/config/users`; `POST .../users/create`, `/change-role`, `/deactivate`, `/reactivate`. `ROUTES`: `usersList`, `usersCreate`, `usersChangeRole`, `usersDeactivate`, `usersReactivate`.
+- Schemas: `StaffClassification`, `StaffName`, `NewPin` (= `ManagerPin`), `NewUsername`, `NewPassword`, `UserView`, `UserResponse`, `UsersResponse`, `CreateUserRequest` with `CreateKitchenUserRequest`, `CreateCashierUserRequest`, `CreateManagerUserRequest`, `ChangeRoleRequest` with `KitchenToCashierRequest`, `KitchenToManagerRequest`, `CashierToManagerRequest`, `ManagerToCashierRequest`, `CashierToKitchenRequest`, `ManagerToKitchenRequest`, `DeactivateUserRequest`, `ReactivateUserRequest`. `CurrentPassword` is not defined (no S8a schema uses it); S8b adds it.
+- Action list (`USER_ACTIONS`): `user.create.cashier`, `user.create.manager`, `user.deactivate`, `user.reactivate`, `user.reactivate.new_pin`, and `user.role.kitchen_to_cashier|kitchen_to_manager|cashier_to_manager|manager_to_cashier|cashier_to_kitchen|manager_to_kitchen`. S8b adds `user.pin.reset`, `user.password.reset`, `user.own_pin.change`, `user.own_password.change`; the closed-list check is `audit()` in `users.ts`, before `writeAudit`.
+- **S8b's commands open with `lockUsers(client, actor, subjectId)`** inside `command(...)`: it locks the actor's and subject's `staff_user` rows together (id order, `FOR NO KEY UPDATE`), then re-reads the actor (active, MANAGER, credential version equal to the session row's, session unreleased) and returns `UNAUTHENTICATED` otherwise. Pass `subjectId` lower-case. The own-account check (`OWN_ACCOUNT`) goes before `command(...)`, before any hashing. `Refusal` thrown inside the callback rolls back and answers; a 23505 on `staff_user_active_pin_lookup_key` or `back_office_credential_username_key` becomes `DUPLICATE` with its field.
+- Codes: `OWN_ACCOUNT` 409 (deactivate and change-role aimed at the actor's own id; S8b adds set-pin and set-password), `USER_CHANGED` 409 (stale origin or inactive subject; a username sent for someone who has one or missing for someone who has none; a `pin` for a kitchen row on reactivate), `DUPLICATE` 409 with `details.field` `pin` or `username` on the users routes only, `UNAUTHENTICATED` 401 from the actor re-check, `NOT_FOUND`, `VALIDATION_FAILED`.
+
+**Decisions and evidence.**
+1. *Hashing outside the lock, and the shared create path.* Ruling 6 says keep `createStaffUser` and `createBackOfficeCredential` shared; C3 says hash outside any transaction. `createStaffUser` hashes inside the call, so calling it under the actor lock would hold a lock across Argon2id. I split each into a prepare/hash step and one shared INSERT function (`insertStaffUser`, `insertBackOfficeCredential`); the script still calls the two original functions, which compose the same pieces. `apps/server/scripts/create-manager.ts` is untouched: its output and exit codes are exactly as before, and the existing back-office-credential cases 29 to 35 still pass.
+2. *A refusal after a write.* The username collision comes after the staff row is inserted in the same transaction, so it is raised as a thrown `Refusal` to roll back both rows; the PIN `ON CONFLICT DO NOTHING` path returns before any write.
+3. *Response scan.* A `UserView` carries `username` by design, so the response-body scans exclude username markers and instead check refusals never contain one; PINs, passwords, lookups and `$argon2id$` are scanned everywhere. The log scan reads each line without its `time`, because a six-digit PIN marker can spell part of a timestamp.
+4. *Uppercase ids.* `z.uuid()` accepts upper case and PostgreSQL prints lower case, so the domain lower-cases the subject id before the own-account comparison and the lock (tested).
+5. *Key-name test location.* It is `apps/server/test/credential-keys.test.ts`, because it must import `SECRET_KEYS` from the server and the contracts package cannot. It walks every `*Request` export at any depth and fails on a credential-shaped key that is nested or not in the list. The task's red names `currentPassword`, which has no S8a schema; I used `password` renamed to `oldPassword` in the create-manager schema instead.
+6. *Audit rollback proof (ruling 5).* `REVOKE INSERT (action) ON audit_entry FROM pos_app`, restored in a `finally`; no production branch or flag.
+
+**Files outside `owns`, changed because the compiler or an existing test forced it. Please ratify or tell me to revert.**
+- `apps/back-office/src/session/fixtureSession.ts`: five `unavailable` entries for the new config routes (`ConfigApi` now has five more required members; typecheck failed without them).
+- `apps/back-office/test/config-api.test.tsx`: its run-time list of config routes gains the five users routes, and its title says so.
+- Within a listed file, `apps/server/test/back-office-credential.test.ts` case 28 (exact export list) gains `hashPassword` and `insertBackOfficeCredential`. Nothing was loosened; each list only grew by the new items.
+
+**Existing tests changed, and why.** `schema.test.ts` (privilege map for `staff_user`; four new cases), `session.test.ts` (new case 11), `log-scan.test.ts` (case 24 gains `currentPassword` and `username`; `resetDatabase` added to its `beforeAll` so a re-run does not meet its own PINs; new users scan), `error-details.types.ts`, the three above. `route-table.test.ts`, `access.test.ts` and every existing `DUPLICATE` assertion (tables, tender methods, catalog, presets) pass unedited.
+
+**Red proofs (each applied, failing for the stated reason, reverted; `git status` shows no mutation left).**
+1. Dropped `users/deactivate` from `ROUTE_TABLE`: `route-table.test.ts` failed "registered but not in the table".
+2. Declared `deactivate` `OPTIONAL`: users case 2 failed at "no cookie".
+3. Granted `UPDATE (name)`: schema privilege map and the new column test failed.
+4. Create-manager username collision reported as `'pin'`: the username-DUPLICATE case failed.
+5. Origin check skipped: the stale-move case wrote.
+6. Increment dropped from deactivation: the deactivate/reactivate sessions case (AC-32) and three others failed.
+7. Unique violation treated as a fault: the three taken-PIN cases got 500.
+8. Own-account check dropped from `deactivateUser`: self-deactivation returned 200, and the held-lock case failed.
+9. Lock only the subject (actor read unlocked): both crossing cases ended `[200, 200]`. My first attempt, dropping the actor from the lock array entirely, made both `UNAUTHENTICATED`, which missed the real defect; the final mutation kept an unlocked actor read.
+10. PIN written into `reason`: the one-entry-per-command case failed. Manager-create entry skipped: failed. Audit written after commit (deactivate): the rollback case and the no-entry case failed.
+11. `u.role IS NOT NULL` removed: session case 11 got `ACTIVE`.
+12. `password` renamed `oldPassword` in a schema: the key-name test failed on "not in SECRET_KEYS".
+13. Details attached in the shared envelope helper (`send` in `errors.ts`): tables and tender-methods `DUPLICATE` exact-body cases failed.
+Case 14 (`error-details.types.ts`) is compile-time and passes `tsc`; every `@ts-expect-error` is live.
+
+**Verify output.** `npm run verify`: typecheck clean; `Test Files 162 passed (162)`, `Tests 5779 passed (5779)`. An earlier full run in this session had three failures, all fixed above (case 28 export list, `config-api.test.tsx`, and my own wrong depth in `credential-keys.test.ts`). One full run took 1119 s on a busy machine against about 120 s normally; I did not find a cause in the tests (the next runs took 117 s and 135 s).
+
+**Found, not fixed.** `reactivateUser` hashes a supplied `pin` before the lock even where the command turns out to be a no-op; harmless, only cost. The own-account check lives in the domain (`changeRole`, `deactivateUser`) rather than the route; a route test proves the status.
+
+**Migration and the development database.** I ran `npm run db:migrate` here: `applied: 0015_staff_user_kitchen.sql`, with no failure, so every existing development row already satisfied the new checks. The lead should do the same on any other development database and, if the migration fails, report the row and not edit it by hand.
+
+**What the next agent does not have.** No `CurrentPassword` schema, no `set-pin`/`set-password`/`own-*` routes, no re-stamp. No screen; the five back-office API functions are declared and called by nothing.
+
+DONE

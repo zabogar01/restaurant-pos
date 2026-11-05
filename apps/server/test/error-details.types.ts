@@ -205,6 +205,60 @@ export function neverCalled(cause: Error, text: string): void {
   const catalog_changedObject: ErrorBody = { error: { code: ErrorCode.CATALOG_CHANGED, details: { any: 'object' } } };
   void [catalog_changedText, catalog_changedObject];
 
+  // S8a: OWN_ACCOUNT and USER_CHANGED take no details.
+  // @ts-expect-error a string
+  new AppError(ErrorCode.OWN_ACCOUNT, 409, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.OWN_ACCOUNT, 409, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.OWN_ACCOUNT, 409, new Error('x'));
+  // @ts-expect-error an undeclared object
+  new AppError(ErrorCode.OWN_ACCOUNT, 409, { any: 'object' });
+  // @ts-expect-error the field of another code
+  new AppError(ErrorCode.OWN_ACCOUNT, 409, { field: 'pin' });
+  // @ts-expect-error a string in the body
+  const own_accountText: ErrorBody = { error: { code: ErrorCode.OWN_ACCOUNT, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const own_accountObject: ErrorBody = { error: { code: ErrorCode.OWN_ACCOUNT, details: { any: 'object' } } };
+  void [own_accountText, own_accountObject];
+
+  // @ts-expect-error a string
+  new AppError(ErrorCode.USER_CHANGED, 409, text);
+  // @ts-expect-error an exception's message
+  new AppError(ErrorCode.USER_CHANGED, 409, cause.message);
+  // @ts-expect-error an exception
+  new AppError(ErrorCode.USER_CHANGED, 409, new Error('x'));
+  // @ts-expect-error an undeclared object
+  new AppError(ErrorCode.USER_CHANGED, 409, { any: 'object' });
+  // @ts-expect-error the field of another code
+  new AppError(ErrorCode.USER_CHANGED, 409, { field: 'username' });
+  // @ts-expect-error a string in the body
+  const user_changedText: ErrorBody = { error: { code: ErrorCode.USER_CHANGED, details: text } };
+  // @ts-expect-error an undeclared object in the body
+  const user_changedObject: ErrorBody = { error: { code: ErrorCode.USER_CHANGED, details: { any: 'object' } } };
+  void [user_changedText, user_changedObject];
+
+  // S8a: DUPLICATE takes only `{ field }`, one of the two literals, and only the users
+  // routes send it. A string, a field of another value, a free string in the field and an
+  // extra key do not compile.
+  // @ts-expect-error a field of another value
+  new AppError(ErrorCode.DUPLICATE, 409, { field: 'name' });
+  // @ts-expect-error a free string in the field
+  new AppError(ErrorCode.DUPLICATE, 409, { field: text });
+  // @ts-expect-error an exception's message in the field
+  new AppError(ErrorCode.DUPLICATE, 409, { field: cause.message });
+  // @ts-expect-error an extra key
+  new AppError(ErrorCode.DUPLICATE, 409, { field: 'pin', value: '123456' });
+  // @ts-expect-error a free string in the body's field
+  const duplicateFreeField: ErrorBody = { error: { code: ErrorCode.DUPLICATE, details: { field: text } } };
+  void duplicateFreeField;
+  new AppError(ErrorCode.DUPLICATE, 409, { field: 'pin' });
+  new AppError(ErrorCode.DUPLICATE, 409, { field: 'username' });
+  new AppError(ErrorCode.DUPLICATE, 409);
+  const duplicateWithField: ErrorBody = { error: { code: ErrorCode.DUPLICATE, details: { field: 'pin' } } };
+  const duplicateBare: ErrorBody = { error: { code: ErrorCode.DUPLICATE } };
+  void [duplicateWithField, duplicateBare];
+
   // The two codes that carry details (009b): a number PostgreSQL computed, and
   // nothing else. A string, an exception's message, an exception and an object of
   // another shape (a parse error's issues among them) do not compile.

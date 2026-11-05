@@ -6,8 +6,43 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance, InjectOptions } from 'fastify';
 import { closePool, query } from '../src/db/pool.js';
+import { pinLookup } from '../src/domain/pin.js';
 import { buildServer } from '../src/http/server.js';
+import { JarClient } from './support/client.js';
+import { resetDatabase } from './support/database.js';
+import { makePeople } from './support/people.js';
 import { inject } from './support/request.js';
+import { usersApi } from './support/users.js';
+
+// PHASE1-S8a: the users routes' credentials. Each travels in a body by one field, with a
+// marker no other field shares. A PIN is six digits by rule, so these six-digit numbers are
+// chosen apart from anything the log prints, and the scan reads each line without its `time`.
+const USERS_MARK = {
+  pins: {
+    created: '987651',
+    cashier: '987652',
+    promoted: '987653',
+    reactivated: '987654',
+    collider: '987655',
+    taken: '987656',
+    extraKey: '987657',
+  },
+  passwords: {
+    created: 'MARK-USERS-PASSWORD-CREATED-7731',
+    promoted: 'MARK-USERS-PASSWORD-PROMOTED-7732',
+    duplicateUsername: 'MARK-USERS-PASSWORD-DUPLICATE-7733',
+  },
+  usernames: {
+    created: 'mark.users.created.4411',
+    promoted: 'mark.users.promoted.4412',
+  },
+  extraKey: 'MARK-USERS-EXTRA-KEY-9901',
+  malformedPin: 'MARK-USERS-MALFORMED-PIN-9902',
+  malformedPassword: 'MK-PW-7',
+};
+const usersPeople = makePeople(760000);
+const usersBodies: string[] = [];
+const usersRefusals: { status: number; body: string }[] = [];
 
 // A request's path is logged by design (the method and the path, never the
 // query), so a marker in a path would be a false alarm. These two travel in the
@@ -30,6 +65,8 @@ const MARK = {
   loggedPin: 'MARK-LOGGED-PIN-1029',
   loggedPassword: 'MARK-LOGGED-PASSWORD-2047',
   loggedDeep: 'MARK-LOGGED-DEEP-3065',
+  loggedCurrentPassword: 'MARK-LOGGED-CURRENTPASSWORD-4471',
+  loggedUsername: 'MARK-LOGGED-USERNAME-5582',
   badUrlPin: 'MARK-BADURL-PIN-6021',
   badUrlPassword: 'MARK-BADURL-PASSWORD-7742',
   bundleQuery: 'MARK-BUNDLE-QUERY-8815',
@@ -54,6 +91,7 @@ async function send(options: InjectOptions) {
 }
 
 beforeAll(async () => {
+  await resetDatabase();
   lines = [];
   const logStream = new Writable({
     write(chunk, _encoding, done) {
@@ -93,6 +131,8 @@ beforeAll(async () => {
             {
               pin: MARK.loggedPin,
               password: MARK.loggedPassword,
+              currentPassword: MARK.loggedCurrentPassword,
+              username: MARK.loggedUsername,
               nested: { pin: MARK.loggedDeep },
             },
             'probe'
@@ -154,6 +194,84 @@ beforeAll(async () => {
     method: 'GET',
     url: `/api/probe-param/${PATH_MARK.param}${'x'.repeat(200)}?pin=${MARK.badUrlPin}`,
   });
+
+  // S8a: every users route with a marker in every credential field, through the success
+  // path, a DUPLICATE on the PIN (the collision made against a marker PIN) and on the
+  // username, and a strict-schema refusal with a marker in an extra key and in a malformed
+  // value. The responses are kept for the body scan and, when they are errors, for the
+  // envelope check.
+  const manager = await usersPeople.manager();
+  const jar = new JarClient(app);
+  await jar.signInBackOffice(manager.username, manager.password);
+  const users = usersApi(jar);
+  const sendUsers = async (call: () => ReturnType<typeof users.list>) => {
+    const res = await call();
+    usersBodies.push(res.body);
+    bodies.push(res.body);
+    if (res.statusCode >= 400) {
+      errorBodies.push({ status: res.statusCode, body: res.body });
+      usersRefusals.push({ status: res.statusCode, body: res.body });
+    }
+    return res;
+  };
+  const idOf = (res: Awaited<ReturnType<typeof sendUsers>>) =>
+    (res.json() as { user: { staffUserId: string } }).user.staffUserId;
+
+  await sendUsers(() => users.list());
+  const created = await sendUsers(() =>
+    users.create({
+      classification: 'MANAGER',
+      name: 'Scan Manager',
+      pin: USERS_MARK.pins.created,
+      username: USERS_MARK.usernames.created,
+      password: USERS_MARK.passwords.created,
+    })
+  );
+  const cashier = await sendUsers(() =>
+    users.create({ classification: 'CASHIER', name: 'Scan Cashier', pin: USERS_MARK.pins.cashier })
+  );
+  const cook = await sendUsers(() => users.create({ classification: 'KITCHEN', name: 'Scan Cook' }));
+  await sendUsers(() =>
+    users.changeRole({
+      change: 'KITCHEN_TO_MANAGER',
+      staffUserId: idOf(cook),
+      pin: USERS_MARK.pins.promoted,
+      password: USERS_MARK.passwords.promoted,
+      username: USERS_MARK.usernames.promoted,
+    })
+  );
+  const spare = await usersPeople.cashier();
+  await sendUsers(() => users.deactivate(spare.id));
+  await sendUsers(() => users.reactivate(spare.id, USERS_MARK.pins.reactivated));
+  await sendUsers(() => users.deactivate(idOf(cashier)));
+  // A DUPLICATE on the PIN: the create, then the reactivation, each against a marker PIN.
+  await sendUsers(() => users.create({ classification: 'CASHIER', name: 'Collides', pin: USERS_MARK.pins.created }));
+  await sendUsers(() => users.reactivate(idOf(cashier), USERS_MARK.pins.reactivated));
+  // A DUPLICATE on the username, with markers in the PIN and the password beside it.
+  await sendUsers(() =>
+    users.create({
+      classification: 'MANAGER',
+      name: 'Collides',
+      pin: USERS_MARK.pins.taken,
+      username: USERS_MARK.usernames.created,
+      password: USERS_MARK.passwords.duplicateUsername,
+    })
+  );
+  // A strict-schema refusal: a marker in an extra key, and in two malformed values.
+  await sendUsers(() =>
+    users.create({ classification: 'CASHIER', name: 'Extra', pin: USERS_MARK.pins.extraKey, extra: USERS_MARK.extraKey })
+  );
+  await sendUsers(() => users.create({ classification: 'CASHIER', name: 'Malformed', pin: USERS_MARK.malformedPin }));
+  await sendUsers(() =>
+    users.create({
+      classification: 'MANAGER',
+      name: 'Short',
+      pin: USERS_MARK.pins.collider,
+      username: 'short.password',
+      password: USERS_MARK.malformedPassword,
+    })
+  );
+  await sendUsers(() => users.deactivate(idOf(created)));
 });
 
 afterAll(async () => {
@@ -243,14 +361,66 @@ describe('what leaves the process', () => {
     expect(logged?.err).not.toHaveProperty('message');
   });
 
-  it('24. a probe that logs { pin, password } produces a line without either key', () => {
+  it('24. a probe that logs { pin, password, currentPassword, username } produces a line without any of the four keys', () => {
     const line = lines
       .map((l) => JSON.parse(l) as Record<string, unknown>)
       .find((l) => l.msg === 'probe');
     expect(line).toBeDefined();
     expect(line).not.toHaveProperty('pin');
     expect(line).not.toHaveProperty('password');
+    expect(line).not.toHaveProperty('currentPassword');
+    expect(line).not.toHaveProperty('username');
     expect(line!.nested).toEqual({});
+  });
+
+  describe('S8a: the users routes', () => {
+    const lookups = Object.values(USERS_MARK.pins).map((pin) => pinLookup(pin));
+    const secrets = [
+      ...Object.values(USERS_MARK.pins),
+      ...Object.values(USERS_MARK.passwords),
+      ...Object.values(USERS_MARK.usernames),
+      USERS_MARK.extraKey,
+      USERS_MARK.malformedPin,
+      ...lookups,
+      '$argon2id$',
+    ];
+
+    it('has the requests it scans, and the refusals it expects', () => {
+      expect(usersBodies.length).toBeGreaterThanOrEqual(14);
+      expect(usersRefusals.map((r) => `${r.status} ${r.body}`)).toEqual([
+        '409 {"error":{"code":"DUPLICATE","details":{"field":"pin"}}}',
+        '409 {"error":{"code":"DUPLICATE","details":{"field":"pin"}}}',
+        '409 {"error":{"code":"DUPLICATE","details":{"field":"username"}}}',
+        '400 {"error":{"code":"VALIDATION_FAILED"}}',
+        '400 {"error":{"code":"VALIDATION_FAILED"}}',
+        '400 {"error":{"code":"VALIDATION_FAILED"}}',
+      ]);
+    });
+
+    it('13. no marker PIN, password or username, no PIN lookup and no hash appears in any log line at trace', () => {
+      // Read without `time`: a timestamp is thirteen digits and could spell a six-digit marker.
+      const log = lines
+        .map((line) => {
+          const parsed = JSON.parse(line) as Record<string, unknown>;
+          delete parsed.time;
+          return JSON.stringify(parsed);
+        })
+        .join('\n');
+      const leaked = secrets.filter((secret) => log.includes(secret));
+      expect(leaked, 'secrets that reached the log').toEqual([]);
+    });
+
+    it('12 and 13. no marker PIN, password, lookup or hash appears in any response body; the username appears only where the view says it', () => {
+      const everything = usersBodies.join('\n');
+      const leaked = secrets
+        .filter((secret) => !Object.values(USERS_MARK.usernames).includes(secret))
+        .filter((secret) => everything.includes(secret));
+      expect(leaked, 'secrets that reached a response').toEqual([]);
+      // A username comes back only in a user view (create and promote), never in a refusal.
+      for (const { body } of usersRefusals) {
+        for (const username of Object.values(USERS_MARK.usernames)) expect(body).not.toContain(username);
+      }
+    });
   });
 
   it('request lines carry the method and the path without its query string', () => {

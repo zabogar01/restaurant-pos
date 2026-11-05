@@ -224,6 +224,25 @@ describe('resolution', () => {
   });
 });
 
+describe('a row with no role', () => {
+  // S8a-11: kitchen staff are `role IS NULL`. Every command that makes a row kitchen also
+  // increments the version; the predicate's own role clause is what keeps "a kitchen row
+  // can never resolve a session" true if a later command forgets.
+  it('11. a cashier\'s session whose row is made kitchen without an increment resolves NONE, idle or not', async () => {
+    const issued = await createSession({ audience: 'POS', user: cashier });
+    expect((await resolveSession(issued.token, 'POS', false)).status).toBe('ACTIVE');
+    await ownerQuery(
+      `UPDATE staff_user SET role = NULL, pin_hash = NULL, pin_lookup = NULL WHERE id = $1`,
+      [cashierId]
+    );
+    expect(await resolveSession(issued.token, 'POS', false)).toEqual({ status: 'NONE' });
+    expect(await resolveSession(issued.token, 'POS', true)).toEqual({ status: 'NONE' });
+    // Not IDLE either: an idle session of a row with no role grants nothing and is not renewable.
+    await age(issued.sessionId, 91);
+    expect(await resolveSession(issued.token, 'POS', false)).toEqual({ status: 'NONE' });
+  });
+});
+
 describe('idle and absolute', () => {
   it('10. POS: 89 seconds is ACTIVE, 91 is IDLE', async () => {
     const issued = await createSession({ audience: 'POS', user: cashier });

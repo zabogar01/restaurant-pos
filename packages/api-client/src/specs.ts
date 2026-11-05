@@ -6,14 +6,17 @@ import {
   CatalogResponse,
   CategoriesResponse,
   CategoryResponse,
+  ChangeRoleRequest,
   CreateCategoryRequest,
   CreateItemRequest,
   CreateTableRequest,
   CreateTenderMethodRequest,
   CreatePresetRequest,
+  CreateUserRequest,
   DeactivatePresetRequest,
   DeactivateTableRequest,
   DeactivateTenderMethodRequest,
+  DeactivateUserRequest,
   ItemResponse,
   ItemsResponse,
   MarkItemAvailableRequest,
@@ -26,6 +29,7 @@ import {
   ReactivatePresetRequest,
   ReactivateTableRequest,
   ReactivateTenderMethodRequest,
+  ReactivateUserRequest,
   ReauthenticateRequest,
   ReorderCategoriesRequest,
   ReorderItemsRequest,
@@ -44,6 +48,8 @@ import {
   UpdatePresetRequest,
   UpdateTableRequest,
   UpdateTenderMethodRequest,
+  UserResponse,
+  UsersResponse,
 } from '@pos/contracts';
 
 /** The one thing the core needs of a schema; every zod schema in the contracts has it. */
@@ -149,6 +155,11 @@ export const SPECS = {
   '/api/back-office/config/catalog/presets/update': { body: UpdatePresetRequest, response: PresetResponse },
   '/api/back-office/config/catalog/presets/deactivate': { body: DeactivatePresetRequest, response: PresetResponse },
   '/api/back-office/config/catalog/presets/reactivate': { body: ReactivatePresetRequest, response: PresetResponse },
+  '/api/back-office/config/users': { response: UsersResponse },
+  '/api/back-office/config/users/create': { body: CreateUserRequest, response: UserResponse },
+  '/api/back-office/config/users/change-role': { body: ChangeRoleRequest, response: UserResponse },
+  '/api/back-office/config/users/deactivate': { body: DeactivateUserRequest, response: UserResponse },
+  '/api/back-office/config/users/reactivate': { body: ReactivateUserRequest, response: UserResponse },
 } as const satisfies Record<RoutePath, Spec>;
 
 type Specs = typeof SPECS;
