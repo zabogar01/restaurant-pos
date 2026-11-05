@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { rateFromPercent } from '@pos/money';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -18,7 +19,6 @@ import {
   COMP,
   DISCOUNT_FIXTURES,
   OTHER_15,
-  PRESETS,
   OTHER_15_NOTE,
   STAFF_MEAL,
   STAFF_MEAL_NOTE,
@@ -27,7 +27,10 @@ import {
 import type { DiscountChange, DiscountRefusal, DiscountThrough } from '../src/discountChange.js';
 import { DiscountSheet } from '../src/DiscountSheets.js';
 import { OrderScreen } from '../src/OrderPanel.js';
+import { PRESETS } from '../src/menuFixtures.js';
 import { ORDER_FIXTURES, ORDER_STATES, type OrderState, type OrderView } from '../src/orderFixtures.js';
+import { CatalogProvider } from '../src/catalog/useCatalog.js';
+import type { CatalogPreset, CatalogStore } from '../src/catalog/types.js';
 import { shownOrder, type ShownOrder } from '../src/voidFixtures.js';
 
 // M-3, the discount family (F2i). What this file is for:
@@ -76,25 +79,40 @@ function render(state: OrderState) {
  * and what it asks the store for; `refuses` makes the store answer with that
  * refusal, as a store would that the screen could not have prevented.
  */
-function renderSheet(fixture: DiscountSheetFixture, order: ShownOrder, refuses?: DiscountRefusal) {
+function renderSheet(fixture: DiscountSheetFixture, order: ShownOrder, refuses?: DiscountRefusal, presets?: ReadonlyArray<Preset>) {
   const went: OrderView[] = [];
   const asked: Array<[DiscountChange, DiscountThrough]> = [];
-  act(() =>
-    root.render(
-      <div className="pos-device" key={++mount}>
-        <DiscountSheet
-          fixture={fixture}
-          order={order}
-          changeDiscount={(change, through) => {
-            asked.push([change, through]);
-            return refuses ? { refused: refuses } : {};
-          }}
-          go={(v) => went.push(v)}
-        />
-      </div>
-    )
+  const sheet = (
+    <div className="pos-device" key={++mount}>
+      <DiscountSheet
+        fixture={fixture}
+        order={order}
+        changeDiscount={(change, through) => {
+          asked.push([change, through]);
+          return refuses ? { refused: refuses } : {};
+        }}
+        go={(v) => went.push(v)}
+      />
+    </div>
   );
+  act(() => root.render(presets ? <CatalogProvider store={storeWith(presets)}>{sheet}</CatalogProvider> : sheet));
   return { went, asked };
+}
+
+/**
+ * A catalog store that holds exactly these presets (the active ones, as the server serves only those): the
+ * picker and the store read the list from the catalog, so a test that wants another list gives it another store.
+ */
+function storeWith(presets: ReadonlyArray<Preset>): CatalogStore {
+  const held: CatalogPreset[] = presets
+    .filter((p) => p.active)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      value: p.value.kind === 'percent' ? { kind: 'PERCENTAGE', rate: rateFromPercent(p.value.percent) } : { kind: 'FIXED', amount: p.value.amount },
+    }));
+  const snapshot = { menu: { version: 0, categories: [], items: [], presets: held }, read: 'ready', failure: null, outOfDate: false, availabilityChanges: 0 } as const;
+  return { kind: 'fixture', getSnapshot: () => snapshot, subscribe: () => () => {}, start: () => () => {}, retry: () => {} };
 }
 
 /** The order a ?state= draws, as the store seeds it. */
@@ -424,17 +442,17 @@ describe('cancelling the prompt returns to the sheet with nothing changed (B-20)
 
 describe('a preset deactivated or edited after it was applied (FR-F5, B-8)', () => {
   const retired: Preset[] = PRESETS.map((p) => (p.id === 'staff-meal' ? { ...p, active: false } : p));
-  const onRetired: DiscountSheetFixture = { ...DISCOUNT_FIXTURES['sheet-remove']!, presets: retired };
+  const onRetired: DiscountSheetFixture = DISCOUNT_FIXTURES['sheet-remove']!;
   const carrying = orderOf('sheet-remove');
 
   it('still reads on the order that carries it', () => {
-    renderSheet(onRetired, carrying);
+    renderSheet(onRetired, carrying, undefined, retired);
     const card = sheet()!.querySelector('.discount-applied')!;
     expect(card.querySelector('.discount-applied__row')!.textContent).toBe('Staff meal — 10%−40.500');
   });
 
   it('is absent from the picker', () => {
-    renderSheet(onRetired, carrying);
+    renderSheet(onRetired, carrying, undefined, retired);
     press(inSheet('Replace with another preset'));
     const offered = [...sheet()!.querySelectorAll('.discount-option')].map((b) => b.textContent);
     expect(offered).toEqual(['Regular customer — 5%', 'Service recovery — 50.000 off', 'Comp — 100%', 'Other amount — needs a manager']);
@@ -442,12 +460,12 @@ describe('a preset deactivated or edited after it was applied (FR-F5, B-8)', () 
 
   it('reads the value it was applied at, not the preset’s value today', () => {
     const edited: Preset[] = PRESETS.map((p) => (p.id === 'staff-meal' ? { ...p, value: { kind: 'percent', percent: '20' } } : p));
-    renderSheet({ ...DISCOUNT_FIXTURES['sheet-remove']!, presets: edited }, carrying);
+    renderSheet(DISCOUNT_FIXTURES['sheet-remove']!, carrying, undefined, edited);
     expect(sheet()!.querySelector('.discount-applied__row')!.textContent).toBe('Staff meal — 10%−40.500');
   });
 
   it('never looks the preset up: a reference to nothing reads the same', () => {
-    renderSheet({ ...DISCOUNT_FIXTURES['sheet-remove']!, presets: [] }, { ...carrying, applied: { ...STAFF_MEAL, presetId: 'gone' } });
+    renderSheet(DISCOUNT_FIXTURES['sheet-remove']!, { ...carrying, applied: { ...STAFF_MEAL, presetId: 'gone' } }, undefined, []);
     expect(sheet()!.querySelector('.discount-applied__row')!.textContent).toBe('Staff meal — 10%−40.500');
   });
 });

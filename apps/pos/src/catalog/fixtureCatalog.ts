@@ -1,12 +1,15 @@
+import { rateFromPercent } from '@pos/money';
 import {
   FIXTURE_MENU_MARKER,
+  FIXTURE_PRESETS_MARKER,
   MENU_CATEGORIES,
   MENU_ITEMS,
+  PRESETS,
   itemDestination,
   itemSheetFixtures,
   menuFixtureFor,
 } from '../menuFixtures.js';
-import type { CatalogMenu, CatalogSnapshot, CatalogStore, FixtureMenuFacts } from './types.js';
+import type { CatalogMenu, CatalogPreset, CatalogSnapshot, CatalogStore, FixtureMenuFacts } from './types.js';
 
 // FIXTURE MODE ONLY, and reached only through session/source.ts. The fixture
 // source of the catalog: it makes no request and starts no timer (ARCH-021
@@ -26,7 +29,16 @@ const FIXTURE_MENU: CatalogMenu = {
     variants: [],
     modifiers: [],
   })),
-  presets: [],
+  presets: /* @__PURE__ */ PRESETS.map(
+    (p): CatalogPreset => ({
+      id: p.id,
+      name: p.name,
+      value:
+        p.value.kind === 'percent'
+          ? { kind: 'PERCENTAGE', rate: rateFromPercent(p.value.percent) }
+          : { kind: 'FIXED', amount: p.value.amount },
+    })
+  ),
 };
 
 const SNAPSHOT: CatalogSnapshot = {
@@ -48,8 +60,9 @@ export function createFixtureCatalog(): CatalogStore {
 }
 
 /** The marker rides on the facts, which are what a build drops, so the bundle test cannot pass vacuously. */
-export const fixtureMenuFacts: FixtureMenuFacts & { readonly marker: string } = {
+export const fixtureMenuFacts: FixtureMenuFacts & { readonly marker: string; readonly presetsMarker: string } = {
   marker: FIXTURE_MENU_MARKER,
+  presetsMarker: FIXTURE_PRESETS_MARKER,
   pictureFor: menuFixtureFor,
   eightySixedFor: (view) => menuFixtureFor(view).eightySixed ?? [],
   itemDestination,

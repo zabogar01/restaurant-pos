@@ -136,5 +136,14 @@ export const GONE_NOTICE = (name: string) => `${name} is no longer on the menu. 
 export const CHANGED_NOTICE = 'This item changed while you were choosing. Check the updated choices and prices before adding.';
 export const REMOVED_NOTICE = (name: string) => `This item changed while you were choosing. ${name} was removed and deselected.`;
 
+// DESIGN-021's copy for M-3 over the served presets, word for word (ADR-011 rule 24). The read failure's title,
+// body and action are the menu's own (READ_FAILURE): the presets are read with the menu, so a failed preset
+// read is the menu's failed first read and says the same words.
+
+export const PRESET_LOADING_LABEL = 'LOADING PRESETS';
+export const PRESET_NONE = 'No active presets. A manager can add or activate a preset in the back office.';
+export const PRESET_GROUP = 'Presets — no approval needed';
+export const PRESET_ANYTHING_ELSE = 'Anything else';
+
 /** The served fire refusal's one recovery control (DESIGN-021's copy table), which focuses the first blocking line. */
 export const SHOW_BLOCKED = 'Show unavailable lines';

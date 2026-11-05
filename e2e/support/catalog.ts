@@ -104,6 +104,41 @@ export async function archiveAtOffice(office: Page, name: string): Promise<void>
   await pressAndAwait(office, `Archive item ${name}`, 'items/archive');
 }
 
+// BO-07, Discount presets, through its own controls (the ones e2e/tests/presets.spec.ts drives): the S7b3
+// case makes and retires a preset at the back office and watches the POS picker follow.
+
+const officePresetsLink = (office: Page) => office.getByRole('link', { name: 'Discount presets', exact: true });
+
+/** Signs the manager in and opens Discount presets from the rail, with the list read. */
+export async function openOfficePresets(office: Page, manager: Person): Promise<void> {
+  await office.goto('/back-office/');
+  await expect(office.locator('#root')).toHaveAttribute('data-session', 'signed-out');
+  await signInAtBackOffice(office, manager);
+  await expect(office.locator('#root')).toHaveAttribute('data-session', 'signed-in');
+  await officePresetsLink(office).click();
+  await expect(office).toHaveURL(/\/back-office\/presets$/);
+  await expect(office.getByRole('heading', { name: 'Discount presets', exact: true, level: 1 })).toBeVisible();
+  await expect(office.locator('#read-state')).toHaveCount(0);
+  await expect(office.locator('#list-facts')).toBeVisible();
+}
+
+/** BO-07's New preset, a percentage typed as the manager types it, through the screen. */
+export async function createPresetAtOffice(office: Page, name: string, percent: string): Promise<void> {
+  await button(office, 'New preset').click();
+  await office.getByRole('textbox', { name: 'Preset name', exact: true }).fill(name);
+  await office.getByRole('textbox', { name: 'Percentage', exact: true }).fill(percent);
+  await button(office, 'Save').click();
+  await expect(officeStatus(office)).toHaveText(`${name} saved.`);
+}
+
+/** BO-07's Deactivate, through its confirmation. */
+export async function deactivatePresetAtOffice(office: Page, name: string): Promise<void> {
+  await button(office, `Deactivate ${name}`).click();
+  const dialog = office.getByRole('dialog', { name: `Deactivate “${name}”?`, exact: true });
+  await dialog.getByRole('button', { name: `Deactivate ${name}`, exact: true }).click();
+  await expect(officeStatus(office)).toContainText(`${name} deactivated.`);
+}
+
 /**
  * Installs the page's clock before its first `goto`, opens POS-03 and signs the cashier in. The URL
  * is kept through POS-01, so signing in draws the order screen.

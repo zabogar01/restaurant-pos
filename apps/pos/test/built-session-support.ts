@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { FIXTURE_MENU_MARKER } from '../src/menuFixtures.js';
+import { FIXTURE_MENU_MARKER, FIXTURE_PRESETS_MARKER } from '../src/menuFixtures.js';
 import { FIXTURE_SESSION_MARKER } from '../src/session/fixtureSession.js';
 
 // ARCH-014 question 3, mechanism 1: the fixture session is chosen by a constant
@@ -27,6 +27,10 @@ const FIXTURE_ONLY = [
   'Chilli mayo',
   'Garlic mayo',
   'pos-03-order-states',
+  // The fixture preset list (PHASE1-S7b3): its marker, and two names no order fixture, copy or test double shares.
+  FIXTURE_PRESETS_MARKER,
+  'Regular customer',
+  'Service recovery',
 ];
 
 export function builtSessionTests(nodeEnv: 'production' | 'development') {

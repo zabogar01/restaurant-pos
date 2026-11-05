@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { discountAmount, orderTotals, snapshotOf, type DiscountSnapshot, type Preset } from '../src/discount.js';
 import { changeDiscount, type DiscountCarrier, type DiscountChange, type DiscountFacts } from '../src/discountChange.js';
-import { OTHER_15, PRESETS, STAFF_MEAL } from '../src/discountFixtures.js';
+import { OTHER_15, STAFF_MEAL } from '../src/discountFixtures.js';
+import { PRESETS } from '../src/menuFixtures.js';
 
 // FE-035, the pure operation that stands in for the server's discount command.
 // What this file is for: FR-F8's eight rows through both doors; the refusals in

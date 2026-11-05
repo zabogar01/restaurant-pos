@@ -6,9 +6,12 @@ import {
   catalogReadsOf,
   createCategoryAtOffice,
   createItemAtOffice,
+  createPresetAtOffice,
+  deactivatePresetAtOffice,
   makeAvailable,
   mark86,
   openOfficeMenu,
+  openOfficePresets,
   openPosOrder,
   outstandingCatalogReads,
   pausePoll,
@@ -405,4 +408,61 @@ test('P10. a notice arriving keeps the scrolled body where it was, and Add where
   const after = (await body.boundingBox())!;
   expect(after.y).toBe(bodyBox.y);
   expect(after.height).toBeLessThan(bodyBox.height);
+});
+
+// PHASE1-S7b3 (consult C4 item 9, AC-12's preset half): the POS picker follows the live list. A preset made at the
+// back office through BO-07's controls reaches an open picker by the poll alone, and one deactivated there leaves
+// it the same way; applying a served preset puts it on the totals. The POS clock is paused, so the only way a
+// change can arrive is the two seconds the case spends with `runFor`.
+test('P11. the open preset picker gains a preset made at the back office and loses one deactivated there, each in two seconds of page time, and a pressed preset reaches the totals', async ({
+  world,
+  twoProfiles,
+}) => {
+  const manager = await world.people.manager();
+  const cashier = await world.people.cashier();
+  const { a: office, b: till } = twoProfiles;
+  // The second item has no variant to choose, so Add is on at once.
+  const { other: item } = await madeMenu('Mains');
+  const first = unique('Crew');
+  const second = unique('Guest');
+
+  await openOfficePresets(office.page, manager);
+  await openPosOrder(till.page, cashier);
+  const pos = till.page;
+  await expect(tileNamed(pos, item)).toBeVisible();
+  await tileNamed(pos, item).click();
+  await pos.getByRole('button', { name: 'Add to order', exact: true }).click();
+  await expect(pos.locator('.order-line', { has: pos.locator('.order-line__name', { hasText: item }) })).toBeVisible();
+
+  // Discount opens the picker directly on an order with nothing applied, and the change sheet over one with a
+  // discount, whose "Replace with another preset" leads to the same picker.
+  await pos.getByRole('button', { name: 'Discount', exact: true }).click();
+  const replace = pos.getByRole('button', { name: 'Replace with another preset', exact: true });
+  if (await replace.count()) await replace.click();
+  const picker = pos.getByRole('dialog', { name: 'Discount', exact: true });
+  await expect(picker).toBeVisible();
+  await expect(picker.locator('#preset-heading')).toHaveText('Presets — no approval needed');
+  await pausePoll(till, pos);
+  const entry = (name: string) => picker.getByRole('button', { name: `${name} — 10%`, exact: true });
+  await expect(entry(first)).toHaveCount(0);
+
+  // A preset made at the back office is not in the picker until the poll brings it.
+  await createPresetAtOffice(office.page, first, '10');
+  await expect(entry(first)).toHaveCount(0);
+  await pos.clock.runFor(PAGE_MS);
+  await expect(entry(first)).toBeVisible();
+
+  // A second one, and the first deactivated: the second arrives and the first leaves, in the same two seconds.
+  await expect.poll(() => outstandingCatalogReads(till, pos)).toBe(0);
+  await createPresetAtOffice(office.page, second, '10');
+  await deactivatePresetAtOffice(office.page, first);
+  await expect(entry(first)).toBeVisible();
+  await pos.clock.runFor(PAGE_MS);
+  await expect(entry(second)).toBeVisible();
+  await expect(entry(first)).toHaveCount(0);
+
+  // Pressing the served preset applies it with no approval and the totals show it.
+  await entry(second).click();
+  await expect(pos.getByRole('dialog')).toHaveCount(0);
+  await expect(pos.locator('.totals__row', { hasText: `${second} 10%` })).toBeVisible();
 });

@@ -1,4 +1,5 @@
-import { RATE_SCALE, mulRate, rateFromPercent, taxIncludedIn, type Money } from '@pos/money';
+import { RATE_SCALE, mulRate, rateFromPercent, taxIncludedIn, type Money, type Rate } from '@pos/money';
+import type { CatalogPreset } from './catalog/types.js';
 import { formatAmount } from './money.js';
 import type { Adjustment, Totals } from './orderFixtures.js';
 
@@ -76,9 +77,41 @@ export function discountAmount(subtotal: Money, value: DiscountValue): Money {
   return mulRate(subtotal, rate);
 }
 
-/** "10%", "50.000 off": the value as the artifact's picker sets it. */
+const PPM_PER_PERCENT = 10_000n;
+
+/**
+ * A rate in parts per million as the percent string `rateFromPercent` parses: `1000000` is `100`, `123456` is
+ * `12.3456`, `1` is `0.0001`, and no trailing zero is kept. Whole-number arithmetic on the bigint, never a
+ * division of floats (B-1), so `rateFromPercent(percentFromPpm(p)) === p` for every rate.
+ */
+export function percentFromPpm(rate: Rate): string {
+  const whole = rate / PPM_PER_PERCENT;
+  const fraction = rate % PPM_PER_PERCENT;
+  if (fraction === 0n) return whole.toString();
+  return `${whole}.${fraction.toString().padStart(4, '0').replace(/0+$/, '')}`;
+}
+
+/**
+ * A preset the catalog projection carries, as the stand-in holds one. Everything the server serves is active
+ * (FR-F5), so `active` is true here and is read from nowhere.
+ */
+export function presetOf(preset: CatalogPreset): Preset {
+  const { value } = preset;
+  return {
+    id: preset.id,
+    name: preset.name,
+    value: value.kind === 'PERCENTAGE' ? { kind: 'percent', percent: percentFromPpm(value.rate) } : { kind: 'fixed', amount: value.amount },
+    active: true,
+  };
+}
+
+/**
+ * "10%", "12,3456%", "50.000 off": the value as the picker sets it. A percent has a decimal comma and no
+ * trailing zeros, as BO-07 writes it (owner, DESIGN-018 Q6); the stored string stays the canonical form.
+ */
 export function valueText(value: DiscountValue): string {
-  return value.kind === 'percent' ? `${value.percent}%` : `${formatAmount(value.amount)} off`;
+  if (value.kind === 'fixed') return `${formatAmount(value.amount)} off`;
+  return `${percentFromPpm(rateFromPercent(value.percent)).replace('.', ',')}%`;
 }
 
 /** "Staff meal — 10%": a discount as the picker and the change sheet name it. */

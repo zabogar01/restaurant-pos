@@ -1,4 +1,4 @@
-import { FREE_FORM_NAME, snapshotOf, type DiscountSnapshot, type FreeFormEntry, type Preset } from './discount.js';
+import { FREE_FORM_NAME, type DiscountSnapshot, type FreeFormEntry } from './discount.js';
 import type { DiscountChange } from './discountChange.js';
 import type { OrderState, OrderView } from './orderFixtures.js';
 import type { ShownOrder } from './voidFixtures.js';
@@ -18,8 +18,6 @@ export type DiscountStep = 'picker' | 'free-form' | 'change';
 // say what the order carries: the discount, its note and the subtotal are read
 // from the order on screen (FE-035), so there is one owner of that state.
 export type DiscountSheetFixture = {
-  /** The presets as the back office holds them; the picker shows the active ones (FR-F5). */
-  presets: ReadonlyArray<Preset>;
   /** The sheets the cashier has come through, last one showing. Back returns along it. */
   trail: ReadonlyArray<DiscountStep>;
   /** What the free-form sheet holds when the fixture opens on it. */
@@ -31,21 +29,25 @@ export type DiscountSheetFixture = {
   landsOn: (change: DiscountChange) => OrderView;
 };
 
-// The artifact's four presets, in its order. All active.
-export const PRESETS: ReadonlyArray<Preset> = [
-  { id: 'staff-meal', name: 'Staff meal', value: { kind: 'percent', percent: '10' }, active: true },
-  { id: 'regular', name: 'Regular customer', value: { kind: 'percent', percent: '5' }, active: true },
-  { id: 'service-recovery', name: 'Service recovery', value: { kind: 'fixed', amount: 50_000n }, active: true },
-  { id: 'comp', name: 'Comp', value: { kind: 'percent', percent: '100' }, active: true },
-];
-
-const preset = (id: string) => snapshotOf(PRESETS.find((p) => p.id === id)!);
+// The orders' discounts are literal snapshots (B-8): they are what an order carries, not a pick-list. The
+// artifact's preset list, which the fixture picker offers, is fixture-only and lives with the fixture menu
+// (menuFixtures.ts), so a built bundle holds none of it (B-24).
 
 /** The table order's discount, as every other state draws it: "Staff meal 10%". */
-export const STAFF_MEAL: DiscountSnapshot = preset('staff-meal');
+export const STAFF_MEAL: DiscountSnapshot = {
+  source: 'preset',
+  name: 'Staff meal',
+  value: { kind: 'percent', percent: '10' },
+  presetId: 'staff-meal',
+};
 
 /** The comp that zero draws: "Comp 100%". */
-export const COMP: DiscountSnapshot = preset('comp');
+export const COMP: DiscountSnapshot = {
+  source: 'preset',
+  name: 'Comp',
+  value: { kind: 'percent', percent: '100' },
+  presetId: 'comp',
+};
 
 /**
  * The one state this slice adds (FE-007): the same order carrying a free-form
@@ -86,7 +88,6 @@ export const DISCOUNT_ACTION = 'discount';
 const DISCOUNT_OPENER = `.order-actions [data-action="${DISCOUNT_ACTION}"]`;
 
 const onTableOrder = {
-  presets: PRESETS,
   // The artifact also opens the change sheet from a "change" link on the
   // totals' discount row, which the panel (F2a) does not draw; see the FE-007
   // handoff. Since F2k, Discount itself opens the change sheet when the order
@@ -132,7 +133,6 @@ export const DISCOUNT_FIXTURES: Partial<Record<OrderState, DiscountSheetFixture>
  */
 export function panelDiscount(view: OrderView, order: ShownOrder): DiscountSheetFixture {
   return {
-    presets: PRESETS,
     trail: [order.applied ? 'change' : 'picker'],
     opener: DISCOUNT_OPENER,
     cancel: view,
