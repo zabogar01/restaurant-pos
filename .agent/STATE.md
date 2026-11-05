@@ -53,7 +53,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Running tasks and agents
 
 - **PHASE1-S8a building** (dispatched 11-05, interactive Sonnet, Herdr `phase1-s8a`, pane `PHASE1-S8a`, worktree
-  `wt/PHASE1-S8a`). If the waiter dies at two hours, write `runs/PHASE1-S8a/builder/session` before a resume.
+  `wt/PHASE1-S8a`). Waiter exited 4 at 15:46 (idle on its own Monitors, not stopped); the builder keeps working, in
+  **auto mode** since the 15:16 heredoc prompt (chosen in the pane). `owns` widened for `fixtureSession.ts` (`50d2501`).
 - **PHASE1-S7b3 complete, PR #171** (`df215e9`, against `development`, its own 8 commits). Codex: 3 findings
   (`c6b9e55`; F1 P1: a preset changed under an open approval was applied with its new value), fixed in round 2 `dd1c1d2`,
   lead-reviewed: 158 / 5743, e2e:all 132, R1 mutations red. `shown` optional (noted). Owner looks before merge.
