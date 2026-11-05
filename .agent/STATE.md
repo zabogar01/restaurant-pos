@@ -54,7 +54,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 - **PHASE1-S8a built** (`5c41a6a`; Sonnet, pane `PHASE1-S8a` kept, **auto mode** since a 15:16 prompt). Its BLOCKED
   (two forced files outside `owns`) ruled: `owns` widened, the builder's `config-api.test.tsx` edit committed by the lead
-  unchanged (`d191ef7`, `8fd0eb9`). Lead verify running; then Codex review. **Dev `pos` is at `0015`** (the builder
+  unchanged (`d191ef7`, `8fd0eb9`). Lead note `e1a67c4`: 162 / 5779, e2e:all 130, 2 reds; **Codex reviewing**. **Dev `pos` is at `0015`** (the builder
   migrated): the main checkout's server refuses to start until S8a merges.
 - **PHASE1-S7b3 complete, PR #171** (`df215e9`, against `development`, its own 8 commits). Codex: 3 findings
   (`c6b9e55`; F1 P1: a preset changed under an open approval was applied with its new value), fixed in round 2 `dd1c1d2`,
