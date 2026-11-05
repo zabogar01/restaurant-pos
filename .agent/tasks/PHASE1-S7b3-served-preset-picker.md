@@ -239,3 +239,67 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ## Handoff
 
+**Builder: Claude Sonnet 5.5.** One commit on `agent/phase1-s7b3`, `f9c253b` (`feat(pos): the served preset picker reads the catalog's active presets`), 18 files, after `npm run verify` and `npm run test:e2e:all` were green. Nothing was pushed. This Handoff is committed separately.
+
+### What I did
+
+- **The conversion and the display** (`apps/pos/src/discount.ts`). `percentFromPpm(rate)` turns parts per million into the canonical percent string with whole-number bigint arithmetic (`0`, `0.0001`, `1`, `12.3456`, `100`), and `presetOf(CatalogPreset)` is the one pure adapter to `discount.ts`'s `Preset` (`active: true`, `PERCENTAGE` to `{ kind: 'percent', percent: percentFromPpm(rate) }`, `FIXED` to `{ kind: 'fixed', amount }`). `valueText` now renders every percent as `percentFromPpm(rateFromPercent(percent))` with the point replaced by a comma (ruling 5), so a stored `12.50` also reads `12,5%`. The stored `percent` string is unchanged.
+- **Where the presets come from** (rulings 1 and 2). `presetsAt(store)` in `apps/pos/src/catalog/useCatalog.tsx` reads `store.getSnapshot().menu?.presets` through `presetOf`. `orderStore.ts`'s `changeDiscount` calls it at the press and passes the result to `applyDiscountChange`; the fixture `PRESETS` import is gone from the store. Before a first read has answered the list is empty, so a press then is `unknown-preset`. `DiscountSheet` reads the same store with `useSyncExternalStore` at every render and derives `presets` with `useMemo` over `held.menu`; nothing is copied into state.
+- **The fixture side** (`menuFixtures.ts`, `catalog/fixtureCatalog.ts`). `PRESETS` and a new `FIXTURE_PRESETS_MARKER` moved into `menuFixtures.ts`, beside the fixture menu. `fixtureCatalog.ts` builds the fixture menu's `presets` from them (`rateFromPercent` for a percent), behind the same `__FIXTURE_SESSION__` switch, and carries the marker on `fixtureMenuFacts`. `discountFixtures.ts` no longer names a preset list: `STAFF_MEAL` and `COMP` are literal snapshots, `DiscountSheetFixture` and `panelDiscount` no longer carry `presets`.
+- **The served picker** (`DiscountSheets.tsx`, `catalog/menuCopy.ts`, `pos.css`). `DiscountSheet` chooses `ServedPicker` when `catalog.kind === 'real'` and the old `Picker` (now taking `presets` instead of `fixture.presets`) otherwise. `ServedPicker` draws DESIGN-021's M-3: `served` `SheetFrame` (opens on the heading, contains Tab), the group label as `#preset-heading`, two-column entries (`data-preset`, `aria-label="{name} — {value}"`), `LOADING PRESETS` as a status, the failure notice with the menu's own `READ_FAILURE` words and `data-action="preset-retry"` calling the catalog store's `retry`, the no-presets sentence, *Anything else* with *Other amount — needs a manager* always present, and the footer's Cancel as `data-action="served-preset-cancel"`. Focus: a retry control or a preset row that is removed while it holds focus sets a ref in its layout-effect cleanup (the pattern `MenuRegion`'s `ReadFailed` uses); after the commit the picker sends focus to the heading if the read is ready, and leaves it to the new *Try again* if the read failed again (that control takes focus only when focus is on the body, and the heading's passive effect wins at opening). Copy constants are in `menuCopy.ts`; the failure title, body and action are the menu's.
+- **Tests.** New `apps/pos/test/served-presets.test.tsx` (37 tests) covers AC 1 to 11; `served-harness.tsx`'s `menuOf` takes an optional fourth argument of served presets. `built-session-support.ts` gets three needles. `e2e/support/catalog.ts` gets `openOfficePresets`, `createPresetAtOffice` and `deactivatePresetAtOffice`, which drive BO-07's own controls (the ones `presets.spec.ts` drives; that file is not changed), and `e2e/tests/pos-catalog.spec.ts` gets case P11.
+
+### What I decided, and on what evidence
+
+- **A gated served entry says so in its visible value column too.** DESIGN-021 draws no served picture of the gated picker (ruling 4). I kept the label-in-name rule: over a free-form discount the entry's `aria-label` is `{name} — {value} — needs a manager`, the value column reads `{value} — needs a manager`, and the entry is dashed (`discount-option--gated`), as the fixture picker's buttons are. If the designer wants other words for a served gated entry, it is one line in `PresetEntry`.
+- **`?state=` fixture sheets over a served catalog.** `DISCOUNT_FIXTURES[view.state]` is still honoured in a served build (it was before), so `?state=sheet-discount` draws `ServedPicker` over the served presets. The tests use that to open the picker directly. I did not change it: `discountFixtures.ts` stays in built bundles by design and now names no preset.
+- **The `held.failure ?? 'failed'` fallback.** `failure` is non-null whenever `read === 'failed'`; the fallback only picks the generic copy if that ever broke, and invents no wording.
+- **E2E P11 starts from `/pos/order`**, which in a served build seeds the default fixture order (it carries Staff meal), so Discount opens the change sheet there. The case presses *Replace with another preset* when it is present and otherwise sees the picker directly, so it does not depend on which order the screen seeds.
+
+### Existing tests I changed, and why
+
+- `discount-change.test.ts`, `discount-apply.test.tsx`, `void-apply.test.tsx`: **import move only** (`PRESETS` from `menuFixtures.js` instead of `discountFixtures.js`). No meaning changed.
+- `discount.test.tsx`: the import move, plus **the FR-F5 describe block** ("a preset deactivated or edited after it was applied"). Those tests passed `presets` through `DiscountSheetFixture`, which no longer has the field, so `renderSheet` takes an optional `presets` argument and wraps the sheet in a `CatalogProvider` over a small stub store (`storeWith`) holding exactly those presets. Each test asserts what it asserted before. No other assertion changed.
+- `served-harness.tsx`: addition only (`ServedPreset`, `menuOf`'s optional fourth parameter; the default is the old empty list).
+- `built-session-support.ts`: additions only (`FIXTURE_PRESETS_MARKER`, `Regular customer`, `Service recovery`). I first renamed the test title to mention the preset list and reverted it to keep the change additions-only.
+- Nothing weakened. The other fixture discount tests (`discount.test.tsx`'s picture and FR-F8 tests, `sheets.test.tsx`, `refund-screen.test.tsx`, `own-items.test.tsx`, `order-store.test.tsx`) passed untouched.
+
+### The red proofs
+
+Each was a mutation applied, observed failing for the stated reason, and reverted. Where my first mutation did not reach the real path I say so.
+
+1. **AC 1.** `orderStore.ts` read `PRESETS` from `menuFixtures.js` in `changeDiscount`. Both built-bundle tests failed: `AssertionError: Regular customer in …/assets/index-….js: expected true to be false`, for `NODE_ENV=production` and `development`.
+2. **AC 2.** My first mutation, `String(Number(rate) / 10000)`, **passed** (the double prints `12.3456` exactly). The float path that drifts is `String(Number(rate) * 0.0001)`: it failed `123456n ppm is 12.3456` with `expected '12.345600000000001' to be '12.3456'`.
+3. **AC 3.** `valueText` printed `${value.percent}%`: `expected '12.3456%' to be '12,3456%'` in `valueText` and in the entry, name, change sheet and totals test.
+4. **AC 4.** The store's `order` read the applied discount's name and value from the live preset by `presetId` at render. It only failed once the store hook also subscribed to the catalog (without a subscription the parent does not re-render on a poll, so the first mutation missed); then the totals test failed: `expected [[Subtotal…]…] to deep equally contain ['Regular guest 12,3456%', '−50.000']`.
+5. **AC 5.** The entry's visible value was capped at the subtotal. My first test only read the `aria-label`, so the mutation **passed**; I added the visible-text assertion and it then failed: `expected 'Service recovery405.000 off' to be 'Service recovery99.999.999 off'`.
+6. **AC 6.** `changeDiscount` used the list captured at render: `expected {} to deeply equal { refused: 'unknown-preset' }`.
+7. **AC 7.** *Other amount* hidden while loading: `TypeError: Cannot read properties of undefined (reading 'click')`.
+8. **AC 8.** The list was held from the first read that had a menu: four tests failed (an edited row stayed `Regular guest — 12,3456%`, a deactivated row stayed, the last-one-leaving case kept one row, focus did not move). The first attempt, a snapshot taken at mount before any menu, broke 14 tests for the wrong reason and proved nothing, so I redid it.
+9. **AC 9.** The `heading.current?.focus()` after a removal was dropped: the retry-success test and the removed-focused-preset test both failed with `expected <body>… to be <span class="sheet__label" …>`.
+10. **AC 10.** `presetsGated = false` in `ServedPicker`: `expected 'Presets — no approval needed' to be 'Presets — need a manager'`.
+11. **AC 11.** `served = catalog.kind === 'real' || true`: the pinned fixture-picker test failed (`expected <button …> to be null`, the served Cancel on the fixture path) and four existing fixture discount tests failed too.
+12. **AC 12.** The AC 8 snapshot mutation, run through `npm run test:e2e -- -g P11`: `expect(locator).toBeVisible() failed … getByRole('button', { name: 'Crew-… — 10%' }) … element(s) not found`.
+
+### Verify output
+
+- Baseline, before my edits: 157 files, 5696 tests (the task's figure; the run I started in the background overlapped with my first edits but reported the same).
+- `npm run typecheck`: clean (all seven `tsc` projects).
+- `npx vitest run` (the whole of `test:unit`), run alone on a quiet machine: **158 files passed, 5733 tests passed** (+1 file, +37 tests, all in `served-presets.test.tsx`).
+- `npm run test:e2e:all`: **132 passed** in 2.0 minutes (130 baseline plus P11 on chromium and webkit).
+
+### What I found and did not fix
+
+- **Two odd full-suite runs, both from the shared test database and a loaded machine, not from this change.** The first `npm run verify` after the e2e runs failed two tests in `apps/server/test/pos-sign-in.test.ts` (the whole security log gained a `PIN_FAILURE` row that test did not expect); that file passes alone (21 tests). A later `npm run verify` took 930 s (the baseline took 135 s) and reported 11 failures in 6 files while the machine's load average was above 6; the same `vitest run` on a quiet machine passed in full. The lead should run `verify` on a quiet machine, not beside another suite or `test:e2e`.
+- **The picker is not looked at in a browser.** The CSS for `.served-preset` (two columns, wrapping, 40 entries, a long name) is jsdom-unmeasurable; P11 proves behaviour, not layout. A designer or reviewer should check `?state=` equivalents against the reviewed `served-presets-many` picture in a real browser.
+- **`valueText` throws on a percent string `rateFromPercent` rejects.** It is only called with stored values (a preset from `percentFromPpm`, or a free-form value `parseFreeForm` already validated), but a hand-built snapshot with a malformed percent now throws at render where it once printed it.
+- I issued one shell heredoc to `/dev/null` by mistake early on (it did nothing); every file was written with the file tools.
+- No formatter was run on any file.
+
+### What the next agent needs and does not have
+
+- Nothing blocks the review. For the reviewer: report against `agent/phase1-s7b2` (the task's `base`); this branch's diff includes S7b1 and S7b2 until those merge.
+- DESIGN-021 draws no served picture of the gated picker; the gated entry wording above is mine, and so is the dashed treatment. Worth a designer's glance.
+- The server is untouched, and nothing is stored: the stand-in's gates, the manager prompt and the free-form path are unchanged.
+
+DONE
