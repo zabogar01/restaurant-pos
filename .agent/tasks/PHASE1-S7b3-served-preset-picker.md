@@ -365,3 +365,38 @@ Each was a mutation applied, observed failing for the stated reason, and reverte
 - The server is untouched, and nothing is stored: the stand-in's gates, the manager prompt and the free-form path are unchanged.
 
 DONE
+
+### Round 2 (builder: Claude Sonnet 5.5)
+
+One code commit, `dd1c1d2` (`fix(pos): bind a preset pick to the snapshot displayed, and keep focus when its prompt closes`), plus this Handoff committed separately. Nothing pushed. Tests were written first and run against the unchanged code (R1's, R2's and R3's new tests failed as expected, 8 of them, with the rest of the file failing in cascade from a test that left its screen mounted); then the code.
+
+**What I did**
+
+- **R1, part 1: the store is the control.** `DiscountChange`'s preset variant (`discountChange.ts`, a type only; the operation's behaviour is unchanged and it never reads the field) gained an optional `shown?: DiscountSnapshot`. `DiscountSheet.change()` fills it from the snapshot it resolves from the live list for that pick, so both a direct press and a prompt's submission carry what the screen displayed. `orderStore.ts`'s `changeDiscount` resolves the preset from the list at the press (`snapshotFor`) and, when `shown` is present, refuses an otherwise accepted change as `unknown-preset` unless `sameSnapshot(resolved, shown)` (new in `discount.ts`: source, name, `presetId`, kind and value compared exactly). The refusal returns the very order (B-20). Closed and locked keep their place first. No refusal code was added.
+- **R1, part 2: the open prompt.** A layout effect in `DiscountSheet` re-resolves the prompt's preset on every presets change; if it has left the list or its snapshot differs from `shown`, the prompt closes by the refusal path (`promptOpen` false, `setPrompt(undefined)`), the sheet stays, nothing is applied and no sentence is added. A fresh pick asks for a fresh approval.
+- **R2.** The prompt-closing focus effect now focuses the opener only if `opener.isConnected`, otherwise `#preset-heading` inside the sheet (found through a ref on the `discount-flow` wrapper, after the sheet is no longer inert), whatever the heading's gated label.
+- **R3.** The served picker's footer is now one child, `<button class="action served-preset-cancel" data-action="served-preset-cancel">`; `pos.css` gives only that class `grid-column: 1 / -1`, so no other sheet's footer changes. I did not use the artifact's `:has()` rule; the grid-column rule has the same effect and is scoped to the one button. Not measured in a browser, as you said.
+
+**Tests** (all in `served-presets.test.tsx`, now 47 tests; `controllable` and `served` were hoisted to module level and `controllable.set` gained a `notify` flag for the moment between a store change and its render)
+
+- R1: at the screen over the free-form 15% order, pick a served preset to open the prompt, then a poll that changes its value, one that changes its name, and one that deactivates it each close the prompt with the sheet kept and `Other discount 15% −60.750` still on the totals; a poll that changes nothing about the preset leaves the prompt open; a change made in the store with no render before the manager confirms is refused and the prompt closes; at the hook, a submission whose `shown` no longer matches is refused with the same order and one whose snapshot matches is applied.
+- Stale press: the round 1 screen test only polled the entry away, as the review said. It is replaced by one that changes the store without notifying the screen and then presses the still-drawn entry; the store refuses, the sheet stays, nothing is applied, no `.notice`.
+- R2: cancel returns focus to the opener; closure by a changed preset with the opener still listed returns to it; closure by a deactivated preset (opener detached, `isConnected` false) puts focus on the heading, `Presets — need a manager`, never the body.
+- R3: the footer has exactly one child, the served Cancel.
+
+**Existing test changed:** `discount.test.tsx`, "a preset is applied at once: the store is asked directly…". It asserted the exact change handed to the store, `{ kind: 'preset', presetId: 'staff-meal' }`; that change now carries `shown: STAFF_MEAL` (R1 says a preset change carries the displayed snapshot). Its other assertions (no prompt, the landing) are unchanged. Nothing else changed.
+
+**Reds**, each applied, observed, reverted
+
+- **R1 store:** `stale = false` (resolve by id alone): the hook test failed `expected {} to deeply equal { refused: 'unknown-preset' }`, and the instant-of-approval screen test failed (the preset was applied, so the sheet had closed: `expected null not to be null`).
+- **R1 prompt:** the closing effect disabled: five tests failed, four with `expected <div class="modal" …> to be null` (value, name, deactivation, and the focus case that depends on the closure) and the deactivation focus test.
+- **R2:** `if (true) opener.focus()`: `expected <body>… to be <span class="sheet__label" …>` in the deactivated-preset focus test.
+- **R3:** the empty `<span />` restored: `expected …(2) to have a length of 1 but got 2`.
+
+**Why no test cancels a prompt whose opener was removed while the prompt stays open:** with R1 in place that state cannot be reached for a preset pick, because a removal of the opener's preset closes the prompt in the same commit; the deactivation case above is the reachable form (opener detached, prompt closed by R1). The `isConnected` guard still covers any other opener.
+
+**Verify output** (quiet machine, load average about 2): `npm run verify`: typecheck clean, **158 files, 5743 tests passed** (+10 tests over round 1). `npm run test:e2e:all`: **132 passed**, both engines.
+
+**Found, not fixed:** nothing new. Round 1's note stands that the served picker's layout (now including the full-width Cancel) is unmeasured in a real browser.
+
+DONE
