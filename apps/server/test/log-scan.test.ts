@@ -375,15 +375,11 @@ describe('what leaves the process', () => {
 
   describe('S8a: the users routes', () => {
     const lookups = Object.values(USERS_MARK.pins).map((pin) => pinLookup(pin));
-    const secrets = [
-      ...Object.values(USERS_MARK.pins),
-      ...Object.values(USERS_MARK.passwords),
-      ...Object.values(USERS_MARK.usernames),
-      USERS_MARK.extraKey,
-      USERS_MARK.malformedPin,
-      ...lookups,
-      '$argon2id$',
-    ];
+    // Every marker leaf of USERS_MARK, however it is grouped, so a standalone marker (the
+    // malformed password was one) can never be sent and left out of the search again.
+    const leaves = (value: unknown): string[] =>
+      typeof value === 'string' ? [value] : Object.values(value as object).flatMap(leaves);
+    const secrets = [...leaves(USERS_MARK), ...lookups, '$argon2id$'];
 
     it('has the requests it scans, and the refusals it expects', () => {
       expect(usersBodies.length).toBeGreaterThanOrEqual(14);

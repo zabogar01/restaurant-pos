@@ -834,3 +834,20 @@ Case 14 (`error-details.types.ts`) is compile-time and passes `tsc`; every `@ts-
 The Handoff itself was written before the commit; the commit is `5c41a6a` on `agent/phase1-s8a`, and the Handoff text was corrected afterwards in the working tree.
 
 BLOCKED: may I commit the one-file edit to apps/back-office/test/config-api.test.tsx (five users route keys added to its expected list; it is sitting uncommitted in the working tree and the pre-commit hook refuses it for the builder), and do you ratify the fixtureSession.ts addition?
+
+(Round 1's closing line, answered by the lead: `config-api.test.tsx` was committed as `d191ef7`.)
+
+## Round 2 (builder)
+
+**What I did.** Fixed R1 only, in `apps/server/test/log-scan.test.ts`. The users scans' secret list was hand-built and left out `USERS_MARK.malformedPassword` (`MK-PW-7`), which the scan sends on the validation-failure path. The list is now `[...leaves(USERS_MARK), ...lookups, '$argon2id$']`, where `leaves` flattens every string in `USERS_MARK` however it is nested, so a standalone marker can no longer be sent and left out. The lookups of the marker PINs and `$argon2id$` stay. The response-body scan still excludes username markers from the search and still checks no refusal carries one. No production file changed; the commit touches only that test.
+
+**Red proof, in the order the lead asked.** The mutation (never committed) was in the create route of `back-office-users.ts`: before `parseBody`, log the request's `password` two levels deep (`{ a: { b: { p } } }`, outside the redaction paths) when it equals the malformed password. I narrowed it to that one value because my first version logged every password and the old list caught the valid ones, which proved nothing about the gap.
+1. With the mutation and the old hand-built list: `log-scan.test.ts` 12 passed. The old list misses the leak.
+2. With the mutation and the derived list: case 13 failed ("secrets that reached the log"), 1 failed, 11 passed.
+3. Mutation removed (`git status` shows only the test file modified): the scan passes.
+
+**Verify.** `npm run verify`: typecheck clean; 162 files, 5779 tests passed (same counts as round 1: the change adds no test, it widens one). I did not run `test:e2e:all`; no browser test or client source changed this round.
+
+**Found, not fixed.** Nothing new.
+
+DONE
