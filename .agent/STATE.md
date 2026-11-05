@@ -9,8 +9,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-11-05: `development` at `a589c23`; dev `pos` at `0014`. **S7b1 and S7b2 complete, PRs #169 and #170 open**
-(owner: push both). **S7b3 complete** (`df215e9`, not pushed). Nothing running. Narrative: [journal/2026-11-04.md](journal/2026-11-04.md).
+2026-11-05: **#169 S7b1 and #170 S7b2 merged**; `development` at `99a734b`; dev `pos` at `0014`. **S7b3 PR #171 open**
+(owner: push). Lead branch pushed. Nothing running. Narrative: [journal/2026-11-04.md](journal/2026-11-04.md).
 
 ## Phase and gates
 
@@ -20,12 +20,12 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   server, `0011`, `SETTINGS_CHANGED`), S2b (#130: BO-08 settings), S3a (#134: tender methods, `0012`), S3b (#137: BO-08
   methods), S4a (#140: catalog domain, `0013`, `catalogWrite`), S4b (#142: catalog routes, `CATALOG_CHANGED`), S4c1
   (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04 whole), S5 (#151: the 86 toggle), S6a (#154: presets server,
-  `0014`), S6b (#157: BO-07), **S7a (#165: the two POS catalog routes)**. **S7 in progress:** S7b1 (#169) and S7b2
-  (#170) complete, PRs open; **S7b3 complete, PR not opened**: S7 is built. Then S8a-c (users, C3; S8c from DESIGN-023), S9, S10.
+  `0014`), S6b (#157: BO-07), S7a (#165: POS catalog routes), **S7b1 (#169: served menu), S7b2 (#170: M-2, Add)**.
+  **S7b3 (the preset picker) complete, PR #171 open**: S7 is built. Then S8a-c (users, C3; S8c from DESIGN-023), S9, S10.
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22): S2 rates 0-100% (Q2), IDR fixed (Q5), five business details (Q12),
   footer required and `created_by`, DESIGN-018 Q1-Q6; S3 tender reactivation (C2 OQ1), cash and card fixed kinds, a
   custom name may be "Cash"/"Card"; S7 real items into the client stand-in (Q14), real presets in the POS picker (C4
-  OQ1, 11-02), **S7b1's PR held for S7b2, merged together (11-02)**; S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
+  OQ1, 11-02); S8 Q1, Q6a, Q7-Q11, C3's OQ1, OQ2.
 - **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. §8: catalog → day → table → order → lease.
 - **Owed, not drafted:** ROADMAP Phase 1 users: role change (Q1c); tender: "reactivate" (OQ1).
 - **Built:** POS-01 to POS-07 on fixtures (POS-01 real); back office BO-01 (provisional), M-6, BO-03/04/05/07/08.
@@ -35,29 +35,27 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Integration branch
 
-- **`development`** at `a589c23` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `99a734b` on GitHub; the main checkout matches it (fast-forwarded 11-05). `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the
   lockfile changed, `npm run db:migrate` if a migration landed (the server refuses to start until it does, S0),
-  **before reporting or dispatching**. `0014` applied; no lockfile change since 10-26.
+  **before reporting or dispatching**. `0014` applied; no lockfile change since 10-26 (checked 11-05).
 - **Guard hooks** current (preflight `--check` 2026-11-04); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1104`** (from `a589c23`; the five post-#168 commits cherry-picked,
-  the kit's `base:` change among them). New lead branches: from `origin/development`, then `git branch
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1104`** (from `a589c23`; pushed, no PR; holds the kit's `base:`
+  change and LESSONS since #168). New lead branches: from `origin/development`, then `git branch
   --unset-upstream`; push with `-u origin <branch>`.
 - **Pushing needs the owner's word, every time** (LESSONS); push task and lead branches together; `gh pr view <n>
   --json state` as its own step before any follow-up push.
-- **Task worktrees:** `wt/PHASE1-S7b3` (complete, held); `wt/PHASE1-S7b1`, `wt/PHASE1-S7b2` (PRs open; remove after merge, with their `runs/` and
-  `wt/evidence/`). Left behind: `runs/PHASE1-S7a`, `runs/DESIGN-023`, `wt/evidence/DESIGN-023`; `wt/ARCH-021`, `wt/DESIGN-021`
+- **Task worktrees:** `wt/PHASE1-S7b3` (PR #171; remove after merge, with `runs/` and `wt/evidence/`). S7b1's and
+  S7b2's removed 11-05. Left behind: `runs/PHASE1-S7a`, `runs/DESIGN-023`, `wt/evidence/DESIGN-023`; `wt/ARCH-021`, `wt/DESIGN-021`
   (removal refused by the classifier: the owner's). Not ours: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
 - **Nothing running; only `lead` in Herdr.**
-- **PHASE1-S7b3 complete** (`df215e9` on `agent/phase1-s7b3`, not pushed; base `agent/phase1-s7b2`). Codex: 3 findings
+- **PHASE1-S7b3 complete, PR #171** (`df215e9`, against `development`, its own 8 commits). Codex: 3 findings
   (`c6b9e55`; F1 P1: a preset changed under an open approval was applied with its new value), fixed in round 2 `dd1c1d2`,
   lead-reviewed: 158 / 5743, e2e:all 132, R1 mutations red. `shown` optional (noted). Owner looks before merge.
-- **PRs #169 (S7b1, `ae44200`) and #170 (S7b2, `988baa8`) open,** both against `development`; #170 holds S7b1's
-  commits, so #169 merges first. **Owner looks at the served POS before merging (`touches: money, boundaries`).**
 - **S7b3's lead rulings 1-6** (in its task file): presets from the catalog store in both modes, `PRESETS` fixture-only,
   served M-3 vs the reviewed fixture picker, the gated label, the decimal comma. `base: agent/phase1-s7b2`; Codex reviews.
 - **For S8c (from DESIGN-023):** FR-B3's own-PIN words (every other session ends); a Chrome/Firefox save-prompt check (F3).
@@ -118,8 +116,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
-- **Push `agent/phase1-s7b3` and open its PR** (after #169, #170)? **Open a PR for `agent/lead-1104`?** **Look at the
-  served POS** in a browser (menu, item sheet, preset picker), then merge #169, #170, then S7b3's.
+- **Look at the served POS** in a browser (menu, item sheet, preset picker; the picker's layout is unmeasured), then
+  merge #171 (money, boundaries). **Open a PR for `agent/lead-1104`?**
 - **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified;
   S8c checks by hand; if a prompt appears, does the 2026-10-13 "does not fight the password manager" ruling extend?
 - **Lead rulings since 10-30, yours to overturn** (each in its task file): DESIGN-021 R1 and round 2; ARCH-021's
@@ -142,7 +140,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S7 is built:** S7b3's push and PR on the owner's word; the owner merges #169, #170, S7b3's in order.
-2. **After #169/#170 merge:** fetch, fast-forward; remove the two worktrees, `runs/` and evidence.
+1. **After #171 merges:** fetch, fast-forward; remove `wt/PHASE1-S7b3`, its `runs/` and evidence.
+2. **Next slice, S8a** (users server, from C3): write its task file on the owner's word.
 3. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
-   the dialog and name-check extraction. Then S8a (users server, C3).
+   the dialog and name-check extraction.
