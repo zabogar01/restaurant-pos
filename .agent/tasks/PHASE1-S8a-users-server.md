@@ -5,7 +5,7 @@ category: feature
 touches: [identity, audit, boundaries]
 depends_on: []
 owns: [db/migrations/0015_staff_user_kitchen.sql, apps/server/src/domain/users.ts, apps/server/src/domain/staff.ts, apps/server/src/domain/pin.ts, apps/server/src/domain/session.ts, apps/server/src/domain/back-office-credential.ts, apps/server/src/domain/audit.ts, apps/server/scripts/create-manager.ts, apps/server/src/http/routes/back-office-users.ts, apps/server/src/http/server.ts, apps/server/src/http/log.ts, packages/contracts/src/users.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, packages/api-client/src/index.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/back-office/src/session/fixtureSession.ts, apps/back-office/test/config-api.test.tsx, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, e2e/support/people.ts]
-status: active
+status: complete
 cycles: 0
 ---
 # PHASE1-S8a — Users on the server: staff records, kitchen, roles, status, and the audit
@@ -745,6 +745,22 @@ questions). Fix exactly this, test first with its red proof recorded, and nothin
 **How to work.** Write and Edit tools only. Run `npm run verify` on a quiet machine before you commit, and report its
 counts. Append a *Round 2* section to the Handoff (do not rewrite round 1), ending with `DONE` or `BLOCKED: <one
 question>`.
+
+## Round 2: lead review, 2026-11-05 (complete)
+
+A lead review instead of a re-review: the one round-2 fix is the review's own, as ruled (R1). Reviewed at `24909f1`,
+the tree clean.
+
+- **Diff:** `apps/server/test/log-scan.test.ts` only: the users scans' secret list is `[...leaves(USERS_MARK),
+  ...lookups, '$argon2id$']`, every string leaf of the marker object, so `MK-PW-7` is now searched. No production file
+  changed.
+- **`npm run verify`:** exit 0; 162 files, 5779 tests passed. **`npm run test:e2e:all`:** exit 0; 130 passed, both
+  engines. Output in `../restaurant-pos-wt/evidence/PHASE1-S8a/lead/round2/`.
+- **The lead's red proof** (reverted, tree clean after): the create route logged the request's `password` two levels
+  deep before `parseBody`; `log-scan.test.ts` case 13 failed, naming `MK-PW-7` among the secrets that reached the log.
+
+**Verdict: complete.** `touches: identity, audit, boundaries`: the owner looks before merge. The development database
+`pos` is already at `0015`.
 
 ## Lead verification, 2026-11-05 (before review)
 
