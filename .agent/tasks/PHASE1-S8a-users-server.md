@@ -4,7 +4,7 @@ title: Users on the server — staff records, kitchen, roles, deactivate and rea
 category: feature
 touches: [identity, audit, boundaries]
 depends_on: []
-owns: [db/migrations/0015_staff_user_kitchen.sql, apps/server/src/domain/users.ts, apps/server/src/domain/staff.ts, apps/server/src/domain/pin.ts, apps/server/src/domain/session.ts, apps/server/src/domain/back-office-credential.ts, apps/server/src/domain/audit.ts, apps/server/scripts/create-manager.ts, apps/server/src/http/routes/back-office-users.ts, apps/server/src/http/server.ts, apps/server/src/http/log.ts, packages/contracts/src/users.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, packages/api-client/src/index.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/back-office/src/session/fixtureSession.ts, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, e2e/support/people.ts]
+owns: [db/migrations/0015_staff_user_kitchen.sql, apps/server/src/domain/users.ts, apps/server/src/domain/staff.ts, apps/server/src/domain/pin.ts, apps/server/src/domain/session.ts, apps/server/src/domain/back-office-credential.ts, apps/server/src/domain/audit.ts, apps/server/scripts/create-manager.ts, apps/server/src/http/routes/back-office-users.ts, apps/server/src/http/server.ts, apps/server/src/http/log.ts, packages/contracts/src/users.ts, packages/contracts/src/routes.ts, packages/contracts/src/errors.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, packages/api-client/src/index.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/realSession.ts, apps/back-office/src/session/fixtureSession.ts, apps/back-office/test/config-api.test.tsx, apps/pos/src/session/realSession.ts, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**, e2e/support/people.ts]
 status: not-started
 cycles: 0
 ---
@@ -719,6 +719,15 @@ database).
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
 
+## Lead ruling on the round 1 BLOCKED, 2026-11-05
+
+The builder's question: may the lead commit its edit to `apps/back-office/test/config-api.test.tsx`, and is the
+`fixtureSession.ts` addition ratified? **Yes to both.** Each is forced by the five new config routes, because each
+holds a table keyed by every config route: the fixture `CONFIG` (widened in `50d2501`) and the test's exact run-time
+list. `config-api.test.tsx` joins `owns` for exactly that list and its title; nothing else in it. The lead committed the
+builder's working-tree edit unchanged, as the builder wrote it, so the slice's tree is the one the builder verified,
+and no builder round was spent on a commit. The Handoff's `BLOCKED` line is answered here; the round counts as done.
+
 ## Handoff
 
 **Result.** The slice is built and `npm run verify` is green: typecheck clean, 162 files and 5779 tests passed (baseline was 157 files and 5696 tests). I did not run `npm run test:e2e:all`: it needs a browser build and run that I did not attempt, and the task has the lead run it before merge. No browser test was added or changed. I changed nothing that Prettier formats; no formatter was run.
@@ -747,7 +756,7 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 **Files outside `owns`, changed because the compiler or an existing test forced it. Please ratify or tell me to revert.**
 - `apps/back-office/src/session/fixtureSession.ts`: five `unavailable` entries for the new config routes (`ConfigApi` now has five more required members; typecheck failed without them).
-- `apps/back-office/test/config-api.test.tsx`: its run-time list of config routes gains the five users routes, and its title says so.
+- `apps/back-office/test/config-api.test.tsx`: its run-time list of config routes must gain the five users routes (and its title say so), or it fails. **The pre-commit hook refused this file (not in the builder's owns), so the edit is in the working tree and NOT in commit `5c41a6a`.** Commit `5c41a6a` therefore has exactly one failing test, this one; with the working-tree edit, `npm run verify` is green (162 files, 5779 tests). The edit adds, after the tender-methods entries and in sorted order: `/api/back-office/config/users`, `.../users/change-role`, `.../users/create`, `.../users/deactivate`, `.../users/reactivate`, and changes the title to "...the five preset routes and the five users routes at run time...".
 - Within a listed file, `apps/server/test/back-office-credential.test.ts` case 28 (exact export list) gains `hashPassword` and `insertBackOfficeCredential`. Nothing was loosened; each list only grew by the new items.
 
 **Existing tests changed, and why.** `schema.test.ts` (privilege map for `staff_user`; four new cases), `session.test.ts` (new case 11), `log-scan.test.ts` (case 24 gains `currentPassword` and `username`; `resetDatabase` added to its `beforeAll` so a re-run does not meet its own PINs; new users scan), `error-details.types.ts`, the three above. `route-table.test.ts`, `access.test.ts` and every existing `DUPLICATE` assertion (tables, tender methods, catalog, presets) pass unedited.
@@ -776,4 +785,6 @@ Case 14 (`error-details.types.ts`) is compile-time and passes `tsc`; every `@ts-
 
 **What the next agent does not have.** No `CurrentPassword` schema, no `set-pin`/`set-password`/`own-*` routes, no re-stamp. No screen; the five back-office API functions are declared and called by nothing.
 
-DONE
+The Handoff itself was written before the commit; the commit is `5c41a6a` on `agent/phase1-s8a`, and the Handoff text was corrected afterwards in the working tree.
+
+BLOCKED: may I commit the one-file edit to apps/back-office/test/config-api.test.tsx (five users route keys added to its expected list; it is sitting uncommitted in the working tree and the pre-commit hook refuses it for the builder), and do you ratify the fixtureSession.ts addition?
