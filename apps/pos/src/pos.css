@@ -1399,6 +1399,12 @@ button.action:not([aria-disabled="true"]):focus-visible:active {
   font-variant-numeric: tabular-nums;
 }
 
+/* The served picker's footer is one full-width Cancel (frost-served-catalog.css:37-38); only this button spans
+ * the footer's two columns, so no other sheet's footer changes. */
+.served-preset-cancel {
+  grid-column: 1 / -1;
+}
+
 .served-presets__loading {
   margin-bottom: var(--frost-space-6);
 }

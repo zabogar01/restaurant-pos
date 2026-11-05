@@ -5,10 +5,11 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { POLL_MS } from '../src/catalog/catalogStore.js';
 import type { CatalogPreset, CatalogStore } from '../src/catalog/types.js';
-import { CatalogProvider } from '../src/catalog/useCatalog.js';
-import { discountAmount, percentFromPpm, presetOf, valueText } from '../src/discount.js';
+import { CatalogProvider, presetsAt } from '../src/catalog/useCatalog.js';
+import { discountAmount, percentFromPpm, presetOf, snapshotOf, valueText } from '../src/discount.js';
 import { STAFF_MEAL } from '../src/discountFixtures.js';
 import { formatAmount } from '../src/money.js';
+import { OrderScreen } from '../src/OrderPanel.js';
 import type { OrderView } from '../src/orderFixtures.js';
 import { useOrderStore, type LiveOrderStore } from '../src/orderStore.js';
 import {
@@ -236,38 +237,39 @@ describe('4. an applied preset keeps its snapshot when it is later edited or dea
 
 // ---- 6. the press reads the list now ----
 
+/** A catalog store whose presets a test changes by hand, with no render in between unless it says so. */
+function controllable(initial: CatalogPreset[]) {
+  let snapshot = {
+    menu: { version: 1, categories: [], items: [], presets: initial },
+    read: 'ready',
+    failure: null,
+    outOfDate: false,
+    availabilityChanges: 0,
+  } as const;
+  const listeners = new Set<() => void>();
+  const store: CatalogStore = {
+    kind: 'real',
+    getSnapshot: () => snapshot,
+    subscribe: (l) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+    start: () => () => {},
+    retry: () => {},
+  };
+  return {
+    store,
+    /** `notify: false` changes what the store holds without telling the screen: the moment between a poll and its render. */
+    set(presets: CatalogPreset[], notify = true) {
+      snapshot = { ...snapshot, menu: { ...snapshot.menu, presets } };
+      if (notify) for (const l of listeners) l();
+    },
+  };
+}
+
+const served = (id: string, percent = '7'): CatalogPreset => ({ id, name: id, value: { kind: 'PERCENTAGE', rate: rateFromPercent(percent) } });
+
 describe('6. a preset deactivated after the picker drew and before the press is refused by the store', () => {
-  /** A catalog store whose presets a test changes by hand, with no render in between. */
-  function controllable(initial: CatalogPreset[]) {
-    let snapshot = {
-      menu: { version: 1, categories: [], items: [], presets: initial },
-      read: 'ready',
-      failure: null,
-      outOfDate: false,
-      availabilityChanges: 0,
-    } as const;
-    const listeners = new Set<() => void>();
-    const store: CatalogStore = {
-      kind: 'real',
-      getSnapshot: () => snapshot,
-      subscribe: (l) => {
-        listeners.add(l);
-        return () => listeners.delete(l);
-      },
-      start: () => () => {},
-      retry: () => {},
-    };
-    return {
-      store,
-      set(presets: CatalogPreset[]) {
-        snapshot = { ...snapshot, menu: { ...snapshot.menu, presets } };
-        for (const l of listeners) l();
-      },
-    };
-  }
-
-  const served = (id: string): CatalogPreset => ({ id, name: id, value: { kind: 'PERCENTAGE', rate: rateFromPercent('7') } });
-
   it('refuses it as unknown-preset, changes nothing, and the order is the same object', () => {
     const catalog = controllable([served('a'), served('b')]);
     const host = document.createElement('div');
@@ -307,18 +309,201 @@ describe('6. a preset deactivated after the picker drew and before the press is 
     host.remove();
   });
 
-  it('on the screen the sheet stays when the store refuses, and adds no sentence', async () => {
-    // The refusal is the screen's own path: a store that answers `unknown-preset` leaves the picker, the order and
-    // the words as they were (DESIGN-021 dropped *Nothing was applied* under C4).
-    await open([COMP, REGULAR]);
-    const before = totalsRows();
-    h.revision(ok({ version: 9 }));
-    h.menu(ok(menuOf(9, MEALS, [NASI, SATE, TEA], [COMP])));
-    await h.advance(POLL_MS);
-    expect(q('[data-preset="regular"]')).toBeNull();
+  it('a submission whose displayed snapshot no longer matches is refused, with the same order (R1)', () => {
+    const catalog = controllable([served('a'), served('b')]);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root: Root = createRoot(host);
+    let first: LiveOrderStore | undefined;
+    let latest!: LiveOrderStore;
+    function Probe() {
+      latest = useOrderStore({ state: 'default' });
+      first ??= latest;
+      return null;
+    }
+    act(() =>
+      root.render(
+        <CatalogProvider store={catalog.store}>
+          <Probe />
+        </CatalogProvider>
+      )
+    );
+    const shown = presetShown(catalog.store, 'a');
+    const before = latest.order;
+    // 'a' is edited: the same id, another value. What was displayed is no longer what the list gives.
+    act(() => catalog.set([served('a', '100'), served('b')]));
+    let outcome!: ReturnType<LiveOrderStore['changeDiscount']>;
+    act(() => {
+      outcome = first!.changeDiscount({ kind: 'preset', presetId: 'a', shown }, 'direct');
+    });
+    expect(outcome).toEqual({ refused: 'unknown-preset' });
+    expect(latest.order.applied).toBe(STAFF_MEAL);
+    expect(latest.order.groups).toBe(before.groups);
+    // A submission whose snapshot is the one the list gives now is applied.
+    act(() => {
+      outcome = first!.changeDiscount({ kind: 'preset', presetId: 'a', shown: presetShown(catalog.store, 'a') }, 'direct');
+    });
+    expect(outcome).toEqual({});
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it('at the screen, a press on an entry the store no longer holds is refused: the sheet stays, nothing is applied, no sentence', () => {
+    const catalog = controllable([served('a'), served('b')]);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root: Root = createRoot(host);
+    window.history.replaceState(null, '', '/pos/order?state=sheet-discount');
+    act(() =>
+      root.render(
+        <CatalogProvider store={catalog.store}>
+          <OrderScreen view={{ state: 'sheet-discount' }} />
+        </CatalogProvider>
+      )
+    );
+    const rows = () => [...host.querySelectorAll<HTMLElement>('.totals__row')].map((r) => [r.querySelector('dt')!.textContent, r.querySelector('dd')!.textContent]);
+    const before = rows();
+    // The store drops 'b' and the screen has not drawn yet: the entry is still there to be pressed.
+    act(() => catalog.set([served('a')], false));
+    act(() => host.querySelector<HTMLElement>('[data-preset="b"]')!.click());
+    expect(host.querySelector('.sheet[role="dialog"]')).not.toBeNull();
+    expect(host.querySelector('.modal[role="dialog"]')).toBeNull();
+    expect(rows()).toEqual(before);
+    expect(host.querySelector('.notice')).toBeNull();
+    act(() => root.unmount());
+    host.remove();
+  });
+});
+
+/** The snapshot the screen would display for a served preset, as the stand-in resolves it. */
+function presetShown(store: CatalogStore, id: string) {
+  return snapshotOf(presetsAt(store).find((p) => p.id === id)!);
+}
+
+// ---- Round 2 ----
+
+describe('R1. a preset that changes under an open manager prompt is never applied with its new facts', () => {
+  const FIFTEEN = 'sheet-remove-freeform';
+  /** Over the free-form 15% order: the picker is gated, and a pick opens the prompt. */
+  async function promptOn(presets: ServedPreset[] = [COMP, REGULAR]) {
+    await open(presets, FIFTEEN);
+    press(inSheet('Replace with another preset — needs a manager'));
+    press(entry('regular'));
+    expect(q('.modal[role="dialog"]')).not.toBeNull();
+  }
+
+  it('its value changed by a poll: the prompt closes, the sheet stays, the order still carries the free-form discount', async () => {
+    await promptOn();
+    await poll([COMP, { id: 'regular', name: 'Regular guest', ppm: '1000000' }]);
+    expect(q('.modal[role="dialog"]')).toBeNull();
     expect(sheet()).not.toBeNull();
-    expect(totalsRows()).toEqual(before);
+    expect(totalsRows()).toContainEqual(['Other discount 15%', '−60.750']);
     expect(q('.notice')).toBeNull();
+    expect(entry('regular').getAttribute('aria-label')).toBe('Regular guest — 100% — needs a manager');
+    // A fresh pick asks for a fresh approval, and then applies what is shown now.
+    press(entry('regular'));
+    expect(q('.modal[role="dialog"]')).not.toBeNull();
+  });
+
+  it('its name changed: the same', async () => {
+    await promptOn();
+    await poll([COMP, { id: 'regular', name: 'Returning guest', ppm: '123456' }]);
+    expect(q('.modal[role="dialog"]')).toBeNull();
+    expect(totalsRows()).toContainEqual(['Other discount 15%', '−60.750']);
+  });
+
+  it('deactivated: the prompt closes and nothing is applied', async () => {
+    await promptOn();
+    await poll([COMP]);
+    expect(q('.modal[role="dialog"]')).toBeNull();
+    expect(sheet()).not.toBeNull();
+    expect(totalsRows()).toContainEqual(['Other discount 15%', '−60.750']);
+  });
+
+  it('a poll that changes nothing about the preset leaves the prompt open', async () => {
+    await promptOn();
+    await poll([{ id: 'comp', name: 'Comp', ppm: '1000000' }, REGULAR, RECOVERY]);
+    expect(q('.modal[role="dialog"]')).not.toBeNull();
+  });
+
+  it('a change at the instant of approval is refused by the store: the prompt closes, the order is unchanged', () => {
+    const catalog = controllable([served('a')]);
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root: Root = createRoot(host);
+    window.history.replaceState(null, '', `/pos/order?state=${FIFTEEN}`);
+    act(() =>
+      root.render(
+        <CatalogProvider store={catalog.store}>
+          <OrderScreen view={{ state: FIFTEEN }} />
+        </CatalogProvider>
+      )
+    );
+    const click = (el: Element | null) => act(() => (el as HTMLElement).click());
+    const byLabel = (label: string) => [...host.querySelectorAll('.sheet button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent) === label)!;
+    click(byLabel('Replace with another preset — needs a manager'));
+    click(host.querySelector('[data-preset="a"]'));
+    const prompt = host.querySelector<HTMLElement>('.modal[role="dialog"]')!;
+    expect(prompt).not.toBeNull();
+    // The store changes with no render in between, then the manager confirms.
+    act(() => catalog.set([served('a', '100')], false));
+    const inPrompt = (name: string) => [...prompt.querySelectorAll('button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent) === name)!;
+    for (const d of '123456') click(inPrompt(d));
+    click(inPrompt('Continue'));
+    expect(host.querySelector('.modal[role="dialog"]')).toBeNull();
+    expect(host.querySelector('.sheet[role="dialog"]')).not.toBeNull();
+    const rows = [...host.querySelectorAll('.totals__row')].map((r) => [r.querySelector('dt')!.textContent, r.querySelector('dd')!.textContent]);
+    expect(rows).toContainEqual(['Other discount 15%', '−60.750']);
+    act(() => root.unmount());
+    host.remove();
+  });
+});
+
+describe('R2. when the prompt closes, focus returns to its opener only if it is still there', () => {
+  async function promptOn() {
+    await open([COMP, REGULAR], 'sheet-remove-freeform');
+    press(inSheet('Replace with another preset — needs a manager'));
+    const opener = entry('regular');
+    focus(opener);
+    press(opener);
+    expect(q('.modal[role="dialog"]')).not.toBeNull();
+    return opener;
+  }
+
+  it('cancelled: the opener has focus', async () => {
+    const opener = await promptOn();
+    press([...host().querySelectorAll('.modal button')].find((b) => b.textContent === 'Cancel')!);
+    expect(q('.modal[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it('closed by a changed preset, the opener still on the list: the opener has focus', async () => {
+    const opener = await promptOn();
+    await poll([COMP, { id: 'regular', name: 'Regular guest', ppm: '1000000' }]);
+    expect(q('.modal[role="dialog"]')).toBeNull();
+    expect(entry('regular')).toBe(opener);
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it('closed by a deactivated preset, the opener gone: focus is on Presets, never the body', async () => {
+    const opener = await promptOn();
+    await poll([COMP]);
+    expect(q('.modal[role="dialog"]')).toBeNull();
+    expect(opener.isConnected).toBe(false);
+    expect(document.activeElement).toBe(heading());
+    expect(heading().textContent).toBe('Presets — need a manager');
+    expect(document.activeElement).not.toBe(document.body);
+  });
+});
+
+describe('R3. the served picker’s footer is one full-width Cancel', () => {
+  it('has one child, the served Cancel, and no empty sibling', async () => {
+    await open();
+    const foot = q('.sheet__foot')!;
+    expect(foot.children).toHaveLength(1);
+    expect(foot.firstElementChild!.classList.contains('served-preset-cancel')).toBe(true);
+    expect(foot.firstElementChild!.getAttribute('data-action')).toBe('served-preset-cancel');
+    expect(foot.firstElementChild!.textContent).toBe('Cancel');
   });
 });
 

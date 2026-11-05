@@ -30,6 +30,12 @@ export type DiscountSnapshot = {
 /** A manager-defined preset as the back office holds it. Deactivated presets leave the picker (FR-F5). */
 export type Preset = { id: string; name: string; value: DiscountValue; active: boolean };
 
+/** Whether two snapshots are the same discount: source, name, preset, kind and value, compared exactly. */
+export function sameSnapshot(a: DiscountSnapshot, b: DiscountSnapshot): boolean {
+  if (a.source !== b.source || a.name !== b.name || a.presetId !== b.presetId || a.value.kind !== b.value.kind) return false;
+  return a.value.kind === 'percent' ? a.value.percent === (b.value as { percent: string }).percent : a.value.amount === (b.value as { amount: Money }).amount;
+}
+
 /** The free-form sheet's title, which is also the name a free-form discount carries. */
 export const FREE_FORM_NAME = 'Other discount';
 

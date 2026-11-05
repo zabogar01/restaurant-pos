@@ -9,6 +9,7 @@ import {
   needsManager,
   parseFreeForm,
   presetOf,
+  sameSnapshot,
   totalsLabel,
   valueText,
   type DiscountSnapshot,
@@ -91,8 +92,11 @@ export function DiscountSheet({
   }
 
   // The one door. FR-F8 decides from the order, never from the sheet.
-  function change(next: DiscountChange, from: HTMLElement) {
-    const shown = next.kind === 'remove' ? 'remove' : snapshotFor(next, presets);
+  function change(asked: DiscountChange, from: HTMLElement) {
+    const shown = asked.kind === 'remove' ? 'remove' : snapshotFor(asked, presets);
+    // A preset pick carries the snapshot this screen displays, so the store can refuse it if the list no longer
+    // gives that (a preset edited or deactivated since), over a prompt as well as for a direct press.
+    const next: DiscountChange = asked.kind === 'preset' && shown && shown !== 'remove' ? { ...asked, shown } : asked;
     if (!shown || !needsManager(applied, next.kind === 'remove' ? 'remove' : { source: next.kind })) {
       return settle(changeDiscount(next, 'direct'), next);
     }
@@ -101,16 +105,32 @@ export function DiscountSheet({
     setPrompt({ next, request: requestFor(applied, shown, subtotal) });
   }
 
+  // A prompt describes one transition. If its preset leaves the live list or its snapshot changes while the manager
+  // is deciding, the prompt closes as a refused submission does: the sheet stays, nothing is applied, and no
+  // sentence is added. The cashier picks again, and a gated pick asks for a fresh approval (B-14, FR-F8).
+  useLayoutEffect(() => {
+    if (!prompt || prompt.next.kind !== 'preset' || !prompt.next.shown) return;
+    const now = snapshotFor(prompt.next, presets);
+    if (now && sameSnapshot(now, prompt.next.shown)) return;
+    promptOpen.current = false;
+    setPrompt(undefined);
+  }, [prompt, presets]);
+
   function cancelPrompt() {
     promptOpen.current = false;
     setPrompt(undefined);
   }
 
-  // Cancelling the prompt hands focus back to the control that raised it.
+  // A prompt closing (cancelled, refused, or closed because its preset changed) hands focus back to the control
+  // that raised it, if that control is still there. A preset a poll removed while its prompt held focus is not:
+  // focus goes to the preset group's heading, now that the sheet is no longer inert, never to the body.
+  const flow = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (prompt || !raisedBy.current) return;
-    raisedBy.current.focus();
+    const opener = raisedBy.current;
     raisedBy.current = null;
+    if (opener.isConnected) opener.focus();
+    else flow.current?.querySelector<HTMLElement>('#preset-heading')?.focus();
   }, [prompt]);
 
   const open = (next: DiscountStep) => {
@@ -137,7 +157,7 @@ export function DiscountSheet({
 
   return (
     <>
-      <div className="discount-flow" {...inert}>
+      <div className="discount-flow" ref={flow} {...inert}>
         {step === 'picker' &&
           (served ? (
             <ServedPicker
@@ -293,12 +313,10 @@ function ServedPicker({ presets, read, retry, applied, change, open, cancel, onE
       onClose={onEscape}
       served
       foot={
-        <>
-          <button type="button" className="action" data-action="served-preset-cancel" onClick={cancel}>
-            Cancel
-          </button>
-          <span />
-        </>
+        // One full-width Cancel, as the artifact draws it: no empty sibling holding the second column.
+        <button type="button" className="action served-preset-cancel" data-action="served-preset-cancel" onClick={cancel}>
+          Cancel
+        </button>
       }
     >
       <span className="sheet__label" id="preset-heading" tabIndex={-1} ref={heading}>

@@ -21,7 +21,11 @@ import {
 
 /** What a caller may ask for. Never a snapshot: the name, the value of a preset and the `source` are this module's to set (B-8). */
 export type DiscountChange =
-  | { kind: 'preset'; presetId: string }
+  // `shown` is what the screen displayed for this pick (and, over a manager prompt, what the manager approved). It is
+  // never written: the operation still builds the snapshot itself. The store refuses the change unless the list
+  // now gives exactly this snapshot for `presetId` (orderStore.ts), so a preset edited since cannot be applied
+  // under a request that describes its old facts.
+  | { kind: 'preset'; presetId: string; shown?: DiscountSnapshot }
   | { kind: 'free-form'; value: DiscountValue }
   | { kind: 'remove' };
 

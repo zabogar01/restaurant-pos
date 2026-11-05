@@ -326,7 +326,8 @@ describe('nothing applied (FR-F2, FR-F3), on a sheet no ?state= draws', () => {
     const { went, asked } = renderSheet(bare, bareOrder);
     press(inSheet('Staff meal — 10%'));
     expect(prompt()).toBeNull();
-    expect(asked).toEqual([[{ kind: 'preset', presetId: 'staff-meal' }, 'direct']]);
+    // R1: a preset change carries the snapshot the picker displayed, which the store checks against its list.
+    expect(asked).toEqual([[{ kind: 'preset', presetId: 'staff-meal', shown: STAFF_MEAL }, 'direct']]);
     expect(went).toEqual([{ state: 'default' }]);
   });
 });
