@@ -6,7 +6,7 @@ touches: [identity, audit, boundaries]
 depends_on: [PHASE1-S8a]
 base: agent/phase1-s8a
 owns: [apps/server/src/domain/users.ts, apps/server/src/domain/session.ts, apps/server/src/domain/back-office-credential.ts, apps/server/src/domain/pin.ts, apps/server/src/http/routes/back-office-users.ts, packages/contracts/src/users.ts, packages/contracts/src/routes.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, packages/api-client/src/index.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/fixtureSession.ts, apps/back-office/test/config-api.test.tsx, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: active
+status: complete
 cycles: 0
 ---
 # PHASE1-S8b — Credentials on the server: resets, own password and own PIN, the re-stamp
@@ -745,6 +745,23 @@ questions). Fix exactly this, test first with its red proofs recorded, and nothi
 **How to work.** Write and Edit tools only. Run `npm run verify` on a quiet machine before you commit, and report its
 counts. Append a *Round 2* section to the Handoff (do not rewrite round 1), ending with `DONE` or `BLOCKED: <one
 question>`.
+
+## Round 2: lead review, 2026-11-06 (complete)
+
+A lead review instead of a re-review: the one round-2 fix is the review's own, as ruled (R1), and test-only. Reviewed at
+`30ae62a`, the tree clean.
+
+- **Diff:** `apps/server/test/log-scan.test.ts` and `apps/server/test/users-audit.test.ts` only. The own managers (and the
+  audit file's actor) are made with marker PINs, usernames and passwords, leaves of the derived secret list; manager B
+  takes `own-password` through five wrong current passwords and a throttled one; `set-password` gains the extra-key
+  case; the exact-answer list grows from 15 to 28. No production file changed.
+- **`npm run verify`:** exit 0; 164 files, 5814 tests passed. `test:e2e:all` not rerun: no production or browser file
+  changed since the lead's run at `ce6191b` (130 passed). Output in `../restaurant-pos-wt/evidence/PHASE1-S8b/lead/round2/`.
+- **The lead's red proof** (restored from a copy, `git status` clean after): `request.log.info({ a: { b: {
+  currentPassword } } })` after the verification in the `own-password` handler; `log-scan.test.ts` case 13 failed,
+  naming `MARK-USERS-PASSWORD-OWNINITIALA-7739` (1 failed, 12 passed).
+
+**Verdict: complete.** `touches: identity, audit, boundaries`: the owner looks before merge. Stacked on S8a (#173).
 
 ## Handoff
 
