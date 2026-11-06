@@ -6,8 +6,79 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance, InjectOptions } from 'fastify';
 import { closePool, query } from '../src/db/pool.js';
+import { createBackOfficeCredential } from '../src/domain/back-office-credential.js';
+import { createStaffUser, pinLookup } from '../src/domain/pin.js';
 import { buildServer } from '../src/http/server.js';
+import { JarClient } from './support/client.js';
+import { resetDatabase } from './support/database.js';
+import { makePeople } from './support/people.js';
 import { inject } from './support/request.js';
+import { usersApi } from './support/users.js';
+
+// PHASE1-S8a: the users routes' credentials. Each travels in a body by one field, with a
+// marker no other field shares. A PIN is six digits by rule, so these six-digit numbers are
+// chosen apart from anything the log prints, and the scan reads each line without its `time`.
+const USERS_MARK = {
+  pins: {
+    created: '987651',
+    cashier: '987652',
+    promoted: '987653',
+    reactivated: '987654',
+    collider: '987655',
+    taken: '987656',
+    extraKey: '987657',
+    // S8b: the PIN of a reset, of an own change, and the ones that travel beside a refusal.
+    reset: '987661',
+    ownNew: '987662',
+    resetExtra: '987663',
+    ownWrongNew: '987664',
+    ownThrottledNew: '987665',
+    // The own managers' own PINs, so signing in as them sends nothing unsearched.
+    ownInitialA: '987666',
+    ownInitialB: '987667',
+  },
+  passwords: {
+    created: 'MARK-USERS-PASSWORD-CREATED-7731',
+    promoted: 'MARK-USERS-PASSWORD-PROMOTED-7732',
+    duplicateUsername: 'MARK-USERS-PASSWORD-DUPLICATE-7733',
+    // S8b: a password set by a reset, one set by the manager for themselves (and then
+    // sent as the current password), a wrong current one and a throttled one.
+    reset: 'MARK-USERS-PASSWORD-RESET-7734',
+    ownNew: 'MARK-USERS-PASSWORD-OWNNEW-7735',
+    ownWrong: 'MARK-USERS-PASSWORD-OWNWRONG-7736',
+    ownThrottled: 'MARK-USERS-PASSWORD-OWNTHROTTLED-7737',
+    ownExtra: 'MARK-USERS-PASSWORD-OWNEXTRA-7738',
+    // The own managers are created with these as their real passwords, so the current
+    // password of their first own change is a searched marker too.
+    ownInitialA: 'MARK-USERS-PASSWORD-OWNINITIALA-7739',
+    ownInitialB: 'MARK-USERS-PASSWORD-OWNINITIALB-7740',
+    // The own-password route's wrong and throttled paths (manager B), and a set-password
+    // sent with an extra key.
+    ownWrongB: 'MARK-USERS-PASSWORD-OWNWRONGB-7741',
+    ownWrongNewB: 'MARK-USERS-PASSWORD-OWNWRONGNEWB-7742',
+    ownThrottledB: 'MARK-USERS-PASSWORD-OWNTHROTTLEDB-7743',
+    ownThrottledNewB: 'MARK-USERS-PASSWORD-OWNTHROTTLEDNEWB-7744',
+    resetExtra: 'MARK-USERS-PASSWORD-RESETEXTRA-7745',
+  },
+  usernames: {
+    created: 'mark.users.created.4411',
+    promoted: 'mark.users.promoted.4412',
+    ownA: 'mark.users.owna.4414',
+    ownB: 'mark.users.ownb.4415',
+  },
+  // A username sent where no username belongs (an own change names no account).
+  bodyUsername: 'mark.users.ownbody.4413',
+  extraKey: 'MARK-USERS-EXTRA-KEY-9901',
+  malformedPin: 'MARK-USERS-MALFORMED-PIN-9902',
+  malformedPassword: 'MK-PW-7',
+  ownMalformedPin: 'MARK-USERS-OWN-MALFORMED-PIN-9903',
+  ownMalformedPassword: 'MK-OWN7',
+};
+const usersPeople = makePeople(760000);
+const usersBodies: string[] = [];
+const usersRefusals: { status: number; body: string }[] = [];
+// The refusals of the four credential routes, apart from S8a's exact list above.
+const credentialRefusals: { status: number; body: string }[] = [];
 
 // A request's path is logged by design (the method and the path, never the
 // query), so a marker in a path would be a false alarm. These two travel in the
@@ -30,6 +101,8 @@ const MARK = {
   loggedPin: 'MARK-LOGGED-PIN-1029',
   loggedPassword: 'MARK-LOGGED-PASSWORD-2047',
   loggedDeep: 'MARK-LOGGED-DEEP-3065',
+  loggedCurrentPassword: 'MARK-LOGGED-CURRENTPASSWORD-4471',
+  loggedUsername: 'MARK-LOGGED-USERNAME-5582',
   badUrlPin: 'MARK-BADURL-PIN-6021',
   badUrlPassword: 'MARK-BADURL-PASSWORD-7742',
   bundleQuery: 'MARK-BUNDLE-QUERY-8815',
@@ -54,6 +127,7 @@ async function send(options: InjectOptions) {
 }
 
 beforeAll(async () => {
+  await resetDatabase();
   lines = [];
   const logStream = new Writable({
     write(chunk, _encoding, done) {
@@ -93,6 +167,8 @@ beforeAll(async () => {
             {
               pin: MARK.loggedPin,
               password: MARK.loggedPassword,
+              currentPassword: MARK.loggedCurrentPassword,
+              username: MARK.loggedUsername,
               nested: { pin: MARK.loggedDeep },
             },
             'probe'
@@ -154,6 +230,162 @@ beforeAll(async () => {
     method: 'GET',
     url: `/api/probe-param/${PATH_MARK.param}${'x'.repeat(200)}?pin=${MARK.badUrlPin}`,
   });
+
+  // S8a: every users route with a marker in every credential field, through the success
+  // path, a DUPLICATE on the PIN (the collision made against a marker PIN) and on the
+  // username, and a strict-schema refusal with a marker in an extra key and in a malformed
+  // value. The responses are kept for the body scan and, when they are errors, for the
+  // envelope check.
+  const manager = await usersPeople.manager();
+  const jar = new JarClient(app);
+  await jar.signInBackOffice(manager.username, manager.password);
+  const users = usersApi(jar);
+  const sendUsers = async (call: () => ReturnType<typeof users.list>) => {
+    const res = await call();
+    usersBodies.push(res.body);
+    bodies.push(res.body);
+    if (res.statusCode >= 400) {
+      errorBodies.push({ status: res.statusCode, body: res.body });
+      usersRefusals.push({ status: res.statusCode, body: res.body });
+    }
+    return res;
+  };
+  const idOf = (res: Awaited<ReturnType<typeof sendUsers>>) =>
+    (res.json() as { user: { staffUserId: string } }).user.staffUserId;
+
+  await sendUsers(() => users.list());
+  const created = await sendUsers(() =>
+    users.create({
+      classification: 'MANAGER',
+      name: 'Scan Manager',
+      pin: USERS_MARK.pins.created,
+      username: USERS_MARK.usernames.created,
+      password: USERS_MARK.passwords.created,
+    })
+  );
+  const cashier = await sendUsers(() =>
+    users.create({ classification: 'CASHIER', name: 'Scan Cashier', pin: USERS_MARK.pins.cashier })
+  );
+  const cook = await sendUsers(() => users.create({ classification: 'KITCHEN', name: 'Scan Cook' }));
+  await sendUsers(() =>
+    users.changeRole({
+      change: 'KITCHEN_TO_MANAGER',
+      staffUserId: idOf(cook),
+      pin: USERS_MARK.pins.promoted,
+      password: USERS_MARK.passwords.promoted,
+      username: USERS_MARK.usernames.promoted,
+    })
+  );
+  const spare = await usersPeople.cashier();
+  await sendUsers(() => users.deactivate(spare.id));
+  await sendUsers(() => users.reactivate(spare.id, USERS_MARK.pins.reactivated));
+  await sendUsers(() => users.deactivate(idOf(cashier)));
+  // A DUPLICATE on the PIN: the create, then the reactivation, each against a marker PIN.
+  await sendUsers(() => users.create({ classification: 'CASHIER', name: 'Collides', pin: USERS_MARK.pins.created }));
+  await sendUsers(() => users.reactivate(idOf(cashier), USERS_MARK.pins.reactivated));
+  // A DUPLICATE on the username, with markers in the PIN and the password beside it.
+  await sendUsers(() =>
+    users.create({
+      classification: 'MANAGER',
+      name: 'Collides',
+      pin: USERS_MARK.pins.taken,
+      username: USERS_MARK.usernames.created,
+      password: USERS_MARK.passwords.duplicateUsername,
+    })
+  );
+  // A strict-schema refusal: a marker in an extra key, and in two malformed values.
+  await sendUsers(() =>
+    users.create({ classification: 'CASHIER', name: 'Extra', pin: USERS_MARK.pins.extraKey, extra: USERS_MARK.extraKey })
+  );
+  await sendUsers(() => users.create({ classification: 'CASHIER', name: 'Malformed', pin: USERS_MARK.malformedPin }));
+  await sendUsers(() =>
+    users.create({
+      classification: 'MANAGER',
+      name: 'Short',
+      pin: USERS_MARK.pins.collider,
+      username: 'short.password',
+      password: USERS_MARK.malformedPassword,
+    })
+  );
+  await sendUsers(() => users.deactivate(idOf(created)));
+
+  // S8b: the four credential routes. The reset routes first, then a second signed-in manager
+  // making the own changes, ending on the five wrong current passwords and the throttled one.
+  const sendCredential = async (call: () => ReturnType<typeof users.list>) => {
+    const res = await call();
+    usersBodies.push(res.body);
+    bodies.push(res.body);
+    if (res.statusCode >= 400) {
+      errorBodies.push({ status: res.statusCode, body: res.body });
+      credentialRefusals.push({ status: res.statusCode, body: res.body });
+    }
+    return res;
+  };
+  await sendCredential(() => users.setPin(spare.id, USERS_MARK.pins.reset));
+  await sendCredential(() => users.setPin(spare.id, USERS_MARK.pins.promoted));
+  await sendCredential(() => users.setPassword(idOf(cook), USERS_MARK.passwords.reset));
+  await sendCredential(() => users.post('set-pin', { staffUserId: spare.id, pin: USERS_MARK.pins.resetExtra, extra: USERS_MARK.extraKey }));
+  await sendCredential(() => users.setPin(spare.id, USERS_MARK.malformedPin));
+  await sendCredential(() => users.setPassword(idOf(cook), USERS_MARK.malformedPassword));
+  await sendCredential(() =>
+    users.post('set-password', {
+      staffUserId: idOf(cook),
+      password: USERS_MARK.passwords.resetExtra,
+      extra: USERS_MARK.extraKey,
+    })
+  );
+
+  // The two own managers are made with marker PINs, usernames and passwords, so that the
+  // current password of their first own change, and every sign-in, sends a searched value.
+  const markerManager = async (n: 'A' | 'B') => {
+    const pin = USERS_MARK.pins[`ownInitial${n}`];
+    const username = USERS_MARK.usernames[`own${n}`];
+    const password = USERS_MARK.passwords[`ownInitial${n}`];
+    const { id } = await createStaffUser({ name: `Scan Own ${n}`, role: 'MANAGER', pin });
+    await createBackOfficeCredential({ staffUserId: id, username, password });
+    const jar = new JarClient(app);
+    await jar.signInBackOffice(username, password);
+    return { api: usersApi(jar), password };
+  };
+  const own = await markerManager('A');
+  const ownApi = own.api;
+  await sendCredential(() => ownApi.ownPassword(own.password, USERS_MARK.passwords.ownNew));
+  await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownNew, USERS_MARK.pins.ownNew));
+  // A DUPLICATE on the PIN, with the current password right.
+  await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownNew, USERS_MARK.pins.promoted));
+  // Strict-schema refusals: an extra key, a malformed new password, a malformed new PIN, and a
+  // `username` where no username belongs.
+  await sendCredential(() =>
+    ownApi.post('own-password', {
+      currentPassword: USERS_MARK.passwords.ownNew,
+      password: USERS_MARK.passwords.ownExtra,
+      extra: USERS_MARK.extraKey,
+    })
+  );
+  await sendCredential(() => ownApi.ownPassword(USERS_MARK.passwords.ownNew, USERS_MARK.ownMalformedPassword));
+  await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownNew, USERS_MARK.ownMalformedPin));
+  await sendCredential(() =>
+    ownApi.post('own-pin', {
+      username: USERS_MARK.bodyUsername,
+      currentPassword: USERS_MARK.passwords.ownNew,
+      pin: USERS_MARK.pins.ownNew,
+    })
+  );
+  // Five wrong current passwords (the fifth starts the cooldown), then a throttled one.
+  for (let i = 0; i < 5; i += 1) {
+    await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownWrong, USERS_MARK.pins.ownWrongNew));
+  }
+  await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownThrottled, USERS_MARK.pins.ownThrottledNew));
+
+  // The same two paths on own-password, for manager B: five wrong current passwords, then a
+  // throttled one, each with a marker in the new password too.
+  const ownB = await markerManager('B');
+  for (let i = 0; i < 5; i += 1) {
+    await sendCredential(() => ownB.api.ownPassword(USERS_MARK.passwords.ownWrongB, USERS_MARK.passwords.ownWrongNewB));
+  }
+  await sendCredential(() =>
+    ownB.api.ownPassword(USERS_MARK.passwords.ownThrottledB, USERS_MARK.passwords.ownThrottledNewB)
+  );
 });
 
 afterAll(async () => {
@@ -243,14 +475,96 @@ describe('what leaves the process', () => {
     expect(logged?.err).not.toHaveProperty('message');
   });
 
-  it('24. a probe that logs { pin, password } produces a line without either key', () => {
+  it('24. a probe that logs { pin, password, currentPassword, username } produces a line without any of the four keys', () => {
     const line = lines
       .map((l) => JSON.parse(l) as Record<string, unknown>)
       .find((l) => l.msg === 'probe');
     expect(line).toBeDefined();
     expect(line).not.toHaveProperty('pin');
     expect(line).not.toHaveProperty('password');
+    expect(line).not.toHaveProperty('currentPassword');
+    expect(line).not.toHaveProperty('username');
     expect(line!.nested).toEqual({});
+  });
+
+  describe('S8a: the users routes', () => {
+    const lookups = Object.values(USERS_MARK.pins).map((pin) => pinLookup(pin));
+    // Every marker leaf of USERS_MARK, however it is grouped, so a standalone marker (the
+    // malformed password was one) can never be sent and left out of the search again.
+    const leaves = (value: unknown): string[] =>
+      typeof value === 'string' ? [value] : Object.values(value as object).flatMap(leaves);
+    const secrets = [...leaves(USERS_MARK), ...lookups, '$argon2id$'];
+
+    it('has the requests it scans, and the refusals it expects', () => {
+      expect(usersBodies.length).toBeGreaterThanOrEqual(14);
+      expect(usersRefusals.map((r) => `${r.status} ${r.body}`)).toEqual([
+        '409 {"error":{"code":"DUPLICATE","details":{"field":"pin"}}}',
+        '409 {"error":{"code":"DUPLICATE","details":{"field":"pin"}}}',
+        '409 {"error":{"code":"DUPLICATE","details":{"field":"username"}}}',
+        '400 {"error":{"code":"VALIDATION_FAILED"}}',
+        '400 {"error":{"code":"VALIDATION_FAILED"}}',
+        '400 {"error":{"code":"VALIDATION_FAILED"}}',
+      ]);
+    });
+
+    it('S8b 11. the four credential routes answered what the scan expects, every refusal the bare envelope', () => {
+      const retry = (body: string) => body.replace(/"retryAfterSeconds":\d+/, '"retryAfterSeconds":N');
+      const dupPin = '{"error":{"code":"DUPLICATE","details":{"field":"pin"}}}';
+      const invalid = '{"error":{"code":"VALIDATION_FAILED"}}';
+      const wrong = '{"error":{"code":"INVALID_CREDENTIALS"}}';
+      const cooled = '401 {"error":{"code":"INVALID_CREDENTIALS","details":{"retryAfterSeconds":N}}}';
+      const throttled = '429 {"error":{"code":"THROTTLED","details":{"retryAfterSeconds":N}}}';
+      expect(credentialRefusals.map((r) => `${r.status} ${retry(r.body)}`)).toEqual([
+        `409 ${dupPin}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `409 ${dupPin}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        cooled,
+        throttled,
+        // own-password, manager B
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        cooled,
+        throttled,
+      ]);
+    });
+
+    it('13. no marker PIN, password or username, no PIN lookup and no hash appears in any log line at trace', () => {
+      // Read without `time`: a timestamp is thirteen digits and could spell a six-digit marker.
+      const log = lines
+        .map((line) => {
+          const parsed = JSON.parse(line) as Record<string, unknown>;
+          delete parsed.time;
+          return JSON.stringify(parsed);
+        })
+        .join('\n');
+      const leaked = secrets.filter((secret) => log.includes(secret));
+      expect(leaked, 'secrets that reached the log').toEqual([]);
+    });
+
+    it('12 and 13. no marker PIN, password, lookup or hash appears in any response body; the username appears only where the view says it', () => {
+      const everything = usersBodies.join('\n');
+      const leaked = secrets
+        .filter((secret) => !Object.values(USERS_MARK.usernames).includes(secret))
+        .filter((secret) => everything.includes(secret));
+      expect(leaked, 'secrets that reached a response').toEqual([]);
+      // A username comes back only in a user view (create and promote), never in a refusal.
+      for (const { body } of usersRefusals) {
+        for (const username of Object.values(USERS_MARK.usernames)) expect(body).not.toContain(username);
+      }
+    });
   });
 
   it('request lines carry the method and the path without its query string', () => {

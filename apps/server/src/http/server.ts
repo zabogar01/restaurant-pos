@@ -22,6 +22,7 @@ import { backOfficePresetRoutes } from './routes/back-office-presets.js';
 import { backOfficeSettingsRoutes } from './routes/back-office-settings.js';
 import { backOfficeTableRoutes } from './routes/back-office-tables.js';
 import { backOfficeTenderMethodRoutes } from './routes/back-office-tender-methods.js';
+import { backOfficeUserRoutes } from './routes/back-office-users.js';
 import { healthRoutes } from './routes/health.js';
 import { posAuthRoutes } from './routes/pos-auth.js';
 import { posCatalogRoutes } from './routes/pos-catalog.js';
@@ -118,6 +119,7 @@ export function buildServer({
       await api.register(backOfficeTenderMethodRoutes);
       await api.register(backOfficeCatalogRoutes);
       await api.register(backOfficePresetRoutes);
+      await api.register(backOfficeUserRoutes);
       for (const routes of apiRoutes) await api.register(routes);
     },
     { prefix: '/api' }
