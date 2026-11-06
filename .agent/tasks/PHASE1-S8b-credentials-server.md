@@ -6,7 +6,7 @@ touches: [identity, audit, boundaries]
 depends_on: [PHASE1-S8a]
 base: agent/phase1-s8a
 owns: [apps/server/src/domain/users.ts, apps/server/src/domain/session.ts, apps/server/src/domain/back-office-credential.ts, apps/server/src/domain/pin.ts, apps/server/src/http/routes/back-office-users.ts, packages/contracts/src/users.ts, packages/contracts/src/routes.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, packages/api-client/src/index.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/fixtureSession.ts, apps/back-office/test/config-api.test.tsx, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S8b — Credentials on the server: resets, own password and own PIN, the re-stamp
@@ -692,6 +692,36 @@ proof; what was found and not fixed; the real `verify` output (say whether you r
 appears). Add the re-stamp function's name and the four actions.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verification, 2026-11-06 (before review)
+
+The lead ran these in this worktree at `ce6191b`; this note is the evidence a reviewer cannot gather.
+
+- **`npm run db:migrate`:** no pending migrations (ruling 1 holds). **`npm run verify`:** exit 0; typecheck clean; 164
+  files, 5814 tests passed. **`npm run test:e2e:all`:** exit 0; 130 passed, both engines (no browser test changed).
+  Output in `../restaurant-pos-wt/evidence/PHASE1-S8b/lead/`.
+- **Paths:** every changed path is inside `owns`; no production file outside the four rulings' modules changed;
+  `route-table.test.ts`, `access.test.ts` and `credential-keys.test.ts` are unedited.
+- **The lead's red proof** (reverted from a copy, `git status` clean after): `changeOwn`'s `if (!restamped) throw` made
+  unreachable; `users-credentials.test.ts` case 6 failed, `password: expected { kind: 'OK', … } to deeply equal { kind:
+  'UNAUTHENTICATED' }`, 1 failed and 27 passed.
+
+**For the reviewer.** Review `agent/phase1-s8a...HEAD` (S8a is PR #173, not yet merged; its own review is done).
+Beyond the review's own reading, the lead asks for a view on:
+
+1. **Test order.** The builder wrote the production code before the tests and ran every red against the finished code
+   (Handoff, *Red proofs*). Does each test fail for the reason its criterion names, or does any pass for an incidental
+   reason (a timeout, an earlier assertion firing first, as the Handoff admits for the audit red)?
+2. **The windows.** ACs 5 and 6 are driven at domain level because the guard's interactive `UPDATE` of the same
+   `actor_session` row blocks an HTTP request before the re-stamp. Is that reasoning right, and does the AC 15 HTTP
+   `UNAUTHENTICATED` path (a holder on the actor's `staff_user` row) prove what it claims?
+3. **The lock order** in `setUserPassword` and `changeOwnPassword` (StaffUser rows, credential row, acting session) and
+   whether any statement in the four commands can take them in another order, or hold a lock across Argon2id.
+4. **The current-password answers** in the Handoff (status, code, details, `retryAfterSeconds` only on the fifth,
+   `THROTTLED` after): do the route and the tests match C3 section 4 and ADR-011 rules 7 and 9 exactly, and is nothing
+   counted on a schema refusal?
+5. **The log and audit scans** for the four routes: is every marker the scans send also searched for (S8a's round 2
+   finding), lookups included, on every path C3 section 8 lists?
 
 ## Handoff
 
