@@ -88,7 +88,18 @@ function logMethod(
 // The control is that a body, a header or a cookie is never handed to the
 // logger at all. B-12 forbids a value in any form, including partially masked,
 // so the censor removes the key outright.
-const SECRET_KEYS = ['pin', 'password', 'managerPin', 'token', 'cookie'];
+// `username` is not a secret, but a mistyped username is frequently a password typed into the
+// wrong field (ADR-009 section 4), so the backstop treats it the same way. Exported for the
+// test that holds every credential-shaped request key to this list.
+export const SECRET_KEYS = [
+  'pin',
+  'password',
+  'managerPin',
+  'token',
+  'cookie',
+  'currentPassword',
+  'username',
+];
 const redact = {
   paths: [
     'req.headers.cookie',

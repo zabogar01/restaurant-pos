@@ -93,6 +93,8 @@ function meaningOf(body: ErrorBody, context: Context): Meaning {
     case ErrorCode.DUPLICATE:
     case ErrorCode.SETTINGS_CHANGED:
     case ErrorCode.CATALOG_CHANGED:
+    case ErrorCode.OWN_ACCOUNT:
+    case ErrorCode.USER_CHANGED:
       return { kind: 'general-failure' };
     default: {
       const unplaced: never = error;

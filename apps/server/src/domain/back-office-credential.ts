@@ -39,6 +39,44 @@ function constraintOf(err: unknown): { code?: string; constraint?: string } {
   return typeof err === 'object' && err !== null ? (err as { code?: string; constraint?: string }) : {};
 }
 
+/**
+ * Argon2id of a password that fits the rule, computed before any transaction opens.
+ * Throws a fixed message that names no value when the password does not fit.
+ */
+export async function hashPassword(password: string): Promise<string> {
+  if (!passwordFits(password)) throw new Error('Password must be 8 to 128 characters');
+  return hash(password, ARGON2);
+}
+
+/**
+ * The one INSERT of a back-office credential, for the first-manager script and the
+ * back-office commands alike. `username` is already normalised. A username any row
+ * holds is the answer `USERNAME_TAKEN`; every other refusal throws a fixed message.
+ */
+export async function insertBackOfficeCredential(
+  client: Pick<pg.PoolClient, 'query'> | undefined,
+  input: { staffUserId: string; username: string; passwordHash: string }
+): Promise<'OK' | 'USERNAME_TAKEN'> {
+  const sql = `INSERT INTO back_office_credential (staff_user_id, username, password_hash)
+               VALUES ($1, $2, $3)`;
+  const params = [input.staffUserId, input.username, input.passwordHash];
+  try {
+    if (client) await client.query(sql, params);
+    else await query(sql, params);
+  } catch (err) {
+    const { code, constraint } = constraintOf(err);
+    if (code === '23505' && constraint === 'back_office_credential_username_key') {
+      return 'USERNAME_TAKEN';
+    }
+    if (code === '23505' && constraint === 'back_office_credential_pkey') {
+      throw new Error('Staff user already has a back-office credential');
+    }
+    if (code === '23503') throw new Error('Staff user does not exist');
+    throw new Error(DATABASE_FAILURE);
+  }
+  return 'OK';
+}
+
 export async function createBackOfficeCredential(
   input: { staffUserId: string; username: string; password: string },
   client?: Pick<pg.PoolClient, 'query'>
@@ -47,26 +85,13 @@ export async function createBackOfficeCredential(
   if (username === null) {
     throw new Error('Username must be 3 to 32 letters, digits, dots, underscores or hyphens');
   }
-  if (!passwordFits(input.password)) throw new Error('Password must be 8 to 128 characters');
-
-  const passwordHash = await hash(input.password, ARGON2);
-  const sql = `INSERT INTO back_office_credential (staff_user_id, username, password_hash)
-               VALUES ($1, $2, $3)`;
-  const params = [input.staffUserId, username, passwordHash];
-  try {
-    if (client) await client.query(sql, params);
-    else await query(sql, params);
-  } catch (err) {
-    const { code, constraint } = constraintOf(err);
-    if (code === '23505' && constraint === 'back_office_credential_username_key') {
-      throw new Error('Username is already taken');
-    }
-    if (code === '23505' && constraint === 'back_office_credential_pkey') {
-      throw new Error('Staff user already has a back-office credential');
-    }
-    if (code === '23503') throw new Error('Staff user does not exist');
-    throw new Error(DATABASE_FAILURE);
-  }
+  const passwordHash = await hashPassword(input.password);
+  const inserted = await insertBackOfficeCredential(client, {
+    staffUserId: input.staffUserId,
+    username,
+    passwordHash,
+  });
+  if (inserted === 'USERNAME_TAKEN') throw new Error('Username is already taken');
   return { username };
 }
 
@@ -80,7 +105,9 @@ const NO_ROW: Attempt = { kind: 'FAILED', retryAfterSeconds: null, cooldownStart
 interface LockedRow {
   staff_user_id: string;
   password_hash: string;
-  role: StaffRole;
+  // Null for a former manager who is now kitchen staff: the credential row stays
+  // and never verifies (`row.role === 'MANAGER'` below refuses it).
+  role: StaffRole | null;
   is_active: boolean;
   credential_version: number;
 }

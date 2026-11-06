@@ -76,4 +76,15 @@ export const ROUTE_TABLE = [
   { method: 'POST', path: '/api/back-office/config/catalog/presets/update', interactive: true },
   { method: 'POST', path: '/api/back-office/config/catalog/presets/deactivate', interactive: true },
   { method: 'POST', path: '/api/back-office/config/catalog/presets/reactivate', interactive: true },
+  // The users read is not interactive, for the reason the tables list is not; every users
+  // command is a person pressing a control.
+  { method: 'GET', path: '/api/back-office/config/users', interactive: false },
+  { method: 'POST', path: '/api/back-office/config/users/create', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/users/change-role', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/users/deactivate', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/users/reactivate', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/users/set-pin', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/users/set-password', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/users/own-password', interactive: true },
+  { method: 'POST', path: '/api/back-office/config/users/own-pin', interactive: true },
 ] as const satisfies readonly RouteEntry[];

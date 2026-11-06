@@ -128,6 +128,15 @@ export const ROUTES = {
   presetsUpdate: find('/api/back-office/config/catalog/presets/update'),
   presetsDeactivate: find('/api/back-office/config/catalog/presets/deactivate'),
   presetsReactivate: find('/api/back-office/config/catalog/presets/reactivate'),
+  usersList: find('/api/back-office/config/users'),
+  usersCreate: find('/api/back-office/config/users/create'),
+  usersChangeRole: find('/api/back-office/config/users/change-role'),
+  usersDeactivate: find('/api/back-office/config/users/deactivate'),
+  usersReactivate: find('/api/back-office/config/users/reactivate'),
+  usersSetPin: find('/api/back-office/config/users/set-pin'),
+  usersSetPassword: find('/api/back-office/config/users/set-password'),
+  usersOwnPassword: find('/api/back-office/config/users/own-password'),
+  usersOwnPin: find('/api/back-office/config/users/own-pin'),
 } as const;
 
 interface View {

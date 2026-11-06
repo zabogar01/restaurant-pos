@@ -45,6 +45,43 @@ export function pinLookup(pin: string): string {
   return createHmac('sha256', pinPepper()).update(pin).digest('hex');
 }
 
+/** A PIN's two stored forms, computed before any transaction opens (Argon2id is slow). */
+export interface PreparedPin {
+  pinHash: string;
+  pinLookup: string;
+}
+
+export async function preparePin(pin: string): Promise<PreparedPin> {
+  assertValidPinFormat(pin);
+  return { pinHash: await hashPin(pin), pinLookup: pinLookup(pin) };
+}
+
+/**
+ * The one INSERT of a staff user, for the first-manager script and the back-office
+ * create command alike. A null `prepared` is kitchen staff and needs a null `role`;
+ * a role needs a PIN. Returns null when an active user already holds the PIN. The
+ * caller has validated and trimmed the name.
+ */
+export async function insertStaffUser(
+  client: Pick<pg.PoolClient, 'query'> | undefined,
+  input: { name: string; role: StaffRole | null; prepared: PreparedPin | null }
+): Promise<{ id: string } | null> {
+  const { name, role, prepared } = input;
+  let rows: { id: string }[];
+  try {
+    const sql = `INSERT INTO staff_user (name, role, pin_hash, pin_lookup)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (pin_lookup) WHERE is_active DO NOTHING
+       RETURNING id`;
+    const params = [name, role, prepared?.pinHash ?? null, prepared?.pinLookup ?? null];
+    rows = client ? (await client.query(sql, params)).rows : await query<{ id: string }>(sql, params);
+  } catch {
+    throw new Error(DATABASE_FAILURE);
+  }
+  const created = rows[0];
+  return created ? { id: created.id } : null;
+}
+
 export async function createStaffUser(
   input: {
     name: string;
@@ -58,23 +95,10 @@ export async function createStaffUser(
   if (name === '') throw new Error('Name must not be blank');
   if (!ROLES.includes(input.role)) throw new Error('Role must be CASHIER or MANAGER');
 
-  const pinHash = await hashPin(input.pin);
-  const lookup = pinLookup(input.pin);
-
-  let rows: { id: string }[];
-  try {
-    const sql = `INSERT INTO staff_user (name, role, pin_hash, pin_lookup)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (pin_lookup) WHERE is_active DO NOTHING
-       RETURNING id`;
-    const params = [name, input.role, pinHash, lookup];
-    rows = client ? (await client.query(sql, params)).rows : await query<{ id: string }>(sql, params);
-  } catch {
-    throw new Error(DATABASE_FAILURE);
-  }
-  const created = rows[0];
+  const prepared = await preparePin(input.pin);
+  const created = await insertStaffUser(client, { name, role: input.role, prepared });
   if (!created) throw new Error('PIN already in use');
-  return { id: created.id };
+  return created;
 }
 
 /**

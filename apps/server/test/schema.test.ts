@@ -86,7 +86,18 @@ describe('privileges', () => {
   // a privilege held on that column alone; a table entry is held on the whole
   // table.
   const EXPECTED: Record<string, { table: string[]; columns: Record<string, string[]> }> = {
-    staff_user: { table: ['INSERT', 'SELECT', 'UPDATE'], columns: {} },
+    // S8a-1: no rename and no id or created_at (consult C3 OQ2): the five columns the users
+    // commands write.
+    staff_user: {
+      table: ['INSERT', 'SELECT'],
+      columns: {
+        role: ['UPDATE'],
+        pin_hash: ['UPDATE'],
+        pin_lookup: ['UPDATE'],
+        is_active: ['UPDATE'],
+        credential_version: ['UPDATE'],
+      },
+    },
     client_instance: { table: ['INSERT', 'SELECT', 'UPDATE'], columns: {} },
     actor_session: { table: ['INSERT', 'SELECT', 'UPDATE'], columns: {} },
     audit_entry: {
@@ -508,6 +519,67 @@ describe('identity', () => {
   it('rejects KITCHEN as a staff_user role (case 16)', async () => {
     const failure = await refusal(insertStaff({ role: 'KITCHEN' }));
     expect(failure.constraint).toBe('staff_user_role_check');
+  });
+
+  // ---- S8a-1: kitchen staff (consult C3 section 1) ----
+
+  /** A staff row written through the owner connection with the credential columns as given. */
+  function insertShape(role: string | null, pinHash: string | null, pinLookup: string | null, name = 'Shape') {
+    return ownerQuery(
+      'INSERT INTO staff_user (name, role, pin_hash, pin_lookup) VALUES ($1, $2, $3, $4)',
+      [name, role, pinHash, pinLookup]
+    );
+  }
+
+  it('accepts a kitchen row: no role, no PIN hash, no PIN lookup (S8a-1 case 3)', async () => {
+    await insertShape(null, null, null);
+    await insertShape(null, null, null);
+    const rows = await ownerQuery<{ n: string }>('SELECT count(*) AS n FROM staff_user WHERE role IS NULL');
+    expect(only(rows).n).toBe('2');
+  });
+
+  it('refuses a role and no PIN, a PIN and no role, and a hash without a lookup (S8a-1 case 3)', async () => {
+    const shapes: [string, string | null, string | null, string | null][] = [
+      ['a role and no PIN', 'CASHIER', null, null],
+      ['a role and a hash without a lookup', 'CASHIER', ARGON2, null],
+      ['a role and a lookup without a hash', 'MANAGER', null, 'lookup-x'],
+      ['a PIN and no role', null, ARGON2, 'lookup-y'],
+      ['no role and a hash alone', null, ARGON2, null],
+      ['no role and a lookup alone', null, null, 'lookup-z'],
+    ];
+    for (const [label, role, hash, lookup] of shapes) {
+      const failure = await refusal(insertShape(role, hash, lookup));
+      expect([failure.code, failure.constraint], label).toEqual([CHECK_VIOLATION, 'staff_user_credential_shape_check']);
+    }
+  });
+
+  it('refuses an untrimmed, over-long or control-character name, U+0007 and U+009B included (S8a-1 case 3)', async () => {
+    const names: [string, string][] = [
+      ['a leading space', ' Dewi'],
+      ['a trailing space', 'Dewi '],
+      ['65 characters', 'x'.repeat(65)],
+      ['U+0007', 'Bell\u0007'],
+      ['U+009B (a C1 control)', 'Csi\u009b'],
+      ['a tab inside', 'A\tB'],
+      ['a newline inside', 'A\nB'],
+    ];
+    for (const [label, name] of names) {
+      const failure = await refusal(insertShape(null, null, null, name));
+      expect([failure.code, failure.constraint], label).toEqual([CHECK_VIOLATION, 'staff_user_name_text_check']);
+    }
+    await insertShape(null, null, null, 'x'.repeat(64));
+    await insertShape(null, null, null, 'Dewi Élise');
+  });
+
+  it('gives pos_app UPDATE on the five columns only: a rename, an id and a created_at change are refused (S8a-1 case 3)', async () => {
+    const id = await insertStaff();
+    for (const set of ['is_active = false', 'credential_version = 2', 'role = \'MANAGER\'', 'pin_hash = pin_hash', 'pin_lookup = \'lookup-new\'']) {
+      await query(`UPDATE staff_user SET ${set} WHERE id = $1`, [id]);
+    }
+    for (const set of ["name = 'Renamed'", "id = '00000000-0000-4000-8000-000000000000'", 'created_at = now()']) {
+      expect((await refusal(query(`UPDATE staff_user SET ${set} WHERE id = $1`, [id]))).code, set).toBe(PERMISSION_DENIED);
+    }
+    expect((await refusal(query('DELETE FROM staff_user WHERE id = $1', [id]))).code).toBe(PERMISSION_DENIED);
   });
 
   it('rejects a pin_hash that is not an Argon2id encoded hash (case 17)', async () => {

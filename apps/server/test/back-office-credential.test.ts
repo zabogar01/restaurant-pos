@@ -571,6 +571,8 @@ describe('durability, grants and shape', () => {
       'PASSWORD_COOLDOWN_MINUTES',
       'PASSWORD_MAX_FAILURES',
       'createBackOfficeCredential',
+      'hashPassword',
+      'insertBackOfficeCredential',
       'normaliseUsername',
       'verifyPasswordThrottled',
     ]);

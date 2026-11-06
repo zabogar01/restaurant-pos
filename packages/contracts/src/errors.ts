@@ -23,6 +23,8 @@ export const ErrorCode = {
   DUPLICATE: 'DUPLICATE',
   SETTINGS_CHANGED: 'SETTINGS_CHANGED',
   CATALOG_CHANGED: 'CATALOG_CHANGED',
+  OWN_ACCOUNT: 'OWN_ACCOUNT',
+  USER_CHANGED: 'USER_CHANGED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -38,6 +40,12 @@ export interface ErrorDetailsByCode {
   THROTTLED: { retryAfterSeconds: number };
   APPROVAL_FAILED: { retryAfterSeconds: number };
   APPROVAL_THROTTLED: { retryAfterSeconds: number };
+  /**
+   * Only the users routes say which unique key collided (the active PIN or the username), so a
+   * form can place the refusal. A constant the server chose from the constraint's name. Every
+   * other route sends `DUPLICATE` with no details.
+   */
+  DUPLICATE: { field: 'pin' | 'username' };
 }
 
 /** The details type of one code, or `never` when the code declares none. */
@@ -67,17 +75,22 @@ const RetryAfter = z.strictObject({ retryAfterSeconds: z.number().int().nonnegat
 const bare = <C extends ErrorCode>(code: C) =>
   z.strictObject({ error: z.strictObject({ code: z.literal(code) }) });
 
-const withRetry = <C extends keyof ErrorDetailsByCode>(code: C) =>
+const withRetry = <C extends ErrorCode>(code: C) =>
   z.strictObject({
     error: z.strictObject({ code: z.literal(code), details: RetryAfter.optional() }),
   });
 
-// The four codes that declare details; `satisfies` holds this list to ErrorDetailsByCode.
+const Field = z.strictObject({ field: z.enum(['pin', 'username']) });
+
+// The five codes that declare details; `satisfies` holds this list to ErrorDetailsByCode.
 const WITH_DETAILS = {
   INVALID_CREDENTIALS: withRetry('INVALID_CREDENTIALS'),
   THROTTLED: withRetry('THROTTLED'),
   APPROVAL_FAILED: withRetry('APPROVAL_FAILED'),
   APPROVAL_THROTTLED: withRetry('APPROVAL_THROTTLED'),
+  DUPLICATE: z.strictObject({
+    error: z.strictObject({ code: z.literal('DUPLICATE'), details: Field.optional() }),
+  }),
 } as const satisfies Record<keyof ErrorDetailsByCode, z.ZodType>;
 
 export const ErrorBody = z.union([
@@ -96,9 +109,11 @@ export const ErrorBody = z.union([
   WITH_DETAILS.THROTTLED,
   WITH_DETAILS.APPROVAL_FAILED,
   WITH_DETAILS.APPROVAL_THROTTLED,
-  bare(ErrorCode.DUPLICATE),
+  WITH_DETAILS.DUPLICATE,
   bare(ErrorCode.SETTINGS_CHANGED),
   bare(ErrorCode.CATALOG_CHANGED),
+  bare(ErrorCode.OWN_ACCOUNT),
+  bare(ErrorCode.USER_CHANGED),
 ]);
 
 // Both directions at compile time: a code added to ErrorCode and not above, or a
