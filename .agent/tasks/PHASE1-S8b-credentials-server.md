@@ -813,3 +813,28 @@ Each answers `{ user }` (the `UserView`).
 **What the next agent (S8c) needs and does not have.** `ROUTES.usersSetPin`, `usersSetPassword`, `usersOwnPassword` and `usersOwnPin` exist in `@pos/api-client`, and `store.config['/api/back-office/config/users/<set-pin|set-password|own-password|own-pin>']` is typed and wired in `officeApi`; the fixture session answers `unavailable` for them. The error codes a form must place: `INVALID_CREDENTIALS` (the wrong current password; field = current password) and `THROTTLED` (with `retryAfterSeconds`) from the own changes; `DUPLICATE` with `details.field === 'pin'` from `set-pin` and `own-pin`; `OWN_ACCOUNT`, `USER_CHANGED`, `NOT_FOUND`, `VALIDATION_FAILED` and `UNAUTHENTICATED` as before. A `UNAUTHENTICATED` from an own change means the session or the credentials moved under the manager; the core ends the session on it as for any command. The own changes answer the `UserView` only, so BO-06 must not expect a new token or `csrfToken`.
 
 DONE
+
+### Round 2 (R1: the credential scans, tests only)
+
+**What I did.** Test files only; no production file changed (`git status` showed only test files after each mutation was removed). Paths: `apps/server/test/log-scan.test.ts` and `apps/server/test/users-audit.test.ts`. The commit hash is given by `git log` on this branch (the commit that follows `ce6191b` and the lead's ruling).
+
+1. **Every credential value the scans send is a searched marker.**
+   - In `log-scan.test.ts` the own managers are no longer made by `makePeople`. A local `markerManager('A' | 'B')` creates each with `createStaffUser` and `createBackOfficeCredential`, with a marker PIN, marker username and marker password. These are leaves of `USERS_MARK`, which the secret list is derived from (`leaves(USERS_MARK)` plus the PIN lookups). So the own-password success request's `currentPassword` is `USERS_MARK.passwords.ownInitialA`, searched in the log and in every response body. The sign-ins send only searched values as well.
+   - In `users-audit.test.ts` the acting manager is made the same way (marker PIN `MARK.pins[8]`, username `MARK.usernames[3]`, password `MARK.passwords[5]`), so the own-password step's `currentPassword` is a marker, searched in every audit row (`row_to_json`) and in every response body. The marker lists grew by those entries; the existing username-in-`UserView` exception is unchanged, as are the PIN lookups.
+2. **Both own routes go through a wrong and a throttled current password.** Manager A does it on `own-pin` as before. Manager B now does it on `own-password`: five wrong current passwords (marker `ownWrongB`, with marker `ownWrongNewB` in the new password), then a throttled one (`ownThrottledB`, new `ownThrottledNewB`). The exact-answer case asserts each body: four bare `INVALID_CREDENTIALS`, the fifth with `retryAfterSeconds`, then `THROTTLED` with `retryAfterSeconds`, for both routes, with `retryAfterSeconds` normalised to `N` as in round 1. The expected list went from 15 to 28 entries.
+3. **`set-password` gains the strict-schema extra-key case** (`extra` marker, `resetExtra` password marker), `400 VALIDATION_FAILED`, beside its malformed-value case.
+4. PIN lookups and the username exception are as they were.
+
+**The four red observations** (test-only mutations of `back-office-users.ts`, each removed afterwards; the file was clean before the final run):
+- *(a) success path, old tests:* `request.log.info({ a: { b: { currentPassword } } }, 'red a')` after the verification in the `own-password` handler: `log-scan.test.ts` **passed**, 13 of 13. It missed the leak because the only own-password success sent a password no scan searched.
+- *(b) wrong-password path, old tests:* the same line between `verifyPasswordThrottled` and `verifiedUser`: **passed**, 13 of 13. The old scan sent no wrong current password to `own-password` at all.
+- *(b) with the new tests:* **failed**, case 13 (`secrets that reached the log`): `MARK-USERS-PASSWORD-OWNINITIALA-7739`, `…OWNWRONGB-7741` and `…OWNTHROTTLEDB-7743`. The line is nested two levels deep, so the redaction backstop did not cover it.
+- *(a) with the new tests:* **failed**, the same case: `MARK-USERS-PASSWORD-OWNINITIALA-7739`.
+- *Removed:* `log-scan.test.ts` passes on the real code, 13 of 13.
+I did not run a separate mutation against `users-audit.test.ts`: nothing the route logs reaches an audit row, so that file's marker scan is a coverage change, checked only by the audit scan's own search of the new markers on clean code.
+
+**`npm run verify`.** Typecheck clean for all seven projects, then `Test Files 164 passed (164), Tests 5814 passed (5814)`, the same counts as round 1, because I added no test case: I extended the data and sequence of existing cases. I did not rerun `test:e2e:all`: no browser test and no production file changed.
+
+**Found and not fixed.** Nothing new.
+
+DONE

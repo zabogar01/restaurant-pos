@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance, InjectOptions } from 'fastify';
 import { closePool, query } from '../src/db/pool.js';
-import { pinLookup } from '../src/domain/pin.js';
+import { createBackOfficeCredential } from '../src/domain/back-office-credential.js';
+import { createStaffUser, pinLookup } from '../src/domain/pin.js';
 import { buildServer } from '../src/http/server.js';
 import { JarClient } from './support/client.js';
 import { resetDatabase } from './support/database.js';
@@ -32,6 +33,9 @@ const USERS_MARK = {
     resetExtra: '987663',
     ownWrongNew: '987664',
     ownThrottledNew: '987665',
+    // The own managers' own PINs, so signing in as them sends nothing unsearched.
+    ownInitialA: '987666',
+    ownInitialB: '987667',
   },
   passwords: {
     created: 'MARK-USERS-PASSWORD-CREATED-7731',
@@ -44,10 +48,23 @@ const USERS_MARK = {
     ownWrong: 'MARK-USERS-PASSWORD-OWNWRONG-7736',
     ownThrottled: 'MARK-USERS-PASSWORD-OWNTHROTTLED-7737',
     ownExtra: 'MARK-USERS-PASSWORD-OWNEXTRA-7738',
+    // The own managers are created with these as their real passwords, so the current
+    // password of their first own change is a searched marker too.
+    ownInitialA: 'MARK-USERS-PASSWORD-OWNINITIALA-7739',
+    ownInitialB: 'MARK-USERS-PASSWORD-OWNINITIALB-7740',
+    // The own-password route's wrong and throttled paths (manager B), and a set-password
+    // sent with an extra key.
+    ownWrongB: 'MARK-USERS-PASSWORD-OWNWRONGB-7741',
+    ownWrongNewB: 'MARK-USERS-PASSWORD-OWNWRONGNEWB-7742',
+    ownThrottledB: 'MARK-USERS-PASSWORD-OWNTHROTTLEDB-7743',
+    ownThrottledNewB: 'MARK-USERS-PASSWORD-OWNTHROTTLEDNEWB-7744',
+    resetExtra: 'MARK-USERS-PASSWORD-RESETEXTRA-7745',
   },
   usernames: {
     created: 'mark.users.created.4411',
     promoted: 'mark.users.promoted.4412',
+    ownA: 'mark.users.owna.4414',
+    ownB: 'mark.users.ownb.4415',
   },
   // A username sent where no username belongs (an own change names no account).
   bodyUsername: 'mark.users.ownbody.4413',
@@ -310,12 +327,29 @@ beforeAll(async () => {
   await sendCredential(() => users.post('set-pin', { staffUserId: spare.id, pin: USERS_MARK.pins.resetExtra, extra: USERS_MARK.extraKey }));
   await sendCredential(() => users.setPin(spare.id, USERS_MARK.malformedPin));
   await sendCredential(() => users.setPassword(idOf(cook), USERS_MARK.malformedPassword));
+  await sendCredential(() =>
+    users.post('set-password', {
+      staffUserId: idOf(cook),
+      password: USERS_MARK.passwords.resetExtra,
+      extra: USERS_MARK.extraKey,
+    })
+  );
 
-  const own = await usersPeople.manager();
-  const ownJar = new JarClient(app);
-  await ownJar.signInBackOffice(own.username, own.password);
-  const ownApi = usersApi(ownJar);
-  await sendCredential(() => ownApi.ownPassword(own.password!, USERS_MARK.passwords.ownNew));
+  // The two own managers are made with marker PINs, usernames and passwords, so that the
+  // current password of their first own change, and every sign-in, sends a searched value.
+  const markerManager = async (n: 'A' | 'B') => {
+    const pin = USERS_MARK.pins[`ownInitial${n}`];
+    const username = USERS_MARK.usernames[`own${n}`];
+    const password = USERS_MARK.passwords[`ownInitial${n}`];
+    const { id } = await createStaffUser({ name: `Scan Own ${n}`, role: 'MANAGER', pin });
+    await createBackOfficeCredential({ staffUserId: id, username, password });
+    const jar = new JarClient(app);
+    await jar.signInBackOffice(username, password);
+    return { api: usersApi(jar), password };
+  };
+  const own = await markerManager('A');
+  const ownApi = own.api;
+  await sendCredential(() => ownApi.ownPassword(own.password, USERS_MARK.passwords.ownNew));
   await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownNew, USERS_MARK.pins.ownNew));
   // A DUPLICATE on the PIN, with the current password right.
   await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownNew, USERS_MARK.pins.promoted));
@@ -342,6 +376,16 @@ beforeAll(async () => {
     await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownWrong, USERS_MARK.pins.ownWrongNew));
   }
   await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownThrottled, USERS_MARK.pins.ownThrottledNew));
+
+  // The same two paths on own-password, for manager B: five wrong current passwords, then a
+  // throttled one, each with a marker in the new password too.
+  const ownB = await markerManager('B');
+  for (let i = 0; i < 5; i += 1) {
+    await sendCredential(() => ownB.api.ownPassword(USERS_MARK.passwords.ownWrongB, USERS_MARK.passwords.ownWrongNewB));
+  }
+  await sendCredential(() =>
+    ownB.api.ownPassword(USERS_MARK.passwords.ownThrottledB, USERS_MARK.passwords.ownThrottledNewB)
+  );
 });
 
 afterAll(async () => {
@@ -468,11 +512,14 @@ describe('what leaves the process', () => {
       const dupPin = '{"error":{"code":"DUPLICATE","details":{"field":"pin"}}}';
       const invalid = '{"error":{"code":"VALIDATION_FAILED"}}';
       const wrong = '{"error":{"code":"INVALID_CREDENTIALS"}}';
+      const cooled = '401 {"error":{"code":"INVALID_CREDENTIALS","details":{"retryAfterSeconds":N}}}';
+      const throttled = '429 {"error":{"code":"THROTTLED","details":{"retryAfterSeconds":N}}}';
       expect(credentialRefusals.map((r) => `${r.status} ${retry(r.body)}`)).toEqual([
         `409 ${dupPin}`,
         `400 ${invalid}`,
         `400 ${invalid}`,
         `400 ${invalid}`,
+        `400 ${invalid}`,
         `409 ${dupPin}`,
         `400 ${invalid}`,
         `400 ${invalid}`,
@@ -482,8 +529,15 @@ describe('what leaves the process', () => {
         `401 ${wrong}`,
         `401 ${wrong}`,
         `401 ${wrong}`,
-        '401 {"error":{"code":"INVALID_CREDENTIALS","details":{"retryAfterSeconds":N}}}',
-        '429 {"error":{"code":"THROTTLED","details":{"retryAfterSeconds":N}}}',
+        cooled,
+        throttled,
+        // own-password, manager B
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        cooled,
+        throttled,
       ]);
     });
 

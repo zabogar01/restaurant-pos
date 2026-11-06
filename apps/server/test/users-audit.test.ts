@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { closePool } from '../src/db/pool.js';
-import { pinLookup } from '../src/domain/pin.js';
+import { createBackOfficeCredential } from '../src/domain/back-office-credential.js';
+import { createStaffUser, pinLookup } from '../src/domain/pin.js';
 import { buildServer } from '../src/http/server.js';
 import { JarClient } from './support/client.js';
 import { ownerQuery, resetDatabase } from './support/database.js';
@@ -18,13 +19,17 @@ const people = makePeople(750000);
 
 let app: FastifyInstance;
 let api: ReturnType<typeof usersApi>;
-let manager: Awaited<ReturnType<typeof people.manager>>;
+let manager: { id: string; username: string; password: string };
 
 beforeAll(async () => {
   await resetDatabase();
   app = buildServer({ origin: TEST_ORIGIN, logLevel: 'silent' });
   await app.ready();
-  manager = await people.manager();
+  // The acting manager is made with marker credentials, so the current password of the own
+  // password change below is a searched value like every other secret this file sends.
+  const { id } = await createStaffUser({ name: 'Marker Actor', role: 'MANAGER', pin: MARK.pins[8]! });
+  await createBackOfficeCredential({ staffUserId: id, username: MARK.usernames[3]!, password: MARK.passwords[5]! });
+  manager = { id, username: MARK.usernames[3]!, password: MARK.passwords[5]! };
   const client = new JarClient(app);
   api = usersApi(client);
   expect((await client.signInBackOffice(manager.username, manager.password)).statusCode).toBe(200);
@@ -37,15 +42,16 @@ afterAll(async () => {
 
 // Distinct markers: six digits for each PIN, text for each password and username.
 const MARK = {
-  pins: ['918273', '364859', '572194', '482916', '703815', '261840', '639485', '815726'],
+  pins: ['918273', '364859', '572194', '482916', '703815', '261840', '639485', '815726', '947261'],
   passwords: [
     'MARKER-password-one-xyz',
     'MARKER-password-two-xyz',
     'MARKER-password-three-xyz',
     'MARKER-password-reset-xyz',
     'MARKER-password-own-xyz',
+    'MARKER-password-actor-xyz',
   ],
-  usernames: ['marker.user.one', 'marker.user.two', 'marker.user.three'],
+  usernames: ['marker.user.one', 'marker.user.two', 'marker.user.three', 'marker.user.actor'],
 };
 
 interface Step {
