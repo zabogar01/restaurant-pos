@@ -10,7 +10,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-11-06: **#173 S8a and #174 S8b merged**; `development` at `e90a265`, the main checkout fast-forwarded; dev `pos` at
-`0015`. Nothing running. Lead branch `agent/lead-1105` pushed with its PR. Narrative: [journal/2026-11-06.md](journal/2026-11-06.md).
+`0015`. Nothing running. Lead branch `agent/lead-1105`: PR #176 open; local merge of `development` (`b91234a`) and later
+commits unpushed. **S8c split; S8c1 written, not dispatched.** Narrative: [journal/2026-11-06.md](journal/2026-11-06.md).
 
 ## Phase and gates
 
@@ -21,7 +22,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   catalog domain, `0013`), S4b (#142: catalog routes), S4c1 (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04), S5 (#151:
   86), S6a (#154: presets server, `0014`), S6b (#157: BO-07), S7a (#165: POS catalog routes), S7b1 (#169: served menu),
   S7b2 (#170: M-2, Add), S7b3 (#171: the served preset picker), S8a (#173: users server, `0015`), S8b (#174:
-  credentials, the re-stamp). **Left:** S8c (BO-06 from DESIGN-023, AC-32 in the browser), S9 (POS-03 Release), S10 (BO-01).
+  credentials, the re-stamp). **Left:** S8c1 (BO-06 list, create, deactivate, reactivate, D1/AC-32), S8c2 (moves, resets,
+  own changes, D2, D3); together C3's S8c (BO-06 from DESIGN-023, AC-32 in the browser), S9 (POS-03 Release), S10 (BO-01).
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22, 11-02): S2 Q2, Q5, Q12, DESIGN-018 Q1-Q6; S3 C2 OQ1; S7 Q14, C4
   OQ1 (real presets at the POS); S8 Q1, Q6a, Q7-Q11, C3's OQ1 (create audited), OQ2 (no rename).
 - **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. ARCHITECTURE already carries C3's §3.2,
@@ -53,9 +55,13 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **S8 server is merged.** S8a: `users.ts` (`lockUsers`, `USER_ACTIONS`), five routes, `OWN_ACCOUNT`, `USER_CHANGED`,
   `DUPLICATE` details. S8b: `set-pin`, `set-password`, `own-password`, `own-pin`, `restampOwnSession` (only `users.ts`
   may import it, `restamp-scan.test.ts`). The four back-office API functions per slice are declared, called by no screen.
-- **S8c not written.** Sources: C3 *For the lead* S8c (`.agent/reviews/ARCH-020-users-and-credentials.md:1007-1056`),
-  C3 §10, DESIGN-023 (BO-06, its R1, R2 and round 2), S8a's and S8b's Handoffs (codes, current-password answers: 401
-  `INVALID_CREDENTIALS`, `retryAfterSeconds` on the fifth, then 429 `THROTTLED`; the own changes issue no token).
+- **PHASE1-S8c1 written 2026-11-06, not dispatched** (untracked in the kit: `.agent/tasks/PHASE1-S8c1-staff-screen.md`;
+  C3 §10 and *S8c* verbatim, rulings 1-21, ACs 1-16). Split by the lead: DESIGN-023's 126 states are too many for one
+  slice (as S4c2a/b). Path `/back-office/staff`, rail *Staff*; S8c1 renders only Deactivate/Reactivate row actions;
+  `scan.ts` map gains create and reactivate only; frame focus untouched (queued). Dry run green (sonnet-5-5).
+- **S8c2 next after S8c1:** moves, PIN and password resets, own password and own PIN (FR-B3's own-PIN words, not C3 §10
+  item 4), current-password answers (S8b Handoff), D2, D3, the rest of the scan map. **F3 save-prompt check** (Chrome,
+  Firefox, headed) is the lead's and the owner's after S8c1.
 - **For S8c (from DESIGN-023):** FR-B3's own-PIN words (every other session ends); a Chrome/Firefox save-prompt check (F3).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
@@ -111,7 +117,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
-- **Merge the lead PR (`agent/lead-1105`)?** **Write S8c?**
+- **Merge #176 (lead)?** **Dispatch S8c1?** S8c1's rulings 1-21 (the split, `/back-office/staff`, no placeholder for
+  S8c2's actions, status-command refusals as definite failures) are yours to overturn.
 - **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified;
   S8c checks by hand; if a prompt appears, does the 2026-10-13 "does not fight the password manager" ruling extend?
 - **Lead rulings since 10-30, yours to overturn** (each in its task file): DESIGN-021 R1 and round 2; ARCH-021's
@@ -136,6 +143,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **On the owner's word, write S8c** (sources above; `depends_on: [PHASE1-S8b]`, base `development`), dry-run, dispatch.
+1. **Dispatch S8c1** on the owner's go. Then S8c2's task file from S8c1's Handoff.
 2. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
