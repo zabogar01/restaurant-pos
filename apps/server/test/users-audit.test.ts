@@ -37,8 +37,14 @@ afterAll(async () => {
 
 // Distinct markers: six digits for each PIN, text for each password and username.
 const MARK = {
-  pins: ['918273', '364859', '572194', '482916', '703815', '261840'],
-  passwords: ['MARKER-password-one-xyz', 'MARKER-password-two-xyz', 'MARKER-password-three-xyz'],
+  pins: ['918273', '364859', '572194', '482916', '703815', '261840', '639485', '815726'],
+  passwords: [
+    'MARKER-password-one-xyz',
+    'MARKER-password-two-xyz',
+    'MARKER-password-three-xyz',
+    'MARKER-password-reset-xyz',
+    'MARKER-password-own-xyz',
+  ],
   usernames: ['marker.user.one', 'marker.user.two', 'marker.user.three'],
 };
 
@@ -68,6 +74,8 @@ describe('the audit entries', () => {
     const cookToCashier = await kitchenRow();
     const cookToManager = await kitchenRow();
     const cookBack = await kitchenRow();
+    const resetPinCashier = await people.cashier();
+    const resetPasswordManager = await people.manager();
 
     const steps: Step[] = [
       {
@@ -186,6 +194,40 @@ describe('the audit entries', () => {
         action: 'user.reactivate',
         run: async () => ({ res: await api.reactivate(cookBack), subjectId: cookBack }),
       },
+      // PHASE1-S8b: the four credential commands, each with marker credentials. The own
+      // changes are the acting manager's, and the session carries on through both.
+      {
+        label: 'set another user\'s PIN',
+        action: 'user.pin.reset',
+        run: async () => ({
+          res: await api.setPin(resetPinCashier.id, MARK.pins[6]),
+          subjectId: resetPinCashier.id,
+        }),
+      },
+      {
+        label: 'set another manager\'s password',
+        action: 'user.password.reset',
+        run: async () => ({
+          res: await api.setPassword(resetPasswordManager.id, MARK.passwords[3]),
+          subjectId: resetPasswordManager.id,
+        }),
+      },
+      {
+        label: 'own password',
+        action: 'user.own_password.change',
+        run: async () => ({
+          res: await api.ownPassword(manager.password, MARK.passwords[4]),
+          subjectId: manager.id,
+        }),
+      },
+      {
+        label: 'own PIN',
+        action: 'user.own_pin.change',
+        run: async () => ({
+          res: await api.ownPin(MARK.passwords[4], MARK.pins[7]),
+          subjectId: manager.id,
+        }),
+      },
     ];
 
     for (const step of steps) {
@@ -238,7 +280,7 @@ describe('the audit entries', () => {
 
   it('10 and 12. no PIN, password, username, lookup or hash is in any audit row, and no PIN, password, lookup or hash in any response', async () => {
     const audit = await ownerQuery<{ r: string }>('SELECT row_to_json(a)::text AS r FROM audit_entry a ORDER BY id');
-    expect(audit.length).toBeGreaterThanOrEqual(13);
+    expect(audit.length).toBeGreaterThanOrEqual(17);
     const everyRow = audit.map((row) => row.r).join('\n');
     const lookups = MARK.pins.map((pin) => pinLookup(pin));
     const secrets = [...MARK.pins, ...MARK.passwords, ...MARK.usernames, ...lookups, '$argon2id$'];

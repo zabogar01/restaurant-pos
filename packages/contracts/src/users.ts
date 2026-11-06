@@ -52,6 +52,13 @@ export const NewPassword = z
   });
 
 /**
+ * The current password of an own change: type and a generous size only, as
+ * `ReauthenticateRequest`'s password, so a malformed one is judged by the verification and
+ * counted as a failure on the account (ADR-011 rule 9; C3 section 4).
+ */
+export const CurrentPassword = z.string().min(1).max(1024);
+
+/**
  * One person as every users route answers. Nothing else: never a hash, a lookup, the
  * credential version, the throttle columns or whether a PIN is set. `username` is the stored
  * username, non-null exactly when a credential row exists, a former manager's included.
@@ -140,6 +147,17 @@ export const ChangeRoleRequest = z.discriminatedUnion('change', [
 export const DeactivateUserRequest = z.strictObject({ staffUserId: z.uuid() });
 /** `pin` replaces the person's PIN as they come back (C3 section 6). */
 export const ReactivateUserRequest = z.strictObject({ staffUserId: z.uuid(), pin: NewPin.optional() });
+
+// ---- credentials (PHASE1-S8b) ---------------------------------------------------------
+//
+// Another user's PIN or a manager's password carries no current password: the other-user
+// commands are refused on oneself (`OWN_ACCOUNT`), and one's own credentials change only
+// through the two own requests, which carry `currentPassword` and name no account.
+
+export const SetPinRequest = z.strictObject({ staffUserId: z.uuid(), pin: NewPin });
+export const SetPasswordRequest = z.strictObject({ staffUserId: z.uuid(), password: NewPassword });
+export const OwnPasswordRequest = z.strictObject({ currentPassword: CurrentPassword, password: NewPassword });
+export const OwnPinRequest = z.strictObject({ currentPassword: CurrentPassword, pin: NewPin });
 
 /** What the four commands answer: the row as committed. */
 export const UserResponse = z.strictObject({ user: UserView });

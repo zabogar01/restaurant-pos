@@ -26,23 +26,42 @@ const USERS_MARK = {
     collider: '987655',
     taken: '987656',
     extraKey: '987657',
+    // S8b: the PIN of a reset, of an own change, and the ones that travel beside a refusal.
+    reset: '987661',
+    ownNew: '987662',
+    resetExtra: '987663',
+    ownWrongNew: '987664',
+    ownThrottledNew: '987665',
   },
   passwords: {
     created: 'MARK-USERS-PASSWORD-CREATED-7731',
     promoted: 'MARK-USERS-PASSWORD-PROMOTED-7732',
     duplicateUsername: 'MARK-USERS-PASSWORD-DUPLICATE-7733',
+    // S8b: a password set by a reset, one set by the manager for themselves (and then
+    // sent as the current password), a wrong current one and a throttled one.
+    reset: 'MARK-USERS-PASSWORD-RESET-7734',
+    ownNew: 'MARK-USERS-PASSWORD-OWNNEW-7735',
+    ownWrong: 'MARK-USERS-PASSWORD-OWNWRONG-7736',
+    ownThrottled: 'MARK-USERS-PASSWORD-OWNTHROTTLED-7737',
+    ownExtra: 'MARK-USERS-PASSWORD-OWNEXTRA-7738',
   },
   usernames: {
     created: 'mark.users.created.4411',
     promoted: 'mark.users.promoted.4412',
   },
+  // A username sent where no username belongs (an own change names no account).
+  bodyUsername: 'mark.users.ownbody.4413',
   extraKey: 'MARK-USERS-EXTRA-KEY-9901',
   malformedPin: 'MARK-USERS-MALFORMED-PIN-9902',
   malformedPassword: 'MK-PW-7',
+  ownMalformedPin: 'MARK-USERS-OWN-MALFORMED-PIN-9903',
+  ownMalformedPassword: 'MK-OWN7',
 };
 const usersPeople = makePeople(760000);
 const usersBodies: string[] = [];
 const usersRefusals: { status: number; body: string }[] = [];
+// The refusals of the four credential routes, apart from S8a's exact list above.
+const credentialRefusals: { status: number; body: string }[] = [];
 
 // A request's path is logged by design (the method and the path, never the
 // query), so a marker in a path would be a false alarm. These two travel in the
@@ -272,6 +291,57 @@ beforeAll(async () => {
     })
   );
   await sendUsers(() => users.deactivate(idOf(created)));
+
+  // S8b: the four credential routes. The reset routes first, then a second signed-in manager
+  // making the own changes, ending on the five wrong current passwords and the throttled one.
+  const sendCredential = async (call: () => ReturnType<typeof users.list>) => {
+    const res = await call();
+    usersBodies.push(res.body);
+    bodies.push(res.body);
+    if (res.statusCode >= 400) {
+      errorBodies.push({ status: res.statusCode, body: res.body });
+      credentialRefusals.push({ status: res.statusCode, body: res.body });
+    }
+    return res;
+  };
+  await sendCredential(() => users.setPin(spare.id, USERS_MARK.pins.reset));
+  await sendCredential(() => users.setPin(spare.id, USERS_MARK.pins.promoted));
+  await sendCredential(() => users.setPassword(idOf(cook), USERS_MARK.passwords.reset));
+  await sendCredential(() => users.post('set-pin', { staffUserId: spare.id, pin: USERS_MARK.pins.resetExtra, extra: USERS_MARK.extraKey }));
+  await sendCredential(() => users.setPin(spare.id, USERS_MARK.malformedPin));
+  await sendCredential(() => users.setPassword(idOf(cook), USERS_MARK.malformedPassword));
+
+  const own = await usersPeople.manager();
+  const ownJar = new JarClient(app);
+  await ownJar.signInBackOffice(own.username, own.password);
+  const ownApi = usersApi(ownJar);
+  await sendCredential(() => ownApi.ownPassword(own.password!, USERS_MARK.passwords.ownNew));
+  await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownNew, USERS_MARK.pins.ownNew));
+  // A DUPLICATE on the PIN, with the current password right.
+  await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownNew, USERS_MARK.pins.promoted));
+  // Strict-schema refusals: an extra key, a malformed new password, a malformed new PIN, and a
+  // `username` where no username belongs.
+  await sendCredential(() =>
+    ownApi.post('own-password', {
+      currentPassword: USERS_MARK.passwords.ownNew,
+      password: USERS_MARK.passwords.ownExtra,
+      extra: USERS_MARK.extraKey,
+    })
+  );
+  await sendCredential(() => ownApi.ownPassword(USERS_MARK.passwords.ownNew, USERS_MARK.ownMalformedPassword));
+  await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownNew, USERS_MARK.ownMalformedPin));
+  await sendCredential(() =>
+    ownApi.post('own-pin', {
+      username: USERS_MARK.bodyUsername,
+      currentPassword: USERS_MARK.passwords.ownNew,
+      pin: USERS_MARK.pins.ownNew,
+    })
+  );
+  // Five wrong current passwords (the fifth starts the cooldown), then a throttled one.
+  for (let i = 0; i < 5; i += 1) {
+    await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownWrong, USERS_MARK.pins.ownWrongNew));
+  }
+  await sendCredential(() => ownApi.ownPin(USERS_MARK.passwords.ownThrottled, USERS_MARK.pins.ownThrottledNew));
 });
 
 afterAll(async () => {
@@ -390,6 +460,30 @@ describe('what leaves the process', () => {
         '400 {"error":{"code":"VALIDATION_FAILED"}}',
         '400 {"error":{"code":"VALIDATION_FAILED"}}',
         '400 {"error":{"code":"VALIDATION_FAILED"}}',
+      ]);
+    });
+
+    it('S8b 11. the four credential routes answered what the scan expects, every refusal the bare envelope', () => {
+      const retry = (body: string) => body.replace(/"retryAfterSeconds":\d+/, '"retryAfterSeconds":N');
+      const dupPin = '{"error":{"code":"DUPLICATE","details":{"field":"pin"}}}';
+      const invalid = '{"error":{"code":"VALIDATION_FAILED"}}';
+      const wrong = '{"error":{"code":"INVALID_CREDENTIALS"}}';
+      expect(credentialRefusals.map((r) => `${r.status} ${retry(r.body)}`)).toEqual([
+        `409 ${dupPin}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `409 ${dupPin}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `400 ${invalid}`,
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        `401 ${wrong}`,
+        '401 {"error":{"code":"INVALID_CREDENTIALS","details":{"retryAfterSeconds":N}}}',
+        '429 {"error":{"code":"THROTTLED","details":{"retryAfterSeconds":N}}}',
       ]);
     });
 

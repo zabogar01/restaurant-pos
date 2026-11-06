@@ -4,6 +4,7 @@ import { writeAudit } from './audit.js';
 import { hashPassword, insertBackOfficeCredential, normaliseUsername } from './back-office-credential.js';
 import { insertStaffUser, preparePin } from './pin.js';
 import type { StaffRole } from './pin.js';
+import { restampOwnSession } from './session.js';
 
 // The users commands (FR-A1, FR-A4, FR-B3; consult C3). Each is one transaction and writes
 // nothing when it refuses. Every command:
@@ -71,7 +72,7 @@ export type UserOutcome =
  * The closed list of audited actions (C3 section 7), each meaning one fact so that an audit
  * viewer can render an entry without reading anything else. `audit.ts` holds no list, so the
  * check is here, inside the command's transaction and before `writeAudit`. The own-change
- * and reset actions join the list in the slice that builds those commands.
+ * and reset actions are in it since PHASE1-S8b.
  */
 export const USER_ACTIONS = {
   CREATE_CASHIER: 'user.create.cashier',
@@ -85,6 +86,10 @@ export const USER_ACTIONS = {
   ROLE_MANAGER_TO_CASHIER: 'user.role.manager_to_cashier',
   ROLE_CASHIER_TO_KITCHEN: 'user.role.cashier_to_kitchen',
   ROLE_MANAGER_TO_KITCHEN: 'user.role.manager_to_kitchen',
+  PIN_RESET: 'user.pin.reset',
+  PASSWORD_RESET: 'user.password.reset',
+  OWN_PIN_CHANGE: 'user.own_pin.change',
+  OWN_PASSWORD_CHANGE: 'user.own_password.change',
 } as const;
 
 export type UserAction = (typeof USER_ACTIONS)[keyof typeof USER_ACTIONS];
@@ -425,5 +430,140 @@ export async function reactivateUser(
       }
     }
     return { kind: 'OK', user: await readUser(client, subjectId) };
+  });
+}
+
+/**
+ * Sets another user's PIN (FR-B3, Q7). A cashier or a manager, active, is set; an inactive
+ * or kitchen subject is `USER_CHANGED`. The PIN is stored, the version increments (so every
+ * session of the person ends) and one entry is written, even when the PIN is the value the
+ * person already had. A taken PIN is `DUPLICATE` on `pin`, by the index.
+ */
+export async function setUserPin(actor: ActingManager, staffUserId: string, pin: string): Promise<UserOutcome> {
+  const subjectId = staffUserId.toLowerCase();
+  if (subjectId === actor.staffUserId) return { kind: 'OWN_ACCOUNT' };
+  const prepared = await preparePin(pin);
+  return command(async (client) => {
+    const locked = await lockUsers(client, actor, subjectId);
+    if (locked.kind === 'UNAUTHENTICATED') return locked;
+    const subject = locked.subject;
+    if (subject === null) return { kind: 'NOT_FOUND' };
+    if (!subject.is_active || subject.role === null) return { kind: 'USER_CHANGED' };
+    await client.query(
+      `UPDATE staff_user
+          SET pin_hash = $2, pin_lookup = $3, credential_version = credential_version + 1
+        WHERE id = $1`,
+      [subjectId, prepared.pinHash, prepared.pinLookup]
+    );
+    await audit(client, actor, USER_ACTIONS.PIN_RESET, subjectId);
+    return { kind: 'OK', user: await readUser(client, subjectId) };
+  });
+}
+
+/**
+ * Sets another manager's back-office password. The subject must be an active MANAGER with a
+ * credential row (a former manager's row stays and is not enough). The write touches
+ * `password_hash` only, so a running cooldown keeps running (PHASE0-007b, ADR-009 section 4).
+ */
+export async function setUserPassword(
+  actor: ActingManager,
+  staffUserId: string,
+  password: string
+): Promise<UserOutcome> {
+  const subjectId = staffUserId.toLowerCase();
+  if (subjectId === actor.staffUserId) return { kind: 'OWN_ACCOUNT' };
+  const passwordHash = await hashPassword(password);
+  return command(async (client) => {
+    const locked = await lockUsers(client, actor, subjectId);
+    if (locked.kind === 'UNAUTHENTICATED') return locked;
+    const subject = locked.subject;
+    if (subject === null) return { kind: 'NOT_FOUND' };
+    if (!subject.is_active || subject.role !== 'MANAGER') return { kind: 'USER_CHANGED' };
+    const credential = await client.query(
+      'SELECT 1 FROM back_office_credential WHERE staff_user_id = $1 FOR UPDATE',
+      [subjectId]
+    );
+    if (credential.rows.length !== 1) return { kind: 'USER_CHANGED' };
+    await client.query('UPDATE back_office_credential SET password_hash = $2 WHERE staff_user_id = $1', [
+      subjectId,
+      passwordHash,
+    ]);
+    await client.query('UPDATE staff_user SET credential_version = credential_version + 1 WHERE id = $1', [subjectId]);
+    await audit(client, actor, USER_ACTIONS.PASSWORD_RESET, subjectId);
+    return { kind: 'OK', user: await readUser(client, subjectId) };
+  });
+}
+
+/**
+ * The shared tail of the two own-credential commands (C3 section 3). The caller has verified
+ * the current password for the acting manager, in its own committed transaction, and passes
+ * the credential version that verification returned. Under the lock the actor must still be
+ * at that version; the credential is written by `write`; the version increments; the acting
+ * session is re-stamped (exactly one row, or the transaction rolls back); the entry is
+ * written. The session's token, `issued_at` and absolute lifetime are not touched.
+ */
+async function changeOwn(
+  actor: ActingManager,
+  verifiedVersion: number,
+  action: UserAction,
+  write: (client: pg.PoolClient) => Promise<void>
+): Promise<UserOutcome> {
+  return command(async (client) => {
+    const locked = await lockUsers(client, actor, actor.staffUserId);
+    if (locked.kind === 'UNAUTHENTICATED') return locked;
+    if (locked.actor.credential_version !== verifiedVersion) return { kind: 'UNAUTHENTICATED' };
+    await write(client);
+    const bumped = await client.query<{ credential_version: number }>(
+      'UPDATE staff_user SET credential_version = credential_version + 1 WHERE id = $1 RETURNING credential_version',
+      [actor.staffUserId]
+    );
+    const newVersion = bumped.rows[0]?.credential_version;
+    if (newVersion === undefined) throw new Error(DATABASE_FAILURE);
+    const restamped = await restampOwnSession(client, {
+      sessionId: actor.sessionId,
+      staffUserId: actor.staffUserId,
+      oldVersion: verifiedVersion,
+      newVersion,
+    });
+    if (!restamped) throw new Refusal({ kind: 'UNAUTHENTICATED' });
+    await audit(client, actor, action, actor.staffUserId);
+    return { kind: 'OK', user: await readUser(client, actor.staffUserId) };
+  });
+}
+
+/**
+ * The acting manager's own password. `verifiedVersion` is the credential version the
+ * current-password verification returned; nothing is hashed before that succeeded (the
+ * caller verifies first). The credential row is locked after the StaffUser rows, and
+ * `password_hash` is the only column written.
+ */
+export async function changeOwnPassword(
+  actor: ActingManager,
+  verifiedVersion: number,
+  password: string
+): Promise<UserOutcome> {
+  const passwordHash = await hashPassword(password);
+  return changeOwn(actor, verifiedVersion, USER_ACTIONS.OWN_PASSWORD_CHANGE, async (client) => {
+    const credential = await client.query(
+      'SELECT 1 FROM back_office_credential WHERE staff_user_id = $1 FOR UPDATE',
+      [actor.staffUserId]
+    );
+    if (credential.rows.length !== 1) throw new Refusal({ kind: 'UNAUTHENTICATED' });
+    await client.query('UPDATE back_office_credential SET password_hash = $2 WHERE staff_user_id = $1', [
+      actor.staffUserId,
+      passwordHash,
+    ]);
+  });
+}
+
+/** The acting manager's own PIN. A PIN set to the current one is a success, not `DUPLICATE`. */
+export async function changeOwnPin(actor: ActingManager, verifiedVersion: number, pin: string): Promise<UserOutcome> {
+  const prepared = await preparePin(pin);
+  return changeOwn(actor, verifiedVersion, USER_ACTIONS.OWN_PIN_CHANGE, async (client) => {
+    await client.query('UPDATE staff_user SET pin_hash = $2, pin_lookup = $3 WHERE id = $1', [
+      actor.staffUserId,
+      prepared.pinHash,
+      prepared.pinLookup,
+    ]);
   });
 }

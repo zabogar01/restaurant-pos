@@ -17,6 +17,7 @@ export const BODY = {
   USER_CHANGED: '{"error":{"code":"USER_CHANGED"}}',
   DUPLICATE_PIN: '{"error":{"code":"DUPLICATE","details":{"field":"pin"}}}',
   DUPLICATE_USERNAME: '{"error":{"code":"DUPLICATE","details":{"field":"username"}}}',
+  INVALID_CREDENTIALS: '{"error":{"code":"INVALID_CREDENTIALS"}}',
   INTERNAL: '{"error":{"code":"INTERNAL"}}',
 };
 
@@ -34,6 +35,11 @@ export function usersApi(client: JarClient) {
   const post = (path: string, payload: unknown) =>
     client.request({ method: 'POST', url: `${BASE}/${path}`, payload: payload as object });
   return {
+    post,
+    setPin: (staffUserId: unknown, pin: unknown) => post('set-pin', { staffUserId, pin }),
+    setPassword: (staffUserId: unknown, password: unknown) => post('set-password', { staffUserId, password }),
+    ownPassword: (currentPassword: unknown, password: unknown) => post('own-password', { currentPassword, password }),
+    ownPin: (currentPassword: unknown, pin: unknown) => post('own-pin', { currentPassword, pin }),
     list: () => client.get(BASE),
     create: (payload: unknown) => post('create', payload),
     changeRole: (payload: unknown) => post('change-role', payload),

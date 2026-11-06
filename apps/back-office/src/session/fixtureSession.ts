@@ -91,6 +91,10 @@ const CONFIG: SessionStore['config'] = {
   '/api/back-office/config/users/change-role': unavailable,
   '/api/back-office/config/users/deactivate': unavailable,
   '/api/back-office/config/users/reactivate': unavailable,
+  '/api/back-office/config/users/set-pin': unavailable,
+  '/api/back-office/config/users/set-password': unavailable,
+  '/api/back-office/config/users/own-password': unavailable,
+  '/api/back-office/config/users/own-pin': unavailable,
 };
 
 export function createFixtureSession(): SessionStore {

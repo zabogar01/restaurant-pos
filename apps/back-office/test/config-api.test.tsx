@@ -40,7 +40,7 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
     expect(true).toBe(true);
   });
 
-  it('holds the five table routes, the two settings routes, the five tender-methods routes, the thirteen catalog routes, the five preset routes and the five users routes at run time, and nothing under /auth/', () => {
+  it('holds the five table routes, the two settings routes, the five tender-methods routes, the thirteen catalog routes, the five preset routes and the nine users routes at run time, and nothing under /auth/', () => {
     expect(Object.keys(store.config).sort()).toEqual([
       '/api/back-office/config/catalog',
       '/api/back-office/config/catalog/categories/archive',
@@ -76,7 +76,11 @@ describe('AC 2. a screen cannot name an /auth/ route through config', () => {
       '/api/back-office/config/users/change-role',
       '/api/back-office/config/users/create',
       '/api/back-office/config/users/deactivate',
+      '/api/back-office/config/users/own-password',
+      '/api/back-office/config/users/own-pin',
       '/api/back-office/config/users/reactivate',
+      '/api/back-office/config/users/set-password',
+      '/api/back-office/config/users/set-pin',
     ]);
   });
 

@@ -95,22 +95,32 @@ async function allNone(sessions: Awaited<ReturnType<typeof signedIn>>): Promise<
 
 // ---- 1 and 2: the declarations and the guard ---------------------------------------------
 
-describe('the five routes', () => {
+describe('the nine routes', () => {
   const entries = ROUTE_TABLE.filter((e) => e.path.startsWith(BASE));
 
-  it('1. are the five of the route table, with the list read not interactive', () => {
+  // The first five are S8a's; the four credential routes (S8b) have their own guard loop in
+  // users-credentials.test.ts, and are listed here so this table stays the whole prefix.
+  it('1. are the nine of the route table, with the list read not interactive', () => {
     expect(entries.map((e) => `${e.method} ${e.path} ${e.interactive}`)).toEqual([
       `GET ${BASE} false`,
       `POST ${BASE}/create true`,
       `POST ${BASE}/change-role true`,
       `POST ${BASE}/deactivate true`,
       `POST ${BASE}/reactivate true`,
+      `POST ${BASE}/set-pin true`,
+      `POST ${BASE}/set-password true`,
+      `POST ${BASE}/own-password true`,
+      `POST ${BASE}/own-pin true`,
     ]);
   });
 
   const bodyFor = (path: string, id: string) => {
     if (path.endsWith('/create')) return { classification: 'KITCHEN', name: 'Refused' };
     if (path.endsWith('/change-role')) return { change: 'MANAGER_TO_KITCHEN', staffUserId: id };
+    if (path.endsWith('/set-pin')) return { staffUserId: id, pin: '123456' };
+    if (path.endsWith('/set-password')) return { staffUserId: id, password: 'a password long enough' };
+    if (path.endsWith('/own-password')) return { currentPassword: 'x', password: 'a password long enough' };
+    if (path.endsWith('/own-pin')) return { currentPassword: 'x', pin: '123456' };
     return { staffUserId: id };
   };
 

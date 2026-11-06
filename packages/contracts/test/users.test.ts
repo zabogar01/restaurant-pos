@@ -8,6 +8,7 @@ import {
   CreateKitchenUserRequest,
   CreateManagerUserRequest,
   CreateUserRequest,
+  CurrentPassword,
   DeactivateUserRequest,
   KitchenToCashierRequest,
   KitchenToManagerRequest,
@@ -16,7 +17,11 @@ import {
   NewPassword,
   NewPin,
   NewUsername,
+  OwnPasswordRequest,
+  OwnPinRequest,
   ReactivateUserRequest,
+  SetPasswordRequest,
+  SetPinRequest,
   StaffName,
   UserResponse,
   UserView,
@@ -137,6 +142,44 @@ describe('deactivate and reactivate', () => {
     expect(ReactivateUserRequest.safeParse({ staffUserId: ID }).success).toBe(true);
     expect(ReactivateUserRequest.safeParse({ staffUserId: ID, pin: '123456' }).success).toBe(true);
     expect(ReactivateUserRequest.safeParse({ staffUserId: ID, pin: '12345' }).success).toBe(false);
+  });
+});
+
+describe('the credential requests (S8b)', () => {
+  const PASSWORD = 'a long enough one';
+
+  it('a PIN reset and a password reset take an id and the new secret, strictly', () => {
+    expect(SetPinRequest.safeParse({ staffUserId: ID, pin: '123456' }).success).toBe(true);
+    expect(SetPinRequest.safeParse({ staffUserId: ID, pin: '12345' }).success).toBe(false);
+    expect(SetPinRequest.safeParse({ staffUserId: ID, pin: '123456', currentPassword: PASSWORD }).success).toBe(false);
+    expect(SetPasswordRequest.safeParse({ staffUserId: ID, password: PASSWORD }).success).toBe(true);
+    expect(SetPasswordRequest.safeParse({ staffUserId: ID, password: 'short' }).success).toBe(false);
+    expect(SetPasswordRequest.safeParse({ staffUserId: ID, password: PASSWORD, currentPassword: PASSWORD }).success).toBe(false);
+    expect(SetPasswordRequest.safeParse({ password: PASSWORD }).success).toBe(false);
+  });
+
+  it('an own change takes the current password and the new secret and names no account', () => {
+    expect(OwnPasswordRequest.safeParse({ currentPassword: 'x', password: PASSWORD }).success).toBe(true);
+    expect(OwnPinRequest.safeParse({ currentPassword: 'x', pin: '123456' }).success).toBe(true);
+    for (const extra of [{ username: 'someone.else' }, { staffUserId: ID }, { newPassword: PASSWORD }]) {
+      expect(OwnPasswordRequest.safeParse({ currentPassword: 'x', password: PASSWORD, ...extra }).success).toBe(false);
+      expect(OwnPinRequest.safeParse({ currentPassword: 'x', pin: '123456', ...extra }).success).toBe(false);
+    }
+    expect(OwnPasswordRequest.safeParse({ password: PASSWORD }).success).toBe(false);
+    expect(OwnPinRequest.safeParse({ pin: '123456' }).success).toBe(false);
+  });
+
+  it('a malformed new secret is refused by the schema; a malformed current password only by size', () => {
+    expect(OwnPasswordRequest.safeParse({ currentPassword: 'x', password: 'short' }).success).toBe(false);
+    expect(OwnPinRequest.safeParse({ currentPassword: 'x', pin: 123456 }).success).toBe(false);
+    // The current password is judged by the verification (and counted), so any string of a
+    // sane size passes, as at M-6.
+    expect(CurrentPassword.safeParse('x').success).toBe(true);
+    expect(CurrentPassword.safeParse(' short ').success).toBe(true);
+    expect(CurrentPassword.safeParse('x'.repeat(1024)).success).toBe(true);
+    expect(CurrentPassword.safeParse('').success).toBe(false);
+    expect(CurrentPassword.safeParse('x'.repeat(1025)).success).toBe(false);
+    expect(CurrentPassword.safeParse(123).success).toBe(false);
   });
 });
 

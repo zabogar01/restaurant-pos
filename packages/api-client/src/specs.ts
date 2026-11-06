@@ -21,6 +21,8 @@ import {
   ItemsResponse,
   MarkItemAvailableRequest,
   MarkItemUnavailableRequest,
+  OwnPasswordRequest,
+  OwnPinRequest,
   PosLoginRequest,
   PosMenuResponse,
   PosRevisionResponse,
@@ -38,6 +40,8 @@ import {
   ROUTE_TABLE,
   SaveSettingsRequest,
   SessionView,
+  SetPasswordRequest,
+  SetPinRequest,
   SettingsReadView,
   TableResponse,
   TablesResponse,
@@ -160,6 +164,10 @@ export const SPECS = {
   '/api/back-office/config/users/change-role': { body: ChangeRoleRequest, response: UserResponse },
   '/api/back-office/config/users/deactivate': { body: DeactivateUserRequest, response: UserResponse },
   '/api/back-office/config/users/reactivate': { body: ReactivateUserRequest, response: UserResponse },
+  '/api/back-office/config/users/set-pin': { body: SetPinRequest, response: UserResponse },
+  '/api/back-office/config/users/set-password': { body: SetPasswordRequest, response: UserResponse },
+  '/api/back-office/config/users/own-password': { body: OwnPasswordRequest, response: UserResponse },
+  '/api/back-office/config/users/own-pin': { body: OwnPinRequest, response: UserResponse },
 } as const satisfies Record<RoutePath, Spec>;
 
 type Specs = typeof SPECS;

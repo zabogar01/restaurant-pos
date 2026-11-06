@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
+import type pg from 'pg';
 import { query } from '../db/pool.js';
 import type { StaffRole } from './pin.js';
 
@@ -190,6 +191,31 @@ export async function reauthenticateSession(
   );
   const row = rows[0];
   return row ? { token: next.token, sessionId: row.id } : null;
+}
+
+/**
+ * Re-stamps the one back-office session an own-credential change was made from with the
+ * credential version the change just wrote, so that session continues (ADR-009 section 5,
+ * ARCHITECTURE 7.2). It runs on the change's own client, inside its transaction, and
+ * answers whether exactly one row moved. The caller rolls the whole transaction back on
+ * anything else: zero rows means the session was released or had already moved, and
+ * committing the change then would sign the manager out of a session the contract says
+ * continues. Only `domain/users.ts` may call it (a source-scan test holds that), because
+ * "it exists only for the acting manager's own session" is the bound ADR-009 drew.
+ * The token, `issued_at`, the absolute limit and the activity stamp are not touched.
+ */
+export async function restampOwnSession(
+  client: Pick<pg.PoolClient, 'query'>,
+  input: { sessionId: string; staffUserId: string; oldVersion: number; newVersion: number }
+): Promise<boolean> {
+  const res = await client.query(
+    `UPDATE actor_session
+        SET credential_version = $4
+      WHERE id = $1 AND staff_user_id = $2 AND audience = 'BACK_OFFICE'
+        AND released_at IS NULL AND credential_version = $3`,
+    [input.sessionId, input.staffUserId, input.oldVersion, input.newVersion]
+  );
+  return res.rowCount === 1;
 }
 
 export async function releaseSession(token: string, audience: Audience): Promise<void> {

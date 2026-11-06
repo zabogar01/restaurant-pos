@@ -524,6 +524,53 @@ describe('concurrency', () => {
   }, 30000);
 });
 
+// PHASE1-S8b: the re-stamp of an own-credential change (ADR-009 section 5). It runs on the
+// transaction's client and answers whether exactly one row moved; the caller rolls back on
+// anything else. Only the users module calls it (restamp-scan.test.ts).
+describe('the own-session re-stamp', () => {
+  async function stamp(
+    input: { sessionId: string; staffUserId: string; oldVersion: number; newVersion: number }
+  ): Promise<boolean> {
+    const client = await getPool().connect();
+    try {
+      return await sessionModule.restampOwnSession(client, input);
+    } finally {
+      client.release();
+    }
+  }
+
+  it('33. moves exactly one unreleased back-office session of the person from the old version to the new, and touches nothing else on the row', async () => {
+    const issued = await createSession({ audience: 'BACK_OFFICE', user: manager });
+    const before = JSON.parse(await snapshot(issued.sessionId)) as Record<string, unknown>;
+    const moved = await stamp({
+      sessionId: issued.sessionId,
+      staffUserId: managerId,
+      oldVersion: manager.credentialVersion,
+      newVersion: manager.credentialVersion + 1,
+    });
+    expect(moved).toBe(true);
+    const after = JSON.parse(await snapshot(issued.sessionId)) as Record<string, unknown>;
+    expect(after).toEqual({ ...before, credential_version: manager.credentialVersion + 1 });
+  });
+
+  it('33. answers false, and writes nothing, for a released session, a stale version, another person\'s session and a POS session', async () => {
+    const office = await createSession({ audience: 'BACK_OFFICE', user: manager });
+    const pos = await createSession({ audience: 'POS', user: manager });
+    const released = await createSession({ audience: 'BACK_OFFICE', user: manager });
+    await ownerQuery('UPDATE actor_session SET released_at = now() WHERE id = $1', [released.sessionId]);
+    const rows = await Promise.all([office, pos, released].map((s) => snapshot(s.sessionId)));
+    const base = {
+      oldVersion: manager.credentialVersion,
+      newVersion: manager.credentialVersion + 1,
+    };
+    expect(await stamp({ ...base, sessionId: released.sessionId, staffUserId: managerId })).toBe(false);
+    expect(await stamp({ ...base, oldVersion: 99, sessionId: office.sessionId, staffUserId: managerId })).toBe(false);
+    expect(await stamp({ ...base, sessionId: office.sessionId, staffUserId: otherManagerId })).toBe(false);
+    expect(await stamp({ ...base, sessionId: pos.sessionId, staffUserId: managerId })).toBe(false);
+    expect(await Promise.all([office, pos, released].map((s) => snapshot(s.sessionId)))).toEqual(rows);
+  });
+});
+
 describe('shape', () => {
   it('31. the module exports exactly the specified names', () => {
     expect(Object.keys(sessionModule).sort()).toEqual([
@@ -532,6 +579,7 @@ describe('shape', () => {
       'reauthenticateSession',
       'releaseSession',
       'resolveSession',
+      'restampOwnSession',
     ]);
   });
 

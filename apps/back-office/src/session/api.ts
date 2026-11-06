@@ -63,6 +63,10 @@ export function configApi(api: OfficeApi): ConfigApi {
     '/api/back-office/config/users/change-role': api['/api/back-office/config/users/change-role'],
     '/api/back-office/config/users/deactivate': api['/api/back-office/config/users/deactivate'],
     '/api/back-office/config/users/reactivate': api['/api/back-office/config/users/reactivate'],
+    '/api/back-office/config/users/set-pin': api['/api/back-office/config/users/set-pin'],
+    '/api/back-office/config/users/set-password': api['/api/back-office/config/users/set-password'],
+    '/api/back-office/config/users/own-password': api['/api/back-office/config/users/own-password'],
+    '/api/back-office/config/users/own-pin': api['/api/back-office/config/users/own-pin'],
   };
 }
 
@@ -120,5 +124,9 @@ export function officeApi(client: ApiClient): OfficeApi {
     '/api/back-office/config/users/change-role': (body) => client.request(ROUTES.usersChangeRole, body),
     '/api/back-office/config/users/deactivate': (body) => client.request(ROUTES.usersDeactivate, body),
     '/api/back-office/config/users/reactivate': (body) => client.request(ROUTES.usersReactivate, body),
+    '/api/back-office/config/users/set-pin': (body) => client.request(ROUTES.usersSetPin, body),
+    '/api/back-office/config/users/set-password': (body) => client.request(ROUTES.usersSetPassword, body),
+    '/api/back-office/config/users/own-password': (body) => client.request(ROUTES.usersOwnPassword, body),
+    '/api/back-office/config/users/own-pin': (body) => client.request(ROUTES.usersOwnPin, body),
   };
 }
