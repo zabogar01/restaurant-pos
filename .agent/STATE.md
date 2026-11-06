@@ -9,7 +9,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-11-05 (wrap-up for a fresh session): S7 merged whole (#169-171), #172 (lead); `development` at `6cd628c`. **S8a
+2026-11-06: S8b written, not dispatched. S7 merged whole (#169-171), #172 (lead); `development` at `6cd628c`. **S8a
 complete, PR #173 open.** Dev `pos` at `0015`. Nothing running. Lead branch `agent/lead-1105`. Narrative:
 [journal/2026-11-05.md](journal/2026-11-05.md).
 
@@ -57,10 +57,9 @@ complete, PR #173 open.** Dev `pos` at `0015`. Nothing running. Lead branch `age
   `apps/server/src/domain/users.ts` (list, create, change-role, deactivate, reactivate, `lockUsers`, `USER_ACTIONS`),
   five routes, `OWN_ACCOUNT`, `USER_CHANGED`, `DUPLICATE` details on the users routes only. Codex: one P2 (the log scan
   omitted a marker), fixed in round 2. **Owner looks before merge (`touches: identity, audit, boundaries`).**
-- **S8b not written.** Sources: C3 *For the lead* S8b (`.agent/reviews/ARCH-020-users-and-credentials.md:948-1006`), C3
-  §3 (the re-stamp), §4 (the current password), §8 (the four routes, `CurrentPassword`); S8a's Handoff *Names to carry
-  forward* (S8b's commands open with `lockUsers(client, actor, subjectId)`; `OWN_ACCOUNT` before it; the closed-list check
-  is `audit()` in `users.ts`). Next migration none expected. `base: agent/phase1-s8a` while #173 is open.
+- **PHASE1-S8b written 2026-11-06, not dispatched** (untracked in the kit: `.agent/tasks/PHASE1-S8b-credentials-server.md`;
+  C3 §3-8 and *S8b* verbatim, lead rulings 1-13, ACs 12-18 added). `base: agent/phase1-s8a`; no migration. Dry run
+  green (builder: claude-sonnet-5-5, interactive). Waits on the owner's go to dispatch.
 - **For S8c (from DESIGN-023):** FR-B3's own-PIN words (every other session ends); a Chrome/Firefox save-prompt check (F3).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
@@ -116,7 +115,8 @@ complete, PR #173 open.** Dev `pos` at `0015`. Nothing running. Lead branch `age
 
 Nothing here is decided. Detail is where each line points.
 
-- **Merge #173 (S8a)** after your look? **Open a PR for `agent/lead-1105`?** **Write S8b?**
+- **Merge #173 (S8a)** after your look? **Open a PR for `agent/lead-1105`?** **Dispatch S8b?** (its rulings 1-13 are yours
+  to overturn).
 - **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified;
   S8c checks by hand; if a prompt appears, does the 2026-10-13 "does not fight the password manager" ruling extend?
 - **Lead rulings since 10-30, yours to overturn** (each in its task file): DESIGN-021 R1 and round 2; ARCH-021's
@@ -141,8 +141,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **`/lead`**, then on the owner's word **write S8b** (sources above; `depends_on: [PHASE1-S8a]`, `base:
-   agent/phase1-s8a` while #173 is open, else `development`), dry-run, dispatch.
+1. **Dispatch S8b** on the owner's go (if #173 has merged first, change `base:` to `development` and dry-run again).
 2. **After #173 merges:** fetch, fast-forward; remove `wt/PHASE1-S8a`, its `runs/` and evidence.
 3. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
