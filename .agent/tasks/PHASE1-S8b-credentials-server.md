@@ -6,7 +6,7 @@ touches: [identity, audit, boundaries]
 depends_on: [PHASE1-S8a]
 base: agent/phase1-s8a
 owns: [apps/server/src/domain/users.ts, apps/server/src/domain/session.ts, apps/server/src/domain/back-office-credential.ts, apps/server/src/domain/pin.ts, apps/server/src/http/routes/back-office-users.ts, packages/contracts/src/users.ts, packages/contracts/src/routes.ts, packages/contracts/src/index.ts, packages/api-client/src/specs.ts, packages/api-client/src/client.ts, packages/api-client/src/index.ts, apps/back-office/src/session/api.ts, apps/back-office/src/session/fixtureSession.ts, apps/back-office/test/config-api.test.tsx, apps/server/test/**, packages/contracts/test/**, packages/api-client/test/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S8b — Credentials on the server: resets, own password and own PIN, the re-stamp
@@ -722,6 +722,29 @@ Beyond the review's own reading, the lead asks for a view on:
    counted on a schema refusal?
 5. **The log and audit scans** for the four routes: is every marker the scans send also searched for (S8a's round 2
    finding), lookups included, on every path C3 section 8 lists?
+
+## Round 2: the lead's ruling on the review, 2026-11-06
+
+The review is `.agent/reviews/PHASE1-S8b-review.md` (Codex, one finding; its *Cleared* section settles the lead's five
+questions). Fix exactly this, test first with its red proofs recorded, and nothing else. No production file changes.
+
+- **R1 (F1, P2, accepted).** Complete the credential scans for the four routes (S8b AC 11, C3 §8, ADR-010 rule 2):
+  1. **Every credential value the scans send is a searched marker.** The own-password success request's
+     `currentPassword` (today `own.password` from `makePeople`) and every other current password the log scan or the
+     audit scan sends must be a distinct marker that is a leaf of the object the secret list is derived from, so it
+     is searched. If the actor's real password must be the marker, create that manager with the marker password.
+  2. **Both own routes** go through a wrong current password and a throttled one, each with markers in every
+     credential field and an exact refusal-envelope assertion (`own-password` today has neither).
+  3. **`set-password`** gains the strict-schema extra-key case beside its malformed-value case.
+  4. Keep the PIN lookups searched and the username-in-`UserView` exception as it is.
+  *Red:* two test-only mutations of `back-office-users.ts`, never committed: (a) log `currentPassword` nested two levels
+  deep after a successful verification in the `own-password` handler; (b) the same on its wrong-password path (before
+  `verifiedUser` throws). Each must fail the scan with the new tests and pass it with the old ones; remove each and the
+  scan passes. Record all four observations.
+
+**How to work.** Write and Edit tools only. Run `npm run verify` on a quiet machine before you commit, and report its
+counts. Append a *Round 2* section to the Handoff (do not rewrite round 1), ending with `DONE` or `BLOCKED: <one
+question>`.
 
 ## Handoff
 
