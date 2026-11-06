@@ -695,3 +695,68 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ## Handoff
 
+**What I did.** One commit on `agent/phase1-s8b`, `5849011` (19 files, 1327 insertions), cut from S8a's tip. No migration (ruling 1): the grants of `0003`, `0007` and `0015` cover every write, and no statement needed a privilege that was missing.
+
+- `apps/server/src/domain/session.ts`: `restampOwnSession(client, { sessionId, staffUserId, oldVersion, newVersion })` runs C3 section 3's statement on the transaction's client and returns `true` only for exactly one row. This is the re-stamp function's name.
+- `apps/server/src/domain/users.ts`: four commands beside S8a's, each inside `command(...)` and opening with `lockUsers`. They are `setUserPin`, `setUserPassword`, `changeOwnPassword` and `changeOwnPin`; the two own commands share a private `changeOwn`. `USER_ACTIONS` gains the four actions: `user.pin.reset`, `user.password.reset`, `user.own_pin.change` and `user.own_password.change`. `set-pin` and `set-password` check `OWN_ACCOUNT` before `command(...)` and before any hashing, on the lower-cased id.
+- `apps/server/src/http/routes/back-office-users.ts`: the four routes. Own-change order is the guard, then `parseBody`, then `verifyPasswordThrottled({ staffUserId: actor.staffUserId }, currentPassword, { clientInstanceId })` mapped through `verifiedUser`, then the domain call. The route verifies and hands the domain the verified `credentialVersion`; the domain hashes the new secret only after that.
+- Contracts: `CurrentPassword` (`min(1).max(1024)`), `SetPinRequest`, `SetPasswordRequest`, `OwnPasswordRequest`, `OwnPinRequest`, all strict, exported through `index.ts`; four `ROUTE_TABLE` entries, all `interactive: true`. Client declarations: `SPECS`, `ROUTES` (`usersSetPin`, `usersSetPassword`, `usersOwnPassword`, `usersOwnPin`), the back-office `api.ts` and `configApi`, four `unavailable` entries in `fixtureSession.ts`. No new error code, so neither `realSession.ts` changed and the POS is untouched.
+- `log.ts` is not touched: `SECRET_KEYS` already listed `currentPassword` and `username`, and case 24 already asserted all four keys.
+
+**The routes, for the carry-forward.** All `POST`, all `{ session: 'ACTIVE', audience: 'BACK_OFFICE', interactive: true }`, ids in the body:
+- `/api/back-office/config/users/set-pin` takes `{ staffUserId, pin }`;
+- `/api/back-office/config/users/set-password` takes `{ staffUserId, password }`;
+- `/api/back-office/config/users/own-password` takes `{ currentPassword, password }`;
+- `/api/back-office/config/users/own-pin` takes `{ currentPassword, pin }`.
+Each answers `{ user }` (the `UserView`).
+
+**The own changes keep the token and issue no `csrfToken`.** On success and on every refusal: no `Set-Cookie`, no `csrfToken` in the body, and the session's token hash, `issued_at`, `released_at` and absolute lifetime are as they were. The only session column that moves on success is `credential_version`, by the re-stamp. `renewableAccount`, `reauthenticateSession`, `signIn` and `renewSession` are not called. The client keeps its anti-CSRF token and cookie and its next command goes through (tested).
+
+**The exact answers of the current-password field.** It is `CurrentPassword = z.string().min(1).max(1024)`, so a missing, empty, over-long or non-string value is `400 VALIDATION_FAILED` and counts nothing. A string that does not match the actor's password is `401 INVALID_CREDENTIALS` with no details, except the failure that starts the cooldown (the fifth), which is `401 INVALID_CREDENTIALS` with `details: { retryAfterSeconds }` (about 300). After that, any current password, the right one included, is `429 THROTTLED` with `details: { retryAfterSeconds }`, nothing verified and nothing counted. Each failure writes one `PASSWORD_FAILURE` and the fifth also one `COOLDOWN_STARTED`, class `BACK_OFFICE_LOGIN`, naming nobody; no audit entry; a `THROTTLED` answer writes no event. A right current password resets the account's count. A `username` key is `VALIDATION_FAILED` (strict). The account verified is always the guard's actor. Five wrong current passwords also block that manager's BO-01 and M-6 sign-in for five minutes while the session continues (C3 section 4; the owner accepted this on 2026-10-07).
+
+**What I decided, and on what evidence.**
+- Ruling 4's choice: the route verifies and passes the verified version to the domain. The domain re-checks it under the lock after `lockUsers` (`locked.actor.credential_version !== verifiedVersion` gives `UNAUTHENTICATED`). `lockUsers` already compares the actor row with the session's version, so this check is belt and braces: when it fires alone, the re-stamp's `credential_version = $3` fails too and rolls back. I kept both and tested it at domain level (case 16, `verifiedVersion` 0), but no red can separate the two.
+- Own password locks the credential row after the StaffUser rows and before the session (ARCHITECTURE section 8), and writes `password_hash` only. Its own count reset comes from the verification, not the write (ruling 7).
+- `changeOwnPassword`'s credential-row-missing case throws `Refusal(UNAUTHENTICATED)`: a manager who passed the guard and verified a password has a row, so it is unreachable from a request and rolls back if it ever is.
+- A same-value PIN or password is a success: it increments, re-stamps (own) and writes its entry (ruling 5). Tested for all four.
+- Race proof (ACs 5, 6, 15 and 16): a request through HTTP cannot sit at the re-stamp. The guard's interactive resolution is an `UPDATE` of the same `actor_session` row, so a held row lock blocks the request at the guard, and a release in that window gets a guard 401 that also clears the cookie. So the AC 5 and AC 6 window tests call `changeOwnPassword` and `changeOwnPin` at domain level, with a separate connection holding `FOR UPDATE` on the session row, and observe the wait through `waitForLockWaits` (`pg_stat_activity`), never a sleep. The HTTP-level `UNAUTHENTICATED` of AC 15 is driven another way: a holder on the actor's `staff_user` row blocks the change at `lockUsers`, then bumps the version and commits.
+
+**Existing tests I changed, and why.**
+- `users.test.ts`: case 1 (the route list) grows from five to nine routes, and `bodyFor` gains the four bodies. No assertion was loosened. Without this the case fails, as ruling 11 foresaw.
+- `session.test.ts`: case 31's exact export list grows by `restampOwnSession` and nothing else; two new cases (33) prove the statement.
+- `log-scan.test.ts`: new markers and the four routes' success, DUPLICATE-on-PIN, strict-schema, wrong and throttled paths, in a separate `credentialRefusals` list; the S8a exact refusal list is untouched. The scan assertions cover the new markers because they are leaves of `USERS_MARK`. One new case asserts the 15 expected answers, with `retryAfterSeconds` normalised to `N`.
+- `users-audit.test.ts`: four new steps with marker credentials, the marker lists extended, the row count `>= 13` raised to `>= 17`.
+- `config-api.test.tsx`: the run-time route list and its title (`nine users routes`).
+- `packages/contracts/test/users.test.ts`: new cases for the four schemas (additions only).
+- `test/support/users.ts`: `setPin`, `setPassword`, `ownPassword`, `ownPin`, `post` and `BODY.INVALID_CREDENTIALS` (additions only).
+- `back-office-credential.test.ts` is **not** changed: the throttle-column case (ruling 7) lives in `users-credentials.test.ts`, case 3, because its subject is the users command. `route-table.test.ts`, `access.test.ts` and `credential-keys.test.ts` are untouched and pass.
+- New files: `users-credentials.test.ts` (28 cases) and `restamp-scan.test.ts` (1 case).
+
+**Red proofs.** I wrote the production code before the tests, which departs from the "test first, run against unchanged code" instruction. The compensation is that every red below was run against the finished code, with the mutation made, the failing assertion read, and the mutation reverted (`git diff apps/server/src` was read afterwards and holds no residue):
+- AC 2, drop the increment in `setUserPin`: `expected 1 to be 2` (version), cases 2 and 12.
+- AC 3, clear the throttle columns in the password write: `expected [ 0, null ] to deeply equal [ 3, '2026-11-06 05:51:11…' ]`.
+- AC 4, skip the re-stamp: S1 resolves `NONE` (`expected 'NONE' to be 'ACTIVE'`), cases 4, 12 and 15 fail too; cases 5 and 6 time out because the command never waits.
+- AC 5, re-stamp after commit through a second connection: `expected '$argon2id…/bkpkb…' to be '$argon2id…wcn0ie…'` (the new hash is visible while the re-stamp waits).
+- AC 6, ignore the row count: `expected { kind: 'OK', … } to deeply equal { kind: 'UNAUTHENTICATED' }`.
+- AC 7, verify against a username from the body (the schema made to accept `username`): the request naming another manager answers `200` instead of `400`.
+- AC 10, import the re-stamp in `back-office-auth.ts`: the scan lists `src/http/routes/back-office-auth.ts` as a third naming file.
+- AC 12, treat a same-value own PIN as a no-op: `expected 1 to be 2` and no entry.
+- AC 13, drop the `role !== 'MANAGER'` check: the former manager (now a cashier) gets `200`. I also separately dropped the credential-row check: a manager with no credential row gets `200`. Both reds are in case 13.
+- AC 14, verify the current password before the schema: a five-digit PIN beside a wrong current password answers `401 INVALID_CREDENTIALS` instead of `400`.
+- AC 15, call `renewSession` after an own PIN change: `Set-Cookie: rpos_bo_sid=…` appears (cases 4 and 15). My first attempt used `presentedForRenewal`, which throws a plain error on an `ACTIVE` route, so the result was a 500 and a wrong-reason failure; I redid it with the cookie token and got the header.
+- Audit, write the PIN into `reason` for `set-pin`: `"reason": "pin 639485"` instead of `null` (the step assertion fires before the marker scan reaches the row, so the marker scan's own assertion was not the one observed to fail).
+- C3's rename (`currentPassword` to `oldPassword` in `OwnPasswordRequest` only): `credential-keys.test.ts` fails with `OwnPasswordRequest.oldPassword is not in SECRET_KEYS`.
+- Not given a red: AC 16 and the `verifiedVersion` check (see above), and AC 8 (a taken own PIN), whose DUPLICATE comes from the database's partial unique index, which no source mutation removes.
+
+**Found and not fixed.**
+- `reactivateUser` hashes a supplied PIN for a no-op (S8a's note, out of scope).
+- `set-password` on an active `MANAGER` with no credential row (made outside the application, as the test does through the owner connection) answers `USER_CHANGED`, per ruling 8. The remedy the owner has is demotion then promotion, as C3 section 8 says.
+- Case 7's THROTTLED check relies on the cooldown being about 300 seconds (`> 290`). It is stable unless the test machine pauses a test for ten seconds between the fifth failure and the read.
+
+**`npm run verify`.** Run on the committed tree: typecheck clean for all seven projects, then `Test Files 164 passed (164), Tests 5814 passed (5814)`. The baseline was 162 files and 5779 tests, so +2 files (`users-credentials.test.ts`, `restamp-scan.test.ts`) and +35 tests. The first run, before I updated `users.test.ts` case 1, had `1 failed | 5813 passed`; that was the expected route-list case. I also ran `npm run test:e2e:all` here (Chromium and WebKit): `130 passed (2.1m)`, matching the baseline. No browser test was added or changed.
+
+**Formatter.** No formatter was run on any file; edits were made by hand.
+
+**What the next agent (S8c) needs and does not have.** `ROUTES.usersSetPin`, `usersSetPassword`, `usersOwnPassword` and `usersOwnPin` exist in `@pos/api-client`, and `store.config['/api/back-office/config/users/<set-pin|set-password|own-password|own-pin>']` is typed and wired in `officeApi`; the fixture session answers `unavailable` for them. The error codes a form must place: `INVALID_CREDENTIALS` (the wrong current password; field = current password) and `THROTTLED` (with `retryAfterSeconds`) from the own changes; `DUPLICATE` with `details.field === 'pin'` from `set-pin` and `own-pin`; `OWN_ACCOUNT`, `USER_CHANGED`, `NOT_FOUND`, `VALIDATION_FAILED` and `UNAUTHENTICATED` as before. A `UNAUTHENTICATED` from an own change means the session or the credentials moved under the manager; the core ends the session on it as for any command. The own changes answer the `UserView` only, so BO-06 must not expect a new token or `csrfToken`.
+
+DONE
