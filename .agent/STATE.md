@@ -10,8 +10,8 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-11-06: **#173 S8a and #174 S8b merged**; `development` at `e90a265`, the main checkout fast-forwarded; dev `pos` at
-`0015`. Nothing running. Lead branch `agent/lead-1105`: PR #176 open; local merge of `development` (`b91234a`) and later
-commits unpushed. **S8c split; S8c1 written, not dispatched.** Narrative: [journal/2026-11-06.md](journal/2026-11-06.md).
+`0015`. S8c1 builder running. Lead branch `agent/lead-1105`: PR #176 open; local merge of `development` (`b91234a`) and later
+commits unpushed. **S8c split; S8c1 dispatched 2026-11-09.** Narrative: [journal/2026-11-06.md](journal/2026-11-06.md).
 
 ## Phase and gates
 
@@ -51,14 +51,14 @@ commits unpushed. **S8c split; S8c1 written, not dispatched.** Narrative: [journ
 
 ## Running tasks and agents
 
-- **Nothing running; only `lead` in Herdr.**
+- **Running: PHASE1-S8c1 builder** (`phase1-s8c1`, pane `PHASE1-S8c1`, claude-sonnet-5-5, interactive), dispatched 2026-11-09.
 - **S8 server is merged.** S8a: `users.ts` (`lockUsers`, `USER_ACTIONS`), five routes, `OWN_ACCOUNT`, `USER_CHANGED`,
   `DUPLICATE` details. S8b: `set-pin`, `set-password`, `own-password`, `own-pin`, `restampOwnSession` (only `users.ts`
   may import it, `restamp-scan.test.ts`). The four back-office API functions per slice are declared, called by no screen.
-- **PHASE1-S8c1 written 2026-11-06, not dispatched** (untracked in the kit: `.agent/tasks/PHASE1-S8c1-staff-screen.md`;
+- **PHASE1-S8c1 dispatched 2026-11-09** (`wt/PHASE1-S8c1`, `agent/phase1-s8c1` from `development`; kit copy deleted after `cmp`;
   C3 §10 and *S8c* verbatim, rulings 1-21, ACs 1-16). Split by the lead: DESIGN-023's 126 states are too many for one
   slice (as S4c2a/b). Path `/back-office/staff`, rail *Staff*; S8c1 renders only Deactivate/Reactivate row actions;
-  `scan.ts` map gains create and reactivate only; frame focus untouched (queued). Dry run green (sonnet-5-5).
+  `scan.ts` map gains create and reactivate only; frame focus untouched (queued). Builder: sonnet-5-5, interactive.
 - **S8c2 next after S8c1:** moves, PIN and password resets, own password and own PIN (FR-B3's own-PIN words, not C3 §10
   item 4), current-password answers (S8b Handoff), D2, D3, the rest of the scan map. **F3 save-prompt check** (Chrome,
   Firefox, headed) is the lead's and the owner's after S8c1.
@@ -117,7 +117,7 @@ commits unpushed. **S8c split; S8c1 written, not dispatched.** Narrative: [journ
 
 Nothing here is decided. Detail is where each line points.
 
-- **Merge #176 (lead)?** **Dispatch S8c1?** S8c1's rulings 1-21 (the split, `/back-office/staff`, no placeholder for
+- **Merge #176 (lead)?** S8c1's rulings 1-21 (the split, `/back-office/staff`, no placeholder for
   S8c2's actions, status-command refusals as definite failures) are yours to overturn.
 - **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified;
   S8c checks by hand; if a prompt appears, does the 2026-10-13 "does not fight the password manager" ruling extend?
@@ -143,6 +143,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **Dispatch S8c1** on the owner's go. Then S8c2's task file from S8c1's Handoff.
+1. **S8c1 running:** on exit, verify (dispatch skill step 4), then Codex review. Then S8c2's task file from its Handoff.
 2. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
