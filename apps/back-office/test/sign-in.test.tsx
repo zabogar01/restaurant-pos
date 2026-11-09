@@ -55,10 +55,11 @@ describe('case 1. a sign-in', () => {
     expect(sessionState(host)).toBe('signed-in');
     expect(text(host.querySelector('.botop'))).toBe('Back officeM. IqbalLog out');
     // The rail lists the destinations that exist, under their group (PHASE1-S1b, PHASE1-S2b, PHASE1-S4c1).
-    expect(text(host.querySelector('.bonav'))).toBe('ConfigurationMenuTablesDiscount presetsSettings');
+    expect(text(host.querySelector('.bonav'))).toBe('ConfigurationMenuTablesStaffDiscount presetsSettings');
     expect([...host.querySelectorAll('.bonav a')].map((a) => a.getAttribute('href'))).toEqual([
       '/back-office/menu',
       '/back-office/tables',
+      '/back-office/staff',
       '/back-office/presets',
       '/back-office/settings',
     ]);
@@ -68,10 +69,11 @@ describe('case 1. a sign-in', () => {
   it('shows no success sentence, link, date or incident in the frame (case 19)', async () => {
     const host = await open(ok(VIEW));
     expect(sessionState(host)).toBe('signed-in');
-    // The only links are the rail's four entries; the success view adds none (PHASE1-S1b, PHASE1-S2b, PHASE1-S4c1, PHASE1-S6b).
+    // The only links are the rail's five entries; the success view adds none (PHASE1-S1b, PHASE1-S2b, PHASE1-S4c1, PHASE1-S6b, PHASE1-S8c1).
     expect([...host.querySelectorAll('a')].map((a) => a.textContent)).toEqual([
       'Menu',
       'Tables',
+      'Staff',
       'Discount presets',
       'Settings',
     ]);

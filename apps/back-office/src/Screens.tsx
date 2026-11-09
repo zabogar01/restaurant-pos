@@ -9,6 +9,8 @@ import { Presets } from './presets/Presets.js';
 import { useConfig, useSession } from './session/useSession.js';
 import { createSettingsModel } from './settings/model.js';
 import { Settings } from './settings/Settings.js';
+import { createStaffModel } from './staff/model.js';
+import { Staff } from './staff/Staff.js';
 import { createTablesModel } from './tables/model.js';
 import { Tables } from './tables/Tables.js';
 import { workGuard } from './work/guard.js';
@@ -34,6 +36,7 @@ export function Screens() {
   const [menu] = useState(() => createMenuModel(config));
   const [item] = useState(() => createItemModel(config, menu));
   const [presets] = useState(() => createPresetsModel(config));
+  const [staff] = useState(() => createStaffModel(config));
   const frameHolds = useSyncExternalStore(workGuard.subscribe, workGuard.isHeld);
   const signedIn = session.phase === 'signed-in';
 
@@ -42,6 +45,7 @@ export function Screens() {
   useEffect(() => menu.start(), [menu]);
   useEffect(() => item.start(), [item]);
   useEffect(() => presets.start(), [presets]);
+  useEffect(() => staff.start(), [staff]);
   // An answer is presented only while the same manager is signed in and nothing of the
   // frame's is open (a decision, the logout confirmation): nothing is chosen for them.
   useEffect(() => tables.setGate(signedIn && !frameHolds), [tables, signedIn, frameHolds]);
@@ -49,6 +53,7 @@ export function Screens() {
   useEffect(() => menu.setGate(signedIn && !frameHolds), [menu, signedIn, frameHolds]);
   useEffect(() => item.setGate(signedIn && !frameHolds), [item, signedIn, frameHolds]);
   useEffect(() => presets.setGate(signedIn && !frameHolds), [presets, signedIn, frameHolds]);
+  useEffect(() => staff.setGate(signedIn && !frameHolds), [staff, signedIn, frameHolds]);
 
   switch (screen) {
     case 'menu':
@@ -57,6 +62,8 @@ export function Screens() {
       return <ItemEditor model={item} />;
     case 'tables':
       return <Tables model={tables} />;
+    case 'staff':
+      return <Staff model={staff} />;
     case 'presets':
       return <Presets model={presets} />;
     case 'settings':

@@ -13,9 +13,17 @@ export type Kind = 'PIN' | 'username' | 'password';
 
 /** The only routes whose request bodies may carry each kind. */
 const OWN_ROUTES: Record<Kind, readonly string[]> = {
-  PIN: ['/api/pos/auth/login'],
-  username: ['/api/back-office/auth/login'],
-  password: ['/api/back-office/auth/login', '/api/back-office/auth/reauthenticate'],
+  PIN: [
+    '/api/pos/auth/login',
+    '/api/back-office/config/users/create',
+    '/api/back-office/config/users/reactivate',
+  ],
+  username: ['/api/back-office/auth/login', '/api/back-office/config/users/create'],
+  password: [
+    '/api/back-office/auth/login',
+    '/api/back-office/auth/reauthenticate',
+    '/api/back-office/config/users/create',
+  ],
 };
 
 export interface Sent {

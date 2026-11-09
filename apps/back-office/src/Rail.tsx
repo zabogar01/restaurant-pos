@@ -5,9 +5,11 @@ import { PRESETS } from './presets/copy.js';
 import { router, useScreen } from './router.js';
 import { PATHS, type Screen } from './routes.js';
 import { SETTINGS } from './settings/copy.js';
+import { STAFF } from './staff/copy.js';
 
 // The rail lists only destinations that exist (DESIGN-016 Part B 4): Menu (S4c), Tables (S1b),
-// Discount presets (S6b) and Settings (S2b), in that order (DESIGN-019 round 2, F5; DESIGN-022),
+// Staff (S8c1), Discount presets (S6b) and Settings (S2b), in that order (DESIGN-019 round 2, F5;
+// DESIGN-022; DESIGN-023),
 // under a group labelled Configuration. The landing is reached by browser Back, not by an entry. BO-04, the item editor,
 // has no entry of its own: Menu is current on it, as on BO-03.
 const GROUPS: ReadonlyArray<{ label: string; entries: ReadonlyArray<{ screen: Screen; label: string }> }> = [
@@ -16,6 +18,7 @@ const GROUPS: ReadonlyArray<{ label: string; entries: ReadonlyArray<{ screen: Sc
     entries: [
       { screen: 'menu', label: MENU },
       { screen: 'tables', label: TABLES },
+      { screen: 'staff', label: STAFF },
       { screen: 'presets', label: PRESETS },
       { screen: 'settings', label: SETTINGS },
     ],
