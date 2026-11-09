@@ -416,6 +416,10 @@ export function createStaffModel(config: ConfigApi) {
 
   function answered(command: Command, answer: Answer): void {
     if (stopped) return;
+    // Whatever the answer, and whether or not it can be presented yet, the form that sent it no
+    // longer needs what was typed: the inputs are emptied now. Presentation, focus and the
+    // announcement stay behind the gate.
+    if (editorOf(command) !== null) set({ credentialEpoch: emptyInputs() });
     if (meaningOf(answer).kind === 'session') {
       // Refused before the handler: nothing was applied, and nothing is held for the session to
       // hand back. M-6 or BO-01 is the session's own, and the draft stays where it is.

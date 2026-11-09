@@ -640,5 +640,19 @@ I wrote the code before the new tests and then proved each guard red by mutation
 
 The lead's manual save-prompt check (F3), and the frame's focus for a different manager (`OfficeApp.tsx`), both outside this slice.
 
+(Round 1 ended `DONE`; round 2 follows.)
+
+### Round 2 (R1 to R3 of the review)
+
+Each test was written first (`apps/back-office/test/staff-round2.test.tsx`) and run against the unchanged round-1 code; six of the eight failed, as read below. Then the fixes.
+
+**R1, credentials emptied when the command answers.** `model.ts` `answered()` now moves `credentialEpoch` at once for any answer whose form is still the open one, before the session branch, the gate, any decision and any reread. Presentation, focus, announcement, the held answer and the command slot are unchanged. Reds against round 1: (a) DUPLICATE arriving behind the open departure decision: `expected '482913' to be ''`; (b) manager create answered unknown with the reread held: `expected '482913' to be ''` (PIN first); (c) the reactivation-PIN form answered `USER_CHANGED` with the reread held: `expected '482913' to be ''`. The review expected (a) and (b) to fail; (c) failed too.
+
+**R2, panel refit.** `fit.ts` now refits in a layout effect after every render of the screen while a form is open (measured, no timer), keeping the scroll, resize and pane-size listeners. Reds: M-6 recovery with the panel top moved 240 to 340, pane bottom 900, padding 24: `expected '636px' to be '536px'`; the same across a partial list's successful *Try again*: `expected '636px' to be '536px'`. Both now give 536px. The browser reached M-6 with the existing clock helpers, no helper changed: new e2e **D1d** opens the manager form, idles the session out, re-authenticates, and asserts Name focused and *Save* and *Cancel* inside the viewport. `reauthenticateAtOffice` was not used because its `getByLabel('Password')` also matches the open form's *New password*; D1d fills M-6's field inside its dialog and records the submission in the ledger exactly as the helper does.
+
+**R3, M-6 recovery focus.** In `Staff.tsx` the recovery effect now focuses the first field whenever an ordinary form is open, whatever the frame restored; it does nothing while a decision or the deactivation confirmation is open (they keep *Stay* and *Keep active*), and a pending command and a held result keep their own focus through `refocus` and the flush as before. Red: prior focus on Classification, `expected <select> to be <input id="staff-name">`; prior focus on Name and on New PIN already passed and stay as regression cases.
+
+**Output.** `npm run verify`: `Test Files 171 passed (171)`, `Tests 6086 passed (6086)`. `npm run test:e2e:all`: `140 passed` (D1d on both engines). Nothing outside R1 to R3 changed.
+
 DONE
 

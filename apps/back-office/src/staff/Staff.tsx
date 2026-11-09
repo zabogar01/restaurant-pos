@@ -175,12 +175,14 @@ export function Staff({ model }: { model: StaffModel }) {
       const now = model.getState();
       if (!now.decision && now.confirm === null) model.refocus();
     } else if (was === 'idle') {
-      // The frame gives back the element that had focus. If there is none, or it is a credential
-      // field (emptied meanwhile: no secret and no selection is restored), the work takes focus
-      // at its first field.
+      // The frame gives back the element that had focus. An open ordinary form takes focus at its
+      // first field whatever was restored (no secret and no selection comes back); a reopened
+      // confirmation or a held decision keeps its own focus; a pending command is answered by
+      // `refocus` on its status. With no form open, only a lost focus is found again.
+      const now = model.getState();
+      if (now.decision || now.confirm !== null) return;
       const active = document.activeElement;
-      const credential = active !== null && ['staff-pin', 'staff-username', 'staff-password'].includes(active.id);
-      if (active === null || active === document.body || credential) model.refocus();
+      if (now.editor !== null || active === null || active === document.body) model.refocus();
     }
   }, [phase, model]);
 

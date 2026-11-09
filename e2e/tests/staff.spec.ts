@@ -1,7 +1,17 @@
 import type { Locator, Page } from '@playwright/test';
 import { createStaffUser } from '../../apps/server/src/domain/pin.js';
+import { SESSION_POLICY } from '../../apps/server/src/domain/session.js';
 import { listUsers } from '../../apps/server/src/domain/users.js';
-import { expect, signInAtBackOffice, signInAtPos, test, type Person, type Profile } from '../support/fixtures.js';
+import { ageSession } from '../support/clock.js';
+import { ledger } from '../support/scan.js';
+import {
+  expect,
+  signInAtBackOffice,
+  signInAtPos,
+  test,
+  type Person,
+  type Profile,
+} from '../support/fixtures.js';
 import { drawName, drawPassword, drawPin, drawUsername, fillNewPerson, fillReactivationPin } from '../support/staff.js';
 
 // BO-06, Staff, part 1, in a real browser (PHASE1-S8c1, consult C3 section S8c, ADR-011 rules 27 and
@@ -153,6 +163,36 @@ test('D1b. a manager creates a cashier and a manager for real, and each signs in
   await expect(rootState(b.page)).toHaveAttribute('data-session', 'signed-out');
   await signInAtBackOffice(b.page, { name: made.name, username: made.username, password: made.password });
   await expect(rootState(b.page)).toHaveAttribute('data-session', 'signed-in');
+});
+
+test('D1d. after M-6 and a same-manager recovery the manager form still shows Save and Cancel, and focus is on Name', async ({
+  world,
+  oneProfile,
+}) => {
+  const manager = await world.people.manager();
+  const page = oneProfile.office;
+  await page.clock.install();
+  await openStaff(page, manager);
+  await button(page, 'Add person').click();
+  await page.getByLabel('Classification', { exact: true }).selectOption('MANAGER');
+  await page.getByLabel('Name', { exact: true }).fill(drawName());
+  await inViewport(page, button(page, 'Save'));
+
+  const seconds = SESSION_POLICY.BACK_OFFICE.idleSeconds + 60;
+  await ageSession('BACK_OFFICE', manager, seconds);
+  await page.clock.fastForward(seconds * 1000);
+  await expect(rootState(page)).toHaveAttribute('data-session', 'idle');
+  // The shared helper's `getByLabel('Password')` would also match the open form's New password,
+  // so M-6's own field is reached inside its dialog; the ledger counts the submission as usual.
+  const gate = page.getByRole('dialog', { name: 'Your session timed out' });
+  await gate.getByLabel('Password', { exact: true }).fill(manager.password!);
+  ledger().submitted('password', manager.password!);
+  await gate.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(rootState(page)).toHaveAttribute('data-session', 'signed-in');
+
+  await expect(page.getByLabel('Name', { exact: true })).toBeFocused();
+  await inViewport(page, button(page, 'Save'));
+  await inViewport(page, button(page, 'Cancel'));
 });
 
 test('D1c. reactivating a person whose PIN is now held asks for a new PIN, sends it once, and the person signs in with it', async ({
