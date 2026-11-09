@@ -5,7 +5,7 @@ category: ui
 touches: [identity, boundaries]
 depends_on: [PHASE1-S8c1]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/staff.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S8c2 — BO-06 Staff, part 2: role changes, resets and the own changes
@@ -426,6 +426,41 @@ the Handoff below in full prose:
 - what was found and not fixed; the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verification, 2026-11-09 (before review)
+
+The lead ran these at `6aa685b`; this note is the evidence a reviewer cannot gather (no database, no browser).
+
+- **`npm run verify`:** exit 0; typecheck clean; 176 files, 6223 tests passed (baseline 171 / 6086).
+  **`npm run test:e2e:all`:** exit 0; 150 passed, both engines (baseline 140; D2, D2b, D3, D3b, D4 on each). Output in
+  `../restaurant-pos-wt/evidence/PHASE1-S8c2/lead/`.
+- **Paths:** every changed path is inside `owns`. `scan.ts` gains exactly ruling 12's entries. Changed S8c1 tests: the
+  own-row action count and the focus-after-success assertions (ruling 3, by design), and AC 14's banned-name pattern,
+  which drops *change role*, *reset* and *change my* because they are now real controls (`show`, `reveal`, `view`,
+  `rename` stay banned).
+- **Test order:** the Handoff records 135 of 311 assertions failing against S8c1's merged code before production code
+  was written, each on a missing control or function; six cases were added after and have no *before* failure.
+- **The lead's red proof** (restored from a copy, `git status` clean after): `INVALID_CREDENTIALS` with
+  `retryAfterSeconds` mapped to the plain wrong password; `staff-cooldown.test.tsx` 7 failed, 6 passed.
+- **Two of the task's *Red* lines were the lead's errors**, and the builder said so (decision 9): the contract does not
+  refuse a username on a former manager's promotion (the server does), and "the row's first button" is the right
+  target on the own row. Its substitute mutations stand for the same defects.
+
+**For the reviewer.** Review `development...HEAD`. Beyond the review's own reading, the lead asks for a view on:
+
+1. **S8c1 behaviour changed** (Handoff decisions 2, 3 and 5): a form blocked by a refusal is no longer dirty; a
+   `DUPLICATE` on a field the form does not show is the general failure; the warning is hidden on a blocked form.
+   Is each consistent with DESIGN-023 and C2? Decision 5 in particular departs from "the warning stays with Save while
+   the form is open".
+2. **The cooldown** (ruling 8): one model-owned wait keyed to the manager, `performance.now` and one timer; is it
+   discarded for a different manager in every path, kept across M-6, BO-01 and reopening, and does `THROTTLED` without
+   details as the general failure match S8b's answers?
+3. **The moves** (ruling 5, C3 §2): exactly each variant's fields, a username only when `UserView.username` is null,
+   the unknown-move comparison (ruling 10).
+4. **Credentials:** the current password and every new input uncontrolled, emptied on answer (S8c1 round 2 R1), in
+   exactly one body; `scan.ts`'s `own-pin` password entry.
+5. **D2 and D3:** do they prove C3 *S8c* AC 4 and AC 5 (B reaches BO-01 *Session ended* and signs in with the new
+   password; profile `a` stays signed in and its next command succeeds while profile `b` ends)?
 
 ## Handoff
 
