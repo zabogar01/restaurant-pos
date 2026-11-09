@@ -262,7 +262,7 @@ describe('AC 13. M-6 over the panel and the confirmation', () => {
     expect(panel(host)).toBeNull();
     expect(text(pageStatus(host))).toBe('Dewi Lestari added.');
     expect(rowNames(host)).toContain('Dewi Lestari');
-    expect(focused()).toBe(named(host, 'Deactivate — Dewi Lestari'));
+    expect(focused()).toBe(named(host, 'Change role — Dewi Lestari'));
     expect(h.count(U_CREATE)).toBe(1);
   });
 
