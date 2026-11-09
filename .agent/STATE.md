@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-11-09: **S8c1 complete, PR #177**. `development` at `e90a265` (S8a #173, S8b #174); dev
-`pos` at `0015`. Nothing running. Lead branch `agent/lead-1105`: PR #176 open, later commits unpushed. Narrative:
-[journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written.
+2026-11-09: **#177 S8c1 and #176 (lead) merged**; `development` at `599f724` (verify 171 / 6086); dev `pos` at `0015`.
+**S8c2 written, not dispatched.** Nothing running. Lead branch renamed `agent/lead-1109` (holds `development`, unpushed).
+Narrative: [journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written.
 
 ## Phase and gates
 
@@ -22,7 +22,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   catalog domain, `0013`), S4b (#142: catalog routes), S4c1 (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04), S5 (#151:
   86), S6a (#154: presets server, `0014`), S6b (#157: BO-07), S7a (#165: POS catalog routes), S7b1 (#169: served menu),
   S7b2 (#170: M-2, Add), S7b3 (#171: the served preset picker), S8a (#173: users server, `0015`), S8b (#174:
-  credentials, the re-stamp). **S8c1 complete** (BO-06 part 1). **Left:** S8c2 (moves, resets, own changes, D2, D3), S9
+  credentials, the re-stamp), S8c1 (#177: BO-06 part 1, D1/AC-32). **Left:** S8c2 (moves, resets, own changes, D2, D3), S9
   (POS-03 Release), S10 (BO-01).
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22, 11-02): S2 Q2, Q5, Q12, DESIGN-018 Q1-Q6; S3 C2 OQ1; S7 Q14, C4
   OQ1 (real presets at the POS); S8 Q1, Q6a, Q7-Q11, C3's OQ1 (create audited), OQ2 (no rename).
@@ -35,17 +35,18 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Integration branch
 
-- **`development`** at `e90a265` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `599f724` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the lockfile
   changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**. No lockfile change since 10-26.
 - **Dev `pos` is at `0015`**, matching `development` (checked 11-06, no pending migrations).
 - **Guard hooks** current (`--check` 2026-11-05); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1105`** (from `6cd628c`; pushed, no PR). New lead branches: from
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1109`** (renamed from `lead-1105` after #176 merged; contains
+  `development` by merge; unpushed, no PR). New lead branches: from
   `origin/development`, `git branch --unset-upstream`, `-u origin` on push; after a lead PR merges, cherry-pick the rest.
 - **Pushing needs the owner's word, every time** (LESSONS); `gh pr view <n> --json state` as its own step before any
   follow-up push.
-- **Task worktrees:** `wt/PHASE1-S8c1` (after merge remove it, its `runs/` and evidence). Left behind: `runs/PHASE1-S7a`,
+- **Task worktrees:** none live (S8c1's removed 11-09). Left behind: `runs/PHASE1-S7a`,
   `runs/DESIGN-021`, `-023`, `wt/evidence/DESIGN-021`, `-023`; `wt/ARCH-021`, `wt/DESIGN-021` (the owner's). Not ours: `restaurant-pos-design`,
   `keen-chebyshev-ccf255`.
 
@@ -55,13 +56,11 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 - **S8 server is merged.** S8a: `users.ts` (`lockUsers`, `USER_ACTIONS`), five routes, `OWN_ACCOUNT`, `USER_CHANGED`,
   `DUPLICATE` details. S8b: `set-pin`, `set-password`, `own-password`, `own-pin`, `restampOwnSession` (only `users.ts`
   may import it, `restamp-scan.test.ts`). The four back-office API functions per slice are declared, called by no screen.
-- **PHASE1-S8c1 complete** (`0e0d8d6`; split from C3's S8c by the lead): `/back-office/staff`, rail *Staff*, list, create,
-  deactivate, reactivate (new-PIN path), D1/AC-32 and D1d (M-6). Codex `0bb32d4`: 3 findings (credentials emptied only on
-  presentation, panel refit, M-6 focus), fixed test-first `44c29db`; lead red repeated. Builder wrote round 1's code before
-  tests (as S8b). **Owner looks before merge (`touches: identity, boundaries`).**
-- **S8c2 next:** moves, resets, own password and PIN (FR-B3's own-PIN words, not C3 §10 item 4), current-password answers
-  (S8b Handoff), D2, D3, the rest of the scan map; from S8c1's Handoff *What S8c2 needs*. **F3** (Chrome/Firefox headed
-  save-prompt check) is the lead's and the owner's, now possible on S8c1's Add person.
+- **PHASE1-S8c2 written 2026-11-09, not dispatched** (untracked in the kit: `.agent/tasks/PHASE1-S8c2-staff-credentials.md`;
+  C3 §2 and *S8c* verbatim, rulings 1-16, ACs 1-12). Moves, resets, own changes (FR-B3 words), the cooldown (shared
+  formatter, owned by the manager's account), D2, D3, a promotion e2e; scan map adds `own-pin` for the current password
+  (C3's AC 6 omitted it). Ruling 16 spells out test-first. Dry run green (sonnet-5-5). **F3** still the lead's and the
+  owner's (headed Chrome/Firefox on Add person).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -116,10 +115,11 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
-- **Merge #176 (lead)?** S8c1's rulings 1-21 (the split, `/back-office/staff`, no placeholder for
-  S8c2's actions, status-command refusals as definite failures) are yours to overturn.
-- **DESIGN-023 F3:** does `autocomplete="new-password"` stop a save prompt for a PIN or another's password? Unverified;
-  S8c checks by hand; if a prompt appears, does the 2026-10-13 "does not fight the password manager" ruling extend?
+- **Dispatch S8c2?** **Push `agent/lead-1109` and open its PR?** S8c1's rulings 1-21 and S8c2's 1-16 are yours to
+  overturn.
+- **DESIGN-023 F3:** does a browser offer to save a PIN or another's password typed on Add person? Unverified; a headed
+  Chrome/Firefox check (now possible); if a prompt appears, does the 2026-10-13 "does not fight the password manager"
+  ruling extend?
 - **Lead rulings since 10-30, yours to overturn** (each in its task file): DESIGN-021 R1 and round 2; ARCH-021's
   acceptances; DESIGN-023 R1, R2 and round 2; S7b1 round 2; S7b2 R3 (two or more removed choices show the generic
   *changed* sentence; a drawn plural is queued, QUEUE 8c); S7b3 rulings 1-6 (presets from the catalog store in both
@@ -142,6 +142,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **On the owner's word:** write S8c2. After #177 merges: fetch, fast-forward, remove `wt/PHASE1-S8c1`. Then S8c2's task file from its Handoff.
+1. **Dispatch S8c2** on the owner's go.
 2. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
