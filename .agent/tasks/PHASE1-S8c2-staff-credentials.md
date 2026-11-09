@@ -583,5 +583,17 @@ No formatter was run on any file; every edit was by hand. A shell here-document 
 
 The code and this Handoff are in commit `98fa2a7`; this line is added by the commit after it.
 
+(Round 1 ended `DONE`; round 2 follows.)
+
+### Round 2 (R1 of the review): the cooldown deadline is fixed when the answer arrives
+
+**Test first.** `apps/back-office/test/staff-cooldown-held.test.tsx` (new, six cases, vitest fake timers for `setTimeout`, `Date` and `performance`) holds an own-password save's answer, delivers `INVALID_CREDENTIALS` with `retryAfterSeconds: 300` while the presentation is held, lets time pass, and then presents it. Run against the unchanged round-1 code, all six failed, each for the reason the review gave (the full wait starts at presentation): (a) a departure decision left open 301 s, then Stay: `expected <div id="form-notice" …> to be null` (the cooldown notice is drawn); (b) the decision open 100 s, then Stay: `expected 'Password verification is cooling down…' to be 'Password verification is cooling down…'` (the notice said 5 min, not 3 min 20 s); (c) behind M-6 and behind BO-01, each with 301 s elapsed (`to be null`) and with 100 s elapsed (the same string mismatch), all three after same-manager recovery. After the fix all six pass; the 3 min 20 s cases also show the field and Save live again once the remaining 200 s run out.
+
+**The fix** is in `model.ts` only. `answered()` now records the deadline, `performance.now()` plus the server's seconds, as soon as an own command's answer arrives, ahead of the session branch, the presentation gate, a held decision and the reread paths, through `recordDeadline`. `currentPasswordRefused` no longer starts a wait: it calls `showCooldown`, which reads the seconds left to that deadline, shows them if any remain, and shows no cooldown (and focuses Current password, not the notice) if the deadline has passed. `flush()` and presentation never restart it. Announcements and focus stay held as before, and the different-manager discard is unchanged (the model goes with the working area). A cooldown answer for a command whose form was discarded is still recorded, as in round 1.
+
+**Output.** `npm run verify`: typecheck clean for all seven projects, `Test Files 177 passed (177)`, `Tests 6229 passed (6229)` (round 1: 176 and 6223; +1 file, +6 tests). No spec changed, so I did not rerun `npm run test:e2e:all`; the round-1 result (150 passed) stands for the unchanged specs. No formatter was run, and every file was written with the Write and Edit tools.
+
+The round 2 commit hash is given by `git log` on this branch.
+
 DONE
 

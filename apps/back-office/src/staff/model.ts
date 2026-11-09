@@ -421,9 +421,16 @@ export function createStaffModel(config: ConfigApi) {
     set({ cooldown: left === 0 ? null : { ...state.cooldown, remaining: left } });
     scheduleTick();
   }
-  function startCooldown(staffUserId: string, seconds: number): void {
+  /**
+   * The deadline is fixed when the answer ARRIVES (`answered`), whatever holds its presentation.
+   * Presenting records nothing: it shows what remains to that deadline, and shows none if it passed.
+   */
+  function recordDeadline(seconds: number): void {
     cooldownEnd = performance.now() + seconds * 1000;
-    set({ cooldown: { staffUserId, remaining: seconds } });
+  }
+  function showCooldown(staffUserId: string): void {
+    const left = secondsLeft();
+    set({ cooldown: left === 0 ? null : { staffUserId, remaining: left } });
     scheduleTick();
   }
   const aim = (target: FocusTarget): StaffState['focus'] => ({ target, n: (focusSequence += 1) });
@@ -612,6 +619,9 @@ export function createStaffModel(config: ConfigApi) {
     // longer needs what was typed: the inputs are emptied now. Presentation, focus and the
     // announcement stay behind the gate.
     if (editorOf(command) !== null) set({ credentialEpoch: emptyInputs() });
+    // The account's wait starts now, not when the answer is presented.
+    const arrived = meaningOf(answer);
+    if (arrived.kind === 'cooldown' && isOwnKind(command.kind)) recordDeadline(arrived.seconds);
     if (meaningOf(answer).kind === 'session') {
       // Refused before the handler: nothing was applied, and nothing is held for the session to
       // hand back. M-6 or BO-01 is the session's own, and the draft stays where it is.
@@ -729,7 +739,7 @@ export function createStaffModel(config: ConfigApi) {
     done: Command | null
   ): void {
     const clearWaiting = (): PageStatus | null => (state.page?.kind === 'waiting' ? null : state.page);
-    if (meaning.kind === 'cooldown' && command.staffUserId !== null) startCooldown(command.staffUserId, meaning.seconds);
+    if (meaning.kind === 'cooldown' && command.staffUserId !== null) showCooldown(command.staffUserId);
     const editor = editorOf(command);
     if (command.discarded || editor === null) {
       set({ command: done, page: clearWaiting() });
@@ -746,7 +756,8 @@ export function createStaffModel(config: ConfigApi) {
         credentialsNotice: hasCredentials(editor),
       },
       credentialEpoch: emptyInputs(),
-      focus: aim(meaning.kind === 'wrong-password' ? 'currentPassword' : 'notice'),
+      // A cooldown whose deadline passed while the answer was held leaves the field live.
+      focus: aim(meaning.kind === 'cooldown' && state.cooldown !== null ? 'notice' : 'currentPassword'),
     });
   }
 
