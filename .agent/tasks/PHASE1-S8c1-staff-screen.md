@@ -5,7 +5,7 @@ category: ui
 touches: [identity, boundaries]
 depends_on: [PHASE1-S8b]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/staff.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S8c1 — BO-06 Staff, part 1: the list, create, deactivate and reactivate
@@ -485,6 +485,38 @@ the Handoff below in full prose:
 - what was found and not fixed; the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verification, 2026-11-09 (before review)
+
+The lead ran these at `b5b2cc7`; this note is the evidence a reviewer cannot gather (no database, no browser).
+
+- **Baseline:** `npm run verify` on `development` at `e90a265`: 165 files, 5861 tests. The builder's measurement was
+  right; this file's *Baseline* (164 / 5814, S8b's branch tip) was the lead's error.
+- **`npm run verify`:** exit 0; typecheck clean; 170 files, 6078 tests passed. **`npm run test:e2e:all`:** exit 0; 138
+  passed, both engines (130 before, plus `staff.spec.ts`'s three tests on each). Output in
+  `../restaurant-pos-wt/evidence/PHASE1-S8c1/lead/`.
+- **Paths:** every changed path is inside `owns`. Shared files: `office.css` gains appended BO-06 rules only (no
+  existing rule changed); `scan.ts` gains exactly ruling 17's four entries; `Rail.tsx`, `Screens.tsx`, `routes.ts` add
+  the screen. Seven existing tests changed, each only its expected rail or manifest list.
+- **The lead's red proof** (restored from a copy, `git status` clean after): `emptyInputs` made to return the same epoch
+  (nothing is ever emptied); `staff-credentials.test.tsx` 7 failed, 6 passed: after `DUPLICATE`, a general failure, an
+  unknown outcome, a classification switch, M-6, BO-01, and the reactivation PIN's refusal.
+
+**For the reviewer.** Review `development...HEAD`. Beyond the review's own reading, the lead asks for a view on:
+
+1. **Test order.** The builder again wrote the code before the tests and proved each guard by mutation afterwards
+   (Handoff, *Red proofs*). Does each new test fail for the reason its criterion names?
+2. **Credentials (ruling 5, AC 5):** are the PIN, username and password inputs uncontrolled on every path, read only at
+   submit, absent from React state, props, attributes, storage and the console, and emptied on every event ruling 5
+   lists? Is the Handoff's reading of AC 5 for the saved username (once, as its row's text) right?
+3. **The read merge without a version** (Handoff *How it works*): can a read that began before a command was answered
+   undo that answer, or drop a row?
+4. **Rulings 10 and 11 as built** (no reread on a plain reactivation's `DUPLICATE`; the three refusals on a status
+   command as its definite failure): consistent with DESIGN-023 and C2?
+5. **`office.css`:** the column widths use `--frost-office-nav-width`, a token named for the rail. A reuse that holds the
+   no-invented-values rule but not its meaning? And `fit.ts`'s panel height (ruling 15).
+6. **The browser spec**: does D1 prove AC-32 (the POS's next request answered `UNAUTHENTICATED`, the lock state), and
+   does the scan map hold exactly ruling 17's entries?
 
 ## Handoff
 
