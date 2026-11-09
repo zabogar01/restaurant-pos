@@ -52,15 +52,12 @@ Narrative: [journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written
 
 ## Running tasks and agents
 
-- **PHASE1-S8c2 review paused:** Codex hit its usage limit at 15:09 (resets 15:38), no report; resume the reviewer
-  session (`--role reviewer --resume`) after it resets.
+- **Running: PHASE1-S8c2 review**, resumed 15:40 after Codex's usage limit (resume 1 of 2).
 - **S8 server is merged.** S8a: `users.ts` (`lockUsers`, `USER_ACTIONS`), five routes, `OWN_ACCOUNT`, `USER_CHANGED`,
   `DUPLICATE` details. S8b: `set-pin`, `set-password`, `own-password`, `own-pin`, `restampOwnSession` (only `users.ts`
   may import it, `restamp-scan.test.ts`). The four back-office API functions per slice are declared, called by no screen.
-- **PHASE1-S8c2 dispatched 2026-11-09** (`wt/PHASE1-S8c2`, `agent/phase1-s8c2` from `599f724`; kit copy deleted after `cmp`;
-  C3 §2 and *S8c* verbatim, rulings 1-16, ACs 1-12). Moves, resets, own changes (FR-B3 words), the cooldown (shared
-  formatter, owned by the manager's account), D2, D3, a promotion e2e; scan map adds `own-pin` for the current password
-  (C3's AC 6 omitted it). Ruling 16 spells out test-first. Built `98fa2a7`, lead note `26f19a7`: verify 176 / 6223, e2e:all 150, test-first
+- **PHASE1-S8c2** (`wt/PHASE1-S8c2`, from `599f724`; rulings 1-16): moves, resets, own changes, the cooldown, D2, D3;
+  scan map adds `own-pin` for the current password (C3's AC 6 omitted it). Ruling 16 spells out test-first. Built `98fa2a7`, lead note `26f19a7`: verify 176 / 6223, e2e:all 150, test-first
   followed (135 assertions red before); cooldown red repeated. Builder changed three S8c1 behaviours (decisions 2, 3, 5:
   blocked form not dirty, DUPLICATE on an unshown field is general, warning hidden on a blocked form): for review. **F3** still the lead's and the
   owner's (headed Chrome/Firefox on Add person).
