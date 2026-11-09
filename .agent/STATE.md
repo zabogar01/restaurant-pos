@@ -52,7 +52,8 @@ Narrative: [journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written
 
 ## Running tasks and agents
 
-- **Running: PHASE1-S8c2 review** (Codex gpt-6-astra, oneshot, pane `PHASE1-S8c2-review`).
+- **PHASE1-S8c2 review paused:** Codex hit its usage limit at 15:09 (resets 15:38), no report; resume the reviewer
+  session (`--role reviewer --resume`) after it resets.
 - **S8 server is merged.** S8a: `users.ts` (`lockUsers`, `USER_ACTIONS`), five routes, `OWN_ACCOUNT`, `USER_CHANGED`,
   `DUPLICATE` details. S8b: `set-pin`, `set-password`, `own-password`, `own-pin`, `restampOwnSession` (only `users.ts`
   may import it, `restamp-scan.test.ts`). The four back-office API functions per slice are declared, called by no screen.
