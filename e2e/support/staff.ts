@@ -91,3 +91,78 @@ export async function fillReactivationPin(page: Page, pin: string): Promise<void
     throw new Error('entering the new PIN of a reactivation at the back office failed');
   }
 }
+
+// PHASE1-S8c2: the role change, the resets, and the own changes. Each helper types what its form
+// asks for and records every credential as submitted; the next press is the form's Save.
+
+/** Types the new PIN of a reset of another person's PIN. */
+export async function fillResetPin(page: Page, pin: string): Promise<void> {
+  try {
+    await page.getByLabel('New PIN', { exact: true }).fill(pin, { timeout: STEP_MS });
+    ledger().submitted('PIN', pin);
+  } catch {
+    throw new Error('entering the new PIN of a reset at the back office failed');
+  }
+}
+
+/** Types the new password of a reset of another manager's password. */
+export async function fillResetPassword(page: Page, password: string): Promise<void> {
+  try {
+    await page.getByLabel('New password', { exact: true }).fill(password, { timeout: STEP_MS });
+    ledger().submitted('password', password);
+  } catch {
+    throw new Error('entering the new password of a reset at the back office failed');
+  }
+}
+
+export interface OwnChange {
+  /** The manager's own current password. */
+  current: string;
+  password?: string;
+  pin?: string;
+}
+
+/** Types the current password and the new password or PIN of an own change. */
+export async function fillOwnChange(page: Page, change: OwnChange): Promise<void> {
+  try {
+    await page.getByLabel('Current password', { exact: true }).fill(change.current, { timeout: STEP_MS });
+    ledger().submitted('password', change.current);
+    if (change.password !== undefined) {
+      await page.getByLabel('New password', { exact: true }).fill(change.password, { timeout: STEP_MS });
+      ledger().submitted('password', change.password);
+    }
+    if (change.pin !== undefined) {
+      await page.getByLabel('New PIN', { exact: true }).fill(change.pin, { timeout: STEP_MS });
+      ledger().submitted('PIN', change.pin);
+    }
+  } catch {
+    throw new Error('filling an own change at the back office failed');
+  }
+}
+
+export interface Promotion {
+  /** What is typed into Username, which may differ from the stored form; omitted for a person who has one. */
+  typedUsername?: string;
+  username?: string;
+  password: string;
+  pin?: string;
+}
+
+/** Chooses Manager in an open Change role form and types what the promotion asks for. */
+export async function fillPromotion(page: Page, promotion: Promotion): Promise<void> {
+  try {
+    await page.getByLabel('Classification', { exact: true }).selectOption('MANAGER', { timeout: STEP_MS });
+    if (promotion.pin !== undefined) {
+      await page.getByLabel('New PIN', { exact: true }).fill(promotion.pin, { timeout: STEP_MS });
+      ledger().submitted('PIN', promotion.pin);
+    }
+    if (promotion.typedUsername !== undefined) {
+      await page.getByLabel('Username', { exact: true }).fill(promotion.typedUsername, { timeout: STEP_MS });
+      ledger().submitted('username', promotion.username!);
+    }
+    await page.getByLabel('New password', { exact: true }).fill(promotion.password, { timeout: STEP_MS });
+    ledger().submitted('password', promotion.password);
+  } catch {
+    throw new Error('filling a promotion at the back office failed');
+  }
+}

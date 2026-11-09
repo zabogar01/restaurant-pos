@@ -81,13 +81,16 @@ describe('AC 2. order, grouping and rows', () => {
     ]);
   });
 
-  it('the own row says You · Signed in and offers no action; every other row offers one', async () => {
+  // PHASE1-S8c2 changes this test by design: the own row now offers the two own changes, and every
+  // other row its part-2 actions (staff-moves.test.tsx lists their names and order).
+  it('the own row says You · Signed in and offers the two own changes; every other row offers its actions', async () => {
     const host = await open();
     const own = rowOf(host, IQBAL.staffUserId);
     expect(rowText(own)).toContain('You · Signed in');
-    expect(own.querySelectorAll('button')).toHaveLength(0);
-    for (const other of [ANA, HALIM, AYU, PUTRA, SARI, WIBOWO]) {
-      expect(rowOf(host, other.staffUserId).querySelectorAll('button')).toHaveLength(1);
+    expect(own.querySelectorAll('button')).toHaveLength(2);
+    const counts = new Map([[ANA, 3], [HALIM, 2], [AYU, 4], [PUTRA, 3], [SARI, 1], [WIBOWO, 1]]);
+    for (const [other, buttons] of counts) {
+      expect(rowOf(host, other.staffUserId).querySelectorAll('button')).toHaveLength(buttons);
     }
     expect(host.querySelector('[aria-label="Deactivate — M. Iqbal"]')).toBeNull();
   });
@@ -301,7 +304,7 @@ describe('AC 4. the form’s checks', () => {
 });
 
 describe('AC 6. create', () => {
-  it('a kitchen person sends exactly { classification, name }, appends to the active group, announces and focuses Deactivate', async () => {
+  it('a kitchen person sends exactly { classification, name }, appends to the active group, announces and focuses Change role', async () => {
     const host = await open();
     const made = person(8, 'Nadia Pratiwi', 'KITCHEN');
     h.reply(U_CREATE, staffAnswer(made));
@@ -316,7 +319,7 @@ describe('AC 6. create', () => {
     expect(text(pageStatus(host))).toBe('Nadia Pratiwi added.');
     expect(pageStatus(host)!.getAttribute('role')).toBe('status');
     expect(panel(host)).toBeNull();
-    expect(focused()).toBe(named(host, 'Deactivate — Nadia Pratiwi'));
+    expect(focused()).toBe(named(host, 'Change role — Nadia Pratiwi'));
     expect(h.count(READ)).toBe(1);
   });
 
@@ -476,7 +479,7 @@ describe('AC 8. deactivation', () => {
 });
 
 describe('AC 9. reactivation', () => {
-  it('a plain reactivation sends one { staffUserId } with no dialog, moves the row and focuses its Deactivate', async () => {
+  it('a plain reactivation sends one { staffUserId } with no dialog, moves the row and focuses its Change role', async () => {
     const host = await open();
     h.reply(U_REACTIVATE, staffAnswer({ ...SARI, isActive: true }));
     tap(named(host, 'Reactivate — R. Sari'));
@@ -488,7 +491,7 @@ describe('AC 9. reactivation', () => {
     expect(text(pageStatus(host))).toBe('R. Sari reactivated.');
     expect(rowNames(host)).toEqual(['M. Iqbal', 'Ana R.', 'S. Halim', 'Ratna Ayu', 'D. Putra', 'R. Sari', 'B. Wibowo']);
     expect(text(facts(host))).toBe('6 active · 1 inactive');
-    expect(focused()).toBe(named(host, 'Deactivate — R. Sari'));
+    expect(focused()).toBe(named(host, 'Change role — R. Sari'));
   });
 
   async function conflict() {
@@ -512,7 +515,7 @@ describe('AC 9. reactivation', () => {
     expect(pageStatus(host)).toBeNull();
   });
 
-  it('its commit sends { staffUserId, pin } once, and success moves the row, announces it and focuses its Deactivate', async () => {
+  it('its commit sends { staffUserId, pin } once, and success moves the row, announces it and focuses its Change role', async () => {
     const host = await conflict();
     typeInto(pinField(host)!, MARKER_PIN);
     h.reply(U_REACTIVATE, staffAnswer({ ...SARI, isActive: true }));
@@ -522,7 +525,7 @@ describe('AC 9. reactivation', () => {
     expect(bodyOf(h, U_REACTIVATE, 1)).toEqual({ staffUserId: SARI.staffUserId, pin: MARKER_PIN });
     expect(text(pageStatus(host))).toBe('R. Sari reactivated.');
     expect(panel(host)).toBeNull();
-    expect(focused()).toBe(named(host, 'Deactivate — R. Sari'));
+    expect(focused()).toBe(named(host, 'Change role — R. Sari'));
   });
 
   it('a second DUPLICATE shows the same error on the empty field', async () => {
@@ -837,7 +840,8 @@ describe('AC 14. no invented control', () => {
     expect(text(host)).not.toMatch(banned);
     expect(host.querySelector('[data-reveal], input[name="confirm"], input[name="confirmPassword"], input[type="text"][name="pin"]')).toBeNull();
     for (const el of host.querySelectorAll('button, a')) {
-      expect(el.getAttribute('aria-label') ?? el.textContent).not.toMatch(/^(show|reveal|view|rename|change role|reset|change my)/i);
+      // S8c2 builds Change role, the resets and the own changes, so those names are no longer invented.
+      expect(el.getAttribute('aria-label') ?? el.textContent).not.toMatch(/^(show|reveal|view|rename)/i);
     }
     // The own row offers no Deactivate.
     expect(host.querySelector('[aria-label="Deactivate — M. Iqbal"]')).toBeNull();

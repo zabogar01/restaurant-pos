@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
+import { SESSION_ENDED } from '../../apps/back-office/src/copy.js';
 import { createStaffUser } from '../../apps/server/src/domain/pin.js';
 import { SESSION_POLICY } from '../../apps/server/src/domain/session.js';
 import { listUsers } from '../../apps/server/src/domain/users.js';
@@ -12,10 +13,21 @@ import {
   type Person,
   type Profile,
 } from '../support/fixtures.js';
-import { drawName, drawPassword, drawPin, drawUsername, fillNewPerson, fillReactivationPin } from '../support/staff.js';
+import {
+  drawName,
+  drawPassword,
+  drawPin,
+  drawUsername,
+  fillNewPerson,
+  fillOwnChange,
+  fillPromotion,
+  fillReactivationPin,
+  fillResetPassword,
+  fillResetPin,
+} from '../support/staff.js';
 
-// BO-06, Staff, part 1, in a real browser (PHASE1-S8c1, consult C3 section S8c, ADR-011 rules 27 and
-// 28). People come from the harness's domain functions with random credentials; the credentials a
+// BO-06, Staff, in a real browser (PHASE1-S8c1 and S8c2, consult C3 section S8c, ADR-011 rules 27
+// and 28). People come from the harness's domain functions with random credentials; the credentials a
 // spec types into the screen are drawn by `support/staff.ts` and recorded as submitted, so the
 // AC-18 scan counts them. The requests are the page's own; the database is read through the
 // server's own `listUsers`. What is asserted is state, accessible names and codes, and changes
@@ -123,7 +135,7 @@ test('D1b. a manager creates a cashier and a manager for real, and each signs in
   await fillNewPerson(a.page, { classification: 'CASHIER', ...cashier });
   await button(a.page, 'Save').click();
   await expect(status(a.page)).toHaveText(`${cashier.name} added.`);
-  await expect(button(a.page, `Deactivate — ${cashier.name}`)).toBeFocused();
+  await expect(button(a.page, `Change role — ${cashier.name}`)).toBeFocused();
   expect(sent(a, 'create')).toHaveLength(1);
   const madeCashier = await stored(cashier.name);
   expect(madeCashier?.classification).toBe('CASHIER');
@@ -222,7 +234,7 @@ test('D1c. reactivating a person whose PIN is now held asks for a new PIN, sends
   await fillReactivationPin(a.page, fresh);
   await button(a.page, 'Reactivate with new PIN').click();
   await expect(status(a.page)).toHaveText(`${cashier.name} reactivated.`);
-  await expect(button(a.page, `Deactivate — ${cashier.name}`)).toBeFocused();
+  await expect(button(a.page, `Change role — ${cashier.name}`)).toBeFocused();
   expect((await stored(cashier.name))?.isActive).toBe(true);
 
   // Exactly one plain reactivation and one with a PIN were sent.
@@ -235,4 +247,195 @@ test('D1c. reactivating a person whose PIN is now held asks for a new PIN, sends
   await expect(rootState(b.page)).toHaveAttribute('data-session', 'signed-out');
   await signInAtPos(b.page, { name: cashier.name, pin: fresh });
   await expect(rootState(b.page)).toHaveAttribute('data-session', 'signed-in');
+});
+
+const LIST = '/api/back-office/config/users';
+
+/** Signs a manager in at the back office in a second profile, and leaves it at the landing. */
+async function signInSecond(page: Page, manager: Pick<Person, 'name' | 'username' | 'password'>): Promise<void> {
+  await page.goto('/back-office/');
+  await expect(rootState(page)).toHaveAttribute('data-session', 'signed-out');
+  await signInAtBackOffice(page, manager);
+  await expect(rootState(page)).toHaveAttribute('data-session', 'signed-in');
+}
+
+/**
+ * The tab's next request is a read of the staff list, caused by the Staff link. The server
+ * answers `UNAUTHENTICATED` and the tab reaches BO-01 *Session ended*, with the working area held.
+ */
+async function nextRequestEnds(profile: Profile & { page: Page }): Promise<void> {
+  await staffLink(profile.page).click();
+  await expect(rootState(profile.page)).toHaveAttribute('data-session', 'signed-out');
+  await expect(profile.page.getByRole('alert').filter({ hasText: SESSION_ENDED.title })).toBeVisible();
+  await expect(profile.page.locator('.office-work')).toHaveCount(1);
+  await profile.settled();
+  const reads = profile.replies.filter((reply) => reply.method === 'GET' && reply.path === LIST);
+  expect(reads[reads.length - 1]?.code).toBe('UNAUTHENTICATED');
+}
+
+test('D2. AC-32, the back-office half: resetting another manager’s password ends their session in another profile, and the new password signs them in', async ({
+  world,
+  twoProfiles,
+}) => {
+  const manager = await world.people.manager();
+  const other = await world.people.manager();
+  const { a, b } = twoProfiles;
+  await openStaff(a.page, manager);
+  await signInSecond(b.page, other);
+
+  // A resets B's password after reading the warning; nothing is sent before Save.
+  await button(a.page, `Reset password — ${other.name}`).click();
+  const form = a.page.getByRole('dialog', { name: `Reset password — ${other.name}`, exact: true });
+  await expect(form).toBeVisible();
+  await expect(a.page.getByLabel('New password', { exact: true })).toBeFocused();
+  await expect(form).toContainText(
+    `${other.name}’s POS and back-office sessions will end on their next action. They must sign in again.`
+  );
+  expect(sent(a, 'set-password')).toHaveLength(0);
+  const fresh = drawPassword();
+  await fillResetPassword(a.page, fresh);
+  await inViewport(a.page, button(a.page, 'Save'));
+  await button(a.page, 'Save').click();
+  await expect(status(a.page)).toHaveText(`${other.name}’s password changed.`);
+  await expect(button(a.page, `Change role — ${other.name}`)).toBeFocused();
+
+  // B's next request is refused: BO-01 Session ended, the working area held.
+  await nextRequestEnds(b);
+  expect(sent(a, 'set-password')).toHaveLength(1);
+
+  // B signs in with the new password and is signed in.
+  await signInAtBackOffice(b.page, { name: other.name, username: other.username, password: fresh });
+  await expect(rootState(b.page)).toHaveAttribute('data-session', 'signed-in');
+});
+
+test('D3. an own password change keeps this profile signed in, and ends the manager’s session in another', async ({
+  world,
+  twoProfiles,
+}) => {
+  const manager = await world.people.manager();
+  const { a, b } = twoProfiles;
+  await openStaff(a.page, manager);
+  await signInSecond(b.page, manager);
+
+  await button(a.page, `Change my password — ${manager.name}`).click();
+  const form = a.page.getByRole('dialog', { name: `Change my password — ${manager.name}`, exact: true });
+  await expect(form).toBeVisible();
+  await expect(a.page.getByLabel('Current password', { exact: true })).toBeFocused();
+  await expect(form).toContainText(
+    'Your other POS and back-office sessions will end on their next action. This back-office session will continue.'
+  );
+  const fresh = drawPassword();
+  await fillOwnChange(a.page, { current: manager.password!, password: fresh });
+  await button(a.page, 'Save').click();
+  // This profile stays signed in, with no sign-in in between, and its next command succeeds.
+  await expect(rootState(a.page)).toHaveAttribute('data-session', 'signed-in');
+  await expect(status(a.page)).toHaveText(`${manager.name}’s password changed. This back-office session continues.`);
+  await expect(button(a.page, `Change my password — ${manager.name}`)).toBeFocused();
+  expect(sent(a, 'own-password')).toHaveLength(1);
+  await expect(rootState(a.page)).toHaveAttribute('data-session', 'signed-in');
+  const next = drawName();
+  await button(a.page, 'Add person').click();
+  await fillNewPerson(a.page, { classification: 'KITCHEN', name: next });
+  await button(a.page, 'Save').click();
+  await expect(status(a.page)).toHaveText(`${next} added.`);
+  await expect(rootState(a.page)).toHaveAttribute('data-session', 'signed-in');
+  const posts = (profile: Profile, url: string) =>
+    profile.requests.filter((r) => r.method === 'POST' && new URL(r.url).pathname === url);
+  expect(posts(a, '/api/back-office/auth/login')).toHaveLength(1);
+  expect(posts(a, '/api/back-office/auth/reauthenticate')).toHaveLength(0);
+
+  // The manager's session in the other profile ends on its next request, and the new password signs in.
+  await nextRequestEnds(b);
+  await signInAtBackOffice(b.page, { name: manager.name, username: manager.username, password: fresh });
+  await expect(rootState(b.page)).toHaveAttribute('data-session', 'signed-in');
+});
+
+test('D3b. an own PIN change keeps this profile signed in, and the new PIN signs in at the POS', async ({
+  world,
+  twoProfiles,
+}) => {
+  const manager = await world.people.manager();
+  const { a, b } = twoProfiles;
+  await openStaff(a.page, manager);
+
+  await button(a.page, `Change my PIN — ${manager.name}`).click();
+  await expect(a.page.getByRole('dialog', { name: `Change my PIN — ${manager.name}`, exact: true })).toBeVisible();
+  await expect(a.page.getByLabel('Current password', { exact: true })).toBeFocused();
+  const fresh = drawPin();
+  await fillOwnChange(a.page, { current: manager.password!, pin: fresh });
+  await button(a.page, 'Save').click();
+  await expect(status(a.page)).toHaveText(`${manager.name}’s PIN changed. This back-office session continues.`);
+  await expect(rootState(a.page)).toHaveAttribute('data-session', 'signed-in');
+  expect(sent(a, 'own-pin')).toHaveLength(1);
+
+  await b.page.goto('/pos/');
+  await expect(rootState(b.page)).toHaveAttribute('data-session', 'signed-out');
+  await signInAtPos(b.page, { name: manager.name, pin: fresh });
+  await expect(rootState(b.page)).toHaveAttribute('data-session', 'signed-in');
+});
+
+test('D2b. resetting a cashier’s PIN sends the new PIN once, and the cashier signs in with it', async ({
+  world,
+  twoProfiles,
+}) => {
+  const manager = await world.people.manager();
+  const cashier = await world.people.cashier();
+  const { a, b } = twoProfiles;
+  await openStaff(a.page, manager);
+
+  await button(a.page, `Reset PIN — ${cashier.name}`).click();
+  const form = a.page.getByRole('dialog', { name: `Reset PIN — ${cashier.name}`, exact: true });
+  await expect(form).toBeVisible();
+  await expect(a.page.getByLabel('New PIN', { exact: true })).toBeFocused();
+  await expect(form).toContainText(`${cashier.name}’s POS sessions will end on their next action. They must sign in again.`);
+  const fresh = drawPin();
+  await fillResetPin(a.page, fresh);
+  await button(a.page, 'Save').click();
+  await expect(status(a.page)).toHaveText(`${cashier.name}’s PIN changed.`);
+  await expect(button(a.page, `Change role — ${cashier.name}`)).toBeFocused();
+  expect(sent(a, 'set-pin')).toHaveLength(1);
+
+  await b.page.goto('/pos/');
+  await expect(rootState(b.page)).toHaveAttribute('data-session', 'signed-out');
+  await signInAtPos(b.page, { name: cashier.name, pin: fresh });
+  await expect(rootState(b.page)).toHaveAttribute('data-session', 'signed-in');
+});
+
+test('D4. a cashier with no username is promoted to manager for real, and signs in at the back office with what was typed', async ({
+  world,
+  twoProfiles,
+}) => {
+  const manager = await world.people.manager();
+  const cashier = await world.people.cashier();
+  const { a, b } = twoProfiles;
+  await openStaff(a.page, manager);
+
+  await button(a.page, `Change role — ${cashier.name}`).click();
+  const form = a.page.getByRole('dialog', { name: `Change role — ${cashier.name}`, exact: true });
+  await expect(form).toBeVisible();
+  // It opens with no destination: the select is focused, and Save is off.
+  await expect(a.page.getByLabel('Classification', { exact: true })).toBeFocused();
+  await expect(button(a.page, 'Save')).toHaveAttribute('aria-disabled', 'true');
+  await expect(form).toContainText('Current classification: Cashier.');
+
+  // A username with upper-case letters and padding, stored in lower case, and a new password.
+  const made = { username: drawUsername(), password: drawPassword() };
+  await fillPromotion(a.page, {
+    typedUsername: `  ${made.username.toUpperCase()}  `,
+    username: made.username,
+    password: made.password,
+  });
+  await expect(form).toContainText(`${cashier.name}’s POS sessions will end on their next action. They must sign in again.`);
+  await inViewport(a.page, button(a.page, 'Save'));
+  await button(a.page, 'Save').click();
+  await expect(status(a.page)).toHaveText(`${cashier.name} changed to Manager.`);
+  await expect(button(a.page, `Change role — ${cashier.name}`)).toBeFocused();
+  expect(sent(a, 'change-role')).toHaveLength(1);
+
+  // The database holds the role and the stored username.
+  const promoted = await stored(cashier.name);
+  expect(promoted?.classification).toBe('MANAGER');
+  expect(promoted?.username).toBe(made.username);
+
+  await signInSecond(b.page, { name: cashier.name, username: made.username, password: made.password });
 });

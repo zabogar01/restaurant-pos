@@ -6,6 +6,9 @@ import { workGuard } from '../work/guard.js';
 import {
   ADD_PERSON,
   CANCEL,
+  CHANGE_MY_PASSWORD,
+  CHANGE_MY_PIN,
+  CHANGE_ROLE,
   CLASSIFICATION_HELP,
   CLASSIFICATION_LABEL,
   COLUMN_ACTIONS,
@@ -15,10 +18,17 @@ import {
   CREATE_CONTEXT,
   CREATE_HEADING,
   CREDENTIALS_CLEARED,
+  CURRENT_EMPTY,
+  CURRENT_HELP,
+  CURRENT_LABEL,
+  CURRENT_LONG,
+  CURRENT_WRONG,
   DEACTIVATE,
   FOOT_HINT,
   FOOT_HINT_BLOCKED,
+  FOOT_HINT_COOLDOWN,
   FOOT_HINT_PENDING,
+  FOOT_HINT_UNCHOSEN,
   FORM_FAILED,
   FORM_SESSION_REFUSED,
   INTRO,
@@ -27,6 +37,8 @@ import {
   LIST_LABEL,
   LIST_PARTIAL,
   LOADING,
+  MOVE_HELP,
+  MOVE_PLACEHOLDER,
   NAME_CONTROL,
   NAME_EMPTY,
   NAME_HELP,
@@ -35,6 +47,7 @@ import {
   NO_SIGN_IN,
   OWN_ACCOUNT,
   OWN_MARKER,
+  OWN_WARNING,
   PASSWORD_HELP,
   PASSWORD_INVALID,
   PASSWORD_LABEL,
@@ -45,6 +58,8 @@ import {
   PIN_LABEL,
   READ_FAILED,
   REACTIVATE,
+  RESET_PASSWORD,
+  RESET_PIN,
   RETURN_TO_LIST,
   SAVE,
   SAVE_REACTIVATE,
@@ -59,35 +74,65 @@ import {
   USERNAME_LABEL,
   WAITING,
   added,
+  changeMyPasswordName,
+  changeMyPinName,
+  changeRoleName,
+  changedContext,
   classificationChoice,
   classificationText,
   confirmDeactivateName,
+  cooldownNotice,
   counts,
+  currentCooling,
   deactivateName,
   deactivateTitle,
   deactivateWarning,
   deactivated,
   deactivating,
   keepActiveName,
+  moveContext,
+  moveWarning,
+  moved,
   notFound,
-  outcomeUnknown,
+  outcomeUnknownFor,
+  ownPasswordChanged,
+  ownPinChanged,
+  passwordReset,
+  pinReset,
   reactivateContext,
   reactivateHeading,
   reactivateName,
   reactivated,
   reactivating,
+  resetPasswordName,
+  resetPinName,
+  resetWarning,
+  retainedFact,
   retainedUsername,
   statusFailed,
   statusSessionRefused,
+  subjectContext,
   unknownBody,
   userChanged,
   username as usernameFact,
   type Classification,
   type NoticeCopy,
+  type UnknownEnd,
 } from './copy.js';
 import { storedUsername } from './fields.js';
 import { useFitPanel } from './fit.js';
-import { fieldsOf, type Editor, type FieldError, type PageStatus, type StaffModel, type StaffState, type Typed } from './model.js';
+import {
+  fieldsOf,
+  isCooling,
+  type Editor,
+  type FieldError,
+  type FieldKey,
+  type PageStatus,
+  type RowAction,
+  type StaffModel,
+  type StaffState,
+  type Typed,
+} from './model.js';
 import { countsOf, inOrder, isFormerManager } from './order.js';
 
 // BO-06, as DESIGN-023 draws it (docs/design/visual-directions/frost/back-office/users.html): the
@@ -105,17 +150,37 @@ import { countsOf, inOrder, isFormerManager } from './order.js';
 const CLOSED_BY_NONE = { closedby: 'none' } as const;
 const CLASSIFICATIONS: readonly Classification[] = ['KITCHEN', 'CASHIER', 'MANAGER'];
 
-const fieldText: Record<FieldError, Partial<Record<'name' | 'pin' | 'username' | 'password', string>>> = {
-  empty: { name: NAME_EMPTY },
-  long: { name: NAME_LONG },
+const fieldText: Record<FieldError, Partial<Record<FieldKey, string>>> = {
+  empty: { name: NAME_EMPTY, currentPassword: CURRENT_EMPTY },
+  long: { name: NAME_LONG, currentPassword: CURRENT_LONG },
   control: { name: NAME_CONTROL },
   invalid: { pin: PIN_INVALID, username: USERNAME_INVALID, password: PASSWORD_INVALID },
   duplicate: { pin: PIN_DUPLICATE, username: USERNAME_DUPLICATE },
   'duplicate-reactivate': { pin: PIN_DUPLICATE_REACTIVATE },
+  wrong: { currentPassword: CURRENT_WRONG },
+};
+
+/** The id of each field's error line: what its `aria-describedby` names. */
+const errorId: Record<FieldKey, string> = {
+  name: 'staff-name-error',
+  currentPassword: 'staff-current-password-error',
+  pin: 'staff-pin-error',
+  username: 'staff-username-error',
+  password: 'staff-password-error',
 };
 
 function pageText(page: PageStatus): string {
   switch (page.kind) {
+    case 'moved':
+      return moved(page.name, page.classification);
+    case 'pin-reset':
+      return pinReset(page.name);
+    case 'password-reset':
+      return passwordReset(page.name);
+    case 'own-password':
+      return ownPasswordChanged(page.name);
+    case 'own-pin':
+      return ownPinChanged(page.name);
     case 'added':
       return added(page.name);
     case 'pending':
@@ -202,11 +267,12 @@ export function Staff({ model }: { model: StaffModel }) {
     else if (target === 'pin') found = pick('#staff-pin');
     else if (target === 'username') found = pick('#staff-username');
     else if (target === 'password') found = pick('#staff-password');
+    else if (target === 'currentPassword') found = pick('#staff-current-password');
     else if (target === 'classification') found = pick('#staff-classification');
     else if (target === 'notice') found = pick('#form-notice');
     else if (target === 'status') found = pick('#page-status');
     else if (target === 'add-person') found = pick('#staff-add');
-    else found = pick(`tr[data-user="${target.row}"] button`) ?? pick('#staff-add');
+    else found = pick(`tr[data-user="${target.row}"] [data-action="${target.action}"]`) ?? pick('#staff-add');
     found?.focus();
   }, [focus, signedIn]);
 
@@ -233,6 +299,20 @@ export function Staff({ model }: { model: StaffModel }) {
   const uncertain = model.guard.status() === 'uncertain';
   const rows = inOrder(users);
   const { active, inactive } = countsOf(users);
+
+  /** A row's action: named by what it does to whom, and found again by `data-action` when focus returns. */
+  const action = (which: RowAction, label: string, name: string, onClick: () => void, danger = false) => (
+    <button
+      type="button"
+      data-action={which}
+      className={danger ? 'office-button small danger' : 'office-button small'}
+      aria-label={name}
+      {...inertProps(busy)}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div ref={root}>
@@ -324,26 +404,40 @@ export function Staff({ model }: { model: StaffModel }) {
                       <td>{person.isActive ? STATUS_ACTIVE : STATUS_INACTIVE}</td>
                       <td>
                         <div className="office-actions">
-                          {own ? null : person.isActive ? (
-                            <button
-                              type="button"
-                              className="office-button small danger"
-                              aria-label={deactivateName(person.name)}
-                              {...inertProps(busy)}
-                              onClick={() => model.openDeactivate(person.staffUserId)}
-                            >
-                              {DEACTIVATE}
-                            </button>
+                          {own ? (
+                            <>
+                              {action('change-my-password', CHANGE_MY_PASSWORD, changeMyPasswordName(person.name), () =>
+                                model.openForm('own-password', person.staffUserId)
+                              )}
+                              {action('change-my-pin', CHANGE_MY_PIN, changeMyPinName(person.name), () =>
+                                model.openForm('own-pin', person.staffUserId)
+                              )}
+                            </>
+                          ) : person.isActive ? (
+                            <>
+                              {action('change-role', CHANGE_ROLE, changeRoleName(person.name), () =>
+                                model.openForm('move', person.staffUserId)
+                              )}
+                              {person.classification !== 'KITCHEN' &&
+                                action('reset-pin', RESET_PIN, resetPinName(person.name), () =>
+                                  model.openForm('reset-pin', person.staffUserId)
+                                )}
+                              {person.classification === 'MANAGER' &&
+                                action('reset-password', RESET_PASSWORD, resetPasswordName(person.name), () =>
+                                  model.openForm('reset-password', person.staffUserId)
+                                )}
+                              {action(
+                                'deactivate',
+                                DEACTIVATE,
+                                deactivateName(person.name),
+                                () => model.openDeactivate(person.staffUserId),
+                                true
+                              )}
+                            </>
                           ) : (
-                            <button
-                              type="button"
-                              className="office-button small"
-                              aria-label={reactivateName(person.name)}
-                              {...inertProps(busy)}
-                              onClick={() => model.reactivate(person.staffUserId)}
-                            >
-                              {REACTIVATE}
-                            </button>
+                            action('reactivate', REACTIVATE, reactivateName(person.name), () =>
+                              model.reactivate(person.staffUserId)
+                            )
                           )}
                         </div>
                       </td>
@@ -368,10 +462,24 @@ export function Staff({ model }: { model: StaffModel }) {
   );
 }
 
-/** What the notice of an open form says, and how it is announced. */
-function noticeOf(editor: Editor, pendingSave: boolean): { kind: string; role: 'status' | 'alert'; copy: NoticeCopy } | null {
+/**
+ * What the notice of an open form says, and how it is announced. The cooldown's notice is a
+ * status that is not a live region: it is drawn again every second, and focus announces it once.
+ */
+function noticeOf(
+  editor: Editor,
+  pendingSave: boolean,
+  cooling: number | null
+): { kind: string; role: 'status' | 'alert'; live?: 'off'; copy: NoticeCopy } | null {
   if (pendingSave) return { kind: 'pending', role: 'status', copy: SAVING };
+  if (cooling !== null) return { kind: 'failure', role: 'status', live: 'off', copy: cooldownNotice(cooling) };
   const subject = editor.kind === 'create' ? editor.sentName : editor.subjectName;
+  const end: UnknownEnd =
+    editor.kind === 'reset-pin' || editor.kind === 'reset-password'
+      ? 'reset'
+      : editor.kind === 'own-password'
+        ? 'own-password'
+        : 'plain';
   switch (editor.notice) {
     case null:
       return null;
@@ -380,9 +488,11 @@ function noticeOf(editor: Editor, pendingSave: boolean): { kind: string; role: '
     case 'session':
       return { kind: 'session', role: 'status', copy: FORM_SESSION_REFUSED };
     case 'unknown':
-      return { kind: 'unknown', role: 'status', copy: outcomeUnknown(subject, true) };
+      return { kind: 'unknown', role: 'status', copy: outcomeUnknownFor(subject, true, end, false) };
     case 'unknown-unread':
-      return { kind: 'unknown', role: 'status', copy: outcomeUnknown(subject, false) };
+      return { kind: 'unknown', role: 'status', copy: outcomeUnknownFor(subject, false, end, false) };
+    case 'unknown-changed':
+      return { kind: 'unknown', role: 'status', copy: outcomeUnknownFor(subject, true, 'plain', true) };
     case 'own-account':
       return { kind: 'failure', role: 'alert', copy: OWN_ACCOUNT };
     case 'user-changed':
@@ -396,27 +506,105 @@ function noticeOf(editor: Editor, pendingSave: boolean): { kind: string; role: '
   }
 }
 
+/** The form's heading: it names the command and the person. */
+function headingOf(editor: Editor): string {
+  switch (editor.kind) {
+    case 'create':
+      return CREATE_HEADING;
+    case 'reactivate':
+      return reactivateHeading(editor.subjectName);
+    case 'move':
+      return changeRoleName(editor.subjectName);
+    case 'reset-pin':
+      return resetPinName(editor.subjectName);
+    case 'reset-password':
+      return resetPasswordName(editor.subjectName);
+    case 'own-password':
+      return changeMyPasswordName(editor.subjectName);
+    case 'own-pin':
+      return changeMyPinName(editor.subjectName);
+  }
+}
+
+/**
+ * The form's context line. After an unknown move whose reread shows the person changed it never
+ * claims the opening classification as current, and never says the change is this save's.
+ */
+function contextOf(editor: Editor): string {
+  const { subject, subjectName } = editor;
+  if (editor.changed !== null && subject !== null) {
+    return changedContext(subjectName, subject.classification, editor.changed.classification, !editor.changed.isActive);
+  }
+  switch (editor.kind) {
+    case 'create':
+      return CREATE_CONTEXT;
+    case 'reactivate':
+      return reactivateContext(subjectName);
+    case 'move':
+      return subject === null ? '' : moveContext(subject.classification, editor.target);
+    default:
+      return subject === null ? '' : subjectContext(subjectName, subject.classification);
+  }
+}
+
+/**
+ * The warning beside Save, in the subject's terms: the surfaces named follow the person's current
+ * classification. None before a move is chosen, and none on a form blocked from saving.
+ */
+function warningOf(editor: Editor): string | null {
+  const { subject, subjectName } = editor;
+  if (subject === null || editor.blocked) return null;
+  switch (editor.kind) {
+    case 'move':
+      return editor.target === null ? null : moveWarning(subjectName, subject.classification, editor.target);
+    case 'reset-pin':
+    case 'reset-password':
+      return resetWarning(subjectName, subject.classification);
+    case 'own-password':
+    case 'own-pin':
+      return OWN_WARNING;
+    default:
+      return null;
+  }
+}
+
 function EditorPanel({ editor, state, model }: { editor: Editor; state: StaffState; model: StaffModel }) {
   const { command } = state;
   const pendingSave = command !== null && !command.discarded && command.editorKey === editor.key;
   // The screen has one command slot: any command in flight holds the draft's controls, not only
   // this form's own save. `pendingSave` stays for the Saving notice.
   const held = command !== null;
-  const saveOff = held || editor.blocked;
-  const notice = noticeOf(editor, pendingSave);
+  // An own change is held while its manager's cooldown runs: its field and Save are off, and the
+  // notice and the field's error speak of the wait that is left.
+  const cooling = isCooling(state, editor);
+  const remaining = cooling && state.cooldown !== null ? state.cooldown.remaining : null;
   const create = editor.kind === 'create';
+  const move = editor.kind === 'move';
+  const unchosen = move && editor.target === null;
+  const saveOff = held || editor.blocked || unchosen || cooling;
+  const notice = noticeOf(editor, pendingSave, remaining);
   const fields = fieldsOf(editor);
-  const hint = pendingSave ? FOOT_HINT_PENDING : editor.blocked ? FOOT_HINT_BLOCKED : FOOT_HINT;
+  const hint = pendingSave
+    ? FOOT_HINT_PENDING
+    : editor.blocked
+      ? FOOT_HINT_BLOCKED
+      : unchosen
+        ? FOOT_HINT_UNCHOSEN
+        : cooling
+          ? FOOT_HINT_COOLDOWN
+          : FOOT_HINT;
+  const warning = warningOf(editor);
 
   const panel = useRef<HTMLElement>(null);
   useFitPanel(panel, true);
 
   // The credential inputs: native and uncontrolled. Their values are read here, once, at submit.
+  const current = useRef<HTMLInputElement>(null);
   const pin = useRef<HTMLInputElement>(null);
   const username = useRef<HTMLInputElement>(null);
   const password = useRef<HTMLInputElement>(null);
   useLayoutEffect(() => {
-    for (const input of [pin.current, username.current, password.current]) {
+    for (const input of [current.current, pin.current, username.current, password.current]) {
       if (input !== null) input.value = '';
     }
   }, [state.credentialEpoch]);
@@ -424,6 +612,7 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: StaffSta
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const typed: Typed = {};
+    if (current.current !== null) typed.currentPassword = current.current.value;
     if (pin.current !== null) typed.pin = pin.current.value;
     if (username.current !== null) {
       // The field shows the stored form on submit; the request carries the same.
@@ -434,12 +623,13 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: StaffSta
     model.submit(typed);
   };
 
-  const describe = (field: 'name' | 'pin' | 'username' | 'password', base: string) =>
-    editor.errors[field] === undefined ? base : `${base} staff-${field}-error`;
-  const errorOf = (field: 'name' | 'pin' | 'username' | 'password') => {
+  // The cooldown is the current password's error while it runs (the same state as THROTTLED).
+  const errorOf = (field: FieldKey): string | null => {
+    if (field === 'currentPassword' && remaining !== null) return currentCooling(remaining);
     const error = editor.errors[field];
     return error === undefined ? null : (fieldText[error][field] ?? null);
   };
+  const describe = (field: FieldKey, base: string) => (errorOf(field) === null ? base : `${base} ${errorId[field]}`);
 
   return (
     <section
@@ -451,13 +641,20 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: StaffSta
       aria-labelledby="editor-title"
     >
       <header className="office-dialog__head">
-        <h2 id="editor-title">{create ? CREATE_HEADING : reactivateHeading(editor.subjectName)}</h2>
+        <h2 id="editor-title">{headingOf(editor)}</h2>
       </header>
       <form id="staff-form" method="post" noValidate onSubmit={submit}>
         <div className="office-dialog__body">
-          <p id="form-context">{create ? CREATE_CONTEXT : reactivateContext(editor.subjectName)}</p>
+          <p id="form-context">{contextOf(editor)}</p>
           {notice !== null && (
-            <div id="form-notice" tabIndex={-1} className="office-notice" data-kind={notice.kind} role={notice.role}>
+            <div
+              id="form-notice"
+              tabIndex={-1}
+              className="office-notice"
+              data-kind={notice.kind}
+              role={notice.role}
+              aria-live={notice.live}
+            >
               <strong>{notice.copy.title}</strong>
               <p>{notice.copy.body}</p>
             </div>
@@ -494,7 +691,7 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: StaffSta
             </div>
           )}
 
-          {create && (
+          {(create || move) && (
             <div className="settings-field office-space-top">
               <label htmlFor="staff-classification">{CLASSIFICATION_LABEL}</label>
               <select
@@ -502,19 +699,57 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: StaffSta
                 name="classification"
                 className="office-field"
                 autoComplete="off"
-                value={editor.classification}
-                disabled={held}
+                value={create ? editor.classification : (editor.target ?? '')}
+                disabled={held || editor.blocked}
                 aria-describedby="staff-classification-help"
                 onChange={(event) => model.setClassification(event.currentTarget.value as Classification)}
               >
-                {CLASSIFICATIONS.map((choice) => (
+                {/* A move opens on a disabled placeholder, and never offers the person's own classification. */}
+                {move && (
+                  <option value="" disabled>
+                    {MOVE_PLACEHOLDER}
+                  </option>
+                )}
+                {CLASSIFICATIONS.filter((choice) => !move || choice !== editor.subject?.classification).map((choice) => (
                   <option key={choice} value={choice}>
                     {classificationChoice(choice)}
                   </option>
                 ))}
               </select>
               <p className="settings-help" id="staff-classification-help">
-                {CLASSIFICATION_HELP}
+                {create ? CLASSIFICATION_HELP : MOVE_HELP}
+              </p>
+            </div>
+          )}
+
+          {move && editor.target === 'MANAGER' && editor.subject?.username != null && (
+            <p id="stored-username" className="settings-help">
+              {retainedFact(editor.subject.username)}
+            </p>
+          )}
+
+          {fields.includes('currentPassword') && (
+            <div className="settings-field office-space-top">
+              <label htmlFor="staff-current-password">{CURRENT_LABEL}</label>
+              <input
+                ref={current}
+                id="staff-current-password"
+                name="currentPassword"
+                type="password"
+                className="office-field"
+                autoComplete="current-password"
+                disabled={held || cooling}
+                aria-invalid={errorOf('currentPassword') === null ? undefined : true}
+                aria-describedby={describe('currentPassword', 'staff-current-password-help')}
+                onInput={() => model.credentialTyped('currentPassword')}
+              />
+              {errorOf('currentPassword') !== null && (
+                <span id="staff-current-password-error" className="office-error">
+                  {errorOf('currentPassword')}
+                </span>
+              )}
+              <p className="settings-help" id="staff-current-password-help">
+                {CURRENT_HELP}
               </p>
             </div>
           )}
@@ -613,6 +848,11 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: StaffSta
           )}
         </div>
         <footer className="office-dialog__foot staff-footer">
+          {warning !== null && (
+            <p className="office-notice" id="session-warning">
+              {warning}
+            </p>
+          )}
           <p className="settings-foot-hint" id="save-hint">
             {hint}
           </p>
@@ -624,9 +864,9 @@ function EditorPanel({ editor, state, model }: { editor: Editor; state: StaffSta
             id="save-staff"
             className="office-button primary"
             {...inertProps(saveOff)}
-            aria-describedby="save-hint"
+            aria-describedby={warning === null ? 'save-hint' : 'save-hint session-warning'}
           >
-            {create ? SAVE : SAVE_REACTIVATE}
+            {editor.kind === 'reactivate' ? SAVE_REACTIVATE : SAVE}
           </button>
         </footer>
       </form>

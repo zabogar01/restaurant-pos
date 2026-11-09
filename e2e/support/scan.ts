@@ -16,13 +16,25 @@ const OWN_ROUTES: Record<Kind, readonly string[]> = {
   PIN: [
     '/api/pos/auth/login',
     '/api/back-office/config/users/create',
+    '/api/back-office/config/users/change-role',
     '/api/back-office/config/users/reactivate',
+    '/api/back-office/config/users/set-pin',
+    '/api/back-office/config/users/own-pin',
   ],
-  username: ['/api/back-office/auth/login', '/api/back-office/config/users/create'],
+  username: [
+    '/api/back-office/auth/login',
+    '/api/back-office/config/users/create',
+    '/api/back-office/config/users/change-role',
+  ],
+  // An own PIN change carries the manager's current password, so `own-pin` is a password route too.
   password: [
     '/api/back-office/auth/login',
     '/api/back-office/auth/reauthenticate',
     '/api/back-office/config/users/create',
+    '/api/back-office/config/users/change-role',
+    '/api/back-office/config/users/set-password',
+    '/api/back-office/config/users/own-password',
+    '/api/back-office/config/users/own-pin',
   ],
 };
 

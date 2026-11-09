@@ -5,9 +5,11 @@
 // answer returned. A zod message, a server text, an error code or a submitted value never becomes
 // visible text, and a credential is never interpolated.
 //
-// Left out on purpose (ruling 19): everything of S8c2 (the role change, the resets of another
-// person, the own password and PIN, and their states), the kitchen-emergency sentences, BO-01's
+// The role change, the resets of another person, and the own password and PIN (PHASE1-S8c2) are
+// rows of the same tables. Left out on purpose: the kitchen-emergency sentences, BO-01's
 // held-draft sentence, and the review artifact's response chooser and cross-client links.
+
+import { waitText } from '../copy.js';
 
 export type NoticeCopy = { title: string; body: string };
 export type Classification = 'KITCHEN' | 'CASHIER' | 'MANAGER';
@@ -155,3 +157,97 @@ export const deactivateWarning = (name: string, classification: Classification):
 export const KEEP_ACTIVE = 'Keep active';
 export const keepActiveName = (name: string): string => `Keep active — ${name}`;
 export const confirmDeactivateName = (name: string): string => `Deactivate ${name}`;
+
+// ---- PHASE1-S8c2: the role change, the resets, and the own changes --------------------------
+
+// Row actions and form headings: the same words, as the copy table gives them.
+export const CHANGE_ROLE = 'Change role';
+export const RESET_PIN = 'Reset PIN';
+export const RESET_PASSWORD = 'Reset password';
+export const CHANGE_MY_PASSWORD = 'Change my password';
+export const CHANGE_MY_PIN = 'Change my PIN';
+export const changeRoleName = (name: string): string => `${CHANGE_ROLE} — ${name}`;
+export const resetPinName = (name: string): string => `${RESET_PIN} — ${name}`;
+export const resetPasswordName = (name: string): string => `${RESET_PASSWORD} — ${name}`;
+export const changeMyPasswordName = (name: string): string => `${CHANGE_MY_PASSWORD} — ${name}`;
+export const changeMyPinName = (name: string): string => `${CHANGE_MY_PIN} — ${name}`;
+
+// The move form.
+export const MOVE_PLACEHOLDER = 'Choose a new classification';
+export const MOVE_HELP = 'Choose the new classification. Changing this choice clears every credential field.';
+export const FOOT_HINT_UNCHOSEN = 'Choose a new classification before saving.';
+export const moveSuffix = (from: Classification, to: Classification): string =>
+  to === 'MANAGER'
+    ? 'Promotion always sets a new password.'
+    : to === 'KITCHEN'
+      ? 'The PIN is removed.'
+      : from === 'KITCHEN'
+        ? 'The POS PIN is set.'
+        : 'The POS PIN is kept.';
+export const moveContext = (from: Classification, to: Classification | null): string =>
+  `Current classification: ${classificationText(from)}.${to === null ? '' : ` ${moveSuffix(from, to)}`}`;
+export const subjectContext = (name: string, classification: Classification): string =>
+  `${name} · ${classificationText(classification)}`;
+export const retainedFact = (value: string): string => `Retained username: ${value} · This username cannot change.`;
+export const changedContext = (name: string, opening: Classification, current: Classification, inactive: boolean): string =>
+  `When you opened this form, ${name}’s classification was ${classificationText(opening)}. The staff list now shows ${classificationText(current)}${inactive ? ', inactive' : ''}. This may be your change; it is not confirmed.`;
+
+// The current password of an own change.
+export const CURRENT_LABEL = 'Current password';
+export const CURRENT_HELP = 'Enter your current back-office password.';
+export const CURRENT_EMPTY = 'Enter your current password.';
+export const CURRENT_LONG = 'Use 1024 characters or fewer.';
+export const CURRENT_WRONG = 'Incorrect current password. Try again.';
+// The cooldown: the shared sign-in duration format (`../copy.ts`), never a second formatter.
+export const FOOT_HINT_COOLDOWN = 'Wait for the cooldown before saving.';
+export const currentCooling = (seconds: number): string =>
+  `Wait ${waitText(seconds)} before trying your current password again.`;
+export const cooldownNotice = (seconds: number): NoticeCopy => ({
+  title: 'Password verification is cooling down',
+  body: `Wait ${waitText(seconds)}. This is the same cooldown used at sign-in.`,
+});
+
+// What a save did.
+export const moved = (name: string, classification: Classification): string =>
+  `${name} changed to ${classificationText(classification)}.`;
+export const pinReset = (name: string): string => `${name}’s PIN changed.`;
+export const passwordReset = (name: string): string => `${name}’s password changed.`;
+export const ownPasswordChanged = (name: string): string =>
+  `${name}’s password changed. This back-office session continues.`;
+export const ownPinChanged = (name: string): string => `${name}’s PIN changed. This back-office session continues.`;
+
+// Unknown outcomes of the new forms.
+export const UNKNOWN_BLOCKED_CONTINUATION = 'Return to the staff list and choose an action on the current person.';
+export const UNKNOWN_RESET_END = 'The list cannot confirm the reset or whether this person’s sessions ended.';
+export const UNKNOWN_OWN_PASSWORD_END =
+  'The list cannot show whether your password changed. For your next change, try the new password you chose as Current password first. If it is refused, try your previous password. Each wrong attempt counts towards your sign-in cooldown.';
+export type UnknownEnd = 'plain' | 'reset' | 'own-password';
+export const outcomeUnknownFor = (name: string, read: boolean, end: UnknownEnd, changed: boolean): NoticeCopy => ({
+  title: OUTCOME_UNKNOWN_TITLE,
+  body: [
+    unknownBody(name, read),
+    changed ? UNKNOWN_BLOCKED_CONTINUATION : UNKNOWN_FORM_CONTINUATION,
+    end === 'reset' ? UNKNOWN_RESET_END : end === 'own-password' ? UNKNOWN_OWN_PASSWORD_END : null,
+  ]
+    .filter((part) => part !== null)
+    .join(' '),
+});
+
+// The warnings, beside Save. The subject's current classification decides which surfaces are named:
+// a cashier (a former manager included, whose retained login never verifies) has POS sessions, a
+// manager has both, and a kitchen person has none.
+export const OWN_WARNING =
+  'Your other POS and back-office sessions will end on their next action. This back-office session will continue.';
+const surfaces = (classification: Classification): string =>
+  classification === 'MANAGER' ? 'POS and back-office sessions' : 'POS sessions';
+export const resetWarning = (name: string, classification: Classification): string =>
+  `${name}’s ${surfaces(classification)} will end on their next action. They must sign in again.`;
+export const moveWarning = (name: string, from: Classification, to: Classification): string => {
+  if (from === 'KITCHEN') {
+    return `${name} currently has no sign-in sessions. After this change, they must sign in to use ${to === 'MANAGER' ? 'the POS or back office' : 'the POS'}.`;
+  }
+  const ends = `${name}’s ${surfaces(from)} will end on their next action.`;
+  if (to === 'KITCHEN') return `${ends} Their PIN will be removed. They will no longer sign in.`;
+  if (from === 'MANAGER') return `${ends} Their back-office login will no longer work. They can sign in at the POS.`;
+  return `${ends} They must sign in again.`;
+};
