@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-11-09: **#177 S8c1 and #176 (lead) merged**; `development` at `599f724` (verify 171 / 6086); dev `pos` at `0015`.
-**S8c2 written, not dispatched.** Nothing running. Lead branch renamed `agent/lead-1109` (holds `development`, unpushed).
+**S8c2 dispatched** (builder running). Lead branch renamed `agent/lead-1109` (holds `development`, unpushed).
 Narrative: [journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written.
 
 ## Phase and gates
@@ -52,14 +52,14 @@ Narrative: [journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written
 
 ## Running tasks and agents
 
-- **Nothing running; only `lead` in Herdr.**
+- **Running: PHASE1-S8c2 builder** (`phase1-s8c2`, pane `PHASE1-S8c2`, claude-sonnet-5-5, interactive), dispatched 2026-11-09.
 - **S8 server is merged.** S8a: `users.ts` (`lockUsers`, `USER_ACTIONS`), five routes, `OWN_ACCOUNT`, `USER_CHANGED`,
   `DUPLICATE` details. S8b: `set-pin`, `set-password`, `own-password`, `own-pin`, `restampOwnSession` (only `users.ts`
   may import it, `restamp-scan.test.ts`). The four back-office API functions per slice are declared, called by no screen.
-- **PHASE1-S8c2 written 2026-11-09, not dispatched** (untracked in the kit: `.agent/tasks/PHASE1-S8c2-staff-credentials.md`;
+- **PHASE1-S8c2 dispatched 2026-11-09** (`wt/PHASE1-S8c2`, `agent/phase1-s8c2` from `599f724`; kit copy deleted after `cmp`;
   C3 §2 and *S8c* verbatim, rulings 1-16, ACs 1-12). Moves, resets, own changes (FR-B3 words), the cooldown (shared
   formatter, owned by the manager's account), D2, D3, a promotion e2e; scan map adds `own-pin` for the current password
-  (C3's AC 6 omitted it). Ruling 16 spells out test-first. Dry run green (sonnet-5-5). **F3** still the lead's and the
+  (C3's AC 6 omitted it). Ruling 16 spells out test-first. **F3** still the lead's and the
   owner's (headed Chrome/Firefox on Add person).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
@@ -115,7 +115,7 @@ Narrative: [journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written
 
 Nothing here is decided. Detail is where each line points.
 
-- **Dispatch S8c2?** **Push `agent/lead-1109` and open its PR?** S8c1's rulings 1-21 and S8c2's 1-16 are yours to
+- **Push `agent/lead-1109` and open its PR?** S8c1's rulings 1-21 and S8c2's 1-16 are yours to
   overturn.
 - **DESIGN-023 F3:** does a browser offer to save a PIN or another's password typed on Add person? Unverified; a headed
   Chrome/Firefox check (now possible); if a prompt appears, does the 2026-10-13 "does not fight the password manager"
@@ -142,6 +142,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **Dispatch S8c2** on the owner's go.
+1. **S8c2 running:** on exit, verify (dispatch skill step 4), then Codex review.
 2. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
