@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-11-09: **#177 S8c1 and #176 (lead) merged**; `development` at `599f724` (verify 171 / 6086); dev `pos` at `0015`.
-**S8c2 reviewed (1 finding), round 2 running.** Lead branch renamed `agent/lead-1109` (holds `development`, unpushed).
+**S8c2 complete** (`agent/phase1-s8c2`, not pushed): BO-06 and FR-B3 built end to end. Lead branch renamed `agent/lead-1109` (holds `development`, unpushed).
 Narrative: [journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written.
 
 ## Phase and gates
@@ -52,8 +52,8 @@ Narrative: [journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written
 
 ## Running tasks and agents
 
-- **Running: PHASE1-S8c2 round 2 builder.** Codex `b69df76`: F1 P2, a cooldown held behind a decision or gate restarts
-  its full wait; ruled `e75e065` (deadline at answer). Lead accepted decisions 2, 3, 5 (5 the owner's to overturn).
+- **Nothing running; only `lead` in Herdr.** S8c2 complete: Codex `b69df76` F1 P2 (a held cooldown restarted its wait),
+  fixed test-first `a850390`; lead review: verify 177 / 6229, e2e:all 150, red repeated. Owner looks before merge. Lead accepted decisions 2, 3, 5 (5 the owner's to overturn).
 - **S8 server is merged.** S8a: `users.ts` (`lockUsers`, `USER_ACTIONS`), five routes, `OWN_ACCOUNT`, `USER_CHANGED`,
   `DUPLICATE` details. S8b: `set-pin`, `set-password`, `own-password`, `own-pin`, `restampOwnSession` (only `users.ts`
   may import it, `restamp-scan.test.ts`). The four back-office API functions per slice are declared, called by no screen.
@@ -143,6 +143,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S8c2 round 2:** on exit, lead review (verify, e2e, repeat a red), `status: complete`; owner looks.
+1. **On the owner's word:** push S8c2 and open its PR. After merge: S8 is done; next S9 (POS-03 Release), S10 (BO-01).
 2. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
