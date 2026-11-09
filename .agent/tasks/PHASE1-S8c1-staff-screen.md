@@ -5,7 +5,7 @@ category: ui
 touches: [identity, boundaries]
 depends_on: [PHASE1-S8b]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/staff.spec.ts, e2e/support/**]
-status: active
+status: complete
 cycles: 0
 ---
 # PHASE1-S8c1 — BO-06 Staff, part 1: the list, create, deactivate and reactivate
@@ -553,6 +553,27 @@ record the failing assertion, then fix. Nothing else.
 machine and `npm run test:e2e:all` if you change the spec, and report both counts. Append a *Round 2* section to the
 Handoff (do not rewrite round 1), with each red's failing assertion read against the unchanged code, ending with `DONE`
 or `BLOCKED: <one question>`.
+
+## Round 2: lead review, 2026-11-09 (complete)
+
+A lead review instead of a re-review: the three fixes are the review's own, as ruled (R1 to R3), done test first.
+Reviewed at `44c29db`, the tree clean.
+
+- **Diff:** `staff/model.ts` (R1: `answered()` moves the credential epoch for the still-open form before the session
+  branch, the gate, a decision or a reread), `staff/fit.ts` (R2: a layout effect refits after every render while a form
+  is open, listeners kept), `staff/Staff.tsx` (R3: same-manager M-6 recovery focuses the first field of an ordinary
+  form; decisions, the confirmation, pending and held results keep theirs), the new `staff-round2.test.tsx` (eight
+  cases) and D1d in `staff.spec.ts` (M-6 reached with the existing clock helpers; no helper changed). Nothing else.
+- **Test order:** six of the eight new cases were run against the unchanged round-1 code and failed as the Handoff
+  quotes; the two that passed are the regression cases R3 asked for.
+- **`npm run verify`:** exit 0; 171 files, 6086 tests passed. **`npm run test:e2e:all`:** exit 0; 140 passed, both
+  engines. Output in `../restaurant-pos-wt/evidence/PHASE1-S8c1/lead/round2/`.
+- **The lead's red proof** (restored from a copy, `git status` clean after): R1's epoch move removed from `answered()`;
+  `staff-round2.test.tsx` cases (a), (b) and (c) failed, 5 passed.
+
+**Verdict: complete.** `touches: identity, boundaries`: the owner looks before merge. **Still open, not this slice's:**
+DESIGN-023 F3, whether Chrome or Firefox offers to save a typed cashier PIN or a new manager's password from Add person
+(ruling 21), a headed check for the lead and the owner.
 
 ## Handoff
 
