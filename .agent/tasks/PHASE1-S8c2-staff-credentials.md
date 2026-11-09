@@ -5,7 +5,7 @@ category: ui
 touches: [identity, boundaries]
 depends_on: [PHASE1-S8c1]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/staff.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S8c2 — BO-06 Staff, part 2: role changes, resets and the own changes
@@ -461,6 +461,32 @@ The lead ran these at `6aa685b`; this note is the evidence a reviewer cannot gat
    exactly one body; `scan.ts`'s `own-pin` password entry.
 5. **D2 and D3:** do they prove C3 *S8c* AC 4 and AC 5 (B reaches BO-01 *Session ended* and signs in with the new
    password; profile `a` stays signed in and its next command succeeds while profile `b` ends)?
+
+## Round 2: the lead's ruling on the review, 2026-11-09
+
+The review is `.agent/reviews/PHASE1-S8c2-review.md` (Codex, one finding; its *Cleared* section settles the lead's
+questions 2 to 5). Fix exactly this, test first: write each test, run it against the unchanged round-1 code and record
+the failing assertion **before** changing production code; then fix. Nothing else.
+
+- **R1 (F1, P2, accepted).** The account's cooldown deadline is recorded **when the answer arrives**, in `answered()`,
+  before the presentation gate, a held departure decision or a session gate, from that moment's monotonic time plus
+  the server's `retryAfterSeconds`. Presenting a held answer later shows the wait remaining to that deadline (zero if
+  it has passed, so Current password and Save come back), and never starts a new one; `flush()` does not restart it.
+  Announcements and focus stay held as now; the different-manager discard stays as now. Tests: (a) a cooldown answer
+  arriving while the departure decision is open, the decision left open past the deadline, then *Stay*: no cooldown,
+  the field and Save live; (b) the same with the decision left open for part of the wait: the remaining wait is the
+  deadline less the elapsed time, not the full wait; (c) the same behind M-6 and behind BO-01, with same-manager
+  recovery. *Red:* the round-1 code starts the full wait at presentation (the review's reproduction: `remaining: 300`
+  after 301 s).
+
+**The lead's ruling on question 1** (the review did not address it): the builder's decisions 2 (a blocked form is not
+dirty), 3 (a `DUPLICATE` on a field the form does not show is the general failure) and 5 (the warning is hidden on a
+blocked form, where Save is off and nothing can be sent) are **accepted**; the owner may overturn decision 5, which
+reads DESIGN-023's "the warning stays with Save while the form is open" as applying to a form that can still save.
+
+**How to work.** Write and Edit tools only. Run `npm run verify` on a quiet machine, and `npm run test:e2e:all` if a
+spec changes; report both counts. Append a *Round 2* section to the Handoff (do not rewrite round 1), with each red's
+failing assertion read against the unchanged code, ending with `DONE` or `BLOCKED: <one question>`.
 
 ## Handoff
 
