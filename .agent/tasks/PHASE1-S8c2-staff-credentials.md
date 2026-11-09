@@ -520,5 +520,7 @@ No formatter was run on any file; every edit was by hand. A shell here-document 
 - The frame's focus after a different manager signs in (`OfficeApp.tsx` still focuses Log out), BO-01's held-draft sentence (S10), and the kitchen-emergency sentences: all ruling 14.
 - Nothing is placeholder in this slice: every state ruling 13 lists is built. The cooldown's timer is the model's own (`performance.now`, `setTimeout`); its tests use vitest's fake timers for those two and the `Date`, not the session harness's clock.
 
+The code and this Handoff are in commit `98fa2a7`; this line is added by the commit after it.
+
 DONE
 
