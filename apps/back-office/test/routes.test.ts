@@ -8,11 +8,12 @@ import { MANIFEST, PATHS, screenAt } from '../src/routes.js';
 // answers with the entry point, and a client path names a screen and nothing else.
 
 describe('the route manifest', () => {
-  it('lists the landing, Menu, the item editor, Tables, Discount presets and Settings', () => {
-    expect(MANIFEST.map((m) => m.screen).sort()).toEqual(['item', 'landing', 'menu', 'presets', 'settings', 'tables']);
+  it('lists the landing, Menu, the item editor, Tables, Staff, Discount presets and Settings', () => {
+    expect(MANIFEST.map((m) => m.screen).sort()).toEqual(['item', 'landing', 'menu', 'presets', 'settings', 'staff', 'tables']);
     expect(PATHS.menu).toBe('/back-office/menu');
     expect(PATHS.item).toBe('/back-office/menu/item');
     expect(PATHS.tables).toBe('/back-office/tables');
+    expect(PATHS.staff).toBe('/back-office/staff');
     expect(PATHS.presets).toBe('/back-office/presets');
     expect(PATHS.settings).toBe('/back-office/settings');
   });
