@@ -48,6 +48,8 @@ duplicates, drop a rule once a test or hook enforces it. The stories are in the
 
 - When an interactive dispatch's waiter dies at the two-hour limit, write `.agent/runs/<ID>/builder/session` from `herdr agent list`'s `agent_session.value` for that agent (check the `.jsonl` of that name exists under the worktree's `~/.claude/projects` folder) before any `--resume`, because the waiter records the session only when it exits normally; PHASE1-S7b2's waiter was killed while the builder sat on an approval prompt, and the round-2 resume was refused with "recorded session: none" (journal 2026-11-04).
 
+- On an interactive dispatch's exit 4 ("idle without a verdict"), read the pane before resuming, because PHASE1-S8a's builder ended a turn to wait on its own background Monitors over a slow full vitest run; the dispatcher read the idle prompt as a stop, while the CLI would wake itself when a Monitor fired, and a `--resume` would have spent a round interrupting it (journal 2026-11-04, 11-05 entry).
+
 ## Builder
 
 - Read the reviewed artifact and the contract, not only the task file, and follow them where they disagree, because seven slices running had a builder catch a wrong task file this way (L2206-2210, L2401-2416).
