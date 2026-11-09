@@ -5,7 +5,7 @@ category: ui
 touches: [identity, boundaries]
 depends_on: [PHASE1-S8c1]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/staff.spec.ts, e2e/support/**]
-status: active
+status: complete
 cycles: 0
 ---
 # PHASE1-S8c2 — BO-06 Staff, part 2: role changes, resets and the own changes
@@ -487,6 +487,25 @@ reads DESIGN-023's "the warning stays with Save while the form is open" as apply
 **How to work.** Write and Edit tools only. Run `npm run verify` on a quiet machine, and `npm run test:e2e:all` if a
 spec changes; report both counts. Append a *Round 2* section to the Handoff (do not rewrite round 1), with each red's
 failing assertion read against the unchanged code, ending with `DONE` or `BLOCKED: <one question>`.
+
+## Round 2: lead review, 2026-11-09 (complete)
+
+A lead review instead of a re-review: the one fix is the review's own, as ruled (R1), done test first. Reviewed at
+`a850390`, the tree clean.
+
+- **Diff:** `staff/model.ts` only (`answered()` records the deadline on arrival through `recordDeadline`; presentation
+  calls `showCooldown`, which shows what remains or nothing, and focuses Current password when the deadline has
+  passed), and the new `staff-cooldown-held.test.tsx` (six cases). No spec changed.
+- **Test order:** all six new cases failed against the unchanged round-1 code, as the Handoff quotes.
+- **`npm run verify`:** exit 0; 177 files, 6229 tests passed. **`npm run test:e2e:all`:** exit 0; 150 passed, both
+  engines. Output in `../restaurant-pos-wt/evidence/PHASE1-S8c2/lead/round2/`.
+- **The lead's red proof** (restored from a copy, `git status` clean after): the `recordDeadline` call in `answered()`
+  removed; `staff-cooldown-held.test.tsx` 3 failed (the partly elapsed cases, which show the wrong remaining time), 3
+  passed (the past-deadline cases, where no cooldown is shown either way, so this mutation cannot fail them; the
+  builder's run against round 1 is their red).
+
+**Verdict: complete.** `touches: identity, boundaries`: the owner looks before merge. Lead acceptance of the builder's
+decisions 2, 3 and 5 stands (5 the owner's to overturn). DESIGN-023 F3, the headed save-prompt check, is still open.
 
 ## Handoff
 
