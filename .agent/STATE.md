@@ -9,9 +9,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-11-06: **#173 S8a and #174 S8b merged**; `development` at `e90a265`, the main checkout fast-forwarded; dev `pos` at
-`0015`. S8c1 reviewed (3 findings), round 2 running. Lead branch `agent/lead-1105`: PR #176 open; local merge of `development` (`b91234a`) and later
-commits unpushed. **S8c split; S8c1 dispatched 2026-11-09.** Narrative: [journal/2026-11-06.md](journal/2026-11-06.md).
+2026-11-09: **S8c1 complete** (`agent/phase1-s8c1`, not pushed). `development` at `e90a265` (S8a #173, S8b #174); dev
+`pos` at `0015`. Nothing running. Lead branch `agent/lead-1105`: PR #176 open, later commits unpushed. Narrative:
+[journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written.
 
 ## Phase and gates
 
@@ -22,16 +22,16 @@ commits unpushed. **S8c split; S8c1 dispatched 2026-11-09.** Narrative: [journal
   catalog domain, `0013`), S4b (#142: catalog routes), S4c1 (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04), S5 (#151:
   86), S6a (#154: presets server, `0014`), S6b (#157: BO-07), S7a (#165: POS catalog routes), S7b1 (#169: served menu),
   S7b2 (#170: M-2, Add), S7b3 (#171: the served preset picker), S8a (#173: users server, `0015`), S8b (#174:
-  credentials, the re-stamp). **Left:** S8c1 (BO-06 list, create, deactivate, reactivate, D1/AC-32), S8c2 (moves, resets,
-  own changes, D2, D3); together C3's S8c (BO-06 from DESIGN-023, AC-32 in the browser), S9 (POS-03 Release), S10 (BO-01).
+  credentials, the re-stamp). **S8c1 complete** (BO-06 part 1). **Left:** S8c2 (moves, resets, own changes, D2, D3), S9
+  (POS-03 Release), S10 (BO-01).
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22, 11-02): S2 Q2, Q5, Q12, DESIGN-018 Q1-Q6; S3 C2 OQ1; S7 Q14, C4
   OQ1 (real presets at the POS); S8 Q1, Q6a, Q7-Q11, C3's OQ1 (create audited), OQ2 (no rename).
 - **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. ARCHITECTURE already carries C3's §3.2,
   §7.2, §8 and §11 wording. **Owed, not drafted:** ROADMAP Phase 1 users: role change (Q1c); tender: "reactivate" (OQ1).
 - **Built:** POS-01 to POS-07 (POS-01 real, POS-03's menu served); BO-01 (provisional), M-6, BO-03/04/05/07/08.
   **Frost designed:** all but G (BO-09) and H (BO-10, 11).
-- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** S8b final tree (`30ae62a`)
-  verify 164 files / 5814 tests; e2e:all 130 at `ce6191b` (same production code).
+- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** S8c1 final tree (`44c29db`)
+  verify 171 files / 6086 tests, e2e:all 140. `development` baseline 165 / 5861.
 
 ## Integration branch
 
@@ -45,26 +45,23 @@ commits unpushed. **S8c split; S8c1 dispatched 2026-11-09.** Narrative: [journal
   `origin/development`, `git branch --unset-upstream`, `-u origin` on push; after a lead PR merges, cherry-pick the rest.
 - **Pushing needs the owner's word, every time** (LESSONS); `gh pr view <n> --json state` as its own step before any
   follow-up push.
-- **Task worktrees:** none live; S8a's and S8b's removed 11-06 with their runs, evidence and local branches. Left behind: `runs/PHASE1-S7a`, `runs/DESIGN-021`, `runs/DESIGN-023`, `wt/evidence/DESIGN-021`, `-023`; `wt/ARCH-021`,
-  `wt/DESIGN-021` (removal refused by the classifier: the owner's). Not ours: `restaurant-pos-design`,
+- **Task worktrees:** `wt/PHASE1-S8c1` (after merge remove it, its `runs/` and evidence). Left behind: `runs/PHASE1-S7a`,
+  `runs/DESIGN-021`, `-023`, `wt/evidence/DESIGN-021`, `-023`; `wt/ARCH-021`, `wt/DESIGN-021` (the owner's). Not ours: `restaurant-pos-design`,
   `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
 
-- **Running: PHASE1-S8c1 round 2 builder** (`phase1-s8c1`, resume 1 of 2).
+- **Nothing running; only `lead` in Herdr.**
 - **S8 server is merged.** S8a: `users.ts` (`lockUsers`, `USER_ACTIONS`), five routes, `OWN_ACCOUNT`, `USER_CHANGED`,
   `DUPLICATE` details. S8b: `set-pin`, `set-password`, `own-password`, `own-pin`, `restampOwnSession` (only `users.ts`
   may import it, `restamp-scan.test.ts`). The four back-office API functions per slice are declared, called by no screen.
-- **PHASE1-S8c1 dispatched 2026-11-09** (`wt/PHASE1-S8c1`, `agent/phase1-s8c1` from `development`; kit copy deleted after `cmp`;
-  C3 §10 and *S8c* verbatim, rulings 1-21, ACs 1-16). Split by the lead: DESIGN-023's 126 states are too many for one
-  slice (as S4c2a/b). Path `/back-office/staff`, rail *Staff*; S8c1 renders only Deactivate/Reactivate row actions;
-  `scan.ts` map gains create and reactivate only; frame focus untouched (queued). Built `d702174`, Handoff `b5b2cc7`, lead note `4261f5e`: verify 170 / 6078,
-  e2e:all 138; credential-emptying red repeated. Code before tests again (as S8b). Real dev baseline is 165 / 5861. Codex `0bb32d4`: F1 P2
-  credentials emptied only when presented, F2 P2 panel not refit when its top moves, F3 P3 M-6 focus; ruled `cf0c2ef`.
-- **S8c2 next after S8c1:** moves, PIN and password resets, own password and own PIN (FR-B3's own-PIN words, not C3 §10
-  item 4), current-password answers (S8b Handoff), D2, D3, the rest of the scan map. **F3 save-prompt check** (Chrome,
-  Firefox, headed) is the lead's and the owner's after S8c1.
-- **For S8c (from DESIGN-023):** FR-B3's own-PIN words (every other session ends); a Chrome/Firefox save-prompt check (F3).
+- **PHASE1-S8c1 complete** (`0e0d8d6`; split from C3's S8c by the lead): `/back-office/staff`, rail *Staff*, list, create,
+  deactivate, reactivate (new-PIN path), D1/AC-32 and D1d (M-6). Codex `0bb32d4`: 3 findings (credentials emptied only on
+  presentation, panel refit, M-6 focus), fixed test-first `44c29db`; lead red repeated. Builder wrote round 1's code before
+  tests (as S8b). **Owner looks before merge (`touches: identity, boundaries`).**
+- **S8c2 next:** moves, resets, own password and PIN (FR-B3's own-PIN words, not C3 §10 item 4), current-password answers
+  (S8b Handoff), D2, D3, the rest of the scan map; from S8c1's Handoff *What S8c2 needs*. **F3** (Chrome/Firefox headed
+  save-prompt check) is the lead's and the owner's, now possible on S8c1's Add person.
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -145,6 +142,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S8c1 round 2:** on exit, lead review (verify, e2e, repeat a red), `status: complete`; owner looks. Then S8c2's task file from its Handoff.
+1. **On the owner's word:** push S8c1 and open its PR; write S8c2. Then S8c2's task file from its Handoff.
 2. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
