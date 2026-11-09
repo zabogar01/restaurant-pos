@@ -5,7 +5,7 @@ category: ui
 touches: [identity, boundaries]
 depends_on: [PHASE1-S8b]
 owns: [apps/back-office/src/**, apps/back-office/test/**, e2e/tests/staff.spec.ts, e2e/support/**]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S8c1 — BO-06 Staff, part 1: the list, create, deactivate and reactivate
@@ -517,6 +517,42 @@ The lead ran these at `b5b2cc7`; this note is the evidence a reviewer cannot gat
    no-invented-values rule but not its meaning? And `fit.ts`'s panel height (ruling 15).
 6. **The browser spec**: does D1 prove AC-32 (the POS's next request answered `UNAUTHENTICATED`, the lock state), and
    does the scan map hold exactly ruling 17's entries?
+
+## Round 2: the lead's ruling on the review, 2026-11-09
+
+The review is `.agent/reviews/PHASE1-S8c1-review.md` (Codex, three findings; its *Cleared* section settles the lead's
+six questions). Fix exactly these, **each test first**: write the test, run it against the unchanged round-1 code,
+record the failing assertion, then fix. Nothing else.
+
+- **R1 (F1, P2, accepted).** Credentials are emptied **when a command answers**, not when its result is presented.
+  As soon as the open form's command answers (any answer: success, refusal, unknown, a session refusal), move the
+  credential epoch for that form if it is still the form that sent it, before the presentation gate, before an open
+  departure decision is resolved, and before any reread. Keep everything else as it is: the held answer, the command
+  slot, the departure decision, and the delayed announcement and focus. Tests that inspect the inputs **while** the
+  outcome is still held: (a) a cashier create pending, Cancel opens the departure decision, the answer `DUPLICATE`
+  arrives while the decision is open: New PIN is empty before Stay is pressed; (b) a manager create answered with an
+  unknown outcome while its reread is held: New PIN, Username and New password are all empty before the reread
+  answers; (c) the same for a reactivation-PIN form. *Red:* the round-1 code, unchanged, fails (a) and (b).
+- **R2 (F2, P2, accepted).** The panel refits whenever a render can move its top, not only on resize and scroll: at
+  least on same-manager recovery from M-6 and BO-01, on a read state change (loading, failed, partial, ready, the counts
+  appearing), and on a page-status or notice change above the panel. A layout effect that refits after every render of
+  the screen while a form is open is acceptable, measured, never a sleep. Test in jsdom with mocked geometry, as the
+  review did: the panel's top moves from 240 to 340 with the pane bottom at 900 and padding 24 across an M-6 recovery,
+  and across a partial list's successful *Try again*; the maximum height becomes 536px in both. *Red:* the round-1 hook
+  keeps 636px. If the browser harness can reach M-6 for a back-office page with the clock helpers
+  `reauthenticate.spec.ts` uses, add a D1b step asserting Save and Cancel inside the viewport after M-6 recovery with
+  the manager form open; if it cannot without a change to an existing helper, say so in the Handoff and rely on the
+  jsdom test.
+- **R3 (F3, P3, accepted).** On same-manager recovery from M-6 of an ordinary open form, focus its first field (Name on
+  create, New PIN on the reactivation-PIN form) whatever control the frame restored, Classification included. Keep the
+  higher-priority targets as they are: a reopened confirmation on *Keep active*, a held departure on *Stay*, a pending
+  command on its status, a held result on its own result focus. Tests with the prior focus on Classification, on Name
+  and on a credential field. *Red:* the round-1 code leaves focus on Classification.
+
+**How to work.** Write and Edit tools only, never a heredoc (round 1 used one once). Run `npm run verify` on a quiet
+machine and `npm run test:e2e:all` if you change the spec, and report both counts. Append a *Round 2* section to the
+Handoff (do not rewrite round 1), with each red's failing assertion read against the unchanged code, ending with `DONE`
+or `BLOCKED: <one question>`.
 
 ## Handoff
 
