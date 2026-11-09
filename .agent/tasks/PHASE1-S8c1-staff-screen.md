@@ -490,7 +490,7 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ### What was done
 
-BO-06 Staff, part 1, is built on `agent/phase1-s8c1`, in one commit (hash below). Paths:
+BO-06 Staff, part 1, is built on `agent/phase1-s8c1`, in commit `d702174` (this Handoff's own hash line is added by a second commit). Paths:
 
 - `apps/back-office/src/staff/` (new): `model.ts` (the one screen model), `Staff.tsx` (the view: list, panel, deactivation confirmation), `copy.ts` (every sentence, each from a DESIGN-023 row), `fields.ts` (the four pure field checks and `storedUsername`), `order.ts` (grouping, counts, former-manager test), `fit.ts` (the panel-height behaviour).
 - `apps/back-office/src/routes.ts` (a `staff` screen at `/back-office/staff`), `Rail.tsx` (Staff between Tables and Discount presets), `Screens.tsx` (one model per working area, started and gated like the others), `office.css` (BO-06's rules, ported from `users.css`, every value a `--frost-*` token).
