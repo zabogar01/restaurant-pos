@@ -36,12 +36,13 @@ const open = async (first?: Parameters<typeof openPresets>[1], path?: string) =>
 };
 
 describe('AC 1. the rail and the route', () => {
-  it('lists Menu, Tables, Discount presets, Settings, with their paths', async () => {
+  it('lists Menu, Tables, Staff, Discount presets, Settings, with their paths', async () => {
     const host = await open();
-    expect(text(rail(host))).toBe('ConfigurationMenuTablesDiscount presetsSettings');
+    expect(text(rail(host))).toBe('ConfigurationMenuTablesStaffDiscount presetsSettings');
     expect([...rail(host).querySelectorAll('a')].map((a) => a.getAttribute('href'))).toEqual([
       '/back-office/menu',
       '/back-office/tables',
+      '/back-office/staff',
       '/back-office/presets',
       '/back-office/settings',
     ]);

@@ -311,3 +311,27 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 #preset-editor .settings-rate { grid-template-columns: minmax(0, 1fr) auto; }
 #form-notice[data-kind='failure'], #form-notice[data-kind='stale'] { background: var(--frost-warning-surface); border-color: var(--frost-warning); color: var(--frost-warning); }
 #preset-rows button[aria-disabled='true'], #new-preset[aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }
+
+/*
+ * BO-06 Staff (PHASE1-S8c1), ported from Frost's users.css
+ * (docs/design/visual-directions/frost/back-office/users.css): the one table with its detail
+ * lines, the sticky footer, and the panel whose heading and footer stay in view while only its
+ * field body scrolls. It composes BO-05's list and panel and BO-08's field and notice rules above.
+ */
+#staff-list caption { text-align: left; color: var(--frost-muted); font-size: var(--frost-text-12); padding-bottom: var(--frost-space-3); }
+#staff-list { table-layout: fixed; }
+#staff-list td { overflow-wrap: anywhere; }
+#staff-list th:first-child { width: var(--frost-office-nav-width); }
+#staff-list th:last-child { width: var(--frost-office-nav-width); }
+#staff-list .office-actions { gap: var(--frost-space-2); }
+#staff-list tr[data-active='false'] { color: var(--frost-muted); }
+#staff-list tr[data-selected='true'] { background: var(--frost-group); }
+.staff-detail { display: block; margin-top: var(--frost-space-1); font-size: var(--frost-text-12); color: var(--frost-muted); font-weight: var(--frost-weight-regular); overflow-wrap: anywhere; }
+.tables-workspace.editing #staff-list th:first-child, .tables-workspace.editing #staff-list th:last-child { width: auto; }
+.staff-footer { flex-wrap: wrap; position: sticky; bottom: 0; }
+.staff-footer > p { flex-basis: 100%; margin: 0; }
+#staff-collection #read-state .office-notice { background: var(--frost-warning-surface); border-color: var(--frost-warning); color: var(--frost-warning); }
+#staff-add[aria-disabled='true'], #staff-rows button[aria-disabled='true'] { background: var(--frost-unavailable); color: var(--frost-unavailable-text); border-color: var(--frost-disabled-border); border-style: dashed; cursor: default; }
+#staff-editor { display: flex; flex-direction: column; overflow: hidden; }
+#staff-form { display: flex; flex-direction: column; min-height: 0; }
+#staff-form > .office-dialog__body { flex: 1; }
