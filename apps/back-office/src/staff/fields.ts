@@ -40,3 +40,13 @@ export function checkPassword(typed: string): 'invalid' | null {
   const length = [...typed].length;
   return length >= 8 && length <= 128 ? null : 'invalid';
 }
+
+/**
+ * The current password of an own change (PHASE1-S8c2 ruling 4): refused when empty or over 1024
+ * code points, never trimmed. It is otherwise judged by the verification, so a value that passes
+ * here is the server's to count (C3 section 4); no new-password rule applies to it.
+ */
+export function checkCurrentPassword(typed: string): 'empty' | 'long' | null {
+  if (typed === '') return 'empty';
+  return [...typed].length > 1024 ? 'long' : null;
+}

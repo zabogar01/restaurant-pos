@@ -1,6 +1,8 @@
-import { NewPassword, NewPin, NewUsername, StaffName } from '@pos/contracts';
+import { CurrentPassword, NewPassword, NewPin, NewUsername, StaffName } from '@pos/contracts';
 import { describe, expect, it } from 'vitest';
-import { checkName, checkPassword, checkPin, checkUsername, storedUsername } from '../src/staff/fields.js';
+import {
+  checkCurrentPassword, checkName, checkPassword, checkPin, checkUsername, storedUsername,
+} from '../src/staff/fields.js';
 
 // BO-06's four field checks (PHASE1-S8c1 ruling 4), each held against the contract schema S8a
 // exported over the boundary values: the form's check and the server's schema must agree on
@@ -153,4 +155,35 @@ describe('the password check', () => {
       expect(checkPassword(typed) === null).toBe(NewPassword.safeParse(typed).success);
     }
   );
+});
+
+// PHASE1-S8c2 ruling 4: the current password is judged by verification, so the form refuses only
+// what the contract would refuse as malformed: nothing, and more than 1024 code points. It is
+// never trimmed, so leading and trailing spaces count and are kept.
+describe('the current password check', () => {
+  const cases: [string, string, 'empty' | 'long' | null][] = [
+    ['nothing', '', 'empty'],
+    ['one character', 'x', null],
+    ['1024 characters', 'x'.repeat(1024), null],
+    ['1025 characters', 'x'.repeat(1025), 'long'],
+    ['1024 astral letters', astral(1024), null],
+    ['1025 astral letters', astral(1025), 'long'],
+    ['1024 emoji', emoji(1024), null],
+    ['1025 emoji', emoji(1025), 'long'],
+    ['one space', ' ', null],
+    ['spaces kept at both ends', '  leading and trailing  ', null],
+  ];
+
+  it.each(cases)('%s', (_label, typed, error) => {
+    expect(checkCurrentPassword(typed)).toBe(error);
+  });
+
+  it('never trims: one space is a current password', () => {
+    expect(checkCurrentPassword(' ')).toBeNull();
+    expect(checkCurrentPassword('  leading')).toBeNull();
+  });
+
+  it.each(cases)('agrees with the contract schema on %s', (_label, typed) => {
+    expect(checkCurrentPassword(typed) === null).toBe(CurrentPassword.safeParse(typed).success);
+  });
 });

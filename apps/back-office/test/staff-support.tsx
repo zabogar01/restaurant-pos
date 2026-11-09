@@ -14,6 +14,12 @@ export const U_CREATE = 'POST /api/back-office/config/users/create';
 export const U_DEACTIVATE = 'POST /api/back-office/config/users/deactivate';
 export const U_REACTIVATE = 'POST /api/back-office/config/users/reactivate';
 
+export const U_CHANGE_ROLE = 'POST /api/back-office/config/users/change-role';
+export const U_SET_PIN = 'POST /api/back-office/config/users/set-pin';
+export const U_SET_PASSWORD = 'POST /api/back-office/config/users/set-password';
+export const U_OWN_PASSWORD = 'POST /api/back-office/config/users/own-password';
+export const U_OWN_PIN = 'POST /api/back-office/config/users/own-pin';
+
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
 export type Classification = 'KITCHEN' | 'CASHIER' | 'MANAGER';
@@ -62,10 +68,16 @@ export const general = refusal('VALIDATION_FAILED', undefined, 400);
 /** A server error: its outcome is not known. */
 export const unknown = refusal('INTERNAL', undefined, 500);
 
+/** The refusals of the current-password field (S8b's Handoff): bare, with the cooldown it starts, or throttled. */
+export const wrongPassword = (retryAfterSeconds?: number) =>
+  refusal('INVALID_CREDENTIALS', retryAfterSeconds === undefined ? undefined : { retryAfterSeconds }, 401);
+export const throttled = (retryAfterSeconds: number) => refusal('THROTTLED', { retryAfterSeconds }, 429);
+
 /** Typed markers: distinctive, and never derived from one another. */
 export const MARKER_PIN = '482913';
 export const MARKER_USERNAME = 'marker.user77';
 export const MARKER_PASSWORD = 'Zx9-marker-pass';
+export const MARKER_CURRENT = 'Cur-marker-pass41';
 
 /** A harness whose health read answers, at the address BO-06 lives at. */
 export function harness(path = '/back-office/staff') {
@@ -106,6 +118,16 @@ export const pinField = (host: HTMLElement) => host.querySelector<HTMLInputEleme
 export const usernameField = (host: HTMLElement) => host.querySelector<HTMLInputElement>('#staff-username');
 export const passwordField = (host: HTMLElement) => host.querySelector<HTMLInputElement>('#staff-password');
 export const classificationField = (host: HTMLElement) => host.querySelector<HTMLSelectElement>('#staff-classification');
+export const currentField = (host: HTMLElement) => host.querySelector<HTMLInputElement>('#staff-current-password');
+export const warningOf = (host: HTMLElement) => host.querySelector('#session-warning');
+export const contextOf = (host: HTMLElement) => host.querySelector('#form-context');
+export const hintOf = (host: HTMLElement) => host.querySelector('#save-hint');
+export const storedFact = (host: HTMLElement) => host.querySelector('#stored-username');
+export const clearedNote = (host: HTMLElement) => host.querySelector('#credentials-cleared');
+export const errorOf = (host: HTMLElement, field: string) => host.querySelector(`#staff-${field}-error`);
+/** The accessible names of a row's buttons, in the order they are drawn. */
+export const actionsOf = (host: HTMLElement, who: { staffUserId: string }) =>
+  [...rowOf(host, who.staffUserId).querySelectorAll('button')].map((b) => b.getAttribute('aria-label'));
 export const panel = (host: HTMLElement) => host.querySelector<HTMLElement>('[role="dialog"][aria-modal="false"]');
 export const panelName = (host: HTMLElement) => host.querySelector('#editor-title')?.textContent ?? null;
 export const pageStatus = (host: HTMLElement) => host.querySelector('#page-status');
