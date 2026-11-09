@@ -167,7 +167,7 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
       focus contract says New preset on BO-07 — decide per screen or in `D`, with the designer — not written.
     - **S7a** (POS catalog routes, from C4) — complete, merged 2026-11-03 as PR #165. *(Done: **S7b1**, served menu, #169; **S7b2**, M-2,
       Add, the sheet between polls, #170; both merged 2026-11-05.)* **S7b3** (the POS preset picker), #171, merged
-      2026-11-05. *(Done: **S8a**, users server, `0015`, #173; **S8b**, credentials, #174; both merged 2026-11-06.)* **S8c1** (BO-06 list, create, deactivate, reactivate, D1) — complete 2026-11-09, not pushed; **S8c2** (moves, resets, own changes, D2, D3) — after S8c1; **S9**
+      2026-11-05. *(Done: **S8a**, users server, `0015`, #173; **S8b**, credentials, #174; both merged 2026-11-06.)* **S8c1** (BO-06 list, create, deactivate, reactivate, D1) — complete 2026-11-09, PR #177; **S8c2** (moves, resets, own changes, D2, D3) — after S8c1; **S9**
       (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
     post-close corrections (before Phase 5), permitted tax and service-charge range (before

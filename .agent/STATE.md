@@ -9,7 +9,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-11-09: **S8c1 complete** (`agent/phase1-s8c1`, not pushed). `development` at `e90a265` (S8a #173, S8b #174); dev
+2026-11-09: **S8c1 complete, PR #177**. `development` at `e90a265` (S8a #173, S8b #174); dev
 `pos` at `0015`. Nothing running. Lead branch `agent/lead-1105`: PR #176 open, later commits unpushed. Narrative:
 [journal/2026-11-06.md](journal/2026-11-06.md); 11-09 not yet written.
 
@@ -142,6 +142,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **On the owner's word:** push S8c1 and open its PR; write S8c2. Then S8c2's task file from its Handoff.
+1. **On the owner's word:** write S8c2. After #177 merges: fetch, fast-forward, remove `wt/PHASE1-S8c1`. Then S8c2's task file from its Handoff.
 2. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
