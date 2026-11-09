@@ -10,7 +10,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 ## Last updated
 
 2026-11-06: **#173 S8a and #174 S8b merged**; `development` at `e90a265`, the main checkout fast-forwarded; dev `pos` at
-`0015`. S8c1 builder running. Lead branch `agent/lead-1105`: PR #176 open; local merge of `development` (`b91234a`) and later
+`0015`. S8c1 built, lead-verified, Codex review running. Lead branch `agent/lead-1105`: PR #176 open; local merge of `development` (`b91234a`) and later
 commits unpushed. **S8c split; S8c1 dispatched 2026-11-09.** Narrative: [journal/2026-11-06.md](journal/2026-11-06.md).
 
 ## Phase and gates
@@ -51,14 +51,15 @@ commits unpushed. **S8c split; S8c1 dispatched 2026-11-09.** Narrative: [journal
 
 ## Running tasks and agents
 
-- **Running: PHASE1-S8c1 builder** (`phase1-s8c1`, pane `PHASE1-S8c1`, claude-sonnet-5-5, interactive), dispatched 2026-11-09.
+- **Running: PHASE1-S8c1 review** (Codex gpt-6-astra, oneshot, pane `PHASE1-S8c1-review`).
 - **S8 server is merged.** S8a: `users.ts` (`lockUsers`, `USER_ACTIONS`), five routes, `OWN_ACCOUNT`, `USER_CHANGED`,
   `DUPLICATE` details. S8b: `set-pin`, `set-password`, `own-password`, `own-pin`, `restampOwnSession` (only `users.ts`
   may import it, `restamp-scan.test.ts`). The four back-office API functions per slice are declared, called by no screen.
 - **PHASE1-S8c1 dispatched 2026-11-09** (`wt/PHASE1-S8c1`, `agent/phase1-s8c1` from `development`; kit copy deleted after `cmp`;
   C3 §10 and *S8c* verbatim, rulings 1-21, ACs 1-16). Split by the lead: DESIGN-023's 126 states are too many for one
   slice (as S4c2a/b). Path `/back-office/staff`, rail *Staff*; S8c1 renders only Deactivate/Reactivate row actions;
-  `scan.ts` map gains create and reactivate only; frame focus untouched (queued). Builder: sonnet-5-5, interactive.
+  `scan.ts` map gains create and reactivate only; frame focus untouched (queued). Built `d702174`, Handoff `b5b2cc7`, lead note `4261f5e`: verify 170 / 6078,
+  e2e:all 138; credential-emptying red repeated. Code before tests again (as S8b). Real dev baseline is 165 / 5861.
 - **S8c2 next after S8c1:** moves, PIN and password resets, own password and own PIN (FR-B3's own-PIN words, not C3 §10
   item 4), current-password answers (S8b Handoff), D2, D3, the rest of the scan map. **F3 save-prompt check** (Chrome,
   Firefox, headed) is the lead's and the owner's after S8c1.
@@ -143,6 +144,6 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **S8c1 running:** on exit, verify (dispatch skill step 4), then Codex review. Then S8c2's task file from its Handoff.
+1. **S8c1 in review:** on exit, commit the report and rule findings, or `status: complete`. Then S8c2's task file from its Handoff.
 2. **Small, between slices:** the code-point cleanup; the frame focus (`OfficeApp.tsx`, per-screen create control);
    the dialog and name-check extraction.
