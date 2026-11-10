@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { ActorChip } from './ActorChip.js';
 import { ApprovalPrompt } from './Approval.js';
 import { APPROVAL_FIXTURES } from './approvalFixtures.js';
 import { DISCOUNT_ACTION, DISCOUNT_FIXTURES, panelDiscount } from './discountFixtures.js';
@@ -319,6 +320,9 @@ export function ControlledOrderScreen({
             <a className="settlement-back" href="/pos/floor" onClick={(event) => followClientSide(event, '/pos/floor')}>
               ← Floor
             </a>
+            <div className="floor-actor">
+              <ActorChip idleClassName="floor-idle" release />
+            </div>
           </div>
         ) : (
           <div className="order-screen__bar" aria-hidden="true" {...inert} />

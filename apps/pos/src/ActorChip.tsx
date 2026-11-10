@@ -8,7 +8,7 @@ const ROLE_LABEL = { CASHIER: 'Cashier', MANAGER: 'Manager' } as const;
  * a name or a number of seconds from a literal (B-24).
  *
  * `idleClassName` is the host screen's own class for the chip; `release` draws
- * Release where the reviewed artifact draws it (floor.html:48, order.html:77,
+ * Release where the reviewed artifact draws it (floor.html:48, order.html:139,
  * closed.js:21). Release is a button, because it acts: the screen leaves for POS-01
  * whatever the server answers.
  */
