@@ -1,0 +1,30 @@
+# PHASE1-S9 review
+
+## Verdict
+
+**clean** — no actionable implementation findings. Reviewed `agent/phase1-s9` at `cec33cd78fef71b55da917c9dff00faeea71bfc9` against `development` at `c89e11b0b404ba1bac368edc800d51aebf7b44a5`, using the task, its cited requirements and rulings, and the Frost order artifact. Full database-backed verification could not be independently completed in this sandbox; the limits and the lead's separate evidence are recorded below.
+
+## Findings
+
+None.
+
+The builder's evidence has two explicit qualifications for the lead's acceptance decision. Task ruling 7 required a failing run before implementation for every criterion; the Handoff acknowledges that the browser case was written after the production change, so its historical before-change failure is missing. Criterion 2's recorded no-op mutation failed first on POS-01 not resting, rather than on the request-count assertion specified by its Red. Neither qualification demonstrates incorrect behavior in the submitted implementation. I did not recreate those mutations or treat the Handoff's mutation records as my own observations.
+
+## What I ran and what I did not
+
+- Ran `npm run verify`. Typechecking completed successfully and Vitest started, but the run produced no test totals and did not finish. I interrupted that run; its exit status was 130. This is not a green full verification run and supplies no full-suite passing count.
+- Ran `npm run test:unit -- --project client`: **135 test files passed, 5,241 tests passed**.
+- Ran `npm run test:unit -- --project client apps/pos/test/order-actor.test.tsx --maxWorkers=1 --pool=threads`: **1 test file passed, 14 tests passed**. These are included in the client total, not additional tests.
+- Ran `npm run test:e2e:all`. Both production client builds succeeded. Playwright setup failed with `connect EPERM 127.0.0.1:5433 - Local (0.0.0.0:0)` before browser cases ran. I therefore observed no Chromium or WebKit test passes. A separate TCP reachability check also failed. The browser failure establishes the database-access restriction; attributing the unfinished full verification run to the same restriction is an inference.
+- Ran `git diff --check development...agent/phase1-s9`: passed.
+- Confirmed an unchanged reviewed tree. Before verification, `git diff --stat` was empty and `git status --short --branch` showed only `agent/phase1-s9`. After the last green test run, the diff remained empty and HEAD, the task branch, and `development` still resolved to the hashes above. After the browser attempt and stopping the unfinished verification run, the diff and status remained clean. The only subsequent repository edit is this report.
+
+The task's **Lead verification, 2026-11-10** records a separate successful full verification of **178 files and 6,243 tests**, and **152 browser passes** across Chromium and WebKit. It also records Chromium layout measurements at 1280×800 for the default order and quick sale. Those are the lead's observations, not independently reproduced results from this review. I did not run database provisioning or migrations, perform a rendered visual inspection, or run mutations. I made no source or test edits, commits, or pushes.
+
+## Cleared
+
+- **Scope and placement.** The production diff adds only the `ActorChip` import and actor group inside the routed bar (`apps/pos/src/OrderPanel.tsx:319`), plus an artifact-line correction in the component comment. The new group follows task rulings 1 and 2 and the existing floor and closed-order screens. The standalone `aria-hidden` bar remains empty. No CSS, session-store, route, server, contract, or existing assertion changes were introduced.
+- **Identity and release.** `ActorChip` reads the signed-in person's name, role, and remaining seconds from the session store, and invokes its existing `release()` method. This preserves FR-A2 and the staff-configuration requirement of B-24 without adding an alternate actor source. The real-store tests click the routed control and prove immediate removal of POS-03, one release request, and POS-01 remaining at rest for 204, 500, and no response. The unchanged store's cookie-changing guard and immediate signed-out transition implement ADR-011 rules 19 and 22. No audit attribution or approval behavior changes were introduced against B-13 or B-14.
+- **Shared control across states.** I specifically checked the shared `inert` value at `OrderPanel.tsx:301`. The actor group is inside the bar receiving that value for sheets, approval, discounts, voids, and the production `itemOpened` path. Payment locking is separate and does not disable Release, as task ruling 3 requires; FR-G12 blocks the five order actions, not session release. The new sheet tests enter fixture states, so their green result alone does not establish production sheet entry. Source inspection confirms that the production item opener contributes to the same bar attribute. The payment-session test does use the floor → order → settlement → order route sequence.
+- **Work survives release.** The route harness mounts `PosRoutes`, which retains the order book and payment-session hooks above the signed-out gate. The new tests demonstrate pending-line retention, unchanged URL, payment-lock retention, and the intervening draft notice after release and fixture sign-in. This matches the task's decided behavior and ADR-011 rule 22. Fixture release also makes zero fetch calls.
+- **Browser case and design.** B12 uses `openPosOrder` and the real sign-in UI, then clicks the order bar's accessible Release button. It checks a bodiless POST, no content-type header, status 204, resting signed-out state, persistence after reload, and exactly one recorded request. Credentials come through the existing person factory and scan ledger. The Frost artifact's fixed actor text and inline button width were correctly replaced by the established session component and token-based classes; the omitted title and order-type tag are explicitly deferred by task ruling 4. No boundary conflict was found in the changed control's visible, locked, modal, or signed-out states.

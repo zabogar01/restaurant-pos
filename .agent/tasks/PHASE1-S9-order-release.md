@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: []
 owns: [apps/pos/src/OrderPanel.tsx, apps/pos/src/ActorChip.tsx, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/identity.spec.ts, e2e/support/**]
-status: review
+status: complete
 cycles: 0
 ---
 # PHASE1-S9 — POS-03's actor group and Release
