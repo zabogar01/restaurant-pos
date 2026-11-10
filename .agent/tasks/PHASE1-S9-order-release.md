@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: []
 owns: [apps/pos/src/OrderPanel.tsx, apps/pos/src/ActorChip.tsx, apps/pos/src/pos.css, apps/pos/test/**, e2e/tests/identity.spec.ts, e2e/support/**]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S9 — POS-03's actor group and Release
@@ -177,6 +177,23 @@ the Handoff below in full prose:
 - the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verification, 2026-11-10 (before review)
+
+The lead's evidence for what the reviewer cannot reach (the database and a browser).
+
+- **Branch:** `f882cb2` (task file), `75b0eda` (the change). Changed paths: `apps/pos/src/OrderPanel.tsx` (+4),
+  `apps/pos/src/ActorChip.tsx` (comment only), `apps/pos/test/order-actor.test.tsx` (new), `e2e/tests/identity.spec.ts`
+  (+29). All inside `owns`; no existing test file's assertions changed, as *Tests expected to change* allows.
+- **`npm run verify`** in the worktree, run by the lead: `Test Files 178 passed (178)`, `Tests 6243 passed (6243)`.
+- **`npm run test:e2e:all`**, run by the lead: `152 passed (2.2m)`, Chromium and WebKit; B12 included.
+- **Layout, headless Chromium at the device's 1280×800, fixture mode** (`vite` on the worktree; screenshots in
+  `../restaurant-pos-wt/evidence/PHASE1-S9/`): on `/pos/order` and `/pos/order?state=quick-new` the actor group's box is
+  `x 1022.8, y 7.5, 237.2 × 48` and Release's `x 1178.0, 81.95 × 48`, identical to the floor header's on `/pos/floor`.
+  The group sits at the bar's right end in the 64 px bar and crowds nothing. `← Floor` sits at the top of the bar rather
+  than centred; that is the existing link's styling (`settlement-back`), unchanged by this slice, and is noted, not
+  owed here.
+- The look on a real tablet remains the owner's.
 
 ## Handoff
 
