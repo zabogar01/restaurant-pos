@@ -11,7 +11,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 2026-11-10: **all eleven Phase 1 slices merged** (S9 #180, S10 #181; lead #179). `development` at `de82604`, main
 checkout fast-forwarded; verify there 180 files / 6284 tests, e2e:all 152. Nothing running. Lead branch
-`agent/lead-1110`, unpushed. Narrative: [journal/2026-11-10.md](journal/2026-11-10.md).
+`agent/lead-1110b` (the gate report; #182 merged before it), unpushed. Narrative: [journal/2026-11-10.md](journal/2026-11-10.md).
 
 ## Phase and gates
 
@@ -39,7 +39,7 @@ checkout fast-forwarded; verify there 180 files / 6284 tests, e2e:all 152. Nothi
   changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**. No lockfile change since 10-26.
 - **Dev `pos` is at `0015`**, matching `development` (checked 11-10: S9 and S10 added no migration or lockfile change).
 - **Guard hooks** current (`--check` 2026-11-05); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1110`** (from `origin/development` at `de82604` after #179
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1110b`** (from `origin/development` at `0d42d54` after #182
   merged; unpushed). **After a dependency merges, merge `origin/development` into
   the lead branch before a dry run:** the kit reads `depends_on` from its own task files (S8c1, S8c2). New lead branches:
   from `origin/development`, `git branch --unset-upstream`, `-u origin` on push.
@@ -114,7 +114,7 @@ checkout fast-forwarded; verify there 180 files / 6284 tests, e2e:all 152. Nothi
 
 Nothing here is decided. Detail is where each line points.
 
-- **Push `agent/lead-1110` and open its PR?** **Write the Phase 1 gate report?**
+- **Push `agent/lead-1110b` (the gate report) and open its PR?** **Close Phase 1** on `.agent/reviews/PHASE1-gate.md`?
 - **DESIGN-023 F3:** does a browser offer to save a PIN or another's password typed on Staff (Add person, Reset PIN,
   Reset password)? Unverified; a headed Chrome/Firefox check, now possible on `development`; if a prompt appears, does
   the 2026-10-13 "does not fight the password manager" ruling extend?
@@ -143,7 +143,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **On the owner's word, the Phase 1 gate report** against the plan's Definition of Done, as `PHASE0-gate.md` did
-   (`.agent/reviews/`); the owner closes the phase on it.
+1. **Phase 1 gate report written** (`.agent/reviews/PHASE1-gate.md`, recommends closing); the owner closes Phase 1, then
+   commission the Phase 2 plan (architect, as ARCH-017).
 2. **Small, between slices:** the code-point cleanup (now also `contracts/src/users.ts`); the frame focus
    (`OfficeApp.tsx`: Log out today, DESIGN-022/023 want the screen's create control); the dialog and name-check extraction.
