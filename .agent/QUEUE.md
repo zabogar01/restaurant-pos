@@ -168,7 +168,15 @@ have Frost artifacts (DESIGN-009, complete and merged); what is left builds them
     - **S7a** (POS catalog routes, from C4) — complete, merged 2026-11-03 as PR #165. *(Done: **S7b1**, served menu, #169; **S7b2**, M-2,
       Add, the sheet between polls, #170; both merged 2026-11-05.)* **S7b3** (the POS preset picker), #171, merged
       2026-11-05. *(Done: **S8a**, users server, `0015`, #173; **S8b**, credentials, #174; both merged 2026-11-06.)* **S8c1** (BO-06 list, create, deactivate, reactivate, D1) — merged 2026-11-09 as #177; **S8c2** (moves, resets, own changes, D2, D3) — merged 2026-11-09 as #178 (S8 complete); **S9**
-      (POS-03 Release), **S10** (BO-01 from DESIGN-016) — in the plan's §3.0 order, one task file at a time.
+      (POS-03's actor group and Release) — merged 2026-11-10 as #180; **S10** (BO-01 from DESIGN-016) — merged
+      2026-11-10 as #181 (all eleven slices merged). Then the **Phase 1 gate** (plan's Definition of Done) — not written.
+    - **M-6 announces its cooldowns once (no ID yet)** — DESIGN-016 N3 and review F4: `Reauth.tsx:371` and `:490` put
+      the ticking wait in `role="status"`, so it is re-announced every second; port S10's announce-once element (one
+      write on a new lock or account key, the visible timer not live). N1's close guard is built (`Reauth.tsx:89-92`) —
+      found by the lead 2026-11-10 — small UI task, `touches: identity`, not written.
+    - **POS-03's bar: the order title and the `DINE IN`/`COUNTER` tag (no ID yet)** — the Frost artifact draws both in
+      the bar (`order.html:130-138`); the build shows the title in the panel only; also `← Floor` sits at the bar's top,
+      not centred (`settlement-back`) — found by S9 — small UI task, not written.
 14. **Open PRD questions** — receipt content and fiscal requirements (before Phase 4),
     post-close corrections (before Phase 5), permitted tax and service-charge range (before
     Phase 2) — depends on the owner — waiting; see `docs/PRD.md` section 9.
