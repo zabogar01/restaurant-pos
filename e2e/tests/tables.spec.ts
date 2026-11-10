@@ -196,7 +196,9 @@ test('C3. and with the form open and no decision, the panel comes back with the 
   const unsaved = await editWithoutSaving(office, label);
 
   await endAbsolutely(office, oneProfile, manager);
-  await expect(office.locator('main.bocontent')).toBeHidden();
+  await expect(office.locator('.bocontent')).toBeHidden();
+  // The unsaved edit is held in this tab, so BO-01 says so (by its id, not its words).
+  await expect(office.locator('#bo-draft-note')).toBeVisible();
   await signInAtBackOffice(office, manager);
 
   await expect(rootState(office)).toHaveAttribute('data-session', 'signed-in');

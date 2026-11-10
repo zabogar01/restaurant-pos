@@ -387,7 +387,7 @@ describe('AC 10. a modal dialog in the working area, and BO-01', () => {
     // Closed, and not as a choice: the form is still there, hidden, with its draft.
     expect(departure.open).toBe(false);
     expect(openDialogs()).toHaveLength(0);
-    expect(host.querySelector<HTMLElement>('main.bocontent')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.bocontent')!.hidden).toBe(true);
     expect(labelField(host)!.value).toBe('Window 1');
     expect(panel(host)).not.toBeNull();
     // BO-01's fields accept typing: nothing modal is left over them.
@@ -399,7 +399,7 @@ describe('AC 10. a modal dialog in the working area, and BO-01', () => {
     expect(departure.open).toBe(true);
     expect(document.activeElement).toBe(stayButton());
     expect(labelField(host)!.value).toBe('Window 1');
-    expect(host.querySelector<HTMLElement>('main.bocontent')!.hidden).toBe(false);
+    expect(host.querySelector<HTMLElement>('.bocontent')!.hidden).toBe(false);
 
     tap(named(departure, 'Stay'));
     expect(document.activeElement).toBe(labelField(host));

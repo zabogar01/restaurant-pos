@@ -281,7 +281,7 @@ describe('the rate confirmation and the session', () => {
     await endSession(host);
     expect(dialog.open).toBe(false);
     expect(openDialogs()).toHaveLength(0);
-    expect(host.querySelector<HTMLElement>('main.bocontent')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.bocontent')!.hidden).toBe(true);
     expect(box(host, 'Tax rate').value).toBe('11');
     type(field(host, 'Username'), 'm.iqbal');
     expect(field(host, 'Username').value).toBe('m.iqbal');
@@ -403,7 +403,7 @@ describe('a modal dialog in the working area, and BO-01', () => {
     await endSession(host);
     expect(departure.open).toBe(false);
     expect(openDialogs()).toHaveLength(0);
-    expect(host.querySelector<HTMLElement>('main.bocontent')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.bocontent')!.hidden).toBe(true);
     expect(box(host, 'Phone').value).toBe('021 555 0000');
     type(field(host, 'Username'), 'm.iqbal');
     expect(field(host, 'Username').value).toBe('m.iqbal');

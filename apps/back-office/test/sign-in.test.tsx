@@ -39,7 +39,7 @@ describe('case 1. a sign-in', () => {
     const host = await open();
     expect(sessionState(host)).toBe('signed-out');
     expect(text(host.querySelector('h1'))).toBe('Back office');
-    expect(text(host.querySelector('.office-signin > p'))).toBe('Sign in with your manager username and password.');
+    expect(text(host.querySelector('.login-intro'))).toBe('Sign in with your manager username and password.');
 
     h.reply(LOGIN, ok(VIEW));
     type(field(host, 'Username'), 'm.iqbal');

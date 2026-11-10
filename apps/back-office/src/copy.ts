@@ -37,6 +37,13 @@ export const ACCESS_REFUSED: NoticeCopy = {
   body: 'This account cannot use the back office. Sign in with a manager account.',
 };
 
+/**
+ * BO-01's isolated-draft sentence (SCREEN-INVENTORY I:629, DESIGN-016 Part A item 4): added to
+ * Session ended when the tab still holds the previous session's unsaved work. It names no manager.
+ */
+export const DRAFT_ISOLATED =
+  'The previous session’s unsaved changes are stored on this tab and are not submitted automatically.';
+
 export const lockedFor = (seconds: number): NoticeCopy => ({
   title: `This username is locked for ${waitText(seconds)}`,
   body: 'This username is cooling down. Other managers can sign in with their own usernames.',
