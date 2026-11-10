@@ -86,7 +86,7 @@ export function SignIn({
 }) {
   const [username, setUsername] = useState('');
   const [local, setLocal] = useState<Local>(CLEAN);
-  const [announcement, setAnnouncement] = useState('');
+  const statusRef = useRef<HTMLSpanElement>(null);
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const retryRef = useRef<HTMLButtonElement>(null);
@@ -131,17 +131,21 @@ export function SignIn({
   }, [waitSeconds !== null]);
 
   // The cooldown is announced once: when a lock newly appears for the account shown, or the
-  // locked account changes. Ticking, a trailing space or a change of case writes nothing.
+  // locked account changes. Ticking, a trailing space or a change of case writes nothing. The
+  // region stays mounted and its text is written through a ref, so a switch between two locked
+  // accounts whose text is equal (the same remaining wait) is still a write.
   const announced = useRef<string | null>(null);
   useEffect(() => {
+    const region = statusRef.current;
+    if (region === null) return;
     if (notice?.locked !== true) {
       announced.current = null;
-      setAnnouncement('');
+      if (region.textContent !== '') region.textContent = '';
       return;
     }
     if (announced.current !== account) {
       announced.current = account;
-      setAnnouncement(`${notice.copy.title}. ${notice.copy.body}`);
+      region.textContent = `${notice.copy.title}. ${notice.copy.body}`;
     }
   }, [notice?.locked === true, account]);
 
@@ -208,9 +212,7 @@ export function SignIn({
             )}
           </section>
         )}
-        <span className="office-announcement" role="status" aria-atomic="true">
-          {announcement}
-        </span>
+        <span ref={statusRef} className="office-announcement" role="status" aria-atomic="true" />
         <form method="post" noValidate onSubmit={onSubmit}>
           <div className="login-field">
             <label htmlFor="bo-username">Username</label>

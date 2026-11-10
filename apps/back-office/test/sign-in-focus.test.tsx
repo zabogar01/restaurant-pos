@@ -349,6 +349,27 @@ describe('criterion 5. the lock is announced once', () => {
     seen.stop();
   });
 
+  it('switching directly between two locked accounts with the same wait writes once each way, though the text is equal', async () => {
+    const host = await open();
+    const status = statusOf(host);
+    h.reply(LOGIN, refusal('THROTTLED', { retryAfterSeconds: 300 }, 429));
+    await signInWith(host, 'first');
+    type(field(host, 'Username'), 'second');
+    type(field(host, 'Password'), 'x');
+    act(() => button(host, 'Sign in').click());
+    await h.settle();
+    expect(status.textContent).toBe(announcement(300));
+    const seen = watch(status);
+
+    type(field(host, 'Username'), 'first');
+    expect(seen.writes()).toBe(1);
+    expect(status.textContent).toBe(announcement(300));
+    type(field(host, 'Username'), 'second');
+    expect(seen.writes()).toBe(1);
+    expect(status.textContent).toBe(announcement(300));
+    seen.stop();
+  });
+
   it('every other notice keeps role="alert", and a lock gives it up', async () => {
     const host = await open();
     h.reply(LOGIN, refusal('INVALID_CREDENTIALS'));

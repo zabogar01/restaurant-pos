@@ -364,4 +364,16 @@ Selector only, `main.bocontent` to `.bocontent` (assertions unchanged): `reauth.
 
 The lead's browser measurements (panel 420 wide and centred, fields 420×40, notice contrast, no overflow, frame at x=0 and x=240 at 1920). Nothing else is missing.
 
+### Round 2 (fix cycle 1): F1, a switch between two locked accounts with equal text
+
+**The change** (`apps/back-office/src/SignIn.tsx` only, plus one test). The status region is now a persistent, empty `<span ref={statusRef} role="status" aria-atomic="true">` with no React children, and the existing guarded effect writes its `textContent` through the ref: when a lock newly appears or the locked account key changes it assigns the title, a full stop and the body; when no lock is shown it empties the region (only if it is not already empty). The `announcement` state is gone. Because assigning `textContent` replaces the text node even when the string is equal, two accounts locked for the same remaining wait now each cause one DOM write on a switch. The guard is unchanged (`announced.current !== account`), so a tick, a trailing space and a change of case on the same account still write nothing; the region stays mounted throughout.
+
+**New test** (`sign-in-focus.test.tsx`, "switching directly between two locked accounts with the same wait writes once each way, though the text is equal"): locks `first` and `second` for 300 s each with no clock movement, so the announcement texts are equal, then replaces Username's whole value `first`, then `second`, observing the region with a `MutationObserver`; each switch is exactly one write and the text is the same announcement.
+
+**Both failures.** Before the fix, the F1 behaviour (state-written text, previous committed `SignIn.tsx`) with the new test: `expected +0 to be 1` at the first switch (no write). Red on the finished code is the same mutation: I restored the committed state-based version, ran the test, got that failure, and copied the fixed file back. With the fix: `sign-in-focus.test.tsx` 25 of 25 pass.
+
+**Decisions not changed, as ruled:** the mixed missing-and-oversize case, and the stale `aria-invalid` note, stand.
+
+**Real output.** `npm run verify`: typecheck clean, 179 files, 6270 tests passed (+1 test). `npm run test:e2e:all` not re-run: nothing a spec reaches changed beyond the status region's text writing, which no spec reads.
+
 DONE
