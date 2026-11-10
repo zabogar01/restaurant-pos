@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { openPosOrder } from '../support/catalog.js';
 import { expect, signInAtPos, test } from '../support/fixtures.js';
 
 // B-13 and ARCH-014 finding 1: a tab never silently becomes another person. Two POS
@@ -10,6 +11,7 @@ import { expect, signInAtPos, test } from '../support/fixtures.js';
 const rootState = (page: Page) => page.locator('#root');
 const ACTIVITY = '/api/pos/auth/activity';
 const ME = '/api/pos/auth/me';
+const RELEASE = '/api/pos/auth/release';
 
 test('B11. a POS tab whose cookie was taken by another person ends and never becomes them', async ({
   world,
@@ -70,6 +72,33 @@ test('B11. a POS tab whose cookie was taken by another person ends and never bec
   // The tab that did sign in as B is B's, undisturbed.
   await expect(rootState(tab2)).toHaveAttribute('data-session', 'signed-in');
   await expect(tab2.getByText(b.name)).toBeVisible();
+});
+
+test('B12. Release on POS-03 sends one bodiless request, rests POS-01, and the server ended the session', async ({
+  world,
+  oneProfile,
+}) => {
+  const cashier = await world.people.cashier();
+  const pos = oneProfile.pos;
+  await openPosOrder(pos, cashier);
+
+  const sent = pos.waitForRequest((r) => r.method() === 'POST' && r.url().endsWith(RELEASE));
+  await pos.locator('.order-screen__bar').getByRole('button', { name: 'Release', exact: true }).click();
+  const request = await sent;
+  expect(request.postData()).toBeNull();
+  expect(Object.keys(await request.allHeaders())).not.toContain('content-type');
+  expect((await request.response())?.status()).toBe(204);
+
+  await expect(rootState(pos)).toHaveAttribute('data-session', 'signed-out');
+  await expect(pos.locator('[data-lock-state]')).toHaveAttribute('data-lock-state', 'resting');
+
+  // A reload reads the session from the server: still POS-01, so the server ended it.
+  await pos.reload();
+  await expect(rootState(pos)).toHaveAttribute('data-session', 'signed-out');
+  await expect(pos.locator('[data-lock-state]')).toHaveAttribute('data-lock-state', 'resting');
+
+  await oneProfile.settled();
+  expect(oneProfile.requests.filter((r) => r.method === 'POST' && new URL(r.url).pathname === RELEASE)).toHaveLength(1);
 });
 
 test('B-scan. the scan finds each PIN in its own sign-in body', async ({ world, oneProfile }) => {

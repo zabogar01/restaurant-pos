@@ -180,4 +180,33 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ## Handoff
 
-*(The builder writes this section.)*
+**What was done.** Routed POS-03 now draws the actor group at the right end of its bar. In `apps/pos/src/OrderPanel.tsx` the `showFloorLink` bar gains `<div className="floor-actor"><ActorChip idleClassName="floor-idle" release /></div>` after `← Floor`, plus the `ActorChip` import. The standalone bar (no `showFloorLink`) is untouched. `apps/pos/src/ActorChip.tsx` changed only its comment, `order.html:77` to `order.html:139`. No CSS was needed: `.floor-actor` already carries `margin-left: auto` and its own gap, and `.order-screen__bar--floor` is already a flex row. New tests are in `apps/pos/test/order-actor.test.tsx` (14 tests) and one new case, `B12`, in `e2e/tests/identity.spec.ts`. No production code outside OrderPanel's bar changed, and the session store, `PosRoutes.tsx` and the e2e support files were not touched.
+
+**What was decided, and on what evidence.**
+- Placement and classes follow ruling 1 and 2 exactly, as the floor, POS-05 and POS-06 do (`FloorScreen.tsx:205-209` and the others).
+- Inert and the locked state needed no code: the group sits inside the bar that already takes `{...inert}`, and `ActorChip` is not gated on `locked`. Tests 4 and 1 (locked) prove both.
+- The e2e case copies the bodiless checks inline from `premises.spec.ts` rather than moving that helper, and imports the existing `openPosOrder` from `e2e/support/catalog.ts` (no support change). It uses `world.people.cashier()` as the other specs do, so the credential scan's ledger records the PIN. It also asserts exactly one Release POST reached the wire, and that after `pos.reload()` the page is still signed out at `resting`, which shows the server ended the session.
+- Criterion 5's test types only the fixture cashier signed in. Signed out, `ActorChip` returns null, so a second case would test nothing. I renamed the test title from "signed in or not" to say what it covers.
+- Criterion 3 in fixture mode: the "payment session" case goes Table 1, Settle, back to Order, which makes a real in-tab payment session; POS-01 then shows `data-lock-state="draft"`. The pending-line case adds a Burger to the free Table 2.
+
+**Existing tests changed.** None. No existing test enumerated the routed POS-03 bar or its buttons, so nothing needed Release added or filtered. The pre-existing suites (floor, POS-05, POS-06, session-store, session-fixture and the other e2e specs) pass unchanged.
+
+**Each criterion: failure before the change, then the Red on the finished code.**
+1. *Before:* with the new tests written and `OrderPanel.tsx` unmodified, the three `the group is drawn` cases and the locked-by-payment-session case failed with `TypeError: Cannot read properties of null (reading 'textContent')` (no `.floor-actor` in the bar). *Red:* removed `release` from the new `ActorChip`; the three bar cases failed with `expected 'Ana R. · Cashier90s' to be 'Ana R. · Cashier90sRelease'`.
+2. *Before:* the three `sends one request` cases failed on `expected [] to have a length of 1 but got +0` (no Release button). *Red:* changed `ActorChip`'s `onClick` to `() => undefined`; the three cases failed on `expected undefined to be 'resting'`. This fails on resting rather than on the request count, but the no-op button sends nothing and reaches neither assertion; both would fail. The test asserts the count after the answer is settled.
+3. *Before:* both survival cases failed with `Cannot read properties of undefined (reading 'click')` (no Release button). *Red:* inserted `window.history.replaceState(null, '', '/pos/floor')` at the top of `PosRoutes.tsx`'s signed-out branch; both cases failed with `expected '/pos/floor' to be '/pos/order?state=default'`. I restored the file with `git checkout -- apps/pos/src/PosRoutes.tsx`, and `git status` afterwards showed it clean (only my three intended files modified).
+4. *Before:* the sheet cases failed with `Cannot read properties of undefined (reading 'closest')`. *Red:* removed `{...inert}` from the routed bar; both the M-2 and the approval-prompt cases failed with `expected null not to be null`. The control case (nothing open, Release not inert) stays green under that mutation, as it should.
+5. *Before:* passes, since this pins existing behaviour (the standalone bar was never changed). *Red:* drew the group in the standalone bar as well; the test failed with `expected 'Ana R. · Cashier90sRelease' to be ''`.
+6. A Release on POS-03 in fixture mode makes zero `fetch` calls. *Before:* failed like the others (no button). *Red:* not needed beyond criterion 2's, as the ruling says.
+7. *Before:* the production change was already in when I wrote the e2e case, so there is no recorded failing run of it against unmodified code; the unit tests carry the before-record. *Red:* replaced `.click()` with `.hover()` on the Release button; the case failed at `page.waitForRequest` (timeout, nothing sent). Restored afterwards. The case passes on Chromium and WebKit.
+
+**Found and not fixed.**
+- Ruling 4: the Frost artifact's bar also draws the order title as an `h1` and a `DINE IN`/`COUNTER` tag. The built screen shows the title in `order-panel__title` and draws neither in the bar. Out of scope here; the lead queues it.
+- Release is drawn in the routed bar with `ActorChip`'s default `floor-action` class, not the artifact's `btn btn--sm` with `width:110px` (ruling 2). I did not check the rendered layout in a browser for visual fit, only the CSS: the bar is a flex row of `--frost-pos-header-height` with `align-items: center`, the same container shape as the floor's header. I used no screenshot and no visual check; a look at `/pos/order` at tablet width would settle whether the group fits beside `← Floor` without crowding.
+- `npm run test:e2e:all` rebuilds `apps/*/dist`; the dist output is not tracked, so it does not appear in `git status`.
+
+**Verify output (real).** `npm run verify`: typecheck clean, then `Test Files 178 passed (178)` and `Tests 6243 passed (6243)` (baseline 177 files, 6229 tests: +1 file, +14 tests). `npm run test:e2e:all`: `152 passed (2.3m)` on Chromium and WebKit (baseline 150: the new B12 on each browser). `npm run db:up` and `build:clients` were run first; nothing was pending to migrate. No formatter touched any file.
+
+**What the next agent needs.** Nothing blocked. I have no browser access in this session beyond Playwright's headless runs, so no human-visual check was done (see above).
+
+DONE
