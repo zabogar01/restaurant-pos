@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-016]
 owns: [apps/back-office/src/SignIn.tsx, apps/back-office/src/OfficeApp.tsx, apps/back-office/src/office.css, apps/back-office/src/copy.ts, apps/back-office/test/**, e2e/tests/tables.spec.ts]
-status: active
+status: complete
 cycles: 0
 ---
 # PHASE1-S10 — BO-01 from DESIGN-016
@@ -300,6 +300,25 @@ Read it whole. This is fix cycle 1 of 2.
 Then `npm run verify`; `npm run test:e2e:all` only if you touch anything a spec reaches beyond `SignIn.tsx`'s
 announcement (it should not). Add a **Round 2** section at the end of the Handoff (the change, both failures for the
 new test, the real output), end the file with `DONE`, commit on `agent/phase1-s10` (path-scoped), and report.
+
+## Round 2: lead review, 2026-11-10 (complete)
+
+Round 2 (`ecdef10`) is reviewed by the lead, not resumed to the reviewer: it is a fully ruled fix of one finding, a
+16-line change to `SignIn.tsx` plus one test. The lead read the whole diff: the status region is a persistent empty
+`span` with no React children, written through a ref inside the unchanged guarded effect (`announced.current !==
+account`), and emptied only when not already empty; React never reconciles its text, so the ref write cannot be
+overwritten by a render. The new test locks two accounts for the same 300 s and observes one write per direct switch,
+both ways.
+
+- **Red, repeated by the lead:** the finished code mutated to skip a write when the text is equal (`if
+  (region.textContent !== t)`); the new test failed with `expected +0 to be 1` (1 failed, 24 passed); `SignIn.tsx`
+  restored from a copy, `git status` clean for it.
+- **`npm run verify`** (lead, final tree): `Test Files 179 passed (179)`, `Tests 6270 passed (6270)`.
+- **`npm run test:e2e:all`** (lead, final tree): `150 passed (2.2m)`, Chromium and WebKit.
+- The round-1 measurements stand: the change touches no layout.
+
+Review history: round 1 one medium (F1, fixed in round 2) and the mixed missing-and-oversize question (the build
+stands, lead ruling). Nothing open. **Status: complete.**
 
 ## Handoff
 
