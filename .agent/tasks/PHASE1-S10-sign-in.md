@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-016]
 owns: [apps/back-office/src/SignIn.tsx, apps/back-office/src/OfficeApp.tsx, apps/back-office/src/office.css, apps/back-office/src/copy.ts, apps/back-office/test/**, e2e/tests/tables.spec.ts]
-status: review
+status: active
 cycles: 0
 ---
 # PHASE1-S10 — BO-01 from DESIGN-016
@@ -275,6 +275,31 @@ The lead's evidence for what the reviewer cannot reach (the database and a brows
   oversize one shows the Sign-in failed notice beside the missing field's inline message. The builder read ruling 4
   ("every missing field … every oversized field") as requiring it (Handoff, *Decisions and evidence*). Ruling 2 names
   `login.js` as the behavioural reference. The lead has not ruled; say which you think is right and why.
+
+## Round 2: the lead's ruling on the review, 2026-11-10
+
+The review is `.agent/reviews/PHASE1-S10-review.md` (Codex `gpt-6-astra`, high, at `b4f9399`): one medium finding.
+Read it whole. This is fix cycle 1 of 2.
+
+- **F1 (medium), accepted as proposed.** Switching directly between two locked accounts whose announcement text is
+  equal (the same remaining wait) writes nothing to the status element, because React sees the same string; the
+  account reference has already advanced, so nothing repairs it, and the visible notice is correctly not live. Ruling
+  5 requires a write whenever the locked account key changes. Fix it so that a change of locked account always writes
+  the status element, even when the text is equal: write its text through a ref inside the existing guarded effect (as
+  `login.js` does with `textContent`), or replace a keyed child inside the persistent region; keep the region itself
+  mounted. Keep the no-write behaviour for a tick, a trailing space and a change of case on the same account, and the
+  emptying when no lock is shown. Add the review's regression: two accounts locked with the same wait, switching
+  directly between them by replacing Username's whole value, **in both directions**, observing DOM writes with a
+  `MutationObserver` (one write per switch). Red: restore the equal-string behaviour and record the failure.
+- **The mixed missing-and-oversize case: the build stands.** Ruling 4 says every missing and every oversized field is
+  marked; the reviewer agrees it is the more specific instruction, and the owner's 2026-10-20 oversize ruling is kept
+  (no inline text beside the oversized field). No change.
+- **The Handoff's stale `aria-invalid` note** (a cooldown over an oversize mark leaves Password flagged until edited):
+  not a defect while the lock disables Password; leave it.
+
+Then `npm run verify`; `npm run test:e2e:all` only if you touch anything a spec reaches beyond `SignIn.tsx`'s
+announcement (it should not). Add a **Round 2** section at the end of the Handoff (the change, both failures for the
+new test, the real output), end the file with `DONE`, commit on `agent/phase1-s10` (path-scoped), and report.
 
 ## Handoff
 
