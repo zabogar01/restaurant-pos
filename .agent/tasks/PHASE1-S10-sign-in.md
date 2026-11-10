@@ -5,7 +5,7 @@ category: ui
 touches: [identity]
 depends_on: [DESIGN-016]
 owns: [apps/back-office/src/SignIn.tsx, apps/back-office/src/OfficeApp.tsx, apps/back-office/src/office.css, apps/back-office/src/copy.ts, apps/back-office/test/**, e2e/tests/tables.spec.ts]
-status: not-started
+status: review
 cycles: 0
 ---
 # PHASE1-S10 — BO-01 from DESIGN-016
@@ -239,6 +239,42 @@ the Handoff below in full prose:
 - the real `verify` and `test:e2e:all` output.
 
 End with `DONE` or `BLOCKED: <one question>`, then report to the lead through Herdr as AGENTS.md says.
+
+## Lead verification, 2026-11-10 (before review)
+
+The lead's evidence for what the reviewer cannot reach (the database and a browser).
+
+- **Branch:** `69266ba` (task file), `df4f1d5` (the change). Every changed path is inside `owns`. Changed tests beyond
+  the three the task named are selector-only (`main.bocontent` to `.bocontent`, `.office-signin > p` to
+  `.login-intro`), each named in the Handoff; no assertion was weakened.
+- **`npm run verify`** in the worktree, run by the lead: `Test Files 179 passed (179)`, `Tests 6269 passed (6269)`.
+- **`npm run test:e2e:all`**, run by the lead: `150 passed (2.2m)`, Chromium and WebKit, including the new
+  `#bo-draft-note` assertion in `tables.spec.ts` C3.
+- **Measurements, headless Chromium, fixture mode** (`vite` on the worktree; screenshots in
+  `../restaurant-pos-wt/evidence/PHASE1-S10/`). Boxes are `(x, y, width, height)` in CSS pixels.
+
+  | Measurement | 1440×900 | 1920×1080 | DESIGN-016 |
+  |---|---|---|---|
+  | `main` elements at BO-01 | 1 | 1 | 1 |
+  | Focus on first load | `bo-username` | `bo-username` | Username |
+  | Panel, resting | `(510, 274.72, 420, 350.58)` | `(750, 364.72, 420, 350.58)` | 420 wide, centred |
+  | Panel, with the Sign-in failed notice (oversize username) | `(510, 229.42, 420, 441.17)` | `(750, 319.42, 420, 441.17)` | x 510 / 750 |
+  | Username field | `420 × 40` | `420 × 40` | `420 × 40` |
+  | Sign in | `420 × 36` | `420 × 36` | full width, 36 |
+  | Notice text on its surface | `rgb(131, 97, 28)` on `rgb(255, 245, 218)`, **5.235 : 1** | same | 5.2348 |
+  | Horizontal overflow (resting, notice, frame) | 0, 0, 0 | 0, 0, 0 | 0 |
+  | Signed-in frame | `(0, 0, 1440, 900)` | `(240, 0, 1440, 1080)` | same |
+  | Rail / top bar | `(0, 0, 220, 900)` / `(220, 0, 1220, 64)` | `(240, 0, 220, 1080)` / `(460, 0, 1220, 64)` | same |
+  | Signed in: `main` elements / `[role=main]` | 0 / 1 | 0 / 1 | one landmark |
+
+  The panel is 89 px shorter than DESIGN-016's because the artifact's panel also holds its review-fixture disclosure.
+  At 1440×300 the page scrolls (`scrollHeight` 399 over 300) and Sign in's bottom (350.6) is inside it: nothing is
+  clipped. The look on the owner's own desk remains the owner's.
+- **For the reviewer, a deviation to weigh.** With one field missing and the other oversize, `login.js` marks only the
+  missing field and shows no notice (its submit returns after the missing check); the build marks both, so the
+  oversize one shows the Sign-in failed notice beside the missing field's inline message. The builder read ruling 4
+  ("every missing field … every oversized field") as requiring it (Handoff, *Decisions and evidence*). Ruling 2 names
+  `login.js` as the behavioural reference. The lead has not ruled; say which you think is right and why.
 
 ## Handoff
 
