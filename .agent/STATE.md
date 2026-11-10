@@ -9,43 +9,43 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Last updated
 
-2026-11-09 (wrap-up for a fresh session): **S8 is merged whole** (S8a #173, S8b #174, S8c1 #177, S8c2 #178; lead #176).
-`development` at `c89e11b`, the main checkout fast-forwarded; dev `pos` at `0015`. Nothing running. Lead branch
-`agent/lead-1109`, unpushed. Narrative: [journal/2026-11-09.md](journal/2026-11-09.md).
+2026-11-10: **all eleven Phase 1 slices merged** (S9 #180, S10 #181; lead #179). `development` at `de82604`, main
+checkout fast-forwarded; verify there 180 files / 6284 tests, e2e:all 152. Nothing running. Lead branch
+`agent/lead-1110`, unpushed. Narrative: [journal/2026-11-10.md](journal/2026-11-10.md).
 
 ## Phase and gates
 
-- **Phase 1 (Back office and catalog, ROADMAP `:60-90`): building.** Plan accepted 2026-10-20
+- **Phase 1 (Back office and catalog, ROADMAP `:60-90`): built; the gate is next.** Plan accepted 2026-10-20
   (`docs/superpowers/plans/2026-10-19-phase-1-back-office-and-catalog.md`). 11 slices S0-S10. **Done and merged:** S0
   (#115: `0009`), S1a (#119: tables server, `0010`), S1b (#123: BO-05, the rail, the form pattern), S2a (#128: settings
   server, `0011`), S2b (#130: BO-08 settings), S3a (#134: tender methods, `0012`), S3b (#137: BO-08 methods), S4a (#140:
   catalog domain, `0013`), S4b (#142: catalog routes), S4c1 (#144: BO-03), S4c2a (#147), S4c2b (#149: BO-04), S5 (#151:
   86), S6a (#154: presets server, `0014`), S6b (#157: BO-07), S7a (#165), S7b1-3 (#169-171: the served POS catalog),
   S8a (#173: users server, `0015`), S8b (#174: credentials, the re-stamp), S8c1 (#177) and S8c2 (#178): BO-06 Staff and
-  FR-B3 end to end, AC-32 in the browser. **Left:** S9 (POS-03's actor group and Release, plan `:393`) and S10 (BO-01
-  from DESIGN-016, plan `:406`), both one small task, independent, no consult.
+  FR-B3 end to end, AC-32 in the browser; S9 (#180: POS-03's actor group and Release), S10 (#181: BO-01 from DESIGN-016).
 - **Rulings by slice** (DECISIONS 2026-10-20 to 22, 11-02): S2 Q2, Q5, Q12, DESIGN-018 Q1-Q6; S3 C2 OQ1; S7 Q14, C4 OQ1; S8
   Q1, Q6a, Q7-Q11, C3's OQ1 (create audited), OQ2 (no rename).
 - **Architecture:** eleven accepted ADRs (001-007, 009-012); ADR-008 deferred. **Owed, not drafted:** ROADMAP Phase 1
   users: role change (Q1c); tender: "reactivate" (OQ1).
-- **Built:** POS-01 to POS-07; BO-01 (provisional), M-6, BO-03 to BO-08. **Frost designed:** all but BO-09, BO-10, 11.
-- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** S8c2 final tree (`a850390`)
-  verify 177 files / 6229 tests, e2e:all 150; `development` should match (lead runs it at `/lead`).
+- **Built:** POS-01 to POS-07; BO-01, M-6, BO-03 to BO-08. **Frost designed:** all but BO-09, BO-10, 11.
+- **Implementation gate: OPEN since 2026-09-14**; nothing open in PRD §9. **Last verify:** `development` `de82604`,
+  verify 180 files / 6284 tests, e2e:all 152 (lead, 2026-11-10).
 
 ## Integration branch
 
-- **`development`** at `c89e11b` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
+- **`development`** at `de82604` on GitHub; the main checkout matches it. `main` and `development` are protected: PR
   required, 0 approvals, admins too. Only the owner merges.
 - **At every `/lead` and after every merge:** `git fetch`, fast-forward the main checkout, then `npm ci` if the lockfile
   changed, `npm run db:migrate` if a migration landed, **before reporting or dispatching**. No lockfile change since 10-26.
-- **Dev `pos` is at `0015`**, matching `development` (checked 11-09, no pending migrations).
+- **Dev `pos` is at `0015`**, matching `development` (checked 11-10: S9 and S10 added no migration or lockfile change).
 - **Guard hooks** current (`--check` 2026-11-05); no agents.yaml or `.githooks/` change since 2026-10-17.
-- **Lead work: `../restaurant-pos-kit` on `agent/lead-1109`** (renamed from `lead-1105` after #176 merged; contains
-  `development` at `c89e11b` by merge; unpushed, no PR). **After a dependency merges, merge `origin/development` into
+- **Lead work: `../restaurant-pos-kit` on `agent/lead-1110`** (from `origin/development` at `de82604` after #179
+  merged; unpushed). **After a dependency merges, merge `origin/development` into
   the lead branch before a dry run:** the kit reads `depends_on` from its own task files (S8c1, S8c2). New lead branches:
   from `origin/development`, `git branch --unset-upstream`, `-u origin` on push.
 - **Pushing needs the owner's word, every time** (LESSONS); `gh pr view <n> --json state` before any follow-up push.
-- **Task worktrees:** none live. Left behind: `runs/PHASE1-S7a`, `runs/DESIGN-021`, `-023`, `wt/evidence/DESIGN-021`,
+- **Task worktrees:** none live; S9's and S10's removed 11-10 with runs and local branches. Left behind:
+  `wt/evidence/PHASE1-S9`, `-S10` (screenshots), `runs/PHASE1-S7a`, `runs/DESIGN-021`, `-023`, `wt/evidence/DESIGN-021`,
   `-023`; `wt/ARCH-021`, `wt/DESIGN-021` (the owner's). Not ours: `restaurant-pos-design`, `keen-chebyshev-ccf255`.
 
 ## Running tasks and agents
@@ -54,8 +54,9 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   credentials in native uncontrolled inputs, emptied when a command answers; the own-password cooldown in the model,
   keyed to the manager, its deadline fixed on arrival. S8c2's decisions 2, 3, 5 (a blocked form is not dirty; a
   `DUPLICATE` on an unshown field is general; the warning is hidden on a blocked form) accepted by the lead.
-- **S9 not written.** Sources: plan `:393-404`; `docs/design/visual-directions/frost/pos/order.html:77`; PHASE0-011c2's
-  task file `:560-566` and its ruling 2; ADR-011 rules 19 and 22; `touches: identity`. Write it on the owner's word.
+- **S9 and S10 as built:** POS-03's routed bar draws `ActorChip` with Release (the floor's look). BO-01: the content
+  pane is a `div` with `role="main"` only while framed, kept mounted (ADR-011 rule 22); the lock is announced once
+  through a ref-written status element. M-6: N1 built, N3/F4 not (queued).
 - **Frontend tasks carry design rules:** BO-13 DESIGN-013's N1, N2, async focus; BO-12 DESIGN-014's C1, density. **Open
   ACs (stand-ins, server owes them):** FE-032 AC-11/14/18/25/34; FE-035 AC-8/9/18/21; FE-036 AC-3/10/11/18/21/22.
 
@@ -90,7 +91,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 ## Live bugs and known defects
 
-- **Owner to see in a browser, then close:** BO-06 Staff (#177, #178); the served POS (#169-171: the menu, M-2, the preset picker, whose layout
+- **Owner to see in a browser, then close:** POS-03's Release (#180); BO-01 (#181); BO-06 Staff (#177, #178); the served POS (#169-171: the menu, M-2, the preset picker, whose layout
   of 40 entries, a 32-code-point name, the full-width Cancel and the gated entries was never measured); BO-03 (with 86),
   BO-04, BO-07 (48-row overflow unmeasured), BO-08's methods; the Burger-tile fix (FE-021 `7268943`); POS-03 Add (L353);
   DESIGN-021's and DESIGN-023's states in the gallery (`docs/design/visual-directions/index.html`).
@@ -99,7 +100,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
   optional `DiscountChange.shown` (its one caller always passes it); every POS store check is a stand-in (Phase 2).
 - **Backend:** `session_replication_role` bypasses the append-only trigger (ADR-008); PIN timing (ARCH-013 §7). The
   schema check compares migration names, not contents (S0). `npm ci` warns about install scripts. One high npm advisory,
-  development-only (PHASE0-008a). **BO-01 provisional** (S10 builds DESIGN-016). **012a/b:** no `makePeople` in `e2e/`.
+  development-only (PHASE0-008a). **012a/b:** no `makePeople` in `e2e/`.
   S8a: `reactivateUser` hashes a supplied PIN even for a no-op (cost only). `packages/contracts/src/users.ts` says
   `StaffName` counts UTF-16 units; zod counts code points (S8c1, S8c2 pair tests).
 - **Lengths are code points** (zod 4.6.5, `char_length`), not the "UTF-16 units" comments (`tables.ts`, `settings.ts`,
@@ -113,7 +114,7 @@ memory archive unless it says otherwise. Owner rulings live only in [DECISIONS.m
 
 Nothing here is decided. Detail is where each line points.
 
-- **Push `agent/lead-1109` and open its PR?** **Write S9?**
+- **Push `agent/lead-1110` and open its PR?** **Write the Phase 1 gate report?**
 - **DESIGN-023 F3:** does a browser offer to save a PIN or another's password typed on Staff (Add person, Reset PIN,
   Reset password)? Unverified; a headed Chrome/Firefox check, now possible on `development`; if a prompt appears, does
   the 2026-10-13 "does not fight the password manager" ruling extend?
@@ -123,7 +124,8 @@ Nothing here is decided. Detail is where each line points.
   modes, the decimal comma, the gated label) and round 2 (an approval binds the snapshot it displays); S8a rulings 1-8
   (C3's three readings accepted, audit rollback by privilege) and the lead's commit of the builder's forced test edit; S8b
   rulings 1-13 and R1; **the S8c split** and S8c1 rulings 1-21 (`/back-office/staff`, no placeholders, row-command
-  refusals as definite failures); S8c2 rulings 1-16 and decision 5 (the warning hidden on a blocked form).
+  refusals as definite failures); S8c2 rulings 1-16 and decision 5 (the warning hidden on a blocked form); S9
+  rulings 1-7 (routed bar only, the floor's look); S10 rulings 1-8 (one `main` by role) and round 2 (mixed fields).
 - **ARCH-013, *For the owner*** (lead: yes to each): (1) FR-J3/AC-18/FR-A5 wording; (2) best-effort cancel reports;
   (3) no Cancel while verifying (replaces POS-03 Q6); (4) accept the approval-entry flood and the PIN timing leak
   for §3.2; (5) commission an inline-approval ADR. 2 and 3 are needed before Phase 2.
@@ -141,7 +143,7 @@ Nothing here is decided. Detail is where each line points.
 
 ## Next up
 
-1. **`/lead`:** fetch, fast-forward, `verify` on `development` (expect 177 / 6229). Then, on the owner's word, **write S9**
-   (sources above), dry-run, dispatch; S10 after or alongside (max one builder).
+1. **On the owner's word, the Phase 1 gate report** against the plan's Definition of Done, as `PHASE0-gate.md` did
+   (`.agent/reviews/`); the owner closes the phase on it.
 2. **Small, between slices:** the code-point cleanup (now also `contracts/src/users.ts`); the frame focus
    (`OfficeApp.tsx`: Log out today, DESIGN-022/023 want the screen's create control); the dialog and name-check extraction.
