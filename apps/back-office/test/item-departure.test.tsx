@@ -351,7 +351,7 @@ describe('AC 16. M-6 and BO-01', () => {
     typeInto(priceInput(host), '60.000');
     priceInput(host).focus();
     await endSession(host);
-    expect(host.querySelector<HTMLElement>('main.bocontent')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.bocontent')!.hidden).toBe(true);
     await signInAgain(host);
     expect(nameInput(host).value).toBe('Burger two');
     expect(priceInput(host).value).toBe('60.000');

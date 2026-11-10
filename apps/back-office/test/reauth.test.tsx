@@ -47,7 +47,7 @@ const btn = (name: string) => button(dlg()!, name);
 const click = (name: string) => act(() => btn(name).click());
 const area = (host: HTMLElement) => host.querySelector<HTMLElement>('.office-work');
 const childInput = (host: HTMLElement) => host.querySelector<HTMLInputElement>('#draft');
-const pane = (host: HTMLElement) => host.querySelector<HTMLElement>('main.bocontent')!;
+const pane = (host: HTMLElement) => host.querySelector<HTMLElement>('.bocontent')!;
 const inertParts = (host: HTMLElement) =>
   ['.bonav', '.botop', '.bocontent'].map((s) => host.querySelector(s)?.hasAttribute('inert'));
 const disabled = (el: Element) => el.getAttribute('aria-disabled') === 'true';

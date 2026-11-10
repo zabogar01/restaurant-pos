@@ -625,7 +625,7 @@ describe('AC 14. the form and the confirmation against the session', () => {
     tap(host.querySelector<HTMLElement>('#kind-fixed')!);
     typeInto(amountField(host)!, '5.000');
     await endSession(host);
-    expect(host.querySelector<HTMLElement>('main.bocontent')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.bocontent')!.hidden).toBe(true);
     expect(nameField(host)!.value).toBe('Gift');
     type(field(host, 'Username'), 'm.iqbal');
     expect(field(host, 'Username').value).toBe('m.iqbal');

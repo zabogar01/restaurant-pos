@@ -547,7 +547,7 @@ describe('AC 9. the method form against the session', () => {
     const host = await open();
     dirtyMethod(host);
     await endSession(host);
-    expect(host.querySelector<HTMLElement>('main.bocontent')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.bocontent')!.hidden).toBe(true);
     expect(methodNameField(host)!.value).toBe('Voucher');
     type(field(host, 'Username'), 'm.iqbal');
     expect(field(host, 'Username').value).toBe('m.iqbal');

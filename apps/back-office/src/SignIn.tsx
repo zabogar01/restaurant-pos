@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   ACCESS_REFUSED,
+  DRAFT_ISOLATED,
   MISSING_PASSWORD,
   MISSING_USERNAME,
   SESSION_ENDED,
@@ -13,10 +14,10 @@ import {
 import { accountKey } from './session/account.js';
 import type { SessionSnapshot, SessionStore } from './session/types.js';
 
-// BO-01, PROVISIONAL (ARCH-014 question 7, item 3): one username field and one
-// password field from the 40px field pattern with a persistent label, the office
-// primary button, and the amber notice, stacked as the dialog forms stack them.
-// Slice B's frontend task replaces the composition; the sentences are DESIGN-015's.
+// BO-01 as DESIGN-016 draws it (PHASE1-S10): a 420px panel centred in the window, the
+// heading and helper, the amber notice, a hidden status element that announces a lock
+// once, and the form of two persistent-label 40px fields and a full-width Sign in. This
+// is the one `<main>` at BO-01. The sentences are DESIGN-015's.
 //
 // The password field is an uncontrolled native input: read once on submit, emptied
 // at once, never React state and never an attribute (B-12). The username is read
@@ -32,9 +33,23 @@ export const PASSWORD_LIMIT = 1024;
 type Local = { username: 'missing' | 'oversize' | null; password: 'missing' | 'oversize' | null };
 const CLEAN: Local = { username: null, password: null };
 
-type Notice = { copy: NoticeCopy; action?: boolean };
+/**
+ * `locked`: a cooldown, announced once and not a live region. `oversize`: the notice a field
+ * that is too long is described by. `draft`: Session ended with the previous session's unsaved
+ * work still held in this tab.
+ */
+type Notice = { copy: NoticeCopy; action?: boolean; locked?: boolean; oversize?: boolean; draft?: boolean };
 
-function noticeFor(snapshot: SignedOut, local: Local, waitSeconds: number | null): Notice | null {
+const NOTICE_BODY_ID = 'bo-notice-body';
+const DRAFT_NOTE_ID = 'bo-draft-note';
+
+/** A missing field is described by its own inline message; an oversize one by the notice, with no inline text. */
+function describedBy(field: keyof Local, mark: Local[keyof Local]): string | undefined {
+  if (mark === 'missing') return field === 'username' ? 'bo-username-error' : 'bo-password-error';
+  return mark === 'oversize' ? NOTICE_BODY_ID : undefined;
+}
+
+function noticeFor(snapshot: SignedOut, local: Local, waitSeconds: number | null, unsavedWork: boolean): Notice | null {
   const { attempt } = snapshot;
   switch (attempt.kind) {
     case 'lookup-unavailable':
@@ -43,8 +58,8 @@ function noticeFor(snapshot: SignedOut, local: Local, waitSeconds: number | null
       return { copy: WENT_WRONG, action: true };
     default:
   }
-  if (waitSeconds !== null) return { copy: lockedFor(waitSeconds) };
-  if (local.username === 'oversize' || local.password === 'oversize') return { copy: SIGN_IN_FAILED };
+  if (waitSeconds !== null) return { copy: lockedFor(waitSeconds), locked: true };
+  if (local.username === 'oversize' || local.password === 'oversize') return { copy: SIGN_IN_FAILED, oversize: true };
   switch (attempt.kind) {
     case 'error':
       return { copy: SIGN_IN_FAILED };
@@ -54,16 +69,27 @@ function noticeFor(snapshot: SignedOut, local: Local, waitSeconds: number | null
       return { copy: UNAVAILABLE, action: true };
     default:
   }
-  if (snapshot.why === 'ended') return { copy: SESSION_ENDED };
+  if (snapshot.why === 'ended') return { copy: SESSION_ENDED, draft: snapshot.held !== null && unsavedWork };
   if (snapshot.why === 'refused') return { copy: ACCESS_REFUSED };
   return null;
 }
 
-export function SignIn({ snapshot, store }: { snapshot: SignedOut; store: SessionStore }) {
+export function SignIn({
+  snapshot,
+  store,
+  unsavedWork,
+}: {
+  snapshot: SignedOut;
+  store: SessionStore;
+  /** The work guard reports unsaved work in the held working area (the frame reads it, not this screen). */
+  unsavedWork: boolean;
+}) {
   const [username, setUsername] = useState('');
   const [local, setLocal] = useState<Local>(CLEAN);
+  const [announcement, setAnnouncement] = useState('');
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const retryRef = useRef<HTMLButtonElement>(null);
 
   const { attempt } = snapshot;
   const lookup = attempt.kind === 'lookup-failed' || attempt.kind === 'lookup-unavailable';
@@ -73,17 +99,54 @@ export function SignIn({ snapshot, store }: { snapshot: SignedOut; store: Sessio
   const fieldsOff = lookup || verifying;
   const passwordOff = fieldsOff || waitSeconds !== null;
   const submitOff = passwordOff;
-  const notice = noticeFor(snapshot, local, waitSeconds);
+  const notice = noticeFor(snapshot, local, waitSeconds, unsavedWork);
+  // A field is marked by what the local check found, and an oversize mark needs the notice that describes it.
+  const marked = (field: keyof Local): Local[keyof Local] =>
+    local[field] === 'oversize' && notice?.oversize !== true ? null : local[field];
 
-  // After a response that was not a sign-in, the manager enters the password afresh.
+  // Focus on arrival (DESIGN-016): Username, or Try again when the first lookup failed; and
+  // Username when a lookup that failed then succeeds.
+  const wasLookup = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (lookup) retryRef.current?.focus();
+    else if (wasLookup.current !== false) usernameRef.current?.focus();
+    wasLookup.current = lookup;
+  }, [lookup]);
+
+  // After a response that was not a sign-in, the manager enters the password afresh. When the
+  // account is cooling down the password is off, so Username is the field to edit.
   const wasVerifying = useRef(false);
   useEffect(() => {
-    if (wasVerifying.current && !verifying) passwordRef.current?.focus();
+    if (wasVerifying.current && !verifying) (passwordOff ? usernameRef : passwordRef).current?.focus();
     wasVerifying.current = verifying;
   }, [verifying]);
 
-  const onEdit = () => {
-    setLocal(CLEAN);
+  // A wait reaching zero brings entry back without a submission: focus stays in Username if it
+  // is there, and otherwise goes to Password.
+  const wasLocked = useRef(false);
+  useEffect(() => {
+    const locked = waitSeconds !== null;
+    if (wasLocked.current && !locked && document.activeElement !== usernameRef.current) passwordRef.current?.focus();
+    wasLocked.current = locked;
+  }, [waitSeconds !== null]);
+
+  // The cooldown is announced once: when a lock newly appears for the account shown, or the
+  // locked account changes. Ticking, a trailing space or a change of case writes nothing.
+  const announced = useRef<string | null>(null);
+  useEffect(() => {
+    if (notice?.locked !== true) {
+      announced.current = null;
+      setAnnouncement('');
+      return;
+    }
+    if (announced.current !== account) {
+      announced.current = account;
+      setAnnouncement(`${notice.copy.title}. ${notice.copy.body}`);
+    }
+  }, [notice?.locked === true, account]);
+
+  const onEdit = (field: keyof Local) => {
+    setLocal((l) => (l[field] === null ? l : { ...l, [field]: null }));
     store.dismiss();
   };
 
@@ -98,23 +161,15 @@ export function SignIn({ snapshot, store }: { snapshot: SignedOut; store: Sessio
     // Read once, and emptied at once: the value is never kept by this component.
     const password = passwordField.value;
     passwordField.value = '';
-    const missing: Local = {
-      username: user === '' ? 'missing' : null,
-      password: password === '' ? 'missing' : null,
+    // Every invalid field is marked; focus goes to the first one in document order. Nothing is
+    // truncated and nothing is sent.
+    const found: Local = {
+      username: user === '' ? 'missing' : user.length > USERNAME_LIMIT ? 'oversize' : null,
+      password: password === '' ? 'missing' : password.length > PASSWORD_LIMIT ? 'oversize' : null,
     };
-    if (missing.username !== null || missing.password !== null) {
-      setLocal(missing);
-      (missing.username !== null ? usernameRef : passwordRef).current?.focus();
-      return;
-    }
-    const oversize: Local = {
-      username: user.length > USERNAME_LIMIT ? 'oversize' : null,
-      password: password.length > PASSWORD_LIMIT ? 'oversize' : null,
-    };
-    if (oversize.username !== null || oversize.password !== null) {
-      // Nothing is truncated and nothing is sent.
-      setLocal(oversize);
-      (oversize.username !== null ? usernameRef : passwordRef).current?.focus();
+    if (found.username !== null || found.password !== null) {
+      setLocal(found);
+      (found.username !== null ? usernameRef : passwordRef).current?.focus();
       return;
     }
     setLocal(CLEAN);
@@ -122,64 +177,95 @@ export function SignIn({ snapshot, store }: { snapshot: SignedOut; store: Sessio
   };
 
   return (
-    <main className="office-signin">
-      <h1>Back office</h1>
-      <p className="office-muted">Sign in with your manager username and password.</p>
-      {notice && (
-        <section className="office-notice office-notice--amber" role="alert">
-          <strong>{notice.copy.title}</strong>
-          <p>{notice.copy.body}</p>
-          {notice.action && (
-            <button type="button" className="office-button small" onClick={() => store.retry()}>
-              Try again
-            </button>
-          )}
-        </section>
-      )}
-      <form method="post" noValidate onSubmit={onSubmit} onInput={onEdit} className="office-stack">
-        <label htmlFor="bo-username">Username</label>
-        <input
-          ref={usernameRef}
-          id="bo-username"
-          name="username"
-          type="text"
-          className="office-field"
-          autoComplete="username"
-          autoCapitalize="none"
-          spellCheck={false}
-          disabled={fieldsOff}
-          aria-invalid={local.username === 'missing' ? true : undefined}
-          aria-describedby={local.username === 'missing' ? 'bo-username-error' : undefined}
-          onInput={(event) => setUsername(event.currentTarget.value)}
-        />
-        {local.username === 'missing' && (
-          <span id="bo-username-error" className="office-error">
-            {MISSING_USERNAME}
-          </span>
+    <main className="login-page">
+      <div className="login-panel">
+        <h1>Back office</h1>
+        <p className="login-intro">Sign in with your manager username and password.</p>
+        {notice && (
+          // A lock is announced once through the status element below; its ticking title is not live.
+          <section
+            className="office-notice office-notice--amber"
+            role={notice.locked ? undefined : 'alert'}
+            aria-live={notice.locked ? 'off' : undefined}
+          >
+            <strong>{notice.copy.title}</strong>
+            <p id={NOTICE_BODY_ID}>{notice.copy.body}</p>
+            {notice.draft && <p id={DRAFT_NOTE_ID}>{DRAFT_ISOLATED}</p>}
+            {notice.action && (
+              <button
+                ref={retryRef}
+                type="button"
+                className="office-button small"
+                onClick={() => {
+                  store.retry();
+                  // A general failure asks for fresh entry here, at once; a failed first read
+                  // redraws the form when it answers.
+                  if (!lookup) (passwordOff ? usernameRef : passwordRef).current?.focus();
+                }}
+              >
+                Try again
+              </button>
+            )}
+          </section>
         )}
-        <label htmlFor="bo-password">Password</label>
-        <input
-          ref={passwordRef}
-          id="bo-password"
-          name="password"
-          type="password"
-          className="office-field"
-          autoComplete="current-password"
-          disabled={passwordOff}
-          aria-invalid={local.password === 'missing' ? true : undefined}
-          aria-describedby={local.password === 'missing' ? 'bo-password-error' : undefined}
-        />
-        {local.password === 'missing' && (
-          <span id="bo-password-error" className="office-error">
-            {MISSING_PASSWORD}
-          </span>
-        )}
-        <div className="office-actions office-space-top">
-          <button type="submit" className="office-button primary" aria-disabled={submitOff ? 'true' : undefined}>
+        <span className="office-announcement" role="status" aria-atomic="true">
+          {announcement}
+        </span>
+        <form method="post" noValidate onSubmit={onSubmit}>
+          <div className="login-field">
+            <label htmlFor="bo-username">Username</label>
+            <input
+              ref={usernameRef}
+              id="bo-username"
+              name="username"
+              type="text"
+              className="office-field"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              disabled={fieldsOff}
+              aria-invalid={marked('username') !== null ? true : undefined}
+              aria-describedby={describedBy('username', marked('username'))}
+              onInput={(event) => {
+                setUsername(event.currentTarget.value);
+                onEdit('username');
+              }}
+            />
+            {marked('username') === 'missing' && (
+              <span id="bo-username-error" className="office-error">
+                {MISSING_USERNAME}
+              </span>
+            )}
+          </div>
+          <div className="login-field">
+            <label htmlFor="bo-password">Password</label>
+            <input
+              ref={passwordRef}
+              id="bo-password"
+              name="password"
+              type="password"
+              className="office-field"
+              autoComplete="current-password"
+              disabled={passwordOff}
+              aria-invalid={marked('password') !== null ? true : undefined}
+              aria-describedby={describedBy('password', marked('password'))}
+              onInput={() => onEdit('password')}
+            />
+            {marked('password') === 'missing' && (
+              <span id="bo-password-error" className="office-error">
+                {MISSING_PASSWORD}
+              </span>
+            )}
+          </div>
+          <button
+            type="submit"
+            className="office-button primary login-submit"
+            aria-disabled={submitOff ? 'true' : undefined}
+          >
             {verifying ? 'Signing in…' : 'Sign in'}
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </main>
   );
 }

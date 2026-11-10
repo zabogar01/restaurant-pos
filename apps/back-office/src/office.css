@@ -3,8 +3,8 @@
  * (docs/design/visual-directions/frost/back-office/office.css) for what PHASE0-011d1
  * and PHASE0-011d2 draw and nothing else: the page, the frame (rail, top bar, content
  * pane), the field pattern with its label and invalid message, the buttons, the amber
- * notice, and M-6's dialog. Every value is a --frost-* token. The BO-01 form (.office-signin,
- * .office-stack) is PROVISIONAL: slice B's frontend task replaces its composition.
+ * notice, and M-6's dialog. Every value is a --frost-* token. BO-01 (.login-page and its
+ * panel) is drawn as DESIGN-016 draws it (PHASE1-S10).
  */
 * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: var(--frost-scrollbar); }
 [hidden] { display: none !important; }
@@ -16,7 +16,7 @@ button, input { -webkit-tap-highlight-color: transparent; }
 b, strong { font-weight: var(--frost-weight-semibold); }
 
 /* The frame: a 220px rail, a 64px top bar, the scrolling content pane. */
-.bo { display: flex; width: var(--frost-office-width); max-width: 100%; height: 100dvh; min-height: 0; overflow: hidden; font-size: var(--frost-text-14); }
+.bo { display: flex; width: var(--frost-office-width); max-width: 100%; margin-inline: auto; height: 100dvh; min-height: 0; overflow: hidden; font-size: var(--frost-text-14); }
 .bo .bonav { width: var(--frost-office-nav-width); flex: none; overflow-y: auto; background: var(--frost-elevated); border-right: var(--frost-divider-stroke); }
 .bomain { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .botop { display: flex; align-items: center; gap: var(--frost-space-4); flex: none; height: var(--frost-office-header-height); padding: 0 var(--frost-office-content-padding); background: var(--frost-elevated); border-bottom: var(--frost-divider-stroke); font-size: var(--frost-text-13); white-space: nowrap; }
@@ -24,12 +24,21 @@ b, strong { font-weight: var(--frost-weight-semibold); }
 .office-actor, .office-muted { color: var(--frost-muted); }
 .bocontent { flex: 1; min-height: 0; overflow-y: auto; padding: var(--frost-office-content-padding); }
 
-/* BO-01, PROVISIONAL: the form page scrolls; nothing is clipped. */
+/*
+ * BO-01 (PHASE1-S10), ported from Frost's entry.css: the panel is centred in the window both
+ * ways, and at a short height the page grows and scrolls, so nothing is clipped. The status
+ * element that announces a lock is visually hidden (office.css of the artifact).
+ */
 .bo-signin { min-height: 100dvh; font-size: var(--frost-text-14); }
-.office-signin { max-width: calc(var(--frost-office-modal-width) + var(--frost-office-nav-width)); margin: 0 auto; padding: var(--frost-space-12) var(--frost-office-content-padding); }
-.office-signin h1 { margin: 0 0 var(--frost-space-2); font-size: var(--frost-text-30); font-weight: var(--frost-weight-medium); letter-spacing: var(--frost-tracking-headline); }
-.office-signin > p { margin: 0 0 var(--frost-space-6); }
-.office-stack label { display: block; font-size: var(--frost-text-12); margin: var(--frost-space-4) 0 var(--frost-space-1); }
+.login-page { min-height: 100dvh; display: flex; flex-direction: column; padding: var(--frost-office-content-padding); }
+.login-panel { width: var(--frost-office-login-width); max-width: 100%; margin: auto; padding-block: var(--frost-space-6); }
+.login-panel h1 { margin: 0 0 var(--frost-space-2); font-size: var(--frost-text-30); font-weight: var(--frost-weight-medium); letter-spacing: var(--frost-tracking-headline); }
+.login-intro { margin: 0 0 var(--frost-space-8); color: var(--frost-muted); }
+.login-field { margin-bottom: var(--frost-space-5); }
+.login-field label { display: block; margin-bottom: var(--frost-space-1); font-size: var(--frost-text-12); color: var(--frost-muted); }
+.login-panel .office-notice button { margin-top: var(--frost-space-3); }
+.login-submit { width: 100%; }
+.office-announcement { position: absolute; width: var(--frost-space-1); height: var(--frost-space-1); overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* The 40px field pattern: resting, focus, invalid, disabled. */
 .office-field { width: 100%; height: var(--frost-field-small-height); padding: var(--frost-field-padding); border: var(--frost-control-stroke); border-radius: var(--frost-radius-surface); background: var(--frost-elevated); color: var(--frost-text); font-size: var(--frost-text-14); }

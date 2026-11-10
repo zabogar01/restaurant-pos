@@ -28,8 +28,9 @@ const CLOSED_BY_NONE = { closedby: 'none' } as const;
  *
  * **The working area is keyed by the staff user it belongs to.** `children` (the
  * screen) is mounted under a key equal to the signed-in `staffUserId`, inside the one
- * `<main>`. When the session is lost to anything that is not a removal, the screen
- * shows BO-01 and that `<main>` stays mounted, hidden and inert, so its form state
+ * content pane, which carries the main landmark only while framed. When the session is lost
+ * to anything that is not a removal, the screen shows BO-01 (the one `<main>` then) and that
+ * pane stays mounted, hidden and inert, so its form state
  * survives; a sign-in as the same staff user shows it again as it was, and a
  * sign-in as anyone else changes the key, so React destroys it. A confirmed
  * logout, `FORBIDDEN` and a reload destroy it too. The served build gives it the
@@ -169,8 +170,11 @@ export function OfficeApp({ children }: { children?: ReactNode }) {
               </button>
             </header>
           )}
-          {session.phase === 'signed-out' && <SignIn snapshot={session} store={store} />}
-          <main className="bocontent" hidden={!framed}>
+          {session.phase === 'signed-out' && <SignIn snapshot={session} store={store} unsavedWork={work !== 'clean'} />}
+          {/* The pane carries the main landmark only while framed. At BO-01 it stays mounted, hidden and
+              inert, and BO-01's own <main> is the only one. It is a div in both phases, so the working
+              area inside it is never remounted. */}
+          <div className="bocontent" role={framed ? 'main' : undefined} hidden={!framed}>
             {failure !== 'none' && (
               <section className="office-notice office-notice--amber" role="alert">
                 <strong>{copy.title}</strong>
@@ -197,7 +201,7 @@ export function OfficeApp({ children }: { children?: ReactNode }) {
                 {children}
               </div>
             )}
-          </main>
+          </div>
         </div>
       </div>
       <dialog

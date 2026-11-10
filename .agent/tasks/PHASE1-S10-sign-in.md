@@ -242,4 +242,65 @@ End with `DONE` or `BLOCKED: <one question>`, then report to the lead through He
 
 ## Handoff
 
-*(The builder writes this section.)*
+**Builder, 2026-11-10. Branch `agent/phase1-s10`; the commit hash is the one that adds this Handoff (see `git log -1`).**
+
+### What I did
+
+- `apps/back-office/src/SignIn.tsx`: BO-01 redrawn as `main.login-page > div.login-panel` holding, in order, `h1`, `p.login-intro`, the notice (when there is one), the visually hidden `span[role=status][aria-atomic=true].office-announcement`, and the `form` (`method="post"`, `noValidate`) of two `div.login-field` blocks (label, native input, inline error) and the `button.office-button.primary.login-submit`. Credential handling is untouched (uncontrolled inputs, read once on submit, password emptied at once, `===''` emptiness, 256/1024 limits). The component takes a new prop `unsavedWork`.
+- `apps/back-office/src/OfficeApp.tsx`: the content pane is now `<div className="bocontent" role={framed ? 'main' : undefined} hidden={!framed}>`; `SignIn` receives `unsavedWork={work !== 'clean'}` from the guard subscription OfficeApp already holds.
+- `apps/back-office/src/office.css`: the provisional `.office-signin` and `.office-stack label` rules are replaced by `entry.css`'s login rules (`.login-page`, `.login-panel`, `.login-intro`, `.login-field`, `.login-submit`, the notice's button margin) plus `.office-announcement` (from the artifact's office.css; no colour). Every value is a Frost token.
+- `apps/back-office/src/copy.ts`: `DRAFT_ISOLATED` (typographic apostrophe, as `I:629`).
+- Tests: new `apps/back-office/test/sign-in-layout.test.tsx` (criteria 1, 6, 7) and `sign-in-focus.test.tsx` (criteria 3, 4, 5); selector-only edits listed below; `e2e/tests/tables.spec.ts` (two lines).
+
+### How ruling 1 keeps one `main` without remounting the work
+
+The pane was `<main>` in every phase. It is now a `<div>` in every phase, so React reconciles the same element and the keyed `.office-work` inside it is never remounted; only the `role` attribute and `hidden` change. While framed (signed in or idle under M-6) the pane carries `role="main"` and is the only main landmark (there is no `<main>` element then). While signed out the pane has no role, is `hidden` and `inert` (the existing layout effect), and `SignIn`'s `<main>` is the only one. Criterion 2's same-manager and other-manager tests pass unchanged in what they assert.
+
+### Decisions and evidence
+
+- Lock notice: `role` absent and `aria-live="off"` while locked; all other notices keep `role="alert"`. The announcement is written by an effect keyed on (lock shown, `accountKey(username)`), so a tick, trailing space or case change cannot write; clearing the lock empties it.
+- Draft note: id `bo-draft-note`; the notice body `<p>` has id `bo-notice-body`, which an oversize field's `aria-describedby` points at. The note is attached to Session ended's notice only, so it cannot appear under a lock, a failure or an oversize notice (test: `error` attempt with held unsaved work shows no note).
+- Validation now computes both fields in one pass (missing, else oversize, else clean) and marks every invalid field. **This changes one built behaviour:** previously a missing field returned before the oversize check ran, so "username oversize + password empty" marked only the password. Ruling 4's "every missing field … every oversized field" requires marking both, so it now does (test: "an oversize username with the password empty"). An oversize mark is shown only while the oversize notice is the one on screen, so it never describes a lock notice.
+- Editing: each field's `onInput` clears only its own local marking (previously any edit cleared both) and calls `store.dismiss()` as before. Ruling 4 says "editing Username clears its own invalid marking"; the artifact keeps Password's mark when Username is edited. I followed the artifact. If you wanted the old clear-everything behaviour, it is one line in `onEdit`.
+- Focus is a mount/transition effect on `lookup` (Username on arrival or when a lookup recovers; Try again while the first read has failed), the existing after-verifying effect now choosing Username when the password is off (a cooldown answer) and Password otherwise, a wait-reaching-zero effect (Password only if focus is not in Username), and Try again's click handler (Password at once for a general failure; nothing for a lookup failure, because retry unmounts and remounts BO-01 through `starting`).
+- The remaining `office-muted` and `office-actions` classes are still used elsewhere; I removed only the BO-01 uses.
+
+### Focus cases of ruling 4 mapped to tests (`sign-in-focus.test.tsx` unless stated)
+
+First load resting / refused / ended / after logout: "where focus lands when BO-01 first draws" (four tests). Validation: "local validation: marking and focus" (rest, blank, password only, both oversize, password-only oversize, mixed, editing Username). INVALID_CREDENTIALS, `failed`, `unavailable`, Try again: "after an answer that was not a sign-in" (INVALID_CREDENTIALS also in the existing `sign-in.test.tsx` case 2, which already asserted Password and still does). Failed lookup then success: "a failed first lookup". Cooldown answer, editing away and back, wait to zero with focus in Username and elsewhere: "a cooldown" (four tests). Loading: "loading" (already built; pinned, fields off, `Signing in…`, `aria-disabled`).
+
+### Tests changed
+
+Selector only, `main.bocontent` to `.bocontent` (assertions unchanged): `reauth.test.tsx:50`, `tables-departure.test.tsx:390,402`, and the ones the task did not name: `item-departure.test.tsx:354`, `methods-departure.test.tsx:550`, `menu-departure.test.tsx:460`, `settings-departure.test.tsx:284,406`, `presets-departure.test.tsx:628`, `session-lifecycle.test.tsx:44`. `sign-in.test.tsx:42`: `.office-signin > p` to `.login-intro` (structural selector the new composition moves). No other assertion changed. `e2e/tests/tables.spec.ts`: the `:199` selector to `.bocontent` and one added `expect(office.locator('#bo-draft-note')).toBeVisible()` before the manager signs in again.
+
+### Both failures per criterion
+
+"Before" was run on the merged code with the new tests in place and the production code untouched: `sign-in-layout` 10 of 16 failed, `sign-in-focus` 17 of 24 failed (the others pin behaviour already built). "Red" is a mutation on the finished code, then restored (I kept a copy of the finished files and copied it back; `git status` showed only the intended files, and the final diff was read).
+
+1. One main. Before: `host.querySelectorAll('main')` had length 2 (BO-01's and the pane's), signed in the `[role=main]` count was fine but `main` count 1 not 0. Red (pane given its `<main>` tag back): length 2 at all three signed-out cases and at "ended with held work"; signed in, `main` count 1, expected 0.
+2. Draft survives BO-01. Pinned by the existing tests, which pass. Red (working area rendered only while framed): 5 of `session-lifecycle.test.tsx`'s same-manager and held-child tests fail (`childInput` null), and my layout test fails.
+3. Focus. Before: 4 first-load tests failed (`activeElement` was `body`). Red 1 (cold-start Username focus removed): the 4 first-load tests and the lookup-recovery test fail. Red 2 (focus Username after an answer): INVALID_CREDENTIALS, general failure and unavailable tests fail, and so does the existing `sign-in.test.tsx` case 2.
+4. Validation marking. Before: the oversize tests failed (no `aria-invalid`, no `aria-describedby`). Red (password marked only when the username is not missing): the blank-submit test fails (`aria-invalid` null on Password).
+5. Lock announced once. Before: no status element, all five announcement tests failed. Red 1 (`role="alert"` on the locked notice): "writes … once" fails at `hasAttribute('role')` (true). Red 2 (write on every tick): the same test fails at `seen.writes()` (3, expected 0).
+6. Draft sentence. Before: `DRAFT_ISOLATED` undefined, all failed. Red (guard condition dropped, `held !== null` only): "held and clean" fails both in the full app (the sentence is appended) and on `SignIn` directly. Browser Red (note never drawn): `tables.spec.ts` "form open and no decision" fails at `#bo-draft-note`, element not found.
+7. Composition. Before: failed (no panel). Red (notice moved below the form): the order test fails (`H1, P, SPAN, FORM, SECTION` against `H1, P, SECTION, SPAN, FORM`).
+8. Frame centred beyond 1440px: not measurable in jsdom. The one rule added: `margin-inline: auto` on `.bo` (`office.css:19`).
+
+### Found and not fixed
+
+- `OfficeApp.tsx:89-91` (focus to Log out after a different manager signs in), the UTF-16 limits and M-6's N1/N3 were out of scope and untouched.
+- A cooldown that is also an oversize marking can leave a stale `aria-invalid` on a cleared Password until it is edited; the mark is hidden while the lock notice is shown, but the password stays flagged. Harmless (a lock disables Password), noted for the lead.
+- I could not measure geometry or contrast; no browser measurement was attempted by me (the e2e run is Chromium and WebKit, state only).
+
+### Real output
+
+- Baseline on `c89e11b`-based tree: `npm run verify` 177 files, 6229 tests passed.
+- Final: `npm run verify` typecheck clean, 179 files, 6269 tests passed (+2 files, +40 tests: 16 in `sign-in-layout`, 24 in `sign-in-focus`).
+- `npm run test:e2e:all`: 150 passed (2.2 min), Chromium and WebKit. `db:migrate`: no pending migrations.
+- No formatter was run. An Edit of mine briefly dropped a space in `copy.ts` (`lockedFor =(`); I caught it in the diff and restored it.
+
+### The next agent needs
+
+The lead's browser measurements (panel 420 wide and centred, fields 420×40, notice contrast, no overflow, frame at x=0 and x=240 at 1920). Nothing else is missing.
+
+DONE

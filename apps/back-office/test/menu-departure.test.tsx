@@ -457,7 +457,7 @@ describe('AC 13. the decision, M-6 and BO-01', () => {
     await endSession(host);
     expect(departure.open).toBe(false);
     expect(openDialogs()).toHaveLength(0);
-    expect(host.querySelector<HTMLElement>('main.bocontent')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.bocontent')!.hidden).toBe(true);
     expect(nameField(host)!.value).toBe('Main plates');
 
     await signInAgain(host);

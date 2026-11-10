@@ -41,7 +41,7 @@ async function signInWith(host: HTMLElement, answer = ok(VIEW), username = 'm.iq
 
 const area = (host: HTMLElement) => host.querySelector<HTMLElement>('.office-work');
 const childInput = (host: HTMLElement) => host.querySelector<HTMLInputElement>('#draft');
-const pane = (host: HTMLElement) => host.querySelector<HTMLElement>('main.bocontent');
+const pane = (host: HTMLElement) => host.querySelector<HTMLElement>('.bocontent');
 const frame = (host: HTMLElement) => host.querySelector('.botop');
 
 /** The child holds a typed value, and the screen is then sent to BO-01 by `trigger`. */
